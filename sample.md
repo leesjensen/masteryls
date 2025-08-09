@@ -60,8 +60,8 @@ graph TD;
 
 ## Issue/PR References
 
-#2
-leesjensen/masteryls#2
+#1
+leesjensen/masteryls#1
 
 ## Autolinked URLs
 
