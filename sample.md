@@ -1,9 +1,30 @@
 # Instruction Title
 
-This is the content of the instruction. It can include **bold text**, _italic text_, and even [links](https://example.com).
+This is the content of the instruction. It can include **bold text**, _italic text_, <sub>sub</sub>, <sup>super</sup>, and even [links](https://example.com).
+
+## Lists
 
 - Item 1
 - Item 2
+
+* Item 1
+* Item 2
+
+- nested
+  1. cow
+  1. rat
+  1. dog
+- more
+  1. apple
+  1. pie
+
+## Color circles
+
+`#0969DA`
+
+## Section links
+
+[Link to mentions](#mentions)
 
 ## Code Block
 
@@ -48,7 +69,7 @@ graph TD;
 
 ## Emoji
 
-:smile: :rocket: :tada:
+:smile: :rocket: :tada: :+1:
 
 ## Images
 
@@ -93,3 +114,7 @@ Here is a footnote reference.[^1]
 |    3 | SQL        |
 
 </details>
+
+## Horizontal lines
+
+---
