@@ -73,6 +73,7 @@ https://github.com
 ## Inline HTML
 
 <span style="color: red;">This is red text</span>
+cow</br>rat
 
 ## Footnotes
 
