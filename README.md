@@ -36,6 +36,23 @@
    1. TouchSpeed: Keyboard assisted grading automation
    1. TouchSpeed: Keyboard assisted feedback generation
 
+## Functionality
+
+### Configuration
+
+The configuration is set using an admin API that is only writeable if you are an admin, but is publicly available for reading.
+
+```js
+{
+   course: {
+      title: "Awesome course",
+      canvas-id: "234344"
+   }
+}
+```
+
+For the supabase edge functions that handle the GitHub MD requests the GitHub token will be inserted into supabase.
+
 ## Development notes
 
 I want to keep this really simple and so I am going to use:
@@ -48,7 +65,12 @@ This should make it so that I can host the whole thing as a static website
 
 ### Markdown support
 
-There are lots of markdown libraries out there such as `marked`, `react-markdown`, and `remark`. However, none of them directly supported GitHub markdown which is what I want to target. So instead I am going to use the GitHub API for rendering markdown. This involves a two step process.
+There are lots of markdown libraries out there such as `marked`, `react-markdown`, and `remark`. However, none of them directly supported GitHub markdown which is what I want to target. So instead I am going to use the GitHub API for rendering markdown. This involves the following process.
 
 1. Download the target markdown.
 1. Render the markdown to HTML using the GitHub API.
+1. Adding mermaid support had to be done manual.
+
+### Added Tailwind for style
+
+Followed these basic [instructions](https://tailwindcss.com/docs/installation/using-vite) for using with Vite.
