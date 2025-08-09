@@ -5,10 +5,17 @@ import Instruction from './src/instruction.jsx';
 
 function App() {
   return (
-    <div>
-      Mastery LS Frame
-      <Instruction />
-    </div>
+    <>
+      <header>
+        <h1>Mastery LS Frame</h1>
+      </header>
+      <main>
+        <Instruction />
+      </main>
+      <footer>
+        <p>Powered by Mastery LS</p>
+      </footer>
+    </>
   );
 }
 
