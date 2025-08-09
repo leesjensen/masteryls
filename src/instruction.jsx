@@ -13,10 +13,12 @@ function Instruction() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          accept: 'application/vnd.github+json',
         },
         body: JSON.stringify({
           text: markdownContent,
           mode: 'gfm',
+          context: 'leesjensen/masteryls',
         }),
       });
       const text = await response.text();

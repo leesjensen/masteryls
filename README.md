@@ -2,7 +2,7 @@
 
 **Mastery LS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.
 
-Features include:
+## Features
 
 1. **Content** that leverages the online experience. This will include instruction video with interactive paths, textual instruction, and self paced learning.
    1. Markdown as the primary content format
@@ -35,3 +35,20 @@ Features include:
    1. API access for notifications
    1. TouchSpeed: Keyboard assisted grading automation
    1. TouchSpeed: Keyboard assisted feedback generation
+
+## Development notes
+
+I want to keep this really simple and so I am going to use:
+
+1. Vite
+1. Basic React library
+1. Supabase for database and authentication
+
+This should make it so that I can host the whole thing as a static website
+
+### Markdown support
+
+There are lots of markdown libraries out there such as `marked`, `react-markdown`, and `remark`. However, none of them directly supported GitHub markdown which is what I want to target. So instead I am going to use the GitHub API for rendering markdown. This involves a two step process.
+
+1. Download the target markdown.
+1. Render the markdown to HTML using the GitHub API.
