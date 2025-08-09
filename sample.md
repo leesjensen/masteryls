@@ -29,12 +29,6 @@ graph TD;
 >
 > This is an important note that should be highlighted.
 
-## Checklist
-
-- [x] Task 1 completed
-- [ ] Task 2 not completed
-- [ ] Task 3 not completed
-
 ## Tables
 
 | Syntax    | Description |
@@ -62,12 +56,12 @@ graph TD;
 
 ## Mentions
 
-@octocat
+@leesjensen
 
 ## Issue/PR References
 
-#123
-octocat/Hello-World#42
+#2
+leesjensen/masteryls#2
 
 ## Autolinked URLs
 
