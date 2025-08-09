@@ -56,12 +56,15 @@ graph TD;
 
 ## Mentions
 
-@leesjensen
+@leesjensen - you are needed
 
 ## Issue/PR References
 
-#1
-leesjensen/masteryls#1
+#1 - relative
+
+leesjensen/masteryls#1 - absolute
+
+softwareconstruction240/softwareconstruction#297 - absolute
 
 ## Autolinked URLs
 
