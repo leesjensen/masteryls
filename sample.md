@@ -80,3 +80,16 @@ cow</br>rat
 Here is a footnote reference.[^1]
 
 [^1]: This is the footnote.
+
+## Collapsed summary
+
+<details>
+<summary>My top languages</summary>
+
+| Rank | Languages  |
+| ---: | ---------- |
+|    1 | JavaScript |
+|    2 | Python     |
+|    3 | SQL        |
+
+</details>
