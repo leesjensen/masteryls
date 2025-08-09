@@ -1,6 +1,6 @@
-# FlexLS
+# Mastery LS
 
-**FlexLS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.
+**Mastery LS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.
 
 Features include:
 

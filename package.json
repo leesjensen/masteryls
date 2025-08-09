@@ -1,0 +1,30 @@
+{
+  "name": "masteryls",
+  "version": "1.0.0",
+  "description": "**MasteryLS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leesjensen/flexls.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/leesjensen/flexls/issues"
+  },
+  "homepage": "https://github.com/leesjensen/flexls#readme",
+  "devDependencies": {
+    "vite": "^7.1.1"
+  },
+  "dependencies": {
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  }
+}
