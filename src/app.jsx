@@ -1,20 +1,38 @@
 import React from 'react';
 
-import Instruction from './instruction.jsx';
+function App() {
+  const title = 'Software Construction';
 
-function App({ title }) {
   return (
-    <>
-      <header className="fixed top-0 left-0 w-full bg-gray-200 p-2 z-10 shadow">
-        <h1>Mastery LS Frame - {title}</h1>
+    <div className="flex flex-col h-screen">
+      <header className="h-[32px] bg-red-500 flex items-center px-2">
+        <h1 className="text-white text-sm">Mastery LS Frame - {title}</h1>
       </header>
-      <main className="p-4 m-4 pt-16">
-        <Instruction />
-      </main>
-      <footer className="bg-gray-200 p-2 text-center">
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-[200px] bg-green-700 h-full overflow-auto p-2">
+          <div className="text-white space-y-2">
+            {Array.from({ length: 100 }, (_, i) => (
+              <p key={i}>TOC {i + 1}</p>
+            ))}
+          </div>
+        </aside>
+
+        <section className="flex-1 bg-amber-700 overflow-hidden">
+          <div id="content" className="h-full overflow-auto p-2">
+            <div className="text-white space-y-2">
+              {Array.from({ length: 100 }, (_, i) => (
+                <p key={i}>Scrollable content line {i + 1}</p>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer className="h-[32px] bg-gray-200 flex items-center justify-center text-sm">
         <p>Powered by Mastery LS</p>
       </footer>
-    </>
+    </div>
   );
 }
 

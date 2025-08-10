@@ -4,4 +4,4 @@ import ReactDOM from 'react-dom/client';
 import App from './src/app.jsx';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App title="Software Construction" />);
+root.render(<App />);

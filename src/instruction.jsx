@@ -47,7 +47,11 @@ function Instruction() {
     }
   }, [content]);
 
-  return <div className="markdown-body" dangerouslySetInnerHTML={{ __html: content }} />;
+  return (
+    <div className="p-4 m-4 pt-16">
+      <div className="markdown-body" dangerouslySetInnerHTML={{ __html: content }} />
+    </div>
+  );
 }
 
 export default Instruction;
