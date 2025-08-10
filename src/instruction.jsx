@@ -48,8 +48,8 @@ function Instruction() {
   }, [content]);
 
   return (
-    <div className="p-4 m-4 pt-16">
-      <div className="markdown-body" dangerouslySetInnerHTML={{ __html: content }} />
+    <div className="">
+      <div className="markdown-body p-4" dangerouslySetInnerHTML={{ __html: content }} />
     </div>
   );
 }
