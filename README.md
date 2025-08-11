@@ -53,6 +53,52 @@ The configuration is set using an admin API that is only writeable if you are an
 
 For the supabase edge functions that handle the GitHub MD requests the GitHub token will be inserted into supabase.
 
+### GitHub repo structure
+
+In order for a GitHub repo to function as the source for a Mastery LS course it must have the following structure.
+
+```txt
+.
+├── LICENSE
+├── README.md
+├── instruction
+│   ├── modules.md
+│   ├── topic1
+│   │   └── topic1.md
+│   ├── topic2
+│   │   ├── topic2.md
+│   │   └── topic2.gif
+│   ├── topic3
+│   │   ├── topic3.md
+│   │   └── topic3.png
+│   └── template
+│       └── template.md
+├── syllabus
+│   └── syllabus.md
+└── schedule
+    └── schedule.md
+```
+
+#### Modules
+
+The `modules.md` file creates the content structure for the course. It uses the headings levels to generate the interface for the instruction modules. The modules file allows you to reorganize the topic order in any desired structure. When Mastery LS loads a course it first parses `modules.md` to generate the table of contents. If a course author modifies the order of topics, and commits the change, then the `modules.md` file is overwritten.
+
+You should only manually modify the contents of `modules.md` if you understand the structure of the file. Any additions to the file beyond the recognized structure will be lost when the file is altered by Mastery LS.
+
+```md
+# Instructional modules
+
+## Module1 title
+
+- [Topic1](topic1/topic1.md)
+- [Topic2](topic2/topic2.md)
+
+## Module2 title
+
+- [Topic3](topic3/topic3.md)
+- [Topic4](topic4/topic4.md)
+```
+
 ## Development notes
 
 I want to keep this really simple and so I am going to use:
