@@ -20,7 +20,7 @@ function Instruction({ config, topicUrl }) {
     if (content) {
       setTimeout(() => {
         mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
-      }, 1000);
+      }, 0);
     }
   }, [content]);
 
@@ -55,7 +55,7 @@ async function downloadTopicMarkdown(config, topicUrl) {
 }
 
 async function convertTopicToHtml(config, topicUrl, markdown) {
-  let baseUrl = `https://raw.githubusercontent.com/softwareconstruction240/softwareconstruction/main`;
+  let baseUrl = `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`;
   let contentPath = topicUrl.split('/contents/')[1];
   contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
   if (contentPath) {
@@ -69,6 +69,7 @@ async function convertTopicToHtml(config, topicUrl, markdown) {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${config.github.token}`,
+      Accept: 'application/vnd.github.v3+json',
     },
     body: JSON.stringify({
       text: markdown,
@@ -80,8 +81,6 @@ async function convertTopicToHtml(config, topicUrl, markdown) {
 }
 
 function postProcessTopicHTML(html) {
-  console.log('Processing HTML for diagrams', html);
-
   html = html.replace(/<div class="highlight highlight-source-mermaid"><pre class="notranslate">([\s\S]*?)<\/pre><\/div>/g, (_, diagramContent) => {
     const cleanDiagram = diagramContent.replace(/<[^>]*>/g, '').trim();
     return `<div class="mermaid">${cleanDiagram}</div>`;
