@@ -1,23 +1,34 @@
 import React, { useState } from 'react';
 
 function Contents({ setTopicUrl, modules }) {
+  const [openModuleIndexes, setOpenModuleIndexes] = useState([1]);
+
+  const toggleModule = (index) => {
+    setOpenModuleIndexes((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]));
+  };
+
   return (
-    <div id="content" className="h-full overflow-auto bg-white">
+    <div id="content" className="h-full overflow-auto bg-white p-4 text-sm">
       <nav>
-        <h3 className="text-lg font-semibold mb-2">Table of Contents</h3>
         <ul className="list-none p-0">
           {modules.map((item, i) => (
-            <li key={i} className="mb-3">
-              <a className="no-underline text-gray-800 font-bold hover:text-blue-600">{item.title}</a>
-              <ul className="list-none p-0">
-                {item.topics.map((item, i) => (
-                  <li key={i} className="mb-3">
-                    <a onClick={() => setTopicUrl(item.path)} className="no-underline text-green-600 hover:text-blue-600">
-                      {item.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+            <li key={i} className="mb-1">
+              <button onClick={() => toggleModule(i)} className="no-underline text-gray-800 font-bold hover:text-blue-600 bg-transparent border-none cursor-pointer p-0 truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis" aria-expanded={openModuleIndexes.includes(i)} title={item.title}>
+                <span style={{ marginRight: 8 }}>{openModuleIndexes.includes(i) ? '▼' : '▶'}</span>
+                {item.title}
+              </button>
+              {openModuleIndexes.includes(i) && (
+                <ul className="list-none p-0 ml-4">
+                  {item.topics.map((topic, j) => (
+                    <li key={j} className="mb-1 flex items-center">
+                      <span style={{ marginRight: 8, fontSize: '1.1em' }}>⁃</span>
+                      <a onClick={() => setTopicUrl(topic.path)} className="no-underline text-green-600 hover:text-blue-600 cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis" title={topic.title}>
+                        {topic.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>

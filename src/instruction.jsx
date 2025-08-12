@@ -84,13 +84,11 @@ function replaceRelativeLinks(baseUrl, text) {
   // Replace images: ![alt](./img.png) or ![alt](img.png)
   text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, alt, url) => {
     const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
-    console.log('Replacing image:', match, 'with', absUrl);
     return `![${alt}](${absUrl})`;
   });
   // Replace links: [label](./file.md) or [label](file.md)
   text = text.replace(/\[([^\]]+)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, label, url) => {
     const absUrl = baseUrl + url.replace(/^\.\//, '');
-    console.log('Replacing link:', match, 'with', absUrl);
     return `[${label}](${absUrl})`;
   });
   return text;

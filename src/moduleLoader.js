@@ -30,7 +30,8 @@ function parseModulesMarkdown(baseUrl, markdownContent) {
 
     const topicMatch = line.match(topicRegex);
     if (topicMatch && currentModule) {
-      const path = topicMatch[2].startsWith('http') ? topicMatch[2] : `${baseUrl}/instruction/${topicMatch[2]}`;
+      const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(topicMatch[2]);
+      const path = isAbsoluteUrl ? topicMatch[2] : `${baseUrl}/instruction/${topicMatch[2]}`;
       currentModule.topics.push({
         title: topicMatch[1].trim(),
         path: path,
