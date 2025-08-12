@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Instruction from './instruction';
 import Sidebar from './sidebar';
 import loadModules from './moduleLoader';
@@ -7,6 +7,7 @@ function App({ config }) {
   const baseUrl = `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents`;
   const [modules, setModules] = React.useState([]);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   React.useEffect(() => {
     loadModules(config, baseUrl).then((modules) => {
@@ -36,8 +37,12 @@ function App({ config }) {
         <h1 className="text-lg text-gray-700">💡 {config.course.title}</h1>
       </header>
 
+      <button className="w-10 ml-2 px-2 py-1 text-xs border rounded hover:bg-gray-100" onClick={() => setSidebarVisible(!sidebarVisible)}>
+        {sidebarVisible ? '◀' : '▶'}
+      </button>
+
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar modules={modules} setTopic={navigateTopic} />
+        {sidebarVisible && <Sidebar modules={modules} setTopic={navigateTopic} />}
         <Instruction config={config} topicUrl={topic.path} />
       </div>
 
