@@ -38,7 +38,7 @@ function Contents({ setTopic, currentTopic, modules }) {
                   {item.topics.map((topic, j) => (
                     <li key={j} className="mb-1 flex items-center">
                       <span style={{ marginRight: 8, fontSize: '1.1em' }}>-</span>
-                      <a onClick={() => setTopic({ title: topic.title, path: topic.path })} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
+                      <a onClick={() => setTopic({ title: topic.title, path: topic.path })} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-300 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
                         {topic.title}
                       </a>
                     </li>

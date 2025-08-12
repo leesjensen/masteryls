@@ -25,7 +25,7 @@ function Instruction({ config, topicUrl }) {
   }, [content]);
 
   return (
-    <section className="flex-1 overflow-auto">
+    <section className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200">
       <div className="markdown-body p-4" dangerouslySetInnerHTML={{ __html: content }} />
     </section>
   );
