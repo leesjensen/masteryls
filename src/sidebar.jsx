@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Contents from './contents.jsx';
 
-function Sidebar({ modules, setTopic }) {
+function Sidebar({ modules, currentTopic, setTopic }) {
   return (
     <div className="border p-2 rounded-xs m-2 border-gray-200 bg-gray-50 overflow-hidden w-full sm:w-[300px]">
       <div className="border-gray-200 pb-2 border-b-1 flex items-center justify-between text-sm">
@@ -9,7 +9,7 @@ function Sidebar({ modules, setTopic }) {
         <span className="rounded p-1 bg-gray-200 ">Schedule</span>
       </div>
       <aside className="w-full h-full overflow-hidden">
-        <Contents modules={modules} setTopic={setTopic} />
+        <Contents modules={modules} currentTopic={currentTopic} setTopic={setTopic} />
       </aside>
     </div>
   );

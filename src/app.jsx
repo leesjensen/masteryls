@@ -25,6 +25,10 @@ function App({ config }) {
   function navigateTopic(newTopic) {
     localStorage.setItem('selectedTopic', JSON.stringify(newTopic));
     setTopic(newTopic);
+
+    if (sidebarVisible && window.innerWidth < 768) {
+      setSidebarVisible(false);
+    }
   }
 
   function gitHubUrl(url) {
@@ -37,19 +41,19 @@ function App({ config }) {
         <h1 className="text-lg text-gray-700">💡 {config.course.title}</h1>
       </header>
 
-      <button className="w-10 ml-2 px-2 py-1 text-xs border rounded hover:bg-gray-100" onClick={() => setSidebarVisible(!sidebarVisible)}>
-        {sidebarVisible ? '◀' : '▶'}
+      <button className="w-12 m-1 px-2 py-1 text-xs border rounded hover:bg-gray-100" onClick={() => setSidebarVisible(!sidebarVisible)}>
+        {sidebarVisible ? '☰ ◀' : '☰ ▶'}
       </button>
 
       <div className="flex flex-1 overflow-hidden">
-        {sidebarVisible && <Sidebar modules={modules} setTopic={navigateTopic} />}
+        {sidebarVisible && <Sidebar modules={modules} currentTopic={topic} setTopic={navigateTopic} />}
         <Instruction config={config} topicUrl={topic.path} />
       </div>
 
-      <footer className="h-[32px] bg-gray-200 flex items-center justify-evenly text-sm">
+      <footer className="h-[32px] bg-gray-200 flex items-center justify-evenly text-sm border-t-1 border-gray-300">
         <span className="text-gray-600">prev</span>
         <a href={gitHubUrl(topic.path)} className="ml-2 text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
-          View on GitHub
+          Topic on GitHub
         </a>
         <span className="text-gray-600">next</span>
       </footer>

@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Rubik+Microbe&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Quicksand&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap');
 @import 'tailwindcss';
 
 * {
-  font-family: 'Quicksand', 'Rubik Microbe', sans-serif;
+  font-family: 'Quicksand', sans-serif;
 }
