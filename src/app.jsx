@@ -35,6 +35,23 @@ function App({ config }) {
     return url.replace(baseUrl, `https://github.com/${config.github.account}/${config.github.repository}/blob/main`);
   }
 
+  function navigateToAdjacentTopic(direction = 'prev') {
+    const allTopics = modules.flatMap((module) =>
+      module.topics.map((t, idx) => ({
+        ...t,
+        moduleIndex: modules.indexOf(module),
+        topicIndex: idx,
+      }))
+    );
+    const currentIndex = allTopics.findIndex((t) => t.path === topic.path);
+
+    if (direction === 'prev' && currentIndex > 0) {
+      navigateTopic(allTopics[currentIndex - 1]);
+    } else if (direction === 'next' && currentIndex < allTopics.length - 1) {
+      navigateTopic(allTopics[currentIndex + 1]);
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen">
       <header className="items-center px-2 rounded-xs m-1 border border-gray-200 hidden sm:block ">
@@ -51,11 +68,15 @@ function App({ config }) {
       </div>
 
       <footer className="h-[32px] bg-gray-200 flex items-center justify-evenly text-sm border-t-1 border-gray-300">
-        <span className="text-gray-600">prev</span>
+        <button className="text-gray-600 px-2 py-1 rounded hover:bg-gray-100" onClick={() => navigateToAdjacentTopic('prev')}>
+          prev
+        </button>
         <a href={gitHubUrl(topic.path)} className="ml-2 text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
           Topic on GitHub
         </a>
-        <span className="text-gray-600">next</span>
+        <button className="text-gray-600 px-2 py-1 rounded hover:bg-gray-100" onClick={() => navigateToAdjacentTopic('next')}>
+          next
+        </button>
       </footer>
     </div>
   );
