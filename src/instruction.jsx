@@ -20,7 +20,7 @@ function Instruction({ config, topicUrl }) {
     if (content) {
       setTimeout(() => {
         mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
-      }, 0);
+      }, 1000);
     }
   }, [content]);
 
@@ -80,11 +80,12 @@ async function convertTopicToHtml(config, topicUrl, markdown) {
 }
 
 function postProcessTopicHTML(html) {
-  // Replace mermaid diagrams
-  html = html.replace(/<section[^>]*class="[^"]*render-needs-enrichment[^"]*"[^>]*>[\s\S]*?<div[^>]*data-plain="([^"]+)"[^>]*>[\s\S]*?<\/section>/g, (_, diagram) => {
-    return `<div class="mermaid">${diagram.trim()}</div>`;
-  });
+  console.log('Processing HTML for diagrams', html);
 
+  html = html.replace(/<div class="highlight highlight-source-mermaid"><pre class="notranslate">([\s\S]*?)<\/pre><\/div>/g, (_, diagramContent) => {
+    const cleanDiagram = diagramContent.replace(/<[^>]*>/g, '').trim();
+    return `<div class="mermaid">${cleanDiagram}</div>`;
+  });
   return html;
 }
 
