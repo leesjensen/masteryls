@@ -33,7 +33,7 @@ function App({ config }) {
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="h-[32px] flex items-center px-2 rounded-xs m-1 border border-gray-200">
+      <header className="items-center px-2 rounded-xs m-1 border border-gray-200 hidden sm:block ">
         <h1 className="text-lg text-gray-700">💡 {config.course.title}</h1>
       </header>
 
