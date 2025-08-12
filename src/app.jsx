@@ -5,9 +5,9 @@ import loadModules from './moduleLoader';
 
 function App() {
   const title = 'Software Construction';
-  const baseUrl = 'https://api.github.com/repos/softwareconstruction240/softwareconstruction/contents/';
+  const baseUrl = 'https://api.github.com/repos/softwareconstruction240/softwareconstruction/contents';
   const [modules, setModules] = React.useState([]);
-  const [topicUrl, setTopicUrl] = React.useState(`${baseUrl}README.md`);
+  const [topicUrl, setTopicUrl] = React.useState(`${baseUrl}/README.md`);
 
   React.useEffect(() => {
     loadModules(baseUrl).then((modules) => {

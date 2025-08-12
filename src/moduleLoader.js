@@ -1,5 +1,5 @@
 export default async function loadModules(baseUrl) {
-  const response = await fetch(`${baseUrl}instruction/modules.md`);
+  const response = await fetch(`${baseUrl}/instruction/modules.md`);
   const fileData = await response.json();
   const markdownContent = atob(fileData.content);
 
@@ -30,7 +30,7 @@ function parseModulesMarkdown(baseUrl, markdownContent) {
 
     const topicMatch = line.match(topicRegex);
     if (topicMatch && currentModule) {
-      const path = topicMatch[2].startsWith('http') ? topicMatch[2] : `${baseUrl}instruction/${topicMatch[2]}`;
+      const path = topicMatch[2].startsWith('http') ? topicMatch[2] : `${baseUrl}/instruction/${topicMatch[2]}`;
       currentModule.topics.push({
         title: topicMatch[1].trim(),
         path: path,
