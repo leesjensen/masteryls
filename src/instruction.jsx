@@ -4,40 +4,66 @@ import 'github-markdown-css/github-markdown-light.css';
 
 mermaid.initialize({ startOnLoad: false });
 
-function Instruction() {
+function Instruction({ topicUrl }) {
   const [content, setContent] = useState('Loading...');
 
   useEffect(() => {
-    (async () => {
-      try {
-        const fileResponse = await fetch('https://api.github.com/repos/leesjensen/masteryls/contents/sample.md');
-        const fileData = await fileResponse.json();
-        const markdownContent = atob(fileData.content);
+    if (topicUrl) {
+      (async () => {
+        try {
+          const fileResponse = await fetch(topicUrl);
+          const fileData = await fileResponse.json();
+          let markdownContent = atob(fileData.content);
 
-        const response = await fetch('https://api.github.com/markdown', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            accept: 'application/vnd.github+json',
-          },
-          body: JSON.stringify({
-            text: markdownContent,
-            mode: 'gfm',
-            context: 'leesjensen/masteryls',
-          }),
-        });
+          //const baseUrl = topicUrl.substring(0, topicUrl.lastIndexOf('/') + 1);
+          let contentPath = topicUrl.split('/contents/')[1];
+          contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
+          const baseUrl = `https://raw.githubusercontent.com/softwareconstruction240/softwareconstruction/main/${contentPath}`;
 
-        let html = await response.text();
-        html = html.replace(/<section[^>]*class="[^"]*render-needs-enrichment[^"]*"[^>]*>[\s\S]*?<div[^>]*data-plain="([^"]+)"[^>]*>[\s\S]*?<\/section>/g, (_, diagram) => {
-          return `<div class="mermaid">${diagram.trim()}</div>`;
-        });
-        setContent(html);
-      } catch (e) {
-        console.error(e);
-        setContent('<p>Error loading content.</p>');
-      }
-    })();
-  }, []);
+          // Replace relative image and link references with absolute URLs
+          const replaceRelativeLinks = (text) => {
+            // Replace images: ![alt](./img.png) or ![alt](img.png)
+            text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, alt, url) => {
+              const absUrl = baseUrl + url.replace(/^\.\//, '');
+              return `![${alt}](${absUrl})`;
+            });
+            // Replace links: [label](./file.md) or [label](file.md)
+            text = text.replace(/\[([^\]]+)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, label, url) => {
+              const absUrl = baseUrl + url.replace(/^\.\//, '');
+              return `[${label}](${absUrl})`;
+            });
+            return text;
+          };
+
+          markdownContent = replaceRelativeLinks(markdownContent);
+
+          console.log('Markdown content:', markdownContent);
+
+          const response = await fetch('https://api.github.com/markdown', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              accept: 'application/vnd.github+json',
+            },
+            body: JSON.stringify({
+              text: markdownContent,
+              mode: 'gfm',
+              context: 'leesjensen/masteryls',
+            }),
+          });
+
+          let html = await response.text();
+          html = html.replace(/<section[^>]*class="[^"]*render-needs-enrichment[^"]*"[^>]*>[\s\S]*?<div[^>]*data-plain="([^"]+)"[^>]*>[\s\S]*?<\/section>/g, (_, diagram) => {
+            return `<div class="mermaid">${diagram.trim()}</div>`;
+          });
+          setContent(html);
+        } catch (e) {
+          console.error(e);
+          setContent('<p>Error loading content.</p>');
+        }
+      })();
+    }
+  }, [topicUrl]);
 
   useEffect(() => {
     if (content) {

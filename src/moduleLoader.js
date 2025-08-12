@@ -1,12 +1,12 @@
-export default async function loadModules() {
-  const response = await fetch('https://api.github.com/repos/softwareconstruction240/softwareconstruction/contents/instruction/modules.md');
+export default async function loadModules(baseUrl) {
+  const response = await fetch(`${baseUrl}instruction/modules.md`);
   const fileData = await response.json();
   const markdownContent = atob(fileData.content);
 
-  return parseModulesMarkdown(markdownContent);
+  return parseModulesMarkdown(baseUrl, markdownContent);
 }
 
-function parseModulesMarkdown(markdownContent) {
+function parseModulesMarkdown(baseUrl, markdownContent) {
   const lines = markdownContent.split('\n');
 
   const modules = [];
@@ -30,9 +30,10 @@ function parseModulesMarkdown(markdownContent) {
 
     const topicMatch = line.match(topicRegex);
     if (topicMatch && currentModule) {
+      const path = topicMatch[2].startsWith('http') ? topicMatch[2] : `${baseUrl}instruction/${topicMatch[2]}`;
       currentModule.topics.push({
         title: topicMatch[1].trim(),
-        path: topicMatch[2].trim(),
+        path: path,
       });
     }
   }
