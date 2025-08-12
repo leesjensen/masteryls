@@ -16,7 +16,7 @@ function Contents({ setTopic, modules }) {
   }
 
   return (
-    <div id="content" className="h-full overflow-auto bg-white p-4 text-sm">
+    <div id="content" className="h-full overflow-auto  p-4 text-sm">
       <nav>
         <ul className="list-none p-0">
           {modules.map((item, i) => (

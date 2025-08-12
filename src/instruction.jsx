@@ -25,9 +25,9 @@ function Instruction({ config, topicUrl }) {
   }, [content]);
 
   return (
-    <div id="content" className="h-full overflow-auto">
+    <section className="flex-1 overflow-auto">
       <div className="markdown-body p-4" dangerouslySetInnerHTML={{ __html: content }} />
-    </div>
+    </section>
   );
 }
 

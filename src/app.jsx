@@ -1,6 +1,6 @@
 import React from 'react';
 import Instruction from './instruction';
-import Contents from './contents';
+import Sidebar from './sidebar';
 import loadModules from './moduleLoader';
 
 function App({ config }) {
@@ -32,24 +32,13 @@ function App({ config }) {
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="h-[32px] flex items-center px-2 rounded-lg m-2 border border-gray-200">
-        <h1 className="text-lg text-gray-700">{config.course.title}</h1>
+      <header className="h-[32px] flex items-center px-2 rounded-xs m-1 border border-gray-200">
+        <h1 className="text-lg text-gray-700">💡 {config.course.title}</h1>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="border  p-2 rounded-lg m-2 border-gray-200">
-          <div className="h-[32px] flex items-center justify-evenly text-sm">
-            <span className="rounded p-1 border">Topics</span>
-            <span className="p-1 ">Schedule</span>
-          </div>
-          <aside className="w-[200px] h-full overflow-hidden">
-            <Contents modules={modules} setTopic={navigateTopic} />
-          </aside>
-        </div>
-
-        <section className="flex-1 overflow-hidden">
-          <Instruction config={config} topicUrl={topic.path} />
-        </section>
+        <Sidebar modules={modules} setTopic={navigateTopic} />
+        <Instruction config={config} topicUrl={topic.path} />
       </div>
 
       <footer className="h-[32px] bg-gray-200 flex items-center justify-evenly text-sm">
