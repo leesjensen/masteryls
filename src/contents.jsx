@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 
-function Contents({ setTopicUrl, modules }) {
-  const [openModuleIndexes, setOpenModuleIndexes] = useState([1]);
+function Contents({ setTopic, modules }) {
+  const [openModuleIndexes, setOpenModuleIndexes] = useState(loadIndexes());
 
   const toggleModule = (index) => {
-    setOpenModuleIndexes((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]));
+    setOpenModuleIndexes((prev) => {
+      const newIndexes = prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index];
+      localStorage.setItem('tocIndexes', JSON.stringify(newIndexes));
+      return newIndexes;
+    });
   };
+
+  function loadIndexes() {
+    return JSON.parse(localStorage.getItem('tocIndexes') || '[0]');
+  }
 
   return (
     <div id="content" className="h-full overflow-auto bg-white p-4 text-sm">
@@ -22,7 +30,7 @@ function Contents({ setTopicUrl, modules }) {
                   {item.topics.map((topic, j) => (
                     <li key={j} className="mb-1 flex items-center">
                       <span style={{ marginRight: 8, fontSize: '1.1em' }}>⁃</span>
-                      <a onClick={() => setTopicUrl(topic.path)} className="no-underline text-green-600 hover:text-blue-600 cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis" title={topic.title}>
+                      <a onClick={() => setTopic({ title: topic.title, path: topic.path })} className="no-underline text-gray-400 hover:text-blue-600 cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis" title={topic.title}>
                         {topic.title}
                       </a>
                     </li>

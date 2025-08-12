@@ -4,12 +4,12 @@ import 'github-markdown-css/github-markdown-light.css';
 
 mermaid.initialize({ startOnLoad: false });
 
-function Instruction({ topicUrl }) {
-  const [content, setContent] = useState('Loading...');
+function Instruction({ config, topicUrl }) {
+  const [content, setContent] = useState('');
 
   useEffect(() => {
     if (topicUrl) {
-      loadTopic(topicUrl).then((html) => {
+      loadTopic(config, topicUrl).then((html) => {
         setContent(html);
       });
     }
@@ -31,16 +31,10 @@ function Instruction({ topicUrl }) {
   );
 }
 
-async function loadTopic(topicUrl) {
+async function loadTopic(config, topicUrl) {
   try {
-    let baseUrl = `https://raw.githubusercontent.com/softwareconstruction240/softwareconstruction/main`;
-    let contentPath = topicUrl.split('/contents/')[1];
-    contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
-    if (contentPath) {
-      baseUrl += `/${contentPath}`;
-    }
-
-    const html = await downloadTopicHTML(baseUrl, topicUrl);
+    const markdown = await downloadTopicMarkdown(config, topicUrl);
+    const html = await convertTopicToHtml(config, topicUrl, markdown);
 
     return postProcessTopicHTML(html);
   } catch (e) {
@@ -49,23 +43,37 @@ async function loadTopic(topicUrl) {
   }
 }
 
-async function downloadTopicHTML(baseUrl, topicUrl) {
-  const fileResponse = await fetch(topicUrl);
+async function downloadTopicMarkdown(config, topicUrl) {
+  const fileResponse = await fetch(topicUrl, {
+    headers: {
+      accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${config.github.token}`,
+    },
+  });
   const fileData = await fileResponse.json();
-  let markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+  return new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+}
 
-  markdownContent = replaceRelativeLinks(baseUrl, markdownContent);
+async function convertTopicToHtml(config, topicUrl, markdown) {
+  let baseUrl = `https://raw.githubusercontent.com/softwareconstruction240/softwareconstruction/main`;
+  let contentPath = topicUrl.split('/contents/')[1];
+  contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
+  if (contentPath) {
+    baseUrl += `/${contentPath}`;
+  }
+
+  markdown = replaceRelativeLinks(baseUrl, markdown);
 
   const response = await fetch('https://api.github.com/markdown', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      accept: 'application/vnd.github+json',
+      Authorization: `Bearer ${config.github.token}`,
     },
     body: JSON.stringify({
-      text: markdownContent,
+      text: markdown,
       mode: 'gfm',
-      context: 'leesjensen/masteryls',
+      context: `${config.github.account}/${config.github.repository}`,
     }),
   });
   return response.text();

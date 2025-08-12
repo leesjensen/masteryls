@@ -1,5 +1,10 @@
-export default async function loadModules(baseUrl) {
-  const response = await fetch(`${baseUrl}/instruction/modules.md`);
+export default async function loadModules(config, baseUrl) {
+  const response = await fetch(`${baseUrl}/instruction/modules.md`, {
+    headers: {
+      Authorization: `Bearer ${config.github.token}`,
+    },
+  });
+
   const fileData = await response.json();
   const markdownContent = atob(fileData.content);
 
