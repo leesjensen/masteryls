@@ -3,7 +3,7 @@ import Contents from './contents.jsx';
 import Schedule from './schedule.jsx';
 import Settings from './settings.jsx';
 
-function Sidebar({ modules, currentTopic, setTopic }) {
+function Sidebar({ config, modules, currentTopic, setTopic }) {
   const [display, setDisplay] = useState('topics');
 
   function toggleDisplay(newDisplay) {
@@ -24,7 +24,7 @@ function Sidebar({ modules, currentTopic, setTopic }) {
       </div>
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents modules={modules} currentTopic={currentTopic} setTopic={setTopic} />}
-        {display === 'schedule' && <Schedule />}
+        {display === 'schedule' && <Schedule config={config} />}
         {display === 'settings' && <Settings />}
       </aside>
     </div>

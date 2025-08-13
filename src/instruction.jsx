@@ -61,14 +61,13 @@ async function downloadTopicMarkdown(config, topicUrl) {
 }
 
 async function convertTopicToHtml(config, topicUrl, markdown) {
-  let baseUrl = `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`;
   let contentPath = topicUrl.split('/contents/')[1];
   contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
   if (contentPath) {
-    baseUrl += `/${contentPath}`;
+    config.gitHub.rawUrl += `/${contentPath}`;
   }
 
-  markdown = replaceRelativeLinks(baseUrl, markdown);
+  markdown = replaceRelativeLinks(config.gitHub.rawUrl, markdown);
 
   const response = await fetch('https://api.github.com/markdown', {
     method: 'POST',

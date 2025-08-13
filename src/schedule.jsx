@@ -1,10 +1,10 @@
 import React from 'react';
+import Instruction from './instruction';
 
-export default function Schedule() {
+export default function Schedule({ config }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <h1 className="text-2xl font-bold mb-4">Schedule</h1>
-      <p className="text-gray-600">This feature is coming soon!</p>
+    <div className="flex flex-col items-center justify-center h-full text-xs">
+      <Instruction config={config} topicUrl={config.schedule} />
     </div>
   );
 }
