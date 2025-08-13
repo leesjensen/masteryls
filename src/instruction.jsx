@@ -6,13 +6,16 @@ mermaid.initialize({ startOnLoad: false });
 
 function Instruction({ config, topicUrl, setTopic }) {
   const [content, setContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
     if (topicUrl) {
-      setContent('<div></div>');
+      setIsLoading(true);
+      setContent('');
       loadTopic(config, topicUrl).then((html) => {
         setContent(html);
+        setIsLoading(false);
       });
     }
   }, [topicUrl]);
@@ -32,7 +35,7 @@ function Instruction({ config, topicUrl, setTopic }) {
 
   return (
     <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200" onClick={(e) => handleContainerClick(e, setTopic, topicUrl, containerRef)}>
-      <div className="markdown-body p-4" dangerouslySetInnerHTML={{ __html: content }} />
+      <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`} dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }} />
     </section>
   );
 }
