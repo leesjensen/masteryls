@@ -15,16 +15,12 @@ function Sidebar({ config, modules, currentTopic, setTopic }) {
         <span className={`rounded p-1 ${display === 'topics' ? 'border' : 'bg-gray-200'}`} onClick={() => toggleDisplay('topics')}>
           Topics
         </span>
-        <span className={`rounded p-1 ${display === 'schedule' ? 'border' : 'bg-gray-200'}`} onClick={() => toggleDisplay('schedule')}>
-          Schedule
-        </span>
         <span className={`rounded p-1 ${display === 'settings' ? 'border' : 'bg-gray-200'}`} onClick={() => toggleDisplay('settings')}>
           Settings
         </span>
       </div>
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents modules={modules} currentTopic={currentTopic} setTopic={setTopic} />}
-        {display === 'schedule' && <Schedule config={config} />}
         {display === 'settings' && <Settings />}
       </aside>
     </div>
