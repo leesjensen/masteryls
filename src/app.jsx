@@ -87,7 +87,9 @@ function App({ config }) {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {sidebarVisible && <Sidebar modules={modules} currentTopic={topic} setTopic={navigateTopic} />}
+        <div className={sidebarVisible ? '' : 'hidden'}>
+          <Sidebar modules={modules} currentTopic={topic} setTopic={navigateTopic} />
+        </div>
         <Instruction config={config} topicUrl={topic.path} />
       </div>
     </div>
