@@ -9,13 +9,21 @@ export default async function loadModules(config) {
   const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
 
   const instructionUrl = `${config.links.gitHub.apiUrl}/instruction/`;
-  return parseModulesMarkdown(instructionUrl, markdownContent);
+  return parseModulesMarkdown(config, instructionUrl, markdownContent);
 }
 
-function parseModulesMarkdown(instructionUrl, markdownContent) {
+function parseModulesMarkdown(config, instructionUrl, markdownContent) {
   const lines = markdownContent.split('\n');
 
-  const modules = [];
+  const modules = [
+    {
+      title: 'Course info',
+      topics: [
+        { title: 'Syllabus', path: config.links.syllabus },
+        { title: 'Schedule', path: config.links.schedule },
+      ],
+    },
+  ];
   let currentModule = null;
 
   const moduleRegex = /^##\s+(.*)$/;
