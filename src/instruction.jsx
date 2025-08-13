@@ -10,6 +10,7 @@ function Instruction({ config, topicUrl, setTopic }) {
 
   useEffect(() => {
     if (topicUrl) {
+      setContent('<div></div>');
       loadTopic(config, topicUrl).then((html) => {
         setContent(html);
       });
