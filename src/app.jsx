@@ -129,7 +129,7 @@ function App() {
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className={sidebarVisible ? 'flex  w-full sm:w-[300px]' : 'hidden'}>
+        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <Sidebar config={config} modules={modules} currentTopic={topic} setTopic={navigateTopic} />
         </div>
         <Instruction config={config} topicUrl={topic.path} setTopic={navigateTopic} />
