@@ -55,7 +55,7 @@ function App({ config }) {
   return (
     <div className="flex flex-col h-screen">
       <header className="items-center px-2 mb-1 border-b-1 py-2 bg-amber-300 border-gray-200 hidden sm:block ">
-        <h1 className="text-lg text-gray-700">💡 {config.course.title}</h1>
+        <h1 className="font-semibold text-lg text-gray-700">💡 {config.course.title}</h1>
       </header>
 
       <div className="flex flex-row justify-between border-b-1 border-gray-200">
