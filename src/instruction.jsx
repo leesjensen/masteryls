@@ -4,7 +4,7 @@ import 'github-markdown-css/github-markdown-light.css';
 
 mermaid.initialize({ startOnLoad: false });
 
-function Instruction({ config, topicUrl }) {
+function Instruction({ config, topicUrl, setTopic }) {
   const [content, setContent] = useState('');
   const containerRef = useRef(null);
 
@@ -16,7 +16,6 @@ function Instruction({ config, topicUrl }) {
     }
   }, [topicUrl]);
 
-  // Re-render mermaid diagrams when content changes and reset scroll to top
   useEffect(() => {
     if (content) {
       // Reset scroll to top of the scrollable container
@@ -31,7 +30,7 @@ function Instruction({ config, topicUrl }) {
   }, [content]);
 
   return (
-    <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200">
+    <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200" onClick={(e) => handleContainerClick(e, setTopic, topicUrl, containerRef)}>
       <div className="markdown-body p-4" dangerouslySetInnerHTML={{ __html: content }} />
     </section>
   );
@@ -68,8 +67,6 @@ async function convertTopicToHtml(config, topicUrl, markdown) {
     baseUrl += `/${contentPath}`;
   }
 
-  markdown = replaceRelativeLinks(baseUrl, markdown);
-
   const response = await fetch('https://api.github.com/markdown', {
     method: 'POST',
     headers: {
@@ -83,7 +80,10 @@ async function convertTopicToHtml(config, topicUrl, markdown) {
       context: `${config.github.account}/${config.github.repository}`,
     }),
   });
-  return response.text();
+
+  const html = replaceImageLinks(baseUrl, await response.text());
+
+  return html;
 }
 
 function postProcessTopicHTML(html) {
@@ -94,18 +94,39 @@ function postProcessTopicHTML(html) {
   return html;
 }
 
-function replaceRelativeLinks(baseUrl, text) {
-  // Replace images: ![alt](./img.png) or ![alt](img.png)
-  text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, alt, url) => {
+function replaceImageLinks(baseUrl, html) {
+  html = html.replace(/<img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)>/g, (match, beforeSrc, url, afterSrc) => {
     const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
-    return `![${alt}](${absUrl})`;
+    return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
   });
-  // Replace links: [label](./file.md) or [label](file.md)
-  text = text.replace(/\[([^\]]+)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, label, url) => {
-    const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
-    return `[${label}](${absUrl})`;
-  });
-  return text;
+
+  return html;
+}
+
+function handleContainerClick(event, setTopic, topicUrl, containerRef) {
+  const anchor = event.target.closest('a');
+  if (anchor && anchor.href) {
+    event.preventDefault();
+    const href = anchor.getAttribute('href');
+
+    if (href.startsWith('http')) {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    } else {
+      if (href.startsWith('#')) {
+        const headings = containerRef.current?.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        if (headings) {
+          const targetId = href.substring(1).replace('-', ' ');
+          const targetElement = Array.from(headings).find((h) => h.textContent.trim().toLowerCase() === targetId.toLowerCase());
+          if (targetElement) {
+            targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' });
+          }
+        }
+      } else {
+        const resolvedUrl = new URL(href, topicUrl).toString();
+        setTopic({ title: anchor.textContent, path: resolvedUrl });
+      }
+    }
+  }
 }
 
 export default Instruction;

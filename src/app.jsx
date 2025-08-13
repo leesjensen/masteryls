@@ -93,7 +93,7 @@ function App() {
         <div className={sidebarVisible ? 'flex  w-full sm:w-[300px]' : 'hidden'}>
           <Sidebar config={config} modules={modules} currentTopic={topic} setTopic={navigateTopic} />
         </div>
-        <Instruction config={config} topicUrl={topic.path} />
+        <Instruction config={config} topicUrl={topic.path} setTopic={navigateTopic} />
       </div>
     </div>
   );

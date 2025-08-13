@@ -8,10 +8,11 @@ export default async function loadModules(config) {
   const fileData = await response.json();
   const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
 
-  return parseModulesMarkdown(config.links.gitHub.apiUrl, markdownContent);
+  const instructionUrl = `${config.links.gitHub.apiUrl}/instruction/`;
+  return parseModulesMarkdown(instructionUrl, markdownContent);
 }
 
-function parseModulesMarkdown(baseUrl, markdownContent) {
+function parseModulesMarkdown(instructionUrl, markdownContent) {
   const lines = markdownContent.split('\n');
 
   const modules = [];
@@ -36,7 +37,7 @@ function parseModulesMarkdown(baseUrl, markdownContent) {
     const topicMatch = line.match(topicRegex);
     if (topicMatch && currentModule) {
       const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(topicMatch[3]);
-      const path = isAbsoluteUrl ? topicMatch[3] : `${baseUrl}/instruction/${topicMatch[3]}`;
+      const path = isAbsoluteUrl ? topicMatch[3] : new URL(topicMatch[3], instructionUrl).toString();
       currentModule.topics.push({
         title: `${topicMatch[1].trim()} ${topicMatch[2].trim()}`,
         path: path,
