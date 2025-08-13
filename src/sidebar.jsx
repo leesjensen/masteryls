@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import Contents from './contents.jsx';
+import Schedule from './schedule.jsx';
+import Settings from './settings.jsx';
 
 function Sidebar({ modules, currentTopic, setTopic }) {
   const [display, setDisplay] = useState('topics');
@@ -22,8 +24,8 @@ function Sidebar({ modules, currentTopic, setTopic }) {
       </div>
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents modules={modules} currentTopic={currentTopic} setTopic={setTopic} />}
-        {display === 'schedule' && <div>Schedule</div>}
-        {display === 'settings' && <div>Settings</div>}
+        {display === 'schedule' && <Schedule />}
+        {display === 'settings' && <Settings />}
       </aside>
     </div>
   );
