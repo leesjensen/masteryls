@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import mermaid from 'mermaid';
 import 'github-markdown-css/github-markdown-light.css';
 
@@ -6,6 +6,7 @@ mermaid.initialize({ startOnLoad: false });
 
 function Instruction({ config, topicUrl }) {
   const [content, setContent] = useState('');
+  const containerRef = useRef(null);
 
   useEffect(() => {
     if (topicUrl) {
@@ -15,9 +16,14 @@ function Instruction({ config, topicUrl }) {
     }
   }, [topicUrl]);
 
-  // Re-render mermaid diagrams when content changes
+  // Re-render mermaid diagrams when content changes and reset scroll to top
   useEffect(() => {
     if (content) {
+      // Reset scroll to top of the scrollable container
+      if (containerRef.current) {
+        containerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+      }
+      // Render mermaid diagrams after content is in the DOM
       setTimeout(() => {
         mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
       }, 0);
@@ -25,7 +31,7 @@ function Instruction({ config, topicUrl }) {
   }, [content]);
 
   return (
-    <section className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200">
+    <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200">
       <div className="markdown-body p-4" dangerouslySetInnerHTML={{ __html: content }} />
     </section>
   );

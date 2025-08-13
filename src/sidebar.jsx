@@ -8,8 +8,8 @@ function Sidebar({ modules, currentTopic, setTopic }) {
     setDisplay(newDisplay);
   }
   return (
-    <div className="border p-2 rounded-xs m-2 border-gray-200 bg-gray-50 overflow-hidden w-full sm:w-[300px]">
-      <div className="border-gray-200 pb-2 border-b-1 flex items-center justify-around text-sm">
+    <div className="flex flex-col border p-2 rounded-xs m-2 border-gray-200 bg-gray-50 overflow-hidden w-full sm:w-[300px]">
+      <div className="basis-[30px] border-gray-200 pb-2 border-b-1 flex items-center justify-around text-sm">
         <span className={`rounded p-1 ${display === 'topics' ? 'border' : 'bg-gray-200'}`} onClick={() => toggleDisplay('topics')}>
           Topics
         </span>
@@ -20,7 +20,7 @@ function Sidebar({ modules, currentTopic, setTopic }) {
           Settings
         </span>
       </div>
-      <aside className="w-full h-full overflow-hidden">
+      <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents modules={modules} currentTopic={currentTopic} setTopic={setTopic} />}
         {display === 'schedule' && <div>Schedule</div>}
         {display === 'settings' && <div>Settings</div>}

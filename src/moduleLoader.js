@@ -6,7 +6,7 @@ export default async function loadModules(config, baseUrl) {
   });
 
   const fileData = await response.json();
-  const markdownContent = atob(fileData.content);
+  const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
 
   return parseModulesMarkdown(baseUrl, markdownContent);
 }
@@ -18,7 +18,7 @@ function parseModulesMarkdown(baseUrl, markdownContent) {
   let currentModule = null;
 
   const moduleRegex = /^##\s+(.*)$/;
-  const topicRegex = /^-\s+\[(.+?)\]\((.+?)\)$/;
+  const topicRegex = /^-\s(.*)\[(.+?)\]\((.+?)\)$/;
 
   for (const line of lines) {
     const moduleMatch = line.match(moduleRegex);
@@ -35,10 +35,10 @@ function parseModulesMarkdown(baseUrl, markdownContent) {
 
     const topicMatch = line.match(topicRegex);
     if (topicMatch && currentModule) {
-      const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(topicMatch[2]);
-      const path = isAbsoluteUrl ? topicMatch[2] : `${baseUrl}/instruction/${topicMatch[2]}`;
+      const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(topicMatch[3]);
+      const path = isAbsoluteUrl ? topicMatch[3] : `${baseUrl}/instruction/${topicMatch[3]}`;
       currentModule.topics.push({
-        title: topicMatch[1].trim(),
+        title: `${topicMatch[1].trim()} ${topicMatch[2].trim()}`,
         path: path,
       });
     }
