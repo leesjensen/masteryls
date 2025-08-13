@@ -1,29 +1,32 @@
 import React, { useState } from 'react';
+import config from '../config.js';
 import Instruction from './instruction';
 import Sidebar from './sidebar';
 import loadModules from './moduleLoader';
 
-function App({ config }) {
-  config.gitHub = {
+config.links = {
+  gitHub: {
     url: `https://github.com/${config.github.account}/${config.github.repository}/blob/main`,
     apiUrl: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents`,
     rawUrl: `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`,
-  };
-  config.schedule = `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/schedule/${config.course.schedule}`;
+  },
+  schedule: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/schedule/${config.course.schedule}`,
+};
 
+function App() {
   const [modules, setModules] = React.useState([]);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
   React.useEffect(() => {
-    loadModules(config, config.gitHub.apiUrl).then((modules) => {
+    loadModules(config, config.links.gitHub.apiUrl).then((modules) => {
       setModules(modules);
 
       const savedTopic = localStorage.getItem('selectedTopic');
       if (savedTopic) {
         setTopic(JSON.parse(savedTopic));
       } else {
-        setTopic({ title: 'Home', path: `${config.gitHub.apiUrl}/README.md` });
+        setTopic({ title: 'Home', path: `${config.links.gitHub.apiUrl}/README.md` });
       }
     });
   }, []);
@@ -38,7 +41,7 @@ function App({ config }) {
   }
 
   function gitHubUrl(url) {
-    return url.replace(config.gitHub.apiUrl, config.gitHub.url);
+    return url.replace(config.links.gitHub.apiUrl, config.links.gitHub.url);
   }
 
   function navigateToAdjacentTopic(direction = 'prev') {

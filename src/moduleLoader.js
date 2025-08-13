@@ -1,5 +1,5 @@
 export default async function loadModules(config) {
-  const response = await fetch(`${config.gitHub.apiUrl}/instruction/modules.md`, {
+  const response = await fetch(`${config.links.gitHub.apiUrl}/instruction/modules.md`, {
     headers: {
       Authorization: `Bearer ${config.github.token}`,
     },
@@ -8,7 +8,7 @@ export default async function loadModules(config) {
   const fileData = await response.json();
   const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
 
-  return parseModulesMarkdown(config.gitHub.apiUrl, markdownContent);
+  return parseModulesMarkdown(config.links.gitHub.apiUrl, markdownContent);
 }
 
 function parseModulesMarkdown(baseUrl, markdownContent) {

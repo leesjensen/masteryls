@@ -61,13 +61,14 @@ async function downloadTopicMarkdown(config, topicUrl) {
 }
 
 async function convertTopicToHtml(config, topicUrl, markdown) {
+  let baseUrl = config.links.gitHub.rawUrl;
   let contentPath = topicUrl.split('/contents/')[1];
   contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
   if (contentPath) {
-    config.gitHub.rawUrl += `/${contentPath}`;
+    baseUrl += `/${contentPath}`;
   }
 
-  markdown = replaceRelativeLinks(config.gitHub.rawUrl, markdown);
+  markdown = replaceRelativeLinks(baseUrl, markdown);
 
   const response = await fetch('https://api.github.com/markdown', {
     method: 'POST',
@@ -101,7 +102,7 @@ function replaceRelativeLinks(baseUrl, text) {
   });
   // Replace links: [label](./file.md) or [label](file.md)
   text = text.replace(/\[([^\]]+)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, label, url) => {
-    const absUrl = baseUrl + url.replace(/^\.\//, '');
+    const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
     return `[${label}](${absUrl})`;
   });
   return text;
