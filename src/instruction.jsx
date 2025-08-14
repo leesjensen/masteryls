@@ -17,7 +17,7 @@ function Instruction({ topic, setTopic, course, navigateToAdjacentTopic }) {
     if (topic.path) {
       setIsLoading(true);
       setContent('');
-      course.loadTopic(topic.path).then((html) => {
+      course.topicHtml(topic.path).then((html) => {
         setContent(html);
         setIsLoading(false);
       });

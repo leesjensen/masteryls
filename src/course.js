@@ -8,6 +8,9 @@ export default class Course {
     this.config = config;
     this.modules = modules;
 
+    this.markdownCache = new Map();
+    this.htmlCache = new Map();
+
     this.allTopics = this.modules.flatMap((module) =>
       module.topics.map((t, idx) => ({
         ...t,
@@ -36,12 +39,20 @@ export default class Course {
     return this.modules.map(op);
   }
 
-  async loadTopic(topicUrl) {
+  async topicHtml(topicUrl) {
     try {
-      const markdown = await this.downloadTopicMarkdown(topicUrl);
-      const html = await this.convertTopicToHtml(topicUrl, markdown);
+      if (this.htmlCache.has(topicUrl)) {
+        return this.htmlCache.get(topicUrl);
+      }
 
-      return this.postProcessTopicHTML(html);
+      const markdown = await this.downloadTopicMarkdown(topicUrl);
+      this.markdownCache.set(topicUrl, markdown);
+
+      const html = await this.convertTopicToHtml(topicUrl, markdown);
+      const processedHtml = this.postProcessTopicHTML(html);
+      this.htmlCache.set(topicUrl, processedHtml);
+
+      return processedHtml;
     } catch (e) {
       console.error(e);
       return '<p>Error loading content.</p>';
