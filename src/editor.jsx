@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Editor({ currentTopic, course, changeTopic }) {
+export default function Editor({ course, setCourse, currentTopic, changeTopic }) {
   const [content, setContent] = React.useState('');
   const [dirty, setDirty] = React.useState(false);
 
@@ -28,9 +28,11 @@ export default function Editor({ currentTopic, course, changeTopic }) {
 
   async function save(content) {
     console.log('Saving...');
-    const savedTopic = await course.saveTopicMarkdown(currentTopic, content);
+
+    const [newCourse, newTopic] = await course.saveTopicMarkdown(currentTopic, content);
     setDirty(false);
-    changeTopic(savedTopic);
+    setCourse(newCourse);
+    changeTopic(newTopic);
   }
 
   return (

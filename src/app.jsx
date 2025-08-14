@@ -23,12 +23,12 @@ function App() {
   const [editorVisible, setEditorVisible] = useState(true);
 
   React.useEffect(() => {
-    Course.create(config).then((course) => {
-      setCourse(course);
+    Course.create(config).then((loadedCourse) => {
+      setCourse(loadedCourse);
 
-      const savedTopic = localStorage.getItem('selectedTopic');
-      if (savedTopic) {
-        setTopic(JSON.parse(savedTopic));
+      const savedTopicPath = localStorage.getItem('selectedTopic');
+      if (savedTopicPath) {
+        setTopic(loadedCourse.topicByPath(savedTopicPath));
       } else {
         setTopic({ title: 'Home', path: `${config.links.gitHub.apiUrl}/README.md` });
       }
@@ -50,7 +50,7 @@ function App() {
   }
 
   function changeTopic(newTopic) {
-    localStorage.setItem('selectedTopic', JSON.stringify(newTopic));
+    localStorage.setItem('selectedTopic', newTopic.path);
     setTopic(newTopic);
 
     if (sidebarVisible && window.innerWidth < 768) {
@@ -74,6 +74,7 @@ function App() {
     <div className="flex flex-col h-screen">
       <header className="items-center px-2 mb-1 border-b-1 py-2 bg-amber-200 border-gray-200 hidden sm:block ">
         <h1 className="font-semibold text-lg text-gray-700">💡 {config.course.title}</h1>
+        <span className="text-xs">{JSON.stringify(topic)}</span>
       </header>
 
       <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} toggleEditor={toggleEditor} />
@@ -82,7 +83,7 @@ function App() {
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <Sidebar course={course} currentTopic={topic} changeTopic={changeTopic} />
         </div>
-        {editorVisible ? <Editor course={course} currentTopic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
+        {editorVisible ? <Editor course={course} setCourse={setCourse} currentTopic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
       </div>
     </div>
   );

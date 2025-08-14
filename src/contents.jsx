@@ -39,12 +39,13 @@ function Contents({ changeTopic, currentTopic, course }) {
               </button>
               {openModuleIndexes.includes(i) && (
                 <ul className="list-none p-0 ml-4">
-                  {item.topics.map((topic, j) => (
-                    <li key={j} className="mb-0.5 flex items-center">
+                  {item.topics.map((topic) => (
+                    <li key={topic.path} className="mb-0.5 flex items-center">
                       <span className="mr-2">-</span>
-                      <a onClick={() => changeTopic({ title: topic.title, path: topic.path })} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
+                      <a onClick={() => changeTopic(topic)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
                         {topic.title}
                       </a>
+                      <span className="text-sm align-super text-amber-600">{topic.lastUpdated ? '*' : ''}</span>
                     </li>
                   ))}
                 </ul>

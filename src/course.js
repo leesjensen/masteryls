@@ -11,13 +11,7 @@ export default class Course {
     this.markdownCache = new Map();
     this.htmlCache = new Map();
 
-    this.allTopics = this.modules.flatMap((module) =>
-      module.topics.map((t, idx) => ({
-        ...t,
-        moduleIndex: this.modules.indexOf(module),
-        topicIndex: idx,
-      }))
-    );
+    this.allTopics = this.modules.flatMap((m) => m.topics);
   }
 
   moduleIndexOf(path) {
@@ -65,12 +59,29 @@ export default class Course {
     return this._downloadTopicMarkdown(topic.path);
   }
 
+  static copy(course) {
+    const newCourse = new Course(
+      { ...course.config },
+      course.modules.map((module) => ({
+        ...module,
+        topics: module.topics.map((topic) => ({ ...topic })),
+      }))
+    );
+    newCourse.markdownCache = new Map(course.markdownCache);
+    newCourse.htmlCache = new Map(course.htmlCache);
+
+    newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
+
+    return newCourse;
+  }
+
   async saveTopicMarkdown(updatedTopic, content) {
-    const topic = this.topicByPath(updatedTopic.path);
+    const updatedCourse = Course.copy(this);
+    const topic = updatedCourse.topicByPath(updatedTopic.path);
     topic.lastUpdated = Date.now();
-    this.markdownCache.set(topic.path, content);
-    await this._convertTopicToHtml(topic.path, content);
-    return topic;
+    updatedCourse.markdownCache.set(updatedTopic.path, content);
+    await updatedCourse._convertTopicToHtml(updatedTopic.path, content);
+    return [updatedCourse, topic];
   }
 
   async discardTopicMarkdown(updatedTopic) {
