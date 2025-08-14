@@ -21,6 +21,8 @@ function App() {
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [sidebarVisible, setSidebarVisible] = useState(getSidebarPreference());
   const [editorVisible, setEditorVisible] = useState(true);
+  const courseRef = React.useRef(course);
+  courseRef.current = course;
 
   React.useEffect(() => {
     Course.create(config).then((loadedCourse) => {
@@ -33,6 +35,19 @@ function App() {
         setTopic({ title: 'Home', path: `${config.links.gitHub.apiUrl}/README.md` });
       }
     });
+
+    function handleBeforeUnload(e) {
+      if (courseRef.current?.isDirty()) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   function getSidebarPreference() {

@@ -37,6 +37,10 @@ export default class Course {
     return this.modules.map(op);
   }
 
+  isDirty() {
+    return this.allTopics.some((topic) => topic.lastUpdated !== undefined);
+  }
+
   async topicHtml(topicUrl) {
     try {
       if (this.htmlCache.has(topicUrl)) {
