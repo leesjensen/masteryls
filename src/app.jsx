@@ -47,7 +47,7 @@ function App() {
     localStorage.setItem('sidebarVisible', visible);
   }
 
-  function navigateTopic(newTopic) {
+  function changeTopic(newTopic) {
     localStorage.setItem('selectedTopic', JSON.stringify(newTopic));
     setTopic(newTopic);
 
@@ -59,7 +59,7 @@ function App() {
   function navigateToAdjacentTopic(direction = 'prev') {
     const adjacentTopic = course.adjacentTopic(topic.path, direction);
     if (adjacentTopic) {
-      navigateTopic(adjacentTopic);
+      changeTopic(adjacentTopic);
     }
   }
 
@@ -73,13 +73,13 @@ function App() {
         <h1 className="font-semibold text-lg text-gray-700">💡 {config.course.title}</h1>
       </header>
 
-      <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} topic={topic} setTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} toggleEditor={toggleEditor} />
+      <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} topic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} toggleEditor={toggleEditor} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <Sidebar course={course} currentTopic={topic} setTopic={navigateTopic} />
+          <Sidebar course={course} currentTopic={topic} changeTopic={changeTopic} />
         </div>
-        <Instruction topic={topic} setTopic={navigateTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />
+        <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />
       </div>
     </div>
   );

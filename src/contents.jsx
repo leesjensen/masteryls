@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function Contents({ setTopic, currentTopic, course }) {
+function Contents({ changeTopic, currentTopic, course }) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
 
   const toggleModule = (index) => {
@@ -42,7 +42,7 @@ function Contents({ setTopic, currentTopic, course }) {
                   {item.topics.map((topic, j) => (
                     <li key={j} className="mb-0.5 flex items-center">
                       <span className="mr-2">-</span>
-                      <a onClick={() => setTopic({ title: topic.title, path: topic.path })} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
+                      <a onClick={() => changeTopic({ title: topic.title, path: topic.path })} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
                         {topic.title}
                       </a>
                     </li>
