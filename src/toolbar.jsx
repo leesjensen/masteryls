@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Toolbar({ config, sidebarVisible, manipulateSidebar, topic, setTopic, navigateToAdjacentTopic }) {
+export default function Toolbar({ config, sidebarVisible, manipulateSidebar, topic, setTopic, navigateToAdjacentTopic, toggleEditor }) {
   function gitHubUrl(url) {
     return url.replace(config.links.gitHub.apiUrl, config.links.gitHub.url);
   }
@@ -65,11 +65,16 @@ export default function Toolbar({ config, sidebarVisible, manipulateSidebar, top
         </button>
         <button
           className='w-8 m-1 p-1.5 text-xs font-medium rounded-full border border-gray-200 bg-white shadow-sm hover:bg-amber-400 hover:text-white hover:shadow-md transition-all duration-200 ease-in-out'
+          onClick={() => toggleEditor()}
+        >
+          ✏️
+        </button>
+        <button
+          className='w-8 m-1 p-1.5 text-xs font-medium rounded-full border border-gray-200 bg-white shadow-sm hover:bg-amber-400 hover:text-white hover:shadow-md transition-all duration-200 ease-in-out'
           onClick={() => navigateToAdjacentTopic('prev')}
         >
           ◀
         </button>
-
         <button
           className='w-8 m-1 p-1.5 text-xs font-medium rounded-full border border-gray-200 bg-white shadow-sm hover:bg-amber-400 hover:text-white hover:shadow-md transition-all duration-200 ease-in-out'
           onClick={() => navigateToAdjacentTopic('next')}

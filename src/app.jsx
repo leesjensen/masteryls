@@ -73,13 +73,25 @@ function App() {
     }
   }
 
+  function toggleEditor() {
+    console.log('toggle editor');
+  }
+
   return (
     <div className='flex flex-col h-screen'>
       <header className='items-center px-2 mb-1 border-b-1 py-2 bg-amber-200 border-gray-200 hidden sm:block '>
         <h1 className='font-semibold text-lg text-gray-700'>💡 {config.course.title}</h1>
       </header>
 
-      <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} topic={topic} setTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />
+      <Toolbar
+        config={config}
+        sidebarVisible={sidebarVisible}
+        manipulateSidebar={manipulateSidebar}
+        topic={topic}
+        setTopic={setTopic}
+        navigateToAdjacentTopic={navigateToAdjacentTopic}
+        toggleEditor={toggleEditor}
+      />
 
       <div className='flex flex-1 overflow-hidden'>
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
