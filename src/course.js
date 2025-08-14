@@ -35,6 +35,10 @@ export default class Course {
     return null;
   }
 
+  topicByPath(path) {
+    return this.allTopics.find((t) => t.path === path);
+  }
+
   map(op) {
     return this.modules.map(op);
   }
@@ -61,16 +65,22 @@ export default class Course {
     return this._downloadTopicMarkdown(topic.path);
   }
 
-  async saveTopicMarkdown(topic, content) {
+  async saveTopicMarkdown(updatedTopic, content) {
+    const topic = this.topicByPath(updatedTopic.path);
+    topic.lastUpdated = Date.now();
     this.markdownCache.set(topic.path, content);
     await this._convertTopicToHtml(topic.path, content);
+    return topic;
   }
 
-  async revertTopicMarkdown(topic) {
+  async discardTopicMarkdown(updatedTopic) {
+    const topic = this.topicByPath(updatedTopic.path);
+    delete topic.lastUpdated;
+
     const markdown = await this._downloadTopicMarkdown(topic.path);
     this.markdownCache.set(topic.path, markdown);
     await this._convertTopicToHtml(topic.path, markdown);
-    return markdown;
+    return [topic, markdown];
   }
 
   async _downloadTopicMarkdown(topicUrl) {
