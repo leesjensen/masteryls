@@ -34,7 +34,6 @@ jobs:
       - name: Build
         run: |
           npm ci && npm run build
-          tree
 
       - name: Update pages artifact
         uses: actions/upload-pages-artifact@v3
