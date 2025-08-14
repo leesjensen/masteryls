@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSwipeNavigation } from './useSwipeNavigation';
 import mermaid from 'mermaid';
 import 'github-markdown-css/github-markdown-light.css';
