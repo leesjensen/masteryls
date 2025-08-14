@@ -36,6 +36,73 @@ export default class Course {
     return this.modules.map(op);
   }
 
+  async loadTopic(topicUrl) {
+    try {
+      const markdown = await this.downloadTopicMarkdown(topicUrl);
+      const html = await this.convertTopicToHtml(topicUrl, markdown);
+
+      return this.postProcessTopicHTML(html);
+    } catch (e) {
+      console.error(e);
+      return '<p>Error loading content.</p>';
+    }
+  }
+
+  async downloadTopicMarkdown(topicUrl) {
+    const fileResponse = await fetch(topicUrl, {
+      headers: {
+        accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${this.config.github.token}`,
+      },
+    });
+    const fileData = await fileResponse.json();
+    return new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+  }
+
+  async convertTopicToHtml(topicUrl, markdown) {
+    let baseUrl = this.config.links.gitHub.rawUrl;
+    let contentPath = topicUrl.split('/contents/')[1];
+    contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
+    if (contentPath) {
+      baseUrl += `/${contentPath}`;
+    }
+
+    const response = await fetch('https://api.github.com/markdown', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.github.token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+      body: JSON.stringify({
+        text: markdown,
+        mode: 'gfm',
+        context: `${this.config.github.account}/${this.config.github.repository}`,
+      }),
+    });
+
+    const html = this.replaceImageLinks(baseUrl, await response.text());
+
+    return html;
+  }
+
+  postProcessTopicHTML(html) {
+    html = html.replace(/<div class="highlight highlight-source-mermaid"><pre class="notranslate">([\s\S]*?)<\/pre><\/div>/g, (_, diagramContent) => {
+      const cleanDiagram = diagramContent.replace(/<[^>]*>/g, '').trim();
+      return `<div class="mermaid">${cleanDiagram}</div>`;
+    });
+    return html;
+  }
+
+  replaceImageLinks(baseUrl, html) {
+    html = html.replace(/<img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)>/g, (match, beforeSrc, url, afterSrc) => {
+      const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
+      return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
+    });
+
+    return html;
+  }
+
   static async load(config) {
     const response = await fetch(`${config.links.gitHub.apiUrl}/instruction/modules.md`, {
       headers: {

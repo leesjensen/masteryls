@@ -5,7 +5,7 @@ import 'github-markdown-css/github-markdown-light.css';
 
 mermaid.initialize({ startOnLoad: false });
 
-function Instruction({ config, topic, setTopic, course, navigateToAdjacentTopic }) {
+function Instruction({ topic, setTopic, course, navigateToAdjacentTopic }) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useSwipeNavigation(
@@ -17,7 +17,7 @@ function Instruction({ config, topic, setTopic, course, navigateToAdjacentTopic 
     if (topic.path) {
       setIsLoading(true);
       setContent('');
-      loadTopic(config, topic.path).then((html) => {
+      course.loadTopic(topic.path).then((html) => {
         setContent(html);
         setIsLoading(false);
       });
@@ -44,73 +44,6 @@ function Instruction({ config, topic, setTopic, course, navigateToAdjacentTopic 
       <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`} dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }} />
     </section>
   );
-}
-
-async function loadTopic(config, topicUrl) {
-  try {
-    const markdown = await downloadTopicMarkdown(config, topicUrl);
-    const html = await convertTopicToHtml(config, topicUrl, markdown);
-
-    return postProcessTopicHTML(html);
-  } catch (e) {
-    console.error(e);
-    return '<p>Error loading content.</p>';
-  }
-}
-
-async function downloadTopicMarkdown(config, topicUrl) {
-  const fileResponse = await fetch(topicUrl, {
-    headers: {
-      accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${config.github.token}`,
-    },
-  });
-  const fileData = await fileResponse.json();
-  return new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
-}
-
-async function convertTopicToHtml(config, topicUrl, markdown) {
-  let baseUrl = config.links.gitHub.rawUrl;
-  let contentPath = topicUrl.split('/contents/')[1];
-  contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
-  if (contentPath) {
-    baseUrl += `/${contentPath}`;
-  }
-
-  const response = await fetch('https://api.github.com/markdown', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.github.token}`,
-      Accept: 'application/vnd.github.v3+json',
-    },
-    body: JSON.stringify({
-      text: markdown,
-      mode: 'gfm',
-      context: `${config.github.account}/${config.github.repository}`,
-    }),
-  });
-
-  const html = replaceImageLinks(baseUrl, await response.text());
-
-  return html;
-}
-
-function postProcessTopicHTML(html) {
-  html = html.replace(/<div class="highlight highlight-source-mermaid"><pre class="notranslate">([\s\S]*?)<\/pre><\/div>/g, (_, diagramContent) => {
-    const cleanDiagram = diagramContent.replace(/<[^>]*>/g, '').trim();
-    return `<div class="mermaid">${cleanDiagram}</div>`;
-  });
-  return html;
-}
-
-function replaceImageLinks(baseUrl, html) {
-  html = html.replace(/<img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)>/g, (match, beforeSrc, url, afterSrc) => {
-    const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
-    return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
-  });
-
-  return html;
 }
 
 function handleContainerClick(event, setTopic, topicUrl, containerRef) {
