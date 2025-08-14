@@ -4,7 +4,8 @@
   "description": "**MasteryLS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.",
   "main": "index.js",
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "build": "vite build"
   },
   "repository": {
     "type": "git",
