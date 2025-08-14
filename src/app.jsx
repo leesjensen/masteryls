@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import config from '../config.js';
 import Toolbar from './toolbar';
 import Instruction from './instruction';
+import Editor from './editor';
 import Sidebar from './sidebar';
 import Course from './course.js';
 
@@ -19,6 +20,7 @@ function App() {
   const [course, setCourse] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [sidebarVisible, setSidebarVisible] = useState(getSidebarPreference());
+  const [editorVisible, setEditorVisible] = useState(false);
 
   React.useEffect(() => {
     Course.create(config).then((course) => {
@@ -65,6 +67,7 @@ function App() {
 
   function toggleEditor() {
     console.log('toggle editor');
+    setEditorVisible((prev) => !prev);
   }
 
   return (
@@ -79,7 +82,7 @@ function App() {
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <Sidebar course={course} currentTopic={topic} changeTopic={changeTopic} />
         </div>
-        <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />
+        {editorVisible ? <Editor course={course} topic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
       </div>
     </div>
   );

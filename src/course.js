@@ -46,17 +46,19 @@ export default class Course {
       }
 
       const markdown = await this.downloadTopicMarkdown(topicUrl);
-      this.markdownCache.set(topicUrl, markdown);
-
-      const html = await this.convertTopicToHtml(topicUrl, markdown);
-      const processedHtml = this.postProcessTopicHTML(html);
-      this.htmlCache.set(topicUrl, processedHtml);
-
-      return processedHtml;
+      return this.convertTopicToHtml(topicUrl, markdown);
     } catch (e) {
       console.error(e);
       return '<p>Error loading content.</p>';
     }
+  }
+
+  async topicMarkdown(topicUrl) {
+    if (this.markdownCache.has(topicUrl)) {
+      return this.markdownCache.get(topicUrl);
+    }
+
+    return this.downloadTopicMarkdown(topicUrl);
   }
 
   async downloadTopicMarkdown(topicUrl) {
@@ -67,7 +69,10 @@ export default class Course {
       },
     });
     const fileData = await fileResponse.json();
-    return new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+    const markdown = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+    this.markdownCache.set(topicUrl, markdown);
+
+    return markdown;
   }
 
   async convertTopicToHtml(topicUrl, markdown) {
@@ -92,7 +97,9 @@ export default class Course {
       }),
     });
 
-    const html = this.replaceImageLinks(baseUrl, await response.text());
+    let html = this.replaceImageLinks(baseUrl, await response.text());
+    html = this.postProcessTopicHTML(html);
+    this.htmlCache.set(topicUrl, html);
 
     return html;
   }
