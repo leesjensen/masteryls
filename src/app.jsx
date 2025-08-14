@@ -3,7 +3,7 @@ import config from '../config.js';
 import Toolbar from './toolbar';
 import Instruction from './instruction';
 import Sidebar from './sidebar';
-import loadModules from './moduleLoader';
+import Course from './moduleLoader';
 
 config.links = {
   gitHub: {
@@ -16,13 +16,13 @@ config.links = {
 };
 
 function App() {
-  const [modules, setModules] = React.useState([]);
+  const [course, setCourse] = React.useState([]);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [sidebarVisible, setSidebarVisible] = useState(getSidebarPreference());
 
   React.useEffect(() => {
-    loadModules(config, config.links.gitHub.apiUrl).then((modules) => {
-      setModules(modules);
+    Course.create(config).then((course) => {
+      setCourse(course);
 
       const savedTopic = localStorage.getItem('selectedTopic');
       if (savedTopic) {
@@ -57,14 +57,7 @@ function App() {
   }
 
   function navigateToAdjacentTopic(direction = 'prev') {
-    const allTopics = modules.flatMap((module) =>
-      module.topics.map((t, idx) => ({
-        ...t,
-        moduleIndex: modules.indexOf(module),
-        topicIndex: idx,
-      }))
-    );
-    const currentIndex = allTopics.findIndex((t) => t.path === topic.path);
+    const currentIndex = course.indexOf(topic.path);
 
     if (direction === 'prev' && currentIndex > 0) {
       navigateTopic(allTopics[currentIndex - 1]);
@@ -95,9 +88,9 @@ function App() {
 
       <div className='flex flex-1 overflow-hidden'>
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <Sidebar config={config} modules={modules} currentTopic={topic} setTopic={navigateTopic} />
+          <Sidebar config={config} modules={course} currentTopic={topic} setTopic={navigateTopic} />
         </div>
-        <Instruction config={config} topic={topic} setTopic={navigateTopic} modules={modules} navigateToAdjacentTopic={navigateToAdjacentTopic} />
+        <Instruction config={config} topic={topic} setTopic={navigateTopic} modules={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />
       </div>
     </div>
   );
