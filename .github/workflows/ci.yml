@@ -30,11 +30,11 @@ jobs:
       - name: Create config.js
         run: |
           echo "export default {course: {title: 'Advanced Software Construction', schedule: 'schedule/fall2025.md', syllabus: 'instruction/syllabus/syllabus.md', canvas: 'https://byu.instructure.com/courses/31693', chat: 'https://discord.com/channels/748656649287368704' },  github: { account: 'softwareconstruction240', repository: 'softwareconstruction', token: '${{ secrets.GH_TOKEN }}'}};" > config.js
-          tree
 
       - name: Build
         run: |
           npm ci && npm run build
+          tree
 
       - name: Update pages artifact
         uses: actions/upload-pages-artifact@v3
