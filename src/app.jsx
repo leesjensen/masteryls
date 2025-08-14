@@ -77,7 +77,7 @@ function App() {
         <span className="text-xs">{JSON.stringify(topic)}</span>
       </header>
 
-      <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} toggleEditor={toggleEditor} />
+      <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
