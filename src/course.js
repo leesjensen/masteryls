@@ -1,6 +1,6 @@
 export default class Course {
   static async create(config) {
-    const modules = await Course.load(config);
+    const modules = await Course._load(config);
     return new Course(config, modules);
   }
 
@@ -45,23 +45,35 @@ export default class Course {
         return this.htmlCache.get(topicUrl);
       }
 
-      const markdown = await this.downloadTopicMarkdown(topicUrl);
-      return this.convertTopicToHtml(topicUrl, markdown);
+      const markdown = await this._downloadTopicMarkdown(topicUrl);
+      return this._convertTopicToHtml(topicUrl, markdown);
     } catch (e) {
       console.error(e);
       return '<p>Error loading content.</p>';
     }
   }
 
-  async topicMarkdown(topicUrl) {
-    if (this.markdownCache.has(topicUrl)) {
-      return this.markdownCache.get(topicUrl);
+  async topicMarkdown(topic) {
+    if (this.markdownCache.has(topic.path)) {
+      return this.markdownCache.get(topic.path);
     }
 
-    return this.downloadTopicMarkdown(topicUrl);
+    return this._downloadTopicMarkdown(topic.path);
   }
 
-  async downloadTopicMarkdown(topicUrl) {
+  async saveTopicMarkdown(topic, content) {
+    this.markdownCache.set(topic.path, content);
+    await this._convertTopicToHtml(topic.path, content);
+  }
+
+  async revertTopicMarkdown(topic) {
+    const markdown = await this._downloadTopicMarkdown(topic.path);
+    this.markdownCache.set(topic.path, markdown);
+    await this._convertTopicToHtml(topic.path, markdown);
+    return markdown;
+  }
+
+  async _downloadTopicMarkdown(topicUrl) {
     const fileResponse = await fetch(topicUrl, {
       headers: {
         accept: 'application/vnd.github+json',
@@ -75,7 +87,7 @@ export default class Course {
     return markdown;
   }
 
-  async convertTopicToHtml(topicUrl, markdown) {
+  async _convertTopicToHtml(topicUrl, markdown) {
     let baseUrl = this.config.links.gitHub.rawUrl;
     let contentPath = topicUrl.split('/contents/')[1];
     contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
@@ -97,14 +109,14 @@ export default class Course {
       }),
     });
 
-    let html = this.replaceImageLinks(baseUrl, await response.text());
-    html = this.postProcessTopicHTML(html);
+    let html = this._replaceImageLinks(baseUrl, await response.text());
+    html = this._postProcessTopicHTML(html);
     this.htmlCache.set(topicUrl, html);
 
     return html;
   }
 
-  postProcessTopicHTML(html) {
+  _postProcessTopicHTML(html) {
     html = html.replace(/<div class="highlight highlight-source-mermaid"><pre class="notranslate">([\s\S]*?)<\/pre><\/div>/g, (_, diagramContent) => {
       const cleanDiagram = diagramContent.replace(/<[^>]*>/g, '').trim();
       return `<div class="mermaid">${cleanDiagram}</div>`;
@@ -112,7 +124,7 @@ export default class Course {
     return html;
   }
 
-  replaceImageLinks(baseUrl, html) {
+  _replaceImageLinks(baseUrl, html) {
     html = html.replace(/<img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)>/g, (match, beforeSrc, url, afterSrc) => {
       const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
       return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
@@ -121,7 +133,7 @@ export default class Course {
     return html;
   }
 
-  static async load(config) {
+  static async _load(config) {
     const response = await fetch(`${config.links.gitHub.apiUrl}/instruction/modules.md`, {
       headers: {
         Authorization: `Bearer ${config.github.token}`,
@@ -132,10 +144,10 @@ export default class Course {
     const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
 
     const instructionUrl = `${config.links.gitHub.apiUrl}/instruction/`;
-    return Course.parseModulesMarkdown(config, instructionUrl, markdownContent);
+    return Course._parseModulesMarkdown(config, instructionUrl, markdownContent);
   }
 
-  static parseModulesMarkdown(config, instructionUrl, markdownContent) {
+  static _parseModulesMarkdown(config, instructionUrl, markdownContent) {
     const lines = markdownContent.split('\n');
 
     const modules = [

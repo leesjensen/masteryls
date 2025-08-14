@@ -20,7 +20,7 @@ function App() {
   const [course, setCourse] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [sidebarVisible, setSidebarVisible] = useState(getSidebarPreference());
-  const [editorVisible, setEditorVisible] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(true);
 
   React.useEffect(() => {
     Course.create(config).then((course) => {
