@@ -1,23 +1,6 @@
 import React from 'react';
 
-export default function Toolbar({ config, modules, sidebarVisible, manipulateSidebar, topic, setTopic, navigateTopic }) {
-  function navigateToAdjacentTopic(direction = 'prev') {
-    const allTopics = modules.flatMap((module) =>
-      module.topics.map((t, idx) => ({
-        ...t,
-        moduleIndex: modules.indexOf(module),
-        topicIndex: idx,
-      }))
-    );
-    const currentIndex = allTopics.findIndex((t) => t.path === topic.path);
-
-    if (direction === 'prev' && currentIndex > 0) {
-      navigateTopic(allTopics[currentIndex - 1]);
-    } else if (direction === 'next' && currentIndex < allTopics.length - 1) {
-      navigateTopic(allTopics[currentIndex + 1]);
-    }
-  }
-
+export default function Toolbar({ config, sidebarVisible, manipulateSidebar, topic, setTopic, navigateToAdjacentTopic }) {
   function gitHubUrl(url) {
     return url.replace(config.links.gitHub.apiUrl, config.links.gitHub.url);
   }

@@ -1,13 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useSwipeNavigation } from './useSwipeNavigation';
 import mermaid from 'mermaid';
 import 'github-markdown-css/github-markdown-light.css';
 
 mermaid.initialize({ startOnLoad: false });
 
-function Instruction({ config, topic, setTopic }) {
+// Accept modules and navigateTopic for navigation
+function Instruction({ config, topic, setTopic, modules, navigateToAdjacentTopic }) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const containerRef = useRef(null);
+  const containerRef = useSwipeNavigation(
+    useCallback(() => navigateToAdjacentTopic('next'), [modules, topic]),
+    useCallback(() => navigateToAdjacentTopic('prev'), [modules, topic])
+  );
 
   useEffect(() => {
     if (topic.path) {

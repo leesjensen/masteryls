@@ -56,19 +56,36 @@ function App() {
     }
   }
 
+  function navigateToAdjacentTopic(direction = 'prev') {
+    const allTopics = modules.flatMap((module) =>
+      module.topics.map((t, idx) => ({
+        ...t,
+        moduleIndex: modules.indexOf(module),
+        topicIndex: idx,
+      }))
+    );
+    const currentIndex = allTopics.findIndex((t) => t.path === topic.path);
+
+    if (direction === 'prev' && currentIndex > 0) {
+      navigateTopic(allTopics[currentIndex - 1]);
+    } else if (direction === 'next' && currentIndex < allTopics.length - 1) {
+      navigateTopic(allTopics[currentIndex + 1]);
+    }
+  }
+
   return (
     <div className='flex flex-col h-screen'>
       <header className='items-center px-2 mb-1 border-b-1 py-2 bg-amber-200 border-gray-200 hidden sm:block '>
         <h1 className='font-semibold text-lg text-gray-700'>💡 {config.course.title}</h1>
       </header>
 
-      <Toolbar config={config} modules={modules} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} topic={topic} setTopic={setTopic} navigateTopic={navigateTopic} />
+      <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} topic={topic} setTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />
 
       <div className='flex flex-1 overflow-hidden'>
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <Sidebar config={config} modules={modules} currentTopic={topic} setTopic={navigateTopic} />
         </div>
-        <Instruction config={config} topic={topic} setTopic={navigateTopic} />
+        <Instruction config={config} topic={topic} setTopic={navigateTopic} modules={modules} navigateToAdjacentTopic={navigateToAdjacentTopic} />
       </div>
     </div>
   );
