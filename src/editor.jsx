@@ -2,6 +2,8 @@ import React from 'react';
 
 export default function Editor({ topic, course }) {
   const [content, setContent] = React.useState('');
+  const [dirty, setDirty] = React.useState(false);
+  console.log('Dirty:', dirty);
 
   React.useEffect(() => {
     if (topic.path) {
@@ -15,32 +17,45 @@ export default function Editor({ topic, course }) {
     <div className="p-2 flex-1 flex flex-col">
       <div className="basis-[32px] flex items-center justify-end">
         <button
-          className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+          className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
           onClick={() => {
             course.saveTopicMarkdown(topic, content);
+            setDirty(false);
           }}
+          disabled={!dirty}
         >
           Save
         </button>
         <button
-          className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+          className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
           onClick={async () => {
             const markdown = await course.revertTopicMarkdown(topic);
             setContent(markdown);
+            setDirty(false);
           }}
+          disabled={!dirty}
         >
           Revert
         </button>
         <button
-          className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
+          className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
           onClick={() => {
             alert('Commit functionality not implemented yet');
+            setDirty(false);
           }}
+          disabled={!dirty}
         >
           Commit
         </button>
       </div>
-      <textarea className="flex-1 text-xs border rounded p-2" value={content} onChange={(e) => setContent(e.target.value)} spellCheck={false} />
+      <textarea
+        className="flex-1 text-xs border rounded p-2"
+        value={content}
+        onChange={(e) => {
+          setContent(e.target.value);
+          setDirty(true);
+        }}
+      />
     </div>
   );
 }
