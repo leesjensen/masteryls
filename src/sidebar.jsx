@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import Contents from './contents.jsx';
-import Schedule from './schedule.jsx';
 import Settings from './settings.jsx';
 
-function Sidebar({ config, modules, currentTopic, setTopic }) {
+function Sidebar({ course, currentTopic, setTopic }) {
   const [display, setDisplay] = useState('topics');
 
   function toggleDisplay(newDisplay) {
@@ -20,7 +19,7 @@ function Sidebar({ config, modules, currentTopic, setTopic }) {
         </span>
       </div>
       <aside className="flex-1 overflow-auto">
-        {display === 'topics' && <Contents modules={modules} currentTopic={currentTopic} setTopic={setTopic} />}
+        {display === 'topics' && <Contents course={course} currentTopic={currentTopic} setTopic={setTopic} />}
         {display === 'settings' && <Settings />}
       </aside>
     </div>

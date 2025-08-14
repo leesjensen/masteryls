@@ -5,13 +5,12 @@ import 'github-markdown-css/github-markdown-light.css';
 
 mermaid.initialize({ startOnLoad: false });
 
-// Accept modules and navigateTopic for navigation
-function Instruction({ config, topic, setTopic, modules, navigateToAdjacentTopic }) {
+function Instruction({ config, topic, setTopic, course, navigateToAdjacentTopic }) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useSwipeNavigation(
-    useCallback(() => navigateToAdjacentTopic('next'), [modules, topic]),
-    useCallback(() => navigateToAdjacentTopic('prev'), [modules, topic])
+    useCallback(() => navigateToAdjacentTopic('next'), [course, topic]),
+    useCallback(() => navigateToAdjacentTopic('prev'), [course, topic])
   );
 
   useEffect(() => {
@@ -41,11 +40,8 @@ function Instruction({ config, topic, setTopic, modules, navigateToAdjacentTopic
   }, [content]);
 
   return (
-    <section ref={containerRef} className='flex-1 overflow-auto my-2 rounded-xs border border-gray-200' onClick={(e) => handleContainerClick(e, setTopic, topic.path, containerRef)}>
-      <div
-        className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}
-        dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }}
-      />
+    <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200" onClick={(e) => handleContainerClick(e, setTopic, topic.path, containerRef)}>
+      <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`} dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }} />
     </section>
   );
 }

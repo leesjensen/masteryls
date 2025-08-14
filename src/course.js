@@ -1,23 +1,39 @@
 export default class Course {
   static async create(config) {
     const modules = await Course.load(config);
-    return new Course(modules);
+    return new Course(config, modules);
   }
 
   constructor(config, modules) {
     this.config = config;
     this.modules = modules;
-  }
 
-  indexOf(path) {
-    const allTopics = content.flatMap((module) =>
+    this.allTopics = this.modules.flatMap((module) =>
       module.topics.map((t, idx) => ({
         ...t,
-        moduleIndex: content.indexOf(module),
+        moduleIndex: this.modules.indexOf(module),
         topicIndex: idx,
       }))
     );
-    return allTopics.findIndex((t) => t.path === topic.path);
+  }
+
+  moduleIndexOf(path) {
+    return this.modules.findIndex((module) => module.topics.some((topic) => topic.path === path));
+  }
+
+  adjacentTopic(path, direction = 'prev') {
+    const topicIndex = this.allTopics.findIndex((t) => t.path === path);
+
+    if (direction === 'prev' && topicIndex > 0) {
+      return this.allTopics[topicIndex - 1];
+    } else if (direction === 'next' && topicIndex < this.allTopics.length - 1) {
+      return this.allTopics[topicIndex + 1];
+    }
+    return null;
+  }
+
+  map(op) {
+    return this.modules.map(op);
   }
 
   static async load(config) {
