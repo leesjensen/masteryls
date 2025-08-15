@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function Contents({ changeTopic, currentTopic, course }) {
+function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
 
   const toggleModule = (index) => {
@@ -21,6 +21,15 @@ function Contents({ changeTopic, currentTopic, course }) {
       }
     }
     setOpenModuleIndexes(indexes);
+
+    const handleKeyDown = (e) => {
+      if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
+        e.preventDefault();
+        navigateToAdjacentTopic(e.key === 'ArrowDown' ? 'next' : 'prev');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentTopic]);
 
   if (!course) {

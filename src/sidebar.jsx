@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Contents from './contents.jsx';
 import Settings from './settings.jsx';
 
-function Sidebar({ course, currentTopic, changeTopic }) {
+function Sidebar({ course, currentTopic, changeTopic, navigateToAdjacentTopic }) {
   const [display, setDisplay] = useState('topics');
 
   function toggleDisplay(newDisplay) {
@@ -19,7 +19,7 @@ function Sidebar({ course, currentTopic, changeTopic }) {
         </span>
       </div>
       <aside className="flex-1 overflow-auto">
-        {display === 'topics' && <Contents course={course} currentTopic={currentTopic} changeTopic={changeTopic} />}
+        {display === 'topics' && <Contents course={course} currentTopic={currentTopic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
         {display === 'settings' && <Settings />}
       </aside>
     </div>
