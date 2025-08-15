@@ -43,13 +43,23 @@
 The configuration is set using an admin API that is only writeable if you are an admin, but is publicly available for reading.
 
 ```js
-{
-   course: {
-      title: "Awesome course",
-      canvas-id: "234344"
-   }
-}
+export default {
+  course: {
+    title: 'Advanced Software Construction',
+    schedule: 'schedule/schedule.md',
+    syllabus: 'instruction/syllabus/syllabus.md',
+    canvas: 'https://byu.instructure.com/courses/31151',
+    chat: 'https://discord.com/channels/748656649287368704',
+  },
+  github: {
+    account: 'devops329',
+    repository: 'devops',
+    token: xxx',
+  },
+};
 ```
+
+The GitHub personal access token must have `Contents` **Read and write** access on the target repository in order to commit. Otherwise, any personal access token, without any permissions, can be used to simple study the content. Any PAT will give you 5000 requests per hour. With caching that should be plenty. We can also explore not using the API to transform the Markdown. Then no PAT would be need for reading.
 
 For the supabase edge functions that handle the GitHub MD requests the GitHub token will be inserted into supabase.
 

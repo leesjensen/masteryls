@@ -88,6 +88,50 @@ export default class Course {
     return [updatedCourse, savedTopic];
   }
 
+  async commitTopicMarkdown(updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
+    const updatedCourse = Course.copy(this);
+    const savedTopic = updatedCourse.topicByPath(updatedTopic.path);
+    delete savedTopic.lastUpdated;
+
+    const markdown = await updatedCourse.topicMarkdown(savedTopic);
+
+    const { github } = this.config;
+    const apiUrl = this.config.links.gitHub.apiUrl;
+    const filePath = savedTopic.path.match(/\/contents\/(.+)$/)[1];
+
+    // Get current file SHA
+    const getRes = await fetch(`${apiUrl}/${filePath}`, {
+      headers: {
+        accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${github.token}`,
+      },
+    });
+    const fileData = await getRes.json();
+    const sha = fileData.sha;
+    const contentBase64 = btoa(unescape(encodeURIComponent(markdown)));
+
+    // Commit to GitHub
+    const response = await fetch(`${apiUrl}/${filePath}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${github.token}`,
+        accept: 'application/vnd.github+json',
+      },
+      body: JSON.stringify({
+        message: commitMessage,
+        content: contentBase64,
+        sha,
+      }),
+    });
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error('Failed to commit to GitHub: ' + err);
+    }
+
+    return [updatedCourse, savedTopic];
+  }
+
   async discardTopicMarkdown(updatedTopic) {
     const updatedCourse = Course.copy(this);
     const topic = updatedCourse.topicByPath(updatedTopic.path);
@@ -189,7 +233,7 @@ export default class Course {
     let currentModule = null;
 
     const moduleRegex = /^##\s+(.*)$/;
-    const topicRegex = /^-\s(.*)\[(.+?)\]\((.+?)\)$/;
+    const topicRegex = /^-\s(.*\s)?\[(.+?)\]\((.+?)\)$/;
 
     for (const line of lines) {
       const moduleMatch = line.match(moduleRegex);
@@ -206,10 +250,13 @@ export default class Course {
 
       const topicMatch = line.match(topicRegex);
       if (topicMatch && currentModule) {
-        const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(topicMatch[3]);
-        const path = isAbsoluteUrl ? topicMatch[3] : new URL(topicMatch[3], instructionUrl).toString();
+        let prefix = topicMatch[1] ? topicMatch[1] : '';
+        let title = topicMatch[2] ? topicMatch[2].trim() : '';
+        let relPath = topicMatch[3] ? topicMatch[3].trim() : '';
+        const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(relPath);
+        const path = isAbsoluteUrl ? relPath : new URL(relPath, instructionUrl).toString();
         currentModule.topics.push({
-          title: `${topicMatch[1].trim()} ${topicMatch[2].trim()}`,
+          title: `${prefix}${title}`,
           path: path,
         });
       }

@@ -35,39 +35,40 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
     changeTopic(savedTopic);
   }
 
+  async function discard() {
+    const [updatedCourse, previousTopic, markdown] = await course.discardTopicMarkdown(currentTopic);
+    setDirty(false);
+    setContent(markdown);
+    changeTopic(previousTopic);
+    setCourse(updatedCourse);
+  }
+
+  async function commit() {
+    const [updatedCourse, committedTopic] = await course.commitTopicMarkdown(currentTopic);
+    setDirty(false);
+    changeTopic(committedTopic);
+    setCourse(updatedCourse);
+  }
+
   return (
     <div className="p-2 flex-1 flex flex-col">
       <div className="basis-[32px] flex items-center justify-between">
-        <span className="text-xs text-gray-300">{currentTopic?.lastUpdated && `Modified: ${new Date(currentTopic.lastUpdated).toLocaleString()}`}</span>
+        <span className="text-xs text-gray-500">{currentTopic?.lastUpdated && `Modified: ${new Date(currentTopic.lastUpdated).toLocaleString()}`}</span>
         <div className="flex items-center">
-          <button
-            className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
-            onClick={async () => {
-              await save(content);
-            }}
-            disabled={!dirty}
-          >
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => save(content)} disabled={!dirty}>
             Save
           </button>
           <button
             className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
-            onClick={async () => {
-              const [updatedCourse, previousTopic, markdown] = await course.discardTopicMarkdown(currentTopic);
-              setDirty(false);
-              setContent(markdown);
-              changeTopic(previousTopic);
-              setCourse(updatedCourse);
-            }}
+            onClick={discard}
             disabled={dirty || !currentTopic?.lastUpdated}
           >
             Discard
           </button>
           <button
             className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
-            onClick={() => {
-              alert('Commit functionality not implemented yet');
-            }}
-            disabled={!dirty}
+            onClick={commit}
+            disabled={dirty || !currentTopic?.lastUpdated}
           >
             Commit
           </button>
