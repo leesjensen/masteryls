@@ -22,16 +22,26 @@ export default function useHotkeys(handlers, { target, enabled = true, preventDe
 
     const onKeyDown = (e) => {
       const t = e.target;
+
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/i.test(t.tagName))) return;
 
-      const fn = handlersRef.current?.[e.key];
+      // Create a key string that includes modifiers
+      let keyString = '';
+      if (e.ctrlKey) keyString += 'ctrl+';
+      if (e.altKey) keyString += 'ALT+';
+      if (e.shiftKey) keyString += 'shift+';
+      if (e.metaKey) keyString += 'meta+';
+      keyString += e.key;
+
+      // Try the full key combination first, then fall back to just the key
+      const fn = handlersRef.current?.[keyString] || handlersRef.current?.[e.key];
       if (fn) {
         if (preventDefault) e.preventDefault();
         fn(e);
       }
     };
 
-    el.addEventListener('keydown', onKeyDown);
-    return () => el.removeEventListener('keydown', onKeyDown);
+    el.addEventListener('keyup', onKeyDown);
+    return () => el.removeEventListener('keyup', onKeyDown);
   }, [target, enabled, preventDefault]);
 }

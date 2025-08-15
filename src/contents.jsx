@@ -7,12 +7,10 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
 
   useHotkeys(
     {
-      ArrowDown: (e) => {
-        e.preventDefault();
+      'ALT+ArrowRight': (e) => {
         navigateToAdjacentTopic('next');
       },
-      ArrowUp: (e) => {
-        e.preventDefault();
+      'ALT+ArrowLeft': (e) => {
         navigateToAdjacentTopic('prev');
       },
     },
@@ -44,12 +42,12 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
   }
 
   return (
-    <div id="content" className="h-full overflow-auto p-4 text-sm">
+    <div ref={containerRef} id="content" className="h-full overflow-auto p-4 text-sm">
       <nav>
         <ul className="list-none p-0">
           {course.map((item, i) => (
             <li key={i} className="mb-1">
-              <button onClick={() => toggleModule(i)} className="no-underline text-gray-800 font-bold hover:text-blue-600 bg-transparent border-none cursor-pointer p-0 truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex items-center" aria-expanded={openModuleIndexes.includes(i)} title={item.title}>
+              <button onClick={() => toggleModule(i)} className="no-underline text-gray-800 font-bold hover:text-blue-600 bg-transparent border-none cursor-pointer p-0 truncate max-w-full flex whitespace-nowrap overflow-hidden text-ellipsis items-center" aria-expanded={openModuleIndexes.includes(i)} title={item.title}>
                 <span className="mr-2">{openModuleIndexes.includes(i) ? '▼' : '▶'}</span>
                 {item.title}
               </button>
