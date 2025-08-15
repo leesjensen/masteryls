@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import useHotkeys from './useHotKeys';
 
 function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
+  const containerRef = React.useRef(null);
+
+  useHotkeys(
+    {
+      ArrowDown: (e) => {
+        e.preventDefault();
+        navigateToAdjacentTopic('next');
+      },
+      ArrowUp: (e) => {
+        e.preventDefault();
+        navigateToAdjacentTopic('prev');
+      },
+    },
+    { target: containerRef }
+  );
 
   const toggleModule = (index) => {
     setOpenModuleIndexes((prev) => {
@@ -21,15 +37,6 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
       }
     }
     setOpenModuleIndexes(indexes);
-
-    const handleKeyDown = (e) => {
-      if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
-        e.preventDefault();
-        navigateToAdjacentTopic(e.key === 'ArrowDown' ? 'next' : 'prev');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentTopic]);
 
   if (!course) {
