@@ -29,8 +29,8 @@ export default class Course {
     return null;
   }
 
-  topicByPath(path) {
-    return this.allTopics.find((t) => t.path === path) || this.allTopics[0];
+  topicFromPath(path, defaultToFirst = true) {
+    return this.allTopics.find((t) => t.path === path) || (defaultToFirst ? this.allTopics[0] : null);
   }
 
   map(op) {
@@ -81,7 +81,7 @@ export default class Course {
 
   async saveTopicMarkdown(updatedTopic, content) {
     const updatedCourse = Course.copy(this);
-    const savedTopic = updatedCourse.topicByPath(updatedTopic.path);
+    const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     savedTopic.lastUpdated = Date.now();
     updatedCourse.markdownCache.set(updatedTopic.path, content);
     await updatedCourse._convertTopicToHtml(updatedTopic.path, content);
@@ -90,7 +90,7 @@ export default class Course {
 
   async commitTopicMarkdown(updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
     const updatedCourse = Course.copy(this);
-    const savedTopic = updatedCourse.topicByPath(updatedTopic.path);
+    const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     delete savedTopic.lastUpdated;
 
     const markdown = await updatedCourse.topicMarkdown(savedTopic);
@@ -134,7 +134,7 @@ export default class Course {
 
   async discardTopicMarkdown(updatedTopic) {
     const updatedCourse = Course.copy(this);
-    const topic = updatedCourse.topicByPath(updatedTopic.path);
+    const topic = updatedCourse.topicFromPath(updatedTopic.path);
     delete topic.lastUpdated;
 
     const markdown = await updatedCourse._downloadTopicMarkdown(topic.path);
@@ -195,7 +195,7 @@ export default class Course {
   }
 
   _replaceImageLinks(baseUrl, html) {
-    html = html.replace(/<img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)>/g, (match, beforeSrc, url, afterSrc) => {
+    html = html.replace(/<a[^>]*><img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)><\/a>/g, (match, beforeSrc, url, afterSrc) => {
       const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
       return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
     });

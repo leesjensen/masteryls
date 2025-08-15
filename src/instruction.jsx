@@ -40,13 +40,13 @@ function Instruction({ topic, changeTopic, course, navigateToAdjacentTopic }) {
   }, [content]);
 
   return (
-    <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200" onClick={(e) => handleContainerClick(e, changeTopic, topic.path, containerRef)}>
+    <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200" onClick={(e) => handleContainerClick(e, course, changeTopic, topic.path, containerRef)}>
       <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`} dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }} />
     </section>
   );
 }
 
-function handleContainerClick(event, changeTopic, topicUrl, containerRef) {
+function handleContainerClick(event, course, changeTopic, topicUrl, containerRef) {
   const anchor = event.target.closest('a');
   if (anchor && anchor.href) {
     event.preventDefault();
@@ -58,11 +58,14 @@ function handleContainerClick(event, changeTopic, topicUrl, containerRef) {
     if (href.startsWith('http')) {
       window.open(href, '_blank', 'noopener,noreferrer');
     } else {
-      if (href.startsWith('#')) {
-        scrollToAnchor(href, containerRef);
+      if (hrefAnchor) {
+        scrollToAnchor(hrefAnchor, containerRef);
       } else {
         const resolvedUrl = new URL(href, topicUrl).toString();
-        changeTopic({ title: anchor.textContent, path: resolvedUrl, anchor: hrefAnchor });
+        const targetTopic = course.topicFromPath(resolvedUrl, false);
+        if (targetTopic) {
+          changeTopic({ ...targetTopic, anchor: hrefAnchor });
+        }
       }
     }
   }

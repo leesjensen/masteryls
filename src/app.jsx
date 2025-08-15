@@ -30,7 +30,7 @@ function App() {
 
       const savedTopicPath = localStorage.getItem('selectedTopic');
       if (savedTopicPath) {
-        setTopic(loadedCourse.topicByPath(savedTopicPath));
+        setTopic(loadedCourse.topicFromPath(savedTopicPath));
       } else {
         setTopic({ title: 'Home', path: `${config.links.gitHub.apiUrl}/README.md` });
       }
