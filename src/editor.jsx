@@ -9,6 +9,59 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
   dirtyRef.current = dirty;
   contentRef.current = content;
 
+  // Helper: convert ArrayBuffer to base64 (chunked to avoid stack limits)
+  function base64ArrayBuffer(arrayBuffer) {
+    const bytes = new Uint8Array(arrayBuffer);
+    const chunkSize = 0x8000; // 32KB
+    let result = '';
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      result += String.fromCharCode.apply(null, chunk);
+    }
+    return btoa(result);
+  }
+
+  // Handle paste - look for files in clipboard and upload them
+  async function handlePaste(e) {
+    alert('Pasting of files is not yet supported');
+    e.preventDefault();
+    // try {
+    //   const items = e.clipboardData?.files;
+    //   if (items && items.length > 0) {
+    //     e.preventDefault();
+    //     // Process each file sequentially
+    //     for (let i = 0; i < items.length; i++) {
+    //       const file = items[i];
+    //       // upload
+    //       //          const uploadedUrl = await uploadFileToGitHub(file);
+    //       const uploadedUrl = 'https://example.com/uploads/' + file.name; // Mocked URL for example
+
+    //       // Insert markdown reference at cursor position
+    //       const isImage = /^image\//.test(file.type);
+    //       const markdownLink = isImage ? `![${file.name}](${uploadedUrl})` : `[${file.name}](${uploadedUrl})`;
+
+    //       // Insert into textarea value at current cursor position
+    //       // Use refs to access latest content
+    //       const textarea = e.target;
+    //       const start = textarea.selectionStart || 0;
+    //       const end = textarea.selectionEnd || 0;
+    //       const newContent = contentRef.current.substring(0, start) + markdownLink + contentRef.current.substring(end);
+    //       setContent(newContent);
+    //       setDirty(true);
+
+    //       // Move cursor after inserted text
+    //       requestAnimationFrame(() => {
+    //         textarea.selectionStart = textarea.selectionEnd = start + markdownLink.length;
+    //         textarea.focus();
+    //       });
+    //     }
+    //   }
+    // } catch (err) {
+    //   console.error(err);
+    //   window.alert('Failed to upload pasted file: ' + err.message);
+    // }
+  }
+
   React.useEffect(() => {
     if (currentTopic?.path) {
       course.topicMarkdown(currentTopic).then((markdown) => {
@@ -58,18 +111,10 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
           <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => save(content)} disabled={!dirty}>
             Save
           </button>
-          <button
-            className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
-            onClick={discard}
-            disabled={dirty || !currentTopic?.lastUpdated}
-          >
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={dirty || !currentTopic?.lastUpdated}>
             Discard
           </button>
-          <button
-            className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
-            onClick={commit}
-            disabled={dirty || !currentTopic?.lastUpdated}
-          >
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={commit} disabled={dirty || !currentTopic?.lastUpdated}>
             Commit
           </button>
         </div>
@@ -83,6 +128,7 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
             setContent(e.target.value);
             setDirty(true);
           }}
+          onPaste={handlePaste}
         />
       </pre>
     </div>

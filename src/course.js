@@ -108,7 +108,7 @@ export default class Course {
     });
     const fileData = await getRes.json();
     const sha = fileData.sha;
-    const contentBase64 = btoa(unescape(encodeURIComponent(markdown)));
+    const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
     // Commit to GitHub
     const response = await fetch(`${apiUrl}/${filePath}`, {

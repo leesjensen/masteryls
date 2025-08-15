@@ -45,7 +45,7 @@ The configuration is set using an admin API that is only writeable if you are an
 ```js
 export default {
   course: {
-    title: 'Advanced Software Construction',
+    title: 'QA & DevOps',
     schedule: 'schedule/schedule.md',
     syllabus: 'instruction/syllabus/syllabus.md',
     canvas: 'https://byu.instructure.com/courses/31151',
@@ -54,7 +54,7 @@ export default {
   github: {
     account: 'devops329',
     repository: 'devops',
-    token: xxx',
+    token: 'xxx',
   },
 };
 ```
