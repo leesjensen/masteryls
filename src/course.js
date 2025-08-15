@@ -30,7 +30,7 @@ export default class Course {
   }
 
   topicByPath(path) {
-    return this.allTopics.find((t) => t.path === path);
+    return this.allTopics.find((t) => t.path === path) || this.allTopics[0];
   }
 
   map(op) {
@@ -225,8 +225,8 @@ export default class Course {
         title: 'Course info',
         topics: [
           { title: 'Home', path: `${config.links.gitHub.apiUrl}/README.md` },
-          { title: 'Syllabus', path: config.links.syllabus },
-          { title: 'Schedule', path: config.links.schedule },
+          { title: 'Syllabus', path: config.links.syllabus || `${config.links.gitHub.apiUrl}/syllabus/syllabus.md` },
+          { title: 'Schedule', path: config.links.schedule || `${config.links.gitHub.apiUrl}/schedule/schedule.md` },
         ],
       },
     ];
