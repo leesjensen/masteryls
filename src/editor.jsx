@@ -74,14 +74,17 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
           </button>
         </div>
       </div>
-      <textarea
-        className="flex-1 text-xs border rounded p-2"
-        value={content}
-        onChange={(e) => {
-          setContent(e.target.value);
-          setDirty(true);
-        }}
-      />
+      <pre className="flex-1 flex">
+        <textarea
+          className="flex-1 text-sm border rounded p-2"
+          value={content}
+          wrap="off"
+          onChange={(e) => {
+            setContent(e.target.value);
+            setDirty(true);
+          }}
+        />
+      </pre>
     </div>
   );
 }
