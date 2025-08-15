@@ -65,8 +65,8 @@ export default function EditorFiles({ files, setFiles }) {
   }
 
   return (
-    <div className="p-2 flex-3/12 shrink-0 basis-[64px] flex flex-col">
-      <div className="basis-[32px] flex items-center justify-between">
+    <div className="p-2 flex-3/12 flex flex-col max-h-1/4 h-1/4">
+      <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">Files</h1>
         <div className="flex items-center">
           <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={deleteSelected}>
@@ -76,7 +76,7 @@ export default function EditorFiles({ files, setFiles }) {
       </div>
 
       <div className="flex-1 mt-2 p-1 border rounded overflow-auto">
-        {files && files.length > 0 ? (
+        {files && files.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {files.map((file, idx) => {
               const name = file.name;
@@ -96,8 +96,6 @@ export default function EditorFiles({ files, setFiles }) {
               );
             })}
           </div>
-        ) : (
-          <div className="text-sm text-gray-500 p-2">No files</div>
         )}
       </div>
     </div>
