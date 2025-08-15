@@ -81,21 +81,22 @@ export default class Course {
 
   async saveTopicMarkdown(updatedTopic, content) {
     const updatedCourse = Course.copy(this);
-    const topic = updatedCourse.topicByPath(updatedTopic.path);
-    topic.lastUpdated = Date.now();
+    const savedTopic = updatedCourse.topicByPath(updatedTopic.path);
+    savedTopic.lastUpdated = Date.now();
     updatedCourse.markdownCache.set(updatedTopic.path, content);
     await updatedCourse._convertTopicToHtml(updatedTopic.path, content);
-    return [updatedCourse, topic];
+    return [updatedCourse, savedTopic];
   }
 
   async discardTopicMarkdown(updatedTopic) {
-    const topic = this.topicByPath(updatedTopic.path);
+    const updatedCourse = Course.copy(this);
+    const topic = updatedCourse.topicByPath(updatedTopic.path);
     delete topic.lastUpdated;
 
-    const markdown = await this._downloadTopicMarkdown(topic.path);
-    this.markdownCache.set(topic.path, markdown);
-    await this._convertTopicToHtml(topic.path, markdown);
-    return [topic, markdown];
+    const markdown = await updatedCourse._downloadTopicMarkdown(topic.path);
+    updatedCourse.markdownCache.set(topic.path, markdown);
+    await updatedCourse._convertTopicToHtml(topic.path, markdown);
+    return [updatedCourse, topic, markdown];
   }
 
   async _downloadTopicMarkdown(topicUrl) {

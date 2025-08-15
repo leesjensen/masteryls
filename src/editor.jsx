@@ -10,7 +10,7 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
   contentRef.current = content;
 
   React.useEffect(() => {
-    if (currentTopic.path) {
+    if (currentTopic?.path) {
       course.topicMarkdown(currentTopic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
@@ -29,16 +29,16 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
   async function save(content) {
     console.log('Saving...');
 
-    const [newCourse, newTopic] = await course.saveTopicMarkdown(currentTopic, content);
+    const [updatedCourse, savedTopic] = await course.saveTopicMarkdown(currentTopic, content);
     setDirty(false);
-    setCourse(newCourse);
-    changeTopic(newTopic);
+    setCourse(updatedCourse);
+    changeTopic(savedTopic);
   }
 
   return (
     <div className="p-2 flex-1 flex flex-col">
       <div className="basis-[32px] flex items-center justify-between">
-        <span className="text-xs text-gray-300">{currentTopic.lastUpdated && `Modified: ${new Date(currentTopic.lastUpdated).toLocaleString()}`}</span>
+        <span className="text-xs text-gray-300">{currentTopic?.lastUpdated && `Modified: ${new Date(currentTopic.lastUpdated).toLocaleString()}`}</span>
         <div className="flex items-center">
           <button
             className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
@@ -52,12 +52,13 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
           <button
             className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs"
             onClick={async () => {
-              const [savedTopic, markdown] = await course.discardTopicMarkdown(currentTopic);
+              const [updatedCourse, previousTopic, markdown] = await course.discardTopicMarkdown(currentTopic);
               setDirty(false);
               setContent(markdown);
-              changeTopic(savedTopic);
+              changeTopic(previousTopic);
+              setCourse(updatedCourse);
             }}
-            disabled={dirty || !currentTopic.lastUpdated}
+            disabled={dirty || !currentTopic?.lastUpdated}
           >
             Discard
           </button>
