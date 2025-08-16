@@ -35,7 +35,7 @@ export default function MarkdownInstruction({ topic, changeTopic, course }) {
     }
   }, [content]);
 
-  return <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`} dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }} />;
+  return <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`} dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }} onClick={(e) => handleContainerClick(e, course, changeTopic, topic.path, containerRef)} />;
 }
 
 function handleContainerClick(event, course, changeTopic, topicUrl, containerRef) {

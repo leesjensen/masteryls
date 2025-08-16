@@ -212,12 +212,14 @@ async function load(config) {
       } else if (!topic.path.startsWith('http')) {
         topic.path = `${gitHub.rawUrl}/${topic.path}`;
       }
+      topic.id = topic.id || generateId();
     }
   }
 
   return courseData;
 }
 
+// This is a fallback for when course.json is not found
 async function loadCourseFromModulesMarkdown(config, gitHub) {
   const response = await fetch(`${gitHub.rawUrl}/instruction/modules.md`);
   const markdownContent = await response.text();
@@ -229,6 +231,10 @@ async function loadCourseFromModulesMarkdown(config, gitHub) {
   const syllabus = `${gitHub.rawUrl}/instruction/syllabus/syllabus.md`;
 
   return { title: config.github.repository, schedule, syllabus, modules, links: { gitHub } };
+}
+
+function generateId() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
 }
 
 function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
@@ -278,6 +284,11 @@ function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
 
   if (currentModule) {
     modules.push(currentModule);
+  }
+  for (const module of courseData.modules) {
+    for (const topic of module.topics) {
+      topic.id = generateId();
+    }
   }
 
   return modules;

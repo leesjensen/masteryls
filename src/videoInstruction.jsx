@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React from 'react';
 
 export default function VideoInstruction({ topic }) {
   return <iframe className="w-full h-full" src={`https://www.youtube.com/embed/${extractYouTubeId(topic.path)}`} title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>;
