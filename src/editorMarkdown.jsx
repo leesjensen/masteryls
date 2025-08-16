@@ -62,7 +62,7 @@ export default function EditorMarkdown({ course, setCourse, currentTopic, change
           <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => stage(content)} disabled={!dirty}>
             Stage
           </button>
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={dirty || !currentTopic?.lastUpdated}>
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!currentTopic?.lastUpdated}>
             Discard
           </button>
           <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={commit} disabled={dirty || !currentTopic?.lastUpdated}>
