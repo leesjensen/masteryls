@@ -61,15 +61,13 @@ export default function EditorMarkdown({ course, setCourse, currentTopic, change
       if (dirtyRef.current) {
         const shouldSave = window.confirm('You have unsaved changes. Save before leaving?');
         if (shouldSave) {
-          save(contentRef.current);
+          stage(contentRef.current);
         }
       }
     };
   }, [currentTopic]);
 
-  async function save(content) {
-    console.log('Saving...');
-
+  async function stage(content) {
     const [updatedCourse, savedTopic] = await course.saveTopicMarkdown(currentTopic, content);
     setDirty(false);
     setCourse(updatedCourse);
@@ -97,8 +95,8 @@ export default function EditorMarkdown({ course, setCourse, currentTopic, change
         <h1 className="text-lg font-bold">Markdown</h1>
         <span className="text-xs text-gray-500">{currentTopic?.lastUpdated && `Modified: ${new Date(currentTopic.lastUpdated).toLocaleString()}`}</span>
         <div className="flex items-center">
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => save(content)} disabled={!dirty}>
-            Save
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => stage(content)} disabled={!dirty}>
+            Stage
           </button>
           <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={dirty || !currentTopic?.lastUpdated}>
             Discard
