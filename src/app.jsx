@@ -6,16 +6,6 @@ import Editor from './editor';
 import Sidebar from './sidebar';
 import Course from './course.js';
 
-config.links = {
-  gitHub: {
-    url: `https://github.com/${config.github.account}/${config.github.repository}/blob/main`,
-    apiUrl: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents`,
-    rawUrl: `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`,
-  },
-  schedule: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/${config.course.schedule}`,
-  syllabus: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/${config.course.syllabus}`,
-};
-
 function App() {
   const [course, setCourse] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });

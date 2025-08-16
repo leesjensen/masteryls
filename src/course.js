@@ -98,13 +98,13 @@ export default class Course {
     const gitHubUrl = `${this.config.links.gitHub.apiUrl}/${savedTopic.path.match(/\/contents\/(.+)$/)[1]}`;
 
     // Get current file SHA
-    const getRes = await this.makeRequest(gitHubUrl);
+    const getRes = await this.makeGitHubApiRequest(gitHubUrl);
     const fileData = await getRes.json();
     const sha = fileData.sha;
 
     // Commit to GitHub
     const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
-    await this.makeRequest(gitHubUrl, 'PUT', {
+    await this.makeGitHubApiRequest(gitHubUrl, 'PUT', {
       message: commitMessage,
       content: contentBase64,
       sha,
@@ -125,9 +125,8 @@ export default class Course {
   }
 
   async _downloadTopicMarkdown(topicUrl) {
-    const response = await this.makeRequest(topicUrl);
-    const fileData = await response.json();
-    const markdown = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+    const response = await fetch(topicUrl);
+    const markdown = await response.text();
     this.markdownCache.set(topicUrl, markdown);
 
     return markdown;
@@ -135,13 +134,13 @@ export default class Course {
 
   async _convertTopicToHtml(topicUrl, markdown) {
     let baseUrl = this.config.links.gitHub.rawUrl;
-    let contentPath = topicUrl.split('/contents/')[1];
+    let contentPath = topicUrl.split('/main/')[1];
     contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
     if (contentPath) {
       baseUrl += `/${contentPath}`;
     }
 
-    const response = await this.makeRequest('https://api.github.com/markdown', 'POST', {
+    const response = await this.makeGitHubApiRequest('https://api.github.com/markdown', 'POST', {
       text: markdown,
       mode: 'gfm',
       context: `${this.config.github.account}/${this.config.github.repository}`,
@@ -171,48 +170,51 @@ export default class Course {
     return html;
   }
 
-  async makeRequest(url, method = 'GET', body = null) {
-    return makeARequest(this.config.github.token, url, method, body);
+  async makeGitHubApiRequest(url, method = 'GET', body = null) {
+    const request = {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.config.github.token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    };
+    if (body) {
+      request.headers['Content-Type'] = 'application/json';
+      request.body = JSON.stringify(body);
+    }
+    return fetch(url, request);
   }
 }
-
-async function makeARequest(token, url, method = 'GET', body = null) {
-  const request = {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-    },
-  };
-  if (body) {
-    request.headers['Content-Type'] = 'application/json';
-    request.body = JSON.stringify(body);
-  }
-  return fetch(url, request);
-}
-
+``;
 async function load(config) {
-  const response = await makeARequest(config.github.token, `${config.links.gitHub.apiUrl}/course.json`);
-  if (!response.ok) {
-    const response = await makeARequest(config.github.token, `${config.links.gitHub.apiUrl}/instruction/modules.md`);
-    const fileData = await response.json();
-    const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+  config.links = {
+    gitHub: {
+      url: `https://github.com/${config.github.account}/${config.github.repository}/blob/main`,
+      apiUrl: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents`,
+      rawUrl: `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`,
+    },
+    schedule: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/${config.course.schedule}`,
+    syllabus: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/${config.course.syllabus}`,
+  };
 
-    const instructionUrl = `${config.links.gitHub.apiUrl}/instruction/`;
+  const response = await fetch(`${config.links.gitHub.rawUrl}/course.json`);
+  if (!response.ok) {
+    const response = await fetch(`${config.links.gitHub.rawUrl}/instruction/modules.md`);
+    const markdownContent = await response.text();
+
+    const instructionUrl = `${config.links.gitHub.rawUrl}/instruction/`;
     return parseModulesMarkdown(config, instructionUrl, markdownContent);
   }
-  const fileData = await response.json();
-  const jsonContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
-  const parsedContent = JSON.parse(jsonContent);
+  const courseData = await response.json();
 
-  const contentUrl = `${config.links.gitHub.apiUrl}/`;
-  for (const module of parsedContent.modules) {
+  const contentUrl = `${config.links.gitHub.rawUrl}/`;
+  for (const module of courseData.modules) {
     for (const topic of module.topics) {
       topic.path = `${contentUrl}${topic.path}`;
     }
   }
 
-  return parsedContent.modules;
+  return courseData.modules;
 }
 
 function parseModulesMarkdown(config, instructionUrl, markdownContent) {
