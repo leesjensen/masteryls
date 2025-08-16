@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import useHotkeys from './useHotKeys';
+import useHotkeys from './hooks/useHotKeys';
 
 function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
-  const containerRef = React.useRef(null);
 
   useHotkeys(
     {
@@ -14,7 +13,7 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
         navigateToAdjacentTopic('prev');
       },
     },
-    { target: containerRef }
+    { target: undefined }
   );
 
   const toggleModule = (index) => {
@@ -42,7 +41,7 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
   }
 
   return (
-    <div ref={containerRef} id="content" className="h-full overflow-auto p-4 text-sm">
+    <div id="content" className="h-full overflow-auto p-4 text-sm">
       <nav>
         <ul className="list-none p-0">
           {course.map((item, i) => (
