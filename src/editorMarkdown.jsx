@@ -1,54 +1,12 @@
 import React from 'react';
+import useLatest from './hooks/useLatest';
 
 export default function EditorMarkdown({ course, setCourse, currentTopic, changeTopic }) {
   const [content, setContent] = React.useState('');
   const [dirty, setDirty] = React.useState(false);
-
-  const dirtyRef = React.useRef(dirty);
-  const contentRef = React.useRef(content);
-  dirtyRef.current = dirty;
-  contentRef.current = content;
-
-  // Handle paste - look for files in clipboard and upload them
-  async function handlePaste(e) {
-    alert('Pasting of files is not yet supported');
-    e.preventDefault();
-    // try {
-    //   const items = e.clipboardData?.files;
-    //   if (items && items.length > 0) {
-    //     e.preventDefault();
-    //     // Process each file sequentially
-    //     for (let i = 0; i < items.length; i++) {
-    //       const file = items[i];
-    //       // upload
-    //       //          const uploadedUrl = await uploadFileToGitHub(file);
-    //       const uploadedUrl = 'https://example.com/uploads/' + file.name; // Mocked URL for example
-
-    //       // Insert markdown reference at cursor position
-    //       const isImage = /^image\//.test(file.type);
-    //       const markdownLink = isImage ? `![${file.name}](${uploadedUrl})` : `[${file.name}](${uploadedUrl})`;
-
-    //       // Insert into textarea value at current cursor position
-    //       // Use refs to access latest content
-    //       const textarea = e.target;
-    //       const start = textarea.selectionStart || 0;
-    //       const end = textarea.selectionEnd || 0;
-    //       const newContent = contentRef.current.substring(0, start) + markdownLink + contentRef.current.substring(end);
-    //       setContent(newContent);
-    //       setDirty(true);
-
-    //       // Move cursor after inserted text
-    //       requestAnimationFrame(() => {
-    //         textarea.selectionStart = textarea.selectionEnd = start + markdownLink.length;
-    //         textarea.focus();
-    //       });
-    //     }
-    //   }
-    // } catch (err) {
-    //   console.error(err);
-    //   window.alert('Failed to upload pasted file: ' + err.message);
-    // }
-  }
+  const dirtyRef = useLatest(dirty);
+  const contentRef = useLatest(content);
+  const courseRef = useLatest(course);
 
   React.useEffect(() => {
     if (currentTopic?.path) {
@@ -61,7 +19,7 @@ export default function EditorMarkdown({ course, setCourse, currentTopic, change
       if (dirtyRef.current) {
         const shouldSave = window.confirm('Do you want to stage your changes?');
         if (shouldSave) {
-          const [updatedCourse] = await course.saveTopicMarkdown(currentTopic, contentRef.current);
+          const [updatedCourse] = await courseRef.current.saveTopicMarkdown(currentTopic, contentRef.current);
           setCourse(updatedCourse);
         }
       }
@@ -88,6 +46,11 @@ export default function EditorMarkdown({ course, setCourse, currentTopic, change
     setDirty(false);
     changeTopic(committedTopic);
     setCourse(updatedCourse);
+  }
+
+  async function handlePaste(e) {
+    alert('Pasting of files is not yet supported');
+    e.preventDefault();
   }
 
   return (
@@ -122,3 +85,44 @@ export default function EditorMarkdown({ course, setCourse, currentTopic, change
     </div>
   );
 }
+
+// Handle paste - look for files in clipboard and upload them
+// async function handlePaste(e) {
+//   alert('Pasting of files is not yet supported');
+//   e.preventDefault();
+// try {
+//   const items = e.clipboardData?.files;
+//   if (items && items.length > 0) {
+//     e.preventDefault();
+//     // Process each file sequentially
+//     for (let i = 0; i < items.length; i++) {
+//       const file = items[i];
+//       // upload
+//       //          const uploadedUrl = await uploadFileToGitHub(file);
+//       const uploadedUrl = 'https://example.com/uploads/' + file.name; // Mocked URL for example
+
+//       // Insert markdown reference at cursor position
+//       const isImage = /^image\//.test(file.type);
+//       const markdownLink = isImage ? `![${file.name}](${uploadedUrl})` : `[${file.name}](${uploadedUrl})`;
+
+//       // Insert into textarea value at current cursor position
+//       // Use refs to access latest content
+//       const textarea = e.target;
+//       const start = textarea.selectionStart || 0;
+//       const end = textarea.selectionEnd || 0;
+//       const newContent = contentRef.current.substring(0, start) + markdownLink + contentRef.current.substring(end);
+//       setContent(newContent);
+//       setDirty(true);
+
+//       // Move cursor after inserted text
+//       requestAnimationFrame(() => {
+//         textarea.selectionStart = textarea.selectionEnd = start + markdownLink.length;
+//         textarea.focus();
+//       });
+//     }
+//   }
+// } catch (err) {
+//   console.error(err);
+//   window.alert('Failed to upload pasted file: ' + err.message);
+// }
+//  }
