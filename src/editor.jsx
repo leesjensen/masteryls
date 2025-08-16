@@ -9,11 +9,9 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
     async function fetchFiles() {
       setFiles([]);
       if (course && currentTopic?.path) {
-        const fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
-
-        const res = await fetch(fetchUrl, {
-          headers: { Authorization: `Bearer ${course.config.github.token}`, Accept: 'application/vnd.github+json' },
-        });
+        let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
+        fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+        const res = await course.makeGitHubApiRequest(fetchUrl);
 
         if (res.ok) {
           const data = await res.json();

@@ -2,7 +2,13 @@
 
 **Mastery LS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.
 
-## Features
+- Markdown for content creation sanity
+- Content management using GitHub for version control
+- AI powered for content generation, learner feedback, quiz generation
+- Video and interactivity powered
+- Project based mastery
+
+## Feature details
 
 1. **Content** that leverages the online experience. This will include instruction video with interactive paths, textual instruction, and self paced learning.
    1. Markdown as the primary content format
@@ -44,13 +50,6 @@ The configuration is set using an admin API that is only writeable if you are an
 
 ```js
 export default {
-  course: {
-    title: 'QA & DevOps',
-    schedule: 'schedule/schedule.md',
-    syllabus: 'instruction/syllabus/syllabus.md',
-    canvas: 'https://byu.instructure.com/courses/31151',
-    chat: 'https://discord.com/channels/748656649287368704',
-  },
   github: {
     account: 'devops329',
     repository: 'devops',
@@ -62,6 +61,34 @@ export default {
 The GitHub personal access token must have `Contents` **Read and write** access on the target repository in order to commit. Otherwise, any personal access token, without any permissions, can be used to simple study the content. Any PAT will give you 5000 requests per hour. With caching that should be plenty. We can also explore not using the API to transform the Markdown. Then no PAT would be need for reading.
 
 For the supabase edge functions that handle the GitHub MD requests the GitHub token will be inserted into supabase.
+
+### Course
+
+A course definition is read from the `course.json` file found in the root of the repo. If there is not `course.json` file then the content of the `instruction/modules.md` file is analyzed to try and discover the course.
+
+#### Example `course.json`
+
+```json
+{
+  "title": "QA & DevOps",
+  "schedule": "schedule/schedule.md",
+  "syllabus": "instruction/syllabus/syllabus.md",
+  "links": {
+    "canvas": "https://byu.instructure.com/courses/31151",
+    "chat": "https://discord.com/channels/748656649287368704"
+  },
+  "modules": [
+    {
+      "title": "Course info",
+      "topics": [
+        { "title": "Home", "path": "README.md" },
+        { "title": "Syllabus", "path": "instruction/syllabus/syllabus.md" },
+        { "title": "Schedule", "path": "schedule/schedule.md" }
+      ]
+    }
+  ]
+}
+```
 
 ### GitHub repo structure
 

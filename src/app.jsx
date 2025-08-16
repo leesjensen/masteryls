@@ -7,7 +7,7 @@ import Sidebar from './sidebar';
 import Course from './course.js';
 
 function App() {
-  const [course, setCourse] = React.useState(null);
+  const [course, setCourse] = React.useState(new Course(config));
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [sidebarVisible, setSidebarVisible] = useState(getSidebarPreference());
   const [editorVisible, setEditorVisible] = useState(false);
@@ -29,7 +29,7 @@ function App() {
     function handleBeforeUnload(e) {
       if (courseRef.current?.isDirty()) {
         e.preventDefault();
-        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        e.returnValue = 'You have uncommitted changes. Are you sure you want to leave?';
         return e.returnValue;
       }
     }
@@ -71,17 +71,16 @@ function App() {
   }
 
   function toggleEditor() {
-    console.log('toggle editor');
     setEditorVisible((prev) => !prev);
   }
 
   return (
     <div className="flex flex-col h-screen">
       <header className="items-center px-2 mb-1 border-b-1 py-2 bg-amber-200 border-gray-200 hidden sm:block ">
-        <h1 className="font-semibold text-lg text-gray-700">💡 {config.course.title}</h1>
+        <h1 className="font-semibold text-lg text-gray-700">💡 {course.title}</h1>
       </header>
 
-      <Toolbar config={config} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
+      <Toolbar course={course} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>

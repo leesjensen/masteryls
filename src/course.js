@@ -1,17 +1,35 @@
 export default class Course {
   static async create(config) {
-    const modules = await load(config);
-    return new Course(config, modules);
+    const courseData = await load(config);
+    return new Course(config, courseData);
   }
 
-  constructor(config, modules) {
+  constructor(config, courseData = { modules: [] }) {
     this.config = config;
-    this.modules = modules;
+    this.title = courseData.title;
+    this.schedule = courseData.schedule;
+    this.syllabus = courseData.syllabus;
+    this.links = courseData.links;
+    this.modules = courseData.modules;
 
     this.markdownCache = new Map();
     this.htmlCache = new Map();
-
     this.allTopics = this.modules.flatMap((m) => m.topics);
+  }
+
+  static copy(course) {
+    const newModules = course.modules.map((module) => ({
+      ...module,
+      topics: module.topics.map((topic) => ({ ...topic })),
+    }));
+    const newCourseData = { title: course.title, schedule: course.schedule, syllabus: course.syllabus, links: course.links, modules: newModules };
+    const newCourse = new Course(course.config, newCourseData);
+
+    newCourse.markdownCache = new Map(course.markdownCache);
+    newCourse.htmlCache = new Map(course.htmlCache);
+    newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
+
+    return newCourse;
   }
 
   moduleIndexOf(path) {
@@ -63,22 +81,6 @@ export default class Course {
     return this._downloadTopicMarkdown(topic.path);
   }
 
-  static copy(course) {
-    const newCourse = new Course(
-      { ...course.config },
-      course.modules.map((module) => ({
-        ...module,
-        topics: module.topics.map((topic) => ({ ...topic })),
-      }))
-    );
-    newCourse.markdownCache = new Map(course.markdownCache);
-    newCourse.htmlCache = new Map(course.htmlCache);
-
-    newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
-
-    return newCourse;
-  }
-
   async saveTopicMarkdown(updatedTopic, content) {
     const updatedCourse = Course.copy(this);
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
@@ -95,7 +97,7 @@ export default class Course {
 
     const markdown = await updatedCourse.topicMarkdown(savedTopic);
 
-    const gitHubUrl = `${this.config.links.gitHub.apiUrl}/${savedTopic.path.match(/\/contents\/(.+)$/)[1]}`;
+    const gitHubUrl = `${this.links.gitHub.apiUrl}/${savedTopic.path.match(/\/contents\/(.+)$/)[1]}`;
 
     // Get current file SHA
     const getRes = await this.makeGitHubApiRequest(gitHubUrl);
@@ -133,7 +135,7 @@ export default class Course {
   }
 
   async _convertTopicToHtml(topicUrl, markdown) {
-    let baseUrl = this.config.links.gitHub.rawUrl;
+    let baseUrl = this.links.gitHub.rawUrl;
     let contentPath = topicUrl.split('/main/')[1];
     contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
     if (contentPath) {
@@ -187,46 +189,54 @@ export default class Course {
 }
 ``;
 async function load(config) {
-  config.links = {
-    gitHub: {
-      url: `https://github.com/${config.github.account}/${config.github.repository}/blob/main`,
-      apiUrl: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents`,
-      rawUrl: `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`,
-    },
-    schedule: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/${config.course.schedule}`,
-    syllabus: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents/${config.course.syllabus}`,
+  const gitHub = {
+    url: `https://github.com/${config.github.account}/${config.github.repository}/blob/main`,
+    apiUrl: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents`,
+    rawUrl: `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`,
   };
 
-  const response = await fetch(`${config.links.gitHub.rawUrl}/course.json`);
+  const response = await fetch(`${gitHub.rawUrl}/course.json`);
   if (!response.ok) {
-    const response = await fetch(`${config.links.gitHub.rawUrl}/instruction/modules.md`);
-    const markdownContent = await response.text();
-
-    const instructionUrl = `${config.links.gitHub.rawUrl}/instruction/`;
-    return parseModulesMarkdown(config, instructionUrl, markdownContent);
+    return loadCourseFromModulesMarkdown(config, gitHub);
   }
   const courseData = await response.json();
+  courseData.links = courseData.links || {};
+  courseData.links.gitHub = gitHub;
+  courseData.schedule = courseData.schedule ? `${gitHub.rawUrl}/${courseData.schedule}` : undefined;
+  courseData.syllabus = courseData.syllabus ? `${gitHub.rawUrl}/${courseData.syllabus}` : undefined;
 
-  const contentUrl = `${config.links.gitHub.rawUrl}/`;
   for (const module of courseData.modules) {
     for (const topic of module.topics) {
-      topic.path = `${contentUrl}${topic.path}`;
+      topic.path = `${gitHub.rawUrl}/${topic.path}`;
     }
   }
 
-  return courseData.modules;
+  return courseData;
 }
 
-function parseModulesMarkdown(config, instructionUrl, markdownContent) {
+async function loadCourseFromModulesMarkdown(config, gitHub) {
+  const response = await fetch(`${gitHub.rawUrl}/instruction/modules.md`);
+  const markdownContent = await response.text();
+
+  const instructionUrl = `${gitHub.rawUrl}/instruction/`;
+  const modules = parseModulesMarkdown(gitHub, instructionUrl, markdownContent);
+
+  const schedule = `${gitHub.rawUrl}/schedule/schedule.md`;
+  const syllabus = `${gitHub.rawUrl}/instruction/syllabus/syllabus.md`;
+
+  return { title: config.github.repository, schedule, syllabus, modules, links: { gitHub } };
+}
+
+function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
   const lines = markdownContent.split('\n');
 
   const modules = [
     {
       title: 'Course info',
       topics: [
-        { title: 'Home', path: `${config.links.gitHub.apiUrl}/README.md` },
-        { title: 'Syllabus', path: config.links.syllabus || `${config.links.gitHub.apiUrl}/syllabus/syllabus.md` },
-        { title: 'Schedule', path: config.links.schedule || `${config.links.gitHub.apiUrl}/schedule/schedule.md` },
+        { title: 'Home', path: `${gitHub.apiUrl}/README.md` },
+        { title: 'Syllabus', path: `${gitHub.apiUrl}/syllabus/syllabus.md` },
+        { title: 'Schedule', path: `${gitHub.apiUrl}/schedule/schedule.md` },
       ],
     },
   ];

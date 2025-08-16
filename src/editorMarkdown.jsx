@@ -57,11 +57,12 @@ export default function EditorMarkdown({ course, setCourse, currentTopic, change
         setDirty(false);
       });
     }
-    return () => {
+    return async () => {
       if (dirtyRef.current) {
-        const shouldSave = window.confirm('You have unsaved changes. Save before leaving?');
+        const shouldSave = window.confirm('Do you want to stage your changes?');
         if (shouldSave) {
-          stage(contentRef.current);
+          const [updatedCourse] = await course.saveTopicMarkdown(currentTopic, contentRef.current);
+          setCourse(updatedCourse);
         }
       }
     };
