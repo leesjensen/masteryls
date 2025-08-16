@@ -95,39 +95,20 @@ export default class Course {
 
     const markdown = await updatedCourse.topicMarkdown(savedTopic);
 
-    const { github } = this.config;
-    const apiUrl = this.config.links.gitHub.apiUrl;
-    const filePath = savedTopic.path.match(/\/contents\/(.+)$/)[1];
+    const gitHubUrl = `${this.config.links.gitHub.apiUrl}/${savedTopic.path.match(/\/contents\/(.+)$/)[1]}`;
 
     // Get current file SHA
-    const getRes = await fetch(`${apiUrl}/${filePath}`, {
-      headers: {
-        accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${github.token}`,
-      },
-    });
+    const getRes = await this.makeRequest(gitHubUrl);
     const fileData = await getRes.json();
     const sha = fileData.sha;
-    const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
     // Commit to GitHub
-    const response = await fetch(`${apiUrl}/${filePath}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${github.token}`,
-        accept: 'application/vnd.github+json',
-      },
-      body: JSON.stringify({
-        message: commitMessage,
-        content: contentBase64,
-        sha,
-      }),
+    const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+    await this.makeRequest(gitHubUrl, 'PUT', {
+      message: commitMessage,
+      content: contentBase64,
+      sha,
     });
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error('Failed to commit to GitHub: ' + err);
-    }
 
     return [updatedCourse, savedTopic];
   }
@@ -144,13 +125,8 @@ export default class Course {
   }
 
   async _downloadTopicMarkdown(topicUrl) {
-    const fileResponse = await fetch(topicUrl, {
-      headers: {
-        accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${this.config.github.token}`,
-      },
-    });
-    const fileData = await fileResponse.json();
+    const response = await this.makeRequest(topicUrl);
+    const fileData = await response.json();
     const markdown = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
     this.markdownCache.set(topicUrl, markdown);
 
@@ -165,21 +141,13 @@ export default class Course {
       baseUrl += `/${contentPath}`;
     }
 
-    const response = await fetch('https://api.github.com/markdown', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.github.token}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-      body: JSON.stringify({
-        text: markdown,
-        mode: 'gfm',
-        context: `${this.config.github.account}/${this.config.github.repository}`,
-      }),
+    const response = await this.makeRequest('https://api.github.com/markdown', 'POST', {
+      text: markdown,
+      mode: 'gfm',
+      context: `${this.config.github.account}/${this.config.github.repository}`,
     });
-
-    let html = this._replaceImageLinks(baseUrl, await response.text());
+    let html = await response.text();
+    html = this._replaceImageLinks(baseUrl, html);
     html = this._postProcessTopicHTML(html);
     this.htmlCache.set(topicUrl, html);
 
@@ -201,6 +169,25 @@ export default class Course {
     });
 
     return html;
+  }
+
+  async makeRequest(url, method = 'GET', body = null) {
+    const request = {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.config.github.token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    };
+    if (body) {
+      request.headers['Content-Type'] = 'application/json';
+      request.body = JSON.stringify(body);
+    }
+    const response = await fetch(url, request);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+    }
+    return response;
   }
 
   static async _load(config) {
