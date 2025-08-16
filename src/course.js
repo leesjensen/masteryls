@@ -207,7 +207,11 @@ async function load(config) {
 
   for (const module of courseData.modules) {
     for (const topic of module.topics) {
-      topic.path = `${gitHub.rawUrl}/${topic.path}`;
+      if (topic.type && topic.type === 'video') {
+        topic.path = `${topic.path}`;
+      } else if (!topic.path.startsWith('http')) {
+        topic.path = `${gitHub.rawUrl}/${topic.path}`;
+      }
     }
   }
 
