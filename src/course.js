@@ -188,21 +188,31 @@ async function makeARequest(token, url, method = 'GET', body = null) {
     request.headers['Content-Type'] = 'application/json';
     request.body = JSON.stringify(body);
   }
-  const response = await fetch(url, request);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
-  }
-  return response;
+  return fetch(url, request);
 }
 
 async function load(config) {
-  const response = await makeARequest(config.github.token, `${config.links.gitHub.apiUrl}/instruction/modules.md`);
+  const response = await makeARequest(config.github.token, `${config.links.gitHub.apiUrl}/course.json`);
+  if (!response.ok) {
+    const response = await makeARequest(config.github.token, `${config.links.gitHub.apiUrl}/instruction/modules.md`);
+    const fileData = await response.json();
+    const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
 
+    const instructionUrl = `${config.links.gitHub.apiUrl}/instruction/`;
+    return parseModulesMarkdown(config, instructionUrl, markdownContent);
+  }
   const fileData = await response.json();
-  const markdownContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+  const jsonContent = new TextDecoder('utf-8').decode(Uint8Array.from(atob(fileData.content), (c) => c.charCodeAt(0)));
+  const parsedContent = JSON.parse(jsonContent);
 
-  const instructionUrl = `${config.links.gitHub.apiUrl}/instruction/`;
-  return parseModulesMarkdown(config, instructionUrl, markdownContent);
+  const contentUrl = `${config.links.gitHub.apiUrl}/`;
+  for (const module of parsedContent.modules) {
+    for (const topic of module.topics) {
+      topic.path = `${contentUrl}${topic.path}`;
+    }
+  }
+
+  return parsedContent.modules;
 }
 
 function parseModulesMarkdown(config, instructionUrl, markdownContent) {
