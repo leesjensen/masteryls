@@ -36,6 +36,17 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
     setOpenModuleIndexes(indexes);
   }, [currentTopic]);
 
+  function topicIcon(topic) {
+    switch (topic.type) {
+      case 'video':
+        return '🎥';
+      case 'quiz':
+        return '🧪';
+      default:
+        return '📄';
+    }
+  }
+
   if (!course) {
     return <div className="p-4 text-gray-500"></div>;
   }
@@ -54,7 +65,7 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
                 <ul className="list-none p-0 ml-4">
                   {item.topics.map((topic) => (
                     <li key={topic.path} className="mb-0.5 flex items-center">
-                      <span className="mr-2">{topic.type === 'video' ? '🎥' : '📄'}</span>
+                      <span className="mr-2">{topicIcon(topic)}</span>
                       <a onClick={() => changeTopic(topic)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
                         {topic.title}
                       </a>

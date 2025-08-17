@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useSwipeNavigation } from './useSwipeNavigation';
 import MarkdownInstruction from './markdownInstruction';
 import VideoInstruction from './videoInstruction';
+import QuizInstruction from './quizInstruction';
 
 export default function Instruction({ topic, changeTopic, course, navigateToAdjacentTopic }) {
   const containerRef = useSwipeNavigation(
@@ -9,17 +10,22 @@ export default function Instruction({ topic, changeTopic, course, navigateToAdja
     useCallback(() => navigateToAdjacentTopic('prev'), [course, topic])
   );
 
-  if (topic.type === 'video') {
-    return (
-      <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200">
-        <VideoInstruction topic={topic} />;
-      </section>
-    );
+  let instructionComponent;
+  switch (topic.type) {
+    case 'video':
+      instructionComponent = <VideoInstruction topic={topic} />;
+      break;
+    case 'quiz':
+      instructionComponent = <QuizInstruction topic={topic} changeTopic={changeTopic} course={course} />;
+      break;
+    default:
+      instructionComponent = <MarkdownInstruction topic={topic} changeTopic={changeTopic} course={course} />;
+      break;
   }
 
   return (
     <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200">
-      <MarkdownInstruction topic={topic} changeTopic={changeTopic} course={course} />
+      {instructionComponent}
     </section>
   );
 }

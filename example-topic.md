@@ -2,6 +2,18 @@
 
 This is the content of the instruction. It can include **bold text**, _italic text_, <sub>sub</sub>, <sup>super</sup>, and even [links](https://example.com).
 
+## Quiz
+
+This is a quiz in Mastery LS format
+
+```masteryls
+{"id":"39283", "title":"Multiple choice" }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+- [ ] This one has a [link](https://cow.com)
+- [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80
+```
+
 ## Lists
 
 - Item 1
