@@ -43,17 +43,18 @@ function handleContainerClick(event, course, changeTopic, topicUrl, containerRef
   if (anchor && anchor.href) {
     event.preventDefault();
     let href = anchor.getAttribute('href');
-    const match = href.match(/^([^#]*)(#.*)?$/);
-    href = match[1];
-    const hrefAnchor = match[2];
 
     if (href.startsWith('http')) {
       window.open(href, '_blank', 'noopener,noreferrer');
     } else {
-      if (hrefAnchor) {
+      const match = href.match(/^([^#]*)(#.*)?$/);
+      const hrefPath = match[1];
+      const hrefAnchor = match[2];
+
+      if (!hrefPath && hrefAnchor) {
         scrollToAnchor(hrefAnchor, containerRef);
-      } else {
-        const resolvedUrl = new URL(href, topicUrl).toString();
+      } else if (hrefPath) {
+        const resolvedUrl = new URL(hrefPath, topicUrl).toString();
         const targetTopic = course.topicFromPath(resolvedUrl, false);
         if (targetTopic) {
           changeTopic({ ...targetTopic, anchor: hrefAnchor });
@@ -65,13 +66,18 @@ function handleContainerClick(event, course, changeTopic, topicUrl, containerRef
 
 function scrollToAnchor(anchor, containerRef) {
   if (anchor) {
-    const headings = containerRef.current?.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    if (headings) {
-      const targetId = anchor.substring(1).replaceAll('-', ' ');
-      const targetElement = Array.from(headings).find((h) => h.textContent.trim().toLowerCase() === targetId.toLowerCase());
-      if (targetElement) {
-        targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' });
+    let anchorId = anchor.substring(1);
+    let targetElement = containerRef.current.querySelector(`#${CSS.escape(anchorId)}`);
+    if (!targetElement) {
+      const headings = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      if (headings) {
+        anchorId = anchorId.replaceAll('-', ' ');
+        targetElement = Array.from(headings).find((h) => h.textContent.trim().toLowerCase() === anchorId.toLowerCase());
       }
+    }
+
+    if (targetElement) {
+      targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' });
     }
   }
 }
