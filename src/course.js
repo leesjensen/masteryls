@@ -1,3 +1,5 @@
+import parseQuiz from './quizParser';
+
 export default class Course {
   static async create(config) {
     const courseData = await load(config);
@@ -150,6 +152,8 @@ export default class Course {
     let html = await response.text();
     html = this._replaceImageLinks(baseUrl, html);
     html = this._postProcessTopicHTML(html);
+    html = parseQuiz(html);
+
     this.htmlCache.set(topicUrl, html);
 
     return html;
