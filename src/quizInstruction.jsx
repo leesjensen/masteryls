@@ -18,11 +18,11 @@ function inlineLiteMarkdown(md) {
   // basic escapes for remaining
   return s;
 }
+
 function escapeHtml(s) {
   return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
-// Turn a language-masteryls code fence into an interactive quiz div string
 function renderQuizHtmlFromFence(raw) {
   // raw is the text content inside the code fence (exactly what you wrote in markdown)
   // Expect: first JSON object line, then "- [ ]" / "- [x]" items
@@ -86,7 +86,7 @@ function renderQuizHtmlFromFence(raw) {
 function injectQuizzesIntoHtml(html) {
   if (!html || typeof html !== 'string') return html;
 
-  // Parse into a DOM to safely locate <code class="language-masteryls">…</code>
+  // Parse into a DOM to safely locate <pre lang="masteryls">…</pre>
   const root = document.createElement('div');
   root.innerHTML = html;
 
@@ -113,7 +113,7 @@ export default function QuizInstruction(props) {
     // Your submission logic here. You get:
     // { id, title, type, selectedIndices, correctIndices, isCorrect }
     // Example:
-    // console.log('quiz submit', result);
+    console.log('quiz submit', result);
   }
 
   return (
