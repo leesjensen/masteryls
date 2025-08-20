@@ -1,31 +1,39 @@
-// QuizInstruction.jsx
 import React from 'react';
 import MarkdownInstruction from './markdownInstruction';
 
-// lightweight markdown-to-HTML for option text (links, images, strong/em)
-function inlineLiteMarkdown(md) {
-  if (!md) return '';
-  let s = md;
-  // images ![alt](url)
-  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => `<img alt="${escapeHtml(alt)}" src="${escapeHtml(url)}">`);
-  // links [text](url)
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => `<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`);
-  // strong **text**
-  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // em _text_ or *text*
-  s = s.replace(/(^|[\s(])_([^_]+)_/g, '$1<em>$2</em>');
-  s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  // basic escapes for remaining
-  return s;
+function injectQuiz(html) {
+  if (!html || typeof html !== 'string') return html;
+
+  // Parse into a DOM to safely locate <pre lang="masteryls">…</pre>
+  const root = document.createElement('div');
+  root.innerHTML = html;
+
+  const codeBlocks = root.querySelectorAll('pre[lang="masteryls"]');
+  codeBlocks.forEach((codeEl) => {
+    const pre = codeEl.closest('pre') || codeEl;
+    const raw = codeEl.textContent || '';
+
+    const temp = document.createElement('div');
+    temp.innerHTML = renderQuizHtmlFromFence(raw);
+
+    pre.replaceWith(...temp.childNodes);
+  });
+
+  return root.innerHTML;
 }
 
-function escapeHtml(s) {
-  return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
-}
-
+/**
+ * The quiz markdown format follow this example syntax:
+ *
+ * ```masteryls
+ * {"id":"39283", "title":"Multiple choice", "type":"multiple-choice" }
+ * - [ ] This is **not** the right answer
+ * - [x] This is _the_ right answer
+ * - [ ] This one has a [link](https://cow.com)
+ * - [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
+ * ```
+ */
 function renderQuizHtmlFromFence(raw) {
-  // raw is the text content inside the code fence (exactly what you wrote in markdown)
-  // Expect: first JSON object line, then "- [ ]" / "- [x]" items
   const jsonMatch = raw.match(/\{[\s\S]*?\}/);
   let meta = { id: undefined, title: 'Quiz', type: 'multiple-choice' };
   let itemsText = raw;
@@ -49,13 +57,12 @@ function renderQuizHtmlFromFence(raw) {
 
   const single = (meta.type || '').toLowerCase() === 'single-choice' || items.filter((i) => i.correct).length === 1;
 
-  // Build HTML with data attributes for delegation
   const inputsHtml = items
     .map((it, i) => {
       const input = `<input type="${single ? 'radio' : 'checkbox'}"
                              name="quiz-${meta.id ?? 'x'}"
-                             data-quiz-index="${i}"
-                             ${it.correct ? 'data-quiz-correct="true"' : ''}
+                             data-plugin-masteryls-index="${i}"
+                             ${it.correct ? 'data-plugin-masteryls-correct="true"' : ''}
                              class="mt-1" />`;
       const label = `<label class="cursor-pointer">${inlineLiteMarkdown(it.text)}</label>`;
       return `<div class="flex items-start gap-2">${input}${label}</div>`;
@@ -64,56 +71,75 @@ function renderQuizHtmlFromFence(raw) {
 
   return `
     <div class="my-6 p-4 rounded-2xl border shadow-sm"
-         data-quiz-root
-         data-quiz-id="${meta.id ?? ''}"
-         data-quiz-title="${escapeHtml(meta.title || '')}"
-         data-quiz-type="${escapeHtml(meta.type || (single ? 'single-choice' : 'multiple-choice'))}">
+         data-plugin-masteryls
+         data-plugin-masteryls-root
+         data-plugin-masteryls-id="${meta.id ?? ''}"
+         data-plugin-masteryls-title="${escapeHtml(meta.title || '')}"
+         data-plugin-masteryls-type="${escapeHtml(meta.type || (single ? 'single-choice' : 'multiple-choice'))}">
       <fieldset>
         ${meta.title ? `<legend class="font-semibold mb-3">${escapeHtml(meta.title)}</legend>` : ''}
         <div class="space-y-3">
           ${inputsHtml}
         </div>
-        <button type="button"
-                class="mt-4 px-4 py-2 rounded-xl border shadow-sm hover:shadow transition"
-                data-quiz-submit>
-          Submit
-        </button>
       </fieldset>
     </div>
   `;
 }
 
-function injectQuizzesIntoHtml(html) {
-  if (!html || typeof html !== 'string') return html;
+// lightweight markdown-to-HTML for option text (links, images, strong/em)
+function inlineLiteMarkdown(md) {
+  if (!md) return '';
+  let s = md;
+  // images ![alt](url)
+  s = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => `<img alt="${escapeHtml(alt)}" src="${escapeHtml(url)}">`);
+  // links [text](url)
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => `<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`);
+  // strong **text**
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // em _text_ or *text*
+  s = s.replace(/(^|[\s(])_([^_]+)_/g, '$1<em>$2</em>');
+  s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // basic escapes for remaining
+  return s;
+}
 
-  // Parse into a DOM to safely locate <pre lang="masteryls">…</pre>
-  const root = document.createElement('div');
-  root.innerHTML = html;
-
-  const codeBlocks = root.querySelectorAll('pre[lang="masteryls"]');
-  codeBlocks.forEach((codeEl) => {
-    // Most renderers wrap <code> inside <pre>; we’ll replace the <pre> with quiz
-    const pre = codeEl.closest('pre') || codeEl;
-    const raw = codeEl.textContent || '';
-
-    const quizHtml = renderQuizHtmlFromFence(raw);
-    const temp = document.createElement('div');
-    temp.innerHTML = quizHtml;
-
-    pre.replaceWith(...temp.childNodes);
-  });
-
-  return root.innerHTML;
+function escapeHtml(s) {
+  return String(s).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
 export default function QuizInstruction(props) {
   const { topic, changeTopic, course } = props;
 
-  function OnQuizSubmit(result) {
-    // Your submission logic here. You get:
-    // { id, title, type, selectedIndices, correctIndices, isCorrect }
-    // Example:
-    console.log('quiz submit', result);
+  function onQuizSubmit({ id, title, type, selectedIndices, correctIndices, isCorrect }) {
+    console.log('quiz submit', { isCorrect });
+  }
+
+  function handleQuizClick(event, quizRoot) {
+    if (event.target.hasAttribute('data-plugin-masteryls-index')) {
+      const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
+      const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
+      const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
+
+      // read selected & correct indices from DOM
+      const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
+      const selected = [];
+      const correct = [];
+      inputs.forEach((inp) => {
+        const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
+        if (inp.checked) selected.push(idx);
+        if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
+      });
+      selected.sort((a, b) => a - b);
+      correct.sort((a, b) => a - b);
+
+      const isCorrect = selected.length === correct.length && correct.every((i, k) => i === selected[k]);
+
+      onQuizSubmit?.({ id, title, type, selectedIndices: selected, correctIndices: correct, isCorrect });
+
+      // give visual feedback
+      quizRoot.classList.add('ring-2', isCorrect ? 'ring-green-500' : 'ring-red-500');
+      setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-green-500', 'ring-red-500'), 600);
+    }
   }
 
   return (
@@ -121,8 +147,13 @@ export default function QuizInstruction(props) {
       topic={topic}
       changeTopic={changeTopic}
       course={course}
-      postProcessHtml={injectQuizzesIntoHtml} // NEW: inject quizzes
-      onQuizSubmit={OnQuizSubmit} // NEW: handle submit
+      languagePlugins={[
+        {
+          lang: 'masteryls',
+          handler: handleQuizClick,
+          processor: injectQuiz,
+        },
+      ]}
     />
   );
 }

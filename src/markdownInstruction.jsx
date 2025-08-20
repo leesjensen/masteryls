@@ -14,13 +14,7 @@ mermaid.initialize({ startOnLoad: false });
  * }} QuizSubmitPayload
  */
 
-export default function MarkdownInstruction({
-  topic,
-  changeTopic,
-  course,
-  postProcessHtml, // NEW (optional)
-  onQuizSubmit, // NEW (optional)
-}) {
+export default function MarkdownInstruction({ topic, changeTopic, course, languagePlugins = [] }) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = React.useRef(null);
@@ -30,7 +24,12 @@ export default function MarkdownInstruction({
       setIsLoading(true);
       setContent('');
       course.topicHtml(topic.path).then((html) => {
-        const processed = typeof postProcessHtml === 'function' ? postProcessHtml(html) : html; // NEW
+        const processed = languagePlugins.reduce((acc, plugin) => {
+          if (plugin.processor) {
+            return plugin.processor(acc);
+          }
+          return acc;
+        }, html);
         setContent(processed);
         setIsLoading(false);
       });
@@ -52,55 +51,20 @@ export default function MarkdownInstruction({
     }
   }, [content]);
 
-  return (
-    <div
-      ref={containerRef}
-      className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}
-      dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }}
-      onClick={
-        (e) => handleContainerClick(e, { course, changeTopic, topicUrl: topic.path, containerRef, onQuizSubmit }) // CHANGED
-      }
-    />
-  );
+  return <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`} dangerouslySetInnerHTML={{ __html: content || '<div class="flex items-center justify-center"></div>' }} onClick={(e) => handleContainerClick(e, { course, changeTopic, topicUrl: topic.path, containerRef, languagePlugins })} />;
 }
 
 function handleContainerClick(event, ctx) {
-  const { course, changeTopic, topicUrl, containerRef, onQuizSubmit } = ctx;
+  const { course, changeTopic, topicUrl, containerRef, languagePlugins } = ctx;
 
-  // --- NEW: quiz submit delegation ---------------------------------------
-  const submitBtn = event.target.closest('[data-quiz-submit]');
-  if (submitBtn) {
-    event.preventDefault();
-
-    const quizRoot = submitBtn.closest('[data-quiz-root]');
-    if (quizRoot) {
-      const id = quizRoot.getAttribute('data-quiz-id') || undefined;
-      const title = quizRoot.getAttribute('data-quiz-title') || undefined;
-      const type = quizRoot.getAttribute('data-quiz-type') || undefined;
-
-      // read selected & correct indices from DOM
-      const inputs = Array.from(quizRoot.querySelectorAll('input[data-quiz-index]'));
-      const selected = [];
-      const correct = [];
-      inputs.forEach((inp) => {
-        const idx = Number(inp.getAttribute('data-quiz-index'));
-        if (inp.checked) selected.push(idx);
-        if (inp.getAttribute('data-quiz-correct') === 'true') correct.push(idx);
-      });
-      selected.sort((a, b) => a - b);
-      correct.sort((a, b) => a - b);
-
-      const isCorrect = selected.length === correct.length && correct.every((i, k) => i === selected[k]);
-
-      onQuizSubmit?.({ id, title, type, selectedIndices: selected, correctIndices: correct, isCorrect });
-
-      // optional simple UX touch: flash the quiz root
-      quizRoot.classList.add('ring-2', isCorrect ? 'ring-green-500' : 'ring-red-500');
-      setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-green-500', 'ring-red-500'), 600);
+  // Handle plugin notifications
+  languagePlugins.forEach((plugin) => {
+    const languageElement = event.target.closest(`[data-plugin-${plugin.lang}]`);
+    if (languageElement) {
+      plugin.handler?.(event, languageElement);
+      return;
     }
-    return; // don't continue into link handling
-  }
-  // -----------------------------------------------------------------------
+  });
 
   // Link handling (existing)
   const anchor = event.target.closest('a');
