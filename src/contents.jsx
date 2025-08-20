@@ -41,9 +41,11 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
       case 'video':
         return '🎥';
       case 'quiz':
-        return '🧪';
+        return '⏱';
+      case 'project':
+        return '⚙️';
       default:
-        return '📄';
+        return '-';
     }
   }
 

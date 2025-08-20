@@ -97,7 +97,8 @@ export default class Course {
 
     const markdown = await updatedCourse.topicMarkdown(savedTopic);
 
-    const gitHubUrl = `${this.links.gitHub.apiUrl}/${savedTopic.path.match(/\/contents\/(.+)$/)[1]}`;
+    const contentPath = savedTopic.path.match(/\/main\/(.+)$/);
+    const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
 
     // Get current file SHA
     const getRes = await this.makeGitHubApiRequest(gitHubUrl);
