@@ -100,7 +100,7 @@ export default class Course {
     const contentPath = savedTopic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
 
-    // Get current file SHA
+    // Get current file SHA - This will overwrite any changes made on GitHub since last fetch
     const getRes = await this.makeGitHubApiRequest(gitHubUrl);
     const fileData = await getRes.json();
     const sha = fileData.sha;
