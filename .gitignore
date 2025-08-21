@@ -1,3 +1,9 @@
 node_modules
 config.js
 dist
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

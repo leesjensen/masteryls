@@ -136,19 +136,14 @@ export default class Course {
   }
 
   async _convertTopicToHtml(topicUrl, markdown) {
-    let baseUrl = this.links.gitHub.rawUrl;
-    let contentPath = topicUrl.split('/main/')[1];
-    contentPath = contentPath.substring(0, contentPath.lastIndexOf('/'));
-    if (contentPath) {
-      baseUrl += `/${contentPath}`;
-    }
-
     const response = await this.makeGitHubApiRequest('https://api.github.com/markdown', 'POST', {
       text: markdown,
       mode: 'gfm',
       context: `${this.config.github.account}/${this.config.github.repository}`,
     });
     let html = await response.text();
+
+    const baseUrl = topicUrl.substring(0, topicUrl.lastIndexOf('/'));
     html = this._replaceImageLinks(baseUrl, html);
     html = this._postProcessTopicHTML(html);
 

@@ -22,7 +22,7 @@ function App() {
       if (savedTopicPath) {
         setTopic(loadedCourse.topicFromPath(savedTopicPath));
       } else {
-        setTopic({ title: 'Home', path: `${config.links.gitHub.apiUrl}/README.md` });
+        setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
       }
     });
 
