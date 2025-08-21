@@ -59,13 +59,16 @@ function renderQuizHtmlFromFence(raw) {
 
   const inputsHtml = items
     .map((it, i) => {
-      const input = `<input type="${useRadioButtons ? 'radio' : 'checkbox'}"
-                             name="quiz-${meta.id ?? 'x'}"
-                             data-plugin-masteryls-index="${i}"
-                             ${it.correct ? 'data-plugin-masteryls-correct="true"' : ''}
-                             class="mt-1" />`;
-      const label = `<label class="cursor-pointer">${inlineLiteMarkdown(it.text)}</label>`;
-      return `<div class="flex items-start gap-2">${input}${label}</div>`;
+      return `<div class="flex items-start gap-2">
+                <label class="cursor-pointer">
+                  <input type="${useRadioButtons ? 'radio' : 'checkbox'}"
+                    name="quiz-${meta.id ?? 'x'}"
+                    data-plugin-masteryls-index="${i}"
+                    ${it.correct ? 'data-plugin-masteryls-correct="true"' : ''}
+                    class="mt-1" />
+                  ${inlineLiteMarkdown(it.text)}
+                </label>
+              </div>`;
     })
     .join('');
 
@@ -111,39 +114,39 @@ export default function QuizInstruction(props) {
   }
 
   function handleQuizClick(event, quizRoot) {
-    if (event.target.hasAttribute('data-plugin-masteryls-index')) {
-      const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
-      const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
-      const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
+    const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
+    const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
+    const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
 
-      // read selected & correct indices from DOM
-      const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
-      const selected = [];
-      const correct = [];
-      inputs.forEach((inp) => {
-        const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
-        if (inp.checked) selected.push(idx);
-        if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
-      });
-      selected.sort((a, b) => a - b);
-      correct.sort((a, b) => a - b);
+    // read selected & correct indices from DOM
+    const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
+    const selected = [];
+    const correct = [];
+    inputs.forEach((inp) => {
+      const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
+      if (inp.checked) selected.push(idx);
+      if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
+    });
+    selected.sort((a, b) => a - b);
+    correct.sort((a, b) => a - b);
 
-      // Calculate percent correct
-      const total = correct.length;
-      const correctSelections = selected.filter((idx) => correct.includes(idx)).length;
-      const incorrectSelections = selected.filter((idx) => !correct.includes(idx)).length;
-      const matched = Math.max(0, correctSelections - incorrectSelections);
-      const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
+    console.log({ selected, correct });
 
-      onQuizSubmit?.({ id, title, type, selectedIndices: selected, correctIndices: correct, percentCorrect });
+    // Calculate percent correct
+    const total = correct.length;
+    const correctSelections = selected.filter((idx) => correct.includes(idx)).length;
+    const incorrectSelections = selected.filter((idx) => !correct.includes(idx)).length;
+    const matched = Math.max(0, correctSelections - incorrectSelections);
+    const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
-      // give visual feedback
-      let ringClass = 'ring-yellow-400';
-      if (percentCorrect === 100) ringClass = 'ring-green-500';
-      else if (percentCorrect === 0) ringClass = 'ring-red-500';
-      quizRoot.classList.add('ring-2', ringClass);
-      setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
-    }
+    onQuizSubmit?.({ id, title, type, selectedIndices: selected, correctIndices: correct, percentCorrect });
+
+    // give visual feedback
+    let ringClass = 'ring-yellow-400';
+    if (percentCorrect === 100) ringClass = 'ring-green-500';
+    else if (percentCorrect === 0) ringClass = 'ring-red-500';
+    quizRoot.classList.add('ring-2', ringClass);
+    setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
   }
 
   return (

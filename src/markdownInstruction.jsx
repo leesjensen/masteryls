@@ -58,13 +58,13 @@ function handleContainerClick(event, ctx) {
   const { course, changeTopic, topicUrl, containerRef, languagePlugins } = ctx;
 
   // Handle plugin notifications
-  languagePlugins.forEach((plugin) => {
+  for (const plugin of languagePlugins) {
     const languageElement = event.target.closest(`[data-plugin-${plugin.lang}]`);
     if (languageElement) {
       plugin.handler?.(event, languageElement);
       return;
     }
-  });
+  }
 
   // Link handling (existing)
   const anchor = event.target.closest('a');
