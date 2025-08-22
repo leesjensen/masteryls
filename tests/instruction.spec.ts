@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from 'playwright-test-coverage';
 
 test('basic display', async ({ page }) => {
   const courseResponse = {
@@ -18,19 +18,16 @@ test('basic display', async ({ page }) => {
   };
 
   await page.route('*/**/course.json', async (route) => {
-    console.log('course.json!!!!!!!!!!!!');
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ json: courseResponse });
   });
 
   await page.route('*/**/README.md', async (route) => {
-    console.log('readme!!!!!!!!!!!!');
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ body: '# Home\n\nsource markdown!' });
   });
 
   await page.route('*/**/markdown', async (route) => {
-    console.log('markdown!!!!!!!!!!!!');
     expect(route.request().method()).toBe('POST');
     await route.fulfill({ body: '<h1>Home</h1><p>rendered markdown</p>' });
   });
