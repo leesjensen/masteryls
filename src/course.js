@@ -145,18 +145,23 @@ export default class Course {
 
     const baseUrl = topicUrl.substring(0, topicUrl.lastIndexOf('/'));
     html = this._replaceImageLinks(baseUrl, html);
-    html = this._postProcessTopicHTML(html);
+    html = this._replaceMermaidFence(html);
 
     this.htmlCache.set(topicUrl, html);
 
     return html;
   }
 
-  _postProcessTopicHTML(html) {
-    html = html.replace(/<div class="highlight highlight-source-mermaid"><pre class="notranslate">([\s\S]*?)<\/pre><\/div>/g, (_, diagramContent) => {
-      const cleanDiagram = diagramContent.replace(/<[^>]*>/g, '').trim();
-      return `<div class="mermaid">${cleanDiagram}</div>`;
+  _replaceMermaidFence(html) {
+    html = html.replace(/<section[\s\S]*?data-type=["']mermaid["'][\s\S]*?<\/section>/g, (sectionHtml) => {
+      const dataPlainMatch = sectionHtml.match(/data-plain=["']([\s\S]*?)["']/);
+      if (dataPlainMatch && dataPlainMatch[1]) {
+        const content = dataPlainMatch[1].trim();
+        return `<div class="mermaid">${content}</div>`;
+      }
+      return sectionHtml;
     });
+
     return html;
   }
 
