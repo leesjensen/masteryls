@@ -193,7 +193,7 @@ async function load(config) {
   };
 
   const courseUrl = `${gitHub.rawUrl}/course.json`;
-\  const response = await fetch(courseUrl);
+  const response = await fetch(courseUrl);
   if (!response.ok) {
     return loadCourseFromModulesMarkdown(config, gitHub);
   }
