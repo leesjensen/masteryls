@@ -288,7 +288,7 @@ function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
   if (currentModule) {
     modules.push(currentModule);
   }
-  for (const module of courseData.modules) {
+  for (const module of modules) {
     for (const topic of module.topics) {
       topic.id = generateId();
     }
