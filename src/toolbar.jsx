@@ -13,7 +13,9 @@ export default function Toolbar({ course, sidebarVisible, manipulateSidebar, cur
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
       <div className="flex flex-row justify-start">
-        <div className="sm:hidden flex justify-center items-center w-[32px] bg-amber-200 ">💡</div>
+        <div className="sm:hidden flex justify-center items-center w-[48px] bg-amber-100 ">
+          <span className="bg-white border border-gray-300 rounded-full px-1 m-1">💡</span>
+        </div>
         <button className="w-12 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => manipulateSidebar(!sidebarVisible)}>
           {sidebarVisible ? '☰ ◀' : '☰ ▶'}
         </button>
