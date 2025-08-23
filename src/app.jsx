@@ -76,7 +76,7 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen">
-      <header className="items-center px-2 mb-1 border-b-1 py-2 bg-amber-50 border-gray-200 hidden sm:block ">
+      <header className="items-center border-b-1 bg-amber-50 border-gray-200 hidden sm:block ">
         <h1 className="font-semibold text-lg text-gray-700">
           <span className="inline-block bg-white border border-gray-300 rounded-full w-[32px] px-1.5 py-0.5  m-1">💡</span> {course.title}
         </h1>

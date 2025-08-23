@@ -24,7 +24,7 @@ export default function Instruction({ topic, changeTopic, course, navigateToAdja
   }
 
   return (
-    <section ref={containerRef} className="flex-1 overflow-auto my-2 rounded-xs border border-gray-200">
+    <section ref={containerRef} className="flex-1 overflow-auto rounded-xs border border-gray-200">
       {instructionComponent}
     </section>
   );
