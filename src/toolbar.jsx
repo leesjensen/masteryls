@@ -16,7 +16,7 @@ export default function Toolbar({ course, sidebarVisible, manipulateSidebar, cur
         <div className="sm:hidden flex justify-center items-center w-[48px] bg-amber-100 ">
           <span className="bg-white border border-gray-300 rounded-full px-1 m-1">💡</span>
         </div>
-        <button className="w-12 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => manipulateSidebar(!sidebarVisible)}>
+        <button className="w-12 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0  hover:text-amber-600 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => manipulateSidebar(!sidebarVisible)}>
           {sidebarVisible ? '☰ ◀' : '☰ ▶'}
         </button>
       </div>
@@ -53,10 +53,10 @@ export default function Toolbar({ course, sidebarVisible, manipulateSidebar, cur
         <button className="w-8 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => toggleEditor()}>
           {editing ? '📘' : '✏️'}
         </button>
-        <button className="w-8 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => navigateToAdjacentTopic('prev')}>
+        <button className="w-8 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:text-amber-600 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => navigateToAdjacentTopic('prev')}>
           ◀
         </button>
-        <button className="w-8 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => navigateToAdjacentTopic('next')}>
+        <button className="w-8 m-1 p-1.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0  hover:text-amber-600 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => navigateToAdjacentTopic('next')}>
           ▶
         </button>
       </div>
