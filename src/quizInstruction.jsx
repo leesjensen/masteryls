@@ -45,6 +45,26 @@ function renderQuizHtmlFromFence(raw) {
     } catch {}
     itemsText = raw.slice(jsonMatch.index + jsonMatch[0].length).trim();
   }
+  let controlHtml = generateControlHtml(meta, itemsText);
+  return `
+    <div class="my-6 p-4 rounded-2xl border shadow-sm"
+         data-plugin-masteryls
+         data-plugin-masteryls-root
+         data-plugin-masteryls-id="${meta.id ?? ''}"
+         data-plugin-masteryls-title="${meta.title}"
+         data-plugin-masteryls-type="${meta.type}">
+      <fieldset>
+        ${meta.title ? `<legend class="font-semibold mb-3">${meta.title}</legend>` : ''}
+        ${meta.body ? `<p class="mb-3">${inlineLiteMarkdown(meta.body)}</p>` : ''}
+        <div class="space-y-3">
+          ${controlHtml}
+        </div>
+      </fieldset>
+    </div>
+  `;
+}
+
+function generateControlHtml(meta, itemsText) {
   let controlHtml = <div></div>;
   if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
     const lines = itemsText
@@ -75,23 +95,27 @@ function renderQuizHtmlFromFence(raw) {
       .join('');
   } else if (meta.type === 'essay') {
     controlHtml = `<textarea name="quiz-${meta.id ?? 'x'}" class="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none transition-colors duration-200 placeholder-gray-400" placeholder="Enter your answer here..."></textarea>`;
-  }
-  return `
-    <div class="my-6 p-4 rounded-2xl border shadow-sm"
-         data-plugin-masteryls
-         data-plugin-masteryls-root
-         data-plugin-masteryls-id="${meta.id ?? ''}"
-         data-plugin-masteryls-title="${meta.title}"
-         data-plugin-masteryls-type="${meta.type}">
-      <fieldset>
-        ${meta.title ? `<legend class="font-semibold mb-3">${meta.title}</legend>` : ''}
-        ${meta.body ? `<p class="mb-3">${inlineLiteMarkdown(meta.body)}</p>` : ''}
-        <div class="space-y-3">
-          ${controlHtml}
+  } else if (meta.type === 'file-submission') {
+    controlHtml = `
+      <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors duration-200" 
+         ondrop="event.preventDefault(); const files = event.dataTransfer.files; if (files.length > 0) { event.target.querySelector('input[type=file]').files = files; event.target.classList.add('border-green-400', 'bg-green-50'); }" 
+         ondragover="event.preventDefault(); event.target.classList.add('border-blue-400', 'bg-blue-50');" 
+         ondragleave="event.target.classList.remove('border-blue-400', 'bg-blue-50');">
+      <input type="file" name="quiz-${meta.id ?? 'x'}" class="hidden" id="file-input-${meta.id ?? 'x'}" />
+      <label for="file-input-${meta.id ?? 'x'}" class="cursor-pointer">
+        <div class="text-gray-500">
+        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <p class="mt-2 text-sm">
+          <span class="font-medium text-blue-600 hover:text-blue-500">Click to upload</span> or drag and drop
+        </p>
         </div>
-      </fieldset>
-    </div>
-  `;
+      </label>
+      </div>`;
+  }
+
+  return controlHtml;
 }
 
 // lightweight markdown-to-HTML for option text (links, images, strong/em)
