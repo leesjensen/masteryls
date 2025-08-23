@@ -4,7 +4,7 @@ This is the content of the instruction. It can include **bold text**, _italic te
 
 ## Quiz
 
-This is a quiz in Mastery LS format
+Quizzes in Mastery LS format
 
 ```masteryls
 {"id":"39283", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
@@ -21,6 +21,10 @@ This is a quiz in Mastery LS format
 - [ ] This is **not** the right answer
 - [x] Another right answer
 - [ ] This is **not** the right answer
+```
+
+```masteryls
+{"id":"39283", "title":"Essay", "type":"essay", "body":"Simple **essay** question" }
 ```
 
 ## Lists
