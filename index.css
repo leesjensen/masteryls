@@ -9,3 +9,11 @@ pre,
 pre * {
   font-family: monospace, 'Courier New', Courier;
 }
+
+ul {
+  list-style: disc;
+}
+
+ol {
+  list-style: number;
+}

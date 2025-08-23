@@ -61,9 +61,28 @@ const topicContents = [
   },
 ];
 
+const defaultMarkdown = `
+# Home
+
+source markdown!
+
+* Item 1
+1. Item 2
+`;
+
+const defaultHtml = `
+<h1>Home</h1>
+<p>rendered markdown</p>
+<ul>
+  <li>Item 1</li>
+</ul>
+<ol>
+  <li>Item 2</li>
+</ol>`;
+
 async function initBasicCourse(props: { page: any; topicMarkdown?: string | undefined; topicHtml?: string | undefined }) {
-  const topicMarkdown = props.topicMarkdown || `# Home\n\nsource markdown!`;
-  const topicHtml = props.topicHtml || `<h1>Home</h1><p>rendered markdown</p>`;
+  const topicMarkdown = props.topicMarkdown || defaultMarkdown;
+  const topicHtml = props.topicHtml || defaultHtml;
 
   await props.page.route('*/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');
