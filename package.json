@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "playwright test",
-    "test:coverage": "nyc --reporter=json-summary --reporter=text playwright test"
+    "test:coverage": "COVERAGE=true nyc --reporter=json-summary --reporter=text playwright test"
   },
   "repository": {
     "type": "git",

@@ -1,4 +1,10 @@
 {
+  "include": ["src/**/*.{js,jsx,ts,tsx}"],
+  "exclude": ["**/*.d.ts", "**/*.test.*", "**/*.spec.*", "**/node_modules/**", "coverage/**", "dist/**", "tests/**"],
+  "reporter": ["text", "json-summary", "html", "lcov"],
+  "report-dir": "coverage",
+  "cache": false,
+  "all": true,
   "check-coverage": true,
   "branches": 0,
   "lines": 25,
