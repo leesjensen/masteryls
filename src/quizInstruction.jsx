@@ -41,25 +41,27 @@ function renderQuizHtmlFromFence(raw) {
   if (jsonMatch) {
     try {
       meta = { ...meta, ...JSON.parse(jsonMatch[0]) };
+      meta.type = meta.type.toLowerCase();
     } catch {}
     itemsText = raw.slice(jsonMatch.index + jsonMatch[0].length).trim();
   }
+  let controlHtml = <div></div>;
+  if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
+    const lines = itemsText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith('- ['));
+    const items = lines.map((line) => {
+      const correct = /^\-\s*\[\s*[xX]\s*\]/.test(line);
+      const text = line.replace(/^\-\s*\[\s*[xX ]\s*\]\s*/, '').trim();
+      return { text, correct };
+    });
 
-  const lines = itemsText
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l.startsWith('- ['));
-  const items = lines.map((line) => {
-    const correct = /^\-\s*\[\s*[xX]\s*\]/.test(line);
-    const text = line.replace(/^\-\s*\[\s*[xX ]\s*\]\s*/, '').trim();
-    return { text, correct };
-  });
+    const useRadioButtons = (meta.type || '').toLowerCase() === 'multiple-choice';
 
-  const useRadioButtons = (meta.type || '').toLowerCase() === 'multiple-choice';
-
-  const inputsHtml = items
-    .map((it, i) => {
-      return `<div class="flex items-start gap-2">
+    controlHtml = items
+      .map((it, i) => {
+        return `<div class="flex items-start gap-2">
                 <label class="cursor-pointer">
                   <input type="${useRadioButtons ? 'radio' : 'checkbox'}"
                     name="quiz-${meta.id ?? 'x'}"
@@ -69,9 +71,11 @@ function renderQuizHtmlFromFence(raw) {
                   ${inlineLiteMarkdown(it.text)}
                 </label>
               </div>`;
-    })
-    .join('');
-
+      })
+      .join('');
+  } else if (meta.type === 'essay') {
+    controlHtml = `<textarea name="quiz-${meta.id ?? 'x'}" class="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none transition-colors duration-200 placeholder-gray-400" placeholder="Enter your answer here..."></textarea>`;
+  }
   return `
     <div class="my-6 p-4 rounded-2xl border shadow-sm"
          data-plugin-masteryls
@@ -83,7 +87,7 @@ function renderQuizHtmlFromFence(raw) {
         ${meta.title ? `<legend class="font-semibold mb-3">${meta.title}</legend>` : ''}
         ${meta.body ? `<p class="mb-3">${inlineLiteMarkdown(meta.body)}</p>` : ''}
         <div class="space-y-3">
-          ${inputsHtml}
+          ${controlHtml}
         </div>
       </fieldset>
     </div>

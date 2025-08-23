@@ -172,7 +172,7 @@ test('editor', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).toBeChecked();
 });
 
-test('quiz', async ({ page }) => {
+test('quiz multiple choice', async ({ page }) => {
   const quizMarkdown = `
 # Quiz
 
@@ -217,6 +217,44 @@ Here is an example quiz
 
   await page.getByRole('radio', { name: 'This is the right answer' }).check();
   await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeChecked();
+});
+
+test('quiz essay', async ({ page }) => {
+  const quizMarkdown = `
+# Quiz
+
+Here is an example quiz
+
+\`\`\`masteryls
+{"id":"39283", "title":"Essay", "type":"essay", "body":"Simple **essay** question" }
+\`\`\`
+`;
+
+  const quizHtml = `
+<h1>Quiz</h1>
+<p>Here is an example quiz</p>
+<pre lang="masteryls" class="notranslate"><code class="notranslate">
+{"id":"39283", "title":"Essay", "type":"essay", "body":"Simple **essay** question" }
+</code></pre>
+`;
+
+  await page.route('*/**/topic1.md', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({ body: quizMarkdown });
+  });
+
+  await initBasicCourse({ page, topicHtml: quizHtml });
+
+  await page.goto('http://localhost:5173/');
+
+  await page.getByText('topic 1').click();
+
+  await expect(page.getByText('Essay', { exact: true })).toBeVisible();
+  await expect(page.getByText('Simple essay question')).toBeVisible();
+
+  await page.getByRole('textbox').click();
+  await page.getByRole('textbox').fill('example text');
+  await expect(page.getByRole('textbox')).toHaveValue('example text');
 });
 
 test('video', async ({ page }) => {
