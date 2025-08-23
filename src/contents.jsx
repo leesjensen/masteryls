@@ -59,7 +59,7 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
         <ul className="list-none p-0">
           {course.map((item, i) => (
             <li key={i} className="mb-1">
-              <button onClick={() => toggleModule(i)} className="no-underline text-gray-800 font-bold hover:text-blue-600 bg-transparent border-none cursor-pointer p-0 truncate max-w-full flex whitespace-nowrap overflow-hidden text-ellipsis items-center" aria-expanded={openModuleIndexes.includes(i)} title={item.title}>
+              <button onClick={() => toggleModule(i)} className="no-underline text-gray-500 font-semibold bg-transparent border-none cursor-pointer p-0 truncate max-w-full flex whitespace-nowrap overflow-hidden text-ellipsis items-center" aria-expanded={openModuleIndexes.includes(i)} title={item.title}>
                 <span className="mr-2">{openModuleIndexes.includes(i) ? '▼' : '▶'}</span>
                 {item.title}
               </button>
@@ -68,7 +68,7 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
                   {item.topics.map((topic) => (
                     <li key={topic.path} className="mb-0.5 flex items-center">
                       <span className="mr-2">{topicIcon(topic)}</span>
-                      <a onClick={() => changeTopic(topic)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-blue-600'}`} title={topic.title}>
+                      <a onClick={() => changeTopic(topic)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
                         {topic.title}
                       </a>
                       <span className="text-sm align-super text-amber-600">{topic.lastUpdated ? '*' : ''}</span>
