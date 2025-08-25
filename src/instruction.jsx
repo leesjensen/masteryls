@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { useSwipeNavigation } from './useSwipeNavigation';
 import MarkdownInstruction from './markdownInstruction';
 import VideoInstruction from './videoInstruction';
-import QuizInstruction from './quizInstruction';
+import QuizInstruction from './quiz/quizInstruction';
 
 export default function Instruction({ topic, changeTopic, course, navigateToAdjacentTopic }) {
   const containerRef = useSwipeNavigation(

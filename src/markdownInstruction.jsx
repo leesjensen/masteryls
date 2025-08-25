@@ -35,15 +35,8 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
     if (topic.path) {
       setIsLoading(true);
       setMarkdown('');
-      // Get raw markdown instead of HTML
       course.topicMarkdown(topic).then((md) => {
-        const processed = languagePlugins.reduce((acc, plugin) => {
-          if (plugin.processor) {
-            return plugin.processor(acc);
-          }
-          return acc;
-        }, md);
-        setMarkdown(processed);
+        setMarkdown(md);
         setIsLoading(false);
       });
     }
@@ -81,17 +74,18 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
         const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
         if (plugin?.processor) {
           // Convert the processed HTML to a React element
-          const processedHtml = plugin.processor(`<pre lang="masteryls">${content}</pre>`);
+          const pluginJsx = plugin.processor(content);
           return (
             <div
-              dangerouslySetInnerHTML={{ __html: processedHtml }}
               onClick={(e) => {
                 const masteryElement = e.target.closest('[data-plugin-masteryls]');
                 if (masteryElement && plugin.handler) {
                   plugin.handler(e, masteryElement);
                 }
               }}
-            />
+            >
+              {pluginJsx}
+            </div>
           );
         }
         return (
