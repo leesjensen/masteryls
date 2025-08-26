@@ -174,20 +174,16 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]}
           rehypePlugins={[
+            [rehypeRaw],
             [
               rehypeMermaid,
               {
                 mermaidConfig: {
                   theme: 'default',
-                  startOnLoad: true,
-                  flowchart: {
-                    useMaxWidth: true,
-                    htmlLabels: true,
-                  },
+                  flowchart: { useMaxWidth: true },
                 },
               },
             ],
-            [rehypeRaw],
           ]}
           components={{ ...customComponents, MermaidBlock }}
         >
