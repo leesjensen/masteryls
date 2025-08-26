@@ -6,6 +6,7 @@ import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
 import 'github-markdown-css/github-markdown-light.css';
+import './markdown.css';
 
 function scrollToAnchor(anchor, containerRef) {
   if (!containerRef.current || !anchor) return;
