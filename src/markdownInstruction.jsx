@@ -171,7 +171,26 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
   return (
     <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>
       {markdown ? (
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={{ ...customComponents, MermaidBlock }}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]}
+          rehypePlugins={[
+            [
+              rehypeMermaid,
+              {
+                mermaidConfig: {
+                  theme: 'default',
+                  startOnLoad: true,
+                  flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                  },
+                },
+              },
+            ],
+            [rehypeRaw],
+          ]}
+          components={{ ...customComponents, MermaidBlock }}
+        >
           {markdown}
         </ReactMarkdown>
       ) : (

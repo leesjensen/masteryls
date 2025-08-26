@@ -19,14 +19,11 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByText('WARNING This is a warning.')).toBeVisible();
   await expect(page.getByText('IMPORTANT This is an important.')).toBeVisible();
 
-  await page
-    .locator('div')
-    .filter({ hasText: /^Is it working\?$/ })
-    .click();
+  await expect(page.locator('div').filter({ hasText: /^Is it working\?$/ })).toBeVisible();
 
-  await page.getByRole('blockquote').click();
+  await expect(page.getByRole('blockquote')).toBeVisible();
 
-  await page.getByRole('separator').click();
+  await expect(page.getByRole('separator')).toBeVisible();
 
   await expect(page.getByText('😄 🚀 🎉 👍')).toBeVisible();
 
