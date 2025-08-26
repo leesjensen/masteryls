@@ -6,28 +6,35 @@ function Login({ setUser }) {
   const [password, setPassword] = useState('');
   const [showSignup, setShowSignup] = useState(false);
 
-  const courses = {
-    cs329: {
+  const courses = [
+    {
+      id: 'cs329',
       title: 'QA & DevOps',
       description: 'Description for QA & DevOps',
       progress: 50,
     },
-    cs240: {
+    {
+      id: 'cs240',
       title: 'Software Construction',
       description: 'Description for Software Construction',
       progress: 20,
     },
-    cs260: {
+    {
+      id: 'cs260',
       title: 'Web Programming',
       description: 'Description for Web Programming',
       progress: 80,
     },
-  };
+  ];
 
   const handleLogin = () => {
-    const user = { name, email, password, courses };
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
+    if (showSignup) {
+      const user = { name, email, password, courses };
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+    } else {
+      alert('Unknown user or password');
+    }
   };
 
   return (
@@ -61,7 +68,7 @@ function Login({ setUser }) {
             </label>
             <input id="password" type="password" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="••••••••" autoComplete={showSignup ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <button type="submit" className="w-full bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || !password || (showSignup && !name)}>
+          <button type="submit" className="w-full disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || !password || (showSignup && !name)}>
             {showSignup ? 'Create Account' : 'Log In'}
           </button>
         </form>
