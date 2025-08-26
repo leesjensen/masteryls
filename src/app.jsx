@@ -87,7 +87,7 @@ function App() {
   if (!user) {
     return <Login setUser={setUser} />;
   } else if (!course) {
-    return <Dashboard user={user} />;
+    return <Dashboard user={user} setUser={setUser} />;
   }
 
   return (
