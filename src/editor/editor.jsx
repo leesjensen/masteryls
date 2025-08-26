@@ -1,5 +1,5 @@
 import React from 'react';
-import EditorMarkdown from './editorMarkdown';
+import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
 
 export default function Editor({ course, setCourse, currentTopic, changeTopic }) {
@@ -29,7 +29,7 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
 
   return (
     <div className="p-2 flex-1 flex flex-col">
-      <EditorMarkdown course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
+      <MarkdownEditor course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
       <EditorFiles files={files} setFiles={setFiles} />
     </div>
   );
