@@ -7,6 +7,8 @@ import rehypeRaw from 'rehype-raw';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
 import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 function scrollToAnchor(anchor, containerRef) {
   if (!containerRef.current || !anchor) return;
@@ -71,6 +73,7 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
       const language = match?.[1];
 
       if (!inline && language === 'masteryls') {
+        // masteryls quiz blocks
         const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
         if (plugin?.processor) {
           const content = String(children).replace(/\n$/, '');
@@ -92,6 +95,16 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
           <pre className={className} {...props}>
             <code>{children}</code>
           </pre>
+        );
+      }
+
+      // Use SyntaxHighlighter for fenced code blocks with a language
+      if (!inline && language) {
+        const codeText = String(children).replace(/\n$/, '');
+        return (
+          <SyntaxHighlighter language={language} style={ghcolors} PreTag="div" {...props}>
+            {codeText}
+          </SyntaxHighlighter>
         );
       }
 

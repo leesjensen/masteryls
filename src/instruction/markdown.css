@@ -53,3 +53,8 @@
   vertical-align: text-bottom;
   fill: currentColor;
 }
+
+.markdown-body pre {
+  border: 1px solid #eee;
+  padding: 0.5rem;
+}
