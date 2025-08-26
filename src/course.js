@@ -13,7 +13,6 @@ export default class Course {
     this.modules = courseData.modules;
 
     this.markdownCache = new Map();
-    //    this.htmlCache = new Map();
     this.allTopics = this.modules.flatMap((m) => m.topics);
   }
 
@@ -26,7 +25,6 @@ export default class Course {
     const newCourse = new Course(course.config, newCourseData);
 
     newCourse.markdownCache = new Map(course.markdownCache);
-    //    newCourse.htmlCache = new Map(course.htmlCache);
     newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
 
     return newCourse;
@@ -120,28 +118,6 @@ export default class Course {
 
     return markdown;
   }
-
-  // _replaceMermaidFence(html) {
-  //   html = html.replace(/<section[\s\S]*?data-type=["']mermaid["'][\s\S]*?<\/section>/g, (sectionHtml) => {
-  //     const dataPlainMatch = sectionHtml.match(/data-plain=["']([\s\S]*?)["']/);
-  //     if (dataPlainMatch && dataPlainMatch[1]) {
-  //       const content = dataPlainMatch[1].trim();
-  //       return `<div class="mermaid">${content}</div>`;
-  //     }
-  //     return sectionHtml;
-  //   });
-
-  //   return html;
-  // }
-
-  // _replaceImageLinks(baseUrl, html) {
-  //   html = html.replace(/<a[^>]*><img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)><\/a>/g, (match, beforeSrc, url, afterSrc) => {
-  //     const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
-  //     return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
-  //   });
-
-  //   return html;
-  // }
 
   async makeGitHubApiRequest(url, method = 'GET', body = null) {
     const request = {

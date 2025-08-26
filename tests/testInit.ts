@@ -68,10 +68,22 @@ markdown!
 
 * Item 1
 1. Item 2
+
+![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100)
+
+![relative image](path/relative.svg)
 `;
 
 async function initBasicCourse(props: { page: any; topicMarkdown?: string | undefined }) {
   const topicMarkdown = props.topicMarkdown || defaultMarkdown;
+
+  await props.page.route('*/**/path/relative.svg', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({
+      body: '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
+      contentType: 'image/svg+xml',
+    });
+  });
 
   await props.page.route('*/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');

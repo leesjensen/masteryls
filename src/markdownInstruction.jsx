@@ -36,6 +36,7 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
       setIsLoading(true);
       setMarkdown('');
       course.topicMarkdown(topic).then((md) => {
+        md = processRelativeImagePaths(md, topic.path);
         setMarkdown(md);
         setIsLoading(false);
       });
@@ -56,6 +57,16 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
       }, 0);
     }
   }, [markdown]);
+
+  function processRelativeImagePaths(md, baseUrl) {
+    md = md.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, altText, url) => {
+      const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
+      const absUrl = `${basePath}/${url.replace(/^\.\//, '')}`;
+      return `![${altText}](${absUrl})`;
+    });
+
+    return md;
+  }
 
   const customComponents = {
     // Custom component for code blocks to handle mermaid and masteryls

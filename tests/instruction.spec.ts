@@ -9,6 +9,9 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByRole('button', { name: '▶', exact: true })).toBeVisible();
   await expect(page.getByText('Module 1')).toBeVisible();
   await expect(page.getByText('markdown!')).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Stock Photo' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'relative image' })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute('src', 'https://raw.githubusercontent.com/devops329/devops/main/path/relative.svg');
 });
 
 test('load from modules.md', async ({ page }) => {
