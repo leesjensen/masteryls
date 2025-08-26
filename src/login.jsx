@@ -6,30 +6,9 @@ function Login({ setUser }) {
   const [password, setPassword] = useState('');
   const [showSignup, setShowSignup] = useState(false);
 
-  const courses = [
-    {
-      id: 'cs329',
-      title: 'QA & DevOps',
-      description: 'Description for QA & DevOps',
-      progress: 50,
-    },
-    {
-      id: 'cs240',
-      title: 'Software Construction',
-      description: 'Description for Software Construction',
-      progress: 20,
-    },
-    {
-      id: 'cs260',
-      title: 'Web Programming',
-      description: 'Description for Web Programming',
-      progress: 80,
-    },
-  ];
-
   const handleLogin = () => {
     if (showSignup) {
-      const user = { name, email, password, courses };
+      const user = { name, email, password, courses: [] };
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
     } else {

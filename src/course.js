@@ -1,16 +1,11 @@
 export default class Course {
-  static async create(config) {
-    const courseData = await load(config);
-    return new Course(config, courseData);
+  static async create(courseInfo) {
+    const courseData = await load(courseInfo);
+    return new Course(courseData);
   }
 
-  constructor(config, courseData = { modules: [] }) {
-    this.config = config;
-    this.title = courseData.title;
-    this.schedule = courseData.schedule;
-    this.syllabus = courseData.syllabus;
-    this.links = courseData.links;
-    this.modules = courseData.modules;
+  constructor(courseData = { modules: [] }) {
+    this.courseData = courseData;
 
     this.markdownCache = new Map();
     this.allTopics = this.modules.flatMap((m) => m.topics);
@@ -21,8 +16,8 @@ export default class Course {
       ...module,
       topics: module.topics.map((topic) => ({ ...topic })),
     }));
-    const newCourseData = { title: course.title, schedule: course.schedule, syllabus: course.syllabus, links: course.links, modules: newModules };
-    const newCourse = new Course(course.config, newCourseData);
+    const newCourseData = { ...course.courseData, modules: newModules };
+    const newCourse = new Course(newCourseData);
 
     newCourse.markdownCache = new Map(course.markdownCache);
     newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
@@ -123,7 +118,7 @@ export default class Course {
     const request = {
       method,
       headers: {
-        Authorization: `Bearer ${this.config.github.token}`,
+        Authorization: `Bearer ${this.courseData.token}`,
         Accept: 'application/vnd.github.v3+json',
       },
     };
@@ -135,23 +130,25 @@ export default class Course {
   }
 }
 ``;
-async function load(config) {
+async function load(courseInfo) {
   const gitHub = {
-    url: `https://github.com/${config.github.account}/${config.github.repository}/blob/main`,
-    apiUrl: `https://api.github.com/repos/${config.github.account}/${config.github.repository}/contents`,
-    rawUrl: `https://raw.githubusercontent.com/${config.github.account}/${config.github.repository}/main`,
+    url: `https://github.com/${courseInfo.gitHub.account}/${courseInfo.gitHub.repository}/blob/main`,
+    apiUrl: `https://api.github.com/repos/${courseInfo.gitHub.account}/${courseInfo.gitHub.repository}/contents`,
+    rawUrl: `https://raw.githubusercontent.com/${courseInfo.gitHub.account}/${courseInfo.gitHub.repository}/main`,
   };
 
   const courseUrl = `${gitHub.rawUrl}/course.json`;
   const response = await fetch(courseUrl);
   if (!response.ok) {
-    return loadCourseFromModulesMarkdown(config, gitHub);
+    return loadCourseFromModulesMarkdown(courseInfo.title, gitHub);
   }
   const courseData = await response.json();
+  courseData.id = courseInfo.id;
   courseData.links = courseData.links || {};
   courseData.links.gitHub = gitHub;
   courseData.schedule = courseData.schedule ? `${gitHub.rawUrl}/${courseData.schedule}` : undefined;
   courseData.syllabus = courseData.syllabus ? `${gitHub.rawUrl}/${courseData.syllabus}` : undefined;
+  courseData.token = courseInfo.gitHub.token;
 
   for (const module of courseData.modules) {
     for (const topic of module.topics) {
@@ -168,7 +165,7 @@ async function load(config) {
 }
 
 // This is a fallback for when course.json is not found
-async function loadCourseFromModulesMarkdown(config, gitHub) {
+async function loadCourseFromModulesMarkdown(title, gitHub) {
   const response = await fetch(`${gitHub.rawUrl}/instruction/modules.md`);
   const markdownContent = await response.text();
 
@@ -178,7 +175,7 @@ async function loadCourseFromModulesMarkdown(config, gitHub) {
   const schedule = `${gitHub.rawUrl}/schedule/schedule.md`;
   const syllabus = `${gitHub.rawUrl}/instruction/syllabus/syllabus.md`;
 
-  return { title: config.github.repository, schedule, syllabus, modules, links: { gitHub } };
+  return { title, schedule, syllabus, modules, links: { gitHub } };
 }
 
 function generateId() {

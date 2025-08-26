@@ -24,31 +24,31 @@ function App() {
     }
   }, []);
 
-  // React.useEffect(() => {
-  //   Course.create(config).then((loadedCourse) => {
-  //     setCourse(loadedCourse);
+  function loadCourse(courseInfo) {
+    Course.create(courseInfo).then((loadedCourse) => {
+      setCourse(loadedCourse);
 
-  //     const savedTopicPath = localStorage.getItem('selectedTopic');
-  //     if (savedTopicPath) {
-  //       setTopic(loadedCourse.topicFromPath(savedTopicPath));
-  //     } else {
-  //       setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
-  //     }
-  //   });
+      const savedTopicPath = localStorage.getItem('selectedTopic');
+      if (savedTopicPath) {
+        setTopic(loadedCourse.topicFromPath(savedTopicPath));
+      } else {
+        setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
+      }
+    });
 
-  //   function handleBeforeUnload(e) {
-  //     if (courseRef.current?.isDirty()) {
-  //       e.preventDefault();
-  //       e.returnValue = 'You have uncommitted changes. Are you sure you want to leave?';
-  //       return e.returnValue;
-  //     }
-  //   }
-  //   window.addEventListener('beforeunload', handleBeforeUnload);
+    function handleBeforeUnload(e) {
+      if (courseRef.current?.isDirty()) {
+        e.preventDefault();
+        e.returnValue = 'You have uncommitted changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
-  //   return () => {
-  //     window.removeEventListener('beforeunload', handleBeforeUnload);
-  //   };
-  // }, []);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }
 
   function getSidebarPreference() {
     const sidebarPref = localStorage.getItem('sidebarVisible');
@@ -87,7 +87,7 @@ function App() {
   if (!user) {
     return <Login setUser={setUser} />;
   } else if (!course) {
-    return <Dashboard user={user} setUser={setUser} />;
+    return <Dashboard config={config} user={user} setUser={setUser} setCourse={loadCourse} />;
   }
 
   return (
