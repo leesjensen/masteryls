@@ -68,7 +68,7 @@ function CourseCard({ course, setSelected }) {
   const enrolled = course?.progress >= 0;
   return (
     <button key={course.id} type="button" onClick={() => setSelected(course)} className="flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-105 hover:shadow-lg" style={{ cursor: 'pointer' }}>
-      <div className={`w-full h-32 rounded-lg mb-4 flex items-center justify-center ${enrolled ? 'bg-amber-500' : 'bg-gray-300'}`}>
+      <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrolled ? 'bg-amber-500' : 'bg-gray-300'}`}>
         <span className="text-white text-xl font-bold">{course.title[0]}</span>
       </div>
       <div className="text-lg font-semibold mb-2 text-center">{course.title}</div>
