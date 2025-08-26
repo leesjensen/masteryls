@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkEmoji from 'remark-emoji';
+import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
 import mermaid from 'mermaid';
 import 'github-markdown-css/github-markdown-light.css';
@@ -180,7 +182,7 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
   return (
     <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>
       {markdown ? (
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={customComponents}>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[rehypeRaw]} components={customComponents}>
           {markdown}
         </ReactMarkdown>
       ) : (

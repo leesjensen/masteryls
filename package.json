@@ -38,7 +38,9 @@
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",
     "rehype-raw": "^7.0.0",
+    "remark-emoji": "^5.0.1",
     "remark-gfm": "^4.0.1",
+    "remark-github-blockquote-alert": "^2.0.0",
     "tailwindcss": "^4.1.11"
   }
 }

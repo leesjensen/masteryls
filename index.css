@@ -17,3 +17,51 @@ ul {
 ol {
   list-style: number;
 }
+
+/* GitHub-style alert styling */
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  border-left: 0.25rem solid;
+}
+
+.markdown-alert-note {
+  color: #0969da;
+  border-left-color: #0969da;
+}
+
+.markdown-alert-tip {
+  color: #1a7f37;
+  border-left-color: #1a7f37;
+}
+
+.markdown-alert-important {
+  color: #8250df;
+  border-left-color: #8250df;
+}
+
+.markdown-alert-warning {
+  color: #9a6700;
+  border-left-color: #9a6700;
+}
+
+.markdown-alert-caution {
+  color: #d1242f;
+  border-left-color: #d1242f;
+}
+
+.markdown-alert-title {
+  display: flex;
+  font-weight: 600;
+  align-items: center;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}

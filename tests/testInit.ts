@@ -66,8 +66,44 @@ const defaultMarkdown = `
 
 markdown!
 
+## Lists
+
 * Item 1
 1. Item 2
+
+
+## Emoji
+
+:smile: :rocket: :tada: :+1:
+
+## Alert
+
+> [!NOTE]
+> This is a note.
+
+> [!TIP]
+> This is a tip.
+
+> [!CAUTION]
+> This is a caution.
+
+> [!WARNING]
+> This is a warning.
+
+> [!IMPORTANT]
+>
+> This is an important.
+
+
+## Blockquote
+
+> This is a blockquote.
+
+## Horizontal Rule
+
+---
+
+# Images
 
 ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100)
 

@@ -8,7 +8,23 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByRole('banner')).toContainText('💡 QA & DevOps');
   await expect(page.getByRole('button', { name: '▶', exact: true })).toBeVisible();
   await expect(page.getByText('Module 1')).toBeVisible();
+
   await expect(page.getByText('markdown!')).toBeVisible();
+
+  await expect(page.getByRole('list').filter({ hasText: 'Item 1' })).toBeVisible();
+
+  await expect(page.getByText('NOTE This is a note.')).toBeVisible();
+  await expect(page.getByText('TIP This is a tip.')).toBeVisible();
+  await expect(page.getByText('CAUTION This is a caution.')).toBeVisible();
+  await expect(page.getByText('WARNING This is a warning.')).toBeVisible();
+  await expect(page.getByText('IMPORTANT This is an important.')).toBeVisible();
+
+  await page.getByRole('blockquote').click();
+
+  await page.getByRole('separator').click();
+
+  await expect(page.getByText('😄 🚀 🎉 👍')).toBeVisible();
+
   await expect(page.getByRole('img', { name: 'Stock Photo' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'relative image' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute('src', 'https://raw.githubusercontent.com/devops329/devops/main/path/relative.svg');
