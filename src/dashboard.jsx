@@ -29,7 +29,7 @@ export default function Dashboard({ config, user, setUser, loadCourse }) {
     <div className="max-w-4xl mx-auto mt-6 p-8 bg-white">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="font-bold text-3xl mb-2">Welcome!</h1>
+          <h1 className="font-bold text-3xl mb-2">Welcome {user.name}!</h1>
         </div>
         <button onClick={logout} className="px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
           Logout

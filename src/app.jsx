@@ -34,7 +34,7 @@ function App() {
     Course.create(courseInfo).then((loadedCourse) => {
       setCourse(loadedCourse);
 
-      localStorage.setItem('course', loadedCourse.id);
+      localStorage.setItem('course', courseInfo.id);
       const savedTopicPath = localStorage.getItem('selectedTopic');
       if (savedTopicPath) {
         setTopic(loadedCourse.topicFromPath(savedTopicPath));

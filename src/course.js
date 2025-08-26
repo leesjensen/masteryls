@@ -40,7 +40,13 @@ export default class Course {
   }
 
   topicFromPath(path, defaultToFirst = true) {
-    return this.allTopics.find((t) => t.path === path) || (defaultToFirst ? this.allTopics[0] : null);
+    const topic = this.allTopics.find((t) => t.path === path);
+    if (topic) {
+      return topic;
+    } else if (!topic && defaultToFirst) {
+      return this.allTopics[0];
+    }
+    return { title: 'unknown topic', path: path };
   }
 
   map(op) {
@@ -188,9 +194,9 @@ function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
     {
       title: 'Course info',
       topics: [
-        { title: 'Home', path: `${gitHub.apiUrl}/README.md` },
-        { title: 'Syllabus', path: `${gitHub.apiUrl}/syllabus/syllabus.md` },
-        { title: 'Schedule', path: `${gitHub.apiUrl}/schedule/schedule.md` },
+        { title: 'Home', path: `${gitHub.rawUrl}/README.md` },
+        { title: 'Syllabus', path: `${gitHub.rawUrl}/syllabus/syllabus.md` },
+        { title: 'Schedule', path: `${gitHub.rawUrl}/schedule/schedule.md` },
       ],
     },
   ];
