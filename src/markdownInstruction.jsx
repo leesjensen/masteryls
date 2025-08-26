@@ -4,6 +4,8 @@ import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
+import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
+//import 'react-markdown-mermaid/style.css';
 import 'github-markdown-css/github-markdown-light.css';
 
 function scrollToAnchor(anchor, containerRef) {
@@ -68,13 +70,10 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
-      // Handle quiz blocks
       if (!inline && language === 'masteryls') {
-        const content = String(children).replace(/\n$/, '');
-        // Find the masteryls plugin
         const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
         if (plugin?.processor) {
-          // Convert the processed HTML to a React element
+          const content = String(children).replace(/\n$/, '');
           const pluginJsx = plugin.processor(content);
           return (
             <div
@@ -167,10 +166,16 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
     },
   };
 
+  // When markdown changes, attempt to load mermaid (if present) and render any
+  // react-markdown-mermaid's rehype plugin will render mermaid blocks; no
+  // manual client-side rendering needed here.
+
+  const components = { ...customComponents, MermaidBlock };
+
   return (
     <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>
       {markdown ? (
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw]]} components={customComponents}>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
           {markdown}
         </ReactMarkdown>
       ) : (
