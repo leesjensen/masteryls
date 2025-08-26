@@ -8,7 +8,7 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByRole('banner')).toContainText('💡 QA & DevOps');
   await expect(page.getByRole('button', { name: '▶', exact: true })).toBeVisible();
   await expect(page.getByText('Module 1')).toBeVisible();
-  await expect(page.getByText('rendered markdown')).toBeVisible();
+  await expect(page.getByText('markdown!')).toBeVisible();
 });
 
 test('load from modules.md', async ({ page }) => {
@@ -38,7 +38,7 @@ test('load from modules.md', async ({ page }) => {
   await page.goto('http://localhost:5173/');
   await expect(page.getByRole('banner')).toContainText('💡 devops');
   await expect(page.getByText('Course info')).toBeVisible();
-  await expect(page.getByText('rendered markdown')).toBeVisible();
+  await expect(page.getByText('markdown!')).toBeVisible();
 });
 
 test('editor', async ({ page }) => {
@@ -47,7 +47,7 @@ test('editor', async ({ page }) => {
   await page.goto('http://localhost:5173/');
 
   await page.getByRole('button', { name: '✏️' }).click();
-  await expect(page.getByRole('textbox')).toContainText('# Home source markdown!');
+  await expect(page.getByRole('textbox')).toContainText('# Home markdown!');
 
   await expect(page.getByRole('button', { name: 'README.md markdown • 2.6 KB' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).not.toBeChecked();

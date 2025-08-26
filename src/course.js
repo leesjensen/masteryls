@@ -13,7 +13,7 @@ export default class Course {
     this.modules = courseData.modules;
 
     this.markdownCache = new Map();
-    this.htmlCache = new Map();
+    //    this.htmlCache = new Map();
     this.allTopics = this.modules.flatMap((m) => m.topics);
   }
 
@@ -26,7 +26,7 @@ export default class Course {
     const newCourse = new Course(course.config, newCourseData);
 
     newCourse.markdownCache = new Map(course.markdownCache);
-    newCourse.htmlCache = new Map(course.htmlCache);
+    //    newCourse.htmlCache = new Map(course.htmlCache);
     newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
 
     return newCourse;
@@ -57,20 +57,6 @@ export default class Course {
 
   isDirty() {
     return this.allTopics.some((topic) => topic.lastUpdated !== undefined);
-  }
-
-  async topicHtml(topicUrl) {
-    try {
-      if (this.htmlCache.has(topicUrl)) {
-        return this.htmlCache.get(topicUrl);
-      }
-
-      const markdown = await this._downloadTopicMarkdown(topicUrl);
-      return this._convertTopicToHtml(topicUrl, markdown);
-    } catch (e) {
-      console.error(e);
-      return '<p>Error loading content.</p>';
-    }
   }
 
   async topicMarkdown(topic) {
@@ -135,44 +121,27 @@ export default class Course {
     return markdown;
   }
 
-  async _convertTopicToHtml(topicUrl, markdown) {
-    const response = await this.makeGitHubApiRequest('https://api.github.com/markdown', 'POST', {
-      text: markdown,
-      mode: 'gfm',
-      context: `${this.config.github.account}/${this.config.github.repository}`,
-    });
-    let html = await response.text();
+  // _replaceMermaidFence(html) {
+  //   html = html.replace(/<section[\s\S]*?data-type=["']mermaid["'][\s\S]*?<\/section>/g, (sectionHtml) => {
+  //     const dataPlainMatch = sectionHtml.match(/data-plain=["']([\s\S]*?)["']/);
+  //     if (dataPlainMatch && dataPlainMatch[1]) {
+  //       const content = dataPlainMatch[1].trim();
+  //       return `<div class="mermaid">${content}</div>`;
+  //     }
+  //     return sectionHtml;
+  //   });
 
-    const baseUrl = topicUrl.substring(0, topicUrl.lastIndexOf('/'));
-    html = this._replaceImageLinks(baseUrl, html);
-    html = this._replaceMermaidFence(html);
+  //   return html;
+  // }
 
-    this.htmlCache.set(topicUrl, html);
+  // _replaceImageLinks(baseUrl, html) {
+  //   html = html.replace(/<a[^>]*><img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)><\/a>/g, (match, beforeSrc, url, afterSrc) => {
+  //     const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
+  //     return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
+  //   });
 
-    return html;
-  }
-
-  _replaceMermaidFence(html) {
-    html = html.replace(/<section[\s\S]*?data-type=["']mermaid["'][\s\S]*?<\/section>/g, (sectionHtml) => {
-      const dataPlainMatch = sectionHtml.match(/data-plain=["']([\s\S]*?)["']/);
-      if (dataPlainMatch && dataPlainMatch[1]) {
-        const content = dataPlainMatch[1].trim();
-        return `<div class="mermaid">${content}</div>`;
-      }
-      return sectionHtml;
-    });
-
-    return html;
-  }
-
-  _replaceImageLinks(baseUrl, html) {
-    html = html.replace(/<a[^>]*><img([^>]+)src=["'](?!https?:\/\/|\/)([^"']+)["']([^>]*)><\/a>/g, (match, beforeSrc, url, afterSrc) => {
-      const absUrl = `${baseUrl}/${url.replace(/^\.\//, '')}`;
-      return `<img${beforeSrc}src="${absUrl}"${afterSrc}>`;
-    });
-
-    return html;
-  }
+  //   return html;
+  // }
 
   async makeGitHubApiRequest(url, method = 'GET', body = null) {
     const request = {

@@ -64,25 +64,14 @@ const topicContents = [
 const defaultMarkdown = `
 # Home
 
-source markdown!
+markdown!
 
 * Item 1
 1. Item 2
 `;
 
-const defaultHtml = `
-<h1>Home</h1>
-<p>rendered markdown</p>
-<ul>
-  <li>Item 1</li>
-</ul>
-<ol>
-  <li>Item 2</li>
-</ol>`;
-
-async function initBasicCourse(props: { page: any; topicMarkdown?: string | undefined; topicHtml?: string | undefined }) {
+async function initBasicCourse(props: { page: any; topicMarkdown?: string | undefined }) {
   const topicMarkdown = props.topicMarkdown || defaultMarkdown;
-  const topicHtml = props.topicHtml || defaultHtml;
 
   await props.page.route('*/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');
@@ -94,14 +83,14 @@ async function initBasicCourse(props: { page: any; topicMarkdown?: string | unde
     await route.fulfill({ body: topicMarkdown });
   });
 
-  await props.page.route('*/**/markdown', async (route) => {
-    expect(route.request().method()).toBe('POST');
-    await route.fulfill({ body: topicHtml });
-  });
-
   await props.page.route('*/**/contents', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ json: topicContents });
+  });
+
+  await props.page.route('*/**/topic1.md', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({ body: topicMarkdown });
   });
 }
 

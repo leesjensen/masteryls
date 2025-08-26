@@ -28,7 +28,7 @@ test('load from modules.md', async ({ page }) => {
   await page.goto('http://localhost:5173/');
   await expect(page.getByRole('banner')).toContainText('💡 devops');
   await expect(page.getByText('Course info')).toBeVisible();
-  await expect(page.getByText('rendered markdown')).toBeVisible();
+  await expect(page.getByText('markdown!')).toBeVisible();
 });
 
 test('toc toggling', async ({ page }) => {
