@@ -1,5 +1,5 @@
 import React from 'react';
-import inlineLiteMarkdown from './inlineLitMarkdown';
+import inlineLiteMarkdown from './inlineLiteMarkdown';
 
 export default function MultipleChoiceQuiz({ meta, itemsText }) {
   const lines = itemsText
@@ -18,9 +18,9 @@ export default function MultipleChoiceQuiz({ meta, itemsText }) {
     <div>
       {items.map((it, i) => {
         return (
-          <div class="flex items-start gap-2">
-            <label class="cursor-pointer">
-              <input type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${meta.id}`} data-plugin-masteryls-index={i} {...(it.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} class="mt-1" />
+          <div key={i} className="flex items-start gap-2">
+            <label className="cursor-pointer">
+              <input type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${meta.id}`} data-plugin-masteryls-index={i} {...(it.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} className="mt-1" />
               {inlineLiteMarkdown(it.text)}
             </label>
           </div>

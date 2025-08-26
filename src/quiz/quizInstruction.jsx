@@ -3,7 +3,7 @@ import MarkdownInstruction from '../markdownInstruction';
 import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
 import SubmissionQuiz from './submissionQuiz';
-import inlineLiteMarkdown from './inlineLitMarkdown';
+import inlineLiteMarkdown from './inlineLiteMarkdown';
 
 export default function QuizInstruction(props) {
   const { topic, changeTopic, course } = props;
@@ -37,11 +37,11 @@ export default function QuizInstruction(props) {
     }
     let controlHtml = generateControlComponent(meta, itemsText);
     return (
-      <div class="my-6 p-4 rounded-2xl border shadow-sm" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id="${meta.id ?? ''}" data-plugin-masteryls-title="${meta.title}" data-plugin-masteryls-type="${meta.type}">
+      <div className="my-6 p-4 rounded-2xl border shadow-sm" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id="${meta.id ?? ''}" data-plugin-masteryls-title="${meta.title}" data-plugin-masteryls-type="${meta.type}">
         <fieldset>
-          {meta.title && <legend class="font-semibold mb-3">{meta.title}</legend>}
-          {meta.body && <p class="mb-3">{inlineLiteMarkdown(meta.body)}</p>}
-          <div class="space-y-3">{controlHtml}</div>
+          {meta.title && <legend className="font-semibold mb-3">{meta.title}</legend>}
+          {meta.body && <p className="mb-3">{inlineLiteMarkdown(meta.body)}</p>}
+          <div className="space-y-3">{controlHtml}</div>
         </fieldset>
       </div>
     );
