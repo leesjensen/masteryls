@@ -5,7 +5,6 @@ import remarkEmoji from 'remark-emoji';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
-//import 'react-markdown-mermaid/style.css';
 import 'github-markdown-css/github-markdown-light.css';
 
 function scrollToAnchor(anchor, containerRef) {
@@ -165,10 +164,6 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
       );
     },
   };
-
-  // When markdown changes, attempt to load mermaid (if present) and render any
-  // react-markdown-mermaid's rehype plugin will render mermaid blocks; no
-  // manual client-side rendering needed here.
 
   const components = { ...customComponents, MermaidBlock };
 
