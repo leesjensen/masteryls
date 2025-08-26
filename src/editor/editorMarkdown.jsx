@@ -1,5 +1,5 @@
 import React from 'react';
-import useLatest from './hooks/useLatest';
+import useLatest from '../hooks/useLatest';
 
 export default function EditorMarkdown({ course, setCourse, currentTopic, changeTopic }) {
   const [content, setContent] = React.useState('');

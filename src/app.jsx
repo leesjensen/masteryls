@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import config from '../config.js';
 import Toolbar from './toolbar';
-import Instruction from './instruction';
-import Editor from './editor';
+import Instruction from './instruction/instruction.jsx';
+import Editor from './editor/editor.jsx';
 import Sidebar from './sidebar';
 import Course from './course.js';
 
