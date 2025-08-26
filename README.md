@@ -148,11 +148,7 @@ This should make it so that I can host the whole thing as a static website
 
 ### Markdown support
 
-There are lots of markdown libraries out there such as `marked`, `react-markdown`, and `remark`. However, none of them directly supported GitHub markdown which is what I want to target. So instead I am going to use the GitHub API for rendering markdown. This involves the following process.
-
-1. Download the target markdown.
-1. Render the markdown to HTML using the GitHub API.
-1. Adding mermaid support had to be done manual.
+There are lots of markdown libraries out there such as `marked`, `react-markdown`, and `remark`. I went with react markdown and various remark plugins.
 
 ### Added Tailwind for style
 

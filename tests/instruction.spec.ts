@@ -19,6 +19,11 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByText('WARNING This is a warning.')).toBeVisible();
   await expect(page.getByText('IMPORTANT This is an important.')).toBeVisible();
 
+  await page
+    .locator('div')
+    .filter({ hasText: /^Is it working\?$/ })
+    .click();
+
   await page.getByRole('blockquote').click();
 
   await page.getByRole('separator').click();

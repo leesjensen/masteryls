@@ -3,11 +3,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
+import remarkMermaid from 'remark-mermaid-plugin';
 import rehypeRaw from 'rehype-raw';
-import mermaid from 'mermaid';
 import 'github-markdown-css/github-markdown-light.css';
-
-mermaid.initialize({ startOnLoad: false });
 
 function scrollToAnchor(anchor, containerRef) {
   if (!containerRef.current || !anchor) return;
@@ -53,10 +51,6 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
       } else if (containerRef.current) {
         containerRef.current.scrollTo({ top: 0, behavior: 'auto' });
       }
-      // Render mermaid diagrams after content is in the DOM
-      setTimeout(() => {
-        mermaid.run({ querySelector: '.mermaid', suppressErrors: true });
-      }, 0);
     }
   }, [markdown]);
 
@@ -71,14 +65,9 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
   }
 
   const customComponents = {
-    // Custom component for code blocks to handle mermaid and masteryls
     code({ node, inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
-
-      if (!inline && language === 'mermaid') {
-        return <div className="mermaid">{String(children).replace(/\n$/, '')}</div>;
-      }
 
       // Handle quiz blocks
       if (!inline && language === 'masteryls') {
@@ -182,7 +171,7 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
   return (
     <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>
       {markdown ? (
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[rehypeRaw]} components={customComponents}>
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert, remarkMermaid]} rehypePlugins={[rehypeRaw]} components={customComponents}>
           {markdown}
         </ReactMarkdown>
       ) : (

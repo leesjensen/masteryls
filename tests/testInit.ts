@@ -103,6 +103,14 @@ markdown!
 
 ---
 
+## Mermaid Diagram
+
+\`\`\`mermaid
+graph TD;
+  A[Start] --> B{Is it working?};
+  B -- Yes --> C[Great!];
+\`\`\`
+
 # Images
 
 ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100)
