@@ -22,12 +22,19 @@ function App() {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+
+    const savedCourse = localStorage.getItem('course');
+    if (savedCourse) {
+      const courseInfo = config.courses.find((c) => c.id === savedCourse);
+      loadCourse(courseInfo);
+    }
   }, []);
 
   function loadCourse(courseInfo) {
     Course.create(courseInfo).then((loadedCourse) => {
       setCourse(loadedCourse);
 
+      localStorage.setItem('course', loadedCourse.id);
       const savedTopicPath = localStorage.getItem('selectedTopic');
       if (savedTopicPath) {
         setTopic(loadedCourse.topicFromPath(savedTopicPath));
@@ -48,6 +55,15 @@ function App() {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
+  }
+
+  function changeCourse(newCourse) {
+    setCourse(newCourse);
+    if (newCourse === null) {
+      localStorage.removeItem('course');
+    } else {
+      localStorage.setItem('course', newCourse.id);
+    }
   }
 
   function getSidebarPreference() {
@@ -87,7 +103,7 @@ function App() {
   if (!user) {
     return <Login setUser={setUser} />;
   } else if (!course) {
-    return <Dashboard config={config} user={user} setUser={setUser} setCourse={loadCourse} />;
+    return <Dashboard config={config} user={user} setUser={setUser} loadCourse={loadCourse} />;
   }
 
   return (
@@ -98,13 +114,13 @@ function App() {
         </h1>
       </header>
 
-      <Toolbar course={course} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
+      <Toolbar course={course} setCourse={changeCourse} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <Sidebar course={course} currentTopic={topic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editorVisible={editorVisible} />
         </div>
-        {editorVisible ? <Editor course={course} setCourse={setCourse} currentTopic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
+        {editorVisible ? <Editor course={course} setCourse={changeCourse} currentTopic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
       </div>
     </div>
   );

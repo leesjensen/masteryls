@@ -5,7 +5,7 @@ export default class Course {
   }
 
   constructor(courseData = { modules: [] }) {
-    this.courseData = courseData;
+    Object.assign(this, courseData);
 
     this.markdownCache = new Map();
     this.allTopics = this.modules.flatMap((m) => m.topics);
@@ -16,8 +16,7 @@ export default class Course {
       ...module,
       topics: module.topics.map((topic) => ({ ...topic })),
     }));
-    const newCourseData = { ...course.courseData, modules: newModules };
-    const newCourse = new Course(newCourseData);
+    const newCourse = new Course({ ...course, modules: newModules });
 
     newCourse.markdownCache = new Map(course.markdownCache);
     newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
@@ -118,7 +117,7 @@ export default class Course {
     const request = {
       method,
       headers: {
-        Authorization: `Bearer ${this.courseData.token}`,
+        Authorization: `Bearer ${this.token}`,
         Accept: 'application/vnd.github.v3+json',
       },
     };

@@ -1,23 +1,24 @@
 import React, { useState } from 'react';
 
-export default function Dashboard({ config, user, setUser, setCourse }) {
+export default function Dashboard({ config, user, setUser, loadCourse }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
   };
 
   const viewCourse = (course) => {
-    setCourse(course);
+    loadCourse(course);
   };
 
-  // Helper to check if user is enrolled in a course
+  // Find full course info by id
+  const getCourseInfo = (courseId) => config.courses.find((c) => c.id === courseId);
+
   const isEnrolled = (courseId) => user.courses && user.courses.some((c) => c.id === courseId);
   const allEnrolled = () => config.courses.filter((course) => !isEnrolled(course.id)).length === 0;
 
-  // Add course to user
   const addCourse = (course) => {
     if (!isEnrolled(course.id)) {
-      const updatedCourses = [...(user.courses || []), { ...course, progress: 0 }];
+      const updatedCourses = [...(user.courses || []), { id: course.id, progress: 0 }];
       const updatedUser = { ...user, courses: updatedCourses };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -28,7 +29,7 @@ export default function Dashboard({ config, user, setUser, setCourse }) {
     <div className="max-w-4xl mx-auto mt-6 p-8 bg-white">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="font-bold text-3xl mb-2">Welcome, {user.name}!</h1>
+          <h1 className="font-bold text-3xl mb-2">Welcome!</h1>
         </div>
         <button onClick={logout} className="px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
           Logout
@@ -37,8 +38,10 @@ export default function Dashboard({ config, user, setUser, setCourse }) {
       <h2 className="border-t-2 border-gray-400 font-semibold mb-6 pt-1 text-xl text-gray-500">Your courses</h2>
       {user.courses && user.courses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {user.courses.map((course) => {
-            return <CourseCard key={course.id} course={course} setSelected={viewCourse} />;
+          {user.courses.map((uc) => {
+            const course = getCourseInfo(uc.id);
+            if (!course) return null;
+            return <CourseCard key={course.id} course={{ ...course, progress: uc.progress }} setSelected={viewCourse} />;
           })}
         </div>
       ) : (
