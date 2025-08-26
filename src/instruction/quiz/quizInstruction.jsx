@@ -35,13 +35,13 @@ export default function QuizInstruction(props) {
       } catch {}
       itemsText = raw.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
-    let controlHtml = generateControlComponent(meta, itemsText);
+    let controlJsx = generateControlComponent(meta, itemsText);
     return (
-      <div className="my-6 p-4 rounded-2xl border shadow-sm" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id="${meta.id ?? ''}" data-plugin-masteryls-title="${meta.title}" data-plugin-masteryls-type="${meta.type}">
+      <div className="p-2 rounded border shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
-          {meta.title && <legend className="font-semibold mb-3">{meta.title}</legend>}
-          {meta.body && <p className="mb-3">{inlineLiteMarkdown(meta.body)}</p>}
-          <div className="space-y-3">{controlHtml}</div>
+          {meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}
+          {meta.body && <p className="mb-3 break-words whitespace-pre-line">{inlineLiteMarkdown(meta.body)}</p>}
+          <div className="space-y-3">{controlJsx}</div>
         </fieldset>
       </div>
     );
