@@ -72,7 +72,7 @@ class Service {
       const enrollmentsArray = JSON.parse(enrollmentsJson);
       enrollmentsArray.forEach((enrollment) => {
         enrollment.courseInfo = config.courses.find((c) => c.id === enrollment.courseId);
-        enrollments.set(enrollment.id, enrollment);
+        enrollments.set(enrollment.courseId, enrollment);
       });
     }
     return enrollments;
@@ -107,9 +107,9 @@ class Service {
     this._writeEnrollments(enrollments);
   }
 
-  removeEnrollment(enrollmentId: string): Map<string, Enrollment> {
+  removeEnrollment(enrollment: Enrollment): Map<string, Enrollment> {
     const enrollments = this.enrollments();
-    enrollments.delete(enrollmentId);
+    enrollments.delete(enrollment.courseId);
     this._writeEnrollments(enrollments);
     return enrollments;
   }

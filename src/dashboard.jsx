@@ -16,7 +16,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   };
 
   const removeEnrollment = (enrollment) => {
-    setEnrollments(service.removeEnrollment(enrollment.id));
+    setEnrollments(service.removeEnrollment(enrollment));
   };
 
   return (
@@ -59,28 +59,42 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
 function CourseCard({ courseInfo, enrollment, select, remove }) {
   return (
-    <button key={courseInfo.id} type="button" onClick={() => select(courseInfo)} className="relative flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-105 hover:shadow-lg cursor-pointer">
-      <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrollment ? 'bg-amber-500' : 'bg-gray-300'}`}>
-        <span className="text-white text-xl font-bold">{courseInfo.title[0]}</span>
-      </div>
-      <div className="text-lg font-semibold mb-2 text-center">{courseInfo.title}</div>
-      <div className="text-gray-500 text-sm mb-3 text-center">{courseInfo.description}</div>
-      {enrollment && (
-        <div className="w-full mt-auto">
-          <div className="text-xs text-gray-700 mb-1">Progress</div>
-          <div className="bg-blue-100 rounded h-2 w-full mb-1 overflow-hidden">
-            <div className="bg-blue-500 h-full" style={{ width: `${enrollment.progress.mastery}%` }} />
+    <div className="grid">
+      <button key={courseInfo.id} type="button" onClick={() => select(courseInfo)} className="col-start-1 row-start-1 flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-102 hover:shadow-lg cursor-pointer">
+        <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrollment ? 'bg-amber-500' : 'bg-gray-300'}`}>
+          <span className="text-white text-xl font-bold">{courseInfo.title[0]}</span>
+        </div>
+
+        <div className="text-lg font-semibold mb-2 text-center">{courseInfo.title}</div>
+        <div className="text-gray-500 text-sm mb-3 text-center">{courseInfo.description}</div>
+
+        {enrollment && (
+          <div className="w-full mt-auto">
+            <div className="text-xs text-gray-700 mb-1">Progress</div>
+            <div className="bg-blue-100 rounded h-2 w-full mb-1 overflow-hidden">
+              <div className="bg-blue-500 h-full" style={{ width: `${enrollment.progress.mastery}%` }} />
+            </div>
+            <div className="text-xs text-gray-400">{enrollment.progress.mastery}% complete</div>
           </div>
-          <div className="text-xs text-gray-400">{enrollment.progress.mastery}% complete</div>
-        </div>
+        )}
+      </button>
+
+      {enrollment && remove && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            remove(enrollment);
+          }}
+          aria-label="Delete"
+          className="col-start-1 row-start-1 place-self-start justify-self-end -translate-y-3 translate-x-3 
+             inline-flex items-center justify-center w-7 h-7 rounded-full bg-white text-gray-600 text-xs shadow 
+             hover:text-gray-50 hover:bg-red-500 focus:outline-none"
+          title="Remove enrollment"
+        >
+          ✕
+        </button>
       )}
-      {remove && (
-        <div onClick={() => remove(enrollment)} className="absolute top-2 right-2 px-2 py-1 bg-gray-100 text-white text-xs rounded hover:bg-gray-200 flex items-center gap-1">
-          <span role="img" aria-label="Delete">
-            ❌
-          </span>
-        </div>
-      )}
-    </button>
+    </div>
   );
 }
