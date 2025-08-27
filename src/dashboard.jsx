@@ -1,27 +1,19 @@
 import React, { useState } from 'react';
 
-export default function Dashboard({ config, user, setUser, loadCourse }) {
+export default function Dashboard({ service, user, setUser, loadCourse }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
   };
 
-  const viewCourse = (course) => {
-    loadCourse(course);
+  const viewCourse = (enrollment) => {
+    loadCourse(enrollment);
   };
 
-  // Find full course info by id
-  const getCourseInfo = (courseId) => config.courses.find((c) => c.id === courseId);
-
-  const isEnrolled = (courseId) => user.courses && user.courses.some((c) => c.id === courseId);
-  const allEnrolled = () => config.courses.filter((course) => !isEnrolled(course.id)).length === 0;
-
-  const addCourse = (course) => {
-    if (!isEnrolled(course.id)) {
-      const updatedCourses = [...(user.courses || []), { id: course.id, progress: 0 }];
-      const updatedUser = { ...user, courses: updatedCourses };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+  const addEnrollment = (enrollment) => {
+    if (!service.isEnrolled(enrollment.courseInfo.id)) {
+      const enrollments = service.saveEnrollment(enrollment);
+      setEnrollments(enrollments);
     }
   };
 

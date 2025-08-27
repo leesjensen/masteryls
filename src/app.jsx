@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import config from '../config.js';
 import Toolbar from './toolbar';
 import Instruction from './instruction/instruction.jsx';
 import Editor from './editor/editor.jsx';
@@ -7,6 +6,7 @@ import Sidebar from './sidebar';
 import Course from './course.js';
 import Start from './start.jsx';
 import Dashboard from './dashboard.jsx';
+import service from '../service/service.js';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -18,26 +18,23 @@ function App() {
   courseRef.current = course;
 
   React.useEffect(() => {
-    const savedUser = localStorage.getItem('user');
+    const savedUser = service.currentUser();
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      setUser(savedUser);
     }
 
-    const savedCourse = localStorage.getItem('course');
-    if (savedCourse) {
-      const courseInfo = config.courses.find((c) => c.id === savedCourse);
-      loadCourse(courseInfo);
+    const enrollment = service.currentEnrollment();
+    if (enrollment) {
+      loadCourse(enrollment.courseInfo);
     }
   }, []);
 
-  function loadCourse(courseInfo) {
-    Course.create(courseInfo).then((loadedCourse) => {
+  function loadCourse(enrollment) {
+    Course.create(enrollment.courseInfo).then((loadedCourse) => {
       setCourse(loadedCourse);
 
-      localStorage.setItem('course', courseInfo.id);
-      const savedTopicPath = localStorage.getItem('selectedTopic');
-      if (savedTopicPath) {
-        setTopic(loadedCourse.topicFromPath(savedTopicPath));
+      if (enrollment.currentTopic) {
+        setTopic(loadedCourse.topicFromPath(enrollment.currentTopic));
       } else {
         setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
       }
@@ -106,7 +103,7 @@ function App() {
   if (!user) {
     return <Start setUser={setUser} />;
   } else if (!course) {
-    return <Dashboard config={config} user={user} setUser={setUser} loadCourse={loadCourse} />;
+    return <Dashboard service={service} user={user} setUser={setUser} loadCourse={loadCourse} />;
   }
 
   return (
