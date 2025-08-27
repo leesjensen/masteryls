@@ -120,13 +120,13 @@ export default class Course {
   }
 
   async makeGitHubApiRequest(url, method = 'GET', body = null) {
-    if (!this.GitHub || !this.GitHub.token) {
+    if (!this.gitHub || !this.gitHub.token) {
       throw new Error('GitHub token is not set');
     }
     const request = {
       method,
       headers: {
-        Authorization: `Bearer ${this.GitHub.token}`,
+        Authorization: `Bearer ${this.gitHub.token}`,
         Accept: 'application/vnd.github.v3+json',
       },
     };
