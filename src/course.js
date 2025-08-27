@@ -70,7 +70,6 @@ export default class Course {
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     savedTopic.lastUpdated = Date.now();
     updatedCourse.markdownCache.set(updatedTopic.path, content);
-    await updatedCourse._convertTopicToHtml(updatedTopic.path, content);
     return [updatedCourse, savedTopic];
   }
 
@@ -107,7 +106,6 @@ export default class Course {
 
     const markdown = await updatedCourse._downloadTopicMarkdown(topic.path);
     updatedCourse.markdownCache.set(topic.path, markdown);
-    await updatedCourse._convertTopicToHtml(topic.path, markdown);
     return [updatedCourse, topic, markdown];
   }
 
@@ -148,7 +146,7 @@ async function load(courseInfo) {
   const courseUrl = `${gitHub.rawUrl}/course.json`;
   const response = await fetch(courseUrl);
   if (!response.ok) {
-    return loadCourseFromModulesMarkdown(courseInfo.title, gitHub);
+    return loadCourseFromModulesMarkdown(courseInfo, gitHub);
   }
   const courseData = await response.json();
   courseData.id = courseInfo.id;
@@ -173,17 +171,19 @@ async function load(courseInfo) {
 }
 
 // This is a fallback for when course.json is not found
-async function loadCourseFromModulesMarkdown(title, gitHub) {
-  const response = await fetch(`${gitHub.rawUrl}/instruction/modules.md`);
+async function loadCourseFromModulesMarkdown(courseInfo, gitHub) {
+  const instructionPath = courseInfo.gitHub.instructionPath ?? 'instruction';
+  const instructionModules = courseInfo.gitHub.instructionModules ?? 'modules.md';
+  const instructionUrl = `${gitHub.rawUrl}/${instructionPath}/`;
+  const response = await fetch(`${instructionUrl}${instructionModules}`);
   const markdownContent = await response.text();
 
-  const instructionUrl = `${gitHub.rawUrl}/instruction/`;
   const modules = parseModulesMarkdown(gitHub, instructionUrl, markdownContent);
 
   const schedule = `${gitHub.rawUrl}/schedule/schedule.md`;
-  const syllabus = `${gitHub.rawUrl}/instruction/syllabus/syllabus.md`;
+  const syllabus = `${instructionUrl}syllabus/syllabus.md`;
 
-  return { title, schedule, syllabus, modules, gitHub, links: { gitHub } };
+  return { title: courseInfo.title, schedule, syllabus, modules, gitHub: courseInfo.gitHub, links: { gitHub } };
 }
 
 function generateId() {
