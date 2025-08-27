@@ -1,10 +1,9 @@
 import { test, expect } from 'playwright-test-coverage';
-import { initBasicCourse } from './testInit';
+import { initBasicCourse, navigateToCourse } from './testInit';
 
 test('toc toggling', async ({ page }) => {
   await initBasicCourse({ page });
-
-  await page.goto('http://localhost:5173/');
+  await navigateToCourse(page);
 
   await expect(page.getByText('topic 1')).toBeVisible();
   await expect(page.getByText('topic 2')).not.toBeVisible();
@@ -16,8 +15,7 @@ test('toc toggling', async ({ page }) => {
 
 test('settings', async ({ page }) => {
   await initBasicCourse({ page });
-
-  await page.goto('http://localhost:5173/');
+  await navigateToCourse(page);
 
   await page.getByText('Settings').click();
   await expect(page.getByRole('complementary')).toContainText('schedule/schedule.md');
@@ -25,8 +23,7 @@ test('settings', async ({ page }) => {
 
 test('settings editing', async ({ page }) => {
   await initBasicCourse({ page });
-
-  await page.goto('http://localhost:5173/');
+  await navigateToCourse(page);
 
   await page.getByRole('button', { name: '✏️' }).click();
   await page.getByText('Settings').click();

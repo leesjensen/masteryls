@@ -13,8 +13,8 @@ export default function Settings({ course, editorVisible }) {
     title: course.title || '',
     schedule: stripGithubPrefix(course.schedule, course),
     description: course.description || '',
-    githubAccount: course.config.github.account,
-    githubRepository: course.config.github.repository,
+    githubAccount: course.gitHub.account,
+    githubRepository: course.gitHub.repository,
   });
 
   const moduleCount = course.modules.length || 0;

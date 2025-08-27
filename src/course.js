@@ -120,10 +120,13 @@ export default class Course {
   }
 
   async makeGitHubApiRequest(url, method = 'GET', body = null) {
+    if (!this.GitHub || !this.GitHub.token) {
+      throw new Error('GitHub token is not set');
+    }
     const request = {
       method,
       headers: {
-        Authorization: `Bearer ${this.token}`,
+        Authorization: `Bearer ${this.GitHub.token}`,
         Accept: 'application/vnd.github.v3+json',
       },
     };
@@ -134,7 +137,7 @@ export default class Course {
     return fetch(url, request);
   }
 }
-``;
+
 async function load(courseInfo) {
   const gitHub = {
     url: `https://github.com/${courseInfo.gitHub.account}/${courseInfo.gitHub.repository}/blob/main`,
@@ -153,7 +156,7 @@ async function load(courseInfo) {
   courseData.links.gitHub = gitHub;
   courseData.schedule = courseData.schedule ? `${gitHub.rawUrl}/${courseData.schedule}` : undefined;
   courseData.syllabus = courseData.syllabus ? `${gitHub.rawUrl}/${courseData.syllabus}` : undefined;
-  courseData.token = courseInfo.gitHub.token;
+  courseData.gitHub = courseInfo.gitHub;
 
   for (const module of courseData.modules) {
     for (const topic of module.topics) {
@@ -180,7 +183,7 @@ async function loadCourseFromModulesMarkdown(title, gitHub) {
   const schedule = `${gitHub.rawUrl}/schedule/schedule.md`;
   const syllabus = `${gitHub.rawUrl}/instruction/syllabus/syllabus.md`;
 
-  return { title, schedule, syllabus, modules, links: { gitHub } };
+  return { title, schedule, syllabus, modules, gitHub, links: { gitHub } };
 }
 
 function generateId() {
