@@ -11,14 +11,27 @@ type CourseInfo = {
   id: string;
   title: string;
   description: string;
+  canvas?: string;
+  chat?: string;
+  gitHub: {
+    account: string;
+    repository: string;
+    token?: string;
+  };
+};
+
+type Progress = {
+  mastery: number;
 };
 
 type Enrollment = {
   id: string;
-  courseInfo: CourseInfo;
+  courseId: string;
   tocIndexes: number[];
   visibleSidebar: boolean;
   currentTopic: string | null;
+  progress: Progress;
+  courseInfo?: CourseInfo;
 };
 
 class Service {
@@ -26,13 +39,8 @@ class Service {
     return config.courses.find((c) => c.id === courseId);
   }
 
-  isEnrolled(courseId: string) {
-    const enrollments = this.enrollments();
-    return enrollments.has(courseId);
-  }
-
-  allEnrolled() {
-    return config.courses.filter((course) => !this.isEnrolled(course.id)).length === 0;
+  allEnrolled(enrollments: Map<string, Enrollment>) {
+    return config.courses.filter((course) => !enrollments.has(course.id)).length === 0;
   }
 
   currentUser(): User | null {
@@ -53,28 +61,67 @@ class Service {
     return null;
   }
 
+  courses(): CourseInfo[] {
+    return config.courses;
+  }
+
   enrollments(): Map<string, Enrollment> {
-    const enrollments = localStorage.getItem('enrollments');
-    if (enrollments) {
-      const enrollmentData = JSON.parse(enrollments);
-      Object.keys(enrollmentData).forEach((courseId) => {
-        enrollmentData[courseId].courseInfo = config.courses.find((c) => c.id === courseId);
+    const enrollments = new Map<string, Enrollment>();
+    const enrollmentsJson = localStorage.getItem('enrollments');
+    if (enrollmentsJson) {
+      const enrollmentsArray = JSON.parse(enrollmentsJson);
+      enrollmentsArray.forEach((enrollment) => {
+        enrollment.courseInfo = config.courses.find((c) => c.id === enrollment.courseId);
+        enrollments.set(enrollment.id, enrollment);
       });
-      return new Map<string, Enrollment>(Object.entries(enrollmentData));
     }
-    return new Map<string, Enrollment>();
+    return enrollments;
   }
 
   saveCurrentCourse(courseId: string): void {
     localStorage.setItem('currentCourse', courseId);
   }
 
-  saveEnrollment(enrollment: Enrollment): void {
-    const enrollments = localStorage.getItem('enrollments');
-    const enrollmentData = enrollments ? JSON.parse(enrollments) : {};
-    enrollmentData[enrollment.courseInfo.id] = enrollment;
-    localStorage.setItem('enrollments', JSON.stringify(enrollmentData));
+  createEnrollment(courseInfo: CourseInfo): [Enrollment, Map<string, Enrollment>] {
+    const enrollments = this.enrollments();
+
+    const enrollment: Enrollment = {
+      id: generateId(),
+      courseId: courseInfo.id,
+      courseInfo,
+      tocIndexes: [],
+      visibleSidebar: true,
+      currentTopic: null,
+      progress: { mastery: 0 },
+    };
+
+    enrollments.set(enrollment.courseId, enrollment);
+    this._writeEnrollments(enrollments);
+
+    return [enrollment, enrollments];
   }
+
+  saveEnrollment(enrollment: Enrollment): void {
+    const enrollments = this.enrollments();
+    enrollments.set(enrollment.courseId, enrollment);
+    this._writeEnrollments(enrollments);
+  }
+
+  removeEnrollment(enrollmentId: string): Map<string, Enrollment> {
+    const enrollments = this.enrollments();
+    enrollments.delete(enrollmentId);
+    this._writeEnrollments(enrollments);
+    return enrollments;
+  }
+
+  _writeEnrollments(enrollments: Map<string, Enrollment>): void {
+    let enrollmentArray = Array.from(enrollments.values()).map(({ courseInfo, ...rest }) => rest);
+    localStorage.setItem('enrollments', JSON.stringify(enrollmentArray));
+  }
+}
+
+function generateId() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
 }
 
 export default new Service();

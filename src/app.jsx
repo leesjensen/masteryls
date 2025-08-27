@@ -6,7 +6,7 @@ import Sidebar from './sidebar';
 import Course from './course.js';
 import Start from './start.jsx';
 import Dashboard from './dashboard.jsx';
-import service from '../service/service.js';
+import service from './service/service.js';
 
 function App() {
   const [user, setUser] = useState(null);
