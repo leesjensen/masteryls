@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Toolbar({ course, setCourse, sidebarVisible, manipulateSidebar, currentTopic, changeTopic, navigateToAdjacentTopic, editing, toggleEditor }) {
+export default function Toolbar({ course, closeCourse, sidebarVisible, manipulateSidebar, currentTopic, changeTopic, navigateToAdjacentTopic, editing, toggleEditor }) {
   function gitHubUrl(url) {
     return url.replace(course.links.gitHub.rawUrl, course.links.gitHub.url);
   }
@@ -59,7 +59,7 @@ export default function Toolbar({ course, setCourse, sidebarVisible, manipulateS
         <button className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0  hover:text-amber-600 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => navigateToAdjacentTopic('next')}>
           ▶
         </button>
-        <button className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => setCourse(null)}>
+        <button className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => closeCourse()}>
           ❌
         </button>
       </div>
