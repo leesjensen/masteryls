@@ -55,11 +55,6 @@
 }
 
 .markdown-body pre {
-  border: 1px solid #eee;
   padding: 0.5rem;
-}
-
-.markdown-body pre,
-.markdown-body pre * {
-  font-family: monospace, 'Courier New', Courier;
+  font-size: 1rem;
 }
