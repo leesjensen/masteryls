@@ -6,6 +6,7 @@ import Editor from './editor/editor.jsx';
 import Sidebar from './sidebar';
 import Course from './course.js';
 import Login from './login.jsx';
+import Start from './start.jsx';
 import Dashboard from './dashboard.jsx';
 
 function App() {
@@ -104,7 +105,7 @@ function App() {
   }
 
   if (!user) {
-    return <Login setUser={setUser} />;
+    return <Start setUser={setUser} />;
   } else if (!course) {
     return <Dashboard config={config} user={user} setUser={setUser} loadCourse={loadCourse} />;
   }

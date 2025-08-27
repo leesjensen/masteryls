@@ -47,9 +47,14 @@ function Login({ setUser }) {
             </label>
             <input id="password" type="password" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="••••••••" autoComplete={showSignup ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <button type="submit" className="w-full disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || !password || (showSignup && !name)}>
-            {showSignup ? 'Create Account' : 'Log In'}
-          </button>
+          <div className="flex space-x-2">
+            <button type="submit" className="flex-1 disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || !password || (showSignup && !name)}>
+              {showSignup ? 'Create Account' : 'Log In'}
+            </button>
+            <button type="button" className="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 rounded transition" onClick={() => setUser(null)}>
+              Cancel
+            </button>
+          </div>
         </form>
         <div className="mt-4 text-center">
           {showSignup ? (
