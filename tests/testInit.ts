@@ -118,10 +118,8 @@ graph TD;
 ![relative image](path/relative.svg)
 `;
 
-async function initBasicCourse(props: { page: any; topicMarkdown?: string | undefined }) {
-  const topicMarkdown = props.topicMarkdown || defaultMarkdown;
-
-  await props.page.route('*/**/path/relative.svg', async (route) => {
+async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page: any; topicMarkdown?: string }) {
+  await page.route('*/**/path/relative.svg', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({
       body: '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
@@ -129,25 +127,38 @@ async function initBasicCourse(props: { page: any; topicMarkdown?: string | unde
     });
   });
 
-  await props.page.route('*/**/course.json', async (route) => {
+  await page.route('*/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ json: courseJson });
   });
 
-  await props.page.route('*/**/README.md', async (route) => {
+  await page.route('*/**/README.md', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ body: topicMarkdown });
   });
 
-  await props.page.route('*/**/contents', async (route) => {
+  await page.route('*/**/contents', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ json: topicContents });
   });
 
-  await props.page.route('*/**/topic1.md', async (route) => {
+  await page.route('*/**/topic1.md', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ body: topicMarkdown });
   });
 }
 
-export { initBasicCourse };
+async function navigateToCourse(page: any) {
+  await page.goto('http://localhost:5173/');
+
+  await page.getByRole('button', { name: 'Login / Register' }).click();
+  await page.getByRole('button', { name: "Don't have an account? Create" }).click();
+  await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
+  await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('toomanysecrets');
+  await page.getByRole('button', { name: 'Create Account' }).click();
+  await page.getByRole('button', { name: 'Q QA & DevOps Description for' }).click();
+  await page.getByRole('button', { name: 'Q QA & DevOps Description for' }).click();
+}
+
+export { initBasicCourse, navigateToCourse };

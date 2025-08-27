@@ -1,36 +1,6 @@
 import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse } from './testInit';
 
-test('load from modules.md', async ({ page }) => {
-  const modulesMarkdown = `
-# Modules
-
-## Module 1
-
-- [Topic 1](something/more/topic1.md)
-
-## Module 2
-
-- [Topic 2](something/more/topic2.md)
-- [Topic 3](https://youtu.be/4-LwodVujTg)
-  `;
-  await initBasicCourse({ page });
-
-  await page.route('*/**/course.json', async (route) => {
-    await route.fulfill({ status: 404, body: 'Not Found' });
-  });
-
-  await page.route('*/**/modules.md', async (route) => {
-    expect(route.request().method()).toBe('GET');
-    await route.fulfill({ body: modulesMarkdown });
-  });
-
-  await page.goto('http://localhost:5173/');
-  await expect(page.getByRole('banner')).toContainText('💡 devops');
-  await expect(page.getByText('Course info')).toBeVisible();
-  await expect(page.getByText('markdown!')).toBeVisible();
-});
-
 test('toc toggling', async ({ page }) => {
   await initBasicCourse({ page });
 

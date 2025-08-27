@@ -1,5 +1,5 @@
 import { test, expect } from 'playwright-test-coverage';
-import { initBasicCourse } from './testInit';
+import { initBasicCourse, navigateToCourse } from './testInit';
 
 test('quiz multiple choice', async ({ page }) => {
   const quizMarkdown = `
@@ -14,8 +14,7 @@ test('quiz multiple choice', async ({ page }) => {
 `;
 
   await initBasicCourse({ page, topicMarkdown: quizMarkdown });
-
-  await page.goto('http://localhost:5173/');
+  await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
 
@@ -42,8 +41,7 @@ test('quiz multiple select', async ({ page }) => {
 `;
 
   await initBasicCourse({ page, topicMarkdown: quizMarkdown });
-
-  await page.goto('http://localhost:5173/');
+  await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
 
@@ -65,8 +63,7 @@ test('quiz essay', async ({ page }) => {
 `;
 
   await initBasicCourse({ page, topicMarkdown: quizMarkdown });
-
-  await page.goto('http://localhost:5173/');
+  await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
 
@@ -87,11 +84,27 @@ test('quiz submission file', async ({ page }) => {
 `;
 
   await initBasicCourse({ page, topicMarkdown: quizMarkdown });
-
-  await page.goto('http://localhost:5173/');
+  await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
 
   await expect(page.getByText('File submission', { exact: true })).toBeVisible();
   await expect(page.getByText('Simple file submission question')).toBeVisible();
+});
+
+test('quiz submission url', async ({ page }) => {
+  const quizMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4e5f6789012345678901234bb", "title":"URL submission", "type":"url-submission", "allowComment":true, "body":"Simple **url submission** question" }
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: quizMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+
+  await expect(page.getByText('URL submission', { exact: true })).toBeVisible();
+  await expect(page.getByText('Simple url submission question')).toBeVisible();
 });
