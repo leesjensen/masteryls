@@ -1,0 +1,32 @@
+import { test, expect } from 'playwright-test-coverage';
+import { initBasicCourse, register } from './testInit';
+
+test('dashboard join/leave courses', async ({ page }) => {
+  await initBasicCourse({ page });
+  await register(page);
+
+  await expect(page.getByRole('heading', { name: 'Join a course' })).toBeVisible();
+
+  await expect(page.locator('#root')).toContainText('You are not enrolled in any courses. Select one below to get started.');
+  await expect(page.locator('#root')).not.toContainText('0% complete');
+  await page.getByRole('button', { name: 'Q QA & DevOps Description for' }).click();
+  await expect(page.getByRole('button', { name: 'Q QA & DevOps Description for' })).toBeVisible();
+  await expect(page.locator('#root')).toContainText('0% complete');
+  await page.getByRole('button', { name: 'Delete' }).click();
+  await expect(page.locator('#root')).not.toContainText('0% complete');
+
+  await page.getByRole('button', { name: 'Q QA & DevOps Description for' }).click();
+  await page.getByRole('button', { name: 'S Software Construction' }).click();
+  await page.getByRole('button', { name: 'W Web Programming Description' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Join a course' })).not.toBeVisible();
+});
+
+test('dashboard logout', async ({ page }) => {
+  await initBasicCourse({ page });
+  await register(page);
+
+  await page.getByRole('button', { name: 'Logout' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Master Your Learning' })).toBeVisible();
+});

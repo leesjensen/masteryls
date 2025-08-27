@@ -161,4 +161,15 @@ async function navigateToCourse(page: any) {
   await page.getByRole('button', { name: 'Q QA & DevOps Description for' }).click();
 }
 
-export { initBasicCourse, navigateToCourse };
+async function register(page: any) {
+  await page.goto('http://localhost:5173/');
+
+  await page.getByRole('button', { name: 'Login / Register' }).click();
+  await page.getByRole('button', { name: "Don't have an account? Create" }).click();
+  await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
+  await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('toomanysecrets');
+  await page.getByRole('button', { name: 'Create Account' }).click();
+}
+
+export { initBasicCourse, navigateToCourse, register };
