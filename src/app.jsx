@@ -5,7 +5,6 @@ import Instruction from './instruction/instruction.jsx';
 import Editor from './editor/editor.jsx';
 import Sidebar from './sidebar';
 import Course from './course.js';
-import Login from './login.jsx';
 import Start from './start.jsx';
 import Dashboard from './dashboard.jsx';
 
