@@ -53,13 +53,9 @@ class Service {
   currentEnrollment(): Enrollment | null {
     const currentCourse = localStorage.getItem('currentCourse');
     if (currentCourse) {
-      const enrollments = localStorage.getItem('enrollments');
+      const enrollments = this.enrollments();
       if (enrollments) {
-        const enrollment = JSON.parse(enrollments)[currentCourse];
-        if (enrollment) {
-          enrollment.courseInfo = config.courses.find((c) => c.id === currentCourse);
-          return enrollment;
-        }
+        return enrollments.get(currentCourse) || null;
       }
     }
     return null;

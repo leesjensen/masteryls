@@ -149,6 +149,7 @@ async function load(courseInfo) {
     return loadCourseFromModulesMarkdown(courseInfo, gitHub);
   }
   const courseData = await response.json();
+  courseData.title = courseData.title || courseInfo.title || '';
   courseData.id = courseInfo.id;
   courseData.links = courseData.links || {};
   courseData.links.gitHub = gitHub;

@@ -9,6 +9,7 @@ import Dashboard from './dashboard.jsx';
 import service from './service/service.js';
 
 function App() {
+  const [loaded, setLoaded] = useState(false);
   const [user, setUser] = useState(null);
   const [course, setCourse] = React.useState(null);
   const [enrollment, setEnrollment] = React.useState(null);
@@ -25,18 +26,19 @@ function App() {
 
     const enrollment = service.currentEnrollment();
     if (enrollment) {
-      loadCourse(enrollment.courseInfo);
+      loadCourse(enrollment);
     }
+    setLoaded(true);
   }, []);
 
-  function loadCourse(newEnrollment) {
-    Course.create(newEnrollment.courseInfo).then((loadedCourse) => {
+  function loadCourse(loadingEnrollment) {
+    Course.create(loadingEnrollment.courseInfo).then((loadedCourse) => {
       service.setCurrentCourse(loadedCourse.id);
       setCourse(loadedCourse);
-      setEnrollment(newEnrollment);
+      setEnrollment(loadingEnrollment);
 
-      if (newEnrollment.ui.currentTopic) {
-        setTopic(loadedCourse.topicFromPath(newEnrollment.ui.currentTopic));
+      if (loadingEnrollment.ui.currentTopic) {
+        setTopic(loadedCourse.topicFromPath(loadingEnrollment.ui.currentTopic));
       } else {
         setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
       }
@@ -95,7 +97,13 @@ function App() {
     setEditorVisible((prev) => !prev);
   }
 
-  if (!user) {
+  if (!loaded) {
+    return (
+      <div className="flex flex-col h-screen">
+        <div className="m-auto text-gray-400">Loading...</div>
+      </div>
+    );
+  } else if (!user) {
     return <Start setUser={setUser} />;
   } else if (!course) {
     return <Dashboard service={service} user={user} setUser={setUser} loadCourse={loadCourse} />;
