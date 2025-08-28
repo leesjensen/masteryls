@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function Settings({ course, editorVisible }) {
+export default function Settings({ course }) {
   function stripGithubPrefix(schedule, course) {
     const githubUrl = course.links.gitHub.rawUrl;
     if (githubUrl && schedule.startsWith(githubUrl)) {
@@ -55,17 +55,17 @@ export default function Settings({ course, editorVisible }) {
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
-              {editorVisible ? <input type="text" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course title" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.title}</div>}
+              <input type="text" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course title" />
             </div>
             {/* Schedule */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Schedule Path</label>
-              {editorVisible ? <input type="url" value={formData.schedule} onChange={(e) => handleInputChange('schedule', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter schedule URL" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.schedule ? formData.schedule : <span className="text-gray-400">No schedule URL set</span>}</div>}
+              <input type="url" value={formData.schedule} onChange={(e) => handleInputChange('schedule', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter schedule URL" />
             </div>
             {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              {editorVisible ? <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course description" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md min-h-[60px] text-sm">{formData.description || <span className="text-gray-400">No description set</span>}</div>}
+              <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course description" />
             </div>
           </div>
         </div>
@@ -76,13 +76,13 @@ export default function Settings({ course, editorVisible }) {
             {/* GitHub Account */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">GitHub Account</label>
-              {editorVisible ? <input type="text" value={formData.githubAccount} onChange={(e) => handleInputChange('githubAccount', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub username" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubAccount}</div>}
+              <input type="text" value={formData.githubAccount} onChange={(e) => handleInputChange('githubAccount', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub username" />
             </div>
 
             {/* GitHub Repository */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Repository Name</label>
-              {editorVisible ? <input type="text" value={formData.githubRepository} onChange={(e) => handleInputChange('githubRepository', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter repository name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubRepository}</div>}
+              <input type="text" value={formData.githubRepository} onChange={(e) => handleInputChange('githubRepository', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter repository name" />
             </div>
 
             {/* GitHub Link */}
