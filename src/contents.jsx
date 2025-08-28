@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useHotkeys from './hooks/useHotKeys';
 
-function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }) {
+function Contents({ service, changeTopic, currentTopic, course, enrollment, navigateToAdjacentTopic }) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
 
   useHotkeys(
@@ -19,21 +19,23 @@ function Contents({ changeTopic, currentTopic, course, navigateToAdjacentTopic }
   const toggleModule = (index) => {
     setOpenModuleIndexes((prev) => {
       const newIndexes = prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index];
-      localStorage.setItem('tocIndexes', JSON.stringify(newIndexes));
+
+      enrollment.ui.tocIndexes = newIndexes;
+      service.saveEnrollment(enrollment);
+
       return newIndexes;
     });
   };
 
   useEffect(() => {
-    const indexes = JSON.parse(localStorage.getItem('tocIndexes') || '[0]');
     if (currentTopic?.path) {
       const moduleIndex = course.moduleIndexOf(currentTopic.path);
-      if (moduleIndex !== -1 && !indexes.includes(moduleIndex)) {
-        indexes.push(moduleIndex);
-        localStorage.setItem('tocIndexes', JSON.stringify(indexes));
+      if (moduleIndex !== -1 && !enrollment.ui.tocIndexes.includes(moduleIndex)) {
+        enrollment.ui.tocIndexes.push(moduleIndex);
+        service.saveEnrollment(enrollment);
       }
     }
-    setOpenModuleIndexes(indexes);
+    setOpenModuleIndexes(enrollment.ui.tocIndexes);
   }, [currentTopic]);
 
   function topicIcon(topic) {

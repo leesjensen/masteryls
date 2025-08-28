@@ -27,9 +27,11 @@ type Progress = {
 type Enrollment = {
   id: string;
   courseId: string;
-  tocIndexes: number[];
-  visibleSidebar: boolean;
-  currentTopic: string | null;
+  ui: {
+    currentTopic: string | null;
+    tocIndexes: number[];
+    sidebarVisible: boolean;
+  };
   progress: Progress;
   courseInfo?: CourseInfo;
 };
@@ -54,8 +56,10 @@ class Service {
       const enrollments = localStorage.getItem('enrollments');
       if (enrollments) {
         const enrollment = JSON.parse(enrollments)[currentCourse];
-        enrollment.courseInfo = config.courses.find((c) => c.id === currentCourse);
-        return enrollment;
+        if (enrollment) {
+          enrollment.courseInfo = config.courses.find((c) => c.id === currentCourse);
+          return enrollment;
+        }
       }
     }
     return null;
@@ -78,8 +82,12 @@ class Service {
     return enrollments;
   }
 
-  saveCurrentCourse(courseId: string): void {
+  setCurrentCourse(courseId: string): void {
     localStorage.setItem('currentCourse', courseId);
+  }
+
+  removeCurrentCourse(): void {
+    localStorage.removeItem('currentCourse');
   }
 
   createEnrollment(courseInfo: CourseInfo): [Enrollment, Map<string, Enrollment>] {
@@ -89,9 +97,11 @@ class Service {
       id: generateId(),
       courseId: courseInfo.id,
       courseInfo,
-      tocIndexes: [],
-      visibleSidebar: true,
-      currentTopic: null,
+      ui: {
+        currentTopic: null,
+        tocIndexes: [0],
+        sidebarVisible: true,
+      },
       progress: { mastery: 0 },
     };
 
@@ -101,10 +111,11 @@ class Service {
     return [enrollment, enrollments];
   }
 
-  saveEnrollment(enrollment: Enrollment): void {
+  saveEnrollment(enrollment: Enrollment): Enrollment {
     const enrollments = this.enrollments();
     enrollments.set(enrollment.courseId, enrollment);
     this._writeEnrollments(enrollments);
+    return enrollment;
   }
 
   removeEnrollment(enrollment: Enrollment): Map<string, Enrollment> {
