@@ -30,6 +30,7 @@
     "vite-plugin-istanbul": "^7.1.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.56.1",
     "@tailwindcss/vite": "^4.1.11",
     "github-markdown-css": "^5.8.1",
     "playwright": "^1.55.0",
