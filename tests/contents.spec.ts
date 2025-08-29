@@ -18,7 +18,7 @@ test('settings', async ({ page }) => {
   await navigateToCourse(page);
 
   await page.getByText('Settings').click();
-  await expect(page.getByRole('complementary')).toContainText('schedule/schedule.md');
+  await expect(page.getByRole('textbox', { name: 'Enter schedule URL' })).toHaveValue('schedule/schedule.md');
 });
 
 test('settings editing', async ({ page }) => {
