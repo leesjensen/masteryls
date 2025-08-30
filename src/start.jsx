@@ -40,8 +40,8 @@ const Start = ({ setUser }) => {
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-amber-50 to-amber-200'>
-      <section className='relative flex items-center justify-between px-8 py-32 max-w-7xl mx-auto mb-10' style={{ transform: `translateY(${scrollY * 0.3}px)` }}>
-        <div className='flex-1 pr-8'>
+      <section className='relative flex items-center justify-between max-w-7xl mx-auto md:py-0 py-4' style={{ transform: `translateY(${scrollY * 0.3}px)` }}>
+        <div className='flex-1 px-8'>
           <div className='flex flex-row'>
             <img src='/favicon.svg' alt='Mastery LS Logo' className='w-16 h-auto mb-6 mr-2' />
             <h1 className='text-5xl font-bold text-gray-900 mb-6 leading-tight'>Mastery LS</h1>
@@ -51,14 +51,14 @@ const Start = ({ setUser }) => {
             Login / Register
           </button>
         </div>
-        <div className='flex-1 hidden md:block'>
-          <img src={stockImages.hero} alt='Learning illustration' className='w-full h-auto rounded-lg shadow-xl' />
+        <div className='flex-1 hidden md:block h-[32rem] relative'>
+          <img src={stockImages.hero} alt='Learning illustration' className='absolute inset-0 w-full h-full object-cover shadow-xl' style={{ objectPosition: 'center' }} />
         </div>
       </section>
 
       <section className='py-32 bg-white mb-20' style={{ transform: `translateY(${scrollY * 0.15}px)` }}>
         <div className='max-w-7xl mx-auto px-8'>
-          <h2 className='text-4xl font-bold text-center text-gray-900 mb-16'>Why Choose Mastery LS?</h2>
+          <h2 className='text-4xl font-bold text-center text-gray-900 mb-16'>Why Learn with Mastery LS?</h2>
           <div className='grid md:grid-cols-3 gap-8'>
             <PromoCard image={stockImages.instruction} title='Expert Instruction' description='Industry professionals with decades of experience.' />
             <PromoCard image={stockImages.aiLearning} title='AI Adaptive Learning' description='AI-powered mentoring, feedback, personalized learning paths, and adaptive assessments.' />
