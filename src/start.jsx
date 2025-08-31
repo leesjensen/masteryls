@@ -15,17 +15,9 @@ const stockImages = {
 };
 
 const Start = ({ setUser }) => {
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
     <div className='min-h-screen bg-gradient-to-br from-amber-50 to-amber-200'>
-      <section className='relative flex items-center justify-between mx-auto md:py-0 py-4' style={{ transform: `translateY(${scrollY * 0.3}px)` }}>
+      <section className='relative flex items-center justify-between mx-auto md:py-0 py-4'>
         <div className='flex-1 px-8 justify-items-end'>
           <div className='flex flex-row'>
             <img src='/favicon.svg' alt='Mastery LS Logo' className='w-16 h-auto mb-6 mr-2' />
@@ -39,7 +31,7 @@ const Start = ({ setUser }) => {
         </div>
       </section>
 
-      <section className='py-32 bg-white mb-20' style={{ transform: `translateY(${scrollY * 0.15}px)` }}>
+      <section className='py-16 bg-white mb-10'>
         <div className='max-w-7xl mx-auto px-8'>
           <h2 className='text-4xl font-bold text-center text-gray-900 mb-16'>Why Learn with Mastery LS?</h2>
           <div className='grid md:grid-cols-3 gap-8'>
@@ -58,7 +50,7 @@ const Start = ({ setUser }) => {
         </div>
       </section>
 
-      <section className='py-32 bg-amber-600 mb-20' style={{ transform: `translateY(${scrollY * 0.05}px)` }}>
+      <section className='py-16 bg-amber-600 mb-10'>
         <div className='max-w-7xl mx-auto px-8'>
           <div className='grid md:grid-cols-4 gap-8 text-center'>
             <div className='text-white'>
@@ -81,7 +73,7 @@ const Start = ({ setUser }) => {
         </div>
       </section>
 
-      <section className='py-20 bg-amber-50 mb-10'>
+      <section className='py-16 bg-amber-50 mb-10'>
         <div className='max-w-7xl mx-auto px-8'>
           <h2 className='text-4xl font-bold text-center text-gray-900 mb-16'>Get In Touch</h2>
           <div className='flex items-center justify-between'>
