@@ -1,4 +1,7 @@
-import config from '../../config.js';
+import { createClient } from '@supabase/supabase-js';
+import config from '../../config';
+
+const supabase = createClient(config.supabase.url, config.supabase.key);
 
 type User = {
   id: string;
@@ -41,13 +44,33 @@ class Service {
     return config.courses.find((c) => c.id === courseId);
   }
 
-  allEnrolled(enrollments: Map<string, Enrollment>) {
-    return config.courses.filter((course) => !enrollments.has(course.id)).length === 0;
-  }
-
   currentUser(): User | null {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
+  }
+
+  async login(email: string, password: string): Promise<User | null> {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error && data.user) {
+      const user = { id: data.user.id, name: 'read this from supabase', email };
+      localStorage.setItem('user', JSON.stringify(user));
+      return user;
+    }
+    throw new Error(error?.message || 'Unable to login');
+  }
+
+  async register(name: string, email: string, password: string): Promise<User | null> {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (!error && data.user) {
+      const user = { id: data.user.id, name, email };
+      localStorage.setItem('user', JSON.stringify(user));
+      return user;
+    }
+    throw new Error(error?.message || 'Unable to register');
+  }
+
+  allEnrolled(enrollments: Map<string, Enrollment>) {
+    return config.courses.filter((course) => !enrollments.has(course.id)).length === 0;
   }
 
   currentEnrollment(): Enrollment | null {

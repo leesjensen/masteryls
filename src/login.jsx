@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import config from '../config';
-
-// Create supabase client once to avoid recreating it on every login attempt
-const supabase = createClient(config.supabase.url, config.supabase.key);
+import service from './service/service';
 
 function Login({ setUser }) {
   const [name, setName] = useState('');
@@ -13,21 +10,15 @@ function Login({ setUser }) {
   const [showSignup, setShowSignup] = useState(false);
 
   const handleLogin = async () => {
-    // Shared response handling for both sign up and sign in
-    const handleAuthResult = ({ data, error }) => {
-      if (!error) {
-        const user = { id: data.user.id, name, email };
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-      } else {
-        alert(error.message);
-      }
-    };
-
+    let user = null;
     if (showSignup) {
-      handleAuthResult(await supabase.auth.signUp({ email, password }));
+      user = await service.register(name, email, password);
     } else {
-      handleAuthResult(await supabase.auth.signInWithPassword({ email, password }));
+      user = await service.login(email, password);
+    }
+
+    if (user) {
+      setUser(user);
     }
   };
 
