@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import Login from './login.jsx';
 
 const stockImages = {
-  hero: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&h=980',
-  instruction: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1469&h=980',
+  hero: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
+
+  instruction: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
   aiLearning: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
   aiContent: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&h=980',
   personalized: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&h=980',
@@ -15,7 +16,6 @@ const stockImages = {
 
 const Start = ({ setUser }) => {
   const [scrollY, setScrollY] = useState(0);
-  const [displayLogin, setDisplayLogin] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -23,35 +23,18 @@ const Start = ({ setUser }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const login = () => {
-    setDisplayLogin(true);
-  };
-
-  const loginResult = (user) => {
-    if (user) {
-      setUser(user);
-    }
-    setDisplayLogin(false);
-  };
-
-  if (displayLogin) {
-    return <Login setUser={loginResult} />;
-  }
-
   return (
     <div className='min-h-screen bg-gradient-to-br from-amber-50 to-amber-200'>
-      <section className='relative flex items-center justify-between max-w-7xl mx-auto md:py-0 py-4' style={{ transform: `translateY(${scrollY * 0.3}px)` }}>
-        <div className='flex-1 px-8'>
+      <section className='relative flex items-center justify-between mx-auto md:py-0 py-4' style={{ transform: `translateY(${scrollY * 0.3}px)` }}>
+        <div className='flex-1 px-8 justify-items-end'>
           <div className='flex flex-row'>
             <img src='/favicon.svg' alt='Mastery LS Logo' className='w-16 h-auto mb-6 mr-2' />
             <h1 className='text-5xl font-bold text-gray-900 mb-6 leading-tight'>Mastery LS</h1>
           </div>
-          <p className='text-xl text-gray-600 mb-8 leading-relaxed'>Master life long learning with AI, world class content, experiential projects, and peer collaboration</p>
-          <button onClick={login} className='bg-amber-600 hover:bg-amber-700 text-white font-semibold py-4 px-8 rounded-lg transition-colors duration-300 shadow-lg'>
-            Login / Register
-          </button>
+          <p className='text-xl text-gray-600 mb-8 leading-relaxed text-right'>Master life long learning with AI, world class content, experiential projects, and peer collaboration</p>
+          <Login setUser={setUser} />
         </div>
-        <div className='flex-1 hidden md:block h-[32rem] relative'>
+        <div className='flex-1 hidden md:block h-[48rem] relative'>
           <img src={stockImages.hero} alt='Learning illustration' className='absolute inset-0 w-full h-full object-cover shadow-xl' style={{ objectPosition: 'center' }} />
         </div>
       </section>
