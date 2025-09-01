@@ -124,7 +124,6 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
   // Handle OPTIONS separately with a more specific pattern
   await context.route('**/auth/v1/signup', async (route) => {
     if (route.request().method() === 'POST') {
-      console.log('POST intercepted for:', route.request().url());
       await route.fulfill({
         json: {
           id: '15cb92ef-d2d0-4080-8770-999516448960',

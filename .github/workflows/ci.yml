@@ -42,7 +42,7 @@ jobs:
                 description: 'Description for QA & DevOps',
                 canvas: 'https://byu.instructure.com/courses/31151',
                 chat: 'https://discord.com/channels/748656649287368704',
-                gitHub: { account: 'devops329', repository: 'devops' },
+                gitHub: { token: '${{ secrets.GITHUB_TOKEN }}', account: 'devops329', repository: 'devops' },
               },
               {
                 id: 'cs240',
@@ -50,7 +50,7 @@ jobs:
                 description: 'Description for Software Construction',
                 canvas: 'https://byu.instructure.com/courses/31151',
                 chat: 'https://discord.com/channels/748656649287368704',
-                gitHub: { account: 'softwareconstruction240', repository: 'softwareconstruction' },
+                gitHub: { token: '${{ secrets.GITHUB_TOKEN }}', account: 'softwareconstruction240', repository: 'softwareconstruction' },
               },
               {
                 id: 'cs260',
@@ -58,7 +58,7 @@ jobs:
                 description: 'Description for Web Programming',
                 canvas: 'https://byu.instructure.com/courses/31151',
                 chat: 'https://discord.com/channels/748656649287368704',
-                gitHub: { account: 'webprogramming260', repository: 'webprogramming' },
+                gitHub: { token: '${{ secrets.GITHUB_TOKEN }}', account: 'webprogramming260', repository: 'webprogramming' },
               },
             ],
           };
@@ -68,10 +68,10 @@ jobs:
         run: |
           npm ci && npm run build
 
-      # - name: Test
-      #   run: |
-      #     npx playwright install chromium
-      #     npm run test:coverage
+      - name: Test
+        run: |
+          npx playwright install chromium
+          npm run test:coverage
 
       - name: Update pages artifact
         uses: actions/upload-pages-artifact@v3
