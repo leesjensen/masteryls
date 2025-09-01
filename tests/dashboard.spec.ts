@@ -1,6 +1,27 @@
 import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, register } from './testInit';
 
+test('dashboard register error', async ({ page }) => {
+  // await page.route('*/**/auth/v1/signup', async (route) => {
+  //   expect(route.request().method()).toBe('POST');
+  //   await route.fulfill({
+  //     status: 400,
+  //     contentType: 'application/json',
+  //     body: JSON.stringify({
+  //       error: {
+  //         message: 'User already registered',
+  //         status: 400,
+  //       },
+  //     }),
+  //   });
+  // });
+
+  await initBasicCourse({ page });
+  await register(page);
+
+  await expect(page.locator('#root')).toContainText('You are not enrolled in any courses. Select one below to get started.');
+});
+
 test('dashboard join/leave courses', async ({ page }) => {
   await initBasicCourse({ page });
   await register(page);

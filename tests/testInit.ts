@@ -127,6 +127,62 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
     });
   });
 
+  await page.route('*/**/auth/v1/signup', async (route) => {
+    console.log(route.request().method(), route.request().postData());
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        id: '15cb92ef-d2d0-4080-8770-999516448960',
+        aud: 'authenticated',
+        role: 'authenticated',
+        email: 'bud@cow.com',
+        phone: '',
+        confirmation_sent_at: '2025-09-01T14:16:59.817650523Z',
+        app_metadata: {
+          provider: 'email',
+          providers: ['email'],
+        },
+        user_metadata: {
+          email: 'bud@cow.com',
+          email_verified: false,
+          phone_verified: false,
+          sub: '15cb92ef-d2d0-4080-8770-999516448960',
+        },
+        identities: [
+          {
+            identity_id: 'da62636e-7136-4157-b189-fabd7e220a30',
+            id: '15cb92ef-d2d0-4080-8770-999516448960',
+            user_id: '15cb92ef-d2d0-4080-8770-999516448960',
+            identity_data: {
+              email: 'bud@cow.com',
+              email_verified: false,
+              phone_verified: false,
+              sub: '15cb92ef-d2d0-4080-8770-999516448960',
+            },
+            provider: 'email',
+            last_sign_in_at: '2025-09-01T14:13:46.21866Z',
+            created_at: '2025-09-01T14:13:46.218719Z',
+            updated_at: '2025-09-01T14:13:46.218719Z',
+            email: 'bud@cow.com',
+          },
+        ],
+        created_at: '2025-09-01T14:13:46.154132Z',
+        updated_at: '2025-09-01T14:17:00.166842Z',
+        is_anonymous: false,
+      });
+    } else if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'X-TESTING': 'mocked',
+        },
+        body: '',
+      });
+    }
+  });
+
   await page.route('*/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ json: courseJson });
@@ -151,7 +207,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
 async function navigateToCourse(page: any) {
   await page.goto('http://localhost:5173/');
 
-  await page.getByRole('button', { name: 'Login / Register' }).click();
+  // await page.getByRole('button', { name: 'Login / Register' }).click();
   await page.getByRole('button', { name: "Don't have an account? Create" }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
   await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
@@ -164,7 +220,6 @@ async function navigateToCourse(page: any) {
 async function register(page: any) {
   await page.goto('http://localhost:5173/');
 
-  await page.getByRole('button', { name: 'Login / Register' }).click();
   await page.getByRole('button', { name: "Don't have an account? Create" }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
   await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
