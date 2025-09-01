@@ -9,28 +9,27 @@ function Login({ setUser }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
 
-  const handleLogin = async () => {
-    let user = null;
-    if (showSignup) {
-      user = await service.register(name, email, password);
-    } else {
-      user = await service.login(email, password);
-    }
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      let user = null;
+      if (showSignup) {
+        user = await service.register(name, email, password);
+      } else {
+        user = await service.login(email, password);
+      }
 
-    if (user) {
-      setUser(user);
+      if (user) {
+        setUser(user);
+      }
+    } catch (error) {
+      alert('Login failed. Please try again.');
     }
   };
 
   return (
     <div className='flex flex-col items-center justify-center relative bg-white bg-opacity-90 shadow-lg rounded-lg overflow-hidden max-w-md w-full min-h-[354px] px-8 py-2'>
-      <form
-        className='space-y-4  max-w-md w-full'
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleLogin();
-        }}
-      >
+      <form className='space-y-4  max-w-md w-full' onSubmit={handleLogin}>
         {showSignup && (
           <div>
             <label className='block text-gray-700 mb-1' htmlFor='name'>

@@ -2,24 +2,29 @@ import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, register } from './testInit';
 
 test('dashboard register error', async ({ page }) => {
-  // await page.route('*/**/auth/v1/signup', async (route) => {
-  //   expect(route.request().method()).toBe('POST');
-  //   await route.fulfill({
-  //     status: 400,
-  //     contentType: 'application/json',
-  //     body: JSON.stringify({
-  //       error: {
-  //         message: 'User already registered',
-  //         status: 400,
-  //       },
-  //     }),
-  //   });
-  // });
+  await page.route('*/**/auth/v1/signup', async (route) => {
+    expect(route.request().method()).toBe('POST');
+    await route.fulfill({
+      status: 400,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        error: {
+          message: 'User already registered',
+          status: 400,
+        },
+      }),
+    });
+  });
 
   await initBasicCourse({ page });
+
+  const dialogPromise = page.waitForEvent('dialog');
+
   await register(page);
 
-  await expect(page.locator('#root')).toContainText('You are not enrolled in any courses. Select one below to get started.');
+  const dialog = await dialogPromise;
+  expect(dialog.message()).toContain('Login failed. Please try again.');
+  await dialog.dismiss();
 });
 
 test('dashboard join/leave courses', async ({ page }) => {
@@ -48,6 +53,5 @@ test('dashboard logout', async ({ page }) => {
   await register(page);
 
   await page.getByRole('button', { name: 'Logout' }).click();
-
-  await expect(page.getByRole('heading', { name: 'Master Your Learning' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Mastery LS', exact: true })).toBeVisible();
 });

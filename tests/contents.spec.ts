@@ -35,7 +35,6 @@ test('settings editing', async ({ page }) => {
   let dialogDisplayed = false;
   page.once('dialog', (dialog) => {
     dialogDisplayed = true;
-    console.log(`Dialog message: ${dialog.message()}`);
     dialog.dismiss().catch(() => {});
   });
   await page.getByRole('button', { name: 'Save Changes' }).click();
