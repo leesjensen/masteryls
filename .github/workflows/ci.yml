@@ -70,6 +70,7 @@ jobs:
 
       - name: Test
         run: |
+          npx playwright install chromium
           npm run test:coverage
 
       - name: Update pages artifact
