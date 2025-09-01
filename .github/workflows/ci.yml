@@ -31,6 +31,10 @@ jobs:
         run: |
           cat > config.js << 'EOF'
           export default {
+            supabase: {
+              url: '${{ secrets.SUPABASE_URL }}',
+              key: '${{ secrets.SUPABASE_KEY }}',
+            },
             courses: [
               {
                 id: 'cs329',
