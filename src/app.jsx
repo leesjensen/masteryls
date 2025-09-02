@@ -19,16 +19,18 @@ function App() {
   courseRef.current = course;
 
   React.useEffect(() => {
-    const savedUser = service.currentUser();
-    if (savedUser) {
-      setUser(savedUser);
-    }
+    (async () => {
+      const savedUser = await service.currentUser();
+      if (savedUser) {
+        setUser(savedUser);
+      }
 
-    const enrollment = service.currentEnrollment();
-    if (enrollment) {
-      loadCourse(enrollment);
-    }
-    setLoaded(true);
+      const enrollment = service.currentEnrollment();
+      if (enrollment) {
+        loadCourse(enrollment);
+      }
+      setLoaded(true);
+    })();
   }, []);
 
   function loadCourse(loadingEnrollment) {

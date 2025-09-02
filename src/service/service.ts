@@ -1,53 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
+import { User, CourseInfo, Enrollment } from '../model';
 
 const supabase = createClient(config.supabase.url, config.supabase.key);
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  password?: string;
-  preferences: any;
-};
-
-type CourseInfo = {
-  id: string;
-  title: string;
-  description: string;
-  canvas?: string;
-  chat?: string;
-  gitHub: {
-    account: string;
-    repository: string;
-    token?: string;
-  };
-};
-
-type Progress = {
-  mastery: number;
-};
-
-type Enrollment = {
-  id: string;
-  courseId: string;
-  ui: {
-    currentTopic: string | null;
-    tocIndexes: number[];
-    sidebarVisible: boolean;
-  };
-  progress: Progress;
-  courseInfo?: CourseInfo;
-};
 
 class Service {
   courseInfo(courseId: string) {
     return config.courses.find((c) => c.id === courseId);
   }
 
-  currentUser(): User | null {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+  async currentUser(): Promise<User | null> {
+    const session = await supabase.auth.getSession();
+    if (session.data.session?.user) {
+      const user = localStorage.getItem('user');
+      return user ? JSON.parse(user) : this._loadUser({ id: session.data.session.user.id });
+    }
+    return null;
   }
 
   async register(name: string, email: string, password: string): Promise<User | null> {
@@ -67,6 +35,8 @@ class Service {
       throw new Error(upsertError.message);
     }
 
+    localStorage.setItem('user', JSON.stringify(user));
+
     return user;
   }
 
@@ -76,18 +46,6 @@ class Service {
       throw new Error(error?.message || 'Unable to login');
     }
     return this._loadUser({ id: data.user.id });
-  }
-
-  async _loadUser({ id }: { id: string }) {
-    const { data, error } = await supabase.from('learner').select('id, name, email, preferences').eq('id', id).single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const user: User = { ...data };
-    localStorage.setItem('user', JSON.stringify(user));
-    return user;
   }
 
   async logout() {
@@ -169,6 +127,18 @@ class Service {
     enrollments.delete(enrollment.courseId);
     this._writeEnrollments(enrollments);
     return enrollments;
+  }
+
+  async _loadUser({ id }: { id: string }) {
+    const { data, error } = await supabase.from('learner').select('id, name, email, preferences').eq('id', id).single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const user: User = { ...data };
+    localStorage.setItem('user', JSON.stringify(user));
+    return user;
   }
 
   _writeEnrollments(enrollments: Map<string, Enrollment>): void {
