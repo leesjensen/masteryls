@@ -8,6 +8,7 @@ type User = {
   name: string;
   email: string;
   password?: string;
+  preferences: any;
 };
 
 type CourseInfo = {
@@ -49,24 +50,50 @@ class Service {
     return user ? JSON.parse(user) : null;
   }
 
-  async login(email: string, password: string): Promise<User | null> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error && data.user) {
-      const user = { id: data.user.id, name: 'read this from supabase', email };
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
-    }
-    throw new Error(error?.message || 'Unable to login');
-  }
-
   async register(name: string, email: string, password: string): Promise<User | null> {
     const { data, error } = await supabase.auth.signUp({ email, password });
-    if (!error && data.user) {
-      const user = { id: data.user.id, name, email };
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
+    if (error || !data.user) {
+      throw new Error(error?.message || 'Unable to register');
     }
-    throw new Error(error?.message || 'Unable to register');
+
+    const user: User = {
+      id: data.user.id,
+      email,
+      name,
+      preferences: { language: 'en' },
+    };
+    const { error: upsertError } = await supabase.from('learner').upsert(user);
+    if (upsertError) {
+      throw new Error(upsertError.message);
+    }
+
+    return user;
+  }
+
+  async login(email: string, password: string): Promise<User | null> {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      throw new Error(error?.message || 'Unable to login');
+    }
+    return this._loadUser({ id: data.user.id });
+  }
+
+  async _loadUser({ id }: { id: string }) {
+    const { data, error } = await supabase.from('learner').select('id, name, email, preferences').eq('id', id).single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const user: User = { ...data };
+    localStorage.setItem('user', JSON.stringify(user));
+    return user;
+  }
+
+  async logout() {
+    localStorage.removeItem('user');
+    localStorage.removeItem('enrollments');
+    await supabase.auth.signOut();
   }
 
   allEnrolled(enrollments: Map<string, Enrollment>) {

@@ -23,7 +23,7 @@ const Start = ({ setUser }) => {
             <img src='/favicon.svg' alt='Mastery LS Logo' className='w-16 h-auto mb-6 mr-2' />
             <h1 className='text-5xl font-bold text-gray-900 mb-6 leading-tight'>Mastery LS</h1>
           </div>
-          <p className='text-xl text-gray-600 mb-8 leading-relaxed text-right'>Master life long learning with AI, world class content, experiential projects, and peer collaboration</p>
+          <p className='text-xl text-gray-600 mb-8 leading-relaxed text-right max-w-[600px]'>Master life long learning with AI, world class content, experiential projects, and peer collaboration</p>
           <Login setUser={setUser} />
         </div>
         <div className='flex-1 hidden md:block h-[48rem] relative'>

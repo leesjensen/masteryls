@@ -23,7 +23,7 @@ function Login({ setUser }) {
         setUser(user);
       }
     } catch (error) {
-      alert('Login failed. Please try again.');
+      console.log('Login failed. Please try again.', error.message);
     }
   };
 
