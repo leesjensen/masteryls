@@ -23,12 +23,13 @@ function App() {
       const savedUser = await service.currentUser();
       if (savedUser) {
         setUser(savedUser);
+
+        const enrollment = await service.currentEnrollment(savedUser.id);
+        if (enrollment) {
+          loadCourse(enrollment);
+        }
       }
 
-      const enrollment = service.currentEnrollment();
-      if (enrollment) {
-        loadCourse(enrollment);
-      }
       setLoaded(true);
     })();
   }, []);

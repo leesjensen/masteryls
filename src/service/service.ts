@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
-import { User, CourseInfo, Enrollment } from '../model';
+import { User, CourseInfo, Enrollment, Enrollments } from '../model';
 
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
@@ -12,8 +12,7 @@ class Service {
   async currentUser(): Promise<User | null> {
     const session = await supabase.auth.getSession();
     if (session.data.session?.user) {
-      const user = localStorage.getItem('user');
-      return user ? JSON.parse(user) : this._loadUser({ id: session.data.session.user.id });
+      return await this._loadUser({ id: session.data.session.user.id });
     }
     return null;
   }
@@ -35,9 +34,7 @@ class Service {
       throw new Error(upsertError.message);
     }
 
-    localStorage.setItem('user', JSON.stringify(user));
-
-    return user;
+    return this._loadUser({ id: data.user.id });
   }
 
   async login(email: string, password: string): Promise<User | null> {
@@ -45,12 +42,10 @@ class Service {
     if (error || !data.user) {
       throw new Error(error?.message || 'Unable to login');
     }
-    return this._loadUser({ id: data.user.id });
+    return this.currentUser();
   }
 
   async logout() {
-    localStorage.removeItem('user');
-    localStorage.removeItem('enrollments');
     await supabase.auth.signOut();
   }
 
@@ -58,10 +53,10 @@ class Service {
     return config.courses.filter((course) => !enrollments.has(course.id)).length === 0;
   }
 
-  currentEnrollment(): Enrollment | null {
+  async currentEnrollment(learnerId: string): Promise<Enrollment | null> {
     const currentCourse = localStorage.getItem('currentCourse');
     if (currentCourse) {
-      const enrollments = this.enrollments();
+      const enrollments = await this.enrollments(learnerId);
       if (enrollments) {
         return enrollments.get(currentCourse) || null;
       }
@@ -69,20 +64,22 @@ class Service {
     return null;
   }
 
-  courses(): CourseInfo[] {
+  courseCatalog(): CourseInfo[] {
     return config.courses;
   }
 
-  enrollments(): Map<string, Enrollment> {
-    const enrollments = new Map<string, Enrollment>();
-    const enrollmentsJson = localStorage.getItem('enrollments');
-    if (enrollmentsJson) {
-      const enrollmentsArray = JSON.parse(enrollmentsJson);
-      enrollmentsArray.forEach((enrollment) => {
-        enrollment.courseInfo = config.courses.find((c) => c.id === enrollment.courseId);
-        enrollments.set(enrollment.courseId, enrollment);
-      });
+  async enrollments(id: string): Promise<Map<string, Enrollment>> {
+    const { data, error } = await supabase.from('enrollment').select('id, courseId, learnerId, ui, progress').eq('learnerId', id);
+
+    if (error) {
+      throw new Error(error.message);
     }
+
+    const enrollments = new Map<string, Enrollment>();
+    data.forEach((item) => {
+      enrollments.set(item.courseId, { ...item, courseInfo: this.courseInfo(item.courseId) });
+    });
+
     return enrollments;
   }
 
@@ -94,39 +91,36 @@ class Service {
     localStorage.removeItem('currentCourse');
   }
 
-  createEnrollment(courseInfo: CourseInfo): [Enrollment, Map<string, Enrollment>] {
-    const enrollments = this.enrollments();
-
-    const enrollment: Enrollment = {
-      id: generateId(),
-      courseId: courseInfo.id,
-      courseInfo,
-      ui: {
-        currentTopic: null,
-        tocIndexes: [0],
-        sidebarVisible: true,
+  async createEnrollment(learnerId: string, courseInfo: CourseInfo): Promise<void> {
+    const { error } = await supabase.from('enrollment').insert([
+      {
+        courseId: courseInfo.id,
+        ui: {
+          currentTopic: null,
+          tocIndexes: [0],
+          sidebarVisible: true,
+        },
+        progress: { mastery: 0 },
       },
-      progress: { mastery: 0 },
-    };
-
-    enrollments.set(enrollment.courseId, enrollment);
-    this._writeEnrollments(enrollments);
-
-    return [enrollment, enrollments];
+    ]);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
-  saveEnrollment(enrollment: Enrollment): Enrollment {
-    const enrollments = this.enrollments();
-    enrollments.set(enrollment.courseId, enrollment);
-    this._writeEnrollments(enrollments);
-    return enrollment;
+  async saveEnrollment(enrollment: Enrollment) {
+    const { courseInfo, ...enrollmentData } = enrollment;
+    const { error } = await supabase.from('enrollment').upsert(enrollmentData);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
-  removeEnrollment(enrollment: Enrollment): Map<string, Enrollment> {
-    const enrollments = this.enrollments();
-    enrollments.delete(enrollment.courseId);
-    this._writeEnrollments(enrollments);
-    return enrollments;
+  async removeEnrollment(enrollment: Enrollment): Promise<void> {
+    const { error } = await supabase.from('enrollment').delete().eq('id', enrollment.id);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   async _loadUser({ id }: { id: string }) {
@@ -137,18 +131,9 @@ class Service {
     }
 
     const user: User = { ...data };
-    localStorage.setItem('user', JSON.stringify(user));
+
     return user;
   }
-
-  _writeEnrollments(enrollments: Map<string, Enrollment>): void {
-    let enrollmentArray = Array.from(enrollments.values()).map(({ courseInfo, ...rest }) => rest);
-    localStorage.setItem('enrollments', JSON.stringify(enrollmentArray));
-  }
-}
-
-function generateId() {
-  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
 }
 
 export default new Service();

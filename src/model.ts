@@ -25,6 +25,7 @@ type Progress = {
 
 type Enrollment = {
   id: string;
+  learnerId: string;
   courseId: string;
   ui: {
     currentTopic: string | null;
@@ -35,4 +36,6 @@ type Enrollment = {
   courseInfo?: CourseInfo;
 };
 
-export { User, CourseInfo, Progress, Enrollment };
+type Enrollments = Map<string, Enrollment>;
+
+export { User, CourseInfo, Progress, Enrollment, Enrollments };
