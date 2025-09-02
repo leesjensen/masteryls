@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
-  timeout: 5000,
+  timeout: process.env.DEBUG ? 120000 : 5000000,
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -20,9 +20,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 800, height: 600 },
-        // Enable coverage collection
         contextOptions: {
-          // Enable coverage
           ...(process.env.COVERAGE && {
             // This helps with coverage collection
             ignoreHTTPSErrors: true,

@@ -121,6 +121,11 @@ graph TD;
 async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page: any; topicMarkdown?: string }) {
   const context = page.context();
 
+  await context.route('**/rest/v1/learner', async (route) => {
+    expect(route.request().method()).toBe('POST');
+    await route.fulfill({ status: 201 });
+  });
+
   // Handle OPTIONS separately with a more specific pattern
   await context.route('**/auth/v1/signup', async (route) => {
     if (route.request().method() === 'POST') {
