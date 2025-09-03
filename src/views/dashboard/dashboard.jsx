@@ -28,10 +28,12 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   const onCreateCourse = async (catalogEntry, gitHubToken) => {
     // Call the service to create the course
-    const newCourse = await service.createCourse(catalogEntry);
+    const newCourse = await service.createCourse(catalogEntry, gitHubToken);
 
     // create the admin enrollment
     //    setEnrollments((prev) => new Map(prev).set(newCourse.id, newCourse));
+
+    // setCreateCourse(false)
   };
 
   if (createCourse) {

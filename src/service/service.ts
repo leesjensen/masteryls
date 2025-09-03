@@ -30,6 +30,7 @@ class Service {
   }
 
   async createCourse(catalogEntry: CatalogEntry, gitHubToken: string): Promise<void> {
+    console.log(catalogEntry, gitHubToken);
     // const { error } = await supabase.from('catalog').insert([catalogEntry]);
     // if (error) {
     //   throw new Error(error.message);
