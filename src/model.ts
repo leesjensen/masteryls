@@ -8,14 +8,13 @@ type User = {
 
 type CourseInfo = {
   id: string;
+  name: string;
   title: string;
   description: string;
-  canvas?: string;
-  chat?: string;
+  links?: object;
   gitHub: {
     account: string;
     repository: string;
-    token?: string;
   };
 };
 

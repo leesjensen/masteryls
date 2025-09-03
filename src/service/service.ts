@@ -5,8 +5,28 @@ import { User, CourseInfo, Enrollment, Enrollments } from '../model';
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
 class Service {
+  catalog: CourseInfo[] = [];
+
+  constructor(catalog: CourseInfo[]) {
+    this.catalog = catalog;
+  }
+
+  static async create() {
+    const { data, error } = await supabase.from('catalog').select('id, name, title, description, links, gitHub');
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return new Service(data);
+  }
+
+  courseCatalog(): CourseInfo[] {
+    return this.catalog;
+  }
+
   courseInfo(courseId: string) {
-    return config.courses.find((c) => c.id === courseId);
+    return this.catalog.find((c) => c.id === courseId);
   }
 
   async currentUser(): Promise<User | null> {
@@ -50,7 +70,7 @@ class Service {
   }
 
   allEnrolled(enrollments: Map<string, Enrollment>) {
-    return config.courses.filter((course) => !enrollments.has(course.id)).length === 0;
+    return this.catalog.filter((course) => !enrollments.has(course.id)).length === 0;
   }
 
   async currentEnrollment(learnerId: string): Promise<Enrollment | null> {
@@ -62,10 +82,6 @@ class Service {
       }
     }
     return null;
-  }
-
-  courseCatalog(): CourseInfo[] {
-    return config.courses;
   }
 
   async enrollments(id: string): Promise<Map<string, Enrollment>> {
@@ -136,4 +152,5 @@ class Service {
   }
 }
 
-export default new Service();
+const service = await Service.create();
+export default service;

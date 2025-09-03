@@ -79,7 +79,7 @@ function CourseCard({ courseInfo, enrollment, select, remove }) {
         </div>
 
         <div className="text-lg font-semibold mb-2 text-center">{courseInfo.title}</div>
-        <div className="text-gray-500 text-sm mb-3 text-center">{courseInfo.description}</div>
+        <div className="text-gray-500 text-sm mb-3 text-center overflow-hidden text-ellipsis whitespace-normal line-clamp-3">{courseInfo.description}</div>
 
         {enrollment && (
           <div className="w-full mt-auto">
