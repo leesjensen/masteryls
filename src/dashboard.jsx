@@ -100,13 +100,25 @@ function CourseCard({ courseInfo, enrollment, select, remove }) {
             remove(enrollment);
           }}
           aria-label="Delete"
-          className="col-start-1 row-start-1 place-self-start justify-self-end -translate-y-3 translate-x-3 
+          className="col-start-1 row-start-1 justify-self-end -translate-y-3 translate-x-3 
              inline-flex items-center justify-center w-7 h-7 rounded-full bg-white text-gray-600 text-xs shadow 
              hover:text-gray-50 hover:bg-red-500 focus:outline-none"
           title="Remove enrollment"
         >
           ✕
         </button>
+      )}
+
+      {enrollment && enrollment.ui?.token && (
+        <div
+          className="col-start-1 row-start-1 justify-self-end -translate-y-3 -translate-x-6 
+             inline-flex items-center justify-center w-7 h-7 rounded-full bg-white text-gray-600 text-xs shadow cursor-default
+            "
+        >
+          <span title="editor rights" className="text-lg">
+            ✏️
+          </span>
+        </div>
       )}
     </div>
   );
