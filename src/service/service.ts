@@ -29,6 +29,13 @@ class Service {
     return this.catalog.find((c) => c.id === courseId);
   }
 
+  async createCourse(catalogEntry: CatalogEntry, gitHubToken: string): Promise<void> {
+    // const { error } = await supabase.from('catalog').insert([catalogEntry]);
+    // if (error) {
+    //   throw new Error(error.message);
+    // }
+  }
+
   async currentUser(): Promise<User | null> {
     const session = await supabase.auth.getSession();
     if (session.data.session?.user) {

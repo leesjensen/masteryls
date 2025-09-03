@@ -26,12 +26,20 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     setEnrollments(await service.enrollments(user.id));
   };
 
-  const addCourse = async () => {
-    setCreateCourse(true);
+  const onCreateCourse = async (catalogEntry, gitHubToken) => {
+    // Call the service to create the course
+    const newCourse = await service.createCourse(catalogEntry);
+
+    // create the admin enrollment
+    //    setEnrollments((prev) => new Map(prev).set(newCourse.id, newCourse));
   };
 
   if (createCourse) {
-    return <CourseForm onClose={() => setCreateCourse(false)}>create a course!</CourseForm>;
+    return (
+      <CourseForm onClose={() => setCreateCourse(false)} onCreate={onCreateCourse}>
+        create a course!
+      </CourseForm>
+    );
   }
 
   if (!enrollments) {
@@ -49,7 +57,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
           <h1 className="font-bold text-3xl mb-2">Welcome {user.name}!</h1>
         </div>
         <div className="flex justify-between mb-6">
-          <button onClick={addCourse} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+          <button onClick={() => setCreateCourse(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
             <span className="font-semibold text-amber-600">+</span> Course
           </button>
           <button onClick={logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">

@@ -7,7 +7,7 @@ type User = {
 };
 
 type CatalogEntry = {
-  id: string;
+  id?: string;
   name: string;
   title: string;
   description: string;
