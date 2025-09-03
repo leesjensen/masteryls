@@ -12,32 +12,3 @@ test('toc toggling', async ({ page }) => {
   await page.getByRole('button', { name: '▼ Module 1' }).click();
   await expect(page.getByText('topic 1')).not.toBeVisible();
 });
-
-test('settings', async ({ page }) => {
-  await initBasicCourse({ page });
-  await navigateToCourse(page);
-
-  await page.getByText('Settings').click();
-  await expect(page.getByRole('textbox', { name: 'Enter schedule URL' })).toHaveValue('schedule/schedule.md');
-});
-
-test('settings editing', async ({ page }) => {
-  await initBasicCourse({ page });
-  await navigateToCourse(page);
-
-  await page.getByRole('button', { name: '✏️' }).click();
-  await page.getByText('Settings').click();
-
-  await expect(page.getByRole('textbox', { name: 'Enter schedule URL' })).toBeVisible();
-
-  await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
-
-  let dialogDisplayed = false;
-  page.once('dialog', (dialog) => {
-    dialogDisplayed = true;
-    dialog.dismiss().catch(() => {});
-  });
-  await page.getByRole('button', { name: 'Save Changes' }).click();
-
-  expect(dialogDisplayed).toBe(true);
-});

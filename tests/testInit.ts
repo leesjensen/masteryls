@@ -1,5 +1,50 @@
 import { expect } from 'playwright-test-coverage';
 
+const catalog = [
+  {
+    id: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+    name: 'cs329',
+    title: 'QA & DevOps',
+    description: 'This course provides you with the experience and skills necessary to deploy, manage, and ensure the quality of a modern software application. This includes automated testing at all levels, continuous integration and deployment pipelines, application monitoring, failure detection, alerting, and elastic application scaling.',
+    links: {
+      chat: 'https://discord.com/channels/748656649287368704',
+      canvas: 'https://byu.instructure.com/courses/31151',
+    },
+    gitHub: {
+      account: 'devops329',
+      repository: 'devops',
+    },
+  },
+  {
+    id: '8817e5a2-025e-467b-95cf-3afcf90f4cf0',
+    name: 'cs240',
+    title: 'Software construction',
+    description: 'Advanced Software Construction provides you with the experience and skills necessary to use a modern programming language in an advanced development environment to design, test, and build a large multi-user application. Your application will have a client frontend program that communicates, over the network, with a centralized backend server.',
+    links: {
+      chat: 'https://discord.com/channels/748656649287368704',
+      canvas: 'https://byu.instructure.com/courses/31151',
+    },
+    gitHub: {
+      account: 'softwareconstruction240',
+      repository: 'softwareconstruction',
+    },
+  },
+  {
+    id: 'e453da9a-b61d-45fa-894e-de4f221462a8',
+    name: 'cs260',
+    title: 'Web Programming',
+    description: 'Web programming gives you practical experience with important aspects of computer science. This includes distributed systems, security, concurrency, networking, caching, data structures, databases, asynchronous execution, protocols, and efficiency.',
+    links: {
+      chat: 'https://discord.com/channels/748656649287368704',
+      canvas: 'https://byu.instructure.com/courses/31151',
+    },
+    gitHub: {
+      account: 'webprogramming260',
+      repository: '.github',
+    },
+  },
+];
+
 const courseJson = {
   title: 'QA & DevOps',
   schedule: 'schedule/schedule.md',
@@ -121,12 +166,66 @@ graph TD;
 async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page: any; topicMarkdown?: string }) {
   const context = page.context();
 
-  await context.route('**/rest/v1/learner', async (route) => {
-    expect(route.request().method()).toBe('POST');
-    await route.fulfill({ status: 201 });
+  await context.route(/.*\/rest\/v1\/catalog(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'GET':
+        await route.fulfill({
+          json: catalog,
+        });
+        break;
+    }
   });
 
-  // Handle OPTIONS separately with a more specific pattern
+  await context.route(/.*\/rest\/v1\/learner(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'POST':
+        await route.fulfill({ status: 201 });
+        break;
+      case 'GET':
+        await route.fulfill({
+          json: {
+            id: '15cb92ef-d2d0-4080-8770-999516448960',
+            name: 'Bud',
+            email: 'bud@cow.com',
+            preferences: {
+              language: 'en',
+            },
+          },
+        });
+        break;
+    }
+  });
+
+  await context.route(/.*\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'POST':
+        await route.fulfill({ status: 201 });
+        break;
+      case 'GET':
+        await route.fulfill({
+          json: [
+            {
+              id: '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5',
+              courseId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+              learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
+              ui: {
+                tocIndexes: [0],
+                currentTopic: 'https://raw.githubusercontent.com/devops329/devops/main/instruction/awsAccount/awsAccount.md',
+                sidebarVisible: true,
+              },
+              progress: {
+                mastery: 0,
+              },
+            },
+          ],
+        });
+        break;
+      case 'DELETE':
+        await route.fulfill({ status: 204 });
+        break;
+    }
+  });
+
   await context.route('**/auth/v1/signup', async (route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
@@ -207,19 +306,17 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
 async function navigateToCourse(page: any) {
   await page.goto('http://localhost:5173/');
 
-  // await page.getByRole('button', { name: 'Login / Register' }).click();
-  await page.getByRole('button', { name: "Don't have an account? Create" }).click();
-  await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
-  await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
-  await page.getByRole('textbox', { name: 'Password' }).fill('toomanysecrets');
-  await page.getByRole('button', { name: 'Create Account' }).click();
-  await page.getByRole('button', { name: 'Q QA & DevOps Description for' }).click();
-  await page.getByRole('button', { name: 'Q QA & DevOps Description for' }).click();
+  await _register(page);
+
+  await page.getByRole('button', { name: 'Q QA & DevOps' }).click();
 }
 
 async function register(page: any) {
   await page.goto('http://localhost:5173/');
+  await _register(page);
+}
 
+async function _register(page: any) {
   await page.getByRole('button', { name: "Don't have an account? Create" }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
   await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');

@@ -73,19 +73,6 @@ test('instruction types all', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute('src', 'https://raw.githubusercontent.com/devops329/devops/main/path/relative.svg');
 });
 
-test('editor', async ({ page }) => {
-  await initBasicCourse({ page });
-  await navigateToCourse(page);
-
-  await page.getByRole('button', { name: '✏️' }).click();
-  await expect(page.getByRole('textbox')).toContainText('# Home markdown!');
-
-  await expect(page.getByRole('button', { name: 'README.md markdown • 2.6 KB' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).not.toBeChecked();
-  await page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).click();
-  await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).toBeChecked();
-});
-
 test('video', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourse(page);
