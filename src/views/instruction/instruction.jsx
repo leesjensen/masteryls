@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { useSwipeNavigation } from '../hooks/useSwipeNavigation';
+import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 import MarkdownInstruction from './markdownInstruction';
 import VideoInstruction from './videoInstruction';
 import QuizInstruction from './quiz/quizInstruction';

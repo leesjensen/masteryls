@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import Toolbar from './toolbar';
-import Instruction from './instruction/instruction.jsx';
-import Editor from './editor/editor.jsx';
+import Instruction from './views/instruction/instruction.jsx';
+import Editor from './views/editor/editor.jsx';
 import Sidebar from './sidebar';
 import Course from './course.js';
 import Start from './start.jsx';
-import Dashboard from './dashboard.jsx';
+import Dashboard from './views/dashboard/dashboard.jsx';
 import service from './service/service.js';
 
 function App() {
