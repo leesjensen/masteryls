@@ -12,9 +12,9 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     service.logout();
   };
 
-  const addEnrollment = async (courseInfo) => {
-    if (!enrollments.has(courseInfo.id)) {
-      await service.createEnrollment(user.id, courseInfo);
+  const addEnrollment = async (catalogEntry) => {
+    if (!enrollments.has(catalogEntry.id)) {
+      await service.createEnrollment(user.id, catalogEntry);
       setEnrollments(await service.enrollments(user.id));
     }
   };
@@ -46,7 +46,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       {enrollments.size > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {Array.from(enrollments.values()).map((enrollment) => {
-            return <CourseCard key={enrollment.id} courseInfo={enrollment.courseInfo} enrollment={enrollment} select={() => loadCourse(enrollment)} remove={() => removeEnrollment(enrollment)} />;
+            return <CourseCard key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => loadCourse(enrollment)} remove={() => removeEnrollment(enrollment)} />;
           })}
         </div>
       ) : (
@@ -59,9 +59,9 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {service
               .courseCatalog()
-              .filter((courseInfo) => !enrollments.has(courseInfo.id))
-              .map((courseInfo) => (
-                <CourseCard key={courseInfo.id} courseInfo={courseInfo} select={() => addEnrollment(courseInfo)} />
+              .filter((catalogEntry) => !enrollments.has(catalogEntry.id))
+              .map((catalogEntry) => (
+                <CourseCard key={catalogEntry.id} catalogEntry={catalogEntry} select={() => addEnrollment(catalogEntry)} />
               ))}
           </div>
         </div>
@@ -70,16 +70,16 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   );
 }
 
-function CourseCard({ courseInfo, enrollment, select, remove }) {
+function CourseCard({ catalogEntry, enrollment, select, remove }) {
   return (
     <div className="grid">
-      <button key={courseInfo.id} type="button" onClick={() => select(courseInfo)} className="col-start-1 row-start-1 flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-102 hover:shadow-lg cursor-pointer">
+      <button key={catalogEntry.id} type="button" onClick={() => select(catalogEntry)} className="col-start-1 row-start-1 flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-102 hover:shadow-lg cursor-pointer">
         <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrollment ? 'bg-amber-500' : 'bg-gray-300'}`}>
-          <span className="text-white text-xl font-bold">{courseInfo.title[0]}</span>
+          <span className="text-white text-xl font-bold">{catalogEntry.title[0]}</span>
         </div>
 
-        <div className="text-lg font-semibold mb-2 text-center">{courseInfo.title}</div>
-        <div className="text-gray-500 text-sm mb-3 text-center overflow-hidden text-ellipsis whitespace-normal line-clamp-3">{courseInfo.description}</div>
+        <div className="text-lg font-semibold mb-2 text-center">{catalogEntry.title}</div>
+        <div className="text-gray-500 text-sm mb-3 text-center overflow-hidden text-ellipsis whitespace-normal line-clamp-3">{catalogEntry.description}</div>
 
         {enrollment && (
           <div className="w-full mt-auto">

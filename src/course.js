@@ -1,6 +1,6 @@
 export default class Course {
-  static async create(courseInfo) {
-    const courseData = await load(courseInfo);
+  static async create(catalogEntry) {
+    const courseData = await load(catalogEntry);
     return new Course(courseData);
   }
 
@@ -136,26 +136,26 @@ export default class Course {
   }
 }
 
-async function load(courseInfo) {
+async function load(catalogEntry) {
   const gitHub = {
-    url: `https://github.com/${courseInfo.gitHub.account}/${courseInfo.gitHub.repository}/blob/main`,
-    apiUrl: `https://api.github.com/repos/${courseInfo.gitHub.account}/${courseInfo.gitHub.repository}/contents`,
-    rawUrl: `https://raw.githubusercontent.com/${courseInfo.gitHub.account}/${courseInfo.gitHub.repository}/main`,
+    url: `https://github.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/blob/main`,
+    apiUrl: `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents`,
+    rawUrl: `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`,
   };
 
   const courseUrl = `${gitHub.rawUrl}/course.json`;
   const response = await fetch(courseUrl);
   if (!response.ok) {
-    return loadCourseFromModulesMarkdown(courseInfo, gitHub);
+    return loadCourseFromModulesMarkdown(catalogEntry, gitHub);
   }
   const courseData = await response.json();
-  courseData.title = courseData.title || courseInfo.title || '';
-  courseData.id = courseInfo.id;
-  courseData.links = courseData.links || {};
+  courseData.title = courseData.title || catalogEntry.title || '';
+  courseData.id = catalogEntry.id;
+  courseData.links = catalogEntry.links || {};
   courseData.links.gitHub = gitHub;
   courseData.schedule = courseData.schedule ? `${gitHub.rawUrl}/${courseData.schedule}` : undefined;
   courseData.syllabus = courseData.syllabus ? `${gitHub.rawUrl}/${courseData.syllabus}` : undefined;
-  courseData.gitHub = courseInfo.gitHub;
+  courseData.gitHub = catalogEntry.gitHub;
 
   for (const module of courseData.modules) {
     for (const topic of module.topics) {
@@ -172,9 +172,9 @@ async function load(courseInfo) {
 }
 
 // This is a fallback for when course.json is not found
-async function loadCourseFromModulesMarkdown(courseInfo, gitHub) {
-  const instructionPath = courseInfo.gitHub.instructionPath ?? 'instruction';
-  const instructionModules = courseInfo.gitHub.instructionModules ?? 'modules.md';
+async function loadCourseFromModulesMarkdown(catalogEntry, gitHub) {
+  const instructionPath = catalogEntry.gitHub.instructionPath ?? 'instruction';
+  const instructionModules = catalogEntry.gitHub.instructionModules ?? 'modules.md';
   const instructionUrl = `${gitHub.rawUrl}/${instructionPath}/`;
   const response = await fetch(`${instructionUrl}${instructionModules}`);
   const markdownContent = await response.text();
@@ -184,7 +184,7 @@ async function loadCourseFromModulesMarkdown(courseInfo, gitHub) {
   const schedule = `${gitHub.rawUrl}/schedule/schedule.md`;
   const syllabus = `${instructionUrl}syllabus/syllabus.md`;
 
-  return { title: courseInfo.title, schedule, syllabus, modules, gitHub: courseInfo.gitHub, links: { gitHub } };
+  return { title: catalogEntry.title, schedule, syllabus, modules, gitHub: catalogEntry.gitHub, links: { gitHub } };
 }
 
 function generateId() {

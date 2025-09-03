@@ -35,7 +35,7 @@ function App() {
   }, []);
 
   function loadCourse(loadingEnrollment) {
-    Course.create(loadingEnrollment.courseInfo).then((loadedCourse) => {
+    Course.create(loadingEnrollment.catalogEntry).then((loadedCourse) => {
       service.setCurrentCourse(loadedCourse.id);
       setCourse(loadedCourse);
       setEnrollment(loadingEnrollment);

@@ -6,7 +6,7 @@ type User = {
   preferences: any;
 };
 
-type CourseInfo = {
+type CatalogEntry = {
   id: string;
   name: string;
   title: string;
@@ -32,9 +32,9 @@ type Enrollment = {
     sidebarVisible: boolean;
   };
   progress: Progress;
-  courseInfo?: CourseInfo;
+  catalogEntry?: CatalogEntry;
 };
 
 type Enrollments = Map<string, Enrollment>;
 
-export { User, CourseInfo, Progress, Enrollment, Enrollments };
+export { User, CatalogEntry as CourseInfo, Progress, Enrollment, Enrollments };

@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
-import { User, CourseInfo, Enrollment, Enrollments } from '../model';
+import { User, CourseInfo as CatalogEntry, Enrollment, Enrollments } from '../model';
 
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
 class Service {
-  catalog: CourseInfo[] = [];
+  catalog: CatalogEntry[] = [];
 
-  constructor(catalog: CourseInfo[]) {
+  constructor(catalog: CatalogEntry[]) {
     this.catalog = catalog;
   }
 
@@ -21,11 +21,11 @@ class Service {
     return new Service(data);
   }
 
-  courseCatalog(): CourseInfo[] {
+  courseCatalog(): CatalogEntry[] {
     return this.catalog;
   }
 
-  courseInfo(courseId: string) {
+  catalogEntry(courseId: string) {
     return this.catalog.find((c) => c.id === courseId);
   }
 
@@ -93,7 +93,7 @@ class Service {
 
     const enrollments = new Map<string, Enrollment>();
     data.forEach((item) => {
-      enrollments.set(item.courseId, { ...item, courseInfo: this.courseInfo(item.courseId) });
+      enrollments.set(item.courseId, { ...item, catalogEntry: this.catalogEntry(item.courseId) });
     });
 
     return enrollments;
@@ -107,10 +107,10 @@ class Service {
     localStorage.removeItem('currentCourse');
   }
 
-  async createEnrollment(learnerId: string, courseInfo: CourseInfo): Promise<void> {
+  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry): Promise<void> {
     const { error } = await supabase.from('enrollment').insert([
       {
-        courseId: courseInfo.id,
+        courseId: catalogEntry.id,
         ui: {
           currentTopic: null,
           tocIndexes: [0],
@@ -125,7 +125,7 @@ class Service {
   }
 
   async saveEnrollment(enrollment: Enrollment) {
-    const { courseInfo, ...enrollmentData } = enrollment;
+    const { catalogEntry: catalogEntry, ...enrollmentData } = enrollment;
     const { error } = await supabase.from('enrollment').upsert(enrollmentData);
     if (error) {
       throw new Error(error.message);
