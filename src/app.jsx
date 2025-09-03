@@ -120,13 +120,13 @@ function App() {
         </h1>
       </header>
 
-      <Toolbar course={course} closeCourse={closeCourse} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
+      <Toolbar enrollment={enrollment} course={course} closeCourse={closeCourse} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={setTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
 
       <div className="flex flex-1 overflow-hidden">
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <Sidebar service={service} course={course} enrollment={enrollment} currentTopic={topic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />
+          <Sidebar service={service} enrollment={enrollment} course={course} currentTopic={topic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />
         </div>
-        {editorVisible ? <Editor course={course} setCourse={setCourse} currentTopic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
+        {editorVisible ? <Editor enrollment={enrollment} course={course} setCourse={setCourse} currentTopic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
       </div>
     </div>
   );

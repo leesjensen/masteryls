@@ -2,7 +2,7 @@ import React from 'react';
 import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
 
-export default function Editor({ course, setCourse, currentTopic, changeTopic }) {
+export default function Editor({ enrollment, course, setCourse, currentTopic, changeTopic }) {
   const [files, setFiles] = React.useState([]);
 
   React.useEffect(() => {
@@ -11,7 +11,7 @@ export default function Editor({ course, setCourse, currentTopic, changeTopic })
       if (course && currentTopic?.path) {
         let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
         fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
-        const res = await course.makeGitHubApiRequest(fetchUrl);
+        const res = await course.makeGitHubApiRequest(enrollment.ui.token, fetchUrl);
 
         if (res.ok) {
           const data = await res.json();

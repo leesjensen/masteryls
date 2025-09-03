@@ -73,7 +73,7 @@ export default class Course {
     return [updatedCourse, savedTopic];
   }
 
-  async commitTopicMarkdown(updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
+  async commitTopicMarkdown(token, updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
     const updatedCourse = Course.copy(this);
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     delete savedTopic.lastUpdated;
@@ -84,13 +84,13 @@ export default class Course {
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
 
     // Get current file SHA - This will overwrite any changes made on GitHub since last fetch
-    const getRes = await this.makeGitHubApiRequest(gitHubUrl);
+    const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
     const fileData = await getRes.json();
     const sha = fileData.sha;
 
     // Commit to GitHub
     const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
-    await this.makeGitHubApiRequest(gitHubUrl, 'PUT', {
+    await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', {
       message: commitMessage,
       content: contentBase64,
       sha,
@@ -117,14 +117,11 @@ export default class Course {
     return markdown;
   }
 
-  async makeGitHubApiRequest(url, method = 'GET', body = null) {
-    if (!this.gitHub || !this.gitHub.token) {
-      throw new Error('GitHub token is not set');
-    }
+  async makeGitHubApiRequest(token, url, method = 'GET', body = null) {
     const request = {
       method,
       headers: {
-        Authorization: `Bearer ${this.gitHub.token}`,
+        Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github.v3+json',
       },
     };
@@ -150,6 +147,7 @@ async function load(catalogEntry) {
   }
   const courseData = await response.json();
   courseData.title = courseData.title || catalogEntry.title || '';
+  courseData.description = courseData.description || catalogEntry.description || '';
   courseData.id = catalogEntry.id;
   courseData.links = catalogEntry.links || {};
   courseData.links.gitHub = gitHub;
