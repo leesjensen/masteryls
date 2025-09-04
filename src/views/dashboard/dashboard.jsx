@@ -16,24 +16,27 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   const addEnrollment = async (catalogEntry) => {
     if (!enrollments.has(catalogEntry.id)) {
-      await service.createEnrollment(user.id, catalogEntry);
-      setEnrollments(await service.enrollments(user.id));
+      const newEnrollment = await service.createEnrollment(user.id, catalogEntry);
+      setEnrollments((prev) => new Map(prev).set(catalogEntry.id, newEnrollment));
     }
   };
 
   const removeEnrollment = async (enrollment) => {
     await service.removeEnrollment(enrollment);
-    setEnrollments(await service.enrollments(user.id));
+    setEnrollments((prev) => {
+      const newEnrollments = new Map(prev);
+      newEnrollments.delete(enrollment.id);
+      return newEnrollments;
+    });
   };
 
   const onCreateCourse = async (catalogEntry, gitHubToken) => {
-    // Call the service to create the course
     const newCourse = await service.createCourse(catalogEntry, gitHubToken);
+    const newEnrollment = await service.createEnrollment(user.id, newCourse, gitHubToken);
 
-    // create the admin enrollment
-    //    setEnrollments((prev) => new Map(prev).set(newCourse.id, newCourse));
+    setEnrollments((prev) => new Map(prev).set(newCourse.id, newEnrollment));
 
-    // setCreateCourse(false)
+    setCreateCourse(false);
   };
 
   if (createCourse) {

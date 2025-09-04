@@ -29,12 +29,13 @@ class Service {
     return this.catalog.find((c) => c.id === courseId);
   }
 
-  async createCourse(catalogEntry: CatalogEntry, gitHubToken: string): Promise<void> {
-    console.log(catalogEntry, gitHubToken);
-    // const { error } = await supabase.from('catalog').insert([catalogEntry]);
-    // if (error) {
-    //   throw new Error(error.message);
-    // }
+  async createCourse(catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+    const { data, error } = await supabase.from('catalog').insert([catalogEntry]).select().single();
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   }
 
   async currentUser(): Promise<User | null> {
@@ -78,7 +79,14 @@ class Service {
   }
 
   allEnrolled(enrollments: Map<string, Enrollment>) {
-    return this.catalog.filter((course) => !enrollments.has(course.id)).length === 0;
+    return (
+      this.catalog.filter((course) => {
+        if (course.id) {
+          return !enrollments.has(course.id);
+        }
+        return false;
+      }).length === 0
+    );
   }
 
   async currentEnrollment(learnerId: string): Promise<Enrollment | null> {
@@ -115,21 +123,30 @@ class Service {
     localStorage.removeItem('currentCourse');
   }
 
-  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry): Promise<void> {
-    const { error } = await supabase.from('enrollment').insert([
-      {
-        courseId: catalogEntry.id,
-        ui: {
-          currentTopic: null,
-          tocIndexes: [0],
-          sidebarVisible: true,
+  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry, token: string | undefined): Promise<Enrollment> {
+    const { data, error } = await supabase
+      .from('enrollment')
+      .insert([
+        {
+          courseId: catalogEntry.id,
+          learnerId,
+          ui: {
+            currentTopic: null,
+            tocIndexes: [0],
+            sidebarVisible: true,
+            token,
+          },
+          progress: { mastery: 0 },
         },
-        progress: { mastery: 0 },
-      },
-    ]);
+      ])
+      .select()
+      .single();
+
     if (error) {
       throw new Error(error.message);
     }
+
+    return { ...data, catalogEntry };
   }
 
   async saveEnrollment(enrollment: Enrollment) {
