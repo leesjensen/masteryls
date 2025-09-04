@@ -35,12 +35,16 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   };
 
   const onCreateCourse = async (catalogEntry, gitHubToken) => {
-    const newCourse = await service.createCourse(catalogEntry, gitHubToken);
-    const newEnrollment = await service.createEnrollment(user.id, newCourse, gitHubToken);
+    try {
+      const newCourse = await service.createCourse(catalogEntry, gitHubToken);
+      const newEnrollment = await service.createEnrollment(user.id, newCourse, gitHubToken);
 
-    setEnrollments((prev) => new Map(prev).set(newCourse.id, newEnrollment));
+      setEnrollments((prev) => new Map(prev).set(newCourse.id, newEnrollment));
 
-    setCreateCourse(false);
+      setCreateCourse(false);
+    } catch (error) {
+      alert(`Error creating course: ${error.message}`);
+    }
   };
 
   if (createCourse) {
