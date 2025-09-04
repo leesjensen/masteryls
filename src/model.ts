@@ -11,6 +11,7 @@ type CatalogEntry = {
   name: string;
   title: string;
   description: string;
+  ownerId: string;
   links?: object;
   gitHub: {
     account: string;
@@ -25,7 +26,7 @@ type Progress = {
 type Enrollment = {
   id: string;
   learnerId: string;
-  courseId: string;
+  catalogId: string;
   ui: {
     currentTopic: string | null;
     tocIndexes: number[];

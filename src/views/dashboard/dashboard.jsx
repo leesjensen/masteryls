@@ -22,10 +22,14 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   };
 
   const removeEnrollment = async (enrollment) => {
+    // if (enrollment.catalogEntry?.ownerId === user.id) {
+    //   await service.removeCourse(enrollment.catalogId);
+    // } else {
     await service.removeEnrollment(enrollment);
+    // }
     setEnrollments((prev) => {
       const newEnrollments = new Map(prev);
-      newEnrollments.delete(enrollment.id);
+      newEnrollments.delete(enrollment.catalogId);
       return newEnrollments;
     });
   };
@@ -74,7 +78,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       {enrollments.size > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {Array.from(enrollments.values()).map((enrollment) => {
-            return <CourseCard key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => loadCourse(enrollment)} remove={() => removeEnrollment(enrollment)} />;
+            return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => loadCourse(enrollment)} remove={() => removeEnrollment(enrollment)} />;
           })}
         </div>
       ) : (
@@ -89,7 +93,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
               .courseCatalog()
               .filter((catalogEntry) => !enrollments.has(catalogEntry.id))
               .map((catalogEntry) => (
-                <CourseCard key={catalogEntry.id} catalogEntry={catalogEntry} select={() => addEnrollment(catalogEntry)} />
+                <CourseCard user={user} key={catalogEntry.id} catalogEntry={catalogEntry} select={() => addEnrollment(catalogEntry)} />
               ))}
           </div>
         </div>
@@ -98,7 +102,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   );
 }
 
-function CourseCard({ catalogEntry, enrollment, select, remove }) {
+function CourseCard({ user, catalogEntry, enrollment, select, remove }) {
   return (
     <div className="grid">
       <button key={catalogEntry.id} type="button" onClick={() => select(catalogEntry)} className="col-start-1 row-start-1 flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-102 hover:shadow-lg cursor-pointer">
@@ -137,14 +141,14 @@ function CourseCard({ catalogEntry, enrollment, select, remove }) {
         </button>
       )}
 
-      {enrollment && enrollment.ui?.token && (
+      {enrollment && (enrollment.ui?.token || enrollment.catalogEntry?.ownerId === user.id) && (
         <div
           className="col-start-1 row-start-1 justify-self-end -translate-y-3 -translate-x-6 
              inline-flex items-center justify-center w-7 h-7 rounded-full bg-white text-gray-600 text-xs shadow cursor-default
             "
         >
-          <span title="editor rights" className="text-lg">
-            ✏️
+          <span title="editor rights" className="text-lg text-yellow-400">
+            {enrollment.catalogEntry?.ownerId === user.id ? '★' : '✏️'}
           </span>
         </div>
       )}

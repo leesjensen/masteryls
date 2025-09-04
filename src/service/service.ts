@@ -12,7 +12,7 @@ class Service {
   }
 
   static async create() {
-    const { data, error } = await supabase.from('catalog').select('id, name, title, description, links, gitHub');
+    const { data, error } = await supabase.from('catalog').select('id, name, title, description, links, gitHub, ownerId');
 
     if (error) {
       throw new Error(error.message);
@@ -25,8 +25,8 @@ class Service {
     return this.catalog;
   }
 
-  catalogEntry(courseId: string) {
-    return this.catalog.find((c) => c.id === courseId);
+  catalogEntry(catalogId: string) {
+    return this.catalog.find((c) => c.id === catalogId);
   }
 
   async createCourse(catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
@@ -36,6 +36,13 @@ class Service {
     }
 
     return data;
+  }
+
+  async removeCourse(catalogId: string): Promise<void> {
+    const { error } = await supabase.from('catalog').delete().eq('id', catalogId);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   async currentUser(): Promise<User | null> {
@@ -101,7 +108,7 @@ class Service {
   }
 
   async enrollments(id: string): Promise<Map<string, Enrollment>> {
-    const { data, error } = await supabase.from('enrollment').select('id, courseId, learnerId, ui, progress').eq('learnerId', id);
+    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, ui, progress').eq('learnerId', id);
 
     if (error) {
       throw new Error(error.message);
@@ -109,14 +116,14 @@ class Service {
 
     const enrollments = new Map<string, Enrollment>();
     data.forEach((item) => {
-      enrollments.set(item.courseId, { ...item, catalogEntry: this.catalogEntry(item.courseId) });
+      enrollments.set(item.catalogId, { ...item, catalogEntry: this.catalogEntry(item.catalogId) });
     });
 
     return enrollments;
   }
 
-  setCurrentCourse(courseId: string): void {
-    localStorage.setItem('currentCourse', courseId);
+  setCurrentCourse(catalogId: string): void {
+    localStorage.setItem('currentCourse', catalogId);
   }
 
   removeCurrentCourse(): void {
@@ -128,7 +135,7 @@ class Service {
       .from('enrollment')
       .insert([
         {
-          courseId: catalogEntry.id,
+          catalogId: catalogEntry.id,
           learnerId,
           ui: {
             currentTopic: null,

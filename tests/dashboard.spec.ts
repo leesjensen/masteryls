@@ -58,7 +58,7 @@ test('dashboard join/leave courses', async ({ page }) => {
   enrollments = [
     {
       id: '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5',
-      courseId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+      catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
       learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
       ui: {
         tocIndexes: [0, 1],
