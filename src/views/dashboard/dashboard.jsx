@@ -24,6 +24,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   const removeEnrollment = async (enrollment) => {
     // if (enrollment.catalogEntry?.ownerId === user.id) {
     //   await service.removeCourse(enrollment.catalogId);
+    //   await service.removeGitHubRepo(enrollment.catalogEntry.gitHub);
     // } else {
     await service.removeEnrollment(enrollment);
     // }
