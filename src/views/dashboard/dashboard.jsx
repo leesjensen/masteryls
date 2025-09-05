@@ -41,9 +41,9 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     } else {
       setDeleteEnrollmentTitle('Delete enrollment');
       setDeleteEnrollmentMessage(
-        <div>
+        <p>
           Are you sure you want to delete your enrollment to <b>{enrollment.catalogEntry.name}</b>?
-        </div>
+        </p>
       );
     }
     setPendingEnrollmentRemoval(enrollment);
@@ -56,19 +56,19 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       await service.removeCourse(pendingEnrollmentRemoval);
     } else {
       await service.removeEnrollment(pendingEnrollmentRemoval.id);
-      setEnrollments((prev) => {
-        const newEnrollments = new Map(prev);
-        newEnrollments.delete(pendingEnrollmentRemoval.catalogId);
-        return newEnrollments;
-      });
     }
+    setEnrollments((prev) => {
+      const newEnrollments = new Map(prev);
+      newEnrollments.delete(pendingEnrollmentRemoval.catalogId);
+      return newEnrollments;
+    });
     setPendingEnrollmentRemoval(null);
   };
 
   const onCreateCourse = async (catalogEntry, gitHubToken) => {
     try {
       const newCourse = await service.createCourse(catalogEntry, gitHubToken);
-      const newEnrollment = await service.createEnrollment(user.id, newCourse, gitHubToken);
+      const newEnrollment = await service.createEnrollment(user.id, newCourse, catalogEntry, gitHubToken);
 
       setEnrollments((prev) => new Map(prev).set(newCourse.id, newEnrollment));
 

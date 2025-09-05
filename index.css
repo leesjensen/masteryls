@@ -4,3 +4,9 @@
 * {
   font-family: 'Quicksand', sans-serif;
 }
+
+@layer utilities {
+  dialog::backdrop {
+    @apply bg-gray-900/40;
+  }
+}
