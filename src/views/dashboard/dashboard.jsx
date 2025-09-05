@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import CourseForm from './courseForm';
 import CourseCard from './courseCard';
+import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 
 export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [enrollments, setEnrollments] = useState();
   const [createCourse, setCreateCourse] = useState(false);
+  const [pendingEnrollment, setPendingEnrollment] = useState(null);
+  const dialogRef = useRef(null);
 
   React.useEffect(() => {
     service.enrollments(user.id).then(setEnrollments);
@@ -23,17 +26,23 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   };
 
   const removeEnrollment = async (enrollment) => {
-    // if (enrollment.catalogEntry?.ownerId === user.id) {
-    //   await service.removeCourse(enrollment.catalogId);
-    //   await service.removeGitHubRepo(enrollment.catalogEntry.gitHub);
-    // } else {
-    await service.removeEnrollment(enrollment);
-    // }
-    setEnrollments((prev) => {
-      const newEnrollments = new Map(prev);
-      newEnrollments.delete(enrollment.catalogId);
-      return newEnrollments;
-    });
+    setPendingEnrollment(enrollment);
+    dialogRef.current.showModal();
+  };
+
+  const confirmEnrollmentRemoval = async () => {
+    dialogRef.current.close();
+    if (pendingEnrollment.catalogEntry?.ownerId === user.id) {
+      await service.removeCourse(pendingEnrollment.catalogId);
+    } else {
+      await service.removeEnrollment(pendingEnrollment.id);
+      setEnrollments((prev) => {
+        const newEnrollments = new Map(prev);
+        newEnrollments.delete(pendingEnrollment.catalogId);
+        return newEnrollments;
+      });
+    }
+    setPendingEnrollment(null);
   };
 
   const onCreateCourse = async (catalogEntry, gitHubToken) => {
@@ -67,6 +76,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   return (
     <div className="max-w-4xl mx-auto mt-6 p-8 bg-white">
+      <ConfirmDialog dialogRef={dialogRef} confirmDelete={confirmEnrollmentRemoval} />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
           <h1 className="font-bold text-3xl mb-2">Welcome {user.name}!</h1>
