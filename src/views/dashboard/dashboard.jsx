@@ -6,7 +6,7 @@ import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [enrollments, setEnrollments] = useState();
   const [createCourse, setCreateCourse] = useState(false);
-  const [pendingEnrollment, setPendingEnrollment] = useState(null);
+  const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [deleteEnrollmentTitle, setDeleteEnrollmentTitle] = useState('');
   const [deleteEnrollmentMessage, setDeleteEnrollmentMessage] = useState('');
   const dialogRef = useRef(null);
@@ -46,23 +46,23 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
         </div>
       );
     }
-    setPendingEnrollment(enrollment);
+    setPendingEnrollmentRemoval(enrollment);
     dialogRef.current.showModal();
   };
 
-  const confirmEnrollmentRemoval = async () => {
+  const confirmedEnrollmentRemoval = async () => {
     dialogRef.current.close();
-    if (pendingEnrollment.catalogEntry?.ownerId === user.id) {
-      await service.removeCourse(pendingEnrollment.catalogId);
+    if (pendingEnrollmentRemoval.catalogEntry?.ownerId === user.id) {
+      await service.removeCourse(pendingEnrollmentRemoval);
     } else {
-      await service.removeEnrollment(pendingEnrollment.id);
+      await service.removeEnrollment(pendingEnrollmentRemoval.id);
       setEnrollments((prev) => {
         const newEnrollments = new Map(prev);
-        newEnrollments.delete(pendingEnrollment.catalogId);
+        newEnrollments.delete(pendingEnrollmentRemoval.catalogId);
         return newEnrollments;
       });
     }
-    setPendingEnrollment(null);
+    setPendingEnrollmentRemoval(null);
   };
 
   const onCreateCourse = async (catalogEntry, gitHubToken) => {
@@ -96,7 +96,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   return (
     <div className="max-w-4xl mx-auto mt-6 p-8 bg-white">
-      <ConfirmDialog dialogRef={dialogRef} title={deleteEnrollmentTitle} confirmed={confirmEnrollmentRemoval} message={deleteEnrollmentMessage} />
+      <ConfirmDialog dialogRef={dialogRef} title={deleteEnrollmentTitle} confirmed={confirmedEnrollmentRemoval} message={deleteEnrollmentMessage} />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
           <h1 className="font-bold text-3xl mb-2">Welcome {user.name}!</h1>

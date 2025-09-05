@@ -31,6 +31,7 @@ type Enrollment = {
     currentTopic: string | null;
     tocIndexes: number[];
     sidebarVisible: boolean;
+    token?: string;
   };
   progress: Progress;
   catalogEntry?: CatalogEntry;

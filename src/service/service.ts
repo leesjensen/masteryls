@@ -65,10 +65,25 @@ class Service {
     return data;
   }
 
-  async removeCourse(catalogId: string): Promise<void> {
-    const { error } = await supabase.from('catalog').delete().eq('id', catalogId);
-    if (error) {
-      throw new Error(error.message);
+  async removeCourse(enrollment: Enrollment): Promise<void> {
+    if (enrollment.catalogEntry?.ownerId === enrollment.learnerId && enrollment.ui.token) {
+      const catalogEntry = enrollment.catalogEntry;
+      const deleteResp = await fetch(`https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${enrollment.ui.token}`,
+          Accept: 'application/vnd.github+json',
+        },
+      });
+      if (!deleteResp.ok) {
+        const errText = await deleteResp.text().catch(() => deleteResp.statusText);
+        throw new Error(`Failed to delete course: ${deleteResp.status} ${errText}`);
+      }
+
+      const { error } = await supabase.from('catalog').delete().eq('id', catalogEntry.id);
+      if (error) {
+        throw new Error(error.message);
+      }
     }
   }
 
