@@ -29,11 +29,26 @@ class Service {
     return this.catalog.find((c) => c.id === catalogId);
   }
 
-  async createCourse(catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+  async getTemplateRepositories(gitHubAccount: string): Promise<string[]> {
+    const url = `https://api.github.com/users/${gitHubAccount}/repos?per_page=100`;
+    const resp = await fetch(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+      },
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => resp.statusText);
+      throw new Error(`Failed to fetch repositories: ${resp.status} ${errText}`);
+    }
+
+    const repos = await resp.json();
+    return repos.filter((repo: any) => repo.is_template).map((repo: any) => repo.name);
+  }
+
+  async createCourse(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     try {
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
-        const templateOwner = config.gitHub.templateRepository.owner || 'csinstructiontemplate';
-        const templateRepo = config.gitHub.templateRepository.repo || 'examplecourse';
         const targetOwner = catalogEntry.gitHub.account;
         const targetRepo = catalogEntry.gitHub.repository;
 

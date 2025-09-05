@@ -80,7 +80,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   if (createCourse) {
     return (
-      <CourseForm onClose={() => setCreateCourse(false)} onCreate={onCreateCourse}>
+      <CourseForm service={service} onClose={() => setCreateCourse(false)} onCreate={onCreateCourse}>
         create a course!
       </CourseForm>
     );

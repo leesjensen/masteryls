@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
 
-export default function CourseForm({ onClose, onCreate }) {
+export default function CourseForm({ service, onClose, onCreate }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [name, setName] = useState('');
   const [gitHubToken, setGitHubToken] = useState('');
   const [gitHubAccount, setGitHubAccount] = useState('');
   const [gitHubRepo, setGitHubRepo] = useState('');
+  const [gitHubSourceAccount, setGitHubSourceAccount] = useState('csinstructiontemplate');
+  const [gitHubTemplates, setGitHubTemplates] = useState([]);
+
+  React.useEffect(() => {
+    service.getTemplateRepositories().then((templates) => {
+      setGitHubTemplates(templates);
+    });
+  }, [gitHubSourceAccount]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -48,27 +56,43 @@ export default function CourseForm({ onClose, onCreate }) {
             <textarea id="course-description" name="description" required rows={5} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300 resize-y" placeholder="Short summary of what learners will accomplish" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-1 border-gray-300 rounded-sm p-2">
+            <div>
+              <label htmlFor="source-gitHub-account" className="block text-sm font-medium text-gray-700 mb-1">
+                Source GitHub Account
+              </label>
+              <input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
+            </div>
+
+            <div>
+              <label htmlFor="source-gitHub-repo" className="block text-sm font-medium text-gray-700 mb-1">
+                Source GitHub Repo
+              </label>
+              <input id="source-gitHub-repo" name="gitHubRepo" value={gitHubRepo} onChange={(e) => setGitHubRepo(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="repo-name" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-1 border-gray-300 rounded-sm p-2 ">
             <div>
               <label htmlFor="gitHub-account" className="block text-sm font-medium text-gray-700 mb-1">
-                GitHub Account
+                Course GitHub Account
               </label>
               <input id="gitHub-account" name="gitHubAccount" value={gitHubAccount} onChange={(e) => setGitHubAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="your-gitHub-username" />
             </div>
 
             <div>
               <label htmlFor="gitHub-repo" className="block text-sm font-medium text-gray-700 mb-1">
-                GitHub Repo
+                Course GitHub Repo
               </label>
               <input id="gitHub-repo" name="gitHubRepo" value={gitHubRepo} onChange={(e) => setGitHubRepo(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="repo-name" />
             </div>
-          </div>
 
-          <div>
-            <label htmlFor="gitHub-token" className="block text-sm font-medium text-gray-700 mb-1">
-              GitHub Token
-            </label>
-            <input id="gitHub-token" name="gitHubToken" type="password" value={gitHubToken} onChange={(e) => setGitHubToken(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Personal access token" />
+            <div>
+              <label htmlFor="gitHub-token" className="block text-sm font-medium text-gray-700 mb-1">
+                GitHub Token
+              </label>
+              <input id="gitHub-token" name="gitHubToken" value={gitHubToken} onChange={(e) => setGitHubToken(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Personal access token" />
+            </div>
           </div>
 
           <div className="flex items-center justify-end space-x-3 pt-2 border-t">
