@@ -46,6 +46,24 @@ class Service {
     return repos.filter((repo: any) => repo.is_template).map((repo: any) => repo.name);
   }
 
+  async verifyGitHubAccount(gitHubToken: string): Promise<boolean> {
+    const resp = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${gitHubToken}`,
+        Accept: 'application/vnd.github+json',
+      },
+    });
+
+    if (resp.ok) {
+      // Check scopes for admin and content write rights
+      const scopes = resp.headers.get('x-oauth-scopes');
+      if (scopes && !scopes.includes('repo') && scopes.includes('admin:repo_hook')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async createCourse(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     try {
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
