@@ -8,10 +8,11 @@ export default function CourseForm({ service, onClose, onCreate }) {
   const [gitHubAccount, setGitHubAccount] = useState('');
   const [gitHubRepo, setGitHubRepo] = useState('');
   const [gitHubSourceAccount, setGitHubSourceAccount] = useState('csinstructiontemplate');
+  const [gitHubSourceRepo, setGitHubSourceRepo] = useState('');
   const [gitHubTemplates, setGitHubTemplates] = useState([]);
 
   React.useEffect(() => {
-    service.getTemplateRepositories().then((templates) => {
+    service.getTemplateRepositories(gitHubSourceAccount).then((templates) => {
       setGitHubTemplates(templates);
     });
   }, [gitHubSourceAccount]);
@@ -19,7 +20,7 @@ export default function CourseForm({ service, onClose, onCreate }) {
   function handleSubmit(e) {
     e.preventDefault();
     if (onCreate) {
-      onCreate({ title, description, name, gitHub: { account: gitHubAccount, repository: gitHubRepo } }, gitHubToken);
+      onCreate(gitHubSourceAccount, gitHubSourceRepo, { title, description, name, gitHub: { account: gitHubAccount, repository: gitHubRepo } }, gitHubToken);
     }
   }
 
@@ -65,10 +66,17 @@ export default function CourseForm({ service, onClose, onCreate }) {
             </div>
 
             <div>
-              <label htmlFor="source-gitHub-repo" className="block text-sm font-medium text-gray-700 mb-1">
-                Source GitHub Repo
+              <label htmlFor="source-gitHub-template" className="block text-sm font-medium text-gray-700 mb-1">
+                Source GitHub Template
               </label>
-              <input id="source-gitHub-repo" name="gitHubRepo" value={gitHubRepo} onChange={(e) => setGitHubRepo(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="repo-name" />
+              <select id="source-gitHub-template" name="gitHubTemplate" value={gitHubSourceRepo} onChange={(e) => setGitHubSourceRepo(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+                <option value="">Select a template...</option>
+                {gitHubTemplates.map((template) => (
+                  <option key={template} value={template}>
+                    {template}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

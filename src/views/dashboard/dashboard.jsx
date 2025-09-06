@@ -65,9 +65,9 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     setPendingEnrollmentRemoval(null);
   };
 
-  const onCreateCourse = async (catalogEntry, gitHubToken) => {
+  const onCreateCourse = async (sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
     try {
-      const newCourse = await service.createCourse(catalogEntry, gitHubToken);
+      const newCourse = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
       const newEnrollment = await service.createEnrollment(user.id, newCourse, catalogEntry, gitHubToken);
 
       setEnrollments((prev) => new Map(prev).set(newCourse.id, newEnrollment));
