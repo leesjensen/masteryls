@@ -99,6 +99,8 @@ class Service {
       if (error) {
         throw new Error(error.message);
       }
+
+      this.catalog = this.catalog.filter((c) => c.id !== catalogEntry.id);
     }
   }
 

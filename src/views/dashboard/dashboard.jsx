@@ -5,7 +5,7 @@ import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 
 export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [enrollments, setEnrollments] = useState();
-  const [createCourse, setCreateCourse] = useState(false);
+  const [displayCreateCourseForm, setDisplayCreateCourseForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [deleteEnrollmentTitle, setDeleteEnrollmentTitle] = useState('');
   const [deleteEnrollmentMessage, setDeleteEnrollmentMessage] = useState('');
@@ -27,7 +27,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     }
   };
 
-  const removeEnrollment = async (enrollment) => {
+  const requestedEnrollmentRemoval = async (enrollment) => {
     if (enrollment.catalogEntry?.ownerId === user.id) {
       setDeleteEnrollmentTitle('Delete course');
       setDeleteEnrollmentMessage(
@@ -65,22 +65,22 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     setPendingEnrollmentRemoval(null);
   };
 
-  const onCreateCourse = async (sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
+  const createCourse = async (sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
     try {
       const newCourse = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-      const newEnrollment = await service.createEnrollment(user.id, newCourse, catalogEntry, gitHubToken);
+      const newEnrollment = await service.createEnrollment(user.id, newCourse, gitHubToken);
 
       setEnrollments((prev) => new Map(prev).set(newCourse.id, newEnrollment));
 
-      setCreateCourse(false);
+      setDisplayCreateCourseForm(false);
     } catch (error) {
       alert(`Error creating course: ${error.message}`);
     }
   };
 
-  if (createCourse) {
+  if (displayCreateCourseForm) {
     return (
-      <CourseForm service={service} onClose={() => setCreateCourse(false)} onCreate={onCreateCourse}>
+      <CourseForm service={service} onClose={() => setDisplayCreateCourseForm(false)} onCreate={createCourse}>
         create a course!
       </CourseForm>
     );
@@ -102,7 +102,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
           <h1 className="font-bold text-3xl mb-2">Welcome {user.name}!</h1>
         </div>
         <div className="flex justify-between mb-6">
-          <button onClick={() => setCreateCourse(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+          <button onClick={() => setDisplayCreateCourseForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
             <span className="font-semibold text-amber-600">+</span> Course
           </button>
           <button onClick={logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
@@ -114,7 +114,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       {enrollments.size > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {Array.from(enrollments.values()).map((enrollment) => {
-            return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => loadCourse(enrollment)} remove={() => removeEnrollment(enrollment)} />;
+            return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => loadCourse(enrollment)} remove={() => requestedEnrollmentRemoval(enrollment)} />;
           })}
         </div>
       ) : (
