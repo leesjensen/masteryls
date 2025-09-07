@@ -12,9 +12,15 @@ export default function CourseForm({ service, onClose, onCreate }) {
   const [gitHubTemplates, setGitHubTemplates] = useState([]);
 
   React.useEffect(() => {
-    service.getTemplateRepositories(gitHubSourceAccount).then((templates) => {
-      setGitHubTemplates(templates);
-    });
+    service
+      .getTemplateRepositories(gitHubSourceAccount)
+      .then((templates) => {
+        setGitHubTemplates(templates);
+      })
+      .catch((error) => {
+        console.error('Error fetching GitHub templates:', error);
+        setGitHubTemplates([]);
+      });
   }, [gitHubSourceAccount]);
 
   function handleSubmit(e) {
@@ -62,14 +68,23 @@ export default function CourseForm({ service, onClose, onCreate }) {
               <label htmlFor="source-gitHub-account" className="block text-sm font-medium text-gray-700 mb-1">
                 Source GitHub Account
               </label>
-              <input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
+              <input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubSourceAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
             </div>
 
             <div>
               <label htmlFor="source-gitHub-template" className="block text-sm font-medium text-gray-700 mb-1">
                 Source GitHub Template
               </label>
-              <select id="source-gitHub-template" name="gitHubTemplate" value={gitHubSourceRepo} onChange={(e) => setGitHubSourceRepo(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+              <select
+                id="source-gitHub-template"
+                disabled={gitHubTemplates.length === 0}
+                name="gitHubTemplate"
+                value={gitHubSourceRepo}
+                onChange={(e) => setGitHubSourceRepo(e.target.value)}
+                className="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300
+                  disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed bg-white text-gray-700 border-gray-200
+                "
+              >
                 <option value="">Select a template...</option>
                 {gitHubTemplates.map((template) => (
                   <option key={template} value={template}>
@@ -108,7 +123,7 @@ export default function CourseForm({ service, onClose, onCreate }) {
               Cancel
             </button>
 
-            <button type="submit" disabled={!isValid} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow ${isValid ? 'bg-amber-400 hover:bg-amber-500' : 'bg-gray-300 cursor-not-allowed'}`}>
+            <button type="submit" disabled={!isValid} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`}>
               Create Course
             </button>
           </div>

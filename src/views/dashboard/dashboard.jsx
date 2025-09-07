@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import CourseForm from './courseForm';
 import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
-import AlertDialog from '../../hooks/alertDialog.jsx';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 
 export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [enrollments, setEnrollments] = useState();
@@ -10,8 +10,8 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [deleteEnrollmentTitle, setDeleteEnrollmentTitle] = useState('');
   const [deleteEnrollmentMessage, setDeleteEnrollmentMessage] = useState('');
-  const [alert, setAlert] = useState(null);
   const dialogRef = useRef(null);
+  const { showAlert } = useAlert();
 
   React.useEffect(() => {
     service.enrollments(user.id).then(setEnrollments);
@@ -69,7 +69,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   const createCourse = async (sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
     try {
-      if (service.verifyGitHubAccount(gitHubToken)) {
+      if (await service.verifyGitHubAccount(gitHubToken)) {
         const newCourse = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
         const newEnrollment = await service.createEnrollment(user.id, newCourse, gitHubToken);
 
@@ -77,10 +77,10 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
         setDisplayCreateCourseForm(false);
       } else {
-        setAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
+        showAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
       }
     } catch (error) {
-      setAlert({ message: `Error creating course: ${error.message}`, type: 'error' });
+      showAlert({ message: `Error creating course: ${error.message}`, type: 'error' });
     }
   };
 
@@ -102,7 +102,6 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   return (
     <div className="max-w-4xl mx-auto mt-6 p-8 bg-white">
-      {alert && <AlertDialog message={alert.message} type={alert.type} onClose={() => setAlert(null)} />}
       <ConfirmDialog dialogRef={dialogRef} title={deleteEnrollmentTitle} confirmed={confirmedEnrollmentRemoval} message={deleteEnrollmentMessage} />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>

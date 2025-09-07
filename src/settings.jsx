@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useAlert } from './contexts/AlertContext.jsx';
 
 export default function Settings({ enrollment, course }) {
+  const { showAlert } = useAlert();
+
   const editorVisible = !!enrollment.ui?.token;
 
   function stripGithubPrefix(schedule, course) {
@@ -27,7 +30,7 @@ export default function Settings({ enrollment, course }) {
   };
 
   const handleSave = () => {
-    alert('Functionality to save settings is not implemented yet.');
+    showAlert({ message: 'Functionality to save settings is not implemented yet.', type: 'info' });
   };
 
   return (
