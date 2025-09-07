@@ -105,7 +105,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       <ConfirmDialog dialogRef={dialogRef} title={deleteEnrollmentTitle} confirmed={confirmedEnrollmentRemoval} message={deleteEnrollmentMessage} />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
-          <h1 className="font-bold text-3xl mb-2">Welcome {user.name}!</h1>
+          <h1 className="font-bold text-3xl mb-2">{user.name}'s dashboard</h1>
         </div>
         <div className="flex justify-between mb-6">
           <button onClick={() => setDisplayCreateCourseForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
