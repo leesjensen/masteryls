@@ -30,7 +30,7 @@ export default function CourseForm({ service, onClose, onCreate }) {
     }
   }
 
-  const isValid = title.trim() && description.trim() && name.trim() && gitHubAccount.trim() && gitHubRepo.trim() && gitHubToken.trim();
+  const isValid = title.trim() && description.trim() && name.trim() && gitHubSourceRepo.trim() && gitHubAccount.trim() && gitHubRepo.trim() && gitHubToken.trim();
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-start pt-16 p-4">
@@ -69,6 +69,7 @@ export default function CourseForm({ service, onClose, onCreate }) {
                 Source GitHub Account
               </label>
               <input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubSourceAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
+              <p className="text-xs text-gray-400 mt-1">Only accounts with public template repositories are eligible.</p>
             </div>
 
             <div>
@@ -115,6 +116,7 @@ export default function CourseForm({ service, onClose, onCreate }) {
                 GitHub Token
               </label>
               <input id="gitHub-token" name="gitHubToken" value={gitHubToken} onChange={(e) => setGitHubToken(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Personal access token" />
+              <p className="text-xs text-gray-400 mt-1">The token must be a fine-grained Personal Access Token with admin and repo write rights.</p>
             </div>
           </div>
 

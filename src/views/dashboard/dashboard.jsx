@@ -70,10 +70,10 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   const createCourse = async (sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
     try {
       if (await service.verifyGitHubAccount(gitHubToken)) {
-        const newCourse = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-        const newEnrollment = await service.createEnrollment(user.id, newCourse, gitHubToken);
+        const newCatalogEntry = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+        const newEnrollment = await service.createEnrollment(user.id, newCatalogEntry, gitHubToken);
 
-        setEnrollments((prev) => new Map(prev).set(newCourse.id, newEnrollment));
+        setEnrollments((prev) => new Map(prev).set(newCatalogEntry.id, newEnrollment));
 
         setDisplayCreateCourseForm(false);
       } else {

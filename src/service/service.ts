@@ -54,14 +54,7 @@ class Service {
       },
     });
 
-    if (resp.ok) {
-      // Check scopes for admin and content write rights
-      const scopes = resp.headers.get('x-oauth-scopes');
-      if (scopes && !scopes.includes('repo') && scopes.includes('admin:repo_hook')) {
-        return true;
-      }
-    }
-    return false;
+    return resp.ok;
   }
 
   async createCourse(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
@@ -94,6 +87,8 @@ class Service {
     if (error) {
       throw new Error(error.message);
     }
+
+    this.catalog.push(data);
 
     return data;
   }
