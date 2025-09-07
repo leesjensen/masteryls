@@ -27,7 +27,7 @@ type Enrollment = {
   id: string;
   learnerId: string;
   catalogId: string;
-  ui: {
+  settings: {
     currentTopic: string | null;
     tocIndexes: number[];
     sidebarVisible: boolean;

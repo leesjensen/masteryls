@@ -39,7 +39,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
         </button>
       )}
 
-      {enrollment && (enrollment.ui?.token || enrollment.catalogEntry?.ownerId === user.id) && (
+      {enrollment && (enrollment.settings?.token || enrollment.catalogEntry?.ownerId === user.id) && (
         <div
           className="col-start-1 row-start-1 justify-self-end -translate-y-3 -translate-x-6 
              inline-flex items-center justify-center w-7 h-7 rounded-full bg-white text-gray-600 text-xs shadow cursor-default

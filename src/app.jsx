@@ -40,8 +40,8 @@ function App() {
       setCourse(loadedCourse);
       setEnrollment(loadingEnrollment);
 
-      if (loadingEnrollment.ui.currentTopic) {
-        setTopic(loadedCourse.topicFromPath(loadingEnrollment.ui.currentTopic));
+      if (loadingEnrollment.settings.currentTopic) {
+        setTopic(loadedCourse.topicFromPath(loadingEnrollment.settings.currentTopic));
       } else {
         setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
       }
@@ -66,11 +66,11 @@ function App() {
     service.removeCurrentCourse();
   }
 
-  const sidebarVisible = enrollment?.ui.sidebarVisible ?? false;
+  const sidebarVisible = enrollment?.settings.sidebarVisible ?? false;
 
   function manipulateSidebar(visible) {
     setEnrollment((previous) => {
-      const next = { ...previous, ui: { ...previous.ui, sidebarVisible: visible } };
+      const next = { ...previous, settings: { ...previous.settings, sidebarVisible: visible } };
       service.saveEnrollment(next);
       return next;
     });
@@ -78,7 +78,7 @@ function App() {
 
   function changeTopic(newTopic) {
     setEnrollment((previous) => {
-      const next = { ...previous, ui: { ...previous.ui, currentTopic: newTopic.path } };
+      const next = { ...previous, settings: { ...previous.settings, currentTopic: newTopic.path } };
       service.saveEnrollment(next);
       return next;
     });

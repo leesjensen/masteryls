@@ -11,7 +11,7 @@ export default function Editor({ enrollment, course, setCourse, currentTopic, ch
       if (course && currentTopic?.path) {
         let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
         fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
-        const res = await course.makeGitHubApiRequest(enrollment.ui.token, fetchUrl);
+        const res = await course.makeGitHubApiRequest(enrollment.settings.token, fetchUrl);
 
         if (res.ok) {
           const data = await res.json();

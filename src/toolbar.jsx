@@ -21,7 +21,7 @@ export default function Toolbar({ enrollment, course, closeCourse, sidebarVisibl
         </button>
       </div>
       <div className="flex flex-row justify-end">
-        {enrollment.ui?.token && (
+        {enrollment.settings?.token && (
           <button className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => toggleEditor()}>
             {editing ? '📘' : '✏️'}
           </button>

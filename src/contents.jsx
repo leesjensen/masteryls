@@ -20,7 +20,7 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, navi
     setOpenModuleIndexes((prev) => {
       const newIndexes = prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index];
 
-      enrollment.ui.tocIndexes = newIndexes;
+      enrollment.settings.tocIndexes = newIndexes;
       service.saveEnrollment(enrollment);
 
       return newIndexes;
@@ -30,12 +30,12 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, navi
   useEffect(() => {
     if (currentTopic?.path) {
       const moduleIndex = course.moduleIndexOf(currentTopic.path);
-      if (moduleIndex !== -1 && !enrollment.ui.tocIndexes.includes(moduleIndex)) {
-        enrollment.ui.tocIndexes.push(moduleIndex);
+      if (moduleIndex !== -1 && !enrollment.settings.tocIndexes.includes(moduleIndex)) {
+        enrollment.settings.tocIndexes.push(moduleIndex);
         service.saveEnrollment(enrollment);
       }
     }
-    setOpenModuleIndexes(enrollment.ui.tocIndexes);
+    setOpenModuleIndexes(enrollment.settings.tocIndexes);
   }, [currentTopic]);
 
   function topicIcon(topic) {

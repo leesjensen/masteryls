@@ -94,12 +94,12 @@ class Service {
   }
 
   async removeCourse(enrollment: Enrollment): Promise<void> {
-    if (enrollment.catalogEntry?.ownerId === enrollment.learnerId && enrollment.ui.token) {
+    if (enrollment.catalogEntry?.ownerId === enrollment.learnerId && enrollment.settings.token) {
       const catalogEntry = enrollment.catalogEntry;
       const deleteResp = await fetch(`https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${enrollment.ui.token}`,
+          Authorization: `Bearer ${enrollment.settings.token}`,
           Accept: 'application/vnd.github+json',
         },
       });
@@ -180,7 +180,7 @@ class Service {
   }
 
   async enrollments(id: string): Promise<Map<string, Enrollment>> {
-    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, ui, progress').eq('learnerId', id);
+    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', id);
 
     if (error) {
       throw new Error(error.message);
@@ -209,7 +209,7 @@ class Service {
         {
           catalogId: catalogEntry.id,
           learnerId,
-          ui: {
+          settings: {
             currentTopic: null,
             tocIndexes: [0],
             sidebarVisible: true,

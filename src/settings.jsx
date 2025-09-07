@@ -4,7 +4,7 @@ import { useAlert } from './contexts/AlertContext.jsx';
 export default function Settings({ enrollment, course }) {
   const { showAlert } = useAlert();
 
-  const editorVisible = !!enrollment.ui?.token;
+  const editorVisible = !!enrollment.settings?.token;
 
   function stripGithubPrefix(schedule, course) {
     const githubUrl = course.links.gitHub.rawUrl;
