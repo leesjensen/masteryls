@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import CourseForm from './courseForm';
+import CourseCreationForm from './courseCreationForm.jsx';
 import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
 export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [enrollments, setEnrollments] = useState();
-  const [displayCreateCourseForm, setDisplayCreateCourseForm] = useState(false);
+  const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [deleteEnrollmentTitle, setDeleteEnrollmentTitle] = useState('');
   const [deleteEnrollmentMessage, setDeleteEnrollmentMessage] = useState('');
@@ -75,7 +75,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
         setEnrollments((prev) => new Map(prev).set(newCatalogEntry.id, newEnrollment));
 
-        setDisplayCreateCourseForm(false);
+        setDisplayCourseCreationForm(false);
       } else {
         showAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
       }
@@ -84,11 +84,11 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     }
   };
 
-  if (displayCreateCourseForm) {
+  if (displayCourseCreationForm) {
     return (
-      <CourseForm service={service} onClose={() => setDisplayCreateCourseForm(false)} onCreate={createCourse}>
+      <CourseCreationForm service={service} onClose={() => setDisplayCourseCreationForm(false)} onCreate={createCourse}>
         create a course!
-      </CourseForm>
+      </CourseCreationForm>
     );
   }
 
@@ -108,7 +108,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
           <h1 className="font-bold text-3xl mb-2">{user.name}'s dashboard</h1>
         </div>
         <div className="flex justify-between mb-6">
-          <button onClick={() => setDisplayCreateCourseForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+          <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
             <span className="font-semibold text-amber-600">+</span> Course
           </button>
           <button onClick={logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">

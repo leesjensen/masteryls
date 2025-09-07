@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function CourseForm({ service, onClose, onCreate }) {
+export default function CourseCreationForm({ service, onClose, onCreate }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [name, setName] = useState('');
