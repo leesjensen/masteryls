@@ -46,21 +46,16 @@
 
 ### Configuration
 
-The configuration is set using an admin API that is only writeable if you are an admin, but is publicly available for reading.
+create your `config.js` file in the root of the project.
 
 ```js
 export default {
-  github: {
-    account: 'devops329',
-    repository: 'devops',
-    token: 'xxx',
+  supabase: {
+    url: 'https://yyy.supabase.co',
+    key: 'xxx',
   },
 };
 ```
-
-The GitHub personal access token must have `Contents` **Read and write** access on the target repository in order to commit. Otherwise, any personal access token, without any permissions, can be used to simple study the content. Any PAT will give you 5000 requests per hour. With caching that should be plenty. We can also explore not using the API to transform the Markdown. Then no PAT would be need for reading.
-
-For the supabase edge functions that handle the GitHub MD requests the GitHub token will be inserted into supabase.
 
 ### Course
 
@@ -142,9 +137,10 @@ I want to keep this really simple and so I am going to use:
 
 1. Vite
 1. Basic React library
+1. Tailwind CSS
 1. Supabase for database and authentication
 
-This should make it so that I can host the whole thing as a static website
+This should make it so that I can host the whole thing as a static website and just host it on GitHub.
 
 ### Markdown support
 

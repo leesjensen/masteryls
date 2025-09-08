@@ -57,7 +57,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
     if (pendingEnrollmentRemoval.catalogEntry?.ownerId === user.id) {
       await service.removeCourse(pendingEnrollmentRemoval);
     } else {
-      await service.removeEnrollment(pendingEnrollmentRemoval.id);
+      await service.removeEnrollment(pendingEnrollmentRemoval);
     }
     setEnrollments((prev) => {
       const newEnrollments = new Map(prev);

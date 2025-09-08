@@ -8,24 +8,15 @@ test('dashboard register error', async ({ page }) => {
     await route.fulfill({
       status: 400,
       contentType: 'application/json',
-      body: JSON.stringify({
-        error: {
-          message: 'User already registered',
-          status: 400,
-        },
-      }),
+      body: JSON.stringify({ code: 'user_already_exists', message: 'User already registered' }),
     });
   });
 
   await initBasicCourse({ page });
 
-  const dialogPromise = page.waitForEvent('dialog');
-
   await register(page);
 
-  const dialog = await dialogPromise;
-  expect(dialog.message()).toContain('Login failed. Please try again.');
-  await dialog.dismiss();
+  await expect(page.locator('#root')).toContainText('Login failed. Please try again. User already registered');
 });
 
 test('dashboard join/leave courses', async ({ page }) => {
@@ -35,7 +26,7 @@ test('dashboard join/leave courses', async ({ page }) => {
   await page.route(/.*\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
-        await route.fulfill({ status: 201 });
+        await route.fulfill({ status: 201, json: enrollments.length > 0 ? enrollments[0] : {} });
         break;
       case 'GET':
         await route.fulfill({
@@ -78,6 +69,8 @@ test('dashboard join/leave courses', async ({ page }) => {
   enrollments = [];
 
   await page.getByRole('button', { name: 'Delete' }).click();
+
+  await page.getByRole('button', { name: 'OK' }).click();
   await expect(page.locator('#root')).not.toContainText('0% complete');
 });
 

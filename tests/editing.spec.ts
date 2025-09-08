@@ -70,12 +70,7 @@ test('settings editing', async ({ page }) => {
 
   await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
 
-  let dialogDisplayed = false;
-  page.once('dialog', (dialog) => {
-    dialogDisplayed = true;
-    dialog.dismiss().catch(() => {});
-  });
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
-  expect(dialogDisplayed).toBe(true);
+  await expect(page.getByText('Functionality to save')).toBeVisible();
 });
