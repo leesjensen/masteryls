@@ -278,21 +278,6 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     await route.continue();
   });
 
-  // GitHub - Get a specific topic SVG file
-  await context.route('*/**/path/relative.svg', async (route) => {
-    expect(route.request().method()).toBe('GET');
-    await route.fulfill({
-      body: '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
-      contentType: 'image/svg+xml',
-    });
-  });
-
-  // GitHub - Get the course description file
-  await context.route('https://raw.githubusercontent.com/**/course.json', async (route) => {
-    expect(route.request().method()).toBe('GET');
-    await route.fulfill({ json: courseJson });
-  });
-
   // GitHub - API request for to list contents of a directory
   await context.route('https://api.github.com/**/contents', async (route) => {
     expect(route.request().method()).toBe('GET');
@@ -314,14 +299,23 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     }
   });
 
-  // GitHub - Get a specific topic markdown file
-  await context.route('https://raw.githubusercontent.com/**/README.md', async (route) => {
+  // GitHub - Get a specific topic SVG file
+  await context.route('https://raw.githubusercontent.com/**/path/relative.svg', async (route) => {
     expect(route.request().method()).toBe('GET');
-    await route.fulfill({ body: topicMarkdown });
+    await route.fulfill({
+      body: '<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue"/></svg>',
+      contentType: 'image/svg+xml',
+    });
   });
 
-  // GitHub - Get a specific topic markdown file
-  await context.route('https://raw.githubusercontent.com/**/topic1.md', async (route) => {
+  // GitHub - Get the course description file
+  await context.route('https://raw.githubusercontent.com/**/course.json', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({ json: courseJson });
+  });
+
+  // GitHub - Get any markdown file
+  await context.route('https://raw.githubusercontent.com/**/*.md', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ body: topicMarkdown });
   });
