@@ -77,11 +77,14 @@ function App() {
   }
 
   function changeTopic(newTopic) {
-    setEnrollment((previous) => {
-      const next = { ...previous, settings: { ...previous.settings, currentTopic: newTopic.path } };
-      service.saveEnrollment(next);
-      return next;
-    });
+    // Remember what the current topic is for when they return in a new session
+    if (newTopic.path !== topic.path) {
+      setEnrollment((previous) => {
+        const next = { ...previous, settings: { ...previous.settings, currentTopic: newTopic.path } };
+        service.saveEnrollment(next);
+        return next;
+      });
+    }
 
     setTopic(newTopic);
     if (sidebarVisible && window.innerWidth < 768) {

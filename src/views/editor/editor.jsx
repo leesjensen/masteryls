@@ -29,7 +29,7 @@ export default function Editor({ enrollment, course, setCourse, currentTopic, ch
 
   return (
     <div className="p-2 flex-1 flex flex-col">
-      <MarkdownEditor course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
+      <MarkdownEditor enrollment={enrollment} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
       <EditorFiles files={files} setFiles={setFiles} />
     </div>
   );

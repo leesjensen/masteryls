@@ -71,7 +71,7 @@ const courseJson = {
   ],
 };
 
-const topicContents = [
+const topicFiles = [
   {
     name: 'README.md',
     path: 'README.md',
@@ -106,7 +106,7 @@ const topicContents = [
   },
 ];
 
-const defaultMarkdown = `
+const defaultTopicMarkdown = `
 # Home
 
 markdown!
@@ -163,10 +163,11 @@ graph TD;
 ![relative image](path/relative.svg)
 `;
 
-async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page: any; topicMarkdown?: string }) {
+async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: { page: any; topicMarkdown?: string }) {
   const context = page.context();
 
-  await context.route(/.*\/rest\/v1\/catalog(\?.+)?/, async (route) => {
+  // Supabase - Catalog table access
+  await context.route(/.*supabase.co\/rest\/v1\/catalog(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'GET':
         await route.fulfill({
@@ -176,7 +177,8 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
     }
   });
 
-  await context.route(/.*\/rest\/v1\/learner(\?.+)?/, async (route) => {
+  // Supabase - Learner table access
+  await context.route(/.*supabase.co\/rest\/v1\/learner(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
         await route.fulfill({ status: 201 });
@@ -196,7 +198,8 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
     }
   });
 
-  await context.route(/.*\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+  // Supabase - Enrollment table access
+  await context.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
         await route.fulfill({ status: 201 });
@@ -226,6 +229,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
     }
   });
 
+  // Supabase - Sign up
   await context.route('**/auth/v1/signup', async (route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
@@ -274,6 +278,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
     await route.continue();
   });
 
+  // GitHub - Get a specific topic SVG file
   await context.route('*/**/path/relative.svg', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({
@@ -282,22 +287,41 @@ async function initBasicCourse({ page, topicMarkdown = defaultMarkdown }: { page
     });
   });
 
-  await context.route('*/**/course.json', async (route) => {
+  // GitHub - Get the course description file
+  await context.route('https://raw.githubusercontent.com/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ json: courseJson });
   });
 
-  await context.route('*/**/README.md', async (route) => {
+  // GitHub - API request for to list contents of a directory
+  await context.route('https://api.github.com/**/contents', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({ json: topicFiles });
+  });
+
+  // GitHub - API request for specific file
+  await context.route('https://api.github.com/**/contents/README.md', async (route) => {
+    switch (route.request().method()) {
+      case 'PUT':
+        await route.fulfill({ status: 201 });
+        break;
+      case 'GET':
+        await route.fulfill({ json: topicFiles[0] });
+        break;
+      default:
+        await route.continue();
+        break;
+    }
+  });
+
+  // GitHub - Get a specific topic markdown file
+  await context.route('https://raw.githubusercontent.com/**/README.md', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ body: topicMarkdown });
   });
 
-  await context.route('*/**/contents', async (route) => {
-    expect(route.request().method()).toBe('GET');
-    await route.fulfill({ json: topicContents });
-  });
-
-  await context.route('*/**/topic1.md', async (route) => {
+  // GitHub - Get a specific topic markdown file
+  await context.route('https://raw.githubusercontent.com/**/topic1.md', async (route) => {
     expect(route.request().method()).toBe('GET');
     await route.fulfill({ body: topicMarkdown });
   });

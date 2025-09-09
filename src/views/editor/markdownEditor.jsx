@@ -1,7 +1,7 @@
 import React from 'react';
 import useLatest from '../../hooks/useLatest';
 
-export default function MarkdownEditor({ course, setCourse, currentTopic, changeTopic }) {
+export default function MarkdownEditor({ enrollment, course, setCourse, currentTopic, changeTopic }) {
   const [content, setContent] = React.useState('');
   const [dirty, setDirty] = React.useState(false);
   const dirtyRef = useLatest(dirty);
@@ -42,7 +42,7 @@ export default function MarkdownEditor({ course, setCourse, currentTopic, change
   }
 
   async function commit() {
-    const [updatedCourse, committedTopic] = await course.commitTopicMarkdown(currentTopic);
+    const [updatedCourse, committedTopic] = await course.commitTopicMarkdown(enrollment.settings.token, currentTopic);
     setDirty(false);
     changeTopic(committedTopic);
     setCourse(updatedCourse);
