@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useAlert } from './contexts/AlertContext.jsx';
 
-export default function Settings({ enrollment, course }) {
+export default function Settings({ user, course }) {
   const { showAlert } = useAlert();
 
-  const editorVisible = !!enrollment.settings?.token;
+  const editorVisible = user.isEditor(course.id);
 
   function stripGithubPrefix(schedule, course) {
     const githubUrl = course.links.gitHub.rawUrl;

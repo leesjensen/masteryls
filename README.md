@@ -149,3 +149,119 @@ There are lots of markdown libraries out there such as `marked`, `react-markdown
 ### Added Tailwind for style
 
 Followed these basic [instructions](https://tailwindcss.com/docs/installation/using-vite) for using with Vite.
+
+## Database
+
+### Catalog
+
+Everyone can read the catalog
+
+```postgres
+CREATE policy "User read all"
+on "public"."catalog"
+FOR ALL
+TO public
+using (
+  true
+);
+```
+
+### User
+
+Let a user manage their own user record so that they can register, login, and update settings
+
+```postgres
+CREATE policy "User manage self"
+on "public"."user"
+FOR ALL
+TO public
+using (
+  (auth.uid() = id)
+)
+with check (
+  (auth.uid() = id)
+);
+```
+
+### Enrollment
+
+Let a user manage their own enrollment record so that they can join, drop, and update settings
+
+```postgres
+CREATE policy "User manage self"
+on "public"."enrollment"
+FOR ALL
+TO public
+using (
+  (auth.uid() = "learnerId")
+)
+with check (
+  (auth.uid() = "learnerId")
+);
+```
+
+### Roles
+
+Allow user to read their own roles
+
+```postgres
+CREATE POLICY "User read self"
+  ON public.role
+  FOR SELECT
+  TO public
+  USING (
+  ("user" = auth.uid())
+  );
+```
+
+// Root
+
+Create a function that validates a user is root. You can then call this in RLS policies
+
+```postgres
+CREATE OR REPLACE FUNCTION public.auth_is_root(uid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.role
+    WHERE "user" = uid
+      AND "right" = 'root'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.auth_is_root(uuid) TO anon, authenticated;
+```
+
+Create a policy on each table that allows root to manage everything
+
+```postgres
+CREATE POLICY "Root all access"
+ON public.catalog
+FOR ALL
+TO public
+USING (public.auth_is_root(auth.uid()))
+WITH CHECK (public.auth_is_root(auth.uid()));
+```
+
+You can allow update for specific columns by restricting the update with a GRANT
+
+```postgres
+DROP POLICY IF EXISTS "update-own-rows" ON public.role;
+CREATE POLICY "update-own-rows"
+  ON public.role
+  FOR UPDATE
+  USING (owner = auth.uid())
+  WITH CHECK (owner = auth.uid());
+
+REVOKE ALL PRIVILEGES ON public.role FROM authenticated;
+
+GRANT SELECT ON public.role TO authenticated;
+GRANT INSERT ON public.role TO authenticated;
+GRANT DELETE ON public.role TO authenticated;
+GRANT UPDATE (settings) ON public.role TO authenticated;
+```

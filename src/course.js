@@ -73,7 +73,7 @@ export default class Course {
     return [updatedCourse, savedTopic];
   }
 
-  async commitTopicMarkdown(service, token, updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
+  async commitTopicMarkdown(user, service, updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
     const updatedCourse = Course.copy(this);
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     delete savedTopic.lastUpdated;
@@ -83,6 +83,7 @@ export default class Course {
     const contentPath = savedTopic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
 
+    const token = user.gitHubToken(this.id);
     await service.commitTopicMarkdown(gitHubUrl, markdown, token, commitMessage);
 
     return [updatedCourse, savedTopic];

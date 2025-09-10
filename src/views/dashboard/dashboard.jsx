@@ -10,6 +10,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [deleteEnrollmentTitle, setDeleteEnrollmentTitle] = useState('');
   const [deleteEnrollmentMessage, setDeleteEnrollmentMessage] = useState('');
+  const [showUser, setShowUser] = useState(false);
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
 
@@ -54,8 +55,8 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   const confirmedEnrollmentRemoval = async () => {
     dialogRef.current.close();
-    if (pendingEnrollmentRemoval.catalogEntry?.ownerId === user.id) {
-      await service.removeCourse(pendingEnrollmentRemoval);
+    if (user.isOwner(pendingEnrollmentRemoval.catalogId)) {
+      await service.removeCourse(user, pendingEnrollmentRemoval.catalogEntry);
     } else {
       await service.removeEnrollment(pendingEnrollmentRemoval);
     }
@@ -70,8 +71,8 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   const createCourse = async (sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
     try {
       if (await service.verifyGitHubAccount(gitHubToken)) {
-        const newCatalogEntry = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-        const newEnrollment = await service.createEnrollment(user.id, newCatalogEntry, gitHubToken);
+        const newCatalogEntry = await service.createCourse(user, sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+        const newEnrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
         setEnrollments((prev) => new Map(prev).set(newCatalogEntry.id, newEnrollment));
 
@@ -105,9 +106,11 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       <ConfirmDialog dialogRef={dialogRef} title={deleteEnrollmentTitle} confirmed={confirmedEnrollmentRemoval} message={deleteEnrollmentMessage} />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
-          <h1 className="font-bold text-3xl mb-2">{user.name}'s dashboard</h1>
-          <pre className="text-gray-400 text-sm">{JSON.stringify(user, null, 2)}</pre>
+          <h1 className="font-bold text-3xl mb-2">
+            <a onClick={() => setShowUser(!showUser)}>{user.name}'s</a> dashboard
+          </h1>
         </div>
+        {showUser && <pre className="text-gray-400 text-[8px]">{JSON.stringify(user, null, 2)}</pre>}
         <div className="flex justify-between mb-6">
           <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
             <span className="font-semibold text-amber-600">+</span> Course

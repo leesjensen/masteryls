@@ -1,21 +1,40 @@
-type Role = {
-  owner: string;
-  action: string;
+export type Role = {
+  user: string;
+  right: string;
   object: string;
   settings: any;
 };
 
-type User = {
+export class User {
   id: string;
   name: string;
   email: string;
-  password?: string;
-  preferences: any;
+  settings: object;
   roles?: Role[];
-};
+  password?: string;
+  constructor(data: { id: string; name: string; email: string; settings: object; roles?: Role[]; password?: string }) {
+    Object.assign(this, data);
+  }
 
-type CatalogEntry = {
-  id?: string;
+  isRole(right: string, object?: string): boolean {
+    return !!this.roles?.some((r) => r.right === right && (!object || r.object === object));
+  }
+
+  isOwner(object: string): boolean {
+    return this.isRole('owner', object);
+  }
+
+  isEditor(object: string): boolean {
+    return !!this.roles?.some((r) => (r.right === 'editor' || r.right === 'owner') && r.object === object);
+  }
+
+  gitHubToken(courseId: string): string | undefined {
+    return this.roles?.find((r) => (r.right === 'editor' || r.right === 'owner') && r.object === courseId)?.settings?.token;
+  }
+}
+
+export type CatalogEntry = {
+  id: string;
   name: string;
   title: string;
   description: string;
@@ -27,11 +46,11 @@ type CatalogEntry = {
   };
 };
 
-type Progress = {
+export type Progress = {
   mastery: number;
 };
 
-type Enrollment = {
+export type Enrollment = {
   id: string;
   learnerId: string;
   catalogId: string;
@@ -39,12 +58,9 @@ type Enrollment = {
     currentTopic: string | null;
     tocIndexes: number[];
     sidebarVisible: boolean;
-    token?: string;
   };
   progress: Progress;
   catalogEntry?: CatalogEntry;
 };
 
-type Enrollments = Map<string, Enrollment>;
-
-export { User, CatalogEntry as CourseInfo, Progress, Enrollment, Enrollments };
+export type Enrollments = Map<string, Enrollment>;

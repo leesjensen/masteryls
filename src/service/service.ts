@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
-import { User, CourseInfo as CatalogEntry, Enrollment, Enrollments } from '../model';
+import { User, CatalogEntry, Enrollment } from '../model';
 
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
@@ -57,8 +57,10 @@ class Service {
     return resp.ok;
   }
 
-  async createCourse(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+  async createCourse(user: User, templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     try {
+      // TODO: We need to create the role and put the token in there.
+
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
         const targetOwner = catalogEntry.gitHub.account;
         const targetRepo = catalogEntry.gitHub.repository;
@@ -93,13 +95,13 @@ class Service {
     return data;
   }
 
-  async removeCourse(enrollment: Enrollment): Promise<void> {
-    if (enrollment.catalogEntry?.ownerId === enrollment.learnerId && enrollment.settings.token) {
-      const catalogEntry = enrollment.catalogEntry;
+  async removeCourse(user: User, catalogEntry: CatalogEntry): Promise<void> {
+    const token = user.gitHubToken(catalogEntry.id);
+    if (token) {
       const deleteResp = await fetch(`https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${enrollment.settings.token}`,
+          Authorization: `Bearer ${token}`,
           Accept: 'application/vnd.github+json',
         },
       });
@@ -135,9 +137,9 @@ class Service {
       id: data.user.id,
       email,
       name,
-      preferences: { language: 'en' },
+      settings: { language: 'en' },
     };
-    const { error: upsertError } = await supabase.from('learner').upsert(user);
+    const { error: upsertError } = await supabase.from('user').upsert(user);
     if (upsertError) {
       throw new Error(upsertError.message);
     }
@@ -202,7 +204,7 @@ class Service {
     localStorage.removeItem('currentCourse');
   }
 
-  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry, token: string | undefined): Promise<Enrollment> {
+  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry): Promise<Enrollment> {
     const { data, error } = await supabase
       .from('enrollment')
       .insert([
@@ -213,7 +215,6 @@ class Service {
             currentTopic: null,
             tocIndexes: [0],
             sidebarVisible: true,
-            token,
           },
           progress: { mastery: 0 },
         },
@@ -272,19 +273,19 @@ class Service {
   }
 
   async _loadUser({ id }: { id: string }) {
-    const { data, error } = await supabase.from('learner').select('id, name, email, preferences').eq('id', id).single();
+    const { data, error } = await supabase.from('user').select('id, name, email, settings').eq('id', id).single();
 
     if (error) {
       throw new Error(error.message);
     }
 
-    const user: User = { ...data, roles: await this._loadUserRoles({ id: data.id }) };
+    const user = new User({ ...data, roles: await this._loadUserRoles({ id: data.id }) });
 
     return user;
   }
 
   async _loadUserRoles({ id }: { id: string }) {
-    const { data, error } = await supabase.from('role').select('owner, action, object, settings').eq('owner', id);
+    const { data, error } = await supabase.from('role').select('user, right, object, settings').eq('user', id);
 
     if (error) {
       throw new Error(error.message);
@@ -296,75 +297,3 @@ class Service {
 
 const service = await Service.create();
 export default service;
-
-// queries
-
-// DROP POLICY IF EXISTS "root-crud-role" ON public.role;
-// CREATE POLICY "root-crud-role"
-//   ON public.role
-//   FOR ALL
-//   USING (
-//     EXISTS (
-//       SELECT 1
-//       FROM public.role r2
-//       WHERE r2.owner = auth.uid()
-//         AND r2.action = 'root'
-//     )
-//   )
-//   WITH CHECK (
-//     EXISTS (
-//       SELECT 1
-//       FROM public.role r2
-//       WHERE r2.owner = auth.uid()
-//         AND r2.action = 'root'
-//     )
-//   );
-
-// DROP POLICY IF EXISTS "editor-or-owner-if-owner-of-object" ON public.role;
-// CREATE POLICY "editor-or-owner-if-owner-of-object"
-//   ON public.role
-//   FOR ALL
-//   USING (
-//     -- applies to SELECT / UPDATE / DELETE visibility
-//     EXISTS (
-//       SELECT 1
-//       FROM public.role r2
-//       WHERE r2.owner = auth.uid()
-//         AND r2.action = 'owner'
-//         AND r2.object = object
-//     )
-//   )
-//   WITH CHECK (
-//     -- applies to INSERT / UPDATE validation
-//     action IN ('editor', 'owner')
-//     AND EXISTS (
-//       SELECT 1
-//       FROM public.role r2
-//       WHERE r2.owner = auth.uid()
-//         AND r2.action = 'owner'
-//         AND r2.object = object
-//     )
-//   );
-
-// DROP POLICY IF EXISTS "read-own-rows" ON public.role;
-// CREATE POLICY "read-own-rows"
-//   ON public.role
-//   FOR SELECT
-//   USING (
-//     owner = auth.uid()
-//   );
-
-// DROP POLICY IF EXISTS "update-own-rows" ON public.role;
-// CREATE POLICY "update-own-rows"
-//   ON public.role
-//   FOR UPDATE
-//   USING (owner = auth.uid())
-//   WITH CHECK (owner = auth.uid());
-
-// The following grant only allows the settings column to be updated. root and owner can delete and insert rows so they can effectively update any column.
-// REVOKE ALL PRIVILEGES ON public.role FROM authenticated;
-
-// GRANT SELECT ON public.role TO authenticated;
-// GRANT INSERT ON public.role TO authenticated;
-// GRANT DELETE ON public.role TO authenticated;
-// GRANT UPDATE (settings) ON public.role TO authenticated;
