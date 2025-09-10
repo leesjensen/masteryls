@@ -73,7 +73,7 @@ export default class Course {
     return [updatedCourse, savedTopic];
   }
 
-  async commitTopicMarkdown(token, updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
+  async commitTopicMarkdown(service, token, updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
     const updatedCourse = Course.copy(this);
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     delete savedTopic.lastUpdated;
@@ -83,18 +83,7 @@ export default class Course {
     const contentPath = savedTopic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
 
-    // Get current file SHA - This will overwrite any changes made on GitHub since last fetch
-    const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
-    const fileData = await getRes.json();
-    const sha = fileData.sha;
-
-    // Commit to GitHub
-    const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
-    await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', {
-      message: commitMessage,
-      content: contentBase64,
-      sha,
-    });
+    await service.commitTopicMarkdown(gitHubUrl, markdown, token, commitMessage);
 
     return [updatedCourse, savedTopic];
   }
@@ -115,21 +104,6 @@ export default class Course {
     this.markdownCache.set(topicUrl, markdown);
 
     return markdown;
-  }
-
-  async makeGitHubApiRequest(token, url, method = 'GET', body = null) {
-    const request = {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    };
-    if (body) {
-      request.headers['Content-Type'] = 'application/json';
-      request.body = JSON.stringify(body);
-    }
-    return fetch(url, request);
   }
 }
 

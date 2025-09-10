@@ -243,6 +243,34 @@ class Service {
     }
   }
 
+  async commitTopicMarkdown(gitHubUrl: string, markdown: string, token: string, commitMessage: string): Promise<void> {
+    // Get current file SHA - This will overwrite any changes made on GitHub since last fetch
+    const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
+    const fileData = await getRes.json();
+    const sha = fileData.sha;
+
+    // Commit to GitHub
+    const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+    await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', {
+      message: commitMessage,
+      content: contentBase64,
+      sha,
+    });
+  }
+
+  async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {
+    const request: RequestInit = {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    };
+    return fetch(url, request);
+  }
+
   async _loadUser({ id }: { id: string }) {
     const { data, error } = await supabase.from('learner').select('id, name, email, preferences').eq('id', id).single();
 
