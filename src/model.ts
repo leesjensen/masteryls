@@ -1,9 +1,17 @@
+type Role = {
+  owner: string;
+  action: string;
+  object: string;
+  settings: any;
+};
+
 type User = {
   id: string;
   name: string;
   email: string;
   password?: string;
   preferences: any;
+  roles?: Role[];
 };
 
 type CatalogEntry = {

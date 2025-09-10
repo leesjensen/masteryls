@@ -106,6 +106,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
           <h1 className="font-bold text-3xl mb-2">{user.name}'s dashboard</h1>
+          <pre className="text-gray-400 text-sm">{JSON.stringify(user, null, 2)}</pre>
         </div>
         <div className="flex justify-between mb-6">
           <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">

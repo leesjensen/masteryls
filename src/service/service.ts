@@ -278,11 +278,93 @@ class Service {
       throw new Error(error.message);
     }
 
-    const user: User = { ...data };
+    const user: User = { ...data, roles: await this._loadUserRoles({ id: data.id }) };
 
     return user;
+  }
+
+  async _loadUserRoles({ id }: { id: string }) {
+    const { data, error } = await supabase.from('role').select('owner, action, object, settings').eq('owner', id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   }
 }
 
 const service = await Service.create();
 export default service;
+
+// queries
+
+// DROP POLICY IF EXISTS "root-crud-role" ON public.role;
+// CREATE POLICY "root-crud-role"
+//   ON public.role
+//   FOR ALL
+//   USING (
+//     EXISTS (
+//       SELECT 1
+//       FROM public.role r2
+//       WHERE r2.owner = auth.uid()
+//         AND r2.action = 'root'
+//     )
+//   )
+//   WITH CHECK (
+//     EXISTS (
+//       SELECT 1
+//       FROM public.role r2
+//       WHERE r2.owner = auth.uid()
+//         AND r2.action = 'root'
+//     )
+//   );
+
+// DROP POLICY IF EXISTS "editor-or-owner-if-owner-of-object" ON public.role;
+// CREATE POLICY "editor-or-owner-if-owner-of-object"
+//   ON public.role
+//   FOR ALL
+//   USING (
+//     -- applies to SELECT / UPDATE / DELETE visibility
+//     EXISTS (
+//       SELECT 1
+//       FROM public.role r2
+//       WHERE r2.owner = auth.uid()
+//         AND r2.action = 'owner'
+//         AND r2.object = object
+//     )
+//   )
+//   WITH CHECK (
+//     -- applies to INSERT / UPDATE validation
+//     action IN ('editor', 'owner')
+//     AND EXISTS (
+//       SELECT 1
+//       FROM public.role r2
+//       WHERE r2.owner = auth.uid()
+//         AND r2.action = 'owner'
+//         AND r2.object = object
+//     )
+//   );
+
+// DROP POLICY IF EXISTS "read-own-rows" ON public.role;
+// CREATE POLICY "read-own-rows"
+//   ON public.role
+//   FOR SELECT
+//   USING (
+//     owner = auth.uid()
+//   );
+
+// DROP POLICY IF EXISTS "update-own-rows" ON public.role;
+// CREATE POLICY "update-own-rows"
+//   ON public.role
+//   FOR UPDATE
+//   USING (owner = auth.uid())
+//   WITH CHECK (owner = auth.uid());
+
+// The following grant only allows the settings column to be updated. root and owner can delete and insert rows so they can effectively update any column.
+// REVOKE ALL PRIVILEGES ON public.role FROM authenticated;
+
+// GRANT SELECT ON public.role TO authenticated;
+// GRANT INSERT ON public.role TO authenticated;
+// GRANT DELETE ON public.role TO authenticated;
+// GRANT UPDATE (settings) ON public.role TO authenticated;
