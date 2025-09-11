@@ -95,6 +95,20 @@ class Service {
     return data;
   }
 
+  async saveCourseSettings(catalogEntry: CatalogEntry): Promise<void> {
+    const { error } = await supabase.from('catalog').upsert(catalogEntry);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const index = this.catalog.findIndex((c) => c.id === catalogEntry.id);
+    if (index !== -1) {
+      this.catalog[index] = catalogEntry;
+    } else {
+      this.catalog.push(catalogEntry);
+    }
+  }
+
   async removeCourse(user: User, catalogEntry: CatalogEntry): Promise<void> {
     const token = user.gitHubToken(catalogEntry.id);
     if (token) {

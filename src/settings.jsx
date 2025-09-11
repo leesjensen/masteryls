@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import Course from './course.js';
 import { useAlert } from './contexts/AlertContext.jsx';
 
-export default function Settings({ service, user, course }) {
+export default function Settings({ service, user, course, setCourse }) {
+  const [isDirty, setIsDirty] = useState(false);
   const { showAlert } = useAlert();
 
   const editorVisible = user.isEditor(course.id);
@@ -27,6 +29,7 @@ export default function Settings({ service, user, course }) {
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
   };
 
   const handleSave = async () => {
@@ -40,10 +43,17 @@ export default function Settings({ service, user, course }) {
         repository: formData.githubRepository,
       },
     };
-    // const updatedCourse = await Course.create(catalogEntry);
-    // setCourse(updatedCourse);
-    // service.saveCourseSettings(user, course.id, catalogEntry);
-    alert(`Saving: ${JSON.stringify(catalogEntry, null, 2)}`);
+    const updatedCourse = await Course.create(catalogEntry);
+    service.saveCourseSettings(catalogEntry);
+    setCourse(updatedCourse);
+    setIsDirty(false);
+    showAlert({
+      message: (
+        <div className="text-xs">
+          <div>Saved</div>
+        </div>
+      ),
+    });
   };
 
   // add a delete course button
@@ -114,7 +124,7 @@ export default function Settings({ service, user, course }) {
         </div>
         {editorVisible && (
           <div className="flex justify-end">
-            <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+            <button disabled={!isDirty} onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
               Save Changes
             </button>
           </div>
