@@ -177,8 +177,8 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     }
   });
 
-  // Supabase - Learner table access
-  await context.route(/.*supabase.co\/rest\/v1\/learner(\?.+)?/, async (route) => {
+  // Supabase - user table access
+  await context.route(/.*supabase.co\/rest\/v1\/user(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
         await route.fulfill({ status: 201 });
@@ -189,10 +189,41 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
             id: '15cb92ef-d2d0-4080-8770-999516448960',
             name: 'Bud',
             email: 'bud@cow.com',
-            preferences: {
+            settings: {
               language: 'en',
             },
           },
+        });
+        break;
+    }
+  });
+
+  // Supabase - role table access
+  await context.route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'POST':
+        await route.fulfill({ status: 201 });
+        break;
+      case 'GET':
+        await route.fulfill({
+          json: [
+            {
+              user: '15cb92ef-d2d0-4080-8770-999516448960',
+              right: 'editor',
+              object: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+              settings: {
+                token: 'xxxx',
+              },
+            },
+            {
+              user: '15cb92ef-d2d0-4080-8770-999516448960',
+              right: 'owner',
+              object: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+              settings: {
+                token: 'xxxx',
+              },
+            },
+          ],
         });
         break;
     }
