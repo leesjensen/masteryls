@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAlert } from './contexts/AlertContext.jsx';
 
-export default function Settings({ user, course }) {
+export default function Settings({ service, user, course }) {
   const { showAlert } = useAlert();
 
   const editorVisible = user.isEditor(course.id);
@@ -29,14 +29,39 @@ export default function Settings({ user, course }) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    showAlert({ message: 'Functionality to save settings is not implemented yet.', type: 'info' });
+  const handleSave = async () => {
+    const catalogEntry = {
+      id: course.id,
+      title: formData.title,
+      description: formData.description,
+      links: course.links,
+      gitHub: {
+        account: formData.githubAccount,
+        repository: formData.githubRepository,
+      },
+    };
+    // const updatedCourse = await Course.create(catalogEntry);
+    // setCourse(updatedCourse);
+    // service.saveCourseSettings(user, course.id, catalogEntry);
+    alert(`Saving: ${JSON.stringify(catalogEntry, null, 2)}`);
   };
+
+  // add a delete course button
+  // if (enrollment.catalogEntry?.ownerId === user.id) {
+  //   setDeleteEnrollmentTitle('Delete course');
+  //   setDeleteEnrollmentMessage(
+  //     <div>
+  //       <p>
+  //         Because you are the owner of <b>{enrollment.catalogEntry.name}</b>, this action will completely delete the course and all enrollments. If you do not want to delete the course then change the owner before you delete your enrollment.
+  //       </p>
+  //       <p className="pt-2">Are you sure you want to delete the course and all enrollments?</p>
+  //     </div>
+  //   );
+  // } else {
 
   return (
     <div className="h-full overflow-auto p-4">
       <div className="max-w-3xl mx-auto">
-        {/* Course Overview */}
         <div className="bg-gray-50 rounded-lg p-4 mb-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Course Overview</h2>
           <div className="grid grid-cols-1 gap-3 max-w-[180px]">
@@ -54,7 +79,6 @@ export default function Settings({ user, course }) {
             </div>
           </div>
         </div>
-        {/* Course Information */}
         <div className="bg-gray-50 rounded-lg p-4 mb-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Course Information</h2>
           <div className="space-y-3">
@@ -62,12 +86,6 @@ export default function Settings({ user, course }) {
               <label className="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
               {editorVisible ? <input type="text" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course title" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.title}</div>}
             </div>
-            {/* Schedule */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Schedule Path</label>
-              {editorVisible ? <input type="url" value={formData.schedule} onChange={(e) => handleInputChange('schedule', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter schedule URL" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.schedule ? formData.schedule : <span className="text-gray-400">No schedule URL set</span>}</div>}
-            </div>
-            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
               {editorVisible ? <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white min-h-[120px]" placeholder="Enter course description" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md min-h-[120px] text-sm">{formData.description || <span className="text-gray-400">No description set</span>}</div>}
@@ -77,13 +95,11 @@ export default function Settings({ user, course }) {
               {editorVisible ? <input type="text" value={formData.githubAccount} onChange={(e) => handleInputChange('githubAccount', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub username" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubAccount}</div>}
             </div>
 
-            {/* GitHub Repository */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Repository Name</label>
               {editorVisible ? <input type="text" value={formData.githubRepository} onChange={(e) => handleInputChange('githubRepository', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter repository name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubRepository}</div>}
             </div>
 
-            {/* GitHub Link */}
             {course.links?.gitHub?.url && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Repository URL</label>

@@ -22,7 +22,7 @@ function Sidebar({ service, user, enrollment, course, currentTopic, changeTopic,
       )}
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents service={service} enrollment={enrollment} course={course} currentTopic={currentTopic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
-        {display === 'settings' && <Settings user={user} course={course} />}
+        {display === 'settings' && <Settings service={service} user={user} course={course} />}
       </aside>
     </div>
   );

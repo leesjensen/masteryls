@@ -73,7 +73,7 @@ test('settings', async ({ page }) => {
   await navigateToCourse(page);
 
   await page.getByText('Settings').click();
-  await expect(page.getByRole('textbox', { name: 'Enter schedule URL' })).toHaveValue('schedule/schedule.md');
+  await expect(page.getByRole('textbox', { name: 'Course Title' })).toHaveValue('QA & DevOps');
 });
 
 test('settings editing', async ({ page }) => {
@@ -83,11 +83,11 @@ test('settings editing', async ({ page }) => {
   await page.getByRole('button', { name: '✏️' }).click();
   await page.getByText('Settings').click();
 
-  await expect(page.getByRole('textbox', { name: 'Enter schedule URL' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Course Title' })).toBeVisible();
 
   await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
-  await expect(page.getByText('Functionality to save')).toBeVisible();
+  //  await expect(page.getByText('Functionality to save')).toBeVisible();
 });
