@@ -12,7 +12,7 @@ class Service {
   }
 
   static async create() {
-    const { data, error } = await supabase.from('catalog').select('id, name, title, description, links, gitHub, ownerId');
+    const { data, error } = await supabase.from('catalog').select('id, name, title, description, links, gitHub');
 
     if (error) {
       throw new Error(error.message);

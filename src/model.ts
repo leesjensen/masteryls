@@ -38,7 +38,6 @@ export type CatalogEntry = {
   name: string;
   title: string;
   description: string;
-  ownerId: string;
   links?: object;
   gitHub: {
     account: string;

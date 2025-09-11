@@ -8,8 +8,6 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
-  const [deleteEnrollmentTitle, setDeleteEnrollmentTitle] = useState('');
-  const [deleteEnrollmentMessage, setDeleteEnrollmentMessage] = useState('');
   const [showUser, setShowUser] = useState(false);
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
@@ -31,24 +29,6 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   };
 
   const requestedEnrollmentRemoval = async (enrollment) => {
-    if (enrollment.catalogEntry?.ownerId === user.id) {
-      setDeleteEnrollmentTitle('Delete course');
-      setDeleteEnrollmentMessage(
-        <div>
-          <p>
-            Because you are the owner of <b>{enrollment.catalogEntry.name}</b>, this action will completely delete the course and all enrollments. If you do not want to delete the course then change the owner before you delete your enrollment.
-          </p>
-          <p className="pt-2">Are you sure you want to delete the course and all enrollments?</p>
-        </div>
-      );
-    } else {
-      setDeleteEnrollmentTitle('Delete enrollment');
-      setDeleteEnrollmentMessage(
-        <p>
-          Are you sure you want to delete your enrollment to <b>{enrollment.catalogEntry.name}</b>?
-        </p>
-      );
-    }
     setPendingEnrollmentRemoval(enrollment);
     dialogRef.current.showModal();
   };
@@ -103,7 +83,16 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   return (
     <div className="max-w-4xl mx-auto mt-6 p-8 bg-white">
-      <ConfirmDialog dialogRef={dialogRef} title={deleteEnrollmentTitle} confirmed={confirmedEnrollmentRemoval} message={deleteEnrollmentMessage} />
+      <ConfirmDialog
+        dialogRef={dialogRef}
+        title="Delete enrollment"
+        confirmed={confirmedEnrollmentRemoval}
+        message={
+          <p>
+            Are you sure you want to delete your enrollment to <b>{pendingEnrollmentRemoval?.catalogEntry.name}</b>?
+          </p>
+        }
+      />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
           <h1 className="font-bold text-3xl mb-2">
