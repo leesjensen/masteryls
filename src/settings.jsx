@@ -58,7 +58,7 @@ export default function Settings({ service, user, course, setCourse }) {
   };
 
   const deleteCourse = async () => {
-    await service.deleteCourse(course.id);
+    await service.deleteCourse(user, course);
     setCourse(null);
     showAlert({
       message: (

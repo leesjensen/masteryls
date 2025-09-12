@@ -109,7 +109,7 @@ class Service {
     }
   }
 
-  async removeCourse(user: User, catalogEntry: CatalogEntry): Promise<void> {
+  async deleteCourse(user: User, catalogEntry: CatalogEntry): Promise<void> {
     const token = user.gitHubToken(catalogEntry.id);
     if (token) {
       const deleteResp = await fetch(`https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}`, {
@@ -251,7 +251,7 @@ class Service {
     }
   }
 
-  async removeEnrollment(enrollment: Enrollment): Promise<void> {
+  async deleteEnrollment(enrollment: Enrollment): Promise<void> {
     const { error } = await supabase.from('enrollment').delete().eq('id', enrollment.id);
     if (error) {
       throw new Error(error.message);

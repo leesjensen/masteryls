@@ -35,11 +35,7 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
 
   const confirmedEnrollmentRemoval = async () => {
     dialogRef.current.close();
-    if (user.isOwner(pendingEnrollmentRemoval.catalogId)) {
-      await service.removeCourse(user, pendingEnrollmentRemoval.catalogEntry);
-    } else {
-      await service.removeEnrollment(pendingEnrollmentRemoval);
-    }
+    await service.deleteEnrollment(pendingEnrollmentRemoval);
     setEnrollments((prev) => {
       const newEnrollments = new Map(prev);
       newEnrollments.delete(pendingEnrollmentRemoval.catalogId);
