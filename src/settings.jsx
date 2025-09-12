@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Course from './course.js';
 import { useAlert } from './contexts/AlertContext.jsx';
 
 export default function Settings({ service, user, course, setCourse }) {
