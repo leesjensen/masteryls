@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import ConfirmDialog from './hooks/confirmDialog.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
 
 export default function Settings({ service, user, course, setCourse }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
+  const dialogRef = useRef(null);
   const { showAlert } = useAlert();
 
   const editorVisible = user.isEditor(course.id);
@@ -55,21 +57,33 @@ export default function Settings({ service, user, course, setCourse }) {
     });
   };
 
-  // add a delete course button
-  // if (enrollment.catalogEntry?.ownerId === user.id) {
-  //   setDeleteEnrollmentTitle('Delete course');
-  //   setDeleteEnrollmentMessage(
-  //     <div>
-  //       <p>
-  //         Because you are the owner of <b>{enrollment.catalogEntry.name}</b>, this action will completely delete the course and all enrollments. If you do not want to delete the course then change the owner before you delete your enrollment.
-  //       </p>
-  //       <p className="pt-2">Are you sure you want to delete the course and all enrollments?</p>
-  //     </div>
-  //   );
-  // } else {
+  const deleteCourse = async () => {
+    await service.deleteCourse(course.id);
+    setCourse(null);
+    showAlert({
+      message: (
+        <div className="text-xs">
+          <div>Course deleted</div>
+        </div>
+      ),
+    });
+  };
 
   return (
     <div className="h-full overflow-auto p-4">
+      <ConfirmDialog
+        dialogRef={dialogRef}
+        title="Delete course"
+        confirmed={deleteCourse}
+        message={
+          <div>
+            <p>
+              Because you are the owner of <b>{course.name}</b>, this action will completely delete the course <b>and all enrollments</b>.
+            </p>
+            <p className="pt-2">Are you sure you want to delete the course and all enrollments?</p>
+          </div>
+        }
+      />
       <div className="max-w-3xl mx-auto">
         <div className="bg-gray-50 rounded-lg p-4 mb-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Course Overview</h2>
@@ -122,9 +136,14 @@ export default function Settings({ service, user, course, setCourse }) {
           </div>
         </div>
         {editorVisible && (
-          <div className="flex justify-end">
+          <div className="flex flex-col justify-end">
+            {user.isOwner() && (
+              <button onClick={() => dialogRef.current.showModal()} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
+                Delete course
+              </button>
+            )}
             <button disabled={!settingsDirty} onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
-              Save Changes
+              Save changes
             </button>
           </div>
         )}
