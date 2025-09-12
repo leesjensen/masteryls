@@ -4,23 +4,16 @@ export default class Course {
     return new Course(courseData);
   }
 
-  constructor(courseData = { modules: [] }) {
-    Object.assign(this, courseData);
+  constructor(courseEntry = { modules: [] }) {
+    Object.assign(this, courseEntry);
 
     this.markdownCache = new Map();
     this.allTopics = this.modules.flatMap((m) => m.topics);
   }
 
-  static copy(course) {
-    const newModules = course.modules.map((module) => ({
-      ...module,
-      topics: module.topics.map((topic) => ({ ...topic })),
-    }));
-    const newCourse = new Course({ ...course, modules: newModules });
-
-    newCourse.markdownCache = new Map(course.markdownCache);
-    newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
-
+  updateCatalogEntry(catalogEntry) {
+    const newCourse = Course._copy(this);
+    Object.assign(newCourse, catalogEntry);
     return newCourse;
   }
 
@@ -66,7 +59,7 @@ export default class Course {
   }
 
   async saveTopicMarkdown(updatedTopic, content) {
-    const updatedCourse = Course.copy(this);
+    const updatedCourse = Course._copy(this);
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     savedTopic.lastUpdated = Date.now();
     updatedCourse.markdownCache.set(updatedTopic.path, content);
@@ -74,7 +67,7 @@ export default class Course {
   }
 
   async commitTopicMarkdown(user, service, updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
-    const updatedCourse = Course.copy(this);
+    const updatedCourse = Course._copy(this);
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     delete savedTopic.lastUpdated;
 
@@ -90,7 +83,7 @@ export default class Course {
   }
 
   async discardTopicMarkdown(updatedTopic) {
-    const updatedCourse = Course.copy(this);
+    const updatedCourse = Course._copy(this);
     const topic = updatedCourse.topicFromPath(updatedTopic.path);
     delete topic.lastUpdated;
 
@@ -105,6 +98,19 @@ export default class Course {
     this.markdownCache.set(topicUrl, markdown);
 
     return markdown;
+  }
+
+  static _copy(course) {
+    const newModules = course.modules.map((module) => ({
+      ...module,
+      topics: module.topics.map((topic) => ({ ...topic })),
+    }));
+    const newCourse = new Course({ ...course, modules: newModules });
+
+    newCourse.markdownCache = new Map(course.markdownCache);
+    newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
+
+    return newCourse;
   }
 }
 

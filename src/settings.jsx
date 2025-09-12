@@ -3,7 +3,7 @@ import Course from './course.js';
 import { useAlert } from './contexts/AlertContext.jsx';
 
 export default function Settings({ service, user, course, setCourse }) {
-  const [isDirty, setIsDirty] = useState(false);
+  const [settingsDirty, setSettingsDirty] = useState(false);
   const { showAlert } = useAlert();
 
   const editorVisible = user.isEditor(course.id);
@@ -29,7 +29,7 @@ export default function Settings({ service, user, course, setCourse }) {
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setIsDirty(true);
+    setSettingsDirty(true);
   };
 
   const handleSave = async () => {
@@ -43,10 +43,10 @@ export default function Settings({ service, user, course, setCourse }) {
         repository: formData.githubRepository,
       },
     };
-    const updatedCourse = await Course.create(catalogEntry);
     service.saveCourseSettings(catalogEntry);
-    setCourse(updatedCourse);
-    setIsDirty(false);
+    const newCourse = course.updateCatalogEntry(catalogEntry);
+    setCourse(newCourse);
+    setSettingsDirty(false);
     showAlert({
       message: (
         <div className="text-xs">
@@ -124,7 +124,7 @@ export default function Settings({ service, user, course, setCourse }) {
         </div>
         {editorVisible && (
           <div className="flex justify-end">
-            <button disabled={!isDirty} onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+            <button disabled={!settingsDirty} onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
               Save Changes
             </button>
           </div>
