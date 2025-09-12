@@ -23,35 +23,58 @@ export default function Settings({ service, user, course, setCourse }) {
     description: course.description || '',
     githubAccount: course.gitHub.account,
     githubRepository: course.gitHub.repository,
+    gitHubToken: user.gitHubToken(course.id) || '',
   });
 
   const moduleCount = course.modules.length || 0;
   const topicCount = course.allTopics.length || 0;
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    setSettingsDirty(true);
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+
+    const courseChanged = courseHasChanged(newFormData);
+    const tokenChanged = field === 'gitHubToken' && gitHubTokenHasChanged(value);
+    setSettingsDirty(tokenChanged || courseChanged);
+    console.log(courseChanged, tokenChanged);
+  };
+
+  const courseHasChanged = (data) => {
+    return data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository;
+  };
+
+  const gitHubTokenHasChanged = (token) => {
+    return token !== (user.gitHubToken(course.id) || '');
   };
 
   const handleSave = async () => {
-    const catalogEntry = {
-      id: course.id,
-      title: formData.title,
-      description: formData.description,
-      links: course.links,
-      gitHub: {
-        account: formData.githubAccount,
-        repository: formData.githubRepository,
-      },
-    };
-    service.saveCourseSettings(catalogEntry);
-    const newCourse = course.updateCatalogEntry(catalogEntry);
-    setCourse(newCourse);
-    setSettingsDirty(false);
+    if (gitHubTokenHasChanged(formData.gitHubToken)) {
+      const roles = user.updateRoleSettings(course.id, { [course.id]: { gitHubToken: formData.gitHubToken } });
+      for (const role of roles) {
+        await service.updateRoleSettings(role);
+      }
+    }
+    if (courseHasChanged(formData)) {
+      const catalogEntry = {
+        id: course.id,
+        title: formData.title,
+        description: formData.description,
+        links: course.links,
+        gitHub: {
+          account: formData.githubAccount,
+          repository: formData.githubRepository,
+        },
+      };
+      service.saveCourseSettings(catalogEntry);
+      const newCourse = course.updateCatalogEntry(catalogEntry);
+      setCourse(newCourse);
+      setSettingsDirty(false);
+    }
+
     showAlert({
       message: (
         <div className="text-xs">
-          <div>Saved</div>
+          <div>Settings saved</div>
         </div>
       ),
     });
@@ -106,7 +129,7 @@ export default function Settings({ service, user, course, setCourse }) {
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Course Information</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Course title</label>
               {editorVisible ? <input type="text" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course title" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.title}</div>}
             </div>
             <div>
@@ -114,14 +137,21 @@ export default function Settings({ service, user, course, setCourse }) {
               {editorVisible ? <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white min-h-[120px]" placeholder="Enter course description" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md min-h-[120px] text-sm">{formData.description || <span className="text-gray-400">No description set</span>}</div>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">GitHub Account</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">GitHub account</label>
               {editorVisible ? <input type="text" value={formData.githubAccount} onChange={(e) => handleInputChange('githubAccount', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub username" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubAccount}</div>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Repository Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Repository name</label>
               {editorVisible ? <input type="text" value={formData.githubRepository} onChange={(e) => handleInputChange('githubRepository', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter repository name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubRepository}</div>}
             </div>
+
+            {user.isEditor(course.id) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">GitHub token</label>
+                <input type="text" value={formData.gitHubToken} onChange={(e) => handleInputChange('gitHubToken', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub token" />
+              </div>
+            )}
 
             {course.links?.gitHub?.url && (
               <div>

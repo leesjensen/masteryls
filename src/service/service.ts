@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
-import { User, CatalogEntry, Enrollment } from '../model';
+import { User, CatalogEntry, Enrollment, Role } from '../model';
 
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
@@ -139,6 +139,16 @@ class Service {
       return await this._loadUser({ id: session.data.session.user.id });
     }
     return null;
+  }
+
+  async updateRoleSettings(role: Role): Promise<void> {
+    let query = supabase.from('role').update({ settings: role.settings }).eq('user', role.user);
+    query = role.object === null ? query.is('object', null) : query.eq('object', role.object);
+    query = query.eq('right', role.right);
+    const { error } = await query;
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   async register(name: string, email: string, password: string): Promise<User | null> {

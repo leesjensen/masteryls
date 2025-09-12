@@ -2,7 +2,7 @@ export type Role = {
   user: string;
   right: string;
   object: string;
-  settings: any;
+  settings: object;
 };
 
 export class User {
@@ -16,20 +16,34 @@ export class User {
     Object.assign(this, data);
   }
 
+  updateRoleSettings(object: string, settings: object): Role[] {
+    const updatedRoles: Role[] = [];
+    this.roles?.forEach((r) => {
+      if (r.right === 'root' || r.object === object) {
+        r.settings = { ...r.settings, ...settings };
+        updatedRoles.push(r);
+      }
+    });
+    return updatedRoles;
+  }
+
   isRole(rights: string[], object?: string): boolean {
     return !!this.roles?.some((r) => r.right === 'root' || (rights.includes(r.right) && (!object || r.object === object)));
   }
 
-  isOwner(object: string): boolean {
+  isOwner(object: string | undefined): boolean {
     return this.isRole(['owner'], object);
   }
 
-  isEditor(object: string): boolean {
+  isEditor(object: string | undefined): boolean {
     return this.isRole(['owner', 'editor'], object);
   }
 
   gitHubToken(courseId: string): string | undefined {
-    return this.roles?.find((r) => r.right === 'root' || ((r.right === 'editor' || r.right === 'owner') && r.object === courseId))?.settings?.token;
+    const role = this.roles?.find((r) => r.right === 'root' || ((r.right === 'editor' || r.right === 'owner') && r.object === courseId));
+    if (role && role.settings[courseId]) {
+      return role.settings[courseId].gitHubToken;
+    }
   }
 }
 

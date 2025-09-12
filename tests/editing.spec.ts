@@ -90,5 +90,5 @@ test('settings editing', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Enter course title' }).fill('QA & DevOpsx');
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
-  await expect(page.getByText('Saved')).toBeVisible();
+  await expect(page.getByText('Settings saved')).toBeVisible();
 });
