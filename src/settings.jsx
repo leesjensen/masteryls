@@ -78,7 +78,7 @@ export default function Settings({ service, user, course, setCourse }) {
         message={
           <div>
             <p>
-              Because you are the owner of <b>{course.name}</b>, this action will completely delete the course <b>and all enrollments</b>.
+              Because you are the owner of <b>{course.name}</b>, this action will <b>completely delete the course and all enrollments</b>.
             </p>
             <p className="pt-2">Are you sure you want to delete the course and all enrollments?</p>
           </div>
