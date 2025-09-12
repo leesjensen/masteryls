@@ -16,20 +16,20 @@ export class User {
     Object.assign(this, data);
   }
 
-  isRole(right: string, object?: string): boolean {
-    return !!this.roles?.some((r) => r.right === right && (!object || r.object === object));
+  isRole(rights: string[], object?: string): boolean {
+    return !!this.roles?.some((r) => r.right === 'root' || (rights.includes(r.right) && (!object || r.object === object)));
   }
 
   isOwner(object: string): boolean {
-    return this.isRole('owner', object);
+    return this.isRole(['owner'], object);
   }
 
   isEditor(object: string): boolean {
-    return !!this.roles?.some((r) => (r.right === 'editor' || r.right === 'owner') && r.object === object);
+    return this.isRole(['owner', 'editor'], object);
   }
 
   gitHubToken(courseId: string): string | undefined {
-    return this.roles?.find((r) => (r.right === 'editor' || r.right === 'owner') && r.object === courseId)?.settings?.token;
+    return this.roles?.find((r) => r.right === 'root' || ((r.right === 'editor' || r.right === 'owner') && r.object === courseId))?.settings?.token;
   }
 }
 

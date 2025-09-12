@@ -97,9 +97,11 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
         </div>
         {showUser && <pre className="text-gray-400 text-[8px]">{JSON.stringify(user, null, 2)}</pre>}
         <div className="flex justify-between mb-6">
-          <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-            <span className="font-semibold text-amber-600">+</span> Course
-          </button>
+          {user.isOwner() && (
+            <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+              <span className="font-semibold text-amber-600">+</span> Course
+            </button>
+          )}
           <button onClick={logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
             Logout
           </button>
