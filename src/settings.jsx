@@ -97,7 +97,7 @@ export default function Settings({ service, user, course, setCourse }) {
               <div className="text-sm text-gray-600">Topics</div>
             </div>
             <div className="bg-white rounded-lg p-2 shadow-sm border">
-              <div className="text-xl font-bold text-gray-800">{course.isDirty() ? 'Yes' : 'No'}</div>
+              <div className={`text-xl font-bold text-gray-800 ${course.isDirty() ? 'text-red-500' : 'text-gray-800'}`}>{course.isDirty() ? 'Yes' : 'No'}</div>
               <div className="text-sm text-gray-600">Unsaved Changes</div>
             </div>
           </div>
@@ -136,15 +136,15 @@ export default function Settings({ service, user, course, setCourse }) {
           </div>
         </div>
         {editorVisible && (
-          <div className="flex flex-col justify-end">
+          <div className="flex flex-col justify-end w-[200px]">
+            <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+              Save changes
+            </button>
             {user.isOwner() && (
-              <button onClick={() => dialogRef.current.showModal()} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
+              <button onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
                 Delete course
               </button>
             )}
-            <button disabled={!settingsDirty} onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
-              Save changes
-            </button>
           </div>
         )}
       </div>

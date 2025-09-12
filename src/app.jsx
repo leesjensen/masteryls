@@ -103,6 +103,7 @@ function App() {
     setEditorVisible((prev) => !prev);
   }
 
+  // What to show before we know who the user is
   if (!loaded) {
     return (
       <div className="flex flex-col h-screen">
@@ -113,6 +114,12 @@ function App() {
     return <Start setUser={setUser} />;
   } else if (!course) {
     return <Dashboard service={service} user={user} setUser={setUser} loadCourse={loadCourse} />;
+  }
+
+  // What to show in the main content area
+  let content = <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />;
+  if (editorVisible) {
+    content = <Editor service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} changeTopic={changeTopic} />;
   }
 
   return (
@@ -129,7 +136,7 @@ function App() {
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
           <Sidebar service={service} user={user} enrollment={enrollment} setCourse={setCourse} course={course} currentTopic={topic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />
         </div>
-        {editorVisible ? <Editor service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} changeTopic={changeTopic} /> : <Instruction topic={topic} changeTopic={changeTopic} course={course} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
+        {content}
       </div>
     </div>
   );

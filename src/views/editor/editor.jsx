@@ -28,7 +28,7 @@ export default function Editor({ service, user, course, setCourse, currentTopic,
   }, [course, currentTopic]);
 
   return (
-    <div className="p-2 flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <MarkdownEditor service={service} user={user} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
       <EditorFiles files={files} setFiles={setFiles} />
     </div>
