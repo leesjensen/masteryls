@@ -19,6 +19,7 @@ export default function Settings({ service, user, course, setCourse }) {
   }
 
   const [formData, setFormData] = useState({
+    name: course.name || '',
     title: course.title || '',
     schedule: stripGithubPrefix(course.schedule, course),
     description: course.description || '',
@@ -58,6 +59,7 @@ export default function Settings({ service, user, course, setCourse }) {
     if (courseHasChanged(formData)) {
       const catalogEntry = {
         id: course.id,
+        name: formData.name,
         title: formData.title,
         description: formData.description,
         links: course.links,
@@ -130,7 +132,11 @@ export default function Settings({ service, user, course, setCourse }) {
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Course Information</h2>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              {editorVisible ? <input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.name}</div>}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
               {editorVisible ? <input type="text" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course title" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.title}</div>}
             </div>
             <div>
