@@ -284,13 +284,16 @@ class Service {
   }
 
   async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
     const request: RequestInit = {
       method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github.v3+json',
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
-      },
+      headers,
       ...(body ? { body: JSON.stringify(body) } : {}),
     };
     return fetch(url, request);

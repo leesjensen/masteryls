@@ -48,7 +48,7 @@ function App() {
     });
 
     function handleBeforeUnload(e) {
-      if (courseRef.current?.isDirty()) {
+      if (courseRef.current?.stagedCount()) {
         e.preventDefault();
         e.returnValue = 'You have uncommitted changes. Are you sure you want to leave?';
         return e.returnValue;

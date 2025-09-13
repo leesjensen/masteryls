@@ -8,6 +8,7 @@ export default function Settings({ service, user, course, setCourse }) {
   const { showAlert } = useAlert();
 
   const editorVisible = user.isEditor(course.id);
+  const stagedCount = course.stagedCount();
 
   function stripGithubPrefix(schedule, course) {
     const githubUrl = course.links.gitHub.rawUrl;
@@ -119,9 +120,9 @@ export default function Settings({ service, user, course, setCourse }) {
               <div className="text-xl font-bold text-gray-800">{topicCount}</div>
               <div className="text-sm text-gray-600">Topics</div>
             </div>
-            <div className="bg-white rounded-lg p-2 shadow-sm border">
-              <div className={`text-xl font-bold text-gray-800 ${course.isDirty() ? 'text-red-500' : 'text-gray-800'}`}>{course.isDirty() ? 'Yes' : 'No'}</div>
-              <div className="text-sm text-gray-600">Unsaved Changes</div>
+            <div className={` rounded-lg p-2 shadow-sm border  ${stagedCount ? 'text-amber-500 bg-amber-50' : 'text-gray-800 bg-white'}`}>
+              <div className="text-xl font-bold">{stagedCount}</div>
+              <div className={`text-sm  ${stagedCount ? 'text-amber-500' : 'text-gray-600'}`}>Uncommitted topics</div>
             </div>
           </div>
         </div>

@@ -46,8 +46,8 @@ export default class Course {
     return this.modules.map(op);
   }
 
-  isDirty() {
-    return this.allTopics.some((topic) => topic.lastUpdated !== undefined);
+  stagedCount() {
+    return this.allTopics.filter((topic) => topic.lastUpdated !== undefined).length;
   }
 
   async topicMarkdown(topic) {
