@@ -23,14 +23,6 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
       </button>
 
       <div className="col-start-1 row-start-1 justify-self-end self-start flex flex-row gap-1 z-10 translate-x-3 -translate-y-3">
-        {user.isOwner(catalogEntry.id) && (
-          <div className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow cursor-default">
-            <span title="editor rights" className="text-lg text-yellow-400">
-              ★
-            </span>
-          </div>
-        )}
-
         {user.isEditor(catalogEntry.id) && (
           <div className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow cursor-default">
             <span title="editor rights" className="text-yellow-400">

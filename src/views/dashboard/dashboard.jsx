@@ -91,13 +91,17 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
       />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
-          <h1 className="font-bold text-3xl mb-2">
-            <a onClick={() => setShowUser(!showUser)}>{user.name}'s</a> dashboard
+          <h1 className="font-bold text-3xl mb-2 flex items-center">
+            <a onClick={() => setShowUser(!showUser)}>{user.name}'s dashboard</a>
+            {user.isRoot() && (
+              <span title="root rights" className="text-lg text-yellow-400 ml-1">
+                ★
+              </span>
+            )}
           </h1>
         </div>
-        {showUser && <pre className="text-gray-400 text-[8px]">{JSON.stringify(user, null, 2)}</pre>}
         <div className="flex justify-between mb-6">
-          {user.isOwner() && (
+          {user.isRoot() && (
             <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
               <span className="font-semibold text-amber-600">+</span> Course
             </button>
@@ -107,7 +111,8 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
           </button>
         </div>
       </div>
-      <h2 className="border-t-2 border-gray-400 font-semibold mb-6 pt-1 text-xl text-gray-500">Your courses</h2>
+      {showUser && <pre className="text-gray-400 text-[12px]">{JSON.stringify(user, null, 2)}</pre>}
+      <h2 className="border-t-2 border-gray-400 font-semibold mb- pt-1 text-xl text-gray-500">Your courses</h2>
       {enrollments.size > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {Array.from(enrollments.values()).map((enrollment) => {

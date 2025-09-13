@@ -7,7 +7,7 @@ export default function Settings({ service, user, course, setCourse }) {
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
 
-  const editorVisible = user.isEditor(course.id);
+  const editorVisible = user.isEditor(course.id) || user.isRoot();
   const stagedCount = course.stagedCount();
 
   function stripGithubPrefix(schedule, course) {
@@ -51,7 +51,7 @@ export default function Settings({ service, user, course, setCourse }) {
 
   const handleSave = async () => {
     if (gitHubTokenHasChanged(formData.gitHubToken)) {
-      await service.updateUserRoleSettings(user, course, formData.gitHubToken);
+      await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
     }
     if (courseHasChanged(formData)) {
       const catalogEntry = {
@@ -101,7 +101,7 @@ export default function Settings({ service, user, course, setCourse }) {
         message={
           <div>
             <p>
-              Because you are the owner of <b>{course.name}</b>, this action will <b>completely delete the course and all enrollments</b>.
+              This will completely delete <b>{course.name}</b> and <b>all enrollments</b>.
             </p>
             <p className="pt-2">Are you sure you want to delete the course and all enrollments?</p>
           </div>
@@ -174,7 +174,7 @@ export default function Settings({ service, user, course, setCourse }) {
             <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
               Save changes
             </button>
-            {user.isOwner() && (
+            {user.isEditor() && (
               <button onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
                 Delete course
               </button>

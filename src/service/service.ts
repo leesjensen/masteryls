@@ -93,12 +93,12 @@ class Service {
     await supabase.from('role').insert([
       {
         user: user.id,
-        right: 'owner',
+        right: 'editor',
         object: data.id,
         settings: {},
       },
     ]);
-    await service.updateUserRoleSettings(user, catalogEntry, gitHubToken);
+    await service.updateUserRoleSettings(user, 'editor', catalogEntry.id, { gitHubToken });
 
     await this._populateTemplateTopics(catalogEntry, gitHubToken);
 
@@ -177,20 +177,18 @@ class Service {
     return null;
   }
 
-  async updateUserRoleSettings(user: User, course: CatalogEntry, gitHubToken: string): Promise<void> {
-    const roles = user.updateRoleSettings(course.id, { [course.id]: { gitHubToken } });
-    for (const role of roles) {
-      await service.updateRoleSettings(role);
-    }
-  }
+  async updateUserRoleSettings(user: User, right: string, objectId: string, settings: object): Promise<void> {
+    const role = user.getRole(right, objectId);
+    if (role) {
+      role.settings = { ...role.settings, ...settings };
+      let query = supabase.from('role').update({ settings: role.settings }).eq('user', role.user);
 
-  async updateRoleSettings(role: Role): Promise<void> {
-    let query = supabase.from('role').update({ settings: role.settings }).eq('user', role.user);
-    query = role.object === null ? query.is('object', null) : query.eq('object', role.object);
-    query = query.eq('right', role.right);
-    const { error } = await query;
-    if (error) {
-      throw new Error(error.message);
+      query = role.object === null ? query.is('object', null) : query.eq('object', role.object);
+      query = query.eq('right', role.right);
+      const { error } = await query;
+      if (error) {
+        throw new Error(error.message);
+      }
     }
   }
 

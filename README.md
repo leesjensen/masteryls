@@ -255,8 +255,8 @@ DROP POLICY IF EXISTS "update-own-rows" ON public.role;
 CREATE POLICY "update-own-rows"
   ON public.role
   FOR UPDATE
-  USING (owner = auth.uid())
-  WITH CHECK (owner = auth.uid());
+  USING (user = auth.uid())
+  WITH CHECK (user = auth.uid());
 
 REVOKE ALL PRIVILEGES ON public.role FROM authenticated;
 

@@ -10,7 +10,7 @@ function Sidebar({ service, user, enrollment, course, setCourse, currentTopic, c
   }
   return (
     <div className="flex flex-col border p-2 rounded-xs m-2 border-gray-200 bg-gray-50 overflow-hidden w-full sm:w-[300px]">
-      {user.isEditor(course.id) && (
+      {(user.isEditor(course.id) || user.isRoot()) && (
         <div className="basis-[30px] border-gray-200 pb-2 border-b-1 flex items-center justify-around text-sm">
           <span className={`rounded p-1 ${display === 'topics' ? 'border' : 'bg-gray-200'}`} onClick={() => toggleDisplay('topics')}>
             Topics
