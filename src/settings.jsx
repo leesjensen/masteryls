@@ -9,14 +9,15 @@ export default function Settings({ service, user, course, setCourse }) {
   const { showAlert } = useAlert();
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const ogSelectedUsersRef = useRef([]);
 
   useEffect(() => {
     (async () => {
       try {
         const fetchedUsers = await service.getAllUsers();
         setUsers(fetchedUsers);
-        const filteredUsers = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
-        setSelectedUsers(filteredUsers);
+        ogSelectedUsersRef.current = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
+        setSelectedUsers(ogSelectedUsersRef.current);
       } catch (error) {
         console.error('Error fetching users:', error);
       }
@@ -24,7 +25,10 @@ export default function Settings({ service, user, course, setCourse }) {
   }, []);
 
   function setSelectedUsersInternal(newSelected) {
-    console.log('Selected users changed:', newSelected);
+    console.log('Selected users changed:', newSelected, ogSelectedUsersRef.current);
+    const hasChanged = selectedUsersChanged(newSelected);
+    console.log('Selected users changed:', hasChanged);
+    setSettingsDirty(hasChanged);
   }
 
   const editorVisible = user.isEditor(course.id) || user.isRoot();
@@ -55,13 +59,26 @@ export default function Settings({ service, user, course, setCourse }) {
     const newFormData = { ...formData, [field]: value };
     setFormData(newFormData);
 
-    const courseChanged = courseHasChanged(newFormData);
+    const courseChanged = courseChanged(newFormData);
     const tokenChanged = field === 'gitHubToken' && gitHubTokenHasChanged(value);
     setSettingsDirty(tokenChanged || courseChanged);
     console.log(courseChanged, tokenChanged);
   };
 
-  const courseHasChanged = (data) => {
+  const selectedUsersChanged = (newSelected) => {
+    if (newSelected.length !== ogSelectedUsersRef.current.length) {
+      return true;
+    }
+    const selectedSet = new Set(newSelected);
+    for (const id of ogSelectedUsersRef.current) {
+      if (!selectedSet.has(id)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const courseChanged = (data) => {
     return data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository;
   };
 
@@ -73,7 +90,7 @@ export default function Settings({ service, user, course, setCourse }) {
     if (gitHubTokenHasChanged(formData.gitHubToken)) {
       await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
     }
-    if (courseHasChanged(formData)) {
+    if (courseChanged(formData)) {
       const catalogEntry = {
         id: course.id,
         name: formData.name,
