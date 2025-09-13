@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import ConfirmDialog from './hooks/confirmDialog.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
+import UserSelect from './components/userSelect.jsx';
 
 export default function Settings({ service, user, course, setCourse }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
@@ -170,15 +171,18 @@ export default function Settings({ service, user, course, setCourse }) {
           </div>
         </div>
         {editorVisible && (
-          <div className="flex flex-col justify-end w-[200px]">
-            <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
-              Save changes
-            </button>
-            {user.isEditor() && (
-              <button onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
-                Delete course
+          <div>
+            <UserSelect onSubmit={(userId) => console.log('Selected user ID:', userId)} />
+            <div className="flex flex-col justify-end w-[200px]">
+              <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+                Save changes
               </button>
-            )}
+              {user.isEditor() && (
+                <button onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
+                  Delete course
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

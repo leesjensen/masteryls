@@ -3,7 +3,7 @@ import Contents from './contents.jsx';
 import Settings from './settings.jsx';
 
 function Sidebar({ service, user, enrollment, course, setCourse, currentTopic, changeTopic, navigateToAdjacentTopic }) {
-  const [display, setDisplay] = useState('topics');
+  const [display, setDisplay] = useState('settings');
 
   function toggleDisplay(newDisplay) {
     setDisplay(newDisplay);
