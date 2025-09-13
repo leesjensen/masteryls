@@ -51,10 +51,7 @@ export default function Settings({ service, user, course, setCourse }) {
 
   const handleSave = async () => {
     if (gitHubTokenHasChanged(formData.gitHubToken)) {
-      const roles = user.updateRoleSettings(course.id, { [course.id]: { gitHubToken: formData.gitHubToken } });
-      for (const role of roles) {
-        await service.updateRoleSettings(role);
-      }
+      await service.updateUserRoleSettings(user, course, formData.gitHubToken);
     }
     if (courseHasChanged(formData)) {
       const catalogEntry = {

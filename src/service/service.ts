@@ -59,8 +59,6 @@ class Service {
 
   async createCourse(user: User, templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     try {
-      // TODO: We need to create the role and put the token in there.
-
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
         const targetOwner = catalogEntry.gitHub.account;
         const targetRepo = catalogEntry.gitHub.repository;
@@ -92,7 +90,45 @@ class Service {
 
     this.catalog.push(data);
 
+    await supabase.from('role').insert([
+      {
+        user: user.id,
+        right: 'owner',
+        object: data.id,
+        settings: {},
+      },
+    ]);
+    await service.updateUserRoleSettings(user, catalogEntry, gitHubToken);
+
+    await this._populateTemplateTopics(catalogEntry, gitHubToken);
+
     return data;
+  }
+
+  async _populateTemplateTopics(catalogEntry: CatalogEntry, gitHubToken: string): Promise<void> {
+    if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
+      const token = gitHubToken;
+      const owner = catalogEntry.gitHub.account;
+      const repo = catalogEntry.gitHub.repository;
+
+      const topics = ['instruction/introduction/introduction.md', 'instruction/syllabus/syllabus.md', 'README.md'];
+      for (const topic of topics) {
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${topic}`;
+
+        const response = await fetch(url);
+        const markdown = await response.text();
+
+        let variableFound = false;
+        const replacedMarkdown = markdown.replace(/%%MASTERYLS_(\w+)%%/g, (_, variable) => {
+          variableFound = true;
+          const key = variable.toLowerCase();
+          return this[key] ?? '';
+        });
+        if (variableFound) {
+          await this.commitTopicMarkdown(url, replacedMarkdown, token, `insert course template variables`);
+        }
+      }
+    }
   }
 
   async saveCourseSettings(catalogEntry: CatalogEntry): Promise<void> {
@@ -139,6 +175,13 @@ class Service {
       return await this._loadUser({ id: session.data.session.user.id });
     }
     return null;
+  }
+
+  async updateUserRoleSettings(user: User, course: CatalogEntry, gitHubToken: string): Promise<void> {
+    const roles = user.updateRoleSettings(course.id, { [course.id]: { gitHubToken } });
+    for (const role of roles) {
+      await service.updateRoleSettings(role);
+    }
   }
 
   async updateRoleSettings(role: Role): Promise<void> {

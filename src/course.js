@@ -58,16 +58,6 @@ export default class Course {
     return this._downloadTopicMarkdown(topic.path);
   }
 
-  async populateTopicMarkdownTemplate(topic) {
-    const markdown = await this.topicMarkdown(topic);
-    const replacedMarkdown = markdown.replace(/%%MASTERYLS_(\w+)%%/g, (_, variable) => {
-      const key = variable.toLowerCase();
-      return this[key] ?? '';
-    });
-    this.markdownCache.set(topic.path, replacedMarkdown);
-    return replacedMarkdown;
-  }
-
   async saveTopicMarkdown(updatedTopic, content) {
     const updatedCourse = Course._copy(this);
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);

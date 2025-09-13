@@ -40,8 +40,8 @@ export class User {
   }
 
   gitHubToken(courseId: string): string | undefined {
-    const role = this.roles?.find((r) => r.right === 'root' || ((r.right === 'editor' || r.right === 'owner') && r.object === courseId));
-    if (role && role.settings[courseId]) {
+    const role = this.roles?.find((r) => r.object === courseId && r.settings && r.settings[courseId] && r.settings[courseId].gitHubToken);
+    if (role) {
       return role.settings[courseId].gitHubToken;
     }
   }
