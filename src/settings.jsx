@@ -7,6 +7,23 @@ export default function Settings({ service, user, course, setCourse }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
+  const [users, setUsers] = useState([
+    { id: 1, name: 'Alice Johnson trslly logn name' },
+    { id: 2, name: 'Bob Smith' },
+    { id: 3, name: 'Charlie Lee' },
+    { id: 4, name: 'Dana White' },
+    { id: 5, name: 'Emily Davis' },
+    { id: 6, name: 'Frank Miller' },
+    { id: 7, name: 'Grace Chen' },
+    { id: 8, name: 'Henry Wilson' },
+    { id: 9, name: 'Isabella Garcia' },
+    { id: 10, name: 'Jack Thompson' },
+    { id: 11, name: 'Karen Rodriguez' },
+    { id: 12, name: 'Luis Martinez' },
+    { id: 13, name: 'Maria Gonzalez' },
+    { id: 14, name: 'Nathan Brown' },
+  ]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
 
   const editorVisible = user.isEditor(course.id) || user.isRoot();
   const stagedCount = course.stagedCount();
@@ -93,23 +110,6 @@ export default function Settings({ service, user, course, setCourse }) {
     });
   };
 
-  const users = [
-    { id: 1, name: 'Alice Johnson' },
-    { id: 2, name: 'Bob Smith' },
-    { id: 3, name: 'Charlie Lee' },
-    { id: 4, name: 'Dana White' },
-    { id: 5, name: 'Emily Davis' },
-    { id: 6, name: 'Frank Miller' },
-    { id: 7, name: 'Grace Chen' },
-    { id: 8, name: 'Henry Wilson' },
-    { id: 9, name: 'Isabella Garcia' },
-    { id: 10, name: 'Jack Thompson' },
-    { id: 11, name: 'Karen Rodriguez' },
-    { id: 12, name: 'Luis Martinez' },
-    { id: 13, name: 'Maria Gonzalez' },
-    { id: 14, name: 'Nathan Brown' },
-  ];
-
   return (
     <div className="h-full overflow-auto p-4">
       <ConfirmDialog
@@ -187,9 +187,16 @@ export default function Settings({ service, user, course, setCourse }) {
             )}
           </div>
         </div>
+        {user.isRoot() && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-1">
+            <div>
+              <h2 className="text-xl font-semibold mb-3 text-gray-800">Editors</h2>
+              <UserSelect users={users} />
+            </div>
+          </div>
+        )}
         {editorVisible && (
           <div>
-            {user.isRoot() && <UserSelect users={users} onSubmit={(userId) => console.log('Selected user ID:', userId)} />}
             <div className="flex flex-col justify-end w-[200px]">
               <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
                 Save changes

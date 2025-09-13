@@ -32,8 +32,7 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
       filtered = filtered.filter((user) => selectedUsers.includes(user.id));
     }
 
-    // Limit to maximum 10 users for display
-    return filtered.slice(0, 10);
+    return filtered;
   };
 
   const filteredUsers = getFilteredUsers();
@@ -47,8 +46,6 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-3 text-gray-800">Select Users</h2>
-
       {/* Search and View Controls */}
       <div className="mb-3 space-y-2">
         <input type="text" placeholder="Filter by name..." value={nameFilter} onChange={(e) => setNameFilter(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
@@ -67,7 +64,7 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
         {filteredUsers.length > 0 ? (
           <div className="divide-y divide-gray-100">
             {filteredUsers.map((user) => (
-              <label key={user.id} className="flex items-center px-3 py-2 cursor-pointer hover:bg-gray-50 transition">
+              <label key={user.id} className="flex items-center px-3 py-0.5 cursor-pointer hover:bg-gray-50 transition">
                 <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => handleUserToggle(user.id)} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3" />
                 <span className="text-sm text-gray-800 flex-grow">{user.name}</span>
               </label>
