@@ -1,30 +1,16 @@
 import React, { useState } from 'react';
 
-// Example users data. Replace with your actual users data source.
-const users = [
-  { id: 1, name: 'Alice Johnson' },
-  { id: 2, name: 'Bob Smith' },
-  { id: 3, name: 'Charlie Lee' },
-  { id: 4, name: 'Dana White' },
-  { id: 5, name: 'Emily Davis' },
-  { id: 6, name: 'Frank Miller' },
-  { id: 7, name: 'Grace Chen' },
-  { id: 8, name: 'Henry Wilson' },
-  { id: 9, name: 'Isabella Garcia' },
-  { id: 10, name: 'Jack Thompson' },
-  { id: 11, name: 'Karen Rodriguez' },
-  { id: 12, name: 'Luis Martinez' },
-  { id: 13, name: 'Maria Gonzalez' },
-  { id: 14, name: 'Nathan Brown' },
-];
-
-export default function UserSelect({ onSubmit, showSelectedOnly = false }) {
-  const [selectedUsers, setSelectedUsers] = useState([]);
+export default function UserSelect({ users, onSubmit, showSelectedOnly = false, selected = [], setSelected }) {
   const [nameFilter, setNameFilter] = useState('');
-  const [viewMode, setViewMode] = useState('all'); // 'all', 'selected'
+  const [viewMode, setViewMode] = useState(showSelectedOnly ? 'selected' : 'all');
+
+  // Use controlled state if setSelected is provided, otherwise use internal state
+  const [internalSelected, setInternalSelected] = useState([]);
+  const selectedUsers = setSelected ? selected : internalSelected;
+  const updateSelectedUsers = setSelected || setInternalSelected;
 
   const handleUserToggle = (userId) => {
-    setSelectedUsers((prev) => {
+    updateSelectedUsers((prev) => {
       if (prev.includes(userId)) {
         return prev.filter((id) => id !== userId);
       } else {
@@ -68,10 +54,10 @@ export default function UserSelect({ onSubmit, showSelectedOnly = false }) {
         <input type="text" placeholder="Filter by name..." value={nameFilter} onChange={(e) => setNameFilter(e.target.value)} className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
         <div className="flex gap-2">
           <button type="button" onClick={() => setViewMode('all')} className={`px-3 py-1 text-xs rounded transition ${viewMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
-            All Users
+            All
           </button>
           <button type="button" onClick={() => setViewMode('selected')} disabled={selectedUsers.length === 0} className={`px-3 py-1 text-xs rounded transition ${viewMode === 'selected' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400'}`}>
-            Selected Only ({selectedUsers.length})
+            Selected ({selectedUsers.length})
           </button>
         </div>
       </div>
@@ -102,9 +88,11 @@ export default function UserSelect({ onSubmit, showSelectedOnly = false }) {
         )}
       </div>
 
-      <button type="submit" disabled={selectedUsers.length === 0} className="w-full bg-blue-600 text-white py-2 text-sm rounded hover:bg-blue-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed">
-        Submit
-      </button>
+      {onSubmit && (
+        <button type="submit" className="w-full bg-blue-600 text-white py-2 text-sm rounded hover:bg-blue-700 transition">
+          Submit
+        </button>
+      )}
     </form>
   );
 }

@@ -93,6 +93,23 @@ export default function Settings({ service, user, course, setCourse }) {
     });
   };
 
+  const users = [
+    { id: 1, name: 'Alice Johnson' },
+    { id: 2, name: 'Bob Smith' },
+    { id: 3, name: 'Charlie Lee' },
+    { id: 4, name: 'Dana White' },
+    { id: 5, name: 'Emily Davis' },
+    { id: 6, name: 'Frank Miller' },
+    { id: 7, name: 'Grace Chen' },
+    { id: 8, name: 'Henry Wilson' },
+    { id: 9, name: 'Isabella Garcia' },
+    { id: 10, name: 'Jack Thompson' },
+    { id: 11, name: 'Karen Rodriguez' },
+    { id: 12, name: 'Luis Martinez' },
+    { id: 13, name: 'Maria Gonzalez' },
+    { id: 14, name: 'Nathan Brown' },
+  ];
+
   return (
     <div className="h-full overflow-auto p-4">
       <ConfirmDialog
@@ -172,7 +189,7 @@ export default function Settings({ service, user, course, setCourse }) {
         </div>
         {editorVisible && (
           <div>
-            <UserSelect onSubmit={(userId) => console.log('Selected user ID:', userId)} />
+            {user.isRoot() && <UserSelect users={users} onSubmit={(userId) => console.log('Selected user ID:', userId)} />}
             <div className="flex flex-col justify-end w-[200px]">
               <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
                 Save changes
