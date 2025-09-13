@@ -1,21 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function UserSelect({ users, onSubmit, showSelectedOnly = false, selected = [], setSelected }) {
   const [nameFilter, setNameFilter] = useState('');
   const [viewMode, setViewMode] = useState(showSelectedOnly ? 'selected' : 'all');
 
-  // Use controlled state if setSelected is provided, otherwise use internal state
-  const [internalSelected, setInternalSelected] = useState([]);
-  const selectedUsers = setSelected ? selected : internalSelected;
-  const updateSelectedUsers = setSelected || setInternalSelected;
+  const [internalSelected, setInternalSelected] = useState(selected);
+
+  useEffect(() => {
+    setInternalSelected(selected);
+  }, [selected]);
 
   const handleUserToggle = (userId) => {
-    updateSelectedUsers((prev) => {
+    setInternalSelected((prev) => {
+      let result;
       if (prev.includes(userId)) {
-        return prev.filter((id) => id !== userId);
+        result = prev.filter((id) => id !== userId);
       } else {
-        return [...prev, userId];
+        result = [...prev, userId];
       }
+      if (setSelected) {
+        setSelected(result);
+      }
+      return result;
     });
   };
 
@@ -29,7 +35,7 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
 
     // Filter by view mode
     if (viewMode === 'selected') {
-      filtered = filtered.filter((user) => selectedUsers.includes(user.id));
+      filtered = filtered.filter((user) => internalSelected.includes(user.id));
     }
 
     return filtered;
@@ -39,8 +45,8 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (selectedUsers.length > 0 && onSubmit) {
-      onSubmit(selectedUsers);
+    if (internalSelected.length > 0 && onSubmit) {
+      onSubmit(internalSelected);
     }
   };
 
@@ -53,8 +59,8 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
           <button type="button" onClick={() => setViewMode('all')} className={`px-3 py-1 text-xs rounded transition ${viewMode === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
             All
           </button>
-          <button type="button" onClick={() => setViewMode('selected')} disabled={selectedUsers.length === 0} className={`px-3 py-1 text-xs rounded transition ${viewMode === 'selected' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400'}`}>
-            Selected ({selectedUsers.length})
+          <button type="button" onClick={() => setViewMode('selected')} disabled={internalSelected.length === 0} className={`px-3 py-1 text-xs rounded transition ${viewMode === 'selected' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400'}`}>
+            Selected ({internalSelected.length})
           </button>
         </div>
       </div>
@@ -65,19 +71,19 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
           <div className="divide-y divide-gray-100">
             {filteredUsers.map((user) => (
               <label key={user.id} className="flex items-center px-3 py-0.5 cursor-pointer hover:bg-gray-50 transition">
-                <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => handleUserToggle(user.id)} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3" />
+                <input type="checkbox" checked={internalSelected.includes(user.id)} onChange={() => handleUserToggle(user.id)} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3" />
                 <span className="text-sm text-gray-800 flex-grow">{user.name}</span>
               </label>
             ))}
           </div>
         ) : (
-          <div className="p-4 text-center text-gray-500 text-sm">{viewMode === 'selected' && selectedUsers.length === 0 ? 'No users selected' : nameFilter.trim() ? 'No users match your search' : 'No users available'}</div>
+          <div className="p-4 text-center text-gray-500 text-sm">{viewMode === 'selected' && internalSelected.length === 0 ? 'No users selected' : nameFilter.trim() ? 'No users match your search' : 'No users available'}</div>
         )}
       </div>
 
       {/* Selection Summary */}
       <div className="text-xs text-gray-600 mb-3">
-        {selectedUsers.length > 0 ? `${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''} selected` : 'No users selected'}
+        {internalSelected.length > 0 ? `${internalSelected.length} user${internalSelected.length > 1 ? 's' : ''} selected` : 'No users selected'}
         {filteredUsers.length < users.length && (
           <span className=" ml-2">
             • Showing {filteredUsers.length} of {users.length} users

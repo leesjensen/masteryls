@@ -177,6 +177,20 @@ class Service {
     return null;
   }
 
+  async getAllUsers(): Promise<User[]> {
+    const { data, error } = await supabase.from('user').select('id, name, email, settings');
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const users: User[] = [];
+    for (const item of data) {
+      const user = new User({ ...item, roles: await this._loadUserRoles({ id: item.id }) });
+      users.push(user);
+    }
+    return users;
+  }
+
   async updateUserRoleSettings(user: User, right: string, objectId: string, settings: object): Promise<void> {
     const role = user.getRole(right, objectId);
     if (role) {

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ConfirmDialog from './hooks/confirmDialog.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
 import UserSelect from './components/userSelect.jsx';
@@ -7,23 +7,25 @@ export default function Settings({ service, user, course, setCourse }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Alice Johnson trslly logn name' },
-    { id: 2, name: 'Bob Smith' },
-    { id: 3, name: 'Charlie Lee' },
-    { id: 4, name: 'Dana White' },
-    { id: 5, name: 'Emily Davis' },
-    { id: 6, name: 'Frank Miller' },
-    { id: 7, name: 'Grace Chen' },
-    { id: 8, name: 'Henry Wilson' },
-    { id: 9, name: 'Isabella Garcia' },
-    { id: 10, name: 'Jack Thompson' },
-    { id: 11, name: 'Karen Rodriguez' },
-    { id: 12, name: 'Luis Martinez' },
-    { id: 13, name: 'Maria Gonzalez' },
-    { id: 14, name: 'Nathan Brown' },
-  ]);
+  const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const fetchedUsers = await service.getAllUsers();
+        setUsers(fetchedUsers);
+        const filteredUsers = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
+        setSelectedUsers(filteredUsers);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    })();
+  }, []);
+
+  function setSelectedUsersInternal(newSelected) {
+    console.log('Selected users changed:', newSelected);
+  }
 
   const editorVisible = user.isEditor(course.id) || user.isRoot();
   const stagedCount = course.stagedCount();
@@ -191,7 +193,7 @@ export default function Settings({ service, user, course, setCourse }) {
           <div className="bg-gray-50 rounded-lg p-4 mb-1">
             <div>
               <h2 className="text-xl font-semibold mb-3 text-gray-800">Editors</h2>
-              <UserSelect users={users} />
+              <UserSelect users={users} selected={selectedUsers} setSelected={setSelectedUsersInternal} />
             </div>
           </div>
         )}
