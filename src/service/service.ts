@@ -90,15 +90,7 @@ class Service {
 
     this.catalog.push(data);
 
-    await supabase.from('role').insert([
-      {
-        user: user.id,
-        right: 'editor',
-        object: data.id,
-        settings: {},
-      },
-    ]);
-    await service.updateUserRoleSettings(user, 'editor', catalogEntry.id, { gitHubToken });
+    await this.addUserRole(user, 'editor', catalogEntry.id, { gitHubToken });
 
     await this._populateTemplateTopics(catalogEntry, gitHubToken);
 
@@ -189,6 +181,23 @@ class Service {
       users.push(user);
     }
     return users;
+  }
+
+  async addUserRole(user: User, right: string, objectId: string | null, settings: any = {}): Promise<void> {
+    const newRole: Role = {
+      user: user.id,
+      right,
+      object: objectId,
+      settings,
+    };
+    const { error } = await supabase.from('role').insert(newRole);
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (!user.roles) {
+      user.roles = [];
+    }
+    user.roles.push(newRole);
   }
 
   async updateUserRoleSettings(user: User, right: string, objectId: string, settings: object): Promise<void> {

@@ -93,11 +93,11 @@ export default function Settings({ service, user, course, setCourse }) {
       const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
       if (editorsChanged) {
         const editorUser = users.find((u) => u.roles.find((r) => r.right === 'editor' && r.object === course.id));
-        const gitHubToken = editorUser.roles.find((r) => r.right === 'editor' && r.object === course.id).settings.gitHubToken;
+        const gitHubToken = editorUser.getRole('editor', course.id).settings.gitHubToken;
         for (const userId of toAdd) {
           const user = users.find((u) => u.id === userId);
           console.log('Adding editor:', userId);
-          await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken });
+          await service.addUserRole(user, 'editor', course.id, { gitHubToken });
         }
         for (const userId of toRemove) {
           //await service.removeEditor(user, course, userId);

@@ -1,7 +1,7 @@
 export type Role = {
   user: string;
   right: string;
-  object: string;
+  object: string | null;
   settings: any;
 };
 
