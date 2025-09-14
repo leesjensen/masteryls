@@ -5,10 +5,31 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
   const [viewMode, setViewMode] = useState(showSelectedOnly ? 'selected' : 'all');
 
   const [internalSelected, setInternalSelected] = useState(selected);
+  const [filteredUsers, setFilteredUsers] = useState(users);
 
   useEffect(() => {
     setInternalSelected(selected);
   }, [selected]);
+
+  useEffect(() => {
+    if (setSelected) {
+      setSelected(internalSelected);
+    }
+  }, [internalSelected]);
+
+  useEffect(() => {
+    let filtered = users;
+
+    if (nameFilter.trim()) {
+      filtered = filtered.filter((user) => user.name.toLowerCase().includes(nameFilter.toLowerCase()));
+    }
+
+    if (viewMode === 'selected') {
+      filtered = filtered.filter((user) => internalSelected.includes(user.id));
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, nameFilter, viewMode, internalSelected]);
 
   const handleUserToggle = (userId) => {
     setInternalSelected((prev) => {
@@ -18,30 +39,9 @@ export default function UserSelect({ users, onSubmit, showSelectedOnly = false, 
       } else {
         result = [...prev, userId];
       }
-      if (setSelected) {
-        setSelected(result);
-      }
       return result;
     });
   };
-
-  const getFilteredUsers = () => {
-    let filtered = users;
-
-    // Filter by name if there's a search term
-    if (nameFilter.trim()) {
-      filtered = filtered.filter((user) => user.name.toLowerCase().includes(nameFilter.toLowerCase()));
-    }
-
-    // Filter by view mode
-    if (viewMode === 'selected') {
-      filtered = filtered.filter((user) => internalSelected.includes(user.id));
-    }
-
-    return filtered;
-  };
-
-  const filteredUsers = getFilteredUsers();
 
   const handleSubmit = (e) => {
     e.preventDefault();

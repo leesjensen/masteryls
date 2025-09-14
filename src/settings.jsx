@@ -8,40 +8,8 @@ export default function Settings({ service, user, course, setCourse }) {
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
   const [users, setUsers] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const ogSelectedUsersRef = useRef([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const fetchedUsers = await service.getAllUsers();
-        setUsers(fetchedUsers);
-        ogSelectedUsersRef.current = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
-        setSelectedUsers(ogSelectedUsersRef.current);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    })();
-  }, []);
-
-  function setSelectedUsersInternal(newSelected) {
-    console.log('Selected users changed:', newSelected, ogSelectedUsersRef.current);
-    const hasChanged = selectedUsersChanged(newSelected);
-    console.log('Selected users changed:', hasChanged);
-    setSettingsDirty(hasChanged);
-  }
-
-  const editorVisible = user.isEditor(course.id) || user.isRoot();
-  const stagedCount = course.stagedCount();
-
-  function stripGithubPrefix(schedule, course) {
-    const githubUrl = course.links.gitHub.rawUrl;
-    if (githubUrl && schedule.startsWith(githubUrl)) {
-      return schedule.slice(githubUrl.length).replace(/^\/+/, '');
-    }
-    return schedule || '';
-  }
-
+  const [selectedEditors, setSelectedEditors] = useState([]);
+  const ogSelectedEditorsRef = useRef([]);
   const [formData, setFormData] = useState({
     name: course.name || '',
     title: course.title || '',
@@ -52,69 +20,110 @@ export default function Settings({ service, user, course, setCourse }) {
     gitHubToken: user.gitHubToken(course.id) || '',
   });
 
+  const editorVisible = user.isEditor(course.id) || user.isRoot();
+  const stagedCount = course.stagedCount();
   const moduleCount = course.modules.length || 0;
   const topicCount = course.allTopics.length || 0;
 
-  const handleInputChange = (field, value) => {
-    const newFormData = { ...formData, [field]: value };
-    setFormData(newFormData);
-
-    const courseChanged = courseChanged(newFormData);
-    const tokenChanged = field === 'gitHubToken' && gitHubTokenHasChanged(value);
-    setSettingsDirty(tokenChanged || courseChanged);
-    console.log(courseChanged, tokenChanged);
-  };
-
-  const selectedUsersChanged = (newSelected) => {
-    if (newSelected.length !== ogSelectedUsersRef.current.length) {
-      return true;
-    }
-    const selectedSet = new Set(newSelected);
-    for (const id of ogSelectedUsersRef.current) {
-      if (!selectedSet.has(id)) {
-        return true;
+  useEffect(() => {
+    (async () => {
+      try {
+        const fetchedUsers = await service.getAllUsers();
+        setUsers(fetchedUsers);
+        ogSelectedEditorsRef.current = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
+        setSelectedEditors(ogSelectedEditorsRef.current);
+      } catch (error) {
+        console.error('Error fetching users:', error);
       }
-    }
-    return false;
+    })();
+  }, []);
+
+  useEffect(() => {
+    const [editorsChanged, ,] = compareEditors(selectedEditors);
+    const courseChanged = compareCourse(formData);
+    const tokenChanged = compareGitHubToken(formData.gitHubToken);
+    setSettingsDirty(tokenChanged || courseChanged || editorsChanged);
+  }, [selectedEditors, formData]);
+
+  const handleInputChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
   };
 
-  const courseChanged = (data) => {
-    return data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository;
+  const compareEditors = (newSelected) => {
+    const currentEditors = new Set(ogSelectedEditorsRef.current);
+    const newEditors = new Set(newSelected);
+
+    const toAdd = newSelected.filter((id) => !currentEditors.has(id));
+    const toRemove = ogSelectedEditorsRef.current.filter((id) => !newEditors.has(id));
+
+    return [toAdd.length !== 0 || toRemove.length !== 0, toAdd, toRemove];
   };
 
-  const gitHubTokenHasChanged = (token) => {
+  const compareCourse = (data) => {
+    return data.name !== course.name || data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository;
+  };
+
+  const compareGitHubToken = (token) => {
     return token !== (user.gitHubToken(course.id) || '');
   };
 
   const handleSave = async () => {
-    if (gitHubTokenHasChanged(formData.gitHubToken)) {
-      await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
-    }
-    if (courseChanged(formData)) {
-      const catalogEntry = {
-        id: course.id,
-        name: formData.name,
-        title: formData.title,
-        description: formData.description,
-        links: course.links,
-        gitHub: {
-          account: formData.githubAccount,
-          repository: formData.githubRepository,
-        },
-      };
-      service.saveCourseSettings(catalogEntry);
-      const newCourse = course.updateCatalogEntry(catalogEntry);
-      setCourse(newCourse);
-      setSettingsDirty(false);
-    }
+    if (selectedEditors.length > 0) {
+      if (compareGitHubToken(formData.gitHubToken)) {
+        await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
+      }
+      if (compareCourse(formData)) {
+        const catalogEntry = {
+          id: course.id,
+          name: formData.name,
+          title: formData.title,
+          description: formData.description,
+          links: course.links,
+          gitHub: {
+            account: formData.githubAccount,
+            repository: formData.githubRepository,
+          },
+        };
+        service.saveCourseSettings(catalogEntry);
+        const newCourse = course.updateCatalogEntry(catalogEntry);
+        setCourse(newCourse);
+        setSettingsDirty(false);
+      }
 
-    showAlert({
-      message: (
-        <div className="text-xs">
-          <div>Settings saved</div>
-        </div>
-      ),
-    });
+      const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
+      if (editorsChanged) {
+        const editorUser = users.find((u) => u.roles.find((r) => r.right === 'editor' && r.object === course.id));
+        const gitHubToken = editorUser.roles.find((r) => r.right === 'editor' && r.object === course.id).settings.gitHubToken;
+        for (const userId of toAdd) {
+          const user = users.find((u) => u.id === userId);
+          console.log('Adding editor:', userId);
+          await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken });
+        }
+        for (const userId of toRemove) {
+          //await service.removeEditor(user, course, userId);
+          console.log('Removing editor:', userId);
+        }
+        ogSelectedEditorsRef.current = [...selectedEditors];
+        setSettingsDirty(false);
+      }
+
+      showAlert({
+        message: (
+          <div className="text-xs">
+            <div>Settings saved</div>
+          </div>
+        ),
+      });
+    } else {
+      showAlert({
+        type: 'error',
+        message: (
+          <div className="text-xs">
+            <div>At least one editor must be selected</div>
+          </div>
+        ),
+      });
+    }
   };
 
   const deleteCourse = async () => {
@@ -128,6 +137,14 @@ export default function Settings({ service, user, course, setCourse }) {
       ),
     });
   };
+
+  function stripGithubPrefix(schedule, course) {
+    const githubUrl = course.links.gitHub.rawUrl;
+    if (githubUrl && schedule.startsWith(githubUrl)) {
+      return schedule.slice(githubUrl.length).replace(/^\/+/, '');
+    }
+    return schedule || '';
+  }
 
   return (
     <div className="h-full overflow-auto p-4">
@@ -210,7 +227,7 @@ export default function Settings({ service, user, course, setCourse }) {
           <div className="bg-gray-50 rounded-lg p-4 mb-1">
             <div>
               <h2 className="text-xl font-semibold mb-3 text-gray-800">Editors</h2>
-              <UserSelect users={users} selected={selectedUsers} setSelected={setSelectedUsersInternal} />
+              <UserSelect users={users} selected={selectedEditors} setSelected={setSelectedEditors} />
             </div>
           </div>
         )}
