@@ -194,10 +194,18 @@ class Service {
     if (error) {
       throw new Error(error.message);
     }
-    if (!user.roles) {
-      user.roles = [];
+  }
+
+  async removeUserRole(user: User, right: string, objectId: string | null): Promise<void> {
+    const { error } = await supabase.from('role').delete().eq('user', user.id).eq('right', right).eq('object', objectId);
+
+    let query = supabase.from('role').delete().eq('user', user.id);
+    query = objectId === null ? query.is('object', null) : query.eq('object', objectId);
+    query = query.eq('right', right);
+
+    if (error) {
+      throw new Error(error.message);
     }
-    user.roles.push(newRole);
   }
 
   async updateUserRoleSettings(user: User, right: string, objectId: string, settings: object): Promise<void> {

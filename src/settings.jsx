@@ -68,53 +68,8 @@ export default function Settings({ service, user, course, setCourse }) {
   };
 
   const handleSave = async () => {
-    if (selectedEditors.length > 0) {
-      if (compareGitHubToken(formData.gitHubToken)) {
-        await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
-      }
-      if (compareCourse(formData)) {
-        const catalogEntry = {
-          id: course.id,
-          name: formData.name,
-          title: formData.title,
-          description: formData.description,
-          links: course.links,
-          gitHub: {
-            account: formData.githubAccount,
-            repository: formData.githubRepository,
-          },
-        };
-        service.saveCourseSettings(catalogEntry);
-        const newCourse = course.updateCatalogEntry(catalogEntry);
-        setCourse(newCourse);
-        setSettingsDirty(false);
-      }
-
-      const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
-      if (editorsChanged) {
-        const editorUser = users.find((u) => u.roles.find((r) => r.right === 'editor' && r.object === course.id));
-        const gitHubToken = editorUser.getRole('editor', course.id).settings.gitHubToken;
-        for (const userId of toAdd) {
-          const user = users.find((u) => u.id === userId);
-          console.log('Adding editor:', userId);
-          await service.addUserRole(user, 'editor', course.id, { gitHubToken });
-        }
-        for (const userId of toRemove) {
-          //await service.removeEditor(user, course, userId);
-          console.log('Removing editor:', userId);
-        }
-        ogSelectedEditorsRef.current = [...selectedEditors];
-        setSettingsDirty(false);
-      }
-
-      showAlert({
-        message: (
-          <div className="text-xs">
-            <div>Settings saved</div>
-          </div>
-        ),
-      });
-    } else {
+    const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
+    if (editorsChanged && selectedEditors.length === 0) {
       showAlert({
         type: 'error',
         message: (
@@ -123,7 +78,53 @@ export default function Settings({ service, user, course, setCourse }) {
           </div>
         ),
       });
+      return;
     }
+
+    if (compareGitHubToken(formData.gitHubToken)) {
+      await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
+    }
+    if (compareCourse(formData)) {
+      const catalogEntry = {
+        id: course.id,
+        name: formData.name,
+        title: formData.title,
+        description: formData.description,
+        links: course.links,
+        gitHub: {
+          account: formData.githubAccount,
+          repository: formData.githubRepository,
+        },
+      };
+      service.saveCourseSettings(catalogEntry);
+      const newCourse = course.updateCatalogEntry(catalogEntry);
+      setCourse(newCourse);
+    }
+
+    if (editorsChanged) {
+      const editorUser = users.find((u) => u.roles.find((r) => r.right === 'editor' && r.object === course.id));
+      if (editorUser) {
+        const gitHubToken = editorUser.getRole('editor', course.id).settings.gitHubToken;
+        for (const userId of toAdd) {
+          const user = users.find((u) => u.id === userId);
+          await service.addUserRole(user, 'editor', course.id, { gitHubToken });
+        }
+        for (const userId of toRemove) {
+          const user = users.find((u) => u.id === userId);
+          await service.removeUserRole(user, 'editor', course.id);
+        }
+        ogSelectedEditorsRef.current = [...selectedEditors];
+      }
+    }
+
+    setSettingsDirty(false);
+    showAlert({
+      message: (
+        <div className="text-xs">
+          <div>Settings saved</div>
+        </div>
+      ),
+    });
   };
 
   const deleteCourse = async () => {
