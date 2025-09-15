@@ -13,7 +13,6 @@ export default function Settings({ service, user, course, setCourse }) {
   const [formData, setFormData] = useState({
     name: course.name || '',
     title: course.title || '',
-    schedule: stripGithubPrefix(course.schedule, course),
     description: course.description || '',
     githubAccount: course.gitHub.account,
     githubRepository: course.gitHub.repository,
@@ -138,14 +137,6 @@ export default function Settings({ service, user, course, setCourse }) {
       ),
     });
   };
-
-  function stripGithubPrefix(schedule, course) {
-    const githubUrl = course.links.gitHub.rawUrl;
-    if (githubUrl && schedule.startsWith(githubUrl)) {
-      return schedule.slice(githubUrl.length).replace(/^\/+/, '');
-    }
-    return schedule || '';
-  }
 
   return (
     <div className="h-full overflow-auto p-4">

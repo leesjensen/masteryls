@@ -161,10 +161,7 @@ async function loadCourseFromModulesMarkdown(catalogEntry, gitHub) {
 
   const modules = parseModulesMarkdown(gitHub, instructionUrl, markdownContent);
 
-  const schedule = `${gitHub.rawUrl}/schedule/schedule.md`;
-  const syllabus = `${instructionUrl}syllabus/syllabus.md`;
-
-  return { id: catalogEntry.id, title: catalogEntry.title, schedule, syllabus, modules, gitHub: catalogEntry.gitHub, links: { gitHub } };
+  return { ...catalogEntry, modules, links: { gitHub } };
 }
 
 function generateId() {
