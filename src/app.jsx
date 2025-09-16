@@ -134,7 +134,7 @@ function App() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <Sidebar service={service} user={user} enrollment={enrollment} setCourse={setCourse} course={course} currentTopic={topic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />
+          <Sidebar service={service} user={user} enrollment={enrollment} setCourse={setCourse} course={course} currentTopic={topic} changeTopic={changeTopic} editorVisible={editorVisible} navigateToAdjacentTopic={navigateToAdjacentTopic} />
         </div>
         {content}
       </div>

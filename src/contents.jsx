@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useHotkeys from './hooks/useHotKeys';
 
-function Contents({ service, changeTopic, currentTopic, course, enrollment, navigateToAdjacentTopic, user, setCourse }) {
+function Contents({ service, changeTopic, currentTopic, course, enrollment, editorVisible, navigateToAdjacentTopic, user, setCourse }) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
   const [showTopicForm, setShowTopicForm] = useState(null); // { moduleIndex: number, afterTopicIndex?: number }
   const [newTopicTitle, setNewTopicTitle] = useState('');
@@ -54,10 +54,6 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, navi
     }
   }
 
-  function isEditor() {
-    return user && course && user.isEditor(course.id);
-  }
-
   function generateTopicId() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
   }
@@ -74,7 +70,7 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, navi
   }
 
   async function addTopic(moduleIndex, afterTopicIndex) {
-    if (!newTopicTitle.trim() || !isEditor()) return;
+    if (!newTopicTitle.trim()) return;
 
     try {
       const updatedCourse = course.constructor._copy(course);
@@ -141,8 +137,6 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, navi
   }
 
   async function removeTopic(moduleIndex, topicIndex) {
-    if (!isEditor()) return;
-
     const topic = course.modules[moduleIndex].topics[topicIndex];
     if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
 
@@ -203,12 +197,12 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, navi
                         {topic.title}
                       </a>
                       <span className="text-sm align-super text-amber-600">{topic.lastUpdated ? '*' : ''}</span>
-                      {isEditor() && (
+                      {editorVisible && (
                         <div className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-                          <button onClick={() => setShowTopicForm({ moduleIndex: i, afterTopicIndex: topicIndex })} className="text-gray-400 hover:text-green-600 mr-1 p-1 text-xs" title="Add topic after this one">
+                          <button onClick={() => setShowTopicForm({ moduleIndex: i, afterTopicIndex: topicIndex })} className="text-gray-400 hover:text-green-600 mr-1 text-xs" title="Add topic after this one">
                             ➕
                           </button>
-                          <button onClick={() => removeTopic(i, topicIndex)} className="text-gray-400 hover:text-red-600 p-1 text-xs" title="Remove this topic">
+                          <button onClick={() => removeTopic(i, topicIndex)} className="text-gray-400 hover:text-red-600 text-xs" title="Remove this topic">
                             ❌
                           </button>
                         </div>
@@ -248,13 +242,6 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, navi
                           </button>
                         </div>
                       </div>
-                    </li>
-                  )}
-                  {isEditor() && (
-                    <li className="mb-0.5 flex items-center">
-                      <button onClick={() => setShowTopicForm({ moduleIndex: i })} className="text-gray-400 hover:text-green-600 ml-4 text-sm py-1" title="Add new topic to this module">
-                        + Add topic
-                      </button>
                     </li>
                   )}
                   {showTopicForm && showTopicForm.moduleIndex === i && showTopicForm.afterTopicIndex === undefined && (
