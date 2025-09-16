@@ -229,13 +229,13 @@ class Service {
       throw new Error(error?.message || 'Unable to register');
     }
 
-    const user: User = {
+    const userData = {
       id: data.user.id,
       email,
       name,
       settings: { language: 'en' },
     };
-    const { error: upsertError } = await supabase.from('user').upsert(user);
+    const { error: upsertError } = await supabase.from('user').upsert(userData);
     if (upsertError) {
       throw new Error(upsertError.message);
     }
@@ -343,16 +343,26 @@ class Service {
   async commitTopicMarkdown(gitHubUrl: string, markdown: string, token: string, commitMessage: string): Promise<void> {
     // Get current file SHA - This will overwrite any changes made on GitHub since last fetch
     const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
-    const fileData = await getRes.json();
-    const sha = fileData.sha;
+
+    let sha: string | undefined;
+    if (getRes.ok) {
+      const fileData = await getRes.json();
+      sha = fileData.sha;
+    }
 
     // Commit to GitHub
     const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
-    await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', {
+    const body: any = {
       message: commitMessage,
       content: contentBase64,
-      sha,
-    });
+    };
+
+    // Only include SHA if file exists (for updates)
+    if (sha) {
+      body.sha = sha;
+    }
+
+    await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
   }
 
   async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {

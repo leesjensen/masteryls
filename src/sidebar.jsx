@@ -21,7 +21,7 @@ function Sidebar({ service, user, enrollment, course, setCourse, currentTopic, c
         </div>
       )}
       <aside className="flex-1 overflow-auto">
-        {display === 'topics' && <Contents service={service} enrollment={enrollment} course={course} currentTopic={currentTopic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} />}
+        {display === 'topics' && <Contents service={service} enrollment={enrollment} course={course} currentTopic={currentTopic} changeTopic={changeTopic} navigateToAdjacentTopic={navigateToAdjacentTopic} user={user} setCourse={setCourse} />}
         {display === 'settings' && <Settings service={service} user={user} course={course} setCourse={setCourse} />}
       </aside>
     </div>

@@ -82,6 +82,44 @@ export default class Course {
     return [updatedCourse, savedTopic];
   }
 
+  async commitCourseStructure(user, service, commitMessage = 'update course structure') {
+    if (!user.isEditor(this.id)) {
+      throw new Error('User does not have permission to modify course structure');
+    }
+
+    const token = user.gitHubToken(this.id);
+    if (!token) {
+      throw new Error('GitHub token not available');
+    }
+
+    // Create course.json content
+    const courseData = {
+      title: this.title,
+      schedule: this.schedule ? this.schedule.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
+      syllabus: this.syllabus ? this.syllabus.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
+      links: this.links ? Object.fromEntries(Object.entries(this.links).filter(([key]) => key !== 'gitHub')) : undefined,
+      modules: this.modules.map((module) => ({
+        title: module.title,
+        topics: module.topics.map((topic) => ({
+          title: topic.title,
+          type: topic.type,
+          path: topic.path.replace(`${this.links.gitHub.rawUrl}/`, ''),
+          id: topic.id,
+        })),
+      })),
+    };
+
+    // Remove undefined values
+    Object.keys(courseData).forEach((key) => courseData[key] === undefined && delete courseData[key]);
+
+    const courseJson = JSON.stringify(courseData, null, 2);
+    const gitHubUrl = `${this.links.gitHub.apiUrl}/course.json`;
+
+    await service.commitTopicMarkdown(gitHubUrl, courseJson, token, commitMessage);
+
+    return this;
+  }
+
   async discardTopicMarkdown(updatedTopic) {
     const updatedCourse = Course._copy(this);
     const topic = updatedCourse.topicFromPath(updatedTopic.path);
