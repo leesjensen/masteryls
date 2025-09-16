@@ -15,19 +15,21 @@ function TopicItem({ topic, topicIndex, moduleIndex, currentTopic, changeTopic, 
   }
 
   return (
-    <li className="mb-0.5 flex items-center group">
-      <span className="mr-2">{topicIcon(topic)}</span>
-      <a onClick={() => changeTopic(topic)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
-        {topic.title}
-      </a>
-      <span className="text-sm align-super text-amber-600">{topic.lastUpdated ? '*' : ''}</span>
+    <li className="mb-0.5 flex justify-between items-center group">
+      <div className="flex flex-row">
+        <span className="mr-2">{topicIcon(topic)}</span>
+        <a onClick={() => changeTopic(topic)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
+          {topic.title}
+        </a>
+        <span className="text-sm align-super text-amber-600">{topic.lastUpdated ? '*' : ''}</span>
+      </div>
       {editorVisible && (
         <div className="ml-2 flex items-center">
-          <button onClick={() => onAddTopic(moduleIndex, topicIndex)} className="text-gray-400 hover:text-green-600 mr-1 text-xs" title="Add topic after this one">
-            ➕
+          <button onClick={() => onAddTopic(moduleIndex, topicIndex)} className="font-semibold text-blue-800 mr-1" title="Add topic after this one">
+            +
           </button>
-          <button onClick={() => onRemoveTopic(moduleIndex, topicIndex)} className="text-gray-400 hover:text-red-600 text-xs" title="Remove this topic">
-            ❌
+          <button onClick={() => onRemoveTopic(moduleIndex, topicIndex)} className="font-semibold text-red-600" title="Remove this topic">
+            x
           </button>
         </div>
       )}
