@@ -6,12 +6,7 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
   const [newTopicType, setNewTopicType] = useState('instruction');
 
   function generateTopicId() {
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11)
-      .replace(/[018]/g, (c) => 
-        (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4))))
-          .toString(16)
-      )
-      .replace(/-/g, '');
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
   }
 
   function generateTopicPath(title, type) {
@@ -145,7 +140,7 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
     setNewTopicType,
     addTopic,
     removeTopic,
-    cancelTopicForm
+    cancelTopicForm,
   };
 }
 

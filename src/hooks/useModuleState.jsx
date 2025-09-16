@@ -5,9 +5,7 @@ function useModuleState(course, enrollment, service, currentTopic) {
 
   const toggleModule = (index) => {
     setOpenModuleIndexes((prev) => {
-      const newIndexes = prev.includes(index) 
-        ? prev.filter((i) => i !== index) 
-        : [...prev, index];
+      const newIndexes = prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index];
 
       enrollment.settings.tocIndexes = newIndexes;
       service.saveEnrollment(enrollment);
@@ -29,7 +27,7 @@ function useModuleState(course, enrollment, service, currentTopic) {
 
   return {
     openModuleIndexes,
-    toggleModule
+    toggleModule,
   };
 }
 
