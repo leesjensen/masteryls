@@ -16,20 +16,29 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
   };
 
   return (
-    <li className="mb-1">
-      <button onClick={() => onToggle(moduleIndex)} className="no-underline text-gray-500 font-semibold bg-transparent border-none cursor-pointer p-0 truncate max-w-full flex whitespace-nowrap overflow-hidden text-ellipsis items-center" aria-expanded={isOpen} title={module.title}>
-        <span className="mr-2">{isOpen ? '▼' : '▶'}</span>
-        {module.title}
-      </button>
-      {isOpen && (
-        <ul className="list-none p-0 ml-4">
-          {module.topics.map((topic, topicIndex) => (
-            <TopicItem key={topic.path} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onAddTopic={handleAddTopicAfter} onRemoveTopic={onRemoveTopic} />
-          ))}
-          {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
-        </ul>
+    <div>
+      <li className="mb-1">
+        <button onClick={() => onToggle(moduleIndex)} className="no-underline text-gray-500 font-semibold bg-transparent border-none cursor-pointer p-0 truncate max-w-full flex whitespace-nowrap overflow-hidden text-ellipsis items-center" aria-expanded={isOpen} title={module.title}>
+          <span className="mr-2">{isOpen ? '▼' : '▶'}</span>
+          {module.title}
+        </button>
+        {isOpen && (
+          <ul className="list-none p-0 ml-4">
+            {module.topics.map((topic, topicIndex) => (
+              <TopicItem key={topic.path} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} />
+            ))}
+            {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
+          </ul>
+        )}
+      </li>
+      {editorVisible && (
+        <li className="mb-0.5 flex items-center">
+          <button onClick={() => handleAddTopicAfter(moduleIndex, module.topics.length - 1)} className="text-gray-400 hover:text-green-600 ml-4 text-sm py-1" title="Add new topic to this module">
+            + Add topic
+          </button>
+        </li>
       )}
-    </li>
+    </div>
   );
 }
 

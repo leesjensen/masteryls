@@ -1,6 +1,6 @@
 import React from 'react';
 
-function TopicItem({ topic, topicIndex, moduleIndex, currentTopic, changeTopic, editorVisible, onAddTopic, onRemoveTopic }) {
+function TopicItem({ topic, topicIndex, moduleIndex, currentTopic, changeTopic, editorVisible, onRemoveTopic }) {
   function topicIcon(topic) {
     switch (topic.type) {
       case 'video':
@@ -25,9 +25,6 @@ function TopicItem({ topic, topicIndex, moduleIndex, currentTopic, changeTopic, 
       </div>
       {editorVisible && (
         <div className="ml-2 flex items-center">
-          <button onClick={() => onAddTopic(moduleIndex, topicIndex)} className="font-semibold text-blue-800 mr-1" title="Add topic after this one">
-            +
-          </button>
           <button onClick={() => onRemoveTopic(moduleIndex, topicIndex)} className="font-semibold text-red-600" title="Remove this topic">
             x
           </button>

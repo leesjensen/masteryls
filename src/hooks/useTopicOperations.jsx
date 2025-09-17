@@ -43,53 +43,51 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
   async function addTopic(moduleIndex, afterTopicIndex) {
     if (!newTopicTitle.trim()) return;
 
-    try {
-      const updatedCourse = course.constructor._copy(course);
-      const module = updatedCourse.modules[moduleIndex];
+    const token = user.gitHubToken(course.id);
 
-      const newTopic = {
-        id: generateTopicId(),
-        title: newTopicTitle.trim(),
-        type: newTopicType,
-        path: `${course.links.gitHub.rawUrl}/${generateTopicPath(newTopicTitle.trim(), newTopicType)}`,
-      };
+    if (token) {
+      try {
+        const updatedCourse = course.constructor._copy(course);
+        const module = updatedCourse.modules[moduleIndex];
 
-      if (afterTopicIndex !== undefined) {
-        module.topics.splice(afterTopicIndex + 1, 0, newTopic);
-      } else {
-        module.topics.push(newTopic);
-      }
+        const newTopic = {
+          id: generateTopicId(),
+          title: newTopicTitle.trim(),
+          type: newTopicType,
+          path: `${course.links.gitHub.rawUrl}/${generateTopicPath(newTopicTitle.trim(), newTopicType)}`,
+        };
 
-      // Update allTopics array
-      updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
+        if (afterTopicIndex !== undefined) {
+          module.topics.splice(afterTopicIndex + 1, 0, newTopic);
+        } else {
+          module.topics.push(newTopic);
+        }
 
-      setCourse(updatedCourse);
-      setShowTopicForm(null);
-      setNewTopicTitle('');
-      setNewTopicType('instruction');
+        // Update allTopics array
+        updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
-      // Create a basic markdown file for the new topic
-      const basicContent = generateBasicContent(newTopic.title, newTopic.type);
+        setCourse(updatedCourse);
+        setShowTopicForm(null);
+        setNewTopicTitle('');
+        setNewTopicType('instruction');
 
-      // Create the GitHub file path
-      const topicPath = generateTopicPath(newTopic.title, newTopic.type);
-      const gitHubUrl = `${course.links.gitHub.apiUrl}/${topicPath}`;
-      const token = user.gitHubToken(course.id);
+        // Create a basic markdown file for the new topic
+        const basicContent = generateBasicContent(newTopic.title, newTopic.type);
 
-      if (token) {
+        // Create the GitHub file path
+        const topicPath = generateTopicPath(newTopic.title, newTopic.type);
+        const gitHubUrl = `${course.links.gitHub.apiUrl}/${topicPath}`;
         // Create the topic file on GitHub
         await service.commitTopicMarkdown(gitHubUrl, basicContent, token, `add(${newTopic.title}): create new topic`);
 
         // Commit the course structure changes
         await updatedCourse.commitCourseStructure(user, service, `add(${newTopic.title}): update course structure`);
-      }
 
-      // Update the local cache
-      const [savedCourse, savedTopic] = await updatedCourse.saveTopicMarkdown(newTopic, basicContent);
-      setCourse(savedCourse);
-    } catch (error) {
-      console.error('Error adding topic:', error);
-      alert('Failed to add topic. Please try again.');
+        changeTopic(newTopic);
+      } catch (error) {
+        console.error('Error adding topic:', error);
+        alert('Failed to add topic. Please try again.');
+      }
     }
   }
 
