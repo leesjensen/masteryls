@@ -10,7 +10,7 @@ function TopicForm({ newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicT
   };
 
   return (
-    <li className="mb-0.5 ml-4 p-2 bg-gray-50 border rounded">
+    <div className="mb-0.5 ml-4 p-2 bg-gray-50 border rounded">
       <div className="flex flex-col gap-2">
         <input type="text" placeholder="Topic title" value={newTopicTitle} onChange={(e) => setNewTopicTitle(e.target.value)} onKeyDown={handleKeyDown} className="px-2 py-1 border rounded text-sm" autoFocus />
         <select value={newTopicType} onChange={(e) => setNewTopicType(e.target.value)} className="px-2 py-1 border rounded text-sm">
@@ -20,7 +20,7 @@ function TopicForm({ newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicT
           <option value="project">Project</option>
         </select>
         <div className="flex gap-2">
-          <button onClick={onSubmit} className="px-2 py-1 bg-green-600 text-white rounded text-xs" disabled={!newTopicTitle.trim()}>
+          <button onClick={onSubmit} className="px-2 py-1 bg-blue-600 text-white rounded text-xs" disabled={!newTopicTitle.trim()}>
             Add
           </button>
           <button onClick={onCancel} className="px-2 py-1 bg-gray-600 text-white rounded text-xs">
@@ -28,7 +28,7 @@ function TopicForm({ newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicT
           </button>
         </div>
       </div>
-    </li>
+    </div>
   );
 }
 
