@@ -33,12 +33,12 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
           <span className="mr-2">{isOpen ? '▼' : '▶'}</span>
           {module.title}
         </button>
-        {isOpen && <ul className="list-none p-0 ml-4">{module.topics.map((topic, topicIndex) => (editorVisible ? <SortableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} /> : <TopicItem key={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} />))}</ul>}
+        {isOpen && <ul className="list-none p-0 ml-4">{module.topics.map((topic, topicIndex) => (editorVisible ? <SortableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} /> : <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />))}</ul>}
         {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
       </li>
       {editorVisible && (
         <li className="mb-0.5 flex items-center">
-          <button onClick={() => handleAddTopicAfter(moduleIndex, module.topics.length - 1)} className="text-gray-400 hover:text-green-600 ml-4 text-sm py-1" title="Add new topic to this module">
+          <button onClick={() => handleAddTopicAfter(moduleIndex, module.topics.length - 1)} className="text-gray-400 hover:text-amber-600 ml-4 text-sm py-1" title="Add new topic to this module">
             + Add topic
           </button>
         </li>

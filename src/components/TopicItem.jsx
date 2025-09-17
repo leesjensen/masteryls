@@ -1,6 +1,6 @@
 import React from 'react';
 
-function TopicItem({ topic, topicIndex, moduleIndex, currentTopic, changeTopic, editorVisible, onRemoveTopic }) {
+function TopicItem({ topic, currentTopic, changeTopic }) {
   function topicIcon(topic) {
     switch (topic.type) {
       case 'video':
@@ -12,7 +12,8 @@ function TopicItem({ topic, topicIndex, moduleIndex, currentTopic, changeTopic, 
       case 'quiz':
         return (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            <rect x="4" y="4" width="16" height="16" rx="2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12l3 3 5-5" />
           </svg>
         );
       case 'project':
@@ -41,13 +42,6 @@ function TopicItem({ topic, topicIndex, moduleIndex, currentTopic, changeTopic, 
         </a>
         <span className="text-sm align-super text-amber-600">{topic.lastUpdated ? '*' : ''}</span>
       </div>
-      {editorVisible && (
-        <div className="ml-2 flex items-center">
-          <button onClick={() => onRemoveTopic(moduleIndex, topicIndex)} className="font-semibold text-red-600" title="Remove this topic">
-            x
-          </button>
-        </div>
-      )}
     </li>
   );
 }
