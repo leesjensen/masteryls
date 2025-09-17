@@ -26,8 +26,7 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
           {module.topics.map((topic, topicIndex) => (
             <TopicItem key={topic.path} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onAddTopic={handleAddTopicAfter} onRemoveTopic={onRemoveTopic} />
           ))}
-          {showTopicForm && showTopicForm.moduleIndex === moduleIndex && showTopicForm.afterTopicIndex !== undefined && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
-          {showTopicForm && showTopicForm.moduleIndex === moduleIndex && showTopicForm.afterTopicIndex === undefined && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
+          {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
         </ul>
       )}
     </li>
