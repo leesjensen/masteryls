@@ -1,5 +1,5 @@
 import React from 'react';
-import { SortableTopicItem } from './SortableTopicItem';
+import { EditableTopicItem } from './SortableTopicItem';
 import TopicItem from './TopicItem';
 import TopicForm from './TopicForm';
 
@@ -33,7 +33,7 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
           <span className="mr-2">{isOpen ? '▼' : '▶'}</span>
           {module.title}
         </button>
-        {isOpen && <ul className="list-none p-0 ml-4">{module.topics.map((topic, topicIndex) => (editorVisible ? <SortableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} /> : <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />))}</ul>}
+        {isOpen && <ul className="list-none p-0 ml-4">{module.topics.map((topic, topicIndex) => (editorVisible ? <EditableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} /> : <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />))}</ul>}
         {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
       </li>
       {editorVisible && (

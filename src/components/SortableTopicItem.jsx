@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TopicItem from './TopicItem';
 
-export function SortableTopicItem({ id, moduleIndex, topicIndex, onRemoveTopic, ...props }) {
+export function EditableTopicItem({ id, moduleIndex, topicIndex, onRemoveTopic, ...props }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
