@@ -9,17 +9,16 @@ export function SortableTopicItem({ id, ...props }) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   // Render a drag handle separate from the clickable topic
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <span {...listeners} style={{ cursor: 'grab', marginRight: 8, userSelect: 'none' }} title="Drag to reorder">
+    <div ref={setNodeRef} style={style} {...attributes} className={isDragging ? 'opacity-50' : ''}>
+      <div className="flex items-right justify-between">
+        <TopicItem {...props} />
+        <span {...listeners} className="cursor-grab mr-2 select-none text-gray-400 hover:text-amber-500" title="Drag to reorder">
           ≡
         </span>
-        <TopicItem {...props} />
       </div>
     </div>
   );
