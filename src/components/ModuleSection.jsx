@@ -1,8 +1,21 @@
 import React from 'react';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableTopicItem } from './SortableTopicItem';
 import TopicItem from './TopicItem';
 import TopicForm from './TopicForm';
 
-function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, onAddTopic, onRemoveTopic, cancelTopicForm }) {
+function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, onAddTopic, onRemoveTopic, cancelTopicForm, onTopicReorder }) {
+  function handleDragEnd(event) {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      const oldIndex = module.topics.findIndex((t) => t.id === active.id);
+      const newIndex = module.topics.findIndex((t) => t.id === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onTopicReorder(moduleIndex, oldIndex, newIndex);
+      }
+    }
+  }
   const handleAddTopicAfter = (moduleIdx, topicIdx) => {
     setShowTopicForm({ moduleIndex: moduleIdx, afterTopicIndex: topicIdx });
   };
@@ -23,12 +36,16 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
           {module.title}
         </button>
         {isOpen && (
-          <ul className="list-none p-0 ml-4">
-            {module.topics.map((topic, topicIndex) => (
-              <TopicItem key={topic.path} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} />
-            ))}
-            {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
-          </ul>
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={module.topics.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              <ul className="list-none p-0 ml-4">
+                {module.topics.map((topic, topicIndex) => (
+                  <SortableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} />
+                ))}
+                {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
+              </ul>
+            </SortableContext>
+          </DndContext>
         )}
       </li>
       {editorVisible && (
