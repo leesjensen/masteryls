@@ -44,7 +44,7 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, edit
   };
   const { openModuleIndexes, toggleModule } = useModuleState(course, enrollment, service, currentTopic);
 
-  const { showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, addTopic, removeTopic, cancelTopicForm } = useTopicOperations(course, setCourse, user, service, currentTopic, changeTopic);
+  const { showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, addTopic, renameTopic, removeTopic, cancelTopicForm } = useTopicOperations(course, setCourse, user, service, currentTopic, changeTopic);
 
   useHotkeys(
     {
@@ -72,7 +72,7 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, edit
             <SortableContext items={allTopicIds} strategy={verticalListSortingStrategy}>
               <ul className="list-none p-0">
                 {course.map((module, moduleIndex) => (
-                  <ModuleSection key={moduleIndex} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} showTopicForm={showTopicForm} setShowTopicForm={setShowTopicForm} newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onAddTopic={addTopic} onRemoveTopic={removeTopic} cancelTopicForm={cancelTopicForm} />
+                  <ModuleSection key={moduleIndex} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} showTopicForm={showTopicForm} setShowTopicForm={setShowTopicForm} newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onAddTopic={addTopic} onRenameTopic={renameTopic} onRemoveTopic={removeTopic} cancelTopicForm={cancelTopicForm} />
                 ))}
               </ul>
             </SortableContext>

@@ -91,6 +91,28 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
     }
   }
 
+  async function renameTopic(moduleIdx, topicIdx, newTitle, newType) {
+    if (!newTitle.trim()) return;
+    const updatedCourse = course.constructor._copy(course);
+    const topic = updatedCourse.modules[moduleIdx].topics[topicIdx];
+    if (!topic) return;
+    const oldTitle = topic.title;
+    const oldType = topic.type;
+    topic.title = newTitle.trim();
+    topic.type = newType || topic.type;
+    updatedCourse.modules[moduleIdx].topics[topicIdx] = topic;
+    updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
+    setCourse(updatedCourse);
+    try {
+      const token = user.gitHubToken(course.id);
+      if (token) {
+        await updatedCourse.commitCourseStructure(user, service, `rename(topic): ${topic.title} type: ${topic.type}`);
+      }
+    } catch (err) {
+      console.error('Failed to persist topic rename:', err);
+    }
+  }
+
   async function removeTopic(moduleIndex, topicIndex) {
     const topic = course.modules[moduleIndex].topics[topicIndex];
     if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
@@ -139,6 +161,7 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
     addTopic,
     removeTopic,
     cancelTopicForm,
+    renameTopic,
   };
 }
 

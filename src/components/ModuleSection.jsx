@@ -3,17 +3,7 @@ import { EditableTopicItem } from './EditableTopicItem';
 import TopicItem from './TopicItem';
 import TopicForm from './TopicForm';
 
-function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, onAddTopic, onRemoveTopic, cancelTopicForm, onTopicReorder }) {
-  function handleDragEnd(event) {
-    const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      const oldIndex = module.topics.findIndex((t) => t.id === active.id);
-      const newIndex = module.topics.findIndex((t) => t.id === over.id);
-      if (oldIndex !== -1 && newIndex !== -1) {
-        onTopicReorder(moduleIndex, oldIndex, newIndex);
-      }
-    }
-  }
+function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, onAddTopic, onRenameTopic, onRemoveTopic, cancelTopicForm, onTopicReorder }) {
   const handleAddTopicAfter = (moduleIdx, topicIdx) => {
     setShowTopicForm({ moduleIndex: moduleIdx, afterTopicIndex: topicIdx });
   };
@@ -33,7 +23,7 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
           <span className="mr-2">{isOpen ? '▼' : '▶'}</span>
           {module.title}
         </button>
-        {isOpen && <ul className="list-none p-0 ml-4">{module.topics.map((topic, topicIndex) => (editorVisible ? <EditableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} /> : <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />))}</ul>}
+        {isOpen && <ul className="list-none p-0 ml-4">{module.topics.map((topic, topicIndex) => (editorVisible ? <EditableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} onRenameTopic={onRenameTopic} /> : <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />))}</ul>}
         {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
       </li>
       {editorVisible && (
