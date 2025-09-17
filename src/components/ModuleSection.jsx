@@ -1,6 +1,4 @@
 import React from 'react';
-import { DndContext, closestCenter } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableTopicItem } from './SortableTopicItem';
 import TopicItem from './TopicItem';
 import TopicForm from './TopicForm';
@@ -35,24 +33,7 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
           <span className="mr-2">{isOpen ? '▼' : '▶'}</span>
           {module.title}
         </button>
-        {isOpen &&
-          (editorVisible ? (
-            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={module.topics.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                <ul className="list-none p-0 ml-4">
-                  {module.topics.map((topic, topicIndex) => (
-                    <SortableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} />
-                  ))}
-                </ul>
-              </SortableContext>
-            </DndContext>
-          ) : (
-            <ul className="list-none p-0 ml-4">
-              {module.topics.map((topic, topicIndex) => (
-                <TopicItem key={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} />
-              ))}
-            </ul>
-          ))}
+        {isOpen && <ul className="list-none p-0 ml-4">{module.topics.map((topic, topicIndex) => (editorVisible ? <SortableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} /> : <TopicItem key={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} onRemoveTopic={onRemoveTopic} />))}</ul>}
         {showTopicForm && showTopicForm.moduleIndex === moduleIndex && <TopicForm newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onSubmit={handleSubmitForm} onCancel={cancelTopicForm} />}
       </li>
       {editorVisible && (
