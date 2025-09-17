@@ -1,5 +1,5 @@
 import React from 'react';
-import { EditableTopicItem } from './SortableTopicItem';
+import { EditableTopicItem } from './EditableTopicItem';
 import TopicItem from './TopicItem';
 import TopicForm from './TopicForm';
 
