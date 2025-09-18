@@ -31,7 +31,7 @@ export default function Editor({ service, user, course, setCourse, currentTopic,
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
-        return <VideoEditor currentTopic={currentTopic} />;
+        return <VideoEditor currentTopic={currentTopic} course={course} setCourse={setCourse} changeTopic={changeTopic} />;
       default:
         return (
           <>
