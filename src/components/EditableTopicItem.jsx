@@ -20,7 +20,7 @@ import useClickOutside from '../hooks/useClickOutside';
  *
  * @returns {JSX.Element} The rendered editable topic item.
  */
-export function EditableTopicItem({ id, moduleIndex, topicIndex, onRemoveTopic, onRenameTopic, topic, ...props }) {
+export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topic, ...props }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const [editingTopic, setEditingTopic] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState(topic?.title || '');
@@ -37,8 +37,8 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, onRemoveTopic, 
   };
 
   const handleRename = () => {
-    if (editingTopic && newTitle.trim() && onRenameTopic) {
-      onRenameTopic(moduleIndex, topicIndex, newTitle.trim(), newType);
+    if (editingTopic && newTitle.trim() && courseOps.onRenameTopic) {
+      courseOps.onRenameTopic(moduleIndex, topicIndex, newTitle.trim(), newType);
       setEditingTopic(false);
     }
   };
@@ -90,7 +90,7 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, onRemoveTopic, 
               e
             </button>
           )}
-          <button onClick={() => onRemoveTopic(moduleIndex, topicIndex)} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
+          <button onClick={() => courseOps.removeTopic(moduleIndex, topicIndex)} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
             x
           </button>
           <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500  pr-1" title="Drag to reorder">

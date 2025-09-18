@@ -1,15 +1,11 @@
 import { useState } from 'react';
 
 function useTopicOperations(course, setCourse, user, service, currentTopic, changeTopic) {
-  const [showTopicForm, setShowTopicForm] = useState(null);
-  const [newTopicTitle, setNewTopicTitle] = useState('');
-  const [newTopicType, setNewTopicType] = useState('instruction');
-
-  function generateTopicId() {
+  function generateId() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
   }
 
-  function generateTopicPath(title, type) {
+  function generateTopicPath(title) {
     const slugTitle = title
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
@@ -40,7 +36,7 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
     return basicContent;
   }
 
-  async function addTopic(moduleIndex, afterTopicIndex) {
+  async function addTopic(moduleIndex, newTopicTitle, newTopicType) {
     if (!newTopicTitle.trim()) return;
 
     const token = user.gitHubToken(course.id);
@@ -51,42 +47,34 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
         const module = updatedCourse.modules[moduleIndex];
 
         const newTopic = {
-          id: generateTopicId(),
+          id: generateId(),
           title: newTopicTitle.trim(),
           type: newTopicType,
-          path: `${course.links.gitHub.rawUrl}/${generateTopicPath(newTopicTitle.trim(), newTopicType)}`,
+          path: `${course.links.gitHub.rawUrl}/${generateTopicPath(newTopicTitle.trim())}`,
         };
 
-        if (afterTopicIndex !== undefined) {
-          module.topics.splice(afterTopicIndex + 1, 0, newTopic);
-        } else {
-          module.topics.push(newTopic);
-        }
+        module.topics.push(newTopic);
 
         // Update allTopics array
         updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
         setCourse(updatedCourse);
-        setShowTopicForm(null);
-        setNewTopicTitle('');
-        setNewTopicType('instruction');
 
         // Create a basic markdown file for the new topic
         const basicContent = generateBasicContent(newTopic.title, newTopic.type);
 
         // Create the GitHub file path
-        const topicPath = generateTopicPath(newTopic.title, newTopic.type);
+        const topicPath = generateTopicPath(newTopic.title);
         const gitHubUrl = `${course.links.gitHub.apiUrl}/${topicPath}`;
         // Create the topic file on GitHub
-        await service.commitTopicMarkdown(gitHubUrl, basicContent, token, `add(${newTopic.title}): create new topic`);
+        await service.commitTopicMarkdown(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
 
         // Commit the course structure changes
-        await updatedCourse.commitCourseStructure(user, service, `add(${newTopic.title}): update course structure`);
+        await updatedCourse.commitCourseStructure(user, service, `add(topic) ${newTopic.title}`);
 
         changeTopic(newTopic);
       } catch (error) {
-        console.error('Error adding topic:', error);
-        alert('Failed to add topic. Please try again.');
+        alert(`Failed to add topic: ${error.message}`);
       }
     }
   }
@@ -96,8 +84,6 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
     const updatedCourse = course.constructor._copy(course);
     const topic = updatedCourse.modules[moduleIdx].topics[topicIdx];
     if (!topic) return;
-    const oldTitle = topic.title;
-    const oldType = topic.type;
     topic.title = newTitle.trim();
     topic.type = newType || topic.type;
     updatedCourse.modules[moduleIdx].topics[topicIdx] = topic;
@@ -106,10 +92,10 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
     try {
       const token = user.gitHubToken(course.id);
       if (token) {
-        await updatedCourse.commitCourseStructure(user, service, `rename(topic): ${topic.title} type: ${topic.type}`);
+        await updatedCourse.commitCourseStructure(user, service, `rename(topic) ${topic.title} with type ${topic.type}`);
       }
     } catch (err) {
-      console.error('Failed to persist topic rename:', err);
+      alert(`Failed to persist topic rename: ${err.message}`);
     }
   }
 
@@ -120,8 +106,6 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
     try {
       const updatedCourse = course.constructor._copy(course);
       updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
-
-      // Update allTopics array
       updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
       setCourse(updatedCourse);
@@ -129,7 +113,7 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
       // Commit the course structure changes
       const token = user.gitHubToken(course.id);
       if (token) {
-        await updatedCourse.commitCourseStructure(user, service, `remove(${topic.title}): update course structure`);
+        await updatedCourse.commitCourseStructure(user, service, `remove(topic) ${topic.title}`);
       }
 
       // If the removed topic was the current topic, navigate to the first topic
@@ -140,28 +124,35 @@ function useTopicOperations(course, setCourse, user, service, currentTopic, chan
         }
       }
     } catch (error) {
-      console.error('Error removing topic:', error);
-      alert('Failed to remove topic. Please try again.');
+      alert(`Failed to remove topic: ${error.message}`);
     }
   }
 
-  function cancelTopicForm() {
-    setShowTopicForm(null);
-    setNewTopicTitle('');
-    setNewTopicType('instruction');
+  async function addModule(title) {
+    if (!title.trim()) return;
+    const updatedCourse = course.constructor._copy(course);
+    updatedCourse.modules.push({
+      id: generateId(),
+      title: title.trim(),
+      topics: [],
+    });
+    updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
+    setCourse(updatedCourse);
+    try {
+      const token = user.gitHubToken(course.id);
+      if (token) {
+        await updatedCourse.commitCourseStructure(user, service, `add(module) ${title.trim()}`);
+      }
+    } catch (err) {
+      alert(`Failed to add module: ${err.message}`);
+    }
   }
 
   return {
-    showTopicForm,
-    setShowTopicForm,
-    newTopicTitle,
-    setNewTopicTitle,
-    newTopicType,
-    setNewTopicType,
     addTopic,
     removeTopic,
-    cancelTopicForm,
     renameTopic,
+    addModule,
   };
 }
 

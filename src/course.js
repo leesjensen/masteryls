@@ -116,8 +116,6 @@ export default class Course {
     const gitHubUrl = `${this.links.gitHub.apiUrl}/course.json`;
 
     await service.commitTopicMarkdown(gitHubUrl, courseJson, token, commitMessage);
-
-    return this;
   }
 
   async discardTopicMarkdown(updatedTopic) {
