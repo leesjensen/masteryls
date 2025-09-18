@@ -1,6 +1,7 @@
 import React from 'react';
 import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
+import VideoInstruction from '../instruction/videoInstruction';
 
 export default function Editor({ service, user, course, setCourse, currentTopic, changeTopic }) {
   const [files, setFiles] = React.useState([]);
@@ -27,10 +28,26 @@ export default function Editor({ service, user, course, setCourse, currentTopic,
     fetchFiles();
   }, [course, currentTopic]);
 
-  return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <MarkdownEditor service={service} user={user} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
-      <EditorFiles files={files} setFiles={setFiles} />
-    </div>
-  );
+  const editorComponent = (type) => {
+    switch (type) {
+      case 'video':
+        return (
+          <>
+            <div className="p-2 border-b border-gray-200 text-sm text-gray-500">
+              <strong>URL</strong> {currentTopic?.path || ''}
+            </div>
+            <VideoInstruction topic={currentTopic} />
+          </>
+        );
+      default:
+        return (
+          <>
+            <MarkdownEditor service={service} user={user} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
+            <EditorFiles files={files} setFiles={setFiles} />
+          </>
+        );
+    }
+  };
+
+  return <div className="flex-1 flex flex-col overflow-hidden">{editorComponent(currentTopic?.type)}</div>;
 }
