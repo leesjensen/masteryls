@@ -1,14 +1,14 @@
 import React from 'react';
 import useHotkeys from './hooks/useHotKeys';
 import useModuleState from './hooks/useModuleState';
-import useTopicOperations from './hooks/useTopicOperations';
+import useCourseOperations from './hooks/useCourseOperations';
 import ModuleSection from './components/ModuleSection';
 import NewModuleButton from './components/NewModuleButton';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 function Contents({ service, changeTopic, currentTopic, course, enrollment, editorVisible, navigateToAdjacentTopic, user, setCourse }) {
   const { openModuleIndexes, toggleModule } = useModuleState(course, enrollment, service, currentTopic);
-  const courseOps = useTopicOperations(course, setCourse, user, service, currentTopic, changeTopic);
+  const courseOps = useCourseOperations(course, setCourse, user, service, currentTopic, changeTopic);
 
   useHotkeys(
     {
