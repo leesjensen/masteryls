@@ -1,7 +1,7 @@
 import React from 'react';
 import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
-import VideoInstruction from '../instruction/videoInstruction';
+import VideoEditor from './VideoEditor';
 
 export default function Editor({ service, user, course, setCourse, currentTopic, changeTopic }) {
   const [files, setFiles] = React.useState([]);
@@ -31,14 +31,7 @@ export default function Editor({ service, user, course, setCourse, currentTopic,
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
-        return (
-          <>
-            <div className="p-2 border-b border-gray-200 text-sm text-gray-500">
-              <strong>URL</strong> {currentTopic?.path || ''}
-            </div>
-            <VideoInstruction topic={currentTopic} />
-          </>
-        );
+        return <VideoEditor currentTopic={currentTopic} />;
       default:
         return (
           <>
