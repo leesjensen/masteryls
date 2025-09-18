@@ -3,7 +3,7 @@ import { EditableTopicItem } from './EditableTopicItem';
 import TopicItem from './TopicItem';
 import TopicForm from './TopicForm';
 
-function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, onAddTopic, onRenameTopic, onRemoveTopic, cancelTopicForm, onTopicReorder }) {
+function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, showTopicForm, setShowTopicForm, newTopicTitle, setNewTopicTitle, newTopicType, setNewTopicType, onAddTopic, onRenameTopic, onRemoveTopic, cancelTopicForm }) {
   const handleAddTopicAfter = (moduleIdx, topicIdx) => {
     setShowTopicForm({ moduleIndex: moduleIdx, afterTopicIndex: topicIdx });
   };

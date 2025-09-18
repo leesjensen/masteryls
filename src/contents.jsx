@@ -3,6 +3,7 @@ import useHotkeys from './hooks/useHotKeys';
 import useModuleState from './hooks/useModuleState';
 import useTopicOperations from './hooks/useTopicOperations';
 import ModuleSection from './components/ModuleSection';
+import NewModuleButton from './components/NewModuleButton';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 function Contents({ service, changeTopic, currentTopic, course, enrollment, editorVisible, navigateToAdjacentTopic, user, setCourse }) {
@@ -68,15 +69,19 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, edit
     <div id="content" className="h-full overflow-auto p-4 text-sm">
       <nav>
         {editorVisible ? (
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={allTopicIds} strategy={verticalListSortingStrategy}>
-              <ul className="list-none p-0">
-                {course.map((module, moduleIndex) => (
-                  <ModuleSection key={moduleIndex} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} showTopicForm={showTopicForm} setShowTopicForm={setShowTopicForm} newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onAddTopic={addTopic} onRenameTopic={renameTopic} onRemoveTopic={removeTopic} cancelTopicForm={cancelTopicForm} />
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
+          <>
+            <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={allTopicIds} strategy={verticalListSortingStrategy}>
+                <ul className="list-none p-0">
+                  {course.map((module, moduleIndex) => (
+                    <ModuleSection key={moduleIndex} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} showTopicForm={showTopicForm} setShowTopicForm={setShowTopicForm} newTopicTitle={newTopicTitle} setNewTopicTitle={setNewTopicTitle} newTopicType={newTopicType} setNewTopicType={setNewTopicType} onAddTopic={addTopic} onRenameTopic={renameTopic} onRemoveTopic={removeTopic} cancelTopicForm={cancelTopicForm} />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
+            {/* New Module Creation UI */}
+            <NewModuleButton course={course} setCourse={setCourse} user={user} service={service} />
+          </>
         ) : (
           <ul className="list-none p-0">
             {course.map((module, moduleIndex) => (
