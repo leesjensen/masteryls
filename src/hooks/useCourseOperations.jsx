@@ -5,71 +5,67 @@ function useCourseOperations(course, setCourse, user, service, currentTopic, cha
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
   }
 
-  function generateTopicPath(title) {
-    const slugTitle = title
+  function generateTopicPath(course, topicTitle, topicType) {
+    if (topicType === 'video') {
+      return 'https://youtu.be/PKiRH2ZKZeM';
+    }
+
+    const slugTitle = topicTitle
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/--+/g, '-')
       .trim('-');
-    const extension = 'md'; // All topics are markdown files
-    return `instruction/${slugTitle}/${slugTitle}.${extension}`;
+    return `${course.links.gitHub.rawUrl}/instruction/${slugTitle}/${slugTitle}.md`;
   }
 
-  function generateBasicContent(title, type) {
-    let basicContent = `# ${title}\n\n`;
+  function generateBasicContent(topic) {
+    let basicContent = `# ${topic.title}\n\n`;
 
-    switch (type) {
+    switch (topic.type) {
       case 'video':
-        basicContent += `## Video Content\n\n[Add video link or embed here]\n\n## Summary\n\nSummary of the video content goes here.\n`;
-        break;
+        return null;
       case 'quiz':
         basicContent += `## Quiz\n\n### Question 1\n\nYour question here?\n\n- [ ] Option A\n- [ ] Option B\n- [ ] Option C\n- [ ] Option D\n\n### Answer\n\nCorrect answer and explanation.\n`;
         break;
       case 'project':
-        basicContent += `## Project: ${title}\n\n### Objectives\n\n- Objective 1\n- Objective 2\n\n### Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n### Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
+        basicContent += `## Project: ${topic.title}\n\n### Objectives\n\n- Objective 1\n- Objective 2\n\n### Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n### Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
         break;
       default:
-        basicContent += `## Overview\n\nContent for ${title} goes here.\n\n## Key Concepts\n\n- Concept 1\n- Concept 2\n- Concept 3\n`;
+        basicContent += `## Overview\n\nContent for ${topic.title} goes here.\n\n## Key Concepts\n\n- Concept 1\n- Concept 2\n- Concept 3\n`;
     }
 
     return basicContent;
   }
 
-  async function addTopic(moduleIndex, newTopicTitle, newTopicType) {
-    if (!newTopicTitle.trim()) return;
+  async function addTopic(moduleIndex, topicTitle, topicType) {
+    topicTitle = topicTitle.trim();
+    topicType = topicType || 'instruction';
+    if (!topicTitle) return;
 
     const token = user.gitHubToken(course.id);
-
     if (token) {
       try {
-        const updatedCourse = course.constructor._copy(course);
-        const module = updatedCourse.modules[moduleIndex];
-
         const newTopic = {
           id: generateId(),
-          title: newTopicTitle.trim(),
-          type: newTopicType,
-          path: `${course.links.gitHub.rawUrl}/${generateTopicPath(newTopicTitle.trim())}`,
+          title: topicTitle,
+          type: topicType,
+          path: generateTopicPath(course, topicTitle, topicType),
         };
 
+        const updatedCourse = course.constructor._copy(course);
+        const module = updatedCourse.modules[moduleIndex];
         module.topics.push(newTopic);
 
-        // Update allTopics array
         updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-
         setCourse(updatedCourse);
 
-        // Create a basic markdown file for the new topic
-        const basicContent = generateBasicContent(newTopic.title, newTopic.type);
+        const basicContent = generateBasicContent(newTopic);
+        if (basicContent) {
+          const gitHubUrl = newTopic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+          await service.commitTopicMarkdown(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
+        }
 
-        // Create the GitHub file path
-        const topicPath = generateTopicPath(newTopic.title);
-        const gitHubUrl = `${course.links.gitHub.apiUrl}/${topicPath}`;
-        // Create the topic file on GitHub
-        await service.commitTopicMarkdown(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
-
-        // Commit the course structure changes
         await updatedCourse.commitCourseStructure(user, service, `add(topic) ${newTopic.title}`);
 
         changeTopic(newTopic);
