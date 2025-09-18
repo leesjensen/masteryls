@@ -52,6 +52,13 @@ export type CatalogEntry = {
   };
 };
 
+export type Topic = {
+  id: string;
+  title: string;
+  path: string;
+  type: 'instruction' | 'quiz' | 'project' | 'video';
+};
+
 export type Progress = {
   mastery: number;
 };
