@@ -130,7 +130,7 @@ function useCourseOperations(course, setCourse, user, service, currentTopic, cha
         break;
       case 'instruction':
         const apiKey = user.getSetting('geminiApiKey');
-        basicContent = await aiTopicGenerator(apiKey, topic.title, topicDescription, 'instruction');
+        basicContent = await aiTopicGenerator(apiKey, topic.title, topicDescription);
         break;
       default:
         basicContent += `## Overview\n\nContent for ${topic.title} goes here.\n\n## Key Concepts\n\n- Concept 1\n- Concept 2\n- Concept 3\n`;
