@@ -49,8 +49,8 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
   }
 
   async function handlePaste(e) {
-    alert('Pasting of files is not yet supported');
-    e.preventDefault();
+    // alert('Pasting of files is not yet supported');
+    // e.preventDefault();
   }
 
   return (

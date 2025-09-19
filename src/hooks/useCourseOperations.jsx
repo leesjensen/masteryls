@@ -30,41 +30,61 @@ function useCourseOperations(course, setCourse, user, service, currentTopic, cha
     try {
       const prompt = createPromptForType(sanitizedTitle, sanitizedDescription, type);
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+          'X-goog-api-key': apiKey,
         },
         body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
+          contents: [
             {
-              role: 'system',
-              content: 'You are an expert educational content creator. Generate comprehensive, well-structured markdown content for online courses. Focus on clear explanations, practical examples, and pedagogically sound structure.',
-            },
-            {
-              role: 'user',
-              content: prompt,
+              parts: [
+                {
+                  text: `You are an expert educational content creator. Generate comprehensive, well-structured markdown content for online courses. Focus on clear explanations, practical examples, and pedagogically sound structure.\n\n${prompt}`,
+                },
+              ],
             },
           ],
-          max_tokens: 4000,
-          temperature: 0.7,
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 10000,
+          },
+          safetySettings: [
+            {
+              category: 'HARM_CATEGORY_HARASSMENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_HATE_SPEECH',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+            {
+              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+            },
+          ],
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
       }
 
       const data = await response.json();
 
-      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-        throw new Error('Invalid response format from OpenAI API');
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+        throw new Error('Invalid response format from Gemini API');
       }
 
-      return data.choices[0].message.content;
+      return data.candidates[0].content.parts[0].text;
     } catch (error) {
       console.error('Error generating AI content:', error);
       throw new Error(`Failed to generate AI content: ${error.message}`);
@@ -118,7 +138,7 @@ Requirements:
     }
   }
 
-  function generateBasicContent(topic) {
+  async function generateBasicContent(topic, topicDescription) {
     let basicContent = `# ${topic.title}\n\n`;
 
     switch (topic.type) {
@@ -130,6 +150,9 @@ Requirements:
       case 'project':
         basicContent += `## Project: ${topic.title}\n\n### Objectives\n\n- Objective 1\n- Objective 2\n\n### Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n### Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
         break;
+      case 'instruction':
+        basicContent = await aiGeneratedContent(apiKey, topic.title, topicDescription, 'instruction');
+        break;
       default:
         basicContent += `## Overview\n\nContent for ${topic.title} goes here.\n\n## Key Concepts\n\n- Concept 1\n- Concept 2\n- Concept 3\n`;
     }
@@ -137,7 +160,7 @@ Requirements:
     return basicContent;
   }
 
-  async function addTopic(moduleIndex, topicTitle, topicType) {
+  async function addTopic(moduleIndex, topicTitle, topicDescription, topicType) {
     topicTitle = topicTitle.trim();
     topicType = topicType || 'instruction';
     if (!topicTitle) return;
@@ -159,7 +182,7 @@ Requirements:
         updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
         setCourse(updatedCourse);
 
-        const basicContent = generateBasicContent(newTopic);
+        const basicContent = await generateBasicContent(newTopic, topicDescription);
         if (basicContent) {
           const gitHubUrl = newTopic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
           await service.commitTopicMarkdown(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);

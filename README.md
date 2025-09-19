@@ -150,6 +150,30 @@ There are lots of markdown libraries out there such as `marked`, `react-markdown
 
 Followed these basic [instructions](https://tailwindcss.com/docs/installation/using-vite) for using with Vite.
 
+## AI
+
+I chose [Gemini](https://ai.google.dev/gemini-api/docs/rate-limits) API because they have a free tier.
+
+![API Limits](geminiApiLimits.png)
+
+```js
+curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent" \
+  -H 'Content-Type: application/json' \
+  -H 'X-goog-api-key: GEMINI_API_KEY' \
+  -X POST \
+  -d '{
+    "contents": [
+      {
+        "parts": [
+          {
+            "text": "Explain how AI works in a few words"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
 ## Database
 
 ### Catalog

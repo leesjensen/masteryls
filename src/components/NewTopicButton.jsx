@@ -4,8 +4,8 @@ import TopicForm from './TopicForm';
 export default function NewTopicButton({ moduleIndex, courseOps }) {
   const [showForm, setShowForm] = useState(false);
 
-  const handleSubmitForm = (title, type) => {
-    courseOps.addTopic(moduleIndex, title, type);
+  const handleSubmitForm = (title, description, type) => {
+    courseOps.addTopic(moduleIndex, title, description, type);
     setShowForm(false);
   };
   if (!showForm) {
