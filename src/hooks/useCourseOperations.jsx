@@ -1,12 +1,64 @@
-import { useState } from 'react';
 import { aiTopicGenerator } from '../ai/aiContentGenerator';
+import Course from '../course';
 
-function useCourseOperations(course, setCourse, user, service, currentTopic, changeTopic) {
+function useCourseOperations(user, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
   async function createCourse(catalogEntry) {
     if (!title.trim()) return;
     const newCourse = await service.createCourse(user, title.trim());
     if (newCourse) {
       setCourse(newCourse);
+    }
+  }
+
+  function loadCourse(loadingEnrollment) {
+    Course.create(loadingEnrollment.catalogEntry).then((loadedCourse) => {
+      service.setCurrentCourse(loadedCourse.id);
+      setCourse(loadedCourse);
+      setEnrollment(loadingEnrollment);
+
+      if (loadingEnrollment.settings.currentTopic) {
+        setTopic(loadedCourse.topicFromPath(loadingEnrollment.settings.currentTopic));
+      } else {
+        setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
+      }
+    });
+
+    function handleBeforeUnload(e) {
+      if (courseRef.current?.stagedCount()) {
+        e.preventDefault();
+        e.returnValue = 'You have uncommitted changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }
+
+  function closeCourse() {
+    setCourse(null);
+    service.removeCurrentCourse();
+  }
+
+  async function addModule(title) {
+    if (!title.trim()) return;
+    const updatedCourse = course.constructor._copy(course);
+    updatedCourse.modules.push({
+      id: generateId(),
+      title: title.trim(),
+      topics: [],
+    });
+    updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
+    setCourse(updatedCourse);
+    try {
+      const token = user.getSetting('gitHubToken', course.id);
+      if (token) {
+        await updatedCourse.commitCourseStructure(user, service, `add(module) ${title.trim()}`);
+      }
+    } catch (err) {
+      alert(`Failed to add module: ${err.message}`);
     }
   }
 
@@ -96,23 +148,23 @@ function useCourseOperations(course, setCourse, user, service, currentTopic, cha
     }
   }
 
-  async function addModule(title) {
-    if (!title.trim()) return;
-    const updatedCourse = course.constructor._copy(course);
-    updatedCourse.modules.push({
-      id: generateId(),
-      title: title.trim(),
-      topics: [],
-    });
-    updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    setCourse(updatedCourse);
-    try {
-      const token = user.getSetting('gitHubToken', course.id);
-      if (token) {
-        await updatedCourse.commitCourseStructure(user, service, `add(module) ${title.trim()}`);
-      }
-    } catch (err) {
-      alert(`Failed to add module: ${err.message}`);
+  function changeTopic(newTopic) {
+    // Remember what the current topic is for when they return in a new session
+    if (newTopic.path !== currentTopic.path) {
+      setEnrollment((previous) => {
+        const next = { ...previous, settings: { ...previous.settings, currentTopic: newTopic.path } };
+        service.saveEnrollment(next);
+        return next;
+      });
+    }
+
+    setTopic(newTopic);
+  }
+
+  function navigateToAdjacentTopic(direction = 'prev') {
+    const adjacentTopic = course.adjacentTopic(currentTopic.path, direction);
+    if (adjacentTopic) {
+      changeTopic(adjacentTopic);
     }
   }
 
@@ -159,10 +211,14 @@ function useCourseOperations(course, setCourse, user, service, currentTopic, cha
 
   return {
     createCourse,
+    loadCourse,
+    closeCourse,
+    addModule,
     addTopic,
     removeTopic,
     renameTopic,
-    addModule,
+    changeTopic,
+    navigateToAdjacentTopic,
   };
 }
 
