@@ -37,8 +37,8 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
   };
 
   const handleRename = () => {
-    if (editingTopic && newTitle.trim() && courseOps.onRenameTopic) {
-      courseOps.onRenameTopic(moduleIndex, topicIndex, newTitle.trim(), newType);
+    if (editingTopic && newTitle.trim()) {
+      courseOps.renameTopic(moduleIndex, topicIndex, newTitle.trim(), newType);
       setEditingTopic(false);
     }
   };
