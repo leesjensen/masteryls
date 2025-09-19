@@ -32,10 +32,10 @@ export class User {
     return this.isRole(['editor'], object);
   }
 
-  gitHubToken(courseId: string): string | undefined {
-    const role = this.roles?.find((r) => r.object === courseId && r.settings && r.settings.gitHubToken);
+  getSetting(settingKey: string, courseId: string | undefined): string | undefined {
+    const role = this.roles?.find((r) => (r.object === courseId || !courseId) && r.settings && r.settings[settingKey]);
     if (role) {
-      return role.settings.gitHubToken;
+      return role.settings[settingKey];
     }
   }
 }

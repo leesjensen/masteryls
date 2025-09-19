@@ -76,7 +76,7 @@ export default class Course {
     const contentPath = savedTopic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
 
-    const token = user.gitHubToken(this.id);
+    const token = user.getSetting('gitHubToken', this.id);
     await service.commitTopicMarkdown(gitHubUrl, markdown, token, commitMessage);
 
     return [updatedCourse, savedTopic];
@@ -87,7 +87,7 @@ export default class Course {
       throw new Error('User does not have permission to modify course structure');
     }
 
-    const token = user.gitHubToken(this.id);
+    const token = user.getSetting('gitHubToken', this.id);
     if (!token) {
       throw new Error('GitHub token not available');
     }

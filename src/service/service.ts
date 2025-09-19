@@ -138,7 +138,7 @@ class Service {
   }
 
   async deleteCourse(user: User, catalogEntry: CatalogEntry): Promise<void> {
-    const token = user.gitHubToken(catalogEntry.id);
+    const token = user.getSetting('gitHubToken', catalogEntry.id);
     if (token) {
       const deleteResp = await fetch(`https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}`, {
         method: 'DELETE',

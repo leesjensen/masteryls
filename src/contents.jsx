@@ -50,7 +50,7 @@ function Contents({ service, changeTopic, currentTopic, course, enrollment, edit
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
     setCourse(updatedCourse);
     try {
-      const token = user.gitHubToken(course.id);
+      const token = user.getSetting('gitHubToken', course.id);
       if (token) {
         await updatedCourse.commitCourseStructure(user, service, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
       }

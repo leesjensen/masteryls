@@ -16,7 +16,7 @@ export default function Settings({ service, user, course, setCourse }) {
     description: course.description || '',
     githubAccount: course.gitHub.account,
     githubRepository: course.gitHub.repository,
-    gitHubToken: user.gitHubToken(course.id) || '',
+    gitHubToken: user.getSetting('gitHubToken', course.id) || '',
   });
 
   const editorVisible = user.isEditor(course.id) || user.isRoot();
@@ -63,7 +63,7 @@ export default function Settings({ service, user, course, setCourse }) {
   };
 
   const compareGitHubToken = (token) => {
-    return token !== (user.gitHubToken(course.id) || '');
+    return token !== (user.getSetting('gitHubToken', course.id) || '');
   };
 
   const handleSave = async () => {
