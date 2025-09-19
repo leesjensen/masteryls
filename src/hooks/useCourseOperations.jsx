@@ -2,12 +2,13 @@ import { aiTopicGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
 function useCourseOperations(user, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
-  async function createCourse(catalogEntry) {
-    if (!title.trim()) return;
-    const newCourse = await service.createCourse(user, title.trim());
-    if (newCourse) {
-      setCourse(newCourse);
-    }
+  async function createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
+    const newCatalogEntry = await service.createCourse(user, sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+
+    await service.addUserRole(user, 'editor', catalogEntry.id, { gitHubToken });
+    await _populateTemplateTopics(catalogEntry, gitHubToken);
+
+    return await service.createEnrollment(user.id, newCatalogEntry);
   }
 
   function loadCourse(loadingEnrollment) {
@@ -46,7 +47,7 @@ function useCourseOperations(user, service, course, setCourse, currentTopic, set
     if (!title.trim()) return;
     const updatedCourse = course.constructor._copy(course);
     updatedCourse.modules.push({
-      id: generateId(),
+      id: _generateId(),
       title: title.trim(),
       topics: [],
     });
@@ -71,10 +72,10 @@ function useCourseOperations(user, service, course, setCourse, currentTopic, set
     if (token) {
       try {
         const newTopic = {
-          id: generateId(),
+          id: _generateId(),
           title: topicTitle,
           type: topicType,
-          path: generateTopicPath(course, topicTitle, topicType),
+          path: _generateTopicPath(course, topicTitle, topicType),
         };
 
         const updatedCourse = course.constructor._copy(course);
@@ -191,11 +192,37 @@ function useCourseOperations(user, service, course, setCourse, currentTopic, set
     return basicContent;
   }
 
-  function generateId() {
+  async function _populateTemplateTopics(catalogEntry, gitHubToken) {
+    if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
+      const token = gitHubToken;
+      const owner = catalogEntry.gitHub.account;
+      const repo = catalogEntry.gitHub.repository;
+
+      const topics = ['instruction/introduction/introduction.md', 'instruction/syllabus/syllabus.md', 'README.md'];
+      for (const topic of topics) {
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${topic}`;
+
+        const response = await fetch(url);
+        const markdown = await response.text();
+
+        let variableFound = false;
+        const replacedMarkdown = markdown.replace(/%%MASTERYLS_(\w+)%%/g, (_, variable) => {
+          variableFound = true;
+          const key = variable.toLowerCase();
+          return this[key] ?? '';
+        });
+        if (variableFound) {
+          await this.commitTopicMarkdown(url, replacedMarkdown, token, `insert course template variables`);
+        }
+      }
+    }
+  }
+
+  function _generateId() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
   }
 
-  function generateTopicPath(course, topicTitle, topicType) {
+  function _generateTopicPath(course, topicTitle, topicType) {
     if (topicType === 'video') {
       return `https://youtu.be/PKiRH2ZKZeM?cb=${Date.now()}`;
     }

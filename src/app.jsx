@@ -61,7 +61,7 @@ function App() {
   } else if (!user) {
     return <Start setUser={setUser} />;
   } else if (!course) {
-    return <Dashboard service={service} user={user} setUser={setUser} loadCourse={courseOps.loadCourse} />;
+    return <Dashboard courseOps={courseOps} service={service} user={user} setUser={setUser} loadCourse={courseOps.loadCourse} />;
   }
 
   // What to show in the main content area

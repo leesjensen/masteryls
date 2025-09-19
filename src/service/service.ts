@@ -90,37 +90,7 @@ class Service {
 
     this.catalog.push(data);
 
-    await this.addUserRole(user, 'editor', catalogEntry.id, { gitHubToken });
-
-    await this._populateTemplateTopics(catalogEntry, gitHubToken);
-
     return data;
-  }
-
-  async _populateTemplateTopics(catalogEntry: CatalogEntry, gitHubToken: string): Promise<void> {
-    if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
-      const token = gitHubToken;
-      const owner = catalogEntry.gitHub.account;
-      const repo = catalogEntry.gitHub.repository;
-
-      const topics = ['instruction/introduction/introduction.md', 'instruction/syllabus/syllabus.md', 'README.md'];
-      for (const topic of topics) {
-        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${topic}`;
-
-        const response = await fetch(url);
-        const markdown = await response.text();
-
-        let variableFound = false;
-        const replacedMarkdown = markdown.replace(/%%MASTERYLS_(\w+)%%/g, (_, variable) => {
-          variableFound = true;
-          const key = variable.toLowerCase();
-          return this[key] ?? '';
-        });
-        if (variableFound) {
-          await this.commitTopicMarkdown(url, replacedMarkdown, token, `insert course template variables`);
-        }
-      }
-    }
   }
 
   async saveCourseSettings(catalogEntry: CatalogEntry): Promise<void> {

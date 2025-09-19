@@ -4,7 +4,7 @@ import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
-export default function Dashboard({ service, user, setUser, loadCourse }) {
+export default function Dashboard({ courseOps, service, user, setUser, loadCourse }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
@@ -47,11 +47,8 @@ export default function Dashboard({ service, user, setUser, loadCourse }) {
   const createCourse = async (sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
     try {
       if (await service.verifyGitHubAccount(gitHubToken)) {
-        const newCatalogEntry = await service.createCourse(user, sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-        const newEnrollment = await service.createEnrollment(user.id, newCatalogEntry);
-
-        setEnrollments((prev) => new Map(prev).set(newCatalogEntry.id, newEnrollment));
-
+        const enrollment = await courseOps.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+        setEnrollments((prev) => new Map(prev).set(enrollment.catalogEntry.id, enrollment));
         setDisplayCourseCreationForm(false);
       } else {
         showAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
