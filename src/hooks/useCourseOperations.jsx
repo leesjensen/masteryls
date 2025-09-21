@@ -88,7 +88,7 @@ function useCourseOperations(user, service, course, setCourse, currentTopic, set
         const basicContent = await generateTopicContent(newTopic, topicDescription);
         if (basicContent) {
           const gitHubUrl = newTopic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
-          await service.commitTopicMarkdown(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
+          await service.addGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
         }
 
         await updatedCourse.commitCourseStructure(user, service, `add(topic) ${newTopic.title}`);
@@ -212,7 +212,7 @@ function useCourseOperations(user, service, course, setCourse, currentTopic, set
           return this[key] ?? '';
         });
         if (variableFound) {
-          await this.commitTopicMarkdown(url, replacedMarkdown, token, `insert course template variables`);
+          await this.addGitHubFile(url, replacedMarkdown, token, `insert course template variables`);
         }
       }
     }

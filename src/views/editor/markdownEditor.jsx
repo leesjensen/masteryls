@@ -42,7 +42,7 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
   }
 
   async function commit() {
-    const [updatedCourse, committedTopic] = await course.commitTopicMarkdown(user, service, currentTopic);
+    const [updatedCourse, committedTopic] = await course.updateTopicMarkdown(user, service, currentTopic);
     setDirty(false);
     changeTopic(committedTopic);
     setCourse(updatedCourse);

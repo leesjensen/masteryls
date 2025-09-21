@@ -310,18 +310,8 @@ class Service {
     }
   }
 
-  async commitTopicMarkdown(gitHubUrl: string, markdown: string, token: string, commitMessage: string): Promise<void> {
-    // Get current file SHA - This will overwrite any changes made on GitHub since last fetch
-    const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
-
-    let sha: string | undefined;
-    if (getRes.ok) {
-      const fileData = await getRes.json();
-      sha = fileData.sha;
-    }
-
-    // Commit to GitHub
-    const contentBase64 = btoa(new TextEncoder().encode(markdown).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, sha?: string): Promise<void> {
+    const contentBase64 = btoa(new TextEncoder().encode(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
     const body: any = {
       message: commitMessage,
       content: contentBase64,
@@ -333,6 +323,16 @@ class Service {
     }
 
     await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
+  }
+
+  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<void> {
+    const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
+    const fileData = await getRes.json();
+    if (!getRes.ok) {
+      throw new Error(`Failed to update file: ${getRes.status} ${fileData.message || getRes.statusText}`);
+    }
+
+    return this.commitGitHubFile(gitHubUrl, content, token, commitMessage, fileData.sha);
   }
 
   async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {
