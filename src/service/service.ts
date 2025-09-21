@@ -153,7 +153,7 @@ class Service {
     return users;
   }
 
-  async addUserRole(user: User, right: string, objectId: string | null, settings: any = {}): Promise<void> {
+  async addUserRole(user: User, right: string, objectId: string | null, settings: any = {}): Promise<Role> {
     const newRole: Role = {
       user: user.id,
       right,
@@ -164,6 +164,8 @@ class Service {
     if (error) {
       throw new Error(error.message);
     }
+
+    return newRole;
   }
 
   async removeUserRole(user: User, right: string, objectId: string | null): Promise<void> {

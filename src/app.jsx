@@ -19,7 +19,7 @@ function App() {
   const courseRef = React.useRef(course);
   courseRef.current = course;
 
-  const courseOps = useCourseOperations(user, service, course, setCourse, topic, setTopic, enrollment, setEnrollment);
+  const courseOps = useCourseOperations(user, setUser, service, course, setCourse, topic, setTopic, enrollment, setEnrollment);
 
   React.useEffect(() => {
     (async () => {

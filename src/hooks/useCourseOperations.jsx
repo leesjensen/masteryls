@@ -1,12 +1,13 @@
 import { aiTopicGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
-function useCourseOperations(user, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
+function useCourseOperations(user, setUser, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
   async function createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
     const newCatalogEntry = await service.createCourse(user, sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+    await _populateTemplateTopics(newCatalogEntry, gitHubToken);
 
-    await service.addUserRole(user, 'editor', catalogEntry.id, { gitHubToken });
-    await _populateTemplateTopics(catalogEntry, gitHubToken);
+    await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
+    setUser(await service.currentUser());
 
     return await service.createEnrollment(user.id, newCatalogEntry);
   }
