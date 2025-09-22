@@ -76,6 +76,7 @@ Requirements:
 - Include overview but do not label it as "Overview"
 - Include relevant subsections with appropriate heading levels
 - Do not number headings
+- Do not over create bulleted lists with multiple levels
 - Make content educational and engaging
 - Prefer textual prose
 - Include practical examples where applicable
