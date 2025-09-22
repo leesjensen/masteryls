@@ -5,8 +5,6 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
   const [content, setContent] = React.useState('');
   const [dirty, setDirty] = React.useState(false);
   const dirtyRef = useLatest(dirty);
-  const contentRef = useLatest(content);
-  const courseRef = useLatest(course);
 
   React.useEffect(() => {
     if (currentTopic?.path) {
@@ -17,21 +15,13 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
     }
     return async () => {
       if (dirtyRef.current) {
-        const shouldSave = window.confirm('Do you want to stage your changes?');
+        const shouldSave = window.confirm('Do you want to commit your changes?');
         if (shouldSave) {
-          const [updatedCourse] = await courseRef.current.saveTopicMarkdown(currentTopic, contentRef.current);
-          setCourse(updatedCourse);
+          commit();
         }
       }
     };
   }, [currentTopic]);
-
-  async function stage(content) {
-    const [updatedCourse, savedTopic] = await course.saveTopicMarkdown(currentTopic, content);
-    setDirty(false);
-    setCourse(updatedCourse);
-    changeTopic(savedTopic);
-  }
 
   async function discard() {
     const [updatedCourse, previousTopic, markdown] = await course.discardTopicMarkdown(currentTopic);
@@ -42,7 +32,7 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
   }
 
   async function commit() {
-    const [updatedCourse, committedTopic] = await course.updateTopicMarkdown(user, service, currentTopic);
+    const [updatedCourse, committedTopic] = await course.updateTopicMarkdown(user, service, currentTopic, content);
     setDirty(false);
     changeTopic(committedTopic);
     setCourse(updatedCourse);
@@ -57,15 +47,11 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
     <div className="p-2 flex-9/12 flex flex-col">
       <div className="basis-[32px] flex items-center justify-between">
         <h1 className="text-lg font-bold">Markdown</h1>
-        <span className="text-xs text-gray-500">{currentTopic?.lastUpdated && `Modified: ${new Date(currentTopic.lastUpdated).toLocaleString()}`}</span>
         <div className="flex items-center">
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => stage(content)} disabled={!dirty}>
-            Stage
-          </button>
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!currentTopic?.lastUpdated}>
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty}>
             Discard
           </button>
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={commit} disabled={dirty || !currentTopic?.lastUpdated}>
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={commit} disabled={!dirty}>
             Commit
           </button>
         </div>

@@ -19,7 +19,7 @@ export default function VideoEditor({ currentTopic, course, setCourse, changeTop
   const handleSave = async () => {
     if (!dirty) return;
     // This should be an updateTopicVideo function in Course class
-    const updatedTopic = { ...currentTopic, path: url, lastUpdated: Date.now() };
+    const updatedTopic = { ...currentTopic, path: url };
     const updatedCourse = await Course.create({ ...course });
     for (const module of updatedCourse.modules) {
       const topicIdx = module.topics.findIndex((t) => t.id === updatedTopic.id);

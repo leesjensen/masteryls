@@ -24,19 +24,6 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
         setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
       }
     });
-
-    function handleBeforeUnload(e) {
-      if (courseRef.current?.stagedCount()) {
-        e.preventDefault();
-        e.returnValue = 'You have uncommitted changes. Are you sure you want to leave?';
-        return e.returnValue;
-      }
-    }
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
   }
 
   function closeCourse() {

@@ -51,7 +51,7 @@ test('editor markdown', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).toBeChecked();
 });
 
-test('editor stage', async ({ page }) => {
+test('editor commit', async ({ page }) => {
   await initWithEditingRights({ page });
   await navigateToCourse(page);
 
@@ -60,9 +60,6 @@ test('editor stage', async ({ page }) => {
 
   await page.getByRole('textbox').fill('# Home\n\naltered!');
   await expect(page.getByRole('textbox')).toContainText('altered!');
-
-  await page.getByRole('button', { name: 'Stage' }).click();
-  await expect(page.locator('#root')).toContainText('Modified:');
 
   await page.getByRole('button', { name: 'Commit' }).click();
   await expect(page.getByRole('button', { name: 'Commit' })).toBeDisabled();

@@ -46,10 +46,6 @@ export default class Course {
     return this.modules.map(op);
   }
 
-  stagedCount() {
-    return this.allTopics.filter((topic) => topic.lastUpdated !== undefined).length;
-  }
-
   async loadTopicMarkdown(topic) {
     if (this.markdownCache.has(topic.path)) {
       return this.markdownCache.get(topic.path);
@@ -58,28 +54,16 @@ export default class Course {
     return this._downloadTopicMarkdown(topic.path);
   }
 
-  async saveTopicMarkdown(updatedTopic, content) {
+  async updateTopicMarkdown(user, service, updatedTopic, content, commitMessage = `update(${updatedTopic.title})`) {
     const updatedCourse = Course._copy(this);
-    const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
-    savedTopic.lastUpdated = Date.now();
-    updatedCourse.markdownCache.set(updatedTopic.path, content);
-    return [updatedCourse, savedTopic];
-  }
 
-  async updateTopicMarkdown(user, service, updatedTopic, commitMessage = `update(${updatedTopic.title})`) {
-    const updatedCourse = Course._copy(this);
-    const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
-    delete savedTopic.lastUpdated;
-
-    const markdown = await updatedCourse.loadTopicMarkdown(savedTopic);
-
-    const contentPath = savedTopic.path.match(/\/main\/(.+)$/);
+    const contentPath = updatedTopic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
 
     const token = user.getSetting('gitHubToken', this.id);
-    await service.updateGitHubFile(gitHubUrl, markdown, token, commitMessage);
+    await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
 
-    return [updatedCourse, savedTopic];
+    return [updatedCourse, updatedTopic];
   }
 
   async commitCourseStructure(user, service, commitMessage = 'update course structure') {
@@ -121,7 +105,6 @@ export default class Course {
   async discardTopicMarkdown(updatedTopic) {
     const updatedCourse = Course._copy(this);
     const topic = updatedCourse.topicFromPath(updatedTopic.path);
-    delete topic.lastUpdated;
 
     const markdown = await updatedCourse._downloadTopicMarkdown(topic.path);
     updatedCourse.markdownCache.set(topic.path, markdown);

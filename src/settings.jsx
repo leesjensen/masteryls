@@ -20,7 +20,6 @@ export default function Settings({ service, user, course, setCourse }) {
   });
 
   const editorVisible = user.isEditor(course.id) || user.isRoot();
-  const stagedCount = course.stagedCount();
   const moduleCount = course.modules.length || 0;
   const topicCount = course.allTopics.length || 0;
 
@@ -164,10 +163,6 @@ export default function Settings({ service, user, course, setCourse }) {
             <div className="bg-white rounded-lg p-2 shadow-sm border">
               <div className="text-xl font-bold text-gray-800">{topicCount}</div>
               <div className="text-sm text-gray-600">Topics</div>
-            </div>
-            <div className={` rounded-lg p-2 shadow-sm border  ${stagedCount ? 'text-amber-500 bg-amber-50' : 'text-gray-800 bg-white'}`}>
-              <div className="text-xl font-bold">{stagedCount}</div>
-              <div className={`text-sm  ${stagedCount ? 'text-amber-500' : 'text-gray-600'}`}>Uncommitted topics</div>
             </div>
           </div>
         </div>
