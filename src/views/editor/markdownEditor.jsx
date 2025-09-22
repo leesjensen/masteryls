@@ -10,7 +10,7 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
 
   React.useEffect(() => {
     if (currentTopic?.path) {
-      course.topicMarkdown(currentTopic).then((markdown) => {
+      course.loadTopicMarkdown(currentTopic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
       });

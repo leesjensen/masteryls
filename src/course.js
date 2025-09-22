@@ -50,7 +50,7 @@ export default class Course {
     return this.allTopics.filter((topic) => topic.lastUpdated !== undefined).length;
   }
 
-  async topicMarkdown(topic) {
+  async loadTopicMarkdown(topic) {
     if (this.markdownCache.has(topic.path)) {
       return this.markdownCache.get(topic.path);
     }
@@ -71,7 +71,7 @@ export default class Course {
     const savedTopic = updatedCourse.topicFromPath(updatedTopic.path);
     delete savedTopic.lastUpdated;
 
-    const markdown = await updatedCourse.topicMarkdown(savedTopic);
+    const markdown = await updatedCourse.loadTopicMarkdown(savedTopic);
 
     const contentPath = savedTopic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
