@@ -6,7 +6,7 @@ import SubmissionQuiz from './submissionQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 
 export default function QuizInstruction(props) {
-  const { topic, changeTopic, course } = props;
+  const { courseOps, topic, changeTopic, course } = props;
 
   function injectQuiz(content) {
     return generateControlComponentFromFence(content);
@@ -102,6 +102,7 @@ export default function QuizInstruction(props) {
 
   return (
     <MarkdownInstruction
+      courseOps={courseOps}
       topic={topic}
       changeTopic={changeTopic}
       course={course}

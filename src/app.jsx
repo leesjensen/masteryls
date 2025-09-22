@@ -65,9 +65,9 @@ function App() {
   }
 
   // What to show in the main content area
-  let content = <Instruction topic={topic} changeTopic={courseOps.changeTopic} course={course} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} />;
+  let content = <Instruction courseOps={courseOps} topic={topic} changeTopic={courseOps.changeTopic} course={course} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} />;
   if (editorVisible) {
-    content = <Editor service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} changeTopic={courseOps.changeTopic} />;
+    content = <Editor courseOps={courseOps} service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} changeTopic={courseOps.changeTopic} />;
   }
 
   return (

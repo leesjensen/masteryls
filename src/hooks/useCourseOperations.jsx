@@ -3,7 +3,7 @@ import Course from '../course';
 
 function useCourseOperations(user, setUser, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
   async function createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
-    const newCatalogEntry = await service.createCourse(user, sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+    const newCatalogEntry = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
     await _populateTemplateTopics(newCatalogEntry, gitHubToken);
 
     await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
@@ -26,6 +26,36 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     });
   }
 
+  async function updateCourseStructure(updatedCourse, commitMessage = 'update course structure') {
+    const token = user.getSetting('gitHubToken', course.id);
+    if (user.isEditor(course.id) && token) {
+      // Create course.json content
+      const courseData = {
+        title: updatedCourse.title,
+        schedule: updatedCourse.schedule ? updatedCourse.schedule.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
+        syllabus: updatedCourse.syllabus ? updatedCourse.syllabus.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
+        links: updatedCourse.links ? Object.fromEntries(Object.entries(updatedCourse.links).filter(([key]) => key !== 'gitHub')) : undefined,
+        modules: updatedCourse.modules.map((module) => ({
+          title: module.title,
+          topics: module.topics.map((topic) => ({
+            title: topic.title,
+            type: topic.type,
+            path: topic.path.replace(`${updatedCourse.links.gitHub.rawUrl}/`, ''),
+            id: topic.id,
+          })),
+        })),
+      };
+
+      // Remove undefined values
+      Object.keys(courseData).forEach((key) => courseData[key] === undefined && delete courseData[key]);
+
+      const courseJson = JSON.stringify(courseData, null, 2);
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/course.json`;
+
+      await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
+    }
+  }
+
   function closeCourse() {
     setCourse(null);
     service.removeCurrentCourse();
@@ -41,14 +71,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     });
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
     setCourse(updatedCourse);
-    try {
-      const token = user.getSetting('gitHubToken', course.id);
-      if (token) {
-        await updatedCourse.commitCourseStructure(user, service, `add(module) ${title.trim()}`);
-      }
-    } catch (err) {
-      alert(`Failed to add module: ${err.message}`);
-    }
+    await updateCourseStructure(updatedCourse, `add(module) ${title.trim()}`);
   }
 
   async function addTopic(moduleIndex, topicTitle, topicDescription, topicType) {
@@ -57,7 +80,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     if (!topicTitle) return;
 
     const token = user.getSetting('gitHubToken', course.id);
-    if (token) {
+    if (user.isEditor(course.id) && token) {
       try {
         const newTopic = {
           id: _generateId(),
@@ -79,13 +102,43 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
           await service.commitGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
         }
 
-        await updatedCourse.commitCourseStructure(user, service, `add(topic) ${newTopic.title}`);
+        await updateCourseStructure(updatedCourse, `add(course) topic '${newTopic.title}'`);
 
         changeTopic(newTopic);
       } catch (error) {
         alert(`Failed to add topic: ${error.message}`);
       }
     }
+  }
+
+  async function getTopic(topic) {
+    // We want to move the cache here.
+    // if (this.markdownCache.has(topic.path)) {
+    //   return this.markdownCache.get(topic.path);
+    // }
+
+    let url = topic.path;
+    if (topic.commit) {
+      url = topic.path.replace(/(\/main\/)/, `/${topic.commit}/`);
+    }
+
+    return course._downloadTopicMarkdown(url);
+  }
+
+  async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
+    const contentPath = topic.path.match(/\/main\/(.+)$/);
+    const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
+
+    const updatedCourse = Course.copy(course);
+    const updatedTopic = updatedCourse.topicFromPath(topic.path);
+
+    const token = user.getSetting('gitHubToken', course.id);
+    const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
+    updatedTopic.commit = commit;
+    setCourse(updatedCourse);
+    await updateCourseStructure(updatedCourse, `update(course) topic ${topic.title}`);
+
+    return updatedTopic;
   }
 
   async function renameTopic(moduleIdx, topicIdx, newTitle, newType) {
@@ -98,14 +151,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     updatedCourse.modules[moduleIdx].topics[topicIdx] = topic;
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
     setCourse(updatedCourse);
-    try {
-      const token = user.getSetting('gitHubToken', course.id);
-      if (token) {
-        await updatedCourse.commitCourseStructure(user, service, `rename(topic) ${topic.title} with type ${topic.type}`);
-      }
-    } catch (err) {
-      alert(`Failed to persist topic rename: ${err.message}`);
-    }
+    await updateCourseStructure(updatedCourse, `rename(course) topic ${topic.title} with type ${topic.type}`);
   }
 
   async function removeTopic(moduleIndex, topicIndex) {
@@ -118,12 +164,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
       updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
       setCourse(updatedCourse);
-
-      // Commit the course structure changes
-      const token = user.getSetting('gitHubToken', course.id);
-      if (token) {
-        await updatedCourse.commitCourseStructure(user, service, `remove(topic) ${topic.title}`);
-      }
+      await updateCourseStructure(updatedCourse, `remove(course) topic ${topic.title}`);
 
       // If the removed topic was the current topic, navigate to the first topic
       if (currentTopic && currentTopic.path === topic.path) {
@@ -228,10 +269,13 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     createCourse,
     loadCourse,
     closeCourse,
+    updateCourseStructure,
     addModule,
     addTopic,
+    getTopic,
     removeTopic,
     renameTopic,
+    updateTopic,
     changeTopic,
     navigateToAdjacentTopic,
   };

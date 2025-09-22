@@ -47,14 +47,7 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
     updatedCourse.modules[toModuleIdx].topics.splice(toTopicIdx, 0, moved);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
     setCourse(updatedCourse);
-    try {
-      const token = user.getSetting('gitHubToken', course.id);
-      if (token) {
-        await updatedCourse.commitCourseStructure(user, service, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
-      }
-    } catch (err) {
-      console.error('Failed to persist topic order:', err);
-    }
+    await courseOps.updateCourseStructure(token, service, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
   };
 
   if (!course) {

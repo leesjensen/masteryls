@@ -30,42 +30,6 @@ export default class Course {
     return newCourse;
   }
 
-  async commitCourseStructure(user, service, commitMessage = 'update course structure') {
-    if (!user.isEditor(this.id)) {
-      throw new Error('User does not have permission to modify course structure');
-    }
-
-    const token = user.getSetting('gitHubToken', this.id);
-    if (!token) {
-      throw new Error('GitHub token not available');
-    }
-
-    // Create course.json content
-    const courseData = {
-      title: this.title,
-      schedule: this.schedule ? this.schedule.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
-      syllabus: this.syllabus ? this.syllabus.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
-      links: this.links ? Object.fromEntries(Object.entries(this.links).filter(([key]) => key !== 'gitHub')) : undefined,
-      modules: this.modules.map((module) => ({
-        title: module.title,
-        topics: module.topics.map((topic) => ({
-          title: topic.title,
-          type: topic.type,
-          path: topic.path.replace(`${this.links.gitHub.rawUrl}/`, ''),
-          id: topic.id,
-        })),
-      })),
-    };
-
-    // Remove undefined values
-    Object.keys(courseData).forEach((key) => courseData[key] === undefined && delete courseData[key]);
-
-    const courseJson = JSON.stringify(courseData, null, 2);
-    const gitHubUrl = `${this.links.gitHub.apiUrl}/course.json`;
-
-    await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
-  }
-
   moduleIndexOf(path) {
     return this.modules.findIndex((module) => module.topics.some((topic) => topic.path === path));
   }
@@ -95,27 +59,6 @@ export default class Course {
     return this.modules.map(op);
   }
 
-  async loadTopicMarkdown(topic) {
-    if (this.markdownCache.has(topic.path)) {
-      return this.markdownCache.get(topic.path);
-    }
-
-    return this._downloadTopicMarkdown(topic.path);
-  }
-
-  async commitTopicMarkdown(user, service, updatedTopic, content, commitMessage = `update(${updatedTopic.title})`) {
-    const updatedCourse = Course.copy(this);
-
-    const contentPath = updatedTopic.path.match(/\/main\/(.+)$/);
-    const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
-
-    const token = user.getSetting('gitHubToken', this.id);
-    await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
-
-    updatedCourse.markdownCache.set(updatedTopic.path, content);
-
-    return [updatedCourse, updatedTopic];
-  }
   async discardTopicMarkdown(updatedTopic) {
     const updatedCourse = Course.copy(this);
     const topic = updatedCourse.topicFromPath(updatedTopic.path);

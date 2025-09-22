@@ -3,7 +3,7 @@ import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
 import VideoEditor from './VideoEditor';
 
-export default function Editor({ service, user, course, setCourse, currentTopic, changeTopic }) {
+export default function Editor({ courseOps, service, user, course, setCourse, currentTopic, changeTopic }) {
   const [files, setFiles] = React.useState([]);
 
   React.useEffect(() => {
@@ -35,7 +35,7 @@ export default function Editor({ service, user, course, setCourse, currentTopic,
       default:
         return (
           <>
-            <MarkdownEditor service={service} user={user} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
+            <MarkdownEditor courseOps={courseOps} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
             <EditorFiles files={files} setFiles={setFiles} />
           </>
         );

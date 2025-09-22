@@ -29,7 +29,7 @@ function scrollToAnchor(anchor, containerRef) {
   }
 }
 
-export default function MarkdownInstruction({ topic, changeTopic, course, languagePlugins = [] }) {
+export default function MarkdownInstruction({ courseOps, topic, changeTopic, course, languagePlugins = [] }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = React.useRef(null);
@@ -38,7 +38,7 @@ export default function MarkdownInstruction({ topic, changeTopic, course, langua
     if (topic.path) {
       setIsLoading(true);
       setMarkdown('');
-      course.loadTopicMarkdown(topic).then((md) => {
+      courseOps.getTopic(topic).then((md) => {
         md = processRelativeImagePaths(md, topic.path);
         setMarkdown(md);
         setIsLoading(false);

@@ -57,7 +57,7 @@ class Service {
     return resp.ok;
   }
 
-  async createCourse(user: User, templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+  async createCourse(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     try {
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
         const targetOwner = catalogEntry.gitHub.account;
@@ -312,29 +312,32 @@ class Service {
     }
   }
 
-  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, sha?: string): Promise<void> {
+  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, sha?: string): Promise<Response> {
     const contentBase64 = btoa(new TextEncoder().encode(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
     const body: any = {
       message: commitMessage,
       content: contentBase64,
     };
 
-    // Only include SHA if file exists (for updates)
+    // The blob SHA represents the file information not the commit.
     if (sha) {
       body.sha = sha;
     }
 
-    await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
+    return await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
   }
 
-  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<void> {
+  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
     const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
-    const fileData = await getRes.json();
+    const getData = await getRes.json();
     if (!getRes.ok) {
-      throw new Error(`Failed to update file: ${getRes.status} ${fileData.message || getRes.statusText}`);
+      throw new Error(`Failed to update file: ${getRes.status} ${getData.message || getRes.statusText}`);
     }
 
-    return this.commitGitHubFile(gitHubUrl, content, token, commitMessage, fileData.sha);
+    const putRes = await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, getData.sha);
+    const putData = await putRes.json();
+
+    return putData.commit.sha;
   }
 
   async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {

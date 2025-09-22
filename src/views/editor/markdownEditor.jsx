@@ -1,14 +1,14 @@
 import React from 'react';
 import useLatest from '../../hooks/useLatest';
 
-export default function MarkdownEditor({ service, user, course, setCourse, currentTopic, changeTopic }) {
+export default function MarkdownEditor({ courseOps, course, setCourse, currentTopic, changeTopic }) {
   const [content, setContent] = React.useState('');
   const [dirty, setDirty] = React.useState(false);
   const dirtyRef = useLatest(dirty);
 
   React.useEffect(() => {
     if (currentTopic?.path) {
-      course.loadTopicMarkdown(currentTopic).then((markdown) => {
+      courseOps.getTopic(currentTopic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
       });
@@ -32,10 +32,9 @@ export default function MarkdownEditor({ service, user, course, setCourse, curre
   }
 
   async function commit() {
-    const [updatedCourse, committedTopic] = await course.commitTopicMarkdown(user, service, currentTopic, content);
+    const updatedTopic = await courseOps.updateTopic(currentTopic, content);
     setDirty(false);
-    changeTopic(committedTopic);
-    setCourse(updatedCourse);
+    changeTopic(updatedTopic);
   }
 
   async function handlePaste(e) {
