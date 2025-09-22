@@ -24,7 +24,7 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
     const { active, over } = event;
     if (!active || !over || active.id === over.id) return;
 
-    const updatedCourse = course.constructor._copy(course);
+    const updatedCourse = Course.copy(course);
     let fromModuleIdx = -1,
       fromTopicIdx = -1;
     let toModuleIdx = -1,

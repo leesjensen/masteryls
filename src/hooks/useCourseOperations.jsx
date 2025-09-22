@@ -33,7 +33,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
 
   async function addModule(title) {
     if (!title.trim()) return;
-    const updatedCourse = course.constructor._copy(course);
+    const updatedCourse = Course.copy(course);
     updatedCourse.modules.push({
       id: _generateId(),
       title: title.trim(),
@@ -66,7 +66,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
           path: _generateTopicPath(course, topicTitle, topicType),
         };
 
-        const updatedCourse = course.constructor._copy(course);
+        const updatedCourse = Course.copy(course);
         const module = updatedCourse.modules[moduleIndex];
         module.topics.push(newTopic);
 
@@ -90,7 +90,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
 
   async function renameTopic(moduleIdx, topicIdx, newTitle, newType) {
     if (!newTitle.trim()) return;
-    const updatedCourse = course.constructor._copy(course);
+    const updatedCourse = Course.copy(course);
     const topic = updatedCourse.modules[moduleIdx].topics[topicIdx];
     if (!topic) return;
     topic.title = newTitle.trim();
@@ -113,7 +113,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
 
     try {
-      const updatedCourse = course.constructor._copy(course);
+      const updatedCourse = Course.copy(course);
       updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
       updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 

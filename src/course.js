@@ -11,10 +11,59 @@ export default class Course {
     this.allTopics = this.modules.flatMap((m) => m.topics);
   }
 
+  static copy(course) {
+    const newModules = course.modules.map((module) => ({
+      ...module,
+      topics: module.topics.map((topic) => ({ ...topic })),
+    }));
+    const newCourse = new Course({ ...course, modules: newModules });
+
+    newCourse.markdownCache = new Map(course.markdownCache);
+    newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
+
+    return newCourse;
+  }
+
   updateCatalogEntry(catalogEntry) {
-    const newCourse = Course._copy(this);
+    const newCourse = Course.copy(this);
     Object.assign(newCourse, catalogEntry);
     return newCourse;
+  }
+
+  async commitCourseStructure(user, service, commitMessage = 'update course structure') {
+    if (!user.isEditor(this.id)) {
+      throw new Error('User does not have permission to modify course structure');
+    }
+
+    const token = user.getSetting('gitHubToken', this.id);
+    if (!token) {
+      throw new Error('GitHub token not available');
+    }
+
+    // Create course.json content
+    const courseData = {
+      title: this.title,
+      schedule: this.schedule ? this.schedule.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
+      syllabus: this.syllabus ? this.syllabus.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
+      links: this.links ? Object.fromEntries(Object.entries(this.links).filter(([key]) => key !== 'gitHub')) : undefined,
+      modules: this.modules.map((module) => ({
+        title: module.title,
+        topics: module.topics.map((topic) => ({
+          title: topic.title,
+          type: topic.type,
+          path: topic.path.replace(`${this.links.gitHub.rawUrl}/`, ''),
+          id: topic.id,
+        })),
+      })),
+    };
+
+    // Remove undefined values
+    Object.keys(courseData).forEach((key) => courseData[key] === undefined && delete courseData[key]);
+
+    const courseJson = JSON.stringify(courseData, null, 2);
+    const gitHubUrl = `${this.links.gitHub.apiUrl}/course.json`;
+
+    await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
   }
 
   moduleIndexOf(path) {
@@ -54,8 +103,8 @@ export default class Course {
     return this._downloadTopicMarkdown(topic.path);
   }
 
-  async updateTopicMarkdown(user, service, updatedTopic, content, commitMessage = `update(${updatedTopic.title})`) {
-    const updatedCourse = Course._copy(this);
+  async commitTopicMarkdown(user, service, updatedTopic, content, commitMessage = `update(${updatedTopic.title})`) {
+    const updatedCourse = Course.copy(this);
 
     const contentPath = updatedTopic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${this.links.gitHub.apiUrl}/${contentPath[1]}`;
@@ -63,47 +112,12 @@ export default class Course {
     const token = user.getSetting('gitHubToken', this.id);
     await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
 
+    updatedCourse.markdownCache.set(updatedTopic.path, content);
+
     return [updatedCourse, updatedTopic];
   }
-
-  async commitCourseStructure(user, service, commitMessage = 'update course structure') {
-    if (!user.isEditor(this.id)) {
-      throw new Error('User does not have permission to modify course structure');
-    }
-
-    const token = user.getSetting('gitHubToken', this.id);
-    if (!token) {
-      throw new Error('GitHub token not available');
-    }
-
-    // Create course.json content
-    const courseData = {
-      title: this.title,
-      schedule: this.schedule ? this.schedule.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
-      syllabus: this.syllabus ? this.syllabus.replace(`${this.links.gitHub.rawUrl}/`, '') : undefined,
-      links: this.links ? Object.fromEntries(Object.entries(this.links).filter(([key]) => key !== 'gitHub')) : undefined,
-      modules: this.modules.map((module) => ({
-        title: module.title,
-        topics: module.topics.map((topic) => ({
-          title: topic.title,
-          type: topic.type,
-          path: topic.path.replace(`${this.links.gitHub.rawUrl}/`, ''),
-          id: topic.id,
-        })),
-      })),
-    };
-
-    // Remove undefined values
-    Object.keys(courseData).forEach((key) => courseData[key] === undefined && delete courseData[key]);
-
-    const courseJson = JSON.stringify(courseData, null, 2);
-    const gitHubUrl = `${this.links.gitHub.apiUrl}/course.json`;
-
-    await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
-  }
-
   async discardTopicMarkdown(updatedTopic) {
-    const updatedCourse = Course._copy(this);
+    const updatedCourse = Course.copy(this);
     const topic = updatedCourse.topicFromPath(updatedTopic.path);
 
     const markdown = await updatedCourse._downloadTopicMarkdown(topic.path);
@@ -117,19 +131,6 @@ export default class Course {
     this.markdownCache.set(topicUrl, markdown);
 
     return markdown;
-  }
-
-  static _copy(course) {
-    const newModules = course.modules.map((module) => ({
-      ...module,
-      topics: module.topics.map((topic) => ({ ...topic })),
-    }));
-    const newCourse = new Course({ ...course, modules: newModules });
-
-    newCourse.markdownCache = new Map(course.markdownCache);
-    newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
-
-    return newCourse;
   }
 }
 
