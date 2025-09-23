@@ -1,6 +1,22 @@
 import { aiTopicGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
+/**
+ * @typedef {import('../service/service.ts').default} Service
+ */
+
+/**
+ * Custom hook for course operations
+ * @param {Object} user - The current user object
+ * @param {Function} setUser - Function to update user state
+ * @param {Service} service - The service instance with GitHub operations
+ * @param {Object} course - The current course object
+ * @param {Function} setCourse - Function to update course state
+ * @param {Object} currentTopic - The currently selected topic
+ * @param {Function} setTopic - Function to update current topic
+ * @param {Object} enrollment - The current enrollment
+ * @param {Function} setEnrollment - Function to update enrollment state
+ */
 function useCourseOperations(user, setUser, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
   async function createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
     const newCatalogEntry = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
@@ -42,17 +58,16 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
             type: topic.type,
             path: topic.path.replace(`${updatedCourse.links.gitHub.rawUrl}/`, ''),
             id: topic.id,
+            commit: topic.commit,
           })),
         })),
       };
 
-      // Remove undefined values
-      Object.keys(courseData).forEach((key) => courseData[key] === undefined && delete courseData[key]);
-
       const courseJson = JSON.stringify(courseData, null, 2);
       const gitHubUrl = `${course.links.gitHub.apiUrl}/course.json`;
 
-      await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
+      const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
+      await service.saveCourseSettings({ id: course.id, gitHub: { ...course.gitHub, commit } });
     }
   }
 

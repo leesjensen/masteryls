@@ -84,7 +84,11 @@ async function load(catalogEntry) {
     rawUrl: `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`,
   };
 
-  const courseUrl = `${gitHub.rawUrl}/course.json`;
+  let courseUrl = `${gitHub.rawUrl}/course.json`;
+  if (catalogEntry.gitHub.commit) {
+    courseUrl = courseUrl.replace('main', catalogEntry.gitHub.commit);
+  }
+
   const response = await fetch(courseUrl);
   if (!response.ok) {
     return loadCourseFromModulesMarkdown(catalogEntry, gitHub);
