@@ -48,8 +48,8 @@ export default function Dashboard({ courseOps, service, user, setUser, loadCours
     try {
       if (await service.verifyGitHubAccount(gitHubToken)) {
         const enrollment = await courseOps.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-        setEnrollments((prev) => new Map(prev).set(enrollment.catalogEntry.id, enrollment));
-        setDisplayCourseCreationForm(false);
+        // setEnrollments((prev) => new Map(prev).set(enrollment.catalogEntry.id, enrollment));
+        // setDisplayCourseCreationForm(false);
       } else {
         showAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
       }

@@ -19,7 +19,7 @@ export async function aiCourseGenerator(apiKey, title, description) {
               {
                 text: `You are an expert educational content creator.
 Generate a JSON object that contains an appropriate number of modules and topics for a course.
-Each module should have a title and a list of topics with titles and descriptions.
+Each module should have a title and a list of topics with titles and descriptions. The progression of the modules and topics should be logical and pedagogically sound.
 
 Course title: ${title}
 Course description: ${description}
@@ -27,24 +27,27 @@ Course description: ${description}
 The JSON must be structured according to the following example:
 
 {
-  "title": "${title}",
+  "title": "Example Course Title",
+  "description": "Example course description that is relevant to the topics included.",
   "modules": [
     {
       "title": "Example module title",
+      "description": "Description for example module.",
       "topics": [
-        { "title": "Overview", "path": "README.md" },
-        { "title": "Topic 1", "path": "instruction/topic-1/topic-1.md" },
-        { "title": "Topic 2", "path": "instruction/topic-2/topic-2.md" },
-        { "title": "Topic 3", "path": "instruction/topic-3/topic-3.md" },
+        { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md" },
+        { "title": "Topic 1", "description": "Description for topic 1.", "path": "instruction/topic-1/topic-1.md" },
+        { "title": "Topic 2", "description": "Description for topic 2.", "path": "instruction/topic-2/topic-2.md" },
+        { "title": "Topic 3", "description": "Description for topic 3.", "path": "instruction/topic-3/topic-3.md" }
       ]
     }
+  ]
 }                 
 
 
 Requirements:
-- Return a JSON object with out any markdown code fences or other text
+- Return a raw JSON object
 - The JSON object must include a title and modules array
-- Each module must include a title and topics array
+- Each module must include a title, description, and topics array
 - Each topic must include a title, description, and path
 - The first topic of the first module must be "Overview" with path "README.md"
 - The path for other topics should follow the format "instruction/topic-name/topic-name.md" where topic-name is a lowercase, hyphenated version of the topic title
@@ -58,38 +61,6 @@ Requirements:
 - Ensure the JSON is valid and can be parsed without errors
 - The course content should be relevant to the title and description provided
 - Focus on clear, educational content that would be useful for learners
-
-Example output:
-{
-  "title": "Introduction to Programming",
-  "modules": [
-    {
-      "title": "Getting Started",
-      "topics": [
-        { "title": "Overview", "path": "README.md" },
-        { "title": "What is Programming?", "path": "instruction/what-is-programming.md" },
-        { "title": "Setting Up Your Environment", "path": "instruction/setting-up-environment.md" },
-        { "title": "Hello World", "path": "instruction/hello-world.md" }
-      ]
-    },
-    {
-      "title": "Basic Concepts",
-      "topics": [
-        { "title": "Variables and Data Types", "path": "instruction/variables-and-data-types.md" },
-        { "title": "Control Structures", "path": "instruction/control-structures.md" },
-        { "title": "Functions", "path": "instruction/functions.md" }
-      ]
-    },
-    {
-      "title": "Advanced Topics",
-      "topics": [
-        { "title": "Object-Oriented Programming", "path": "instruction/object-oriented-programming.md" },
-        { "title": "Error Handling", "path": "instruction/error-handling.md" },
-        { "title": "Working with Libraries", "path": "instruction/working-with-libraries.md" }
-      ]
-    }
-  ]
-}
 `,
               },
             ],
