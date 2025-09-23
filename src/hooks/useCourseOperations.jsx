@@ -19,8 +19,14 @@ import Course from '../course';
  */
 function useCourseOperations(user, setUser, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
   async function createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
-    const newCatalogEntry = await service.createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-    await _populateTemplateTopics(newCatalogEntry, gitHubToken);
+    let newCatalogEntry;
+    if (sourceAccount && sourceRepo) {
+      newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+      await _populateTemplateTopics(newCatalogEntry, gitHubToken);
+    } else {
+      newCatalogEntry = await service.createCourseFromDescription(catalogEntry, gitHubToken);
+      // generate AI course.json and topics
+    }
 
     await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
     setUser(await service.currentUser());

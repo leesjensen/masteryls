@@ -57,7 +57,43 @@ class Service {
     return resp.ok;
   }
 
-  async createCourse(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+  async createCourseFromDescription(catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+    try {
+      if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
+        const targetOwner = catalogEntry.gitHub.account;
+        const targetRepo = catalogEntry.gitHub.repository;
+
+        const url = `https://api.github.com/user/repos`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${gitHubToken}`,
+            Accept: 'application/vnd.github.baptiste-preview+json, application/vnd.github+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: targetRepo, description: catalogEntry.description, private: false }),
+        });
+
+        if (resp.status !== 201) {
+          const errText = await resp.text().catch(() => resp.statusText);
+          throw new Error(`${resp.status} ${errText}`);
+        }
+      }
+    } catch (err: any) {
+      throw new Error(`Failed to create course from template: ${err?.message || err}`);
+    }
+
+    const { data, error } = await supabase.from('catalog').insert([catalogEntry]).select().single();
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    this.catalog.push(data);
+
+    return data;
+  }
+
+  async createCourseFromTemplate(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     try {
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
         const targetOwner = catalogEntry.gitHub.account;
@@ -71,7 +107,7 @@ class Service {
             Accept: 'application/vnd.github.baptiste-preview+json, application/vnd.github+json',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ owner: targetOwner, name: targetRepo, description: 'my repo', private: false }),
+          body: JSON.stringify({ owner: targetOwner, name: targetRepo, description: catalogEntry.description, private: false }),
         });
 
         if (resp.status !== 201) {
