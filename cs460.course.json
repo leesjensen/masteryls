@@ -1,0 +1,61 @@
+{
+  "title": "Advanced Web Frameworks",
+  "description": "This course gives an advanced survey of the common web frameworks such as  React, Vue, and Svelte. We then dive into the implementation details of each framework. This includes how each framework implements DOM interactions, managing state, handling reactivity, routing, and integrating HTML, JavaScript, and CSS. The different framework approaches are compared and contrasted with discussions of performance, scalability, and developer experience. You then create your own web framework that renders components, manages state, supports reactivity, handles routing, and integrates HTML, CSS, and JavaScript. As a demonstration of your mastery you build a modern web application using your framework.",
+  "modules": [
+    {
+      "title": "Introduction to Modern Web Frameworks",
+      "topics": [
+        { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md" },
+        { "title": "The Evolution of Web Frameworks", "description": "A historical perspective on web framework development.", "path": "instruction/the-evolution-of-web-frameworks/the-evolution-of-web-frameworks.md" },
+        { "title": "Key Concepts and Terminology", "description": "Defining essential terms like component-based architecture, virtual DOM, and reactivity.", "path": "instruction/key-concepts-and-terminology/key-concepts-and-terminology.md" },
+        { "title": "Comparing Framework Architectures", "description": "A comparative analysis of different architectural patterns used by web frameworks.", "path": "instruction/comparing-framework-architectures/comparing-framework-architectures.md" }
+      ]
+    },
+    {
+      "title": "React Deep Dive",
+      "topics": [
+        { "title": "React's Virtual DOM", "description": "Understanding the virtual DOM and its role in React's performance.", "path": "instruction/reacts-virtual-dom/reacts-virtual-dom.md" },
+        { "title": "Component Lifecycle and Hooks", "description": "Exploring component lifecycle methods and the power of React hooks.", "path": "instruction/component-lifecycle-and-hooks/component-lifecycle-and-hooks.md" },
+        { "title": "State Management in React", "description": "Techniques for managing application state in React, including Context and Redux.", "path": "instruction/state-management-in-react/state-management-in-react.md" },
+        { "title": "React Router and Navigation", "description": "Implementing routing and navigation in React applications.", "path": "instruction/react-router-and-navigation/react-router-and-navigation.md" }
+      ]
+    },
+    {
+      "title": "Vue.js In-Depth",
+      "topics": [
+        { "title": "Vue's Reactivity System", "description": "Understanding how Vue.js tracks and updates changes in data.", "path": "instruction/vues-reactivity-system/vues-reactivity-system.md" },
+        { "title": "Components in Vue", "description": "Creating and managing components in Vue.js.", "path": "instruction/components-in-vue/components-in-vue.md" },
+        { "title": "Vue Router", "description": "Setting up routing in Vue applications.", "path": "instruction/vue-router/vue-router.md" },
+        { "title": "Vuex for State Management", "description": "Using Vuex to manage complex application state.", "path": "instruction/vuex-for-state-management/vuex-for-state-management.md" }
+      ]
+    },
+    {
+      "title": "Svelte: A Compiler-Based Framework",
+      "topics": [
+        { "title": "Svelte's Compilation Process", "description": "Understanding how Svelte compiles components into highly efficient JavaScript.", "path": "instruction/svelte-compilation-process/svelte-compilation-process.md" },
+        { "title": "Reactivity in Svelte", "description": "Exploring Svelte's unique approach to reactivity.", "path": "instruction/reactivity-in-svelte/reactivity-in-svelte.md" },
+        { "title": "Svelte Components", "description": "Building user interfaces with Svelte components.", "path": "instruction/svelte-components/svelte-components.md" },
+        { "title": "SvelteKit and Routing", "description": "Using SvelteKit for server-side rendering and routing.", "path": "instruction/sveltekit-and-routing/sveltekit-and-routing.md" }
+      ]
+    },
+    {
+      "title": "Building Your Own Web Framework",
+      "topics": [
+        { "title": "Core Architecture and Design", "description": "Planning the architecture of your custom framework.", "path": "instruction/core-architecture-and-design/core-architecture-and-design.md" },
+        { "title": "Component Rendering Engine", "description": "Implementing a rendering engine for your framework.", "path": "instruction/component-rendering-engine/component-rendering-engine.md" },
+        { "title": "State Management Implementation", "description": "Creating a system for managing application state.", "path": "instruction/state-management-implementation/state-management-implementation.md" },
+        { "title": "Routing and Navigation", "description": "Adding routing capabilities to your framework.", "path": "instruction/routing-and-navigation/routing-and-navigation.md" },
+        { "title": "Integrating HTML, CSS, and JavaScript", "description": "Handling the integration of different web technologies.", "path": "instruction/integrating-html-css-and-javascript/integrating-html-css-and-javascript.md" }
+      ]
+    },
+    {
+      "title": "Performance, Scalability, and Developer Experience",
+      "topics": [
+        { "title": "Performance Optimization Techniques", "description": "Strategies for improving the performance of web applications.", "path": "instruction/performance-optimization-techniques/performance-optimization-techniques.md" },
+        { "title": "Scalability Considerations", "description": "Designing web applications for scalability.", "path": "instruction/scalability-considerations/scalability-considerations.md" },
+        { "title": "Improving Developer Experience", "description": "Tools and techniques for enhancing the developer experience.", "path": "instruction/improving-developer-experience/improving-developer-experience.md" },
+        { "title": "Framework Comparison: Performance and Scalability", "description": "A comparative analysis of the performance and scalability of different frameworks.", "path": "instruction/framework-comparison-performance-and-scalability/framework-comparison-performance-and-scalability.md" }
+      ]
+    }
+  ]
+}

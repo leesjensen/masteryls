@@ -42,6 +42,14 @@ The JSON must be structured according to the following example:
 
 
 Requirements:
+- Return a JSON object with out any markdown code fences or other text
+- The JSON object must include a title and modules array
+- Each module must include a title and topics array
+- Each topic must include a title, description, and path
+- The first topic of the first module must be "Overview" with path "README.md"
+- The path for other topics should follow the format "instruction/topic-name/topic-name.md" where topic-name is a lowercase, hyphenated version of the topic title
+- The course title should match the provided title exactly
+- The course description should be relevant to the topics included
 - The course should have between 3 and 7 modules
 - Each module should have between 3 and 7 topics
 - Each topic should have a concise, descriptive title
@@ -216,24 +224,4 @@ Requirements:
     console.error('Error generating AI content:', error);
     throw new Error(`Failed to generate AI content: ${error.message}`);
   }
-}
-
-function createTopicPrompt(title, description) {
-  return `Create comprehensive markdown content for an instructional topic titled "${title}".
-Description: ${description}
-
-Requirements:
-- Start with a level 1 heading using only the exact title
-- Use proper markdown formatting
-- Include overview but do not label it as "Overview"
-- Include relevant subsections with appropriate heading levels
-- Do not number headings
-- Do not over create bulleted lists with multiple levels
-- Make content educational and engaging
-- Prefer textual prose
-- Include practical examples where applicable
-- Include references to external resources if relevant
-- Encourage thoughtful engagement with the material
-- Include common challenges and solutions
-- Provide a summary`;
 }

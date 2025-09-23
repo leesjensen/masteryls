@@ -1,4 +1,4 @@
-import { aiTopicGenerator } from '../ai/aiContentGenerator';
+import { aiTopicGenerator, aiCourseGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
 /**
@@ -19,19 +19,23 @@ import Course from '../course';
  */
 function useCourseOperations(user, setUser, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
   async function createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
-    let newCatalogEntry;
-    if (sourceAccount && sourceRepo) {
-      newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-      await _populateTemplateTopics(newCatalogEntry, gitHubToken);
-    } else {
-      newCatalogEntry = await service.createCourseFromDescription(catalogEntry, gitHubToken);
-      // generate AI course.json and topics
-    }
+    // let newCatalogEntry;
+    // if (sourceAccount && sourceRepo) {
+    //   newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+    //   await _populateTemplateTopics(newCatalogEntry, gitHubToken);
+    // } else {
+    //      newCatalogEntry = await service.createCourseFromDescription(catalogEntry, gitHubToken);
+    // generate AI course.json and topics
 
-    await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
-    setUser(await service.currentUser());
+    const apiKey = user.getSetting('geminiApiKey');
+    const courseJson = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
+    console.log('Generated course.json:', courseJson);
+    // }
 
-    return await service.createEnrollment(user.id, newCatalogEntry);
+    // await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
+    // setUser(await service.currentUser());
+
+    // return await service.createEnrollment(user.id, newCatalogEntry);
   }
 
   function loadCourse(loadingEnrollment) {
