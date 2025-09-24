@@ -53,8 +53,9 @@ Requirements:
 - The path for other topics should follow the format "instruction/topic-name/topic-name.md" where topic-name is a lowercase, hyphenated version of the topic title
 - The course title should match the provided title exactly
 - The course description should be relevant to the topics included
-- The course should have between 3 and 7 modules
-- Each module should have between 3 and 7 topics
+- The course should have 6 modules
+- There should be around 100 topics
+- Have capstone project that integrates the topics covered in each module
 - Each topic should have a concise, descriptive title
 - Use proper JSON formatting
 - Do not include any additional text outside the JSON object
