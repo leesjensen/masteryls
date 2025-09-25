@@ -50,7 +50,7 @@ Requirements:
 - Return a raw JSON object that is not surrounded by a markdown code fence
 - The JSON object must include a title and modules array
 - Each module must include a title, description, and topics array
-- Each topic must include a title, description, a path, a state set to "stub", and an id that is set to a UUID
+- Each topic must include a title, description, a path, and a state set to "stub"
 - The first topic of the first module must be "Overview" with path "README.md"
 - The path for other topics should follow the format "instruction/topic-name/topic-name.md" where topic-name is a lowercase, hyphenated version of the topic title
 - The course title should match the provided title exactly

@@ -8,7 +8,7 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
     if (editorVisible) {
       return <EditableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} courseOps={courseOps} />;
     }
-    return <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />;
+    return <TopicItem key={topic.id} courseOps={courseOps} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />;
   }
   return (
     <div>

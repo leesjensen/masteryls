@@ -1,9 +1,9 @@
 import React from 'react';
 
-function TopicForm({ title, type, onSubmit, onCancel, isLoading }) {
+function TopicForm({ title, prompt, type, submitButtonText, onSubmit, onCancel, isLoading }) {
   const [newTitle, setNewTitle] = React.useState(title || '');
   const [newType, setNewType] = React.useState(type || 'instruction');
-  const [newPrompt, setNewPrompt] = React.useState('');
+  const [newPrompt, setNewPrompt] = React.useState(prompt || '');
 
   return (
     <div className="mb-0.5 ml-4 p-2 bg-gray-50 border rounded relative">
@@ -28,7 +28,7 @@ function TopicForm({ title, type, onSubmit, onCancel, isLoading }) {
         <div className="flex gap-2">
           <button onClick={() => onSubmit(newTitle, newPrompt, newType)} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1" disabled={!newTitle.trim() || isLoading}>
             {isLoading && <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>}
-            {isLoading ? 'Adding...' : 'Add'}
+            {isLoading ? 'Adding...' : submitButtonText || 'Add'}
           </button>
           <button onClick={onCancel} className="px-2 py-1 bg-gray-600 text-white rounded text-xs disabled:bg-gray-400 disabled:cursor-not-allowed" disabled={isLoading}>
             Cancel

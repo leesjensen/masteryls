@@ -78,7 +78,7 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
               />
             </div>
           ) : (
-            <TopicItem {...props} topic={topic} />
+            <TopicItem {...props} courseOps={courseOps} topic={topic} />
           )}
         </div>
         <div className="flex flex-row justify-between items-center">

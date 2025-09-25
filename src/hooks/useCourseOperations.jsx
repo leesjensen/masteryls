@@ -88,6 +88,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
           path: topic.path.replace(`${updatedCourse.links.gitHub.rawUrl}/`, ''),
           id: topic.id || _generateId(),
           state: topic.state,
+          description: topic.description,
           commit: topic.commit,
         })),
       })),
@@ -116,6 +117,31 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
     setCourse(updatedCourse);
     await updateCourseStructure(updatedCourse, `add(module) ${title.trim()}`);
+  }
+
+  async function generateTopic(topic, prompt) {
+    const token = user.getSetting('gitHubToken', course.id);
+    if (user.isEditor(course.id) && token) {
+      try {
+        const updatedCourse = Course.copy(course);
+        topic = updatedCourse.topicFromPath(topic.path);
+        topic.description = prompt;
+        topic.state = 'stable';
+        setCourse(updatedCourse);
+
+        const basicContent = await generateTopicContent(topic, prompt);
+        if (basicContent) {
+          const gitHubUrl = topic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+          await service.commitGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${topic.title}`);
+        }
+
+        await updateCourseStructure(updatedCourse, `add(course) topic '${topic.title}'`);
+
+        changeTopic(topic);
+      } catch (error) {
+        alert(`Failed to generate topic: ${error.message}`);
+      }
+    }
   }
 
   async function addTopic(moduleIndex, topicTitle, topicDescription, topicType) {
@@ -277,12 +303,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
       case 'project':
         basicContent += `## Project: ${topic.title}\n\n### Objectives\n\n- Objective 1\n- Objective 2\n\n### Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n### Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
         break;
-      case 'instruction':
+      default:
         const apiKey = user.getSetting('geminiApiKey');
         basicContent = await aiTopicGenerator(apiKey, topic.title, topicDescription);
         break;
-      default:
-        basicContent += `## Overview\n\nContent for ${topic.title} goes here.\n\n## Key Concepts\n\n- Concept 1\n- Concept 2\n- Concept 3\n`;
     }
 
     return basicContent;
@@ -338,6 +362,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     updateCourseStructure,
     addModule,
     addTopic,
+    generateTopic,
     getTopicMarkdown,
     removeTopic,
     renameTopic,
