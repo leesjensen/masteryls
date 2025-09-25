@@ -76,9 +76,6 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
                   if (e.key === 'Escape') handleCancel();
                 }}
               />
-              <button onClick={handleRename} className="text-blue-600 px-1 text-xs" title="Save" disabled={!newTitle.trim()}>
-                ✓
-              </button>
             </div>
           ) : (
             <TopicItem {...props} topic={topic} />

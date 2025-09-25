@@ -56,6 +56,15 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
 
   const allTopicIds = course && course.modules ? course.modules.flatMap((m) => m.topics.map((t) => t.id)) : [];
 
+  function filterTopicsByState(course) {
+    return course.modules
+      .map((module) => ({
+        ...module,
+        topics: module.topics.filter((topic) => topic.state === 'stable'),
+      }))
+      .filter((module) => module.topics.length > 0);
+  }
+
   return (
     <div id="content" className="h-full overflow-auto p-4 text-sm">
       <nav>
@@ -74,7 +83,7 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
           </>
         ) : (
           <ul className="list-none p-0">
-            {course.map((module, moduleIndex) => (
+            {filterTopicsByState(course).map((module, moduleIndex) => (
               <ModuleSection key={moduleIndex} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} courseOps={courseOps} />
             ))}
           </ul>

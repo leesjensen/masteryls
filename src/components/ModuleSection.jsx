@@ -4,6 +4,12 @@ import TopicItem from './TopicItem';
 import NewTopicButton from './NewTopicButton';
 
 function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, courseOps }) {
+  function getTopicItem(topic, topicIndex) {
+    if (editorVisible) {
+      return <EditableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} courseOps={courseOps} />;
+    }
+    return <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />;
+  }
   return (
     <div>
       <li className="mb-1">
@@ -13,7 +19,7 @@ function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, ch
         </button>
         {isOpen && (
           <ul className="list-none p-0 ml-4">
-            {module.topics.map((topic, topicIndex) => (editorVisible ? <EditableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} courseOps={courseOps} /> : <TopicItem key={topic.id} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />))}
+            {module.topics.map((topic, topicIndex) => getTopicItem(topic, topicIndex))}
             {editorVisible && (
               <li className="mb-0.5 flex items-center">
                 <NewTopicButton moduleIndex={moduleIndex} courseOps={courseOps} />
