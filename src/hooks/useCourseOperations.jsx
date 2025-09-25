@@ -62,38 +62,41 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
       if (loadingEnrollment.settings.currentTopic) {
         setTopic(loadedCourse.topicFromPath(loadingEnrollment.settings.currentTopic));
       } else {
-        setTopic({ title: 'Home', path: `${loadedCourse.links.gitHub.rawUrl}/README.md` });
+        setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
       }
     });
   }
 
   async function updateCourseStructure(updatedCourse, commitMessage = 'update course structure') {
-    const token = user.getSetting('gitHubToken', course.id);
-    if (user.isEditor(course.id) && token) {
-      // Create course.json content
-      const courseData = {
-        title: updatedCourse.title,
-        schedule: updatedCourse.schedule ? updatedCourse.schedule.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
-        syllabus: updatedCourse.syllabus ? updatedCourse.syllabus.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
-        links: updatedCourse.links ? Object.fromEntries(Object.entries(updatedCourse.links).filter(([key]) => key !== 'gitHub')) : undefined,
-        modules: updatedCourse.modules.map((module) => ({
-          title: module.title,
-          topics: module.topics.map((topic) => ({
-            title: topic.title,
-            type: topic.type,
-            path: topic.path.replace(`${updatedCourse.links.gitHub.rawUrl}/`, ''),
-            id: topic.id,
-            commit: topic.commit,
-          })),
-        })),
-      };
-
-      const courseJson = JSON.stringify(courseData, null, 2);
-      const gitHubUrl = `${course.links.gitHub.apiUrl}/course.json`;
-
-      const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
-      await service.saveCourseSettings({ id: course.id, gitHub: { ...course.gitHub, commit } });
+    const token = user.getSetting('gitHubToken', updatedCourse.id);
+    if (user.isEditor(updatedCourse.id) && token) {
+      await _updateCourseStructure(token, updatedCourse, commitMessage);
     }
+  }
+
+  async function _updateCourseStructure(token, updatedCourse, commitMessage = 'update course structure') {
+    const courseData = {
+      title: updatedCourse.title,
+      schedule: updatedCourse.schedule ? updatedCourse.schedule.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
+      syllabus: updatedCourse.syllabus ? updatedCourse.syllabus.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
+      links: updatedCourse.links ? Object.fromEntries(Object.entries(updatedCourse.links).filter(([key]) => key !== 'gitHub')) : undefined,
+      modules: updatedCourse.modules.map((module) => ({
+        title: module.title,
+        topics: module.topics.map((topic) => ({
+          title: topic.title,
+          type: topic.type,
+          path: topic.path.replace(`${updatedCourse.links.gitHub.rawUrl}/`, ''),
+          id: topic.id,
+          commit: topic.commit,
+        })),
+      })),
+    };
+
+    const courseJson = JSON.stringify(courseData, null, 2);
+    const gitHubUrl = `${updatedCourse.links.gitHub.apiUrl}/course.json`;
+
+    const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
+    await service.saveCourseSettings({ id: updatedCourse.id, gitHub: { ...updatedCourse.gitHub, commit } });
   }
 
   function closeCourse() {
@@ -166,19 +169,25 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
   }
 
   async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
+    const token = user.getSetting('gitHubToken', course.id);
+    const [updatedCourse, updatedTopic] = await _updateTopic(token, course, topic, content, commitMessage);
+    setCourse(updatedCourse);
+
+    return updatedTopic;
+  }
+
+  async function _updateTopic(token, course, topic, content, commitMessage = `update(${topic.title})`) {
     const contentPath = topic.path.match(/\/main\/(.+)$/);
     const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
 
     const updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromPath(topic.path);
 
-    const token = user.getSetting('gitHubToken', course.id);
     const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
     updatedTopic.commit = commit;
-    setCourse(updatedCourse);
-    await updateCourseStructure(updatedCourse, `update(course) topic ${topic.title}`);
+    await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
 
-    return updatedTopic;
+    return [updatedCourse, updatedTopic];
   }
 
   async function renameTopic(moduleIdx, topicIdx, newTitle, newType) {
@@ -297,17 +306,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
           }
         });
         if (variableFound) {
-          await _updateTopic(course, topic, replacedMarkdown, gitHubToken, `update(topic) with template variables`);
+          await _updateTopic(gitHubToken, course, topic, replacedMarkdown, `update(topic) with template variables`);
         }
       }
     }
-  }
-
-  async function _updateTopic(course, topic, content, token, commitMessage = `update(${topic.title})`) {
-    const contentPath = topic.path.match(/\/main\/(.+)$/);
-    const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
-
-    await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
   }
 
   function _generateId() {
