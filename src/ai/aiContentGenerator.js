@@ -34,10 +34,10 @@ The JSON must be structured according to the following example:
       "title": "Example module title",
       "description": "Description for example module.",
       "topics": [
-        { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md" },
-        { "title": "Topic 1", "description": "Description for topic 1.", "path": "instruction/topic-1/topic-1.md" },
-        { "title": "Topic 2", "description": "Description for topic 2.", "path": "instruction/topic-2/topic-2.md" },
-        { "title": "Topic 3", "description": "Description for topic 3.", "path": "instruction/topic-3/topic-3.md" }
+        { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md", "state": "defined" },
+        { "title": "Topic 1", "description": "Description for topic 1.", "path": "instruction/topic-1/topic-1.md", "state": "defined" },
+        { "title": "Topic 2", "description": "Description for topic 2.", "path": "instruction/topic-2/topic-2.md", "state": "defined" },
+        { "title": "Topic 3", "description": "Description for topic 3.", "path": "instruction/topic-3/topic-3.md", "state": "defined" }
       ]
     }
   ]
@@ -45,23 +45,20 @@ The JSON must be structured according to the following example:
 
 
 Requirements:
-- Return a raw JSON object
+- The course content should be relevant to the title and description provided
+- Focus on clear, educational content that would be useful for learners
+- Return a raw JSON object that is not surrounded by a markdown code fence
 - The JSON object must include a title and modules array
 - Each module must include a title, description, and topics array
-- Each topic must include a title, description, and path
+- Each topic must include a title, description, a path, and a state set to "defined"
 - The first topic of the first module must be "Overview" with path "README.md"
 - The path for other topics should follow the format "instruction/topic-name/topic-name.md" where topic-name is a lowercase, hyphenated version of the topic title
 - The course title should match the provided title exactly
 - The course description should be relevant to the topics included
 - The course should have 6 modules
-- There should be around 100 topics
-- Have capstone project that integrates the topics covered in each module
+- There should be around 100 topics spread evenly across the modules
+- The course contains a capstone project that integrates the topics covered in each module
 - Each topic should have a concise, descriptive title
-- Use proper JSON formatting
-- Do not include any additional text outside the JSON object
-- Ensure the JSON is valid and can be parsed without errors
-- The course content should be relevant to the title and description provided
-- Focus on clear, educational content that would be useful for learners
 `,
               },
             ],
@@ -104,7 +101,9 @@ Requirements:
       throw new Error('Invalid response format from AI');
     }
 
-    return data.candidates[0].content.parts[0].text;
+    const courseJson = data.candidates[0].content.parts[0].text;
+    const cleanedJson = courseJson.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
+    return cleanedJson;
   } catch (error) {
     console.error('Error generating AI content:', error);
     throw new Error(`Failed to generate AI content: ${error.message}`);

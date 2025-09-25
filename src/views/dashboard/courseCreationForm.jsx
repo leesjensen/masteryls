@@ -10,27 +10,32 @@ export default function CourseCreationForm({ service, onClose, onCreate }) {
   const [gitHubSourceAccount, setGitHubSourceAccount] = useState('csinstructiontemplate');
   const [gitHubSourceRepo, setGitHubSourceRepo] = useState('');
   const [gitHubTemplates, setGitHubTemplates] = useState([]);
+  const [generateWithAi, setGenerateWithAi] = useState(true);
 
   React.useEffect(() => {
-    service
-      .getTemplateRepositories(gitHubSourceAccount)
-      .then((templates) => {
-        setGitHubTemplates(templates);
-      })
-      .catch((error) => {
-        console.error('Error fetching GitHub templates:', error);
-        setGitHubTemplates([]);
-      });
+    if (gitHubSourceAccount.trim()) {
+      service
+        .getTemplateRepositories(gitHubSourceAccount)
+        .then((templates) => {
+          setGitHubTemplates(templates);
+        })
+        .catch((error) => {
+          console.error('Error fetching GitHub templates:', error);
+          setGitHubTemplates([]);
+        });
+    } else {
+      setGitHubTemplates([]);
+    }
   }, [gitHubSourceAccount]);
 
   function handleSubmit(e) {
     e.preventDefault();
     if (onCreate) {
-      onCreate(gitHubSourceAccount, gitHubSourceRepo, { title, description, name, gitHub: { account: gitHubAccount, repository: gitHubRepo } }, gitHubToken);
+      onCreate(generateWithAi, gitHubSourceAccount, gitHubSourceRepo, { title, description, name, gitHub: { account: gitHubAccount, repository: gitHubRepo } }, gitHubToken);
     }
   }
 
-  const isValid = title.trim() && description.trim() && name.trim() && gitHubSourceRepo.trim() && gitHubAccount.trim() && gitHubRepo.trim() && gitHubToken.trim();
+  const isValid = title.trim() && description.trim() && name.trim() && (generateWithAi || (gitHubSourceAccount.trim() && gitHubSourceRepo.trim())) && gitHubAccount.trim() && gitHubRepo.trim() && gitHubToken.trim();
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-start pt-16 p-4">
@@ -61,40 +66,56 @@ export default function CourseCreationForm({ service, onClose, onCreate }) {
               Description
             </label>
             <textarea id="course-description" name="description" required rows={5} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300 resize-y" placeholder="Short summary of what learners will accomplish" />
+            <div className="flex items-center mt-2">
+              <input
+                id="generate-ai"
+                type="checkbox"
+                className="mr-2 h-4 w-4 text-amber-400 border-gray-300 rounded focus:ring-amber-300"
+                checked={generateWithAi}
+                onChange={(e) => {
+                  setGenerateWithAi(e.target.checked);
+                }}
+              />
+              <label htmlFor="generate-ai" className="text-sm text-gray-700">
+                Generate course from description
+              </label>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-1 border-gray-300 rounded-sm p-2">
-            <div>
-              <label htmlFor="source-gitHub-account" className="block text-sm font-medium text-gray-700 mb-1">
-                Source GitHub Account
-              </label>
-              <input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubSourceAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
-              <p className="text-xs text-gray-400 mt-1">Only accounts with public template repositories are eligible.</p>
-            </div>
+          {!generateWithAi && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-1 border-gray-300 rounded-sm p-2">
+              <div>
+                <label htmlFor="source-gitHub-account" className="block text-sm font-medium text-gray-700 mb-1">
+                  Source GitHub Account
+                </label>
+                <input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubSourceAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
+                <p className="text-xs text-gray-400 mt-1">Only accounts with public template repositories are eligible.</p>
+              </div>
 
-            <div>
-              <label htmlFor="source-gitHub-template" className="block text-sm font-medium text-gray-700 mb-1">
-                Source GitHub Template
-              </label>
-              <select
-                id="source-gitHub-template"
-                disabled={gitHubTemplates.length === 0}
-                name="gitHubTemplate"
-                value={gitHubSourceRepo}
-                onChange={(e) => setGitHubSourceRepo(e.target.value)}
-                className="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300
+              <div>
+                <label htmlFor="source-gitHub-template" className="block text-sm font-medium text-gray-700 mb-1">
+                  Source GitHub Template
+                </label>
+                <select
+                  id="source-gitHub-template"
+                  disabled={gitHubTemplates.length === 0}
+                  name="gitHubTemplate"
+                  value={gitHubSourceRepo}
+                  onChange={(e) => setGitHubSourceRepo(e.target.value)}
+                  className="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300
                   disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed bg-white text-gray-700 border-gray-200
                 "
-              >
-                <option value="">Select a template...</option>
-                {gitHubTemplates.map((template) => (
-                  <option key={template} value={template}>
-                    {template}
-                  </option>
-                ))}
-              </select>
+                >
+                  <option value="">Select a template...</option>
+                  {gitHubTemplates.map((template) => (
+                    <option key={template} value={template}>
+                      {template}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-1 border-gray-300 rounded-sm p-2 ">
             <div>

@@ -4,8 +4,8 @@ export default class Course {
     return new Course(courseData);
   }
 
-  constructor(courseEntry = { modules: [] }) {
-    Object.assign(this, courseEntry);
+  constructor(courseData = { modules: [] }) {
+    Object.assign(this, courseData);
 
     this.markdownCache = new Map();
     this.allTopics = this.modules.flatMap((m) => m.topics);
@@ -45,6 +45,16 @@ export default class Course {
     return null;
   }
 
+  topicFromTitle(title, defaultToFirst = true) {
+    const topic = this.allTopics.find((t) => t.title === title);
+    if (topic) {
+      return topic;
+    } else if (!topic && defaultToFirst) {
+      return this.allTopics[0];
+    }
+    return null;
+  }
+
   topicFromPath(path, defaultToFirst = true) {
     const topic = this.allTopics.find((t) => t.path === path);
     if (topic) {
@@ -52,46 +62,29 @@ export default class Course {
     } else if (!topic && defaultToFirst) {
       return this.allTopics[0];
     }
-    return { title: 'unknown topic', path: path };
+    return null;
   }
 
   map(op) {
     return this.modules.map(op);
   }
-
-  async discardTopicMarkdown(updatedTopic) {
-    const updatedCourse = Course.copy(this);
-    const topic = updatedCourse.topicFromPath(updatedTopic.path);
-
-    const markdown = await updatedCourse._downloadTopicMarkdown(topic.path);
-    updatedCourse.markdownCache.set(topic.path, markdown);
-    return [updatedCourse, topic, markdown];
-  }
-
-  async _downloadTopicMarkdown(topicUrl) {
-    const response = await fetch(topicUrl);
-    const markdown = await response.text();
-    this.markdownCache.set(topicUrl, markdown);
-
-    return markdown;
-  }
 }
 
 async function load(catalogEntry) {
-  const gitHub = {
+  const gitHubLinks = {
     url: `https://github.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/blob/main`,
     apiUrl: `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents`,
     rawUrl: `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`,
   };
 
-  let courseUrl = `${gitHub.rawUrl}/course.json`;
+  let courseUrl = `${gitHubLinks.rawUrl}/course.json`;
   if (catalogEntry.gitHub.commit) {
     courseUrl = courseUrl.replace('main', catalogEntry.gitHub.commit);
   }
 
   const response = await fetch(courseUrl);
   if (!response.ok) {
-    return loadCourseFromModulesMarkdown(catalogEntry, gitHub);
+    return loadCourseFromModulesMarkdown(catalogEntry, gitHubLinks);
   }
   const courseData = await response.json();
   courseData.name = catalogEntry.name || '';
@@ -99,9 +92,9 @@ async function load(catalogEntry) {
   courseData.description = catalogEntry.description || '';
   courseData.id = catalogEntry.id;
   courseData.links = catalogEntry.links || {};
-  courseData.links.gitHub = gitHub;
-  courseData.schedule = courseData.schedule ? `${gitHub.rawUrl}/${courseData.schedule}` : undefined;
-  courseData.syllabus = courseData.syllabus ? `${gitHub.rawUrl}/${courseData.syllabus}` : undefined;
+  courseData.links.gitHub = gitHubLinks;
+  courseData.schedule = courseData.schedule ? `${gitHubLinks.rawUrl}/${courseData.schedule}` : undefined;
+  courseData.syllabus = courseData.syllabus ? `${gitHubLinks.rawUrl}/${courseData.syllabus}` : undefined;
   courseData.gitHub = catalogEntry.gitHub;
 
   for (const module of courseData.modules) {
@@ -109,7 +102,7 @@ async function load(catalogEntry) {
       if (topic.type && topic.type === 'video') {
         topic.path = `${topic.path}`;
       } else if (!topic.path.startsWith('http')) {
-        topic.path = `${gitHub.rawUrl}/${topic.path}`;
+        topic.path = `${gitHubLinks.rawUrl}/${topic.path}`;
       }
       topic.id = topic.id || generateId();
     }

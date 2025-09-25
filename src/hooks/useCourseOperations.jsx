@@ -18,24 +18,39 @@ import Course from '../course';
  * @param {Function} setEnrollment - Function to update enrollment state
  */
 function useCourseOperations(user, setUser, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
-  async function createCourse(sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
-    // let newCatalogEntry;
-    // if (sourceAccount && sourceRepo) {
-    //   newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-    //   await _populateTemplateTopics(newCatalogEntry, gitHubToken);
-    // } else {
-    //      newCatalogEntry = await service.createCourseFromDescription(catalogEntry, gitHubToken);
-    // generate AI course.json and topics
+  async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
+    let newCatalogEntry;
+    let enrollment;
+    if (generateWithAi) {
+      //const apiKey = user.getSetting('geminiApiKey');
+      //const courseJson = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
+      const response = await fetch('/cs460.course.json');
+      const courseJson = await response.json();
+      const courseText = JSON.stringify(courseJson, null, 2);
+      catalogEntry.outcomes = courseJson.outcomes || [];
 
-    const apiKey = user.getSetting('geminiApiKey');
-    const courseJson = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
-    console.log('Generated course.json:', courseJson);
-    // }
+      const gitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
 
-    // await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
-    // setUser(await service.currentUser());
+      newCatalogEntry = await service.createCourseEmpty(catalogEntry, gitHubToken);
+      await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
+      setUser(await service.currentUser());
+      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
-    // return await service.createEnrollment(user.id, newCatalogEntry);
+      const commit = await service.updateGitHubFile(gitHubUrl, courseText, gitHubToken, 'update(course) to generated content structure');
+      await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
+
+      const course = await Course.create(newCatalogEntry);
+      await _populateTemplateTopics(course, ['Overview'], gitHubToken);
+    } else {
+      newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+      await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
+      setUser(await service.currentUser());
+      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
+
+      const course = await Course.create(newCatalogEntry);
+      await _populateTemplateTopics(course, ['Introduction', 'Syllabus', 'Overview'], gitHubToken);
+    }
+    return enrollment;
   }
 
   function loadCourse(loadingEnrollment) {
@@ -136,7 +151,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     }
   }
 
-  async function getTopic(topic) {
+  async function getTopicMarkdown(topic) {
     // We want to move the cache here.
     // if (this.markdownCache.has(topic.path)) {
     //   return this.markdownCache.get(topic.path);
@@ -147,7 +162,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
       url = topic.path.replace(/(\/main\/)/, `/${topic.commit}/`);
     }
 
-    return course._downloadTopicMarkdown(url);
+    return _downloadTopicMarkdown(url);
   }
 
   async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
@@ -203,6 +218,23 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     }
   }
 
+  async function discardTopicMarkdown(updatedTopic) {
+    const updatedCourse = Course.copy(course);
+    const topic = updatedCourse.topicFromPath(updatedTopic.path);
+
+    const markdown = await _downloadTopicMarkdown(topic.path);
+    updatedCourse.markdownCache.set(topic.path, markdown);
+    return [updatedCourse, topic, markdown];
+  }
+
+  async function _downloadTopicMarkdown(topicUrl) {
+    const response = await fetch(topicUrl);
+    const markdown = await response.text();
+    //    this.markdownCache.set(topicUrl, markdown);
+
+    return markdown;
+  }
+
   function changeTopic(newTopic) {
     // Remember what the current topic is for when they return in a new session
     if (newTopic.path !== currentTopic.path) {
@@ -246,30 +278,36 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     return basicContent;
   }
 
-  async function _populateTemplateTopics(catalogEntry, gitHubToken) {
-    if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
-      const token = gitHubToken;
-      const owner = catalogEntry.gitHub.account;
-      const repo = catalogEntry.gitHub.repository;
-
-      const topics = ['instruction/introduction/introduction.md', 'instruction/syllabus/syllabus.md', 'README.md'];
-      for (const topic of topics) {
-        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${topic}`;
-
-        const response = await fetch(url);
-        const markdown = await response.text();
+  async function _populateTemplateTopics(course, topicNames, gitHubToken) {
+    if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
+      for (const topicName of topicNames) {
+        const topic = course.topicFromTitle(topicName);
+        if (!topic) continue;
+        const markdown = await getTopicMarkdown(topic);
 
         let variableFound = false;
         const replacedMarkdown = markdown.replace(/%%MASTERYLS_(\w+)%%/g, (_, variable) => {
           variableFound = true;
           const key = variable.toLowerCase();
-          return this[key] ?? '';
+          const value = course[key] ?? '';
+          if (typeof value === 'string') {
+            return value;
+          } else if (Array.isArray(value)) {
+            return value.reduce((acc, item) => acc + `- ${item}\n`, '');
+          }
         });
         if (variableFound) {
-          await service.updateGitHubFile(url, replacedMarkdown, token, `insert course template variables`);
+          await _updateTopic(course, topic, replacedMarkdown, gitHubToken, `update(topic) with template variables`);
         }
       }
     }
+  }
+
+  async function _updateTopic(course, topic, content, token, commitMessage = `update(${topic.title})`) {
+    const contentPath = topic.path.match(/\/main\/(.+)$/);
+    const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
+
+    await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
   }
 
   function _generateId() {
@@ -297,11 +335,12 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     updateCourseStructure,
     addModule,
     addTopic,
-    getTopic,
+    getTopicMarkdown,
     removeTopic,
     renameTopic,
     updateTopic,
     changeTopic,
+    discardTopicMarkdown,
     navigateToAdjacentTopic,
   };
 }

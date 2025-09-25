@@ -38,7 +38,7 @@ export default function MarkdownInstruction({ courseOps, topic, changeTopic, cou
     if (topic.path) {
       setIsLoading(true);
       setMarkdown('');
-      courseOps.getTopic(topic).then((md) => {
+      courseOps.getTopicMarkdown(topic).then((md) => {
         md = processRelativeImagePaths(md, topic.path);
         setMarkdown(md);
         setIsLoading(false);

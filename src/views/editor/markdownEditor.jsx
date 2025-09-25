@@ -9,7 +9,7 @@ export default function MarkdownEditor({ courseOps, course, setCourse, currentTo
 
   React.useEffect(() => {
     if (currentTopic?.path) {
-      courseOps.getTopic(currentTopic).then((markdown) => {
+      courseOps.getTopicMarkdown(currentTopic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
       });
@@ -25,7 +25,7 @@ export default function MarkdownEditor({ courseOps, course, setCourse, currentTo
   }, [currentTopic]);
 
   async function discard() {
-    const [updatedCourse, previousTopic, markdown] = await course.discardTopicMarkdown(currentTopic);
+    const [updatedCourse, previousTopic, markdown] = await courseOps.discardTopicMarkdown(currentTopic);
     setDirty(false);
     setContent(markdown);
     changeTopic(previousTopic);

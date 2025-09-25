@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
 import { User, CatalogEntry, Enrollment, Role } from '../model';
+import Course from '../course';
 
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
@@ -57,40 +58,10 @@ class Service {
     return resp.ok;
   }
 
-  async createCourseFromDescription(catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
-    try {
-      if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
-        const targetOwner = catalogEntry.gitHub.account;
-        const targetRepo = catalogEntry.gitHub.repository;
+  async createCourseEmpty(catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+    const newCatalogEntry = await this.createCourseFromTemplate('csinstructiontemplate', 'emptycourse', catalogEntry, gitHubToken);
 
-        const url = `https://api.github.com/user/repos`;
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${gitHubToken}`,
-            Accept: 'application/vnd.github.baptiste-preview+json, application/vnd.github+json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ name: targetRepo, description: catalogEntry.description, private: false }),
-        });
-
-        if (resp.status !== 201) {
-          const errText = await resp.text().catch(() => resp.statusText);
-          throw new Error(`${resp.status} ${errText}`);
-        }
-      }
-    } catch (err: any) {
-      throw new Error(`Failed to create course from template: ${err?.message || err}`);
-    }
-
-    const { data, error } = await supabase.from('catalog').insert([catalogEntry]).select().single();
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    this.catalog.push(data);
-
-    return data;
+    return newCatalogEntry;
   }
 
   async createCourseFromTemplate(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
@@ -348,32 +319,34 @@ class Service {
     }
   }
 
-  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, sha?: string): Promise<Response> {
+  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, blobSha?: string): Promise<Response> {
     const contentBase64 = btoa(new TextEncoder().encode(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
     const body: any = {
       message: commitMessage,
       content: contentBase64,
     };
 
-    // The blob SHA represents the file information not the commit.
-    if (sha) {
-      body.sha = sha;
+    if (blobSha) {
+      body.sha = blobSha;
     }
 
     return await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
   }
 
   async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
+    let blobSha: string | undefined;
     const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
     const getData = await getRes.json();
-    if (!getRes.ok) {
-      throw new Error(`Failed to update file: ${getRes.status} ${getData.message || getRes.statusText}`);
+    if (getRes.ok) {
+      blobSha = getData.sha;
     }
 
-    const putRes = await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, getData.sha);
-    const putData = await putRes.json();
-
-    return putData.commit.sha;
+    const putRes = await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, blobSha);
+    if (putRes.ok) {
+      const putData = await putRes.json();
+      return putData.commit.sha;
+    }
+    throw new Error(`Failed to update file: ${putRes.status} ${putRes.statusText}`);
   }
 
   async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {
