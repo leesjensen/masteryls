@@ -2,6 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TopicItem from './TopicItem';
+import TopicForm from './TopicForm';
 import useClickOutside from '../hooks/useClickOutside';
 
 /**
@@ -26,6 +27,20 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
   const [newTitle, setNewTitle] = React.useState(topic?.title || '');
   const [newType, setNewType] = React.useState(topic?.type || 'instruction');
   const editorRef = React.useRef(null);
+  const [showEditForm, setShowEditForm] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  async function handleSubmitForm(title, prompt, type) {
+    setIsLoading(true);
+    try {
+      await courseOps.generateTopic(topic, prompt);
+      setShowEditForm(false);
+    } catch (error) {
+      console.error('Error adding topic:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useClickOutside(editorRef, () => {
     handleCancel();
@@ -78,7 +93,10 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
               />
             </div>
           ) : (
-            <TopicItem {...props} courseOps={courseOps} topic={topic} />
+            <div className="flex flex-col">
+              <TopicItem {...props} courseOps={courseOps} topic={topic} setShowEditForm={setShowEditForm} />
+              {showEditForm && <TopicForm title={topic.title} prompt={topic.description} type={topic.type} submitButtonText={'Generate'} onSubmit={handleSubmitForm} onCancel={() => setShowEditForm(false)} isLoading={isLoading} />}
+            </div>
           )}
         </div>
         <div className="flex flex-row justify-between items-center">
