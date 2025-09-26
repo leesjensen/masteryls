@@ -16,7 +16,10 @@ function App() {
   const [enrollment, setEnrollment] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [editorVisible, setEditorVisible] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(enrollment?.settings.sidebarVisible ?? true);
+  const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth * 0.75);
   const courseRef = React.useRef(course);
+  const isResizing = React.useRef(false);
   courseRef.current = course;
 
   const courseOps = useCourseOperations(user, setUser, service, course, setCourse, topic, setTopic, enrollment, setEnrollment);
@@ -37,15 +40,31 @@ function App() {
     })();
   }, []);
 
-  const sidebarVisible = enrollment?.settings.sidebarVisible ?? false;
+  React.useEffect(() => {
+    const minSidebarWidth = 50;
+    const maxSidebarWidth = window.innerWidth * 0.75;
 
-  function manipulateSidebar(visible) {
-    setEnrollment((previous) => {
-      const next = { ...previous, settings: { ...previous.settings, sidebarVisible: visible } };
-      service.saveEnrollment(next);
-      return next;
-    });
-  }
+    function handleMouseMove(e) {
+      if (isResizing.current) {
+        let newWidth = e.clientX;
+        newWidth = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, newWidth));
+        if (newWidth <= minSidebarWidth) {
+          setSidebarVisible(false);
+        } else {
+          setSidebarWidth(newWidth);
+        }
+      }
+    }
+    function handleMouseUp() {
+      isResizing.current = false;
+    }
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [sidebarVisible]);
 
   function toggleEditor() {
     setEditorVisible((prev) => !prev);
@@ -78,14 +97,26 @@ function App() {
         </h1>
       </header>
 
-      <Toolbar user={user} course={course} closeCourse={courseOps.closeCourse} sidebarVisible={sidebarVisible} manipulateSidebar={manipulateSidebar} currentTopic={topic} changeTopic={courseOps.changeTopic} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
+      <nav>
+        <Toolbar user={user} course={course} closeCourse={courseOps.closeCourse} sidebarVisible={sidebarVisible} setSidebarVisible={setSidebarVisible} currentTopic={topic} changeTopic={courseOps.changeTopic} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
+      </nav>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sidebarVisible ? 'flex w-full sm:w-[300px] opacity-100' : 'w-0 opacity-0'}`}>
-          <Sidebar courseOps={courseOps} service={service} user={user} enrollment={enrollment} setCourse={setCourse} course={course} currentTopic={topic} changeTopic={courseOps.changeTopic} editorVisible={editorVisible} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} />
-        </div>
-        {content}
-      </div>
+      <main className="flex flex-1 overflow-hidden">
+        {sidebarVisible && (
+          <>
+            <div className={`overflow-hidden ${sidebarVisible ? 'flex opacity-100' : 'w-0 opacity-0'}`} style={{ width: sidebarWidth }}>
+              <Sidebar courseOps={courseOps} service={service} user={user} enrollment={enrollment} setCourse={setCourse} course={course} currentTopic={topic} changeTopic={courseOps.changeTopic} editorVisible={editorVisible} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} />
+            </div>
+            <div
+              className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors"
+              onMouseDown={() => {
+                isResizing.current = true;
+              }}
+            />
+          </>
+        )}
+        <div className="flex-1 h-full overflow-auto">{content}</div>
+      </main>
     </div>
   );
 }
