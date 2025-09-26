@@ -23,9 +23,6 @@ import useClickOutside from '../hooks/useClickOutside';
  */
 export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topic, ...props }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  const [editingTopic, setEditingTopic] = React.useState(false);
-  const [newTitle, setNewTitle] = React.useState(topic?.title || '');
-  const [newType, setNewType] = React.useState(topic?.type || 'instruction');
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -33,8 +30,13 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
   async function handleSubmitForm(title, prompt, type) {
     setIsLoading(true);
     try {
-      await courseOps.generateTopic(topic, prompt);
-      setShowEditForm(false);
+      if (topic.state === 'stub') {
+        await courseOps.generateTopic(topic, prompt);
+        setShowEditForm(false);
+      } else {
+        courseOps.renameTopic(moduleIndex, topicIndex, title.trim(), type);
+        setShowEditForm(false);
+      }
     } catch (error) {
       console.error('Error adding topic:', error);
     } finally {
@@ -43,7 +45,7 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
   }
 
   useClickOutside(editorRef, () => {
-    handleCancel();
+    setShowEditForm(false);
   });
 
   const style = {
@@ -51,60 +53,23 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
     transition,
   };
 
-  const handleRename = () => {
-    if (editingTopic && newTitle.trim()) {
-      courseOps.renameTopic(moduleIndex, topicIndex, newTitle.trim(), newType);
-      setEditingTopic(false);
-    }
-  };
-
-  const handleCancel = () => {
-    if (editingTopic) {
-      setNewTitle(topic?.title || '');
-      setNewType(topic?.type || 'instruction');
-      setEditingTopic(false);
-    }
-  };
-
   return (
     <div ref={setNodeRef} style={style} {...attributes} className={isDragging ? 'opacity-50' : ''}>
       <div className="flex items-right justify-between">
         <div className="flex flex-row flex-1 items-center">
-          {editingTopic ? (
-            <div ref={editorRef} className="flex flex-row items-center justify-between">
-              <div className="mr-2">
-                <select value={newType} onChange={(e) => setNewType(e.target.value)} className="appearance-none px-2 bg-transparent border-3 border-sky-600 rounded-sm text-xs cursor-pointer" title="Change topic type">
-                  <option value="instruction">i</option>
-                  <option value="video">v</option>
-                  <option value="quiz">q</option>
-                  <option value="project">p</option>
-                </select>
+          <div className="flex flex-col">
+            <TopicItem {...props} courseOps={courseOps} topic={topic} setShowEditForm={setShowEditForm} />
+            {showEditForm && (
+              <div ref={editorRef}>
+                <TopicForm topic={topic} onSubmit={handleSubmitForm} onCancel={() => setShowEditForm(false)} isLoading={isLoading} />
               </div>
-              <input
-                type="text"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                className="px-1 py-0.5 border rounded text-xs w-28 mr-1"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleRename();
-                  if (e.key === 'Escape') handleCancel();
-                }}
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              <TopicItem {...props} courseOps={courseOps} topic={topic} setShowEditForm={setShowEditForm} />
-              {showEditForm && <TopicForm title={topic.title} prompt={topic.description} type={topic.type} submitButtonText={'Generate'} onSubmit={handleSubmitForm} onCancel={() => setShowEditForm(false)} isLoading={isLoading} />}
-            </div>
-          )}
+            )}
+          </div>
         </div>
         <div className="flex flex-row justify-between items-center">
-          {!editingTopic && (
-            <button onClick={() => setEditingTopic(true)} className="font-semibold text-gray-400 hover:text-blue-600  pr-1" title="Edit this topic">
-              e
-            </button>
-          )}
+          <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600  pr-1" title="Edit this topic">
+            e
+          </button>
           <button onClick={() => courseOps.removeTopic(moduleIndex, topicIndex)} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
             x
           </button>

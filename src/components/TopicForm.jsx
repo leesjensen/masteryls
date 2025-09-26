@@ -1,9 +1,12 @@
 import React from 'react';
 
-function TopicForm({ title, prompt, type, submitButtonText, onSubmit, onCancel, isLoading }) {
-  const [newTitle, setNewTitle] = React.useState(title || '');
-  const [newType, setNewType] = React.useState(type || 'instruction');
-  const [newPrompt, setNewPrompt] = React.useState(prompt || '');
+function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading }) {
+  const [newTitle, setNewTitle] = React.useState(topic.title || '');
+  const [newType, setNewType] = React.useState(topic.type || 'instruction');
+  const [newPrompt, setNewPrompt] = React.useState(topic.description || '');
+
+  const showPrompt = topic.state === 'stub';
+  const submitButtonText = topic.state === 'stub' ? 'Generate' : 'Save';
 
   return (
     <div className="mb-0.5 ml-4 p-2 bg-gray-50 border rounded relative">
@@ -18,7 +21,7 @@ function TopicForm({ title, prompt, type, submitButtonText, onSubmit, onCancel, 
 
       <div className="flex flex-col gap-2">
         <input type="text" placeholder="Topic title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" autoFocus disabled={isLoading} />
-        <textarea placeholder="AI prompt" value={newPrompt} onChange={(e) => setNewPrompt(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" rows={3} disabled={isLoading} />
+        {showPrompt && <textarea placeholder="AI prompt" value={newPrompt} onChange={(e) => setNewPrompt(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" rows={3} disabled={isLoading} />}
         <select value={newType} onChange={(e) => setNewType(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isLoading}>
           <option value="instruction">Instruction</option>
           <option value="video">Video</option>
