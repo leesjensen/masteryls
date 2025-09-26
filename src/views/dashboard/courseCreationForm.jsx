@@ -137,7 +137,9 @@ export default function CourseCreationForm({ service, onClose, onCreate }) {
                 GitHub Token
               </label>
               <input id="gitHub-token" name="gitHubToken" value={gitHubToken} onChange={(e) => setGitHubToken(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Personal access token" />
-              <p className="text-xs text-gray-400 mt-1">The token must be a fine-grained Personal Access Token with admin and repo write rights.</p>
+              <p className="text-xs text-gray-400 mt-1">
+                The token must be a fine-grained Personal Access Token with <b>Administration</b> and <b>Contents</b> read/write rights.
+              </p>
             </div>
           </div>
 
