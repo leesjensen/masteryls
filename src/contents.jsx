@@ -60,7 +60,7 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
     return course.modules
       .map((module) => ({
         ...module,
-        topics: module.topics.filter((topic) => topic.state === 'stable'),
+        topics: module.topics.filter((topic) => !topic.state || topic.state === 'stable'),
       }))
       .filter((module) => module.topics.length > 0);
   }

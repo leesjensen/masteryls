@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
 import { User, CatalogEntry, Enrollment, Role } from '../model';
-import Course from '../course';
 
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
@@ -232,6 +231,13 @@ class Service {
 
   async logout() {
     await supabase.auth.signOut();
+  }
+
+  async deleteUser(user: User): Promise<void> {
+    const { error } = await supabase.from('user').delete().eq('id', user.id);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   allEnrolled(enrollments: Map<string, Enrollment>) {

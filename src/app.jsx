@@ -15,7 +15,7 @@ function App() {
   const [course, setCourse] = React.useState(null);
   const [enrollment, setEnrollment] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
-  const [editorVisible, setEditorVisible] = useState(true);
+  const [editorVisible, setEditorVisible] = useState(false);
   const courseRef = React.useRef(course);
   courseRef.current = course;
 
