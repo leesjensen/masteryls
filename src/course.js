@@ -35,12 +35,15 @@ export default class Course {
   }
 
   adjacentTopic(path, direction = 'prev') {
-    const topicIndex = this.allTopics.findIndex((t) => t.path === path);
+    let topicIndex = this.allTopics.findIndex((t) => t.path === path);
+    topicIndex += direction === 'prev' ? -1 : 1;
 
-    if (direction === 'prev' && topicIndex > 0) {
-      return this.allTopics[topicIndex - 1];
-    } else if (direction === 'next' && topicIndex < this.allTopics.length - 1) {
-      return this.allTopics[topicIndex + 1];
+    while (topicIndex >= 0 && topicIndex < this.allTopics.length) {
+      const topic = this.allTopics[topicIndex];
+      if (topic && (!topic.state || topic.state === 'stable')) {
+        return topic;
+      }
+      topicIndex += direction === 'prev' ? -1 : 1;
     }
     return null;
   }

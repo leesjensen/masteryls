@@ -19,7 +19,7 @@ export default function Settings({ service, user, course, setCourse }) {
     gitHubToken: user.getSetting('gitHubToken', course.id) || '',
   });
 
-  const editorVisible = user.isEditor(course.id) || user.isRoot();
+  const editorVisible = user.isEditor(course.id);
   const moduleCount = course.modules.length || 0;
   const topicCount = course.allTopics.length || 0;
 
@@ -210,27 +210,27 @@ export default function Settings({ service, user, course, setCourse }) {
             )}
           </div>
         </div>
-        {user.isRoot() && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-1">
-            <div>
-              <h2 className="text-xl font-semibold mb-3 text-gray-800">Editors</h2>
-              <UserSelect users={users} selected={selectedEditors} setSelected={setSelectedEditors} />
-            </div>
-          </div>
-        )}
         {editorVisible && (
-          <div>
-            <div className="flex flex-col justify-end w-[200px]">
-              <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
-                Save changes
-              </button>
-              {user.isEditor() && (
-                <button onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
-                  Delete course
-                </button>
-              )}
+          <>
+            <div className="bg-gray-50 rounded-lg p-4 mb-1">
+              <div>
+                <h2 className="text-xl font-semibold mb-3 text-gray-800">Editors</h2>
+                <UserSelect users={users} selected={selectedEditors} setSelected={setSelectedEditors} />
+              </div>
             </div>
-          </div>
+            <div>
+              <div className="flex flex-col justify-end w-[200px]">
+                <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+                  Save changes
+                </button>
+                {user.isEditor(course.id) && user.isRoot() && (
+                  <button onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
+                    Delete course
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
