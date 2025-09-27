@@ -33,7 +33,7 @@ function scrollToAnchor(anchor, containerRef) {
 export default function MarkdownInstruction({ courseOps, topic, course, languagePlugins = [], user }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [discussionOpen, setDiscussionOpen] = useState(false);
+  const [discussionOpen, setDiscussionOpen] = useState(true);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -186,11 +186,12 @@ export default function MarkdownInstruction({ courseOps, topic, course, language
   return (
     <>
       <div className="relative">
+        {/* Discussion Toggle Button - Fixed position to stay in place while scrolling */}
+        <button onClick={() => setDiscussionOpen(!discussionOpen)} className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6`} title="Discuss this topic">
+          💬 Discuss
+        </button>
+
         <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>
-          {/* Discussion Toggle Button */}
-          <button onClick={() => setDiscussionOpen(!discussionOpen)} className="absolute top-4 right-4 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200" title="Discuss this topic">
-            💬 Discuss
-          </button>
           {markdown ? (
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
               {markdown}
