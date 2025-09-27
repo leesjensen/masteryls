@@ -6,27 +6,35 @@ import VideoEditor from './VideoEditor';
 export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
   const [files, setFiles] = React.useState([]);
 
-  React.useEffect(() => {
-    async function fetchFiles() {
-      setFiles([]);
-      if (course && currentTopic?.path) {
-        let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
-        fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
-        const res = await service.makeGitHubApiRequest(user.getSetting('gitHubToken', course.id), fetchUrl);
+  const contentAvailable = currentTopic && currentTopic.path && currentTopic.state === 'stable';
 
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            setFiles(data);
-          } else {
-            setFiles([]);
+  React.useEffect(() => {
+    if (contentAvailable) {
+      async function fetchFiles() {
+        setFiles([]);
+        if (course && contentAvailable) {
+          let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
+          fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+          const res = await service.makeGitHubApiRequest(user.getSetting('gitHubToken', course.id), fetchUrl);
+
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              setFiles(data);
+            } else {
+              setFiles([]);
+            }
           }
         }
       }
-    }
 
-    fetchFiles();
+      fetchFiles();
+    }
   }, [course, currentTopic]);
+
+  if (!contentAvailable) {
+    return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
+  }
 
   const editorComponent = (type) => {
     switch (type) {

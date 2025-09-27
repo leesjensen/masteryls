@@ -8,7 +8,7 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
   const dirtyRef = useLatest(dirty);
 
   React.useEffect(() => {
-    if (currentTopic?.path) {
+    if (currentTopic && currentTopic.path) {
       courseOps.getTopicMarkdown(currentTopic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
