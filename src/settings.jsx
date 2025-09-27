@@ -155,6 +155,10 @@ export default function Settings({ service, user, course, setCourse }) {
       <div className="max-w-3xl mx-auto">
         <div className="bg-gray-50 rounded-lg p-4 mb-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Course Overview</h2>
+          <div className="mb-2">
+            <span className="text-xs text-gray-500">Course ID:</span>
+            <span className="ml-2 text-xs font-mono text-gray-700 max-w-full truncate block">{course.id}</span>
+          </div>
           <div className="grid grid-cols-1 gap-3 max-w-[180px]">
             <div className="bg-white rounded-lg p-2 shadow-sm border">
               <div className="text-xl font-bold text-gray-800">{moduleCount}</div>
