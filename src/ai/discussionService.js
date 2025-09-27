@@ -27,6 +27,7 @@ The student has asked the following question or made this comment about the topi
 "${userPrompt}"
 
 Please provide a helpful, educational response that:
+- Prefer short responses of less than 200 words with one or two concise paragraphs, bullet points, lists, and code examples
 - Directly addresses the student's question or comment
 - References specific parts of the topic content when relevant
 - Provides additional context, examples, or explanations that enhance understanding
