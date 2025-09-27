@@ -9,20 +9,20 @@ import Start from './start.jsx';
 import Dashboard from './views/dashboard/dashboard.jsx';
 import service from './service/service.js';
 
+const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
+
 function App() {
   const [loaded, setLoaded] = useState(false);
   const [user, setUser] = useState(null);
   const [course, setCourse] = React.useState(null);
-  const [enrollment, setEnrollment] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [editorVisible, setEditorVisible] = useState(false);
-  const [sidebarVisible, setSidebarVisible] = useState(enrollment?.settings.sidebarVisible ?? true);
-  const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth * 0.25);
+  const [settings, setSettings] = useState(defaultUiSettings);
   const courseRef = React.useRef(course);
   const isResizing = React.useRef(false);
   courseRef.current = course;
 
-  const courseOps = useCourseOperations(user, setUser, service, course, setCourse, topic, setTopic, enrollment, setEnrollment);
+  const courseOps = useCourseOperations(user, setUser, service, course, setCourse, setSettings, topic, setTopic);
 
   React.useEffect(() => {
     (async () => {
@@ -49,9 +49,9 @@ function App() {
         let newWidth = clientX;
         newWidth = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, newWidth));
         if (newWidth <= minSidebarWidth) {
-          setSidebarVisible(false);
+          courseOps.saveEnrollmentUiSettings(course.id, { ...settings, sidebarVisible: false });
         } else {
-          setSidebarWidth(newWidth);
+          courseOps.saveEnrollmentUiSettings(course.id, { ...settings, sidebarWidth: newWidth });
         }
       }
     }
@@ -82,7 +82,7 @@ function App() {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleEnd);
     };
-  }, [sidebarVisible]);
+  }, [settings.sidebarVisible]);
 
   function toggleEditor() {
     setEditorVisible((prev) => !prev);
@@ -102,9 +102,9 @@ function App() {
   }
 
   // What to show in the main content area
-  let content = <Instruction courseOps={courseOps} topic={topic} changeTopic={courseOps.changeTopic} course={course} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} />;
+  let content = <Instruction courseOps={courseOps} topic={topic} course={course} />;
   if (editorVisible) {
-    content = <Editor courseOps={courseOps} service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} changeTopic={courseOps.changeTopic} />;
+    content = <Editor courseOps={courseOps} service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} />;
   }
 
   return (
@@ -116,14 +116,14 @@ function App() {
       </header>
 
       <nav>
-        <Toolbar user={user} course={course} closeCourse={courseOps.closeCourse} sidebarVisible={sidebarVisible} setSidebarVisible={setSidebarVisible} currentTopic={topic} changeTopic={courseOps.changeTopic} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} editing={editorVisible} toggleEditor={toggleEditor} />
+        <Toolbar courseOps={courseOps} user={user} course={course} settings={settings} topic={topic} editing={editorVisible} toggleEditor={toggleEditor} />
       </nav>
 
       <main className="flex flex-1 overflow-hidden">
-        {sidebarVisible && (
+        {settings.sidebarVisible && (
           <>
-            <div className={`overflow-hidden ${sidebarVisible ? 'flex opacity-100' : 'w-0 opacity-0'}`} style={{ width: sidebarWidth }}>
-              <Sidebar courseOps={courseOps} service={service} user={user} enrollment={enrollment} setCourse={setCourse} course={course} currentTopic={topic} changeTopic={courseOps.changeTopic} editorVisible={editorVisible} navigateToAdjacentTopic={courseOps.navigateToAdjacentTopic} />
+            <div className={`overflow-hidden ${settings.sidebarVisible ? 'flex opacity-100' : 'w-0 opacity-0'}`} style={{ width: settings.sidebarWidth }}>
+              <Sidebar courseOps={courseOps} service={service} user={user} setCourse={setCourse} course={course} currentTopic={topic} editorVisible={editorVisible} />
             </div>
             <div
               className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none"

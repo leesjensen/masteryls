@@ -5,16 +5,16 @@ import ModuleSection from './components/ModuleSection';
 import NewModuleButton from './components/NewModuleButton';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-function Contents({ courseOps, service, changeTopic, currentTopic, course, enrollment, editorVisible, navigateToAdjacentTopic, user, setCourse }) {
-  const { openModuleIndexes, toggleModule } = useModuleState(course, enrollment, service, currentTopic);
+function Contents({ courseOps, service, currentTopic, course, editorVisible, setCourse }) {
+  const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, service, currentTopic);
 
   useHotkeys(
     {
       'ALT+ArrowRight': (e) => {
-        navigateToAdjacentTopic('next');
+        courseOps.navigateToAdjacentTopic('next');
       },
       'ALT+ArrowLeft': (e) => {
-        navigateToAdjacentTopic('prev');
+        courseOps.navigateToAdjacentTopic('prev');
       },
     },
     { target: undefined }
@@ -24,7 +24,7 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
     const { active, over } = event;
     if (!active || !over || active.id === over.id) return;
 
-    const updatedCourse = Course.copy(course);
+    const updatedCourse = course.copy(course);
     let fromModuleIdx = -1,
       fromTopicIdx = -1;
     let toModuleIdx = -1,
@@ -65,6 +65,15 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
       .filter((module) => module.topics.length > 0);
   }
 
+  const moduleMap = editorVisible ? course.modules : filterTopicsByState(course);
+  const moduleJsx = (
+    <ul className="list-none p-0">
+      {moduleMap.map((module, moduleIndex) => (
+        <ModuleSection key={moduleIndex} courseOps={courseOps} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} editorVisible={editorVisible} />
+      ))}
+    </ul>
+  );
+
   return (
     <div id="content" className="h-full overflow-auto p-4 text-sm">
       <nav>
@@ -72,21 +81,13 @@ function Contents({ courseOps, service, changeTopic, currentTopic, course, enrol
           <>
             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={allTopicIds} strategy={verticalListSortingStrategy}>
-                <ul className="list-none p-0">
-                  {course.map((module, moduleIndex) => (
-                    <ModuleSection key={moduleIndex} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} courseOps={courseOps} />
-                  ))}
-                </ul>
+                {moduleJsx}
               </SortableContext>
             </DndContext>
             <NewModuleButton courseOps={courseOps} />
           </>
         ) : (
-          <ul className="list-none p-0">
-            {filterTopicsByState(course).map((module, moduleIndex) => (
-              <ModuleSection key={moduleIndex} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} courseOps={courseOps} />
-            ))}
-          </ul>
+          moduleJsx
         )}
       </nav>
     </div>

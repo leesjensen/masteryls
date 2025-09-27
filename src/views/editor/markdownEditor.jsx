@@ -1,7 +1,7 @@
 import React from 'react';
 import useLatest from '../../hooks/useLatest';
 
-export default function MarkdownEditor({ courseOps, course, setCourse, currentTopic, changeTopic }) {
+export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
   const [content, setContent] = React.useState('');
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
@@ -28,7 +28,7 @@ export default function MarkdownEditor({ courseOps, course, setCourse, currentTo
     const [updatedCourse, previousTopic, markdown] = await courseOps.discardTopicMarkdown(currentTopic);
     setDirty(false);
     setContent(markdown);
-    changeTopic(previousTopic);
+    courseOps.changeTopic(previousTopic);
     setCourse(updatedCourse);
   }
 
@@ -39,7 +39,7 @@ export default function MarkdownEditor({ courseOps, course, setCourse, currentTo
     try {
       const updatedTopic = await courseOps.updateTopic(currentTopic, content);
       setDirty(false);
-      changeTopic(updatedTopic);
+      courseOps.changeTopic(updatedTopic);
     } catch (error) {
       console.error('Error committing changes:', error);
       alert('Failed to commit changes. Please try again.');

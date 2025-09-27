@@ -17,7 +17,25 @@ import Course from '../course';
  * @param {Object} enrollment - The current enrollment
  * @param {Function} setEnrollment - Function to update enrollment state
  */
-function useCourseOperations(user, setUser, service, course, setCourse, currentTopic, setTopic, enrollment, setEnrollment) {
+function useCourseOperations(user, setUser, service, course, setCourse, setSettings, currentTopic, setTopic) {
+  function getEnrollmentUiSettings(courseId) {
+    if (courseId) {
+      const settings = localStorage.getItem(`uiSettings-${courseId}`);
+      if (settings) {
+        return JSON.parse(settings);
+      }
+    }
+    return { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
+  }
+
+  function saveEnrollmentUiSettings(courseId, updatedSettings) {
+    if (courseId) {
+      const settings = { ...getEnrollmentUiSettings(courseId), ...updatedSettings };
+      localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(settings));
+      setSettings(settings);
+    }
+  }
+
   async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
     let newCatalogEntry;
     let enrollment;
@@ -40,6 +58,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
       await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
 
       const course = await Course.create(newCatalogEntry);
+      setCourse(course);
+      setSettings(getEnrollmentUiSettings(course.id));
       await _populateTemplateTopics(course, ['Overview'], gitHubToken);
     } else {
       newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
@@ -48,6 +68,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
       enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
       const course = await Course.create(newCatalogEntry);
+      setCourse(course);
+      setSettings(getEnrollmentUiSettings(course.id));
       await _populateTemplateTopics(course, ['Introduction', 'Syllabus', 'Overview'], gitHubToken);
     }
     return enrollment;
@@ -57,10 +79,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
     Course.create(loadingEnrollment.catalogEntry).then((loadedCourse) => {
       service.setCurrentCourse(loadedCourse.id);
       setCourse(loadedCourse);
-      setEnrollment(loadingEnrollment);
 
-      if (loadingEnrollment.settings.currentTopic) {
-        setTopic(loadedCourse.topicFromPath(loadingEnrollment.settings.currentTopic));
+      const settings = getEnrollmentUiSettings(loadingEnrollment.id);
+      setSettings(settings);
+      if (settings.currentTopic) {
+        setTopic(loadedCourse.topicFromPath(settings.currentTopic));
       } else {
         setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
       }
@@ -272,13 +295,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
   }
 
   function changeTopic(newTopic) {
-    // Remember what the current topic is for when they return in a new session
     if (newTopic.path !== currentTopic.path) {
-      setEnrollment((previous) => {
-        const next = { ...previous, settings: { ...previous.settings, currentTopic: newTopic.path } };
-        service.saveEnrollment(next);
-        return next;
-      });
+      saveEnrollmentUiSettings(course.id, { currentTopic: newTopic.path });
     }
 
     setTopic(newTopic);
@@ -356,6 +374,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, currentT
   }
 
   return {
+    getEnrollmentUiSettings,
+    saveEnrollmentUiSettings,
     createCourse,
     loadCourse,
     closeCourse,

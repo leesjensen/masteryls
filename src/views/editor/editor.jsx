@@ -3,7 +3,7 @@ import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
 import VideoEditor from './VideoEditor';
 
-export default function Editor({ courseOps, service, user, course, setCourse, currentTopic, changeTopic }) {
+export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
   const [files, setFiles] = React.useState([]);
 
   React.useEffect(() => {
@@ -31,12 +31,12 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
-        return <VideoEditor currentTopic={currentTopic} course={course} setCourse={setCourse} changeTopic={changeTopic} />;
+        return <VideoEditor currentTopic={currentTopic} course={course} setCourse={setCourse} />;
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-8/10 flex overflow-hidden">
-              <MarkdownEditor courseOps={courseOps} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
+              <MarkdownEditor courseOps={courseOps} setCourse={setCourse} currentTopic={currentTopic} />
             </div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles files={files} setFiles={setFiles} />

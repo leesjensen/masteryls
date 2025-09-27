@@ -29,7 +29,7 @@ function scrollToAnchor(anchor, containerRef) {
   }
 }
 
-export default function MarkdownInstruction({ courseOps, topic, changeTopic, course, languagePlugins = [] }) {
+export default function MarkdownInstruction({ courseOps, topic, course, languagePlugins = [] }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = React.useRef(null);
@@ -136,7 +136,7 @@ export default function MarkdownInstruction({ courseOps, topic, changeTopic, cou
                 const resolvedUrl = new URL(hrefPath, topic.path).toString();
                 const targetTopic = course.topicFromPath(resolvedUrl, false);
                 if (targetTopic) {
-                  changeTopic({ ...targetTopic, anchor: hrefAnchor });
+                  courseOps.changeTopic({ ...targetTopic, anchor: hrefAnchor });
                 }
               }
             }

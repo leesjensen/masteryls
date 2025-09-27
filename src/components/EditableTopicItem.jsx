@@ -21,7 +21,7 @@ import useClickOutside from '../hooks/useClickOutside';
  *
  * @returns {JSX.Element} The rendered editable topic item.
  */
-export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topic, ...props }) {
+export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, topic, currentTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
@@ -58,7 +58,7 @@ export function EditableTopicItem({ id, moduleIndex, topicIndex, courseOps, topi
       <div className="flex items-right justify-between">
         <div className="flex flex-row flex-1 items-center">
           <div className="flex flex-col">
-            <TopicItem {...props} courseOps={courseOps} topic={topic} setShowEditForm={setShowEditForm} />
+            <TopicItem courseOps={courseOps} topic={topic} currentTopic={currentTopic} />
             {showEditForm && (
               <div ref={editorRef}>
                 <TopicForm topic={topic} onSubmit={handleSubmitForm} onCancel={() => setShowEditForm(false)} isLoading={isLoading} />

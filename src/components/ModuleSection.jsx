@@ -3,12 +3,12 @@ import { EditableTopicItem } from './EditableTopicItem';
 import TopicItem from './TopicItem';
 import NewTopicButton from './NewTopicButton';
 
-function ModuleSection({ module, moduleIndex, isOpen, onToggle, currentTopic, changeTopic, editorVisible, courseOps }) {
+function ModuleSection({ courseOps, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible }) {
   function getTopicItem(topic, topicIndex) {
     if (editorVisible) {
-      return <EditableTopicItem key={topic.id} id={topic.id} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} changeTopic={changeTopic} editorVisible={editorVisible} courseOps={courseOps} />;
+      return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} />;
     }
-    return <TopicItem key={topic.id} courseOps={courseOps} topic={topic} currentTopic={currentTopic} changeTopic={changeTopic} />;
+    return <TopicItem key={topic.id} courseOps={courseOps} topic={topic} currentTopic={currentTopic} />;
   }
   return (
     <div>
