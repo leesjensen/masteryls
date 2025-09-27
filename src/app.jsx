@@ -15,7 +15,7 @@ function App() {
   const [course, setCourse] = React.useState(null);
   const [enrollment, setEnrollment] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
-  const [editorVisible, setEditorVisible] = useState(true);
+  const [editorVisible, setEditorVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(enrollment?.settings.sidebarVisible ?? true);
   const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth * 0.25);
   const courseRef = React.useRef(course);
