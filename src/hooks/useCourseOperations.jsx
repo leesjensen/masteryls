@@ -19,13 +19,17 @@ import Course from '../course';
  */
 function useCourseOperations(user, setUser, service, course, setCourse, setSettings, currentTopic, setTopic) {
   function getEnrollmentUiSettings(courseId) {
+    const defaultSettings = { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
+
     if (courseId) {
       const settings = localStorage.getItem(`uiSettings-${courseId}`);
       if (settings) {
         return JSON.parse(settings);
+      } else {
+        localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(defaultSettings));
       }
     }
-    return { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
+    return defaultSettings;
   }
 
   function saveEnrollmentUiSettings(courseId, updatedSettings) {
@@ -33,6 +37,13 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       const settings = { ...getEnrollmentUiSettings(courseId), ...updatedSettings };
       localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(settings));
       setSettings(settings);
+    }
+  }
+
+  function setSidebarVisible(visible) {
+    if (course) {
+      saveEnrollmentUiSettings(course.id, { sidebarVisible: visible });
+      setSettings((prev) => ({ ...prev, sidebarVisible: visible }));
     }
   }
 
@@ -80,7 +91,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       service.setCurrentCourse(loadedCourse.id);
       setCourse(loadedCourse);
 
-      const settings = getEnrollmentUiSettings(loadingEnrollment.id);
+      const settings = getEnrollmentUiSettings(loadedCourse.id);
       setSettings(settings);
       if (settings.currentTopic) {
         setTopic(loadedCourse.topicFromPath(settings.currentTopic));
@@ -376,6 +387,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   return {
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
+    setSidebarVisible,
     createCourse,
     loadCourse,
     closeCourse,
