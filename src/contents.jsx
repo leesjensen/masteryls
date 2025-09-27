@@ -75,7 +75,7 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible, set
   );
 
   return (
-    <div id="content" className="h-full overflow-auto p-4 text-sm">
+    <div id="content" className="h-full overflow-auto p-4 text-sm select-none">
       <nav>
         {editorVisible ? (
           <>

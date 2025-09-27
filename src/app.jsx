@@ -49,9 +49,9 @@ function App() {
         let newWidth = clientX;
         newWidth = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, newWidth));
         if (newWidth <= minSidebarWidth) {
-          courseOps.saveEnrollmentUiSettings(course.id, { ...settings, sidebarVisible: false });
+          courseOps.saveEnrollmentUiSettings(courseRef.current.id, { ...settings, sidebarVisible: false });
         } else {
-          courseOps.saveEnrollmentUiSettings(course.id, { ...settings, sidebarWidth: newWidth });
+          courseOps.saveEnrollmentUiSettings(courseRef.current.id, { ...settings, sidebarWidth: newWidth });
         }
       }
     }
