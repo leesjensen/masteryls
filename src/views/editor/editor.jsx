@@ -34,13 +34,17 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
         return <VideoEditor currentTopic={currentTopic} course={course} setCourse={setCourse} changeTopic={changeTopic} />;
       default:
         return (
-          <>
-            <MarkdownEditor courseOps={courseOps} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
-            <EditorFiles files={files} setFiles={setFiles} />
-          </>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-8/10 flex overflow-hidden">
+              <MarkdownEditor courseOps={courseOps} course={course} setCourse={setCourse} currentTopic={currentTopic} changeTopic={changeTopic} />
+            </div>
+            <div className="flex-2/10 flex overflow-hidden">
+              <EditorFiles files={files} setFiles={setFiles} />
+            </div>
+          </div>
         );
     }
   };
 
-  return <div className="flex-1 flex flex-col overflow-hidden">{editorComponent(currentTopic?.type)}</div>;
+  return editorComponent(currentTopic?.type);
 }
