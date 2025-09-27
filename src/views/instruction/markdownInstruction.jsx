@@ -9,6 +9,7 @@ import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import DiscussionPanel from '../../components/DiscussionPanel';
 
 function scrollToAnchor(anchor, containerRef) {
   if (!containerRef.current || !anchor) return;
@@ -29,9 +30,10 @@ function scrollToAnchor(anchor, containerRef) {
   }
 }
 
-export default function MarkdownInstruction({ courseOps, topic, course, languagePlugins = [] }) {
+export default function MarkdownInstruction({ courseOps, topic, course, languagePlugins = [], user }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [discussionOpen, setDiscussionOpen] = useState(false);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -182,14 +184,26 @@ export default function MarkdownInstruction({ courseOps, topic, course, language
   const components = { ...customComponents, MermaidBlock };
 
   return (
-    <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>
-      {markdown ? (
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
-          {markdown}
-        </ReactMarkdown>
-      ) : (
-        <div className="flex items-center justify-center" />
-      )}
-    </div>
+    <>
+      <div className="relative">
+        {/* Discussion Toggle Button */}
+        <button onClick={() => setDiscussionOpen(!discussionOpen)} className={`fixed top-4 right-4 z-40 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 ${discussionOpen ? 'right-[25rem]' : 'right-4'}`} title="Discuss this topic">
+          💬 Discuss
+        </button>
+
+        <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>
+          {markdown ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
+              {markdown}
+            </ReactMarkdown>
+          ) : (
+            <div className="flex items-center justify-center" />
+          )}
+        </div>
+      </div>
+
+      {/* Discussion Panel */}
+      <DiscussionPanel isOpen={discussionOpen} onClose={() => setDiscussionOpen(false)} topicTitle={topic?.title || 'Current Topic'} topicContent={markdown} user={user} courseId={course?.id} />
+    </>
   );
 }

@@ -102,7 +102,7 @@ function App() {
   }
 
   // What to show in the main content area
-  let content = <Instruction courseOps={courseOps} topic={topic} course={course} />;
+  let content = <Instruction courseOps={courseOps} topic={topic} course={course} user={user} />;
   if (editorVisible) {
     content = <Editor courseOps={courseOps} service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} />;
   }

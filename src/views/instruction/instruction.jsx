@@ -4,7 +4,7 @@ import MarkdownInstruction from './markdownInstruction';
 import VideoInstruction from './videoInstruction';
 import QuizInstruction from './quiz/quizInstruction';
 
-export default function Instruction({ courseOps, topic, course }) {
+export default function Instruction({ courseOps, topic, course, user }) {
   const containerRef = useSwipeNavigation(
     useCallback(() => courseOps.navigateToAdjacentTopic('next'), [course, topic]),
     useCallback(() => courseOps.navigateToAdjacentTopic('prev'), [course, topic])
@@ -24,7 +24,7 @@ export default function Instruction({ courseOps, topic, course }) {
       instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} course={course} />;
       break;
     default:
-      instructionComponent = <MarkdownInstruction courseOps={courseOps} topic={topic} course={course} />;
+      instructionComponent = <MarkdownInstruction courseOps={courseOps} topic={topic} course={course} user={user} />;
       break;
   }
 
