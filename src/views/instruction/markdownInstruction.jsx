@@ -203,7 +203,7 @@ export default function MarkdownInstruction({ courseOps, topic, course, language
       </div>
 
       {/* Discussion Panel */}
-      <DiscussionPanel isOpen={discussionOpen} onClose={() => setDiscussionOpen(false)} topicTitle={topic?.title || 'Current Topic'} topicContent={markdown} user={user} courseId={course?.id} />
+      <DiscussionPanel isOpen={discussionOpen} onClose={() => setDiscussionOpen(false)} topicTitle={topic?.title || 'Current Topic'} topicContent={markdown} user={user} />
     </>
   );
 }
