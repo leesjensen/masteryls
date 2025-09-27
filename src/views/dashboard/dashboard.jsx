@@ -4,7 +4,7 @@ import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
-export default function Dashboard({ courseOps, service, user, setUser, loadCourse }) {
+export default function Dashboard({ courseOps, service, user, setUser }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
@@ -113,7 +113,7 @@ export default function Dashboard({ courseOps, service, user, setUser, loadCours
       {enrollments.size > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {Array.from(enrollments.values()).map((enrollment) => {
-            return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => loadCourse(enrollment)} remove={() => requestedEnrollmentRemoval(enrollment)} />;
+            return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => courseOps.loadCourse(enrollment)} remove={() => requestedEnrollmentRemoval(enrollment)} />;
           })}
         </div>
       ) : (
