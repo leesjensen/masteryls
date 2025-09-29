@@ -5,6 +5,8 @@ import ModuleSection from './components/ModuleSection';
 import NewModuleButton from './components/NewModuleButton';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import Course from './course.js';
+
 function Contents({ courseOps, service, currentTopic, course, editorVisible, setCourse }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, service, currentTopic);
 
@@ -24,7 +26,7 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible, set
     const { active, over } = event;
     if (!active || !over || active.id === over.id) return;
 
-    const updatedCourse = course.copy(course);
+    const updatedCourse = Course.copy(course);
     let fromModuleIdx = -1,
       fromTopicIdx = -1;
     let toModuleIdx = -1,
@@ -47,7 +49,7 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible, set
     updatedCourse.modules[toModuleIdx].topics.splice(toTopicIdx, 0, moved);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
     setCourse(updatedCourse);
-    await courseOps.updateCourseStructure(token, service, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
+    await courseOps.updateCourseStructure(updatedCourse, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
   };
 
   if (!course) {
