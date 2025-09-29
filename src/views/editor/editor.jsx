@@ -6,7 +6,7 @@ import VideoEditor from './VideoEditor';
 export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
   const [files, setFiles] = React.useState([]);
 
-  const contentAvailable = currentTopic && currentTopic.path && currentTopic.state === 'stable';
+  const contentAvailable = currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable');
 
   React.useEffect(() => {
     if (contentAvailable) {

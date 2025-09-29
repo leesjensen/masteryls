@@ -33,7 +33,7 @@ function scrollToAnchor(anchor, containerRef) {
 export default function MarkdownInstruction({ courseOps, topic, course, languagePlugins = [], user }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [discussionOpen, setDiscussionOpen] = useState(true);
+  const [discussionOpen, setDiscussionOpen] = useState(false);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
