@@ -49,11 +49,7 @@ export default function QuizInstruction(props) {
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        {quizFeedback && (
-          <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900">
-            <strong>Feedback:</strong> {quizFeedback}
-          </div>
-        )}
+        {quizFeedback[meta.id] && <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900">{inlineLiteMarkdown(quizFeedback[meta.id])}</div>}
       </div>
     );
   }
@@ -83,7 +79,7 @@ export default function QuizInstruction(props) {
         'Percent correct': percentCorrect,
       };
       const feedback = await courseOps.getQuizFeedback(data);
-      setQuizFeedback(feedback || '');
+      setQuizFeedback((prev) => ({ ...prev, [id]: feedback || '' }));
       console.log('feedback', feedback);
     }
   }
@@ -142,11 +138,6 @@ export default function QuizInstruction(props) {
           },
         ]}
       />
-      {quizFeedback && (
-        <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900">
-          <strong>Feedback:</strong> {quizFeedback}
-        </div>
-      )}
     </>
   );
 }

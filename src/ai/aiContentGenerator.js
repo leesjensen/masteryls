@@ -74,6 +74,8 @@ ${Object.entries(data)
   .join('\n')}
 
 Requirements:
+- Address the student directly
+- The feedback to be part of a larger conversation that is already occurring
 - Acknowledge any correct aspects of the student's answer
 - Clearly explain why the student's answer is incorrect, if applicable
 - Provide the correct answer with a brief explanation
