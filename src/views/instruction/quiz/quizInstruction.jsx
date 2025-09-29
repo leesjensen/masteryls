@@ -46,7 +46,7 @@ export default function QuizInstruction(props) {
             </p>
           )}
         </fieldset>
-        <div>{response}</div>
+        <div className="space-y-3">{controlJsx}</div>
       </div>
     );
   }
@@ -75,7 +75,8 @@ export default function QuizInstruction(props) {
         'Correct answers': correct.map((i) => choices[i]),
         'Percent correct': percentCorrect,
       };
-      console.log('feedback', await courseOps.getQuizFeedback(data));
+      const feedback = await courseOps.getQuizFeedback(data);
+      console.log('feedback', feedback);
     }
   }
 

@@ -83,8 +83,7 @@ Requirements:
 - Limit feedback to around 150 words
 `;
 
-  let feedback = await makeAiRequest(apiKey, prompt);
-  return feedback.replace(/^feedback[\s:\-]*/i, '').trim();
+  return await makeAiRequest(apiKey, prompt);
 }
 
 export async function aiCourseGenerator(apiKey, title, description) {
