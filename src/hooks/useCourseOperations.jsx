@@ -1,4 +1,4 @@
-import { aiTopicGenerator, aiCourseGenerator } from '../ai/aiContentGenerator';
+import { aiTopicGenerator, aiQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
 /**
@@ -341,6 +341,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return basicContent;
   }
 
+  async function getQuizFeedback(data) {
+    const apiKey = user.getSetting('geminiApiKey');
+    return aiQuizFeedbackGenerator(apiKey, data);
+  }
+
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
     if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
       for (const topicName of topicNames) {
@@ -402,6 +407,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     changeTopic,
     discardTopicMarkdown,
     navigateToAdjacentTopic,
+    getQuizFeedback,
   };
 }
 
