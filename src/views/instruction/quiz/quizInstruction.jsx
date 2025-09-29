@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import MarkdownInstruction from '../markdownInstruction';
 import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
@@ -7,6 +7,8 @@ import inlineLiteMarkdown from './inlineLiteMarkdown';
 
 export default function QuizInstruction(props) {
   const { courseOps, topic, course } = props;
+
+  const [quizFeedback, setQuizFeedback] = useState('');
 
   function injectQuiz(content) {
     return generateControlComponentFromFence(content);
@@ -47,6 +49,11 @@ export default function QuizInstruction(props) {
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
+        {quizFeedback && (
+          <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900">
+            <strong>Feedback:</strong> {quizFeedback}
+          </div>
+        )}
       </div>
     );
   }
@@ -76,6 +83,7 @@ export default function QuizInstruction(props) {
         'Percent correct': percentCorrect,
       };
       const feedback = await courseOps.getQuizFeedback(data);
+      setQuizFeedback(feedback || '');
       console.log('feedback', feedback);
     }
   }
@@ -121,17 +129,24 @@ export default function QuizInstruction(props) {
   }
 
   return (
-    <MarkdownInstruction
-      courseOps={courseOps}
-      topic={topic}
-      course={course}
-      languagePlugins={[
-        {
-          lang: 'masteryls',
-          handler: handleQuizClick,
-          processor: injectQuiz,
-        },
-      ]}
-    />
+    <>
+      <MarkdownInstruction
+        courseOps={courseOps}
+        topic={topic}
+        course={course}
+        languagePlugins={[
+          {
+            lang: 'masteryls',
+            handler: handleQuizClick,
+            processor: injectQuiz,
+          },
+        ]}
+      />
+      {quizFeedback && (
+        <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900">
+          <strong>Feedback:</strong> {quizFeedback}
+        </div>
+      )}
+    </>
   );
 }
