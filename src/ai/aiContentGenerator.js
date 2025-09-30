@@ -100,6 +100,47 @@ Requirements:
 }
 
 /**
+ * Generates a discussion response for a student based on the provided topic content and user prompt.
+ *
+ * @async
+ * @function aiDiscussionResponseGenerator
+ * @param {string} apiKey - The API key for authenticating with the AI service.
+ * @param {string} topicTitle - The title of the topic being discussed.
+ * @param {string} topicContent - The content of the topic being discussed.
+ * @param {string} userPrompt - The student's question or comment about the topic.
+ * @returns {Promise<string>} A promise that resolves to the generated discussion response.
+ */
+export async function aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, userPrompt) {
+  const prompt = `
+You are a knowledgeable teaching assistant helping a student understand course material. 
+You have access to the following topic content that the student is currently studying:
+
+TOPIC: ${topicTitle}
+
+CONTENT:
+${topicContent}
+
+The student has asked the following question or made this comment about the topic:
+"${userPrompt}"
+
+Please provide a helpful, educational response that:
+- The response must be valid GitHub-flavored markdown
+- Prefer short responses of less than 200 words with one or two concise paragraphs
+- Prefer to use bullet points, lists, mermaid diagrams, and code examples instead of text
+- Include a mermaid diagram if it helps explain the concept
+- Directly addresses the student's question or comment
+- References specific parts of the topic content when relevant
+- Provides additional context, examples, or explanations that enhance understanding
+- Encourages further learning and critical thinking
+- Is conversational and supportive in tone
+- Stays focused on the educational content and avoids unrelated topics
+
+If the student's question is not directly related to the topic content, gently redirect them back to the material while still being helpful.`;
+
+  return makeAiRequest(apiKey, prompt);
+}
+
+/**
  * Generates constructive feedback for a student's answer to a quiz question using AI.
  *
  * The feedback is designed to be part of an ongoing conversation, acknowledging correct aspects,
@@ -108,6 +149,7 @@ Requirements:
  * is limited to around 150 words.
  *
  * @async
+ * @function aiQuizFeedbackGenerator
  * @param {string} apiKey - The API key used to authenticate the AI request.
  * @param {Object} data - An object containing details about the quiz question and the student's answer.
  * @returns {Promise<string>} A promise that resolves to the generated feedback string.
@@ -177,7 +219,8 @@ async function makeAiRequest(apiKey, prompt) {
       throw new Error('Invalid response format from AI');
     }
 
-    return data.candidates[0].content.parts[0].text;
+    const responseText = data.candidates[0].content.parts[0].text;
+    return responseText;
   } catch (error) {
     console.error('Error generating AI content:', error);
     throw new Error(`Failed to generate AI content: ${error.message}`);

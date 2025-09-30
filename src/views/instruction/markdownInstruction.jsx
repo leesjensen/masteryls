@@ -2,25 +2,6 @@ import React, { useEffect, useState } from 'react';
 import DiscussionPanel from '../../components/DiscussionPanel';
 import Markdown from '../../components/Markdown';
 
-function scrollToAnchor(anchor, containerRef) {
-  if (!containerRef.current || !anchor) return;
-
-  let anchorId = anchor.startsWith('#') ? anchor.substring(1) : anchor;
-  let targetElement = containerRef.current.querySelector(`#${CSS.escape(anchorId)}`);
-
-  if (!targetElement) {
-    const headings = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    if (headings) {
-      anchorId = anchorId.replaceAll('-', ' ');
-      targetElement = Array.from(headings).find((h) => h.textContent.trim().toLowerCase() === anchorId.toLowerCase());
-    }
-  }
-
-  if (targetElement) {
-    targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' });
-  }
-}
-
 export default function MarkdownInstruction({ courseOps, topic, user, languagePlugins = [] }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +39,25 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
     });
 
     return md;
+  }
+
+  function scrollToAnchor(anchor, containerRef) {
+    if (!containerRef.current || !anchor) return;
+
+    let anchorId = anchor.startsWith('#') ? anchor.substring(1) : anchor;
+    let targetElement = containerRef.current.querySelector(`#${CSS.escape(anchorId)}`);
+
+    if (!targetElement) {
+      const headings = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      if (headings) {
+        anchorId = anchorId.replaceAll('-', ' ');
+        targetElement = Array.from(headings).find((h) => h.textContent.trim().toLowerCase() === anchorId.toLowerCase());
+      }
+    }
+
+    if (targetElement) {
+      targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' });
+    }
   }
 
   return (

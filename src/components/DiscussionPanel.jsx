@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { discussTopic } from '../ai/discussionService';
+import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Markdown from './Markdown';
 
 export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicContent, user }) {
@@ -42,7 +42,7 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     setIsLoading(true);
 
     try {
-      const response = await discussTopic(apiKey, topicTitle, topicContent, userMessage);
+      const response = await aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, userMessage);
       setMessages((prev) => [
         ...prev,
         {
@@ -103,10 +103,14 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
 
         {messages.map((message) => (
           <div key={message.timestamp} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-lg px-3 py-2 ${message.type === 'user' ? 'bg-blue-500 text-white' : message.type === 'error' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-gray-100 text-gray-800'} overflow-auto break-words`}>
-              <div className="whitespace-pre-wrap text-sm">
-                <Markdown content={message.content} />
-              </div>
+            <div className={`max-w-[80%] rounded-lg px-3 py-2 border-2 ${message.type === 'user' ? 'border-blue-500 bg-blue-600 text-white' : message.type === 'error' ? 'border-red-700' : 'border-gray-400'} overflow-auto break-words`}>
+              {message.type === 'user' ? (
+                <div>{message.content}</div>
+              ) : (
+                <div className="markdown-body">
+                  <Markdown content={message.content} />
+                </div>
+              )}
             </div>
           </div>
         ))}
