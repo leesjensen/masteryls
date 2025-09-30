@@ -25,7 +25,7 @@ export default function QuizInstruction({ courseOps, topic, user }) {
    */
   function generateControlComponentFromFence(raw) {
     const jsonMatch = raw.match(/\{[\s\S]*?\}/);
-    let meta = { id: undefined, title: 'Quiz', type: 'multiple-choice' };
+    let meta = { id: undefined, title: '', type: 'multiple-choice' };
     let itemsText = raw;
 
     if (jsonMatch) {
