@@ -6,7 +6,7 @@ import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
 import 'github-markdown-css/github-markdown-light.css';
-import '../views/instruction/markdown.css';
+import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { discussTopic } from '../ai/discussionService';
