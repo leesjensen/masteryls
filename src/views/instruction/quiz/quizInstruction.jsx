@@ -5,9 +5,7 @@ import MultipleChoiceQuiz from './multipleChoiceQuiz';
 import SubmissionQuiz from './submissionQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 
-export default function QuizInstruction(props) {
-  const { courseOps, topic, course } = props;
-
+export default function QuizInstruction({ courseOps, topic, user }) {
   const [quizFeedback, setQuizFeedback] = useState('');
 
   function injectQuiz(content) {
@@ -129,7 +127,7 @@ export default function QuizInstruction(props) {
       <MarkdownInstruction
         courseOps={courseOps}
         topic={topic}
-        course={course}
+        user={user}
         languagePlugins={[
           {
             lang: 'masteryls',

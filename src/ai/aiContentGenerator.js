@@ -1,99 +1,18 @@
-const standardRequestBody = {
-  generationConfig: {
-    temperature: 0.7,
-    topK: 40,
-    topP: 0.95,
-    maxOutputTokens: 500,
-  },
-  safetySettings: [
-    {
-      category: 'HARM_CATEGORY_HARASSMENT',
-      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-    },
-    {
-      category: 'HARM_CATEGORY_HATE_SPEECH',
-      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-    },
-    {
-      category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-    },
-    {
-      category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
-    },
-  ],
-};
-
-async function makeAiRequest(apiKey, prompt) {
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        ...standardRequestBody,
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`AI error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-      throw new Error('Invalid response format from AI');
-    }
-
-    return data.candidates[0].content.parts[0].text;
-  } catch (error) {
-    console.error('Error generating AI content:', error);
-    throw new Error(`Failed to generate AI content: ${error.message}`);
-  }
-}
-
-export async function aiQuizFeedbackGenerator(apiKey, data) {
-  const prompt = `You are an expert educational content creator.
-Generate constructive feedback for a student's answer to a quiz question.
-Focus on clear explanations, encouragement, and guidance for improvement.
-
-${Object.entries(data)
-  .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}
-
-Requirements:
-- Address the student directly
-- The feedback to be part of a larger conversation that is already occurring
-- Acknowledge any correct aspects of the student's answer
-- Clearly explain why the student's answer is incorrect, if applicable
-- Provide the correct answer with a brief explanation
-- Only if the answer is incorrect, offer suggestions for improvement or further study
-- Only if the answer is incorrect, then start with a positive comment about the student's effort
-- Keep the tone supportive and encouraging
-- Limit feedback to around 150 words
-`;
-
-  return await makeAiRequest(apiKey, prompt);
-}
-
+/**
+ * Generates a course structure in JSON format using AI, based on the provided title and description.
+ *
+ * @async
+ * @param {string} apiKey - The API key required for AI content generation.
+ * @param {string} title - The exact title of the course to be generated.
+ * @param {string} description - The description of the course, relevant to the topics included.
+ * @returns {Promise<string>} A promise that resolves to a raw JSON string representing the course structure.
+ *
+ * @example
+ * const courseJson = await aiCourseGenerator(apiKey, "Introduction to AI", "Learn the fundamentals of artificial intelligence.");
+ */
 export async function aiCourseGenerator(apiKey, title, description) {
   title = title.trim();
   description = description.trim();
-  if (!apiKey || !title || !description) {
-    throw new Error('API key, title, and description are required for AI content generation');
-  }
 
   const prompt = `You are an expert educational content creator.
 Generate a JSON object that contains an appropriate number of modules and topics for a course.
@@ -143,11 +62,17 @@ Requirements:
   return cleanedJson;
 }
 
+/**
+ * Generates comprehensive, well-structured markdown content for an instructional topic using AI.
+ *
+ * @async
+ * @function aiTopicGenerator
+ * @param {string} apiKey - The API key required for AI content generation.
+ * @param {string} title - The title of the instructional topic.
+ * @param {string} description - A description of the instructional topic.
+ * @returns {Promise<string>} A promise that resolves to the generated markdown content.
+ */
 export async function aiTopicGenerator(apiKey, title, description) {
-  if (!apiKey || !title || !description) {
-    throw new Error('API key, title, and description are required for AI content generation');
-  }
-
   const prompt = `You are an expert educational content creator.
 Generate comprehensive, well-structured markdown content for online courses.
 Focus on clear explanations, practical examples, and pedagogically sound structure.
@@ -173,3 +98,115 @@ Requirements:
 
   return makeAiRequest(apiKey, prompt);
 }
+
+/**
+ * Generates constructive feedback for a student's answer to a quiz question using AI.
+ *
+ * The feedback is designed to be part of an ongoing conversation, acknowledging correct aspects,
+ * explaining incorrect answers, providing the correct answer with a brief explanation, and offering
+ * suggestions for improvement if needed. The tone is supportive and encouraging, and the feedback
+ * is limited to around 150 words.
+ *
+ * @async
+ * @param {string} apiKey - The API key used to authenticate the AI request.
+ * @param {Object} data - An object containing details about the quiz question and the student's answer.
+ * @returns {Promise<string>} A promise that resolves to the generated feedback string.
+ */
+export async function aiQuizFeedbackGenerator(apiKey, data) {
+  const prompt = `You are an expert educational content creator.
+Generate constructive feedback for a student's answer to a quiz question.
+Focus on clear explanations, encouragement, and guidance for improvement.
+
+${Object.entries(data)
+  .map(([key, value]) => `- ${key}: ${value}`)
+  .join('\n')}
+
+Requirements:
+- Address the student directly
+- The feedback to be part of a larger conversation that is already occurring
+- Acknowledge any correct aspects of the student's answer
+- Clearly explain why the student's answer is incorrect, if applicable
+- Provide the correct answer with a brief explanation
+- Only if the answer is incorrect, offer suggestions for improvement or further study
+- Only if the answer is incorrect, then start with a positive comment about the student's effort
+- Keep the tone supportive and encouraging
+- Limit feedback to around 150 words
+`;
+
+  return await makeAiRequest(apiKey, prompt);
+}
+
+/**
+ * Sends a prompt to the Gemini 2.0 Flash generative language model and returns the generated content.
+ *
+ * @async
+ * @function makeAiRequest
+ * @param {string} apiKey - The API key for authenticating with the Google Generative Language API.
+ * @param {string} prompt - The prompt text to send to the AI model.
+ * @returns {Promise<string>} The generated content from the AI model.
+ */
+async function makeAiRequest(apiKey, prompt) {
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        ...standardRequestBody,
+        contents: [
+          {
+            parts: [
+              {
+                text: prompt,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`AI error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const data = await response.json();
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    return data.candidates[0].content.parts[0].text;
+  } catch (error) {
+    console.error('Error generating AI content:', error);
+    throw new Error(`Failed to generate AI content: ${error.message}`);
+  }
+}
+
+const standardRequestBody = {
+  generationConfig: {
+    temperature: 0.7,
+    topK: 40,
+    topP: 0.95,
+    maxOutputTokens: 500,
+  },
+  safetySettings: [
+    {
+      category: 'HARM_CATEGORY_HARASSMENT',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      category: 'HARM_CATEGORY_HATE_SPEECH',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+    {
+      category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+      threshold: 'BLOCK_MEDIUM_AND_ABOVE',
+    },
+  ],
+};

@@ -21,7 +21,7 @@ function scrollToAnchor(anchor, containerRef) {
   }
 }
 
-export default function MarkdownInstruction({ courseOps, topic, course, languagePlugins = [], user }) {
+export default function MarkdownInstruction({ courseOps, topic, user, languagePlugins = [] }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [discussionOpen, setDiscussionOpen] = useState(false);

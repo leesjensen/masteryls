@@ -21,10 +21,10 @@ export default function Instruction({ courseOps, topic, course, user }) {
       instructionComponent = <VideoInstruction topic={topic} />;
       break;
     case 'quiz':
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} course={course} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} />;
       break;
     default:
-      instructionComponent = <MarkdownInstruction courseOps={courseOps} topic={topic} course={course} user={user} />;
+      instructionComponent = <MarkdownInstruction courseOps={courseOps} topic={topic} user={user} />;
       break;
   }
 
