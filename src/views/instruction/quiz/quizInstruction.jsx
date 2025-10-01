@@ -8,10 +8,6 @@ import inlineLiteMarkdown from './inlineLiteMarkdown';
 export default function QuizInstruction({ courseOps, topic, user }) {
   const [quizFeedback, setQuizFeedback] = useState('');
 
-  function injectQuiz(content) {
-    return generateControlComponentFromFence(content);
-  }
-
   /**
    * The quiz markdown format follow this example syntax:
    *
@@ -23,17 +19,17 @@ export default function QuizInstruction({ courseOps, topic, user }) {
    * - [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
    * ```
    */
-  function generateControlComponentFromFence(raw) {
-    const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+  function injectQuiz(content) {
+    const jsonMatch = content.match(/\{[\s\S]*?\}/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
-    let itemsText = raw;
+    let itemsText = content;
 
     if (jsonMatch) {
       try {
         meta = { ...meta, ...JSON.parse(jsonMatch[0]) };
         meta.type = meta.type.toLowerCase();
       } catch {}
-      itemsText = raw.slice(jsonMatch.index + jsonMatch[0].length).trim();
+      itemsText = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
     let controlJsx = generateControlComponent(meta, itemsText);
     return (
@@ -76,9 +72,14 @@ export default function QuizInstruction({ courseOps, topic, user }) {
         'Correct answers': correct.map((i) => choices[i]),
         'Percent correct': percentCorrect,
       };
-      const feedback = await courseOps.getQuizFeedback(data);
-      setQuizFeedback((prev) => ({ ...prev, [id]: feedback || '' }));
-      console.log('feedback', feedback);
+
+      let feedback = '';
+      try {
+        feedback = await courseOps.getQuizFeedback(data);
+      } catch {
+        feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
+      }
+      setQuizFeedback((prev) => ({ ...prev, [id]: feedback }));
     }
   }
 
@@ -102,8 +103,6 @@ export default function QuizInstruction({ courseOps, topic, user }) {
     });
     selected.sort((a, b) => a - b);
     correct.sort((a, b) => a - b);
-
-    console.log({ selected, correct });
 
     // Calculate percent correct
     const total = correct.length;
