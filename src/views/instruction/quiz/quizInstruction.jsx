@@ -31,7 +31,7 @@ export default function QuizInstruction({ courseOps, topic, user }) {
       } catch {}
       itemsText = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
-    let controlJsx = generateControlComponent(meta, itemsText);
+    let controlJsx = generateQuizComponent(meta, itemsText);
     return (
       <div className="p-2 rounded border border-gray-300 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
@@ -48,7 +48,7 @@ export default function QuizInstruction({ courseOps, topic, user }) {
     );
   }
 
-  function generateControlComponent(meta, itemsText) {
+  function generateQuizComponent(meta, itemsText) {
     let controlHtml = <div></div>;
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
       return <MultipleChoiceQuiz meta={meta} itemsText={itemsText} />;
