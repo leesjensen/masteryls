@@ -1,0 +1,99 @@
+import React, { useRef, useEffect } from 'react';
+import Editor from '@monaco-editor/react';
+
+const MonacoMarkdownEditor = ({ 
+  value, 
+  onChange, 
+  onMount, 
+  readOnly = false, 
+  height = "100%",
+  theme = "vs-light"
+}) => {
+  const editorRef = useRef(null);
+
+  function handleEditorDidMount(editor, monaco) {
+    editorRef.current = editor;
+    
+    // Configure advanced Monaco Editor settings
+    editor.updateOptions({
+      fontSize: 14,
+      fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+      wordWrap: 'on',
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      tabSize: 2,
+      insertSpaces: true,
+      lineNumbers: 'on',
+      folding: true,
+      foldingStrategy: 'auto',
+      showFoldingControls: 'always',
+      unfoldOnClickAfterEndOfLine: false,
+      contextmenu: true,
+      multiCursorModifier: 'ctrlCmd',
+      accessibilitySupport: 'auto',
+      bracketPairColorization: { enabled: true },
+      guides: {
+        bracketPairs: true,
+        indentation: true
+      },
+      suggest: {
+        showWords: false,
+        showSnippets: false
+      },
+      quickSuggestions: false,
+      parameterHints: { enabled: false },
+      wordBasedSuggestions: false,
+      suggestOnTriggerCharacters: false,
+      acceptSuggestionOnEnter: 'off',
+      tabCompletion: 'off'
+    });
+
+    // Add markdown-specific features
+    monaco.languages.setLanguageConfiguration('markdown', {
+      wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
+      onEnterRules: [
+        {
+          beforeText: /^\s*[\*\-\+]\s+.*$/,
+          action: { indentAction: monaco.languages.IndentAction.None, appendText: '- ' }
+        },
+        {
+          beforeText: /^\s*\d+\.\s+.*$/,
+          action: { indentAction: monaco.languages.IndentAction.None, appendText: '1. ' }
+        }
+      ]
+    });
+
+    // Call the external onMount handler if provided
+    if (onMount) {
+      onMount(editor, monaco);
+    }
+  }
+
+  return (
+    <Editor
+      height={height}
+      language="markdown"
+      value={value}
+      onChange={onChange}
+      onMount={handleEditorDidMount}
+      theme={theme}
+      options={{
+        readOnly,
+        fontSize: 14,
+        wordWrap: 'on',
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        insertSpaces: true,
+        lineNumbers: 'on',
+        folding: true,
+        contextmenu: true,
+        multiCursorModifier: 'ctrlCmd'
+      }}
+    />
+  );
+};
+
+export default MonacoMarkdownEditor;
