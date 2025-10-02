@@ -5,6 +5,21 @@ import { User, CatalogEntry, Enrollment, Role } from '../model';
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
 class Service {
+  async getTopicContentAtCommit(gitHubToken: string, repoApiUrl: string, filePath: string, commitSha: string): Promise<string> {
+    const url = `${repoApiUrl}/contents/${filePath}?ref=${commitSha}`;
+    const res = await this.makeGitHubApiRequest(gitHubToken, url);
+    if (!res.ok) return '';
+    const data = await res.json();
+    if (data && data.content) {
+      // GitHub returns base64 encoded content
+      try {
+        return atob(data.content.replace(/\n/g, ''));
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  }
   async getTopicCommits(gitHubToken: string, fileUrl: string): Promise<any[]> {
     const res = await this.makeGitHubApiRequest(gitHubToken, fileUrl);
     if (!res.ok) return [];

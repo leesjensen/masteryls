@@ -15,8 +15,8 @@ export default function MarkdownEditor({ content, onChange, commit }) {
     setEditorLoaded(true);
 
     // Add custom key bindings
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      commit();
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
+      await commit();
     });
 
     // Add Find and Replace shortcut

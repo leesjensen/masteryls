@@ -12,6 +12,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   const [committing, setCommitting] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
   const dirtyRef = useLatest(dirty);
+  const contentRef = useLatest(content);
 
   const contentAvailable = currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable');
 
@@ -43,7 +44,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
           // Build the GitHub API URL for commits for the topic file
           const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
           const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
-          const commitsUrl = `${repoApiUrl}/commits?path=${filePath}`;
+          const commitsUrl = `${repoApiUrl}/commits?path=${filePath}&cachebust=${Date.now()}`;
           const commits = await service.getTopicCommits(user.getSetting('gitHubToken', course.id), commitsUrl);
           setTopicCommits(commits);
         }
@@ -57,9 +58,8 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
 
       return async () => {
         if (dirtyRef.current) {
-          const shouldSave = window.confirm('Do you want to commit your changes?');
-          if (shouldSave) {
-            commit();
+          if (window.confirm('Do you want to commit your changes?')) {
+            await commit();
           }
         }
       };
@@ -81,15 +81,14 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   }
 
   async function commit() {
-    if (committing) return; // Prevent multiple commits
+    if (committing || !dirty) return; // Prevent multiple commits
 
     setCommitting(true);
     try {
-      const updatedTopic = await courseOps.updateTopic(currentTopic, content);
+      const updatedTopic = await courseOps.updateTopic(currentTopic, contentRef.current);
       setDirty(false);
       courseOps.changeTopic(updatedTopic);
     } catch (error) {
-      console.error('Error committing changes:', error);
       alert('Failed to commit changes. Please try again.');
     } finally {
       setCommitting(false);
@@ -116,7 +115,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
               </div>
             )}
             <div className="basis-[32px] flex items-center justify-between">
-              <h1 className="text-lg font-bold">Markdown</h1>
+              <h1 className={`text-lg font-bold pl-2 ${dirty ? 'text-amber-400' : 'text-gray-800'}`}>Markdown</h1>
               <div className="flex items-center">
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
                   Discard
@@ -138,11 +137,25 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
                   <ul className="text-xs">
                     {topicCommits.map((commit) => (
                       <li key={commit.sha} className="mb-2">
-                        <div>
-                          <span className="font-bold">{commit.commit.author.name}</span> <span className="text-gray-400">({new Date(commit.commit.author.date).toLocaleString()})</span>
-                          <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pl-1 text-blue-600 underline">
-                            {commit.sha.slice(0, 7)}
-                          </a>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-bold">{commit.commit.author.name}</span> <span className="text-gray-400">({new Date(commit.commit.author.date).toLocaleString()})</span>
+                            <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pl-1 text-blue-600 underline">
+                              {commit.sha.slice(0, 7)}
+                            </a>
+                          </div>
+                          <button
+                            className="ml-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300"
+                            onClick={async () => {
+                              const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
+                              const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
+                              const content = await service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
+                              setContent(content);
+                              setDirty(true);
+                            }}
+                          >
+                            Use This Commit
+                          </button>
                         </div>
                         <div className="text-gray-700">{commit.commit.message}</div>
                       </li>
