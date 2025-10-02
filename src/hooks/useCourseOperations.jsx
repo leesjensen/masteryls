@@ -269,6 +269,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
 
     try {
+      const token = user.getSetting('gitHubToken', course.id);
+      const contentPath = topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
+      await service.deleteGitHubFolder(gitHubUrl, token, `remove(topic) ${topic.title}`);
+
       const updatedCourse = Course.copy(course);
       updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
       updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);

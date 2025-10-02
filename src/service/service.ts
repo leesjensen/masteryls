@@ -355,6 +355,33 @@ class Service {
     throw new Error(`Failed to update file: ${putRes.status} ${putRes.statusText}`);
   }
 
+  async deleteGitHubFolder(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
+    const getFilesRes = await this.makeGitHubApiRequest(token, gitHubUrl);
+    if (!getFilesRes.ok) {
+      if (getFilesRes.status === 404) {
+        return;
+      }
+      throw new Error(`Failed to fetch folder contents: ${getFilesRes.status} ${getFilesRes.statusText}`);
+    }
+    const getData = await getFilesRes.json();
+    if (Array.isArray(getData)) {
+      for (const item of getData) {
+        if (item.type === 'file') {
+          const deleteBody = {
+            message: commitMessage,
+            sha: item.sha,
+          };
+          const deleteRes = await this.makeGitHubApiRequest(token, item.url, 'DELETE', deleteBody);
+          if (!deleteRes.ok) {
+            throw new Error(`Failed to delete file: ${deleteRes.status} ${deleteRes.statusText}`);
+          }
+        } else if (item.type === 'dir') {
+          await this.deleteGitHubFolder(item.url, token, commitMessage);
+        }
+      }
+    }
+  }
+
   async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {
     const headers: Record<string, string> = {
       Accept: 'application/vnd.github.v3+json',
