@@ -4,10 +4,10 @@ import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
 import SubmissionQuiz from './submissionQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
+import QuizFeedback from './quizFeedback';
+import { updateQuizFeedback } from './feedbackStore';
 
 export default function QuizInstruction({ courseOps, topic, user }) {
-  const [quizFeedback, setQuizFeedback] = useState('');
-
   /**
    * The quiz markdown format follow this example syntax:
    *
@@ -32,7 +32,6 @@ export default function QuizInstruction({ courseOps, topic, user }) {
       itemsText = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
     let controlJsx = generateQuizComponent(meta, itemsText);
-    console.log('rerender quiz', meta.id);
     return (
       <div className="p-2 rounded border border-gray-300 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
@@ -44,7 +43,7 @@ export default function QuizInstruction({ courseOps, topic, user }) {
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        {quizFeedback[meta.id] && <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900">{inlineLiteMarkdown(quizFeedback[meta.id])}</div>}
+        <QuizFeedback quizId={meta.id} />
       </div>
     );
   }
@@ -64,22 +63,22 @@ export default function QuizInstruction({ courseOps, topic, user }) {
 
   async function onQuizSubmit({ id, title, type, body, choices, selected, correct, percentCorrect }) {
     if (selected.length > 0) {
-      // const data = {
-      //   title,
-      //   type,
-      //   Question: body,
-      //   Choices: choices.map((choice) => '\n   -' + choice).join(''),
-      //   'Student answers': selected.map((i) => choices[i]),
-      //   'Correct answers': correct.map((i) => choices[i]),
-      //   'Percent correct': percentCorrect,
-      // };
-      // let feedback = '';
-      // try {
-      //   feedback = await courseOps.getQuizFeedback(data);
-      // } catch {
-      //   feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
-      // }
-      // setQuizFeedback((prev) => ({ ...prev, [id]: feedback }));
+      const data = {
+        title,
+        type,
+        Question: body,
+        Choices: choices.map((choice) => '\n   -' + choice).join(''),
+        'Student answers': selected.map((i) => choices[i]),
+        'Correct answers': correct.map((i) => choices[i]),
+        'Percent correct': percentCorrect,
+      };
+      let feedback = '';
+      try {
+        feedback = await courseOps.getQuizFeedback(data);
+      } catch {
+        feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
+      }
+      updateQuizFeedback(id, feedback);
     }
   }
 
