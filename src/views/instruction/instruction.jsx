@@ -24,7 +24,7 @@ export default function Instruction({ courseOps, topic, course, user }) {
       instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} />;
       break;
     default:
-      instructionComponent = <MarkdownInstruction courseOps={courseOps} topic={topic} user={user} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} />;
       break;
   }
 
