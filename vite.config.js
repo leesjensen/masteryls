@@ -4,7 +4,7 @@ import istanbul from 'vite-plugin-istanbul';
 
 export default defineConfig({
   build: {
-    sourcemap: process.env.COVERAGE ? true : false,
+    sourcemap: true,
   },
   plugins: [
     tailwindcss(),
