@@ -84,7 +84,6 @@ export default function QuizInstruction({ courseOps, topic, user }) {
 
   async function handleQuizClick(event, quizRoot) {
     if (event.target.tagName === 'INPUT') {
-      console.log('quiz click', event);
       const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
       const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
       const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
