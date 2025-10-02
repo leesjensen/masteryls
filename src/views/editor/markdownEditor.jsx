@@ -1,55 +1,9 @@
 import React from 'react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
-import useLatest from '../../hooks/useLatest';
 
-export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
-  const [content, setContent] = React.useState('');
-  const [dirty, setDirty] = React.useState(false);
-  const [committing, setCommitting] = React.useState(false);
+export default function MarkdownEditor({ content, onChange, commit }) {
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
-  const dirtyRef = useLatest(dirty);
-
-  React.useEffect(() => {
-    if (currentTopic && currentTopic.path) {
-      courseOps.getTopicMarkdown(currentTopic).then((markdown) => {
-        setContent(markdown);
-        setDirty(false);
-      });
-    }
-    return async () => {
-      if (dirtyRef.current) {
-        const shouldSave = window.confirm('Do you want to commit your changes?');
-        if (shouldSave) {
-          commit();
-        }
-      }
-    };
-  }, [currentTopic]);
-
-  async function discard() {
-    const [updatedCourse, previousTopic, markdown] = await courseOps.discardTopicMarkdown(currentTopic);
-    setDirty(false);
-    setContent(markdown);
-    courseOps.changeTopic(previousTopic);
-    setCourse(updatedCourse);
-  }
-
-  async function commit() {
-    if (committing) return; // Prevent multiple commits
-
-    setCommitting(true);
-    try {
-      const updatedTopic = await courseOps.updateTopic(currentTopic, content);
-      setDirty(false);
-      courseOps.changeTopic(updatedTopic);
-    } catch (error) {
-      console.error('Error committing changes:', error);
-      alert('Failed to commit changes. Please try again.');
-    } finally {
-      setCommitting(false);
-    }
-  }
 
   async function handlePaste(e) {
     // alert('Pasting of files is not yet supported');
@@ -62,9 +16,7 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
 
     // Add custom key bindings
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      if (dirty && !committing) {
-        commit();
-      }
+      commit();
     });
 
     // Add Find and Replace shortcut
@@ -81,12 +33,6 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD, () => {
       editor.getAction('editor.action.addSelectionToNextFindMatch').run();
     });
-  }
-
-  function handleEditorChange(value) {
-    if (committing) return;
-    setContent(value || '');
-    setDirty(true);
   }
 
   // Helper functions for editor actions
@@ -123,28 +69,6 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
 
   return (
     <div className="p-2 flex-9/12 flex flex-col relative">
-      {committing && (
-        <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50 rounded">
-          <div className="flex items-center gap-3 text-gray-700">
-            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600"></div>
-            <span className="text-sm font-medium">Committing changes...</span>
-          </div>
-        </div>
-      )}
-
-      <div className="basis-[32px] flex items-center justify-between">
-        <h1 className="text-lg font-bold">Markdown</h1>
-        <div className="flex items-center">
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
-            Discard
-          </button>
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
-            {committing && <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>}
-            {committing ? 'Committing...' : 'Commit'}
-          </button>
-        </div>
-      </div>
-
       {/* Markdown Toolbar */}
       {editorLoaded && (
         <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm">
@@ -206,7 +130,7 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
         </div>
       )}
       <div className="flex-1 border rounded overflow-hidden">
-        <MonacoMarkdownEditor value={content} onChange={handleEditorChange} onMount={handleEditorDidMount} readOnly={committing} theme="vs-light" />
+        <MonacoMarkdownEditor value={content} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
       </div>
     </div>
   );
