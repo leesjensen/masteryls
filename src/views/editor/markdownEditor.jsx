@@ -59,7 +59,7 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
     setEditorLoaded(true);
-    
+
     // Add custom key bindings
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       if (dirty && !committing) {
@@ -97,8 +97,8 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
         {
           range: selection,
           text: text,
-          forceMoveMarkers: true
-        }
+          forceMoveMarkers: true,
+        },
       ]);
       editorRef.current.focus();
     }
@@ -109,13 +109,13 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
       const selection = editorRef.current.getSelection();
       const selectedText = editorRef.current.getModel().getValueInRange(selection);
       const newText = before + selectedText + after;
-      
+
       editorRef.current.executeEdits('', [
         {
           range: selection,
           text: newText,
-          forceMoveMarkers: true
-        }
+          forceMoveMarkers: true,
+        },
       ]);
       editorRef.current.focus();
     }
@@ -144,84 +144,44 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
           </button>
         </div>
       </div>
-      
+
       {/* Markdown Toolbar */}
       {editorLoaded && (
         <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm">
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs font-bold"
-            onClick={() => wrapSelection('**', '**')}
-            title="Bold (Ctrl+B)"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs font-bold" onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)">
             B
           </button>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs italic"
-            onClick={() => wrapSelection('*', '*')}
-            title="Italic (Ctrl+I)"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs italic" onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)">
             I
           </button>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => wrapSelection('`', '`')}
-            title="Inline Code"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('`', '`')} title="Inline Code">
             {'</>'}
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => insertText('# ')}
-            title="Heading 1"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('# ')} title="Heading 1">
             H1
           </button>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => insertText('## ')}
-            title="Heading 2"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('## ')} title="Heading 2">
             H2
           </button>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => insertText('### ')}
-            title="Heading 3"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('### ')} title="Heading 3">
             H3
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => insertText('- ')}
-            title="Bullet List"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('- ')} title="Bullet List">
             •
           </button>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => insertText('1. ')}
-            title="Numbered List"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('1. ')} title="Numbered List">
             1.
           </button>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => wrapSelection('[', '](url)')}
-            title="Link"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('[', '](url)')} title="Link">
             🔗
           </button>
-          <button 
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => insertText('![alt text](image-url)')}
-            title="Image"
-          >
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('![alt text](image-url)')} title="Image">
             🖼️
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button 
+          <button
             className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
             onClick={() => {
               if (editorRef.current) {
@@ -232,7 +192,7 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
           >
             🔍
           </button>
-          <button 
+          <button
             className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
             onClick={() => {
               if (editorRef.current) {
@@ -246,13 +206,7 @@ export default function MarkdownEditor({ courseOps, setCourse, currentTopic }) {
         </div>
       )}
       <div className="flex-1 border rounded overflow-hidden">
-        <MonacoMarkdownEditor
-          value={content}
-          onChange={handleEditorChange}
-          onMount={handleEditorDidMount}
-          readOnly={committing}
-          theme="vs-light"
-        />
+        <MonacoMarkdownEditor value={content} onChange={handleEditorChange} onMount={handleEditorDidMount} readOnly={committing} theme="vs-light" />
       </div>
     </div>
   );

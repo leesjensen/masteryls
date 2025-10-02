@@ -1,19 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 
-const MonacoMarkdownEditor = ({ 
-  value, 
-  onChange, 
-  onMount, 
-  readOnly = false, 
-  height = "100%",
-  theme = "vs-light"
-}) => {
+const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, height = '100%', theme = 'vs-light' }) => {
   const editorRef = useRef(null);
 
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
-    
+
     // Configure advanced Monaco Editor settings
     editor.updateOptions({
       fontSize: 14,
@@ -35,18 +28,18 @@ const MonacoMarkdownEditor = ({
       bracketPairColorization: { enabled: true },
       guides: {
         bracketPairs: true,
-        indentation: true
+        indentation: true,
       },
       suggest: {
         showWords: false,
-        showSnippets: false
+        showSnippets: false,
       },
       quickSuggestions: false,
       parameterHints: { enabled: false },
       wordBasedSuggestions: false,
       suggestOnTriggerCharacters: false,
       acceptSuggestionOnEnter: 'off',
-      tabCompletion: 'off'
+      tabCompletion: 'off',
     });
 
     // Add markdown-specific features
@@ -55,13 +48,13 @@ const MonacoMarkdownEditor = ({
       onEnterRules: [
         {
           beforeText: /^\s*[\*\-\+]\s+.*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, appendText: '- ' }
+          action: { indentAction: monaco.languages.IndentAction.None, appendText: '- ' },
         },
         {
           beforeText: /^\s*\d+\.\s+.*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, appendText: '1. ' }
-        }
-      ]
+          action: { indentAction: monaco.languages.IndentAction.None, appendText: '1. ' },
+        },
+      ],
     });
 
     // Call the external onMount handler if provided
@@ -90,7 +83,7 @@ const MonacoMarkdownEditor = ({
         lineNumbers: 'on',
         folding: true,
         contextmenu: true,
-        multiCursorModifier: 'ctrlCmd'
+        multiCursorModifier: 'ctrlCmd',
       }}
     />
   );
