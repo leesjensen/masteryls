@@ -81,7 +81,8 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   }
 
   async function commit() {
-    if (committing || !dirty) return; // Prevent multiple commits
+    console.log('commit called', committing, dirty);
+    if (committing || !dirtyRef.current) return;
 
     setCommitting(true);
     try {
@@ -130,38 +131,36 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
             </div>
             {showCommits && (
               <div className="max-h-64 overflow-auto border rounded bg-gray-50 p-2 my-2">
-                <h2 className="text-md font-semibold mb-2">Previous Commits</h2>
-                {topicCommits.length === 0 ? (
-                  <div className="text-gray-500">No commits found for this topic.</div>
-                ) : (
-                  <ul className="text-xs">
-                    {topicCommits.map((commit) => (
-                      <li key={commit.sha} className="mb-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="font-bold">{commit.commit.author.name}</span> <span className="text-gray-400">({new Date(commit.commit.author.date).toLocaleString()})</span>
-                            <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pl-1 text-blue-600 underline">
+                <ul className="text-xs">
+                  {topicCommits.map((commit) => (
+                    <li key={commit.sha} className="mb-2">
+                      <div className="flex items-center justify-start  border border-gray-300 rounded p-1 w-full">
+                        <button
+                          className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300"
+                          onClick={async () => {
+                            const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
+                            const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
+                            const content = await service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
+                            setContent(content);
+                            setDirty(true);
+                          }}
+                        >
+                          Apply
+                        </button>
+                        <div className="flex flex-col">
+                          <div className="flex flex-row">
+                            <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pr-1 text-blue-600 underline">
                               {commit.sha.slice(0, 7)}
                             </a>
+                            <span className="font-bold pr-1">{commit.commit.author.name}</span>
+                            <span className="text-gray-400 pr-1">({new Date(commit.commit.author.date).toLocaleString()})</span>
                           </div>
-                          <button
-                            className="ml-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300"
-                            onClick={async () => {
-                              const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
-                              const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
-                              const content = await service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
-                              setContent(content);
-                              setDirty(true);
-                            }}
-                          >
-                            Use This Commit
-                          </button>
+                          <div className="text-gray-700">{commit.commit.message}</div>
                         </div>
-                        <div className="text-gray-700">{commit.commit.message}</div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
             <div className="flex-8/10 flex overflow-hidden">
