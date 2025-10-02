@@ -1,10 +1,9 @@
 import React, { useCallback } from 'react';
 import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
-import MarkdownInstruction from './markdownInstruction';
 import VideoInstruction from './videoInstruction';
 import QuizInstruction from './quiz/quizInstruction';
 
-export default function Instruction({ courseOps, topic, course, user }) {
+export default function Instruction({ courseOps, topic, course, user, preview = null }) {
   const containerRef = useSwipeNavigation(
     useCallback(() => courseOps.navigateToAdjacentTopic('next'), [course, topic]),
     useCallback(() => courseOps.navigateToAdjacentTopic('prev'), [course, topic])
@@ -21,10 +20,10 @@ export default function Instruction({ courseOps, topic, course, user }) {
       instructionComponent = <VideoInstruction topic={topic} />;
       break;
     case 'quiz':
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
       break;
     default:
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
       break;
   }
 

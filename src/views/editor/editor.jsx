@@ -1,4 +1,5 @@
 import React from 'react';
+import Instruction from '../instruction/instruction.jsx';
 import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
 import VideoEditor from './VideoEditor';
@@ -6,9 +7,10 @@ import useLatest from '../../hooks/useLatest';
 
 export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
   const [topicCommits, setTopicCommits] = React.useState([]);
-  const [showCommits, setShowCommits] = React.useState(true);
+  const [showCommits, setShowCommits] = React.useState(false);
   const [files, setFiles] = React.useState([]);
   const [content, setContent] = React.useState('');
+  const [preview, setPreview] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
   const dirtyRef = useLatest(dirty);
@@ -116,16 +118,19 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
               </div>
             )}
             <div className="basis-[32px] pt-2 flex items-center justify-between">
-              <h1 className={`text-lg font-bold pl-2 ${dirty ? 'text-amber-400' : 'text-gray-800'}`}>Markdown</h1>
+              <h1 className={`text-lg font-bold pl-2 ${dirty ? 'text-amber-400' : 'text-gray-800'}`}>Editor</h1>
 
               <div className="flex items-center">
+                <button className="mx-1 px-3 py-1 w-18 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => setPreview((v) => !v)}>
+                  {preview ? 'Edit' : 'Preview'}
+                </button>
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
                   Discard
                 </button>
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
                   Commit
                 </button>
-                <button className="mx-1 px-3 py-1 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs flex items-center gap-2" onClick={() => setShowCommits((v) => !v)}>
+                <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={() => setShowCommits((v) => !v)}>
                   {showCommits ? 'Hide' : 'Show'} Commits
                 </button>
               </div>
@@ -164,9 +169,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
                 </ul>
               </div>
             )}
-            <div className="flex-8/10 flex overflow-hidden">
-              <MarkdownEditor content={content} onChange={handleEditorChange} commit={commit} />
-            </div>
+            <div className="flex-8/10 flex overflow-hidden">{preview ? <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} /> : <MarkdownEditor content={content} onChange={handleEditorChange} commit={commit} />}</div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles files={files} setFiles={setFiles} />
             </div>

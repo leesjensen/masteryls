@@ -7,7 +7,7 @@ import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
 import { updateQuizFeedback } from './feedbackStore';
 
-export default function QuizInstruction({ courseOps, topic, user }) {
+export default function QuizInstruction({ courseOps, topic, user, preview = null }) {
   /**
    * The quiz markdown format follow this example syntax:
    *
@@ -135,6 +135,7 @@ export default function QuizInstruction({ courseOps, topic, user }) {
             processor: injectQuiz,
           },
         ]}
+        preview={preview}
       />
     </>
   );
