@@ -43,8 +43,7 @@ test('editor markdown', async ({ page }) => {
   await navigateToCourse(page);
 
   await page.getByRole('button', { name: '✏️' }).click();
-  await expect(page.getByRole('textbox')).toContainText('# Home markdown!');
-
+  await expect(page.getByRole('code')).toContainText('# Home');
   await expect(page.getByRole('button', { name: 'README.md markdown • 2.6 KB' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).not.toBeChecked();
   await page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).click();
@@ -56,10 +55,13 @@ test('editor commit', async ({ page }) => {
   await navigateToCourse(page);
 
   await page.getByRole('button', { name: '✏️' }).click();
-  await expect(page.getByRole('textbox')).toContainText('# Home markdown!');
+  await expect(page.getByRole('code')).toContainText('# Home');
 
-  await page.getByRole('textbox').fill('# Home\n\naltered!');
-  await expect(page.getByRole('textbox')).toContainText('altered!');
+  await page.getByText('# Home').click();
+  await page.getByRole('textbox', { name: 'Editor content' }).press('End');
+  await page.getByRole('textbox', { name: 'Editor content' }).fill('\n# Home altered!');
+  // await page.getByRole('textbox').fill('# Home\n\naltered!');
+  await expect(page.getByRole('code')).toContainText('altered!');
 
   await page.getByRole('button', { name: 'Commit' }).click();
   await expect(page.getByRole('button', { name: 'Commit' })).toBeDisabled();
