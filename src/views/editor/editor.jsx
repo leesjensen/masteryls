@@ -5,6 +5,8 @@ import VideoEditor from './VideoEditor';
 import useLatest from '../../hooks/useLatest';
 
 export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
+  const [topicCommits, setTopicCommits] = React.useState([]);
+  const [showCommits, setShowCommits] = React.useState(false);
   const [files, setFiles] = React.useState([]);
   const [content, setContent] = React.useState('');
   const [committing, setCommitting] = React.useState(false);
@@ -34,6 +36,19 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
       }
 
       fetchFiles();
+
+      // Fetch previous commits for the current topic file
+      async function fetchCommits() {
+        if (course && currentTopic && currentTopic.path && course.links?.gitHub?.apiUrl) {
+          // Build the GitHub API URL for commits for the topic file
+          const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
+          const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
+          const commitsUrl = `${repoApiUrl}/commits?path=${filePath}`;
+          const commits = await service.getTopicCommits(user.getSetting('gitHubToken', course.id), commitsUrl);
+          setTopicCommits(commits);
+        }
+      }
+      fetchCommits();
 
       courseOps.getTopicMarkdown(currentTopic).then((markdown) => {
         setContent(markdown);
@@ -109,8 +124,33 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
                   Commit
                 </button>
+                <button className="mx-1 px-3 py-1 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs flex items-center gap-2" onClick={() => setShowCommits((v) => !v)}>
+                  {showCommits ? 'Hide' : 'Show'} Commits
+                </button>
               </div>
             </div>
+            {showCommits && (
+              <div className="max-h-64 overflow-auto border rounded bg-gray-50 p-2 my-2">
+                <h2 className="text-md font-semibold mb-2">Previous Commits</h2>
+                {topicCommits.length === 0 ? (
+                  <div className="text-gray-500">No commits found for this topic.</div>
+                ) : (
+                  <ul className="text-xs">
+                    {topicCommits.map((commit) => (
+                      <li key={commit.sha} className="mb-2">
+                        <div>
+                          <span className="font-bold">{commit.commit.author.name}</span> <span className="text-gray-400">({new Date(commit.commit.author.date).toLocaleString()})</span>
+                          <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pl-1 text-blue-600 underline">
+                            {commit.sha.slice(0, 7)}
+                          </a>
+                        </div>
+                        <div className="text-gray-700">{commit.commit.message}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             <div className="flex-8/10 flex overflow-hidden">
               <MarkdownEditor content={content} onChange={handleEditorChange} commit={commit} />
             </div>

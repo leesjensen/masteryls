@@ -5,6 +5,12 @@ import { User, CatalogEntry, Enrollment, Role } from '../model';
 const supabase = createClient(config.supabase.url, config.supabase.key);
 
 class Service {
+  async getTopicCommits(gitHubToken: string, fileUrl: string): Promise<any[]> {
+    const res = await this.makeGitHubApiRequest(gitHubToken, fileUrl);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }
   catalog: CatalogEntry[] = [];
 
   constructor(catalog: CatalogEntry[]) {
