@@ -6,7 +6,7 @@ import useLatest from '../../hooks/useLatest';
 
 export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
   const [topicCommits, setTopicCommits] = React.useState([]);
-  const [showCommits, setShowCommits] = React.useState(false);
+  const [showCommits, setShowCommits] = React.useState(true);
   const [files, setFiles] = React.useState([]);
   const [content, setContent] = React.useState('');
   const [committing, setCommitting] = React.useState(false);
@@ -115,8 +115,9 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
                 </div>
               </div>
             )}
-            <div className="basis-[32px] flex items-center justify-between">
+            <div className="basis-[32px] pt-2 flex items-center justify-between">
               <h1 className={`text-lg font-bold pl-2 ${dirty ? 'text-amber-400' : 'text-gray-800'}`}>Markdown</h1>
+
               <div className="flex items-center">
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
                   Discard
@@ -130,7 +131,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
               </div>
             </div>
             {showCommits && (
-              <div className="max-h-64 overflow-auto border rounded bg-gray-50 p-2 my-2">
+              <div className="max-h-64 overflow-auto border border-gray-300 rounded bg-gray-50 p-2 m-2">
                 <ul className="text-xs">
                   {topicCommits.map((commit) => (
                     <li key={commit.sha} className="mb-2">

@@ -68,7 +68,7 @@ export default function MarkdownEditor({ content, onChange, commit }) {
   };
 
   return (
-    <div className="p-2 flex-9/12 flex flex-col relative">
+    <div className="m-2 flex-9/12 flex flex-col relative border border-gray-300 ">
       {/* Markdown Toolbar */}
       {editorLoaded && (
         <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm">
@@ -129,7 +129,7 @@ export default function MarkdownEditor({ content, onChange, commit }) {
           </button>
         </div>
       )}
-      <div className="flex-1 border rounded overflow-hidden">
+      <div className="flex-1 overflow-hidden">
         <MonacoMarkdownEditor value={content} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
       </div>
     </div>

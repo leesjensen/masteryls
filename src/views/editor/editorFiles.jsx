@@ -75,7 +75,7 @@ export default function EditorFiles({ files, setFiles }) {
         </div>
       </div>
 
-      <div className="flex-1 mt-2 p-1 border rounded overflow-auto">
+      <div className="flex-1 mt-2 p-1 border border-gray-300 rounded overflow-auto">
         {files && files.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {files.map((file, idx) => {
