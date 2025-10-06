@@ -188,8 +188,10 @@ Requirements:
  * @returns {Promise<string>} The generated content from the AI model.
  */
 async function makeAiRequest(apiKey, prompt) {
+  const model = 'gemini-2.0-flash';
+  //const model = 'gemini-2.5-pro';
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -232,7 +234,7 @@ const standardRequestBody = {
     temperature: 0.7,
     topK: 40,
     topP: 0.95,
-    maxOutputTokens: 500,
+    //    maxOutputTokens: 5000,
   },
   safetySettings: [
     {

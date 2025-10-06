@@ -1,4 +1,4 @@
-import { aiTopicGenerator, aiQuizFeedbackGenerator } from '../ai/aiContentGenerator';
+import { aiCourseGenerator, aiTopicGenerator, aiQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
 /**
@@ -51,11 +51,15 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     let newCatalogEntry;
     let enrollment;
     if (generateWithAi) {
-      //const apiKey = user.getSetting('geminiApiKey');
-      //const courseJson = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
-      const response = await fetch('/cs460.course.json');
-      const courseJson = await response.json();
-      const courseText = JSON.stringify(courseJson, null, 2);
+      const apiKey = user.getSetting('geminiApiKey');
+
+      const courseText = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
+      const courseJson = JSON.parse(courseText);
+
+      //const response = await fetch('/cs460.course.json');
+      //const courseJson = await response.json();
+      // const courseText = JSON.stringify(courseJson, null, 2);
+
       catalogEntry.outcomes = courseJson.outcomes || [];
 
       const gitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
