@@ -11,6 +11,8 @@ export default function CourseCreationForm({ service, onClose, onCreate }) {
   const [gitHubSourceRepo, setGitHubSourceRepo] = useState('');
   const [gitHubTemplates, setGitHubTemplates] = useState([]);
   const [generateWithAi, setGenerateWithAi] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('Initializing');
 
   React.useEffect(() => {
     if (gitHubSourceAccount.trim()) {
@@ -28,10 +30,15 @@ export default function CourseCreationForm({ service, onClose, onCreate }) {
     }
   }, [gitHubSourceAccount]);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (onCreate) {
-      onCreate(generateWithAi, gitHubSourceAccount, gitHubSourceRepo, { title, description, name, gitHub: { account: gitHubAccount, repository: gitHubRepo } }, gitHubToken);
+      setIsLoading(true);
+      setUpdateMessage('Creating your course...');
+
+      await onCreate(generateWithAi, gitHubSourceAccount, gitHubSourceRepo, { title, description, name, gitHub: { account: gitHubAccount, repository: gitHubRepo } }, gitHubToken, setUpdateMessage);
+
+      setIsLoading(false);
     }
   }
 
@@ -41,6 +48,29 @@ export default function CourseCreationForm({ service, onClose, onCreate }) {
     <div className="fixed inset-0 z-50 flex justify-center items-start pt-16 p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className="relative z-10 w-full max-w-2xl bg-white rounded-lg shadow-lg overflow-hidden">
+        {/* Loading Overlay */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+            {/* Spinner */}
+            <div className="relative mb-6">
+              <div className="w-16 h-16 border-4 border-gray-200 border-t-amber-500 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-amber-300 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            </div>
+
+            {/* Loading Message */}
+            <div className="space-y-2 text-center">
+              <h3 className="text-2xl font-semibold text-gray-800">Creating Your Course</h3>
+              <p className="text-xl text-gray-600 animate-pulse">{updateMessage}</p>
+            </div>
+
+            {/* Progress Dots */}
+            <div className="flex justify-center space-x-2 mt-4">
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+          </div>
+        )}
         <div className="px-6 py-4 border-b">
           <h2 className="text-xl font-semibold text-gray-800">Create a Course</h2>
           <p className="text-sm text-gray-500 mt-1">Add a title and short description for your new course.</p>

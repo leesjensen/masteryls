@@ -88,7 +88,7 @@ function App() {
     setEditorVisible((prev) => !prev);
   }
 
-  // What to show before we know who the user is
+  // When no course is displayed
   if (!loaded) {
     return (
       <div className="flex flex-col h-screen">
@@ -101,7 +101,7 @@ function App() {
     return <Dashboard courseOps={courseOps} service={service} user={user} setUser={setUser} />;
   }
 
-  // What to show in the main content area
+  // When the course is displayed
   let content = <Instruction courseOps={courseOps} topic={topic} course={course} user={user} />;
   if (editorVisible) {
     content = <Editor courseOps={courseOps} service={service} user={user} course={course} setCourse={setCourse} currentTopic={topic} />;

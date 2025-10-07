@@ -44,10 +44,10 @@ export default function Dashboard({ courseOps, service, user, setUser }) {
     setPendingEnrollmentRemoval(null);
   };
 
-  const createCourse = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken) => {
+  const createCourse = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) => {
     try {
       if (await service.verifyGitHubAccount(gitHubToken)) {
-        const enrollment = await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+        const enrollment = await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
         setEnrollments((prev) => new Map(prev).set(enrollment.catalogEntry.id, enrollment));
         setDisplayCourseCreationForm(false);
       } else {
@@ -59,11 +59,7 @@ export default function Dashboard({ courseOps, service, user, setUser }) {
   };
 
   if (displayCourseCreationForm) {
-    return (
-      <CourseCreationForm service={service} onClose={() => setDisplayCourseCreationForm(false)} onCreate={createCourse}>
-        create a course!
-      </CourseCreationForm>
-    );
+    return <CourseCreationForm service={service} onClose={() => setDisplayCourseCreationForm(false)} onCreate={createCourse} />;
   }
 
   if (!enrollments) {

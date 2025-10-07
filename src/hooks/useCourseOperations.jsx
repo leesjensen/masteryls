@@ -19,17 +19,17 @@ import Course from '../course';
  */
 function useCourseOperations(user, setUser, service, course, setCourse, setSettings, currentTopic, setTopic) {
   function getEnrollmentUiSettings(courseId) {
-    const defaultSettings = { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
+    const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
 
     if (courseId) {
       const settings = localStorage.getItem(`uiSettings-${courseId}`);
       if (settings) {
         return JSON.parse(settings);
       } else {
-        localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(defaultSettings));
+        localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(defaultEnrollmentSettings));
       }
     }
-    return defaultSettings;
+    return defaultEnrollmentSettings;
   }
 
   function saveEnrollmentUiSettings(courseId, updatedSettings) {
@@ -47,14 +47,23 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     }
   }
 
-  async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken) {
+  async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
     let newCatalogEntry;
     let enrollment;
     if (generateWithAi) {
       const apiKey = user.getSetting('geminiApiKey');
 
+      setUpdateMessage('Using AI to create course topics');
+
+      const messages = ['The gerbil is digging', 'The hamster is running', 'The beaver is building', 'The squirrel is gathering nuts'];
+      const messageInterval = setInterval(() => {
+        setUpdateMessage(messages[Math.floor(Math.random() * messages.length)]);
+      }, 3000);
+
       const courseText = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
       const courseJson = JSON.parse(courseText);
+
+      clearInterval(messageInterval);
 
       //const response = await fetch('/cs460.course.json');
       //const courseJson = await response.json();
@@ -62,20 +71,24 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
       catalogEntry.outcomes = courseJson.outcomes || [];
 
-      const gitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
+      setUpdateMessage('Creating course repository');
 
       newCatalogEntry = await service.createCourseEmpty(catalogEntry, gitHubToken);
+
+      setUpdateMessage('Creating roles and enrollment');
       await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
       setUser(await service.currentUser());
       enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
-      const commit = await service.updateGitHubFile(gitHubUrl, courseText, gitHubToken, 'update(course) to generated content structure');
-      await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
+      setUpdateMessage('Saving course structure');
+      const gitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
+      const commit = await service.commitGitHubFile(gitHubUrl, courseText, gitHubToken, 'add(course) generated content structure');
 
+      setUpdateMessage('Finalizing course creation');
+      await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
       const course = await Course.create(newCatalogEntry);
       setCourse(course);
-      setSettings(getEnrollmentUiSettings(course.id));
-      await _populateTemplateTopics(course, ['Overview'], gitHubToken);
+      saveEnrollmentUiSettings(course.id, { editing: true });
     } else {
       newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
       await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });

@@ -317,11 +317,7 @@ class Service {
         {
           catalogId: catalogEntry.id,
           learnerId,
-          settings: {
-            currentTopic: null,
-            tocIndexes: [0],
-            sidebarVisible: true,
-          },
+          settings: {},
           progress: { mastery: 0 },
         },
       ])
