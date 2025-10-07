@@ -117,6 +117,8 @@ Requirements:
 - The response must be valid GitHub-flavored markdown
 - Make the content upbeat and engaging
 - Include a level 1 heading using only the exact course title
+- Include a single hero image at the top that is relevant to the course topic
+- The hero image should be embedded using markdown syntax with a relevant alt text
 - Use paragraph text where appropriate
 - Include introductory paragraphs that provide an overview of the entire course but do not label it as "Overview"
 - Include a level 2 section containing a bulleted list of course outcomes
