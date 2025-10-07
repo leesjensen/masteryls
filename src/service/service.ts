@@ -161,7 +161,11 @@ class Service {
   async currentUser(): Promise<User | null> {
     const session = await supabase.auth.getSession();
     if (session.data.session?.user) {
-      return await this._loadUser({ id: session.data.session.user.id });
+      try {
+        return await this._loadUser({ id: session.data.session.user.id });
+      } catch {
+        supabase.auth.signOut();
+      }
     }
     return null;
   }
