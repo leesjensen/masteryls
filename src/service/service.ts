@@ -346,7 +346,7 @@ class Service {
     }
   }
 
-  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, blobSha?: string): Promise<Response> {
+  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, blobSha?: string): Promise<string> {
     const contentBase64 = btoa(new TextEncoder().encode(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
     const body: any = {
       message: commitMessage,
@@ -357,7 +357,12 @@ class Service {
       body.sha = blobSha;
     }
 
-    return await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
+    const commitRes = await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
+    if (commitRes.ok) {
+      const commitData = await commitRes.json();
+      return commitData.commit.sha;
+    }
+    throw new Error(`Failed to commit file: ${commitRes.status} ${commitRes.statusText}`);
   }
 
   async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
@@ -368,12 +373,7 @@ class Service {
       blobSha = getData.sha;
     }
 
-    const putRes = await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, blobSha);
-    if (putRes.ok) {
-      const putData = await putRes.json();
-      return putData.commit.sha;
-    }
-    throw new Error(`Failed to update file: ${putRes.status} ${putRes.statusText}`);
+    return await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, blobSha);
   }
 
   async deleteGitHubFolder(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {

@@ -31,7 +31,7 @@ The JSON must be structured according to the following example:
       "title": "Example module title",
       "description": "Description for example module.",
       "topics": [
-        { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md", "type": "instruction", "state": "stub" },
+        { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md", "type": "instruction", "state": "stable" },
         { "title": "Topic 1", "description": "Description for topic 1.", "path": "instruction/topic-1/topic-1.md", "type": "instruction", "state": "stub" },
         { "title": "Topic 2", "description": "Description for topic 2.", "path": "instruction/topic-2/topic-2.md", "type": "instruction", "state": "stub" },
         { "title": "Topic 3", "description": "Description for topic 3.", "path": "instruction/topic-3/topic-3.md", "type": "instruction", "state": "stub" }
@@ -47,7 +47,7 @@ Requirements:
 - The JSON object must include a title and modules array
 - Each module must include a title, description, and topics array
 - Each topic must include a title, description, a path, a type set to "instruction", and a state set to "stub"
-- The first topic of the first module must be "Overview" with path "README.md"
+- The first topic of the first module must be "Overview" with path "README.md" and a state set to "stable"
 - The path for other topics should follow the format "instruction/topic-name/topic-name.md" where topic-name is a lowercase, hyphenated version of the topic title
 - The course title should match the provided title exactly
 - The course description should be relevant to the topics included
@@ -85,7 +85,7 @@ Requirements:
 - Start with a level 1 heading using only the exact title
 - Use proper markdown formatting
 - Include overview but do not label it as "Overview"
-- Include relevant subsections with appropriate heading levels
+- Include relevant subsections with appropriate markdown heading levels
 - Do not number headings
 - Do not over create bulleted lists with multiple levels
 - Make content educational and engaging
@@ -95,6 +95,33 @@ Requirements:
 - Encourage thoughtful engagement with the material
 - Include common challenges and solutions
 - Provide a summary`;
+
+  return makeAiRequest(apiKey, prompt);
+}
+
+export async function aiCourseOverviewGenerator(apiKey, course) {
+  const modules = course.modules.map((module) => ({
+    title: module.title,
+    description: module.description,
+  }));
+
+  const prompt = `You are an expert educational content creator.
+Create markdown content that provides an overview for a course titled "${course.title}".
+
+Description: ${course.description}
+
+Course Modules:
+${modules.map((module) => `- ${module.title}: ${module.description}`).join('\n')}
+
+Requirements:
+- The response must be valid GitHub-flavored markdown
+- Make the content upbeat and engaging
+- Include a level 1 heading using only the exact course title
+- Use paragraph text where appropriate
+- Include introductory paragraphs that provide an overview of the entire course but do not label it as "Overview"
+- Include a level 2 section containing a bulleted list of course outcomes
+- Include a level 2 section containing a bulleted list of modules that contain the title and description of each module
+`;
 
   return makeAiRequest(apiKey, prompt);
 }

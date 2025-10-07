@@ -1,4 +1,4 @@
-import { aiCourseGenerator, aiTopicGenerator, aiQuizFeedbackGenerator } from '../ai/aiContentGenerator';
+import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
 /**
@@ -42,7 +42,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       const settings = { ...getEnrollmentUiSettings(courseId), ...updatedSettings };
       localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(settings));
       setSettings(settings);
+      return settings;
     }
+    return {};
   }
 
   function setSidebarVisible(visible) {
@@ -80,6 +82,12 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
       newCatalogEntry = await service.createCourseEmpty(catalogEntry, gitHubToken);
 
+      setUpdateMessage('Creating course overview');
+
+      const overview = await aiCourseOverviewGenerator(apiKey, courseJson);
+      const overviewGitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/README.md`;
+      await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
+
       setUpdateMessage('Creating roles and enrollment');
       await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
       setUser(await service.currentUser());
@@ -93,7 +101,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
       const course = await Course.create(newCatalogEntry);
       setCourse(course);
-      saveEnrollmentUiSettings(course.id, { editing: true });
+      setTopic(course.allTopics[0]);
+
+      const settings = saveEnrollmentUiSettings(course.id, { editing: true });
+      setSettings(settings);
     } else {
       newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
       await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
