@@ -4,7 +4,7 @@ import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
-export default function Dashboard({ courseOps, service, user, setUser }) {
+export default function Dashboard({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
@@ -15,11 +15,6 @@ export default function Dashboard({ courseOps, service, user, setUser }) {
   React.useEffect(() => {
     service.enrollments(user.id).then(setEnrollments);
   }, [user.id]);
-
-  const logout = () => {
-    setUser(null);
-    service.logout();
-  };
 
   const addEnrollment = async (catalogEntry) => {
     if (!enrollments.has(catalogEntry.id)) {
@@ -99,7 +94,7 @@ export default function Dashboard({ courseOps, service, user, setUser }) {
               <span className="font-semibold text-amber-600">+</span> Course
             </button>
           )}
-          <button onClick={logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+          <button onClick={courseOps.logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
             Logout
           </button>
         </div>

@@ -18,6 +18,11 @@ import Course from '../course';
  * @param {Function} setEnrollment - Function to update enrollment state
  */
 function useCourseOperations(user, setUser, service, course, setCourse, setSettings, currentTopic, setTopic) {
+  function logout() {
+    setUser(null);
+    service.logout();
+  }
+
   function getEnrollmentUiSettings(courseId) {
     const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
 
@@ -412,6 +417,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   return {
+    logout,
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
     setSidebarVisible,

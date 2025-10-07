@@ -98,7 +98,7 @@ function App() {
   } else if (!user) {
     return <Start setUser={setUser} />;
   } else if (!course) {
-    return <Dashboard courseOps={courseOps} service={service} user={user} setUser={setUser} />;
+    return <Dashboard courseOps={courseOps} service={service} user={user} />;
   }
 
   // When the course is displayed
