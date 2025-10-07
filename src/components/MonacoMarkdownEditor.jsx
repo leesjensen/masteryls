@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import Editor from '@monaco-editor/react';
 
 const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, height = '100%', theme = 'vs-light' }) => {
