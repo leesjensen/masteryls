@@ -83,7 +83,6 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   }
 
   async function commit() {
-    console.log('commit called', committing, dirty);
     if (committing || !dirtyRef.current) return;
 
     setCommitting(true);
