@@ -116,13 +116,14 @@ ${modules.map((module) => `- ${module.title}: ${module.description}`).join('\n')
 Requirements:
 - The response must be valid GitHub-flavored markdown
 - Make the content upbeat and engaging
+- Include a Markdown formatted image at the top for the URL https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/byulogo.png
 - Include a level 1 heading using only the exact course title
-- Include a single hero image at the top that is relevant to the course topic
-- The hero image should be embedded using markdown syntax with a relevant alt text
-- Use paragraph text where appropriate
+- After the level 1 heading include a Markdown formatted image the URL https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg
+- Prefer paragraph text where appropriate
 - Include introductory paragraphs that provide an overview of the entire course but do not label it as "Overview"
 - Include a level 2 section containing a bulleted list of course outcomes
 - Include a level 2 section containing a bulleted list of modules that contain the title and description of each module
+- Conclude with a motivational call to action encouraging learners to begin the course
 `;
 
   return makeAiRequest(apiKey, prompt);
