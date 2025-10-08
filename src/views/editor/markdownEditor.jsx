@@ -45,11 +45,24 @@ export default function MarkdownEditor({ content, onChange, commit }) {
     }
   };
 
+  const prefixInsertText = (text) => {
+    if (editorRef.current) {
+      const selection = editorRef.current.getSelection();
+      let position = selection.getStartPosition();
+      editorRef.current.setPosition({ lineNumber: position.lineNumber, column: 1 });
+      editorRef.current.focus();
+      insertText(text);
+    }
+  };
+
   const wrapSelection = (before, after) => {
     if (editorRef.current) {
       const selection = editorRef.current.getSelection();
       const selectedText = editorRef.current.getModel().getValueInRange(selection);
-      const newText = before + selectedText + after;
+      let newText = before;
+      if (selectedText) {
+        newText = before + selectedText + after;
+      }
 
       editorRef.current.executeEdits('', [
         {
@@ -77,20 +90,20 @@ export default function MarkdownEditor({ content, onChange, commit }) {
             {'</>'}
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('# ')} title="Heading 1">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('# ')} title="Heading 1">
             H1
           </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('## ')} title="Heading 2">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('## ')} title="Heading 2">
             H2
           </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('### ')} title="Heading 3">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('### ')} title="Heading 3">
             H3
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('- ')} title="Bullet List">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('- ')} title="Bullet List">
             •
           </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('1. ')} title="Numbered List">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('1. ')} title="Numbered List">
             1.
           </button>
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('[', '](url)')} title="Link">

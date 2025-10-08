@@ -7,48 +7,16 @@ const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, heig
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
 
-    // Configure advanced Monaco Editor settings
-    editor.updateOptions({
-      fontSize: 14,
-      fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-      wordWrap: 'on',
-      minimap: { enabled: false },
-      scrollBeyondLastLine: false,
-      automaticLayout: true,
-      tabSize: 2,
-      insertSpaces: true,
-      lineNumbers: 'on',
-      folding: true,
-      foldingStrategy: 'auto',
-      showFoldingControls: 'always',
-      unfoldOnClickAfterEndOfLine: false,
-      contextmenu: true,
-      multiCursorModifier: 'ctrlCmd',
-      accessibilitySupport: 'auto',
-      bracketPairColorization: { enabled: true },
-      guides: {
-        bracketPairs: true,
-        indentation: true,
-      },
-      suggest: {
-        showWords: false,
-        showSnippets: false,
-      },
-      quickSuggestions: false,
-      parameterHints: { enabled: false },
-      wordBasedSuggestions: false,
-      suggestOnTriggerCharacters: false,
-      acceptSuggestionOnEnter: 'off',
-      tabCompletion: 'off',
-    });
-
-    // Add markdown-specific features
     monaco.languages.setLanguageConfiguration('markdown', {
       wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
       onEnterRules: [
         {
-          beforeText: /^\s*[\*\-\+]\s+.*$/,
+          beforeText: /^\s*[\-\+]\s+.*$/,
           action: { indentAction: monaco.languages.IndentAction.None, appendText: '- ' },
+        },
+        {
+          beforeText: /^\s*[\*\+]\s+.*$/,
+          action: { indentAction: monaco.languages.IndentAction.None, appendText: '* ' },
         },
         {
           beforeText: /^\s*\d+\.\s+.*$/,
@@ -74,7 +42,9 @@ const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, heig
       options={{
         readOnly,
         fontSize: 14,
+        fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
         wordWrap: 'on',
+        wrappingIndent: 'none',
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         automaticLayout: true,
@@ -84,6 +54,13 @@ const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, heig
         folding: true,
         contextmenu: true,
         multiCursorModifier: 'ctrlCmd',
+        occurrencesHighlight: false,
+        selectionHighlight: true,
+        renderLineHighlight: 'gutter',
+        guides: {
+          indentation: false,
+        },
+        quickSuggestions: false,
       }}
     />
   );
