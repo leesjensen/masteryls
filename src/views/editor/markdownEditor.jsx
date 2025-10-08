@@ -9,16 +9,6 @@ export default function MarkdownEditor({ content, onChange, commit }) {
     editorRef.current = editor;
     setEditorLoaded(true);
 
-    editor.onDidPaste((e) => {
-      console.log('Content pasted into the editor', e);
-      handlePaste(e);
-    });
-    // Handle paste of images
-    const editorDomNode = editor.getDomNode();
-    if (editorDomNode) {
-      editorDomNode.addEventListener('paste', handlePaste, true);
-    }
-
     // Add custom key bindings
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
       await commit();
@@ -141,33 +131,33 @@ export default function MarkdownEditor({ content, onChange, commit }) {
   );
 }
 
-// Handle paste - look for files in clipboard and upload them
-async function handlePaste(e) {
-  e = e.clipboardEvent;
-  if (!e.clipboardData || !e.clipboardData.files || e.clipboardData.files.length === 0) return;
-  const file = e.clipboardData.files[0];
-  if (!/^image\//.test(file.type)) return;
+// // Handle paste - look for files in clipboard and upload them
+// async function handlePaste(e) {
+//   e = e.clipboardEvent;
+//   if (!e.clipboardData || !e.clipboardData.files || e.clipboardData.files.length === 0) return;
+//   const file = e.clipboardData.files[0];
+//   if (!/^image\//.test(file.type)) return;
 
-  e.preventDefault();
-  try {
-    const items = e.clipboardData?.files;
-    if (items && items.length > 0) {
-      e.preventDefault();
-      // Process each file sequentially
-      for (let i = 0; i < items.length; i++) {
-        const file = items[i];
-        // upload
-        //          const uploadedUrl = await uploadFileToGitHub(file);
-        const uploadedUrl = 'https://example.com/uploads/' + file.name; // Mocked URL for example
+//   e.preventDefault();
+//   try {
+//     const items = e.clipboardData?.files;
+//     if (items && items.length > 0) {
+//       e.preventDefault();
+//       // Process each file sequentially
+//       for (let i = 0; i < items.length; i++) {
+//         const file = items[i];
+//         // upload
+//         //          const uploadedUrl = await uploadFileToGitHub(file);
+//         const uploadedUrl = 'https://example.com/uploads/' + file.name; // Mocked URL for example
 
-        // Insert markdown reference at cursor position
-        const markdownLink = `![${file.name}](${uploadedUrl})`;
+//         // Insert markdown reference at cursor position
+//         const markdownLink = `![${file.name}](${uploadedUrl})`;
 
-        insertText(markdownLink);
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    window.alert('Failed to upload pasted file: ' + err.message);
-  }
-}
+//         insertText(markdownLink);
+//       }
+//     }
+//   } catch (err) {
+//     console.error(err);
+//     window.alert('Failed to upload pasted file: ' + err.message);
+//   }
+// }
