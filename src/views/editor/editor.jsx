@@ -115,9 +115,9 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
                   Commit
                 </button>
-                <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDirty={setDirty} />
               </div>
             </div>
+            <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDirty={setDirty} />
             <div className="flex-8/10 flex overflow-hidden">{preview ? <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} /> : <MarkdownEditor content={content} onChange={handleEditorChange} commit={commit} />}</div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles files={files} setFiles={setFiles} />

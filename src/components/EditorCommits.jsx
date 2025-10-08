@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export default function EditorCommits({ currentTopic, course, user, service, setContent, setDirty }) {
   const [topicCommits, setTopicCommits] = useState([]);
-  const [showCommits, setShowCommits] = useState(false);
+  const [showCommits, setShowCommits] = useState(true);
 
   // Fetch commits when dependencies change
   useEffect(() => {
@@ -33,13 +33,14 @@ export default function EditorCommits({ currentTopic, course, user, service, set
   };
 
   return (
-    <>
-      <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={() => setShowCommits((v) => !v)}>
-        {showCommits ? 'Hide' : 'Show'} Commits
-      </button>
-
+    <div className="flex flex-col  my-1 w-full">
+      <div className="flex justify-end w-full">
+        <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={() => setShowCommits((v) => !v)}>
+          {showCommits ? 'Hide' : 'Show'} Commits
+        </button>
+      </div>
       {showCommits && (
-        <div className="max-h-64 overflow-auto border border-gray-300 rounded bg-gray-50 p-2 m-2">
+        <div className="max-h-64 overflow-auto border border-gray-300 rounded bg-gray-50 p-2 m-2 ">
           <ul className="text-xs">
             {topicCommits.map((commit) => (
               <li key={commit.sha} className="mb-2">
@@ -63,6 +64,6 @@ export default function EditorCommits({ currentTopic, course, user, service, set
           </ul>
         </div>
       )}
-    </>
+    </div>
   );
 }
