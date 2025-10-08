@@ -63,8 +63,8 @@ test('editor commit', async ({ page }) => {
   // await page.getByRole('textbox').fill('# Home\n\naltered!');
   await expect(page.getByRole('code')).toContainText('altered!');
 
-  await page.getByRole('button', { name: 'Commit' }).click();
-  await expect(page.getByRole('button', { name: 'Commit' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Commit', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeDisabled();
 });
 
 test('settings', async ({ page }) => {
