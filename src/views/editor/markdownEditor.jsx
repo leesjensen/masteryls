@@ -45,6 +45,11 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
     }
   };
 
+  const insertQuiz = (quizTemplate) => {
+    const quizWithUuid = quizTemplate.replace(/"id":""/, `"id":"${crypto.randomUUID()}"`);
+    insertText(quizWithUuid);
+  };
+
   const prefixInsertText = (text) => {
     if (editorRef.current) {
       const selection = editorRef.current.getSelection();
@@ -111,7 +116,7 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('[', '](url)', true)} title="Link">
             🔗
           </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('![alt text](image-url)')} title="Image">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100&q=80)')} title="Image">
             🖼️
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
@@ -137,6 +142,22 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
           >
             🔄
           </button>
+          <div className="w-px h-4 bg-gray-300 mx-1"></div>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz">
+            ◉
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz">
+            ☑
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultEssayQuizTemplate)} title="Essay Quiz">
+            📝
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultFileSubmissionQuizTemplate)} title="File Submission Quiz">
+            ⬆️
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultUrlSubmissionQuizTemplate)} title="URL Submission Quiz">
+            🌐
+          </button>
         </div>
       )}
       <div className="flex-1 overflow-hidden">
@@ -145,6 +166,44 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
     </div>
   );
 }
+
+const defaultMultipleSelectQuizTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"Multiple select", "type":"multiple-select", "body": "A **multiple select** question can have multiple answers. Incorrect selections count against correct ones when calculating the correct percentage." }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+- [ ] This is **not** the right answer
+- [x] Another right answer
+- [ ] This is **not** the right answer
+\`\`\`
+`;
+
+const defaultMultipleChoiceQuizTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+- [ ] This one has a [link](https://cow.com)
+- [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
+\`\`\`
+`;
+const defaultEssayQuizTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"Essay", "type":"essay", "body":"Simple **essay** question" }
+\`\`\`
+`;
+
+const defaultFileSubmissionQuizTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"File submission", "type":"file-submission", "body":"Simple **submission** by file", "allowComment":true  }
+\`\`\`
+`;
+
+const defaultUrlSubmissionQuizTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"URL submission", "type":"url-submission", "body":"Simple **submission** by url", "allowComment":true }
+\`\`\`
+`;
 
 // // Handle paste - look for files in clipboard and upload them
 // async function handlePaste(e) {
