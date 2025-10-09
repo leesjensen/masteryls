@@ -55,13 +55,15 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
     }
   };
 
-  const wrapSelection = (before, after) => {
+  const wrapSelection = (before, after, selectionRequired = false) => {
     if (editorRef.current) {
       const selection = editorRef.current.getSelection();
       const selectedText = editorRef.current.getModel().getValueInRange(selection);
       let newText = before;
       if (selectedText) {
         newText = before + selectedText + after;
+      } else if (selectionRequired) {
+        return;
       }
 
       editorRef.current.executeEdits('', [
@@ -106,7 +108,7 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('1. ')} title="Numbered List">
             1.
           </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('[', '](url)')} title="Link">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('[', '](url)', true)} title="Link">
             🔗
           </button>
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('![alt text](image-url)')} title="Image">
