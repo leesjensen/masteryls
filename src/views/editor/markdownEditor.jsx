@@ -120,6 +120,22 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
             🖼️
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz">
+            ◉
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz">
+            ☑
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultEssayQuizTemplate)} title="Essay Quiz">
+            📝
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultFileSubmissionQuizTemplate)} title="File Submission Quiz">
+            ⬆️
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultUrlSubmissionQuizTemplate)} title="URL Submission Quiz">
+            🌐
+          </button>
+          <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <button
             className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
             onClick={() => {
@@ -141,22 +157,6 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
             title="Find & Replace (Ctrl+Shift+F)"
           >
             🔄
-          </button>
-          <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz">
-            ◉
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz">
-            ☑
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultEssayQuizTemplate)} title="Essay Quiz">
-            📝
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultFileSubmissionQuizTemplate)} title="File Submission Quiz">
-            ⬆️
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultUrlSubmissionQuizTemplate)} title="URL Submission Quiz">
-            🌐
           </button>
         </div>
       )}
