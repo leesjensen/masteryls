@@ -7,12 +7,14 @@ export default function EditorCommits({ currentTopic, course, user, service, set
   // Fetch commits
   useEffect(() => {
     async function fetchCommits() {
+      console.log('Fetching commits for topic:', currentTopic.commit);
       if (course && currentTopic && currentTopic.path && course.links?.gitHub?.apiUrl) {
         const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
         const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
         const commitsUrl = `${repoApiUrl}/commits?path=${filePath}&cachebust=${Date.now()}`;
         const commits = await service.getTopicCommits(user.getSetting('gitHubToken', course.id), commitsUrl);
         setTopicCommits(commits);
+        setCurrentCommit(currentTopic.commit);
       }
     }
 
@@ -28,6 +30,7 @@ export default function EditorCommits({ currentTopic, course, user, service, set
     const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
     const content = await service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
     setCurrentCommit(commit.sha);
+    console.log('Applying commit:', commit.sha);
     setContent(content);
     setDirty(true);
   };
