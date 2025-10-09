@@ -10,7 +10,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   const [files, setFiles] = React.useState([]);
   const [content, setContent] = React.useState('');
   const [preview, setPreview] = React.useState(false);
-  const [showCommits, setShowCommits] = React.useState(true);
+  const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
 
   const [committing, setCommitting] = React.useState(false);
