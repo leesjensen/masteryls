@@ -58,11 +58,11 @@ export default function EditorCommits({ currentTopic, course, user, service, set
             <div className="flex items-center justify-start border border-gray-300 rounded p-1 w-full">
               {commit.sha !== currentCommit && (
                 <>
-                  <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => handleApplyCommit(commit)}>
+                  <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-blue-50 rounded text-blue-700 border border-blue-300" onClick={() => handleApplyCommit(commit)}>
                     Apply
                   </button>
                   {diffCommit !== commit.sha && (
-                    <button className="mr-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-900 border border-gray-300" onClick={() => handleDiffCommit(commit)}>
+                    <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-amber-50 rounded text-gray-900 border border-gray-300" onClick={() => handleDiffCommit(commit)}>
                       Diff
                     </button>
                   )}
