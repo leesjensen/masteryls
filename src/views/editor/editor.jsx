@@ -11,6 +11,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   const [content, setContent] = React.useState('');
   const [preview, setPreview] = React.useState(false);
   const [showCommits, setShowCommits] = React.useState(true);
+  const [diffContent, setDiffContent] = React.useState(null);
 
   const [committing, setCommitting] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
@@ -122,8 +123,8 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
                 </button>
               </div>
             </div>
-            {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDirty={setDirty} />}
-            <div className="flex-8/10 flex overflow-hidden">{preview ? <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} /> : <MarkdownEditor content={content} onChange={handleEditorChange} commit={commit} />}</div>
+            {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
+            <div className="flex-8/10 flex overflow-hidden">{preview ? <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} /> : <MarkdownEditor content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} />}</div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles files={files} setFiles={setFiles} />
             </div>

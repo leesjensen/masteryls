@@ -1,7 +1,7 @@
 import React from 'react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 
-export default function MarkdownEditor({ content, onChange, commit }) {
+export default function MarkdownEditor({ content, diffContent, onChange, commit }) {
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
 
@@ -138,7 +138,7 @@ export default function MarkdownEditor({ content, onChange, commit }) {
         </div>
       )}
       <div className="flex-1 overflow-hidden">
-        <MonacoMarkdownEditor value={content} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
+        <MonacoMarkdownEditor content={content} diffContent={diffContent} compareValue={'fish tacos'} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
-export default function EditorCommits({ currentTopic, course, user, service, setContent, setDirty }) {
+export default function EditorCommits({ currentTopic, course, user, service, setContent, setDiffContent, setDirty }) {
   const [topicCommits, setTopicCommits] = useState([]);
   const [currentCommit, setCurrentCommit] = useState(currentTopic.commit);
+  const [diffEnabled, setDiffEnabled] = useState(false);
 
   // Fetch commits
   useEffect(() => {
@@ -25,14 +26,28 @@ export default function EditorCommits({ currentTopic, course, user, service, set
     }
   }, [course, currentTopic, user, service]);
 
-  const handleApplyCommit = async (commit) => {
+  const loadCommit = async (commit) => {
     const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
     const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
-    const content = await service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
+    return service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
+  };
+
+  const handleApplyCommit = async (commit) => {
+    const content = await loadCommit(commit);
     setCurrentCommit(commit.sha);
-    console.log('Applying commit:', commit.sha);
     setContent(content);
     setDirty(true);
+  };
+
+  const handleDiffCommit = async (commit) => {
+    const content = await loadCommit(commit);
+    setDiffContent(content);
+    setDiffEnabled(true);
+  };
+
+  const clearDiff = () => {
+    setDiffContent(null);
+    setDiffEnabled(false);
   };
 
   return (
@@ -46,10 +61,15 @@ export default function EditorCommits({ currentTopic, course, user, service, set
                   <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => handleApplyCommit(commit)}>
                     Apply
                   </button>
-                  <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => handleApplyCommit(commit)}>
+                  <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => handleDiffCommit(commit)}>
                     Diff
                   </button>
                 </>
+              )}
+              {commit.sha === currentCommit && diffEnabled && (
+                <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => clearDiff()}>
+                  Clear diff
+                </button>
               )}
               <div className="flex flex-col">
                 <div className="flex flex-row">

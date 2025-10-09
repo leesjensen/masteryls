@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
-import Editor from '@monaco-editor/react';
+import Editor, { DiffEditor } from '@monaco-editor/react';
 import { useMonacoSpellChecker } from './MonacoSpellChecker';
 
-const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, height = '100%', theme = 'vs-light' }) => {
+const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnly = false, height = '100%', theme = 'vs-dark' }) => {
   const editorRef = useRef(null);
   const { spellCheckerRef } = useMonacoSpellChecker();
 
@@ -27,8 +27,8 @@ const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, heig
       ],
     });
 
-    // Setup spell checker if enabled
-    if (spellCheckerRef.current) {
+    // Setup spell checker if enabled and not in compare mode
+    if (spellCheckerRef.current && !diffContent) {
       spellCheckerRef.current.setupEditor(editor, monaco);
     }
 
@@ -38,41 +38,50 @@ const MonacoMarkdownEditor = ({ value, onChange, onMount, readOnly = false, heig
     }
   }
 
-  return (
-    <Editor
-      height={height}
-      language="markdown"
-      value={value}
-      onChange={onChange}
-      onMount={handleEditorDidMount}
-      theme={theme}
-      options={{
-        readOnly,
-        fontSize: 14,
-        fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-        wordWrap: 'on',
-        wrappingIndent: 'none',
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        automaticLayout: true,
-        tabSize: 2,
-        insertSpaces: true,
-        lineNumbers: 'on',
-        folding: true,
-        contextmenu: true,
-        multiCursorModifier: 'ctrlCmd',
-        occurrencesHighlight: false,
-        selectionHighlight: true,
-        renderLineHighlight: 'gutter',
-        guides: {
-          indentation: false,
-        },
-        quickSuggestions: false,
-        lineNumbersMinChars: 1,
-        lineDecorationsWidth: 0,
-      }}
-    />
-  );
+  function handleDiffEditorDidMount(diffEditor, monaco) {
+    editorRef.current = diffEditor;
+
+    monaco.languages.setLanguageConfiguration('markdown', {
+      wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
+    });
+
+    // Call the external onMount handler if provided
+    if (onMount) {
+      onMount(diffEditor, monaco);
+    }
+  }
+
+  const editorOptions = {
+    readOnly,
+    fontSize: 14,
+    fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+    wordWrap: 'on',
+    wrappingIndent: 'none',
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    tabSize: 2,
+    insertSpaces: true,
+    lineNumbers: 'on',
+    folding: true,
+    contextmenu: true,
+    multiCursorModifier: 'ctrlCmd',
+    occurrencesHighlight: false,
+    selectionHighlight: true,
+    renderLineHighlight: 'gutter',
+    guides: {
+      indentation: false,
+    },
+    quickSuggestions: false,
+    lineNumbersMinChars: 1,
+    lineDecorationsWidth: 0,
+  };
+
+  if (diffContent) {
+    return <DiffEditor height={height} language="markdown" original={diffContent} modified={content} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
+  }
+
+  return <Editor height={height} language="markdown" value={content} onChange={onChange} onMount={handleEditorDidMount} theme={theme} options={editorOptions} />;
 };
 
 export default MonacoMarkdownEditor;
