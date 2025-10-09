@@ -9,22 +9,22 @@ export default function MarkdownEditor({ content, diffContent, onChange, commit 
     editorRef.current = editor;
     setEditorLoaded(true);
 
-    // Add custom key bindings
+    // Save
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
       await commit();
     });
 
-    // Add Find and Replace shortcut
+    // Find and Replace
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
       editor.getAction('actions.find').run();
     });
 
-    // Add Find and Replace All shortcut
+    // Find and Replace
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
       editor.getAction('editor.action.startFindReplaceAction').run();
     });
 
-    // Add Multi-cursor shortcut
+    // Multi-cursor select next occurrence
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD, () => {
       editor.getAction('editor.action.addSelectionToNextFindMatch').run();
     });
