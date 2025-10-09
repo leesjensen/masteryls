@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import { useMonacoSpellChecker } from './MonacoSpellChecker';
 
-const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnly = false, height = '100%', theme = 'vs-dark' }) => {
+const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnly = false, height = '100%', width = '100%', theme = 'vs-dark' }) => {
   const editorRef = useRef(null);
   const { spellCheckerRef } = useMonacoSpellChecker();
 
@@ -78,10 +78,10 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
   };
 
   if (diffContent) {
-    return <DiffEditor height={height} language="markdown" original={diffContent} modified={content} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
+    return <DiffEditor height={height} width={width} language="markdown" original={diffContent} modified={content} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, readOnly: true, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
   }
 
-  return <Editor height={height} language="markdown" value={content} onChange={onChange} onMount={handleEditorDidMount} theme={theme} options={editorOptions} />;
+  return <Editor height={height} width={width} language="markdown" value={content} onChange={onChange} onMount={handleEditorDidMount} theme={theme} options={editorOptions} />;
 };
 
 export default MonacoMarkdownEditor;
