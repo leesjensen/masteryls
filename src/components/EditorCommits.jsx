@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 export default function EditorCommits({ currentTopic, course, user, service, setContent, setDiffContent, setDirty }) {
   const [topicCommits, setTopicCommits] = useState([]);
   const [currentCommit, setCurrentCommit] = useState(currentTopic.commit);
-  const [diffEnabled, setDiffEnabled] = useState(false);
+  const [diffCommit, setDiffCommit] = useState(null);
 
   // Fetch commits
   useEffect(() => {
@@ -42,12 +42,12 @@ export default function EditorCommits({ currentTopic, course, user, service, set
   const handleDiffCommit = async (commit) => {
     const content = await loadCommit(commit);
     setDiffContent(content);
-    setDiffEnabled(true);
+    setDiffCommit(commit.sha);
   };
 
   const clearDiff = () => {
     setDiffContent(null);
-    setDiffEnabled(false);
+    setDiffCommit(null);
   };
 
   return (
@@ -61,19 +61,21 @@ export default function EditorCommits({ currentTopic, course, user, service, set
                   <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => handleApplyCommit(commit)}>
                     Apply
                   </button>
-                  <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => handleDiffCommit(commit)}>
-                    Diff
-                  </button>
+                  {diffCommit !== commit.sha && (
+                    <button className="mr-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded text-gray-900 border border-gray-300" onClick={() => handleDiffCommit(commit)}>
+                      Diff
+                    </button>
+                  )}
+                  {diffCommit === commit.sha && (
+                    <button className="mr-2 px-2 py-1 text-xs bg-amber-200 hover:bg-amber-300 rounded text-amber-900 border border-amber-300" onClick={() => clearDiff()}>
+                      Diff
+                    </button>
+                  )}
                 </>
-              )}
-              {commit.sha === currentCommit && diffEnabled && (
-                <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => clearDiff()}>
-                  Clear diff
-                </button>
               )}
               <div className="flex flex-col">
                 <div className="flex flex-row">
-                  <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pr-1 text-blue-600 underline">
+                  <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pr-1 text-amber-600 underline">
                     {commit.sha.slice(0, 7)}
                   </a>
                   <span className="font-bold pr-1">{commit.commit.author.name}</span>

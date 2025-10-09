@@ -86,6 +86,11 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
     }
   }
 
+  function toggleShowCommits() {
+    setShowCommits((v) => !v);
+    setDiffContent(null);
+  }
+
   if (!contentAvailable) {
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
   }
@@ -118,7 +123,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
                   Commit
                 </button>
-                <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={() => setShowCommits((v) => !v)}>
+                <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={toggleShowCommits}>
                   {showCommits ? 'Hide' : 'Show'} Commits
                 </button>
               </div>
