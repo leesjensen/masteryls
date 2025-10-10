@@ -429,6 +429,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     }
   }
 
+  async function makeGitHubApiRequest(url) {
+    const token = user.getSetting('gitHubToken', course.id);
+    return service.makeGitHubApiRequest(token, url);
+  }
+
   function _generateId() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
   }
@@ -468,6 +473,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     discardTopicMarkdown,
     navigateToAdjacentTopic,
     getQuizFeedback,
+    makeGitHubApiRequest,
   };
 }
 

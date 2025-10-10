@@ -1,9 +1,35 @@
 import React from 'react';
 
-export default function EditorFiles({ courseOps, files, setFiles }) {
+export default function EditorFiles({ courseOps, course, currentTopic }) {
+  const [files, setFiles] = React.useState([]);
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [isDragOver, setIsDragOver] = React.useState(false);
   const lastSelectedIndexRef = React.useRef(-1);
+
+  React.useEffect(() => {
+    const contentAvailable = !!(currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable'));
+
+    if (contentAvailable) {
+      async function fetchFiles() {
+        setFiles([]);
+        if (course && contentAvailable) {
+          let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
+          fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+          const res = await courseOps.makeGitHubApiRequest(fetchUrl);
+
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              const filteredData = data.filter((file) => !currentTopic.path.endsWith(file.path));
+              setFiles(filteredData);
+            }
+          }
+        }
+      }
+
+      fetchFiles();
+    }
+  }, [course, currentTopic]);
 
   function detectTypeFromName(name) {
     if (!name) return 'file';

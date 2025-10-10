@@ -7,7 +7,6 @@ import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
 
 export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
-  const [files, setFiles] = React.useState([]);
   const [content, setContent] = React.useState('');
   const [preview, setPreview] = React.useState(false);
   const [showCommits, setShowCommits] = React.useState(false);
@@ -18,29 +17,10 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   const dirtyRef = useLatest(dirty);
   const contentRef = useLatest(content);
 
-  const contentAvailable = currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable');
+  const contentAvailable = !!(currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable'));
 
   React.useEffect(() => {
     if (contentAvailable) {
-      async function fetchFiles() {
-        setFiles([]);
-        if (course && contentAvailable) {
-          let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
-          fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
-          const res = await service.makeGitHubApiRequest(user.getSetting('gitHubToken', course.id), fetchUrl);
-
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data)) {
-              const filteredData = data.filter((file) => !currentTopic.path.endsWith(file.path));
-              setFiles(filteredData);
-            }
-          }
-        }
-      }
-
-      fetchFiles();
-
       courseOps.getTopicMarkdown(currentTopic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
@@ -139,7 +119,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
             {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
             <div className="flex-8/10 flex overflow-hidden">{currentEditor}</div>
             <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles courseOps={courseOps} files={files} setFiles={setFiles} />
+              <EditorFiles courseOps={courseOps} course={course} currentTopic={currentTopic} />
             </div>
           </div>
         );
