@@ -32,9 +32,8 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data)) {
-              setFiles(data);
-            } else {
-              setFiles([]);
+              const filteredData = data.filter((file) => !currentTopic.path.endsWith(file.path));
+              setFiles(filteredData);
             }
           }
         }

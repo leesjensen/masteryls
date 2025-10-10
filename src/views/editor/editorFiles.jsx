@@ -2,6 +2,7 @@ import React from 'react';
 
 export default function EditorFiles({ files, setFiles }) {
   const [selectedFiles, setSelectedFiles] = React.useState([]);
+  const [isDragOver, setIsDragOver] = React.useState(false);
   const lastSelectedIndexRef = React.useRef(-1);
 
   function detectTypeFromName(name) {
@@ -64,6 +65,50 @@ export default function EditorFiles({ files, setFiles }) {
     return bytes.toFixed(1) + ' ' + units[u];
   }
 
+  // Drag and drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set isDragOver to false if we're leaving the drop zone entirely
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+
+    if (droppedFiles.length > 0) {
+      // Convert File objects to the format expected by the component
+      const newFiles = droppedFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified,
+        file: file, // Store the actual File object for potential upload
+      }));
+
+      // Add new files to existing files, avoiding duplicates
+      setFiles((prevFiles) => {
+        const existingNames = new Set(prevFiles.map((f) => f.name));
+        const uniqueNewFiles = newFiles.filter((f) => !existingNames.has(f.name));
+        return [...prevFiles, ...uniqueNewFiles];
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col p-2 w-full">
       <div className="flex items-center justify-between">
@@ -75,8 +120,17 @@ export default function EditorFiles({ files, setFiles }) {
         </div>
       </div>
 
-      <div className="flex-1 mt-2 p-1 border border-gray-300 rounded overflow-auto">
-        {files && files.length > 0 && (
+      <div className={`flex-1 mt-2 p-1 border rounded overflow-auto transition-colors ${isDragOver ? 'border-blue-500 border-2 border-dashed bg-blue-50' : 'border-gray-300'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+        {isDragOver && (
+          <div className="flex items-center justify-center h-32 text-blue-600 font-medium">
+            <div className="text-center">
+              <div className="text-2xl mb-2">📁</div>
+              <div>Drop files here to add them</div>
+            </div>
+          </div>
+        )}
+
+        {files && files.length > 0 && !isDragOver && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {files.map((file, idx) => {
               const name = file.name;
@@ -95,6 +149,16 @@ export default function EditorFiles({ files, setFiles }) {
                 </button>
               );
             })}
+          </div>
+        )}
+
+        {(!files || files.length === 0) && !isDragOver && (
+          <div className="flex items-center justify-center h-32 text-gray-500">
+            <div className="text-center">
+              <div className="text-2xl mb-2">📁</div>
+              <div>No files yet</div>
+              <div className="text-sm">Drag and drop files here to add them</div>
+            </div>
           </div>
         )}
       </div>
