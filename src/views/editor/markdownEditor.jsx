@@ -135,6 +135,9 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
             H3
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText(defaultTableTemplate)} title="Table">
+            ⊞
+          </button>
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('- ')} title="Bullet List">
             •
           </button>
@@ -144,7 +147,7 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('[', '](url)', true)} title="Link">
             🔗
           </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100&q=80)')} title="Image">
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80)')} title="Image">
             🖼️
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
@@ -203,6 +206,13 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
     </div>
   );
 }
+
+const defaultTableTemplate = `\n
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Row 1 Col 1 | Row 1 Col 2 | Row 1 Col 3 |
+| Row 2 Col 1 | Row 2 Col 2 | Row 2 Col 3 |\n
+`;
 
 const defaultMultipleSelectQuizTemplate = `
 \`\`\`masteryls
