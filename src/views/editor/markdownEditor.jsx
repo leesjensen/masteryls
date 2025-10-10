@@ -8,11 +8,12 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
 
-  // Expose insertText function to parent via ref
+  // Expose insertText and insertFiles functions to parent via ref
   React.useImperativeHandle(
     ref,
     () => ({
       insertText,
+      insertFiles,
     }),
     []
   );
@@ -58,6 +59,34 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
       ]);
       editorRef.current.focus();
     }
+  };
+
+  // Function to insert files as appropriate markdown
+  const insertFiles = (fileNames) => {
+    if (!fileNames || fileNames.length === 0) return;
+
+    const markdownLinks = fileNames
+      .map((fileName) => {
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+
+        // Generate appropriate markdown based on file type
+        if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(fileExtension)) {
+          // Image files
+          return `![${fileName}](${fileName})`;
+        } else if (['mp4', 'webm', 'ogg', 'mov'].includes(fileExtension)) {
+          // Video files
+          return `<video controls width="100%">\n  <source src="${fileName}" type="video/${fileExtension === 'mov' ? 'quicktime' : fileExtension}">\n  Your browser does not support the video tag.\n</video>`;
+        } else if (['mp3', 'wav', 'ogg'].includes(fileExtension)) {
+          // Audio files
+          return `<audio controls>\n  <source src="${fileName}" type="audio/${fileExtension}">\n  Your browser does not support the audio tag.\n</audio>`;
+        } else {
+          // Other files (documents, code, etc.)
+          return `[${fileName}](${fileName})`;
+        }
+      })
+      .join('\n\n');
+
+    insertText(markdownLinks);
   };
 
   const insertQuiz = (quizTemplate) => {

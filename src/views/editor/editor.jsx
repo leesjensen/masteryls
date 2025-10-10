@@ -73,33 +73,10 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
     setDiffContent(null);
   }
 
-  // Function to handle file insertion from EditorFiles component
+  // Simple function to handle file insertion from EditorFiles component
   const handleInsertFiles = (selectedFileNames) => {
     if (!markdownEditorRef.current || !selectedFileNames.length) return;
-
-    const markdownLinks = selectedFileNames
-      .map((fileName) => {
-        const fileExtension = fileName.split('.').pop().toLowerCase();
-
-        // Generate appropriate markdown based on file type
-        if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(fileExtension)) {
-          // Image files
-          return `![${fileName}](${fileName})`;
-        } else if (['mp4', 'webm', 'ogg', 'mov'].includes(fileExtension)) {
-          // Video files
-          return `<video controls width="100%">\n  <source src="${fileName}" type="video/${fileExtension === 'mov' ? 'quicktime' : fileExtension}">\n  Your browser does not support the video tag.\n</video>`;
-        } else if (['mp3', 'wav', 'ogg'].includes(fileExtension)) {
-          // Audio files
-          return `<audio controls>\n  <source src="${fileName}" type="audio/${fileExtension}">\n  Your browser does not support the audio tag.\n</audio>`;
-        } else {
-          // Other files (documents, code, etc.)
-          return `[${fileName}](${fileName})`;
-        }
-      })
-      .join('\n\n');
-
-    // Insert the markdown into the editor
-    markdownEditorRef.current.insertText(markdownLinks);
+    markdownEditorRef.current.insertFiles(selectedFileNames);
   };
 
   if (!contentAvailable) {
