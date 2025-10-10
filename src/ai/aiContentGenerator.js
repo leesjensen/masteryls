@@ -99,6 +99,19 @@ Requirements:
   return makeAiRequest(apiKey, prompt);
 }
 
+/**
+ * Generates markdown content for a course overview using AI.
+ *
+ * @async
+ * @param {string} apiKey - The API key used for authentication with the AI service.
+ * @param {Object} course - The course object containing title, description and modules.
+ * @param {string} course.title - The title of the course.
+ * @param {string} course.description - The description of the course.
+ * @param {Array<Object>} course.modules - Array of module objects for the course.
+ * @param {string} course.modules[].title - The title of a module.
+ * @param {string} course.modules[].description - The description of a module.
+ * @returns {Promise<string>} A promise that resolves to the generated markdown content.
+ */
 export async function aiCourseOverviewGenerator(apiKey, course) {
   const modules = course.modules.map((module) => ({
     title: module.title,
@@ -129,6 +142,55 @@ Requirements:
   return makeAiRequest(apiKey, prompt);
 }
 
+/**
+ * Generates a topic section.
+ *
+ * @async
+ * @param {string} apiKey - The API key to use for the AI service.
+ * @param {string} topic - The instructional topic for the section.
+ * @param {string} subject - The specific subject for the section.
+ * @returns {Promise<string>} A promise that resolves to the generated section in markdown format.
+ */
+export async function aiSectionGenerator(apiKey, topic, subject) {
+  const prompt = `You are an expert educational content creator.
+Generate a section for a course topic that uses the following format:
+
+## section title
+
+Multiple paragraphs of section content. Examples, lists, mermaid diagrams, and code examples are preferred.
+
+\`\`\`masteryls
+{"id":"", "title":"question title", "type":"multiple-choice", "body":"question text" }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+- [ ] This is also wrong
+- [ ] This one is close but wrong
+\`\`\`
+
+
+Instructional topic: ${topic}
+Section subject: ${subject}
+
+Requirements:
+- Create a course topic section based on the provided topic and section subject
+- The response must be valid GitHub-flavored markdown
+- The section title should be concise and descriptive
+- The section body should be clear and unambiguous
+- Ensure that the section is educational and reinforces key concepts from the topic
+`;
+
+  return makeAiRequest(apiKey, prompt);
+}
+
+/**
+ * Generates a multiple-choice quiz question using AI based on the provided topic and subject.
+ *
+ * @async
+ * @param {string} apiKey - The API key to use for the AI service.
+ * @param {string} topic - The instructional topic for the quiz question.
+ * @param {string} subject - The specific subject for the quiz question.
+ * @returns {Promise<string>} A promise that resolves to the generated quiz question in markdown format.
+ */
 export async function aiQuizGenerator(apiKey, topic, subject) {
   const prompt = `You are an expert educational content creator.
 Generate a multiple choice quiz that uses the following format:
@@ -202,12 +264,7 @@ If the student's question is not directly related to the topic content, gently r
 }
 
 /**
- * Generates constructive feedback for a student's answer to a quiz question using AI.
- *
- * The feedback is designed to be part of an ongoing conversation, acknowledging correct aspects,
- * explaining incorrect answers, providing the correct answer with a brief explanation, and offering
- * suggestions for improvement if needed. The tone is supportive and encouraging, and the feedback
- * is limited to around 150 words.
+ * Generates constructive feedback for a student's answer to a quiz question.
  *
  * @async
  * @function aiQuizFeedbackGenerator
@@ -240,7 +297,7 @@ Requirements:
 }
 
 /**
- * Sends a prompt to the Gemini 2.0 Flash generative language model and returns the generated content.
+ * Sends a prompt to the Gemini generative language model and returns the generated content.
  *
  * @async
  * @function makeAiRequest
