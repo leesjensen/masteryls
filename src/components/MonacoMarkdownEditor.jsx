@@ -87,7 +87,7 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
   };
 
   if (diffContent) {
-    return <DiffEditor height={height} width={width} language="markdown" original={diffContent} modified={content} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, originalEditable: false, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
+    return <DiffEditor height={height} width={width} language="markdown" original={diffContent} modified={content} keepCurrentOriginalModel={true} keepCurrentModifiedModel={true} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, originalEditable: false, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
   }
 
   return <Editor height={height} width={width} language="markdown" value={content} onChange={onChange} onMount={handleEditorDidMount} theme={theme} options={editorOptions} />;
