@@ -73,23 +73,21 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
     setDiffContent(null);
   }
 
-  // Simple function to handle file insertion from EditorFiles component
-  const handleInsertFiles = (selectedFileNames) => {
-    if (!markdownEditorRef.current || !selectedFileNames.length) return;
-    markdownEditorRef.current.insertFiles(selectedFileNames);
-  };
-
   if (!contentAvailable) {
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
   }
 
   let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
   if (preview) {
-    const previewContent = content.replace(/(\]\()((?!https?:\/\/|www\.)[^)\s]+)(\))/g, (match, p1, p2, p3) => {
-      const prefixedPath = p2.startsWith('/') || p2.startsWith('http') ? p2 : `${course.links.gitHub.rawUrl}/${p2}`;
-      return `${p1}${prefixedPath}${p3}`;
+    const previewContent = content.replace(/\]\(([^\)\s]+)\)/g, (match, p1) => {
+      const prefixedPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${course.links.gitHub.rawUrl}/${p1}`;
+      return `](${prefixedPath})`;
     });
-    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={previewContent} />;
+    const previewWithFullVideoPaths = previewContent.replace(/ src="([^"]+)"/g, (match, p1) => {
+      const fullPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${course.links.gitHub.rawUrl}/${p1}`;
+      return ` src="${fullPath}"`;
+    });
+    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={previewWithFullVideoPaths} />;
   }
 
   const editorComponent = (type) => {
@@ -128,7 +126,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
             {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
             <div className="flex-8/10 flex overflow-hidden">{currentEditor}</div>
             <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles courseOps={courseOps} course={course} currentTopic={currentTopic} onInsertFiles={handleInsertFiles} />
+              <EditorFiles courseOps={courseOps} course={course} currentTopic={currentTopic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
             </div>
           </div>
         );

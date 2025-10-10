@@ -40,30 +40,23 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
     setSelectedFiles([]);
   };
 
-  const insertSelected = () => {
-    if (selectedFiles.length > 0 && onInsertFiles) {
-      onInsertFiles(selectedFiles);
-      setSelectedFiles([]); // Clear selection after inserting
-    }
-  };
-
   const handleItemClick = (e, index, file) => {
-    const name = file.name;
-    const isSelected = selectedFiles.includes(name);
+    const path = file.path;
+    const isSelected = selectedFiles.includes(path);
 
     if (e.shiftKey && lastSelectedIndexRef.current !== -1) {
       // Range select
       const start = Math.min(lastSelectedIndexRef.current, index);
       const end = Math.max(lastSelectedIndexRef.current, index);
-      const rangeNames = files.slice(start, end + 1).map((f) => f.name);
+      const rangeNames = files.slice(start, end + 1).map((f) => f.path);
       const newSet = Array.from(new Set([...selectedFiles, ...rangeNames]));
       setSelectedFiles(newSet);
     } else if (e.ctrlKey || e.metaKey) {
       // Toggle selection
       if (isSelected) {
-        setSelectedFiles((prev) => prev.filter((n) => n !== name));
+        setSelectedFiles((prev) => prev.filter((n) => n !== path));
       } else {
-        setSelectedFiles((prev) => [...prev, name]);
+        setSelectedFiles((prev) => [...prev, path]);
       }
       lastSelectedIndexRef.current = index;
     } else {
@@ -71,7 +64,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
       if (isSelected) {
         setSelectedFiles([]);
       } else {
-        setSelectedFiles([name]);
+        setSelectedFiles([path]);
         lastSelectedIndexRef.current = index;
       }
     }
@@ -116,6 +109,10 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
 
     const droppedFiles = Array.from(e.dataTransfer.files);
 
+    function cleanFilename(name) {
+      return name.replace(/[^a-zA-Z0-9-_\.]/g, '_');
+    }
+
     if (droppedFiles.length > 0) {
       // Convert File objects to the format expected by the component
       const newFiles = droppedFiles.map((file) => ({
@@ -137,16 +134,12 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
     }
   };
 
-  function cleanFilename(name) {
-    return name.replace(/[^a-zA-Z0-9-_\.]/g, '_');
-  }
-
   return (
     <div className="flex flex-col p-2 w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">Files</h1>
         <div className="flex items-center">
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={insertSelected}>
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={() => onInsertFiles(selectedFiles)}>
             Insert
           </button>
           <button className="mx-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={deleteSelected}>
@@ -168,18 +161,13 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
         {files && files.length > 0 && !isDragOver && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {files.map((file, idx) => {
-              const name = file.name;
-              const size = fileSize(file);
-              const type = detectTypeFromName(name);
-              const selected = selectedFiles.includes(name);
+              const selected = selectedFiles.includes(file.path);
               return (
-                <button key={name + idx} onClick={(e) => handleItemClick(e, idx, file)} className={`text-left px-1 border rounded shadow-sm flex items-center gap-2 hover:border-blue-400 focus:outline-none ${selected ? 'bg-amber-100 border-amber-400' : 'bg-white'}`}>
+                <button key={file.name + idx} onClick={(e) => handleItemClick(e, idx, file)} className={`text-left px-1 border rounded shadow-sm flex items-center gap-2 hover:border-blue-400 focus:outline-none ${selected ? 'bg-amber-100 border-amber-400' : 'bg-white'}`}>
                   <input type="checkbox" readOnly checked={selected} className="w-4 h-4" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm truncate">{name}</div>
-                    <div className="text-xs text-gray-500">
-                      {type} {size ? `• ${size}` : ''}
-                    </div>
+                    <div className="text-sm truncate">{file.name}</div>
+                    <div className="text-xs text-gray-500">{`${detectTypeFromName(file.name)} • ${fileSize(file)}`}</div>
                   </div>
                 </button>
               );

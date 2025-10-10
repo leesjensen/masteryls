@@ -370,8 +370,6 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       const reader = new FileReader();
       reader.onload = () => {
         file.content = new Uint8Array(reader.result);
-
-        console.log(gitHubUrl, file.content, token, commitMessage);
         service.commitGitHubFile(gitHubUrl, file.content, token, commitMessage);
       };
       reader.readAsArrayBuffer(file.props);
@@ -385,7 +383,14 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     const res = await service.makeGitHubApiRequest(token, fetchUrl);
 
     if (res.ok) {
-      return res.json();
+      const data = await res.json();
+
+      const contentPath = currentTopic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
+      data.forEach((file) => {
+        file.path = `${contentPath[1]}/${file.name}`;
+      });
+
+      return data;
     }
     return [];
   }
