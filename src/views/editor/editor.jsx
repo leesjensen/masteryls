@@ -96,7 +96,11 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
 
   let currentEditor = <MarkdownEditor currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
   if (preview) {
-    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} />;
+    const previewContent = content.replace(/(\]\()((?!https?:\/\/|www\.)[^)\s]+)(\))/g, (match, p1, p2, p3) => {
+      const prefixedPath = p2.startsWith('/') || p2.startsWith('http') ? p2 : `${course.links.gitHub.rawUrl}/${p2}`;
+      return `${p1}${prefixedPath}${p3}`;
+    });
+    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={previewContent} />;
   }
 
   const editorComponent = (type) => {
