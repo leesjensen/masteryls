@@ -346,8 +346,20 @@ class Service {
     }
   }
 
-  async commitGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, blobSha?: string): Promise<string> {
-    const contentBase64 = btoa(new TextEncoder().encode(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+  async commitGitHubFile(gitHubUrl: string, content: string | Uint8Array, token: string, commitMessage: string, blobSha?: string): Promise<string> {
+    let contentBase64: string;
+    if (content instanceof Uint8Array) {
+      contentBase64 = btoa(
+        Array.from(content)
+          .map((byte) => String.fromCharCode(byte))
+          .join('')
+      );
+    } else if (typeof content == 'string') {
+      contentBase64 = btoa(new TextEncoder().encode(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+    } else {
+      throw new Error('Invalid content type');
+    }
+
     const body: any = {
       message: commitMessage,
       content: contentBase64,

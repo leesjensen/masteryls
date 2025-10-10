@@ -359,6 +359,25 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     }
   }
 
+  async function addTopicFiles(files) {
+    const token = user.getSetting('gitHubToken', course.id);
+    const commitMessage = `enhance(topic) ${currentTopic.title} with new file`;
+
+    files.forEach(async (file) => {
+      const contentPath = currentTopic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}/${file.name}`;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        file.content = new Uint8Array(reader.result);
+
+        console.log(gitHubUrl, file.content, token, commitMessage);
+        service.commitGitHubFile(gitHubUrl, file.content, token, commitMessage);
+      };
+      reader.readAsArrayBuffer(file.props);
+    });
+  }
+
   async function generateTopicContent(topic, topicDescription) {
     let basicContent = `# ${topic.title}\n\n`;
 
@@ -445,6 +464,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     renameTopic,
     updateTopic,
     changeTopic,
+    addTopicFiles,
     discardTopicMarkdown,
     navigateToAdjacentTopic,
     getQuizFeedback,

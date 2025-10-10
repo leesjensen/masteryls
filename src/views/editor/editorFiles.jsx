@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function EditorFiles({ files, setFiles }) {
+export default function EditorFiles({ courseOps, files, setFiles }) {
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [isDragOver, setIsDragOver] = React.useState(false);
   const lastSelectedIndexRef = React.useRef(-1);
@@ -93,12 +93,14 @@ export default function EditorFiles({ files, setFiles }) {
     if (droppedFiles.length > 0) {
       // Convert File objects to the format expected by the component
       const newFiles = droppedFiles.map((file) => ({
-        name: file.name,
+        name: cleanFilename(file.name),
         size: file.size,
         type: file.type,
         lastModified: file.lastModified,
-        file: file, // Store the actual File object for potential upload
+        props: file,
       }));
+
+      courseOps.addTopicFiles(newFiles);
 
       // Add new files to existing files, avoiding duplicates
       setFiles((prevFiles) => {
@@ -108,6 +110,10 @@ export default function EditorFiles({ files, setFiles }) {
       });
     }
   };
+
+  function cleanFilename(name) {
+    return name.replace(/[^a-zA-Z0-9-_\.]/g, '_');
+  }
 
   return (
     <div className="flex flex-col p-2 w-full">

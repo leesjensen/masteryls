@@ -130,7 +130,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
             {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
             <div className="flex-8/10 flex overflow-hidden">{preview ? <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} /> : <MarkdownEditor currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />}</div>
             <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles files={files} setFiles={setFiles} />
+              <EditorFiles courseOps={courseOps} files={files} setFiles={setFiles} />
             </div>
           </div>
         );
