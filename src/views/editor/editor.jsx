@@ -94,6 +94,11 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
   }
 
+  let currentEditor = <MarkdownEditor currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
+  if (preview) {
+    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} />;
+  }
+
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
@@ -128,7 +133,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
               </div>
             </div>
             {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
-            <div className="flex-8/10 flex overflow-hidden">{preview ? <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} /> : <MarkdownEditor currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />}</div>
+            <div className="flex-8/10 flex overflow-hidden">{currentEditor}</div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles courseOps={courseOps} files={files} setFiles={setFiles} />
             </div>
