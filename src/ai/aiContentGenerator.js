@@ -56,10 +56,7 @@ Requirements:
 - The course contains a capstone project that integrates the topics covered in each module
 - Each topic should have a concise, descriptive title
 `;
-  const courseJson = await makeAiRequest(apiKey, prompt);
-
-  const cleanedJson = courseJson.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
-  return cleanedJson;
+  return makeAiRequest(apiKey, prompt);
 }
 
 /**
@@ -223,6 +220,34 @@ Requirements:
 }
 
 /**
+ * Generates a response to a general prompt.
+ *
+ * @async
+ * @param {string} apiKey - The API key to use for the AI service.
+ * @param {string} topic - The instructional topic for the prompt.
+ * @param {string} prompt - The general prompt.
+ * @returns {Promise<string>} A promise that resolves to the prompt response.
+ */
+export async function aiGeneralPromptResponse(apiKey, topic, prompt) {
+  const fullPrompt = `You are an expert educational content creator.
+Generate a response to the following prompt:
+
+Instructional topic: ${topic}
+Prompt: ${prompt}
+
+Requirements:
+- The response must be valid GitHub-flavored markdown
+- The response should be clear and unambiguous
+- Only include information relevant to the prompt
+- Do not include commentary about the prompt itself
+- Do not include introductions to the response
+- Ensure that the response is educational and reinforces key concepts from the topic
+`;
+
+  return makeAiRequest(apiKey, fullPrompt);
+}
+
+/**
  * Generates a discussion response for a student based on the provided topic content and user prompt.
  *
  * @async
@@ -340,7 +365,9 @@ async function makeAiRequest(apiKey, prompt) {
     }
 
     const responseText = data.candidates[0].content.parts[0].text;
-    return responseText;
+    const cleanedText = responseText.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
+
+    return cleanedText;
   } catch (error) {
     console.error('Error generating AI content:', error);
     throw new Error(`Failed to generate AI content: ${error.message}`);

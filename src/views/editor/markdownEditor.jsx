@@ -1,6 +1,6 @@
 import React from 'react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
-import { aiQuizGenerator, aiSectionGenerator } from '../../ai/aiContentGenerator';
+import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
 
 export default function MarkdownEditor({ currentTopic, content, diffContent, onChange, commit, user }) {
@@ -9,8 +9,9 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
   const subjectDialogRef = React.useRef(null);
 
   function handleEditorDidMount(editor, monaco) {
+    editor.setPosition({ lineNumber: 1, column: 1 });
+    editor.focus();
     editorRef.current = editor;
-    editorRef.current.focus();
 
     setEditorLoaded(true);
 
@@ -121,6 +122,23 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
     }
   };
 
+  const insertPromptContent = async () => {
+    const subject = await subjectDialogRef.current.show({
+      title: 'Generate content',
+      description: 'What would you like to generate?',
+      placeholder: 'generation prompt',
+      confirmButtonText: 'Generate',
+      required: true,
+    });
+
+    if (subject) {
+      const topic = currentTopic.description || currentTopic.title;
+      const apiKey = user.getSetting('geminiApiKey');
+      const response = '\n' + (await aiGeneralPromptResponse(apiKey, topic, subject)) + '\n';
+      insertText(response);
+    }
+  };
+
   return (
     <div className="m-2 flex-9/12 flex flex-col relative border border-gray-300 ">
       {/* Markdown Toolbar */}
@@ -136,9 +154,6 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
             {'</>'}
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('# ')} title="Heading 1">
-            H1
-          </button>
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('## ')} title="Heading 2">
             H2
           </button>
@@ -183,6 +198,9 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
           </button>
           <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertAiSection()} title="Insert AI generated section">
             ✨
+          </button>
+          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertPromptContent()} title="Insert AI prompt response">
+            💡
           </button>
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <button

@@ -63,7 +63,7 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
   }, [dialogRef]);
 
   return (
-    <dialog ref={dialogRef} className="p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
+    <dialog ref={dialogRef} className="w-full p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
       {currentTitle && <h2 className="text-xl font-bold text-amber-500 mb-4">{currentTitle}</h2>}
       {currentDescription && <div className="mb-4 text-gray-700">{currentDescription}</div>}
 
