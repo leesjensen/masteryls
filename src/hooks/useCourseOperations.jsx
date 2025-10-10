@@ -224,6 +224,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
           title: topicTitle,
           type: topicType,
           path: _generateTopicPath(course, topicTitle, topicType),
+          description: topicDescription,
         };
 
         const updatedCourse = Course.copy(course);

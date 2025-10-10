@@ -129,6 +129,37 @@ Requirements:
   return makeAiRequest(apiKey, prompt);
 }
 
+export async function aiQuizGenerator(apiKey, topic, subject) {
+  const prompt = `You are an expert educational content creator.
+Generate a multiple choice quiz that uses the following format:
+
+\`\`\`masteryls
+{"id":"", "title":"question title", "type":"multiple-choice", "body":"question text" }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+- [ ] This is also wrong
+- [ ] This one is close but wrong
+\`\`\`
+
+Instructional topic: ${topic}
+Question subject: ${subject}
+
+Requirements:
+- Create a question based on the instructional topic and question subject
+- The response must be valid GitHub-flavored markdown
+- The question title should be concise and descriptive
+- The question body should be clear and unambiguous
+- Provide four answer choices, with one correct answer marked with [x] and three incorrect answers marked with [ ]
+- The correct answer should be plausible and relevant to the question
+- The incorrect answers should be plausible but clearly wrong to someone who understands the material
+- Avoid using "All of the above" or "None of the above" as answer choices
+- Ensure that the quiz is educational and reinforces key concepts from the topic
+- The quiz should be challenging but fair, suitable for learners who have studied the topic
+`;
+
+  return makeAiRequest(apiKey, prompt);
+}
+
 /**
  * Generates a discussion response for a student based on the provided topic content and user prompt.
  *
