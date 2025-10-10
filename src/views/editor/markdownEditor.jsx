@@ -10,6 +10,8 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
 
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
+    editorRef.current.focus();
+
     setEditorLoaded(true);
 
     // Save
@@ -58,7 +60,6 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
       const selection = editorRef.current.getSelection();
       let position = selection.getStartPosition();
       editorRef.current.setPosition({ lineNumber: position.lineNumber, column: 1 });
-      editorRef.current.focus();
       insertText(text);
     }
   };
@@ -91,11 +92,18 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
   };
 
   const insertAiQuiz = async () => {
-    const subject = await subjectDialogRef.current.show();
+    const subject = await subjectDialogRef.current.show({
+      title: 'Generate quiz',
+      description: 'What would you like the quiz to be about?',
+      placeholder: 'subject',
+      confirmButtonText: 'Generate',
+      required: true,
+    });
+
     if (subject) {
       const topic = currentTopic.description || currentTopic.title;
       const apiKey = user.getSetting('geminiApiKey');
-      const response = await aiQuizGenerator(apiKey, topic, subject);
+      const response = '\n' + (await aiQuizGenerator(apiKey, topic, subject)) + '\n';
 
       const quizWithUuid = response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
       insertText(quizWithUuid);
@@ -191,7 +199,7 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
         <MonacoMarkdownEditor content={content} diffContent={diffContent} compareValue={'fish tacos'} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
       </div>
 
-      <InputDialog dialogRef={subjectDialogRef} title="Enter Quiz Subject" description="Enter the subject area for the AI-generated quiz (e.g., Biology, Computer Science, History):" placeholder="e.g., Computer Science, Biology, History" confirmButtonText="Generate Quiz" required={true} />
+      <InputDialog dialogRef={subjectDialogRef} />
     </div>
   );
 }
