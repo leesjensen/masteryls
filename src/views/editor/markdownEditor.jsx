@@ -1,10 +1,12 @@
 import React from 'react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator } from '../../ai/aiContentGenerator';
+import InputDialog from '../../hooks/inputDialog';
 
 export default function MarkdownEditor({ currentTopic, content, diffContent, onChange, commit, user }) {
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
+  const subjectDialogRef = React.useRef(null);
 
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
@@ -88,6 +90,25 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
     insertText(sectionTemplate);
   };
 
+  const showSubjectDialog = () => {
+    return new Promise((resolve) => {
+      const dialog = subjectDialogRef.current;
+      if (dialog) {
+        // Store the resolve function temporarily
+        dialog._resolve = resolve;
+        dialog.showModal();
+      }
+    });
+  };
+
+  const handleSubjectConfirm = (subject) => {
+    const dialog = subjectDialogRef.current;
+    if (dialog && dialog._resolve) {
+      dialog._resolve(subject || null);
+      dialog._resolve = null;
+    }
+  };
+
   const insertAiQuiz = async () => {
     const apiKey = user.getSetting('geminiApiKey');
     if (!apiKey) {
@@ -95,8 +116,13 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
       return;
     }
 
+    // Show dialog to get subject from user
+    const subject = await showSubjectDialog();
+    if (!subject) {
+      return; // User cancelled
+    }
+
     const topic = currentTopic.description || currentTopic.title;
-    const subject = 'Cow digestion';
     const response = await aiQuizGenerator(apiKey, topic, subject);
 
     const quizWithUuid = response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
@@ -191,6 +217,8 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
       <div className="flex-1 overflow-hidden">
         <MonacoMarkdownEditor content={content} diffContent={diffContent} compareValue={'fish tacos'} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
       </div>
+
+      <InputDialog dialogRef={subjectDialogRef} onConfirm={handleSubjectConfirm} title="Enter Quiz Subject" description="Enter the subject area for the AI-generated quiz (e.g., Biology, Computer Science, History):" placeholder="e.g., Computer Science, Biology, History" confirmButtonText="Generate Quiz" required={true} />
     </div>
   );
 }
