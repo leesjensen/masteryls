@@ -182,7 +182,7 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
 
 function ToolbarButton({ onClick, title, text }) {
   return (
-    <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs grayscale" onClick={onClick} title={title}>
+    <button className="px-2 py-1 rounded text-xs grayscale hover:bg-gray-200 hover:grayscale-0 hover:text-amber-600" onClick={onClick} title={title}>
       {text}
     </button>
   );
