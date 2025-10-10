@@ -144,95 +144,47 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
       {/* Markdown Toolbar */}
       {editorLoaded && (
         <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm">
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs font-bold" onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)">
-            B
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs italic" onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)">
-            I
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('`', '`')} title="Inline Code">
-            {'</>'}
-          </button>
+          <ToolbarButton onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" text="B" />
+          <ToolbarButton onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" text="I" />
+          <ToolbarButton onClick={() => wrapSelection('`', '`')} title="Inline Code" text="</>" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('## ')} title="Heading 2">
-            H2
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('### ')} title="Heading 3">
-            H3
-          </button>
+          <ToolbarButton onClick={() => prefixInsertText('## ')} title="Heading 2" text="H2" />
+          <ToolbarButton onClick={() => prefixInsertText('### ')} title="Heading 3" text="H3" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText(defaultTableTemplate)} title="Table">
-            ⊞
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('- ')} title="Bullet List">
-            •
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => prefixInsertText('1. ')} title="Numbered List">
-            1.
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => wrapSelection('[', '](url)', true)} title="Link">
-            🔗
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80)')} title="Image">
-            🖼️
-          </button>
+          <ToolbarButton onClick={() => insertText(defaultTableTemplate)} title="Table" text="⊞" />
+          <ToolbarButton onClick={() => prefixInsertText('- ')} title="Bullet List" text="•" />
+          <ToolbarButton onClick={() => prefixInsertText('1. ')} title="Numbered List" text="1." />
+          <ToolbarButton onClick={() => wrapSelection('[', '](url)', true)} title="Link" text="🔗" />
+          <ToolbarButton onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100&q=80)')} title="Image" text="🖼️" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz">
-            ◉
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz">
-            ☑
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultEssayQuizTemplate)} title="Essay Quiz">
-            📝
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultFileSubmissionQuizTemplate)} title="File Submission Quiz">
-            ⬆️
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertQuiz(defaultUrlSubmissionQuizTemplate)} title="URL Submission Quiz">
-            🌐
-          </button>
+          <ToolbarButton onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz" text="◉" />
+          <ToolbarButton onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" text="☑" />
+          <ToolbarButton onClick={() => insertQuiz(defaultEssayQuizTemplate)} title="Essay Quiz" text="📝" />
+          <ToolbarButton onClick={() => insertQuiz(defaultFileSubmissionQuizTemplate)} title="File Submission Quiz" text="⬆️" />
+          <ToolbarButton onClick={() => insertQuiz(defaultUrlSubmissionQuizTemplate)} title="URL Submission Quiz" text="🌐" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertAiQuiz()} title="Insert AI generated quiz">
-            🚀
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertAiSection()} title="Insert AI generated section">
-            ✨
-          </button>
-          <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs" onClick={() => insertPromptContent()} title="Insert AI prompt response">
-            💡
-          </button>
+          <ToolbarButton onClick={() => insertAiQuiz()} title="Insert AI generated quiz" text="🚀" />
+          <ToolbarButton onClick={() => insertAiSection()} title="Insert AI generated section" text="✨" />
+          <ToolbarButton onClick={() => insertPromptContent()} title="Insert AI prompt response" text="💡" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <button
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => {
-              if (editorRef.current) {
-                editorRef.current.getAction('actions.find').run();
-              }
-            }}
-            title="Find (Ctrl+F)"
-          >
-            🔍
-          </button>
-          <button
-            className="px-2 py-1 hover:bg-gray-200 rounded text-xs"
-            onClick={() => {
-              if (editorRef.current) {
-                editorRef.current.getAction('editor.action.startFindReplaceAction').run();
-              }
-            }}
-            title="Find & Replace (Ctrl+Shift+F)"
-          >
-            🔄
-          </button>
+          <ToolbarButton onClick={() => editorRef.current.getAction('actions.find').run()} title="Find (Ctrl+F)" text="🔍" />
+          <ToolbarButton onClick={() => editorRef.current.getAction('editor.action.startFindReplaceAction').run()} title="Find & Replace (Ctrl+Shift+F)" text="🔄" />
         </div>
       )}
       <div className="flex-1 overflow-hidden">
-        <MonacoMarkdownEditor content={content} diffContent={diffContent} compareValue={'fish tacos'} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
+        <MonacoMarkdownEditor content={content} diffContent={diffContent} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
       </div>
 
       <InputDialog dialogRef={subjectDialogRef} />
     </div>
+  );
+}
+
+function ToolbarButton({ onClick, title, text }) {
+  return (
+    <button className="px-2 py-1 hover:bg-gray-200 rounded text-xs grayscale" onClick={onClick} title={title}>
+      {text}
+    </button>
   );
 }
 
