@@ -3,10 +3,19 @@ import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
 
-export default function MarkdownEditor({ currentTopic, content, diffContent, onChange, commit, user }) {
+const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, content, diffContent, onChange, commit, user }, ref) {
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
+
+  // Expose insertText function to parent via ref
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      insertText,
+    }),
+    []
+  );
 
   function handleEditorDidMount(editor, monaco) {
     editor.setPosition({ lineNumber: 1, column: 1 });
@@ -178,7 +187,9 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
       <InputDialog dialogRef={subjectDialogRef} />
     </div>
   );
-}
+});
+
+export default MarkdownEditor;
 
 function ToolbarButton({ onClick, title, text }) {
   return (

@@ -17,6 +17,9 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
   const dirtyRef = useLatest(dirty);
   const contentRef = useLatest(content);
 
+  // Ref to access MarkdownEditor's insert functionality
+  const markdownEditorRef = React.useRef(null);
+
   const contentAvailable = !!(currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable'));
 
   React.useEffect(() => {
@@ -70,11 +73,40 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
     setDiffContent(null);
   }
 
+  // Function to handle file insertion from EditorFiles component
+  const handleInsertFiles = (selectedFileNames) => {
+    if (!markdownEditorRef.current || !selectedFileNames.length) return;
+
+    const markdownLinks = selectedFileNames
+      .map((fileName) => {
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+
+        // Generate appropriate markdown based on file type
+        if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(fileExtension)) {
+          // Image files
+          return `![${fileName}](${fileName})`;
+        } else if (['mp4', 'webm', 'ogg', 'mov'].includes(fileExtension)) {
+          // Video files
+          return `<video controls width="100%">\n  <source src="${fileName}" type="video/${fileExtension === 'mov' ? 'quicktime' : fileExtension}">\n  Your browser does not support the video tag.\n</video>`;
+        } else if (['mp3', 'wav', 'ogg'].includes(fileExtension)) {
+          // Audio files
+          return `<audio controls>\n  <source src="${fileName}" type="audio/${fileExtension}">\n  Your browser does not support the audio tag.\n</audio>`;
+        } else {
+          // Other files (documents, code, etc.)
+          return `[${fileName}](${fileName})`;
+        }
+      })
+      .join('\n\n');
+
+    // Insert the markdown into the editor
+    markdownEditorRef.current.insertText(markdownLinks);
+  };
+
   if (!contentAvailable) {
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
   }
 
-  let currentEditor = <MarkdownEditor currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
+  let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
   if (preview) {
     const previewContent = content.replace(/(\]\()((?!https?:\/\/|www\.)[^)\s]+)(\))/g, (match, p1, p2, p3) => {
       const prefixedPath = p2.startsWith('/') || p2.startsWith('http') ? p2 : `${course.links.gitHub.rawUrl}/${p2}`;
@@ -119,7 +151,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
             {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
             <div className="flex-8/10 flex overflow-hidden">{currentEditor}</div>
             <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles courseOps={courseOps} course={course} currentTopic={currentTopic} />
+              <EditorFiles courseOps={courseOps} course={course} currentTopic={currentTopic} onInsertFiles={handleInsertFiles} />
             </div>
           </div>
         );

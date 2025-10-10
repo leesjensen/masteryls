@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function EditorFiles({ courseOps, course, currentTopic }) {
+export default function EditorFiles({ courseOps, course, currentTopic, onInsertFiles }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -38,6 +38,13 @@ export default function EditorFiles({ courseOps, course, currentTopic }) {
   const deleteSelected = () => {
     setFiles((prev) => prev.filter((file) => !selectedFiles.includes(file.name)));
     setSelectedFiles([]);
+  };
+
+  const insertSelected = () => {
+    if (selectedFiles.length > 0 && onInsertFiles) {
+      onInsertFiles(selectedFiles);
+      setSelectedFiles([]); // Clear selection after inserting
+    }
   };
 
   const handleItemClick = (e, index, file) => {
@@ -139,7 +146,10 @@ export default function EditorFiles({ courseOps, course, currentTopic }) {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">Files</h1>
         <div className="flex items-center">
-          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={deleteSelected}>
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={insertSelected}>
+            Insert
+          </button>
+          <button className="mx-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={deleteSelected}>
             Delete
           </button>
         </div>
