@@ -378,6 +378,18 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     });
   }
 
+  async function getTopicFiles() {
+    let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
+    fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+    const token = user.getSetting('gitHubToken', course.id);
+    const res = await service.makeGitHubApiRequest(token, fetchUrl);
+
+    if (res.ok) {
+      return res.json();
+    }
+    return [];
+  }
+
   async function generateTopicContent(topic, topicDescription) {
     let basicContent = `# ${topic.title}\n\n`;
 
@@ -429,11 +441,6 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     }
   }
 
-  async function makeGitHubApiRequest(url) {
-    const token = user.getSetting('gitHubToken', course.id);
-    return service.makeGitHubApiRequest(token, url);
-  }
-
   function _generateId() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
   }
@@ -470,10 +477,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     updateTopic,
     changeTopic,
     addTopicFiles,
+    getTopicFiles,
     discardTopicMarkdown,
     navigateToAdjacentTopic,
     getQuizFeedback,
-    makeGitHubApiRequest,
   };
 }
 

@@ -13,20 +13,13 @@ export default function EditorFiles({ courseOps, course, currentTopic }) {
       async function fetchFiles() {
         setFiles([]);
         if (course && contentAvailable) {
-          let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
-          fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
-          const res = await courseOps.makeGitHubApiRequest(fetchUrl);
-
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data)) {
-              const filteredData = data.filter((file) => !currentTopic.path.endsWith(file.path));
-              setFiles(filteredData);
-            }
+          const data = await courseOps.getTopicFiles();
+          if (Array.isArray(data)) {
+            const filteredData = data.filter((file) => !currentTopic.path.endsWith(file.path));
+            setFiles(filteredData);
           }
         }
       }
-
       fetchFiles();
     }
   }, [course, currentTopic]);
