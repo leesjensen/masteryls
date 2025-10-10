@@ -1,21 +1,30 @@
 import React from 'react';
 
-export default function InputDialog({ dialogRef, onConfirm, title, description, placeholder, confirmButtonText = 'OK', cancelButtonText = 'Cancel', inputType = 'text', required = false }) {
+export default function InputDialog({ dialogRef, title, description, placeholder, confirmButtonText = 'OK', cancelButtonText = 'Cancel', inputType = 'text', required = false }) {
   const [inputValue, setInputValue] = React.useState('');
 
   const closeDialog = () => {
     dialogRef.current.close();
     setInputValue('');
+    // Resolve with null if there's a pending promise (user cancelled)
+    if (dialogRef.current._resolve) {
+      dialogRef.current._resolve(null);
+      dialogRef.current._resolve = null;
+    }
   };
 
   const handleConfirm = () => {
     const value = inputValue.trim();
     if (required && !value) return;
 
-    closeDialog();
-    if (onConfirm) {
-      onConfirm(value);
+    // Resolve with the value if there's a pending promise
+    if (dialogRef.current._resolve) {
+      dialogRef.current._resolve(value);
+      dialogRef.current._resolve = null;
     }
+
+    dialogRef.current.close();
+    setInputValue('');
   };
 
   const handleKeyDown = (e) => {
@@ -26,10 +35,19 @@ export default function InputDialog({ dialogRef, onConfirm, title, description, 
     }
   };
 
-  // Reset input value when dialog opens
+  // Add show method to the dialog ref for promise-based usage
   React.useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog) {
+      // Add a show method that returns a promise
+      dialog.show = () => {
+        return new Promise((resolve) => {
+          dialog._resolve = resolve;
+          setInputValue('');
+          dialog.showModal();
+        });
+      };
+
       const handleOpen = () => {
         setInputValue('');
         // Focus the input after the dialog opens
@@ -40,7 +58,12 @@ export default function InputDialog({ dialogRef, onConfirm, title, description, 
       };
 
       dialog.addEventListener('open', handleOpen);
-      return () => dialog.removeEventListener('open', handleOpen);
+      return () => {
+        dialog.removeEventListener('open', handleOpen);
+        // Clean up the custom show method
+        delete dialog.show;
+        delete dialog._resolve;
+      };
     }
   }, [dialogRef]);
 
@@ -56,7 +79,7 @@ export default function InputDialog({ dialogRef, onConfirm, title, description, 
           {cancelButtonText}
         </button>
         <button onClick={handleConfirm} disabled={required && !inputValue.trim()} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
-          {confirmButtonText || 'OK'}
+          {confirmButtonText}
         </button>
       </div>
     </dialog>

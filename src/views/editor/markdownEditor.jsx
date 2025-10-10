@@ -90,43 +90,16 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
     insertText(sectionTemplate);
   };
 
-  const showSubjectDialog = () => {
-    return new Promise((resolve) => {
-      const dialog = subjectDialogRef.current;
-      if (dialog) {
-        // Store the resolve function temporarily
-        dialog._resolve = resolve;
-        dialog.showModal();
-      }
-    });
-  };
-
-  const handleSubjectConfirm = (subject) => {
-    const dialog = subjectDialogRef.current;
-    if (dialog && dialog._resolve) {
-      dialog._resolve(subject || null);
-      dialog._resolve = null;
-    }
-  };
-
   const insertAiQuiz = async () => {
-    const apiKey = user.getSetting('geminiApiKey');
-    if (!apiKey) {
-      alert('Please configure your Gemini API key in settings to use this feature.');
-      return;
+    const subject = await subjectDialogRef.current.show();
+    if (subject) {
+      const topic = currentTopic.description || currentTopic.title;
+      const apiKey = user.getSetting('geminiApiKey');
+      const response = await aiQuizGenerator(apiKey, topic, subject);
+
+      const quizWithUuid = response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
+      insertText(quizWithUuid);
     }
-
-    // Show dialog to get subject from user
-    const subject = await showSubjectDialog();
-    if (!subject) {
-      return; // User cancelled
-    }
-
-    const topic = currentTopic.description || currentTopic.title;
-    const response = await aiQuizGenerator(apiKey, topic, subject);
-
-    const quizWithUuid = response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
-    insertText(quizWithUuid);
   };
 
   return (
@@ -218,7 +191,7 @@ export default function MarkdownEditor({ currentTopic, content, diffContent, onC
         <MonacoMarkdownEditor content={content} diffContent={diffContent} compareValue={'fish tacos'} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
       </div>
 
-      <InputDialog dialogRef={subjectDialogRef} onConfirm={handleSubjectConfirm} title="Enter Quiz Subject" description="Enter the subject area for the AI-generated quiz (e.g., Biology, Computer Science, History):" placeholder="e.g., Computer Science, Biology, History" confirmButtonText="Generate Quiz" required={true} />
+      <InputDialog dialogRef={subjectDialogRef} title="Enter Quiz Subject" description="Enter the subject area for the AI-generated quiz (e.g., Biology, Computer Science, History):" placeholder="e.g., Computer Science, Biology, History" confirmButtonText="Generate Quiz" required={true} />
     </div>
   );
 }
