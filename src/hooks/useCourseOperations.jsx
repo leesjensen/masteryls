@@ -361,6 +361,16 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     }
   }
 
+  async function deleteTopicFiles(topic, files) {
+    const token = user.getSetting('gitHubToken', course.id);
+
+    files.forEach(async (file) => {
+      const contentPath = topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}/${file}`;
+      await service.deleteGitHubFile(gitHubUrl, token, `remove(topic) file ${file}`);
+    });
+  }
+
   async function addTopicFiles(files) {
     const token = user.getSetting('gitHubToken', course.id);
     const commitMessage = `enhance(topic) ${currentTopic.title} with new file`;
@@ -499,6 +509,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     updateTopic,
     changeTopic,
     addTopicFiles,
+    deleteTopicFiles,
     getTopicFiles,
     discardTopicMarkdown,
     navigateToAdjacentTopic,

@@ -399,14 +399,29 @@ class Service {
     throw new Error(`Failed to commit file: ${commitRes.status} ${commitRes.statusText}`);
   }
 
-  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
-    let blobSha: string | undefined;
+  async deleteGitHubFile(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
+    const blobSha = await this._getGitHubFileSha(gitHubUrl, token);
+    const body = {
+      message: commitMessage,
+      sha: blobSha,
+    };
+
+    const deleteRes = await this.makeGitHubApiRequest(token, gitHubUrl, 'DELETE', body);
+    if (!deleteRes.ok) {
+      throw new Error(`Failed to delete file: ${deleteRes.status} ${deleteRes.statusText}`);
+    }
+  }
+
+  async _getGitHubFileSha(gitHubUrl: string, token: string): Promise<string | undefined> {
     const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
     const getData = await getRes.json();
     if (getRes.ok) {
-      blobSha = getData.sha;
+      return getData.sha;
     }
+  }
 
+  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
+    const blobSha = await this._getGitHubFileSha(gitHubUrl, token);
     return await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, blobSha);
   }
 

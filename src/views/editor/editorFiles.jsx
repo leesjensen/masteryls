@@ -36,6 +36,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
   }
 
   const deleteSelected = () => {
+    courseOps.deleteTopicFiles(currentTopic, selectedFiles);
     setFiles((prev) => prev.filter((file) => !selectedFiles.includes(file.name)));
     setSelectedFiles([]);
   };
