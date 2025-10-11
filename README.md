@@ -224,6 +224,22 @@ with check (
 );
 ```
 
+### Progress
+
+```postgres
+CREATE POLICY "Allow users to insert their own progress"
+ON "public"."progress"
+FOR INSERT TO authenticated
+WITH CHECK ((SELECT auth.uid()) = "userId");
+```
+
+```postgres
+CREATE POLICY "Allow users to read their own progress"
+ON "public"."progress"
+FOR SELECT TO authenticated
+USING ((SELECT auth.uid()) = "userId");
+```
+
 ### Roles
 
 Allow user to read their own roles
@@ -238,7 +254,7 @@ CREATE POLICY "User read self"
   );
 ```
 
-// Root
+#### Root
 
 Create a function that validates a user is root. You can then call this in RLS policies
 

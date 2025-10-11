@@ -1,3 +1,4 @@
+import React from 'react';
 import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
@@ -14,10 +15,10 @@ import Course from '../course';
  * @param {Function} setCourse - Function to update course state
  * @param {Object} currentTopic - The currently selected topic
  * @param {Function} setTopic - Function to update current topic
- * @param {Object} enrollment - The current enrollment
- * @param {Function} setEnrollment - Function to update enrollment state
  */
 function useCourseOperations(user, setUser, service, course, setCourse, setSettings, currentTopic, setTopic) {
+  const [enrollment, setEnrollment] = React.useState(null);
+
   function logout() {
     setUser(null);
     service.logout();
@@ -120,6 +121,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   function loadCourse(loadingEnrollment) {
+    setEnrollment(loadingEnrollment);
     Course.create(loadingEnrollment.catalogEntry).then((loadedCourse) => {
       service.setCurrentCourse(loadedCourse.id);
       setCourse(loadedCourse);
@@ -385,12 +387,18 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     if (res.ok) {
       const data = await res.json();
 
-      const contentPath = currentTopic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
-      data.forEach((file) => {
-        file.path = `${contentPath[1]}/${file.name}`;
+      const files = data.filter((file) => file.type !== 'dir');
+
+      let contentPath = '';
+      const match = currentTopic.path.match(/\/main\/(.+\/)[^\/]+\.md$/);
+      if (match) {
+        contentPath = match[1];
+      }
+      files.forEach((file) => {
+        file.path = `${contentPath}${file.name}`;
       });
 
-      return data;
+      return files;
     }
     return [];
   }
@@ -419,6 +427,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   async function getQuizFeedback(data) {
     const apiKey = user.getSetting('geminiApiKey');
     return aiQuizFeedbackGenerator(apiKey, data);
+  }
+
+  async function addProgress(activityId, type, duration) {
+    const enrollmentId = enrollment ? enrollment.id : null;
+    return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration);
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
@@ -486,6 +499,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     discardTopicMarkdown,
     navigateToAdjacentTopic,
     getQuizFeedback,
+    addProgress,
+    enrollment,
   };
 }
 

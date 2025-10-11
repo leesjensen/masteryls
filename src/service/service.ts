@@ -346,6 +346,28 @@ class Service {
     }
   }
 
+  async addProgress(userId: string, catalogId: string, enrollmentId: string, activityId: string, type: string, duration: number): Promise<void> {
+    const { error } = await supabase
+      .from('progress')
+      .insert([
+        {
+          userId,
+          catalogId,
+          enrollmentId,
+          activityId,
+          type,
+          duration,
+          details: {},
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
   async commitGitHubFile(gitHubUrl: string, content: string | Uint8Array, token: string, commitMessage: string, blobSha?: string): Promise<string> {
     let contentBase64: string;
     if (content instanceof Uint8Array) {
