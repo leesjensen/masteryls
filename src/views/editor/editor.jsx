@@ -79,15 +79,7 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
 
   let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
   if (preview) {
-    const previewContent = content.replace(/\]\(([^\)\s]+)\)/g, (match, p1) => {
-      const prefixedPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${course.links.gitHub.rawUrl}/${p1}`;
-      return `](${prefixedPath})`;
-    });
-    const previewWithFullVideoPaths = previewContent.replace(/ src="([^"]+)"/g, (match, p1) => {
-      const fullPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${course.links.gitHub.rawUrl}/${p1}`;
-      return ` src="${fullPath}"`;
-    });
-    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={previewWithFullVideoPaths} />;
+    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} />;
   }
 
   const editorComponent = (type) => {

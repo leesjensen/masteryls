@@ -10,7 +10,8 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
 
   useEffect(() => {
     if (preview) {
-      setMarkdown(preview);
+      const md = processRelativeImagePaths(preview, topic.path);
+      setMarkdown(md);
       setIsLoading(false);
       return;
     }
@@ -37,10 +38,20 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
   }, [markdown]);
 
   function processRelativeImagePaths(md, baseUrl) {
-    md = md.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, altText, url) => {
-      const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
-      const absUrl = `${basePath}/${url.replace(/^\.\//, '')}`;
-      return `![${altText}](${absUrl})`;
+    // md = md.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, altText, url) => {
+    //   const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
+    //   const absUrl = `${basePath}/${url.replace(/^\.\//, '')}`;
+    //   return `![${altText}](${absUrl})`;
+    // });
+
+    const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
+    md = md.replace(/\]\(([^\)\s]+)\)/g, (match, p1) => {
+      const prefixedPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${basePath}/${p1}`;
+      return `](${prefixedPath})`;
+    });
+    md = md.replace(/ src="([^"]+)"/g, (match, p1) => {
+      const fullPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${basePath}/${p1}`;
+      return ` src="${fullPath}"`;
     });
 
     return md;

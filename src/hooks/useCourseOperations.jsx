@@ -389,18 +389,22 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
       const files = data.filter((file) => file.type !== 'dir');
 
-      let contentPath = '';
-      const match = currentTopic.path.match(/\/main\/(.+\/)[^\/]+\.md$/);
-      if (match) {
-        contentPath = match[1];
-      }
+      let topicPath = _getTopicPath();
       files.forEach((file) => {
-        file.path = `${contentPath}${file.name}`;
+        file.path = `${topicPath}${file.name}`;
       });
 
       return files;
     }
     return [];
+  }
+  function _getTopicPath() {
+    let topicPath = '';
+    const match = currentTopic.path.match(/\/main\/(.+\/)[^\/]+\.md$/);
+    if (match) {
+      topicPath = match[1];
+    }
+    return topicPath;
   }
 
   async function generateTopicContent(topic, topicDescription) {

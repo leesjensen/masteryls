@@ -15,7 +15,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
         if (course && contentAvailable) {
           const data = await courseOps.getTopicFiles();
           if (Array.isArray(data)) {
-            const filteredData = data.filter((file) => !currentTopic.path.endsWith(file.path));
+            const filteredData = data.filter((file) => !currentTopic.path.endsWith(file.name));
             setFiles(filteredData);
           }
         }
@@ -41,22 +41,22 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
   };
 
   const handleItemClick = (e, index, file) => {
-    const path = file.path;
-    const isSelected = selectedFiles.includes(path);
+    const name = file.name;
+    const isSelected = selectedFiles.includes(name);
 
     if (e.shiftKey && lastSelectedIndexRef.current !== -1) {
       // Range select
       const start = Math.min(lastSelectedIndexRef.current, index);
       const end = Math.max(lastSelectedIndexRef.current, index);
-      const rangeNames = files.slice(start, end + 1).map((f) => f.path);
+      const rangeNames = files.slice(start, end + 1).map((f) => f.name);
       const newSet = Array.from(new Set([...selectedFiles, ...rangeNames]));
       setSelectedFiles(newSet);
     } else if (e.ctrlKey || e.metaKey) {
       // Toggle selection
       if (isSelected) {
-        setSelectedFiles((prev) => prev.filter((n) => n !== path));
+        setSelectedFiles((prev) => prev.filter((n) => n !== name));
       } else {
-        setSelectedFiles((prev) => [...prev, path]);
+        setSelectedFiles((prev) => [...prev, name]);
       }
       lastSelectedIndexRef.current = index;
     } else {
@@ -64,7 +64,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
       if (isSelected) {
         setSelectedFiles([]);
       } else {
-        setSelectedFiles([path]);
+        setSelectedFiles([name]);
         lastSelectedIndexRef.current = index;
       }
     }
@@ -115,14 +115,16 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
 
     if (droppedFiles.length > 0) {
       // Convert File objects to the format expected by the component
-      const newFiles = droppedFiles.map((file) => ({
-        name: cleanFilename(file.name),
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified,
-        props: file,
-      }));
-
+      const newFiles = droppedFiles.map((file) => {
+        const name = cleanFilename(file.name);
+        return {
+          name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified,
+          props: file,
+        };
+      });
       courseOps.addTopicFiles(newFiles);
 
       // Add new files to existing files, avoiding duplicates
@@ -161,7 +163,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
         {files && files.length > 0 && !isDragOver && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {files.map((file, idx) => {
-              const selected = selectedFiles.includes(file.path);
+              const selected = selectedFiles.includes(file.name);
               return (
                 <button key={file.name + idx} onClick={(e) => handleItemClick(e, idx, file)} className={`text-left px-1 border rounded shadow-sm flex items-center gap-2 hover:border-blue-400 focus:outline-none ${selected ? 'bg-amber-100 border-amber-400' : 'bg-white'}`}>
                   <input type="checkbox" readOnly checked={selected} className="w-4 h-4" />
