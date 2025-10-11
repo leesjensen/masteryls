@@ -429,9 +429,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return aiQuizFeedbackGenerator(apiKey, data);
   }
 
-  async function addProgress(activityId, type, duration) {
+  async function addProgress(activityId, type, duration = 0, details = {}) {
     const enrollmentId = enrollment ? enrollment.id : null;
-    return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration);
+    return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration, details);
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {

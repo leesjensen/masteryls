@@ -346,7 +346,7 @@ class Service {
     }
   }
 
-  async addProgress(userId: string, catalogId: string, enrollmentId: string, activityId: string, type: string, duration: number): Promise<void> {
+  async addProgress(userId: string, catalogId: string, enrollmentId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}): Promise<void> {
     const { error } = await supabase
       .from('progress')
       .insert([
@@ -357,7 +357,7 @@ class Service {
           activityId,
           type,
           duration,
-          details: {},
+          details,
         },
       ])
       .select()

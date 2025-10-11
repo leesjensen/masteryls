@@ -66,11 +66,11 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
       const data = {
         title,
         type,
-        Question: body,
-        Choices: choices.map((choice) => '\n   -' + choice).join(''),
-        'Student answers': selected.map((i) => choices[i]),
-        'Correct answers': correct.map((i) => choices[i]),
-        'Percent correct': percentCorrect,
+        question: body,
+        choices: choices.map((choice) => '\n   -' + choice).join(''),
+        learnerAnswers: selected.map((i) => choices[i]),
+        correctAnswers: correct.map((i) => choices[i]),
+        percentCorrect: percentCorrect,
       };
       let feedback = '';
       try {
@@ -79,6 +79,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
         feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
       }
       updateQuizFeedback(id, feedback);
+      await courseOps.addProgress(id, 'quizSubmit', 0, { selected, correct, percentCorrect });
     }
   }
 

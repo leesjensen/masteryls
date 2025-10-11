@@ -16,7 +16,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [course, setCourse] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
-  const [editorVisible, setEditorVisible] = useState(true);
+  const [editorVisible, setEditorVisible] = useState(false);
   const [settings, setSettings] = useState(defaultUiSettings);
   const courseRef = React.useRef(course);
   const isResizing = React.useRef(false);

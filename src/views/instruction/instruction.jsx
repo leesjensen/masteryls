@@ -14,7 +14,7 @@ export default function Instruction({ courseOps, topic, course, user, preview = 
 
   useProgressTracking({
     activityId: topic?.id,
-    activityType: 'instruction_view',
+    activityType: 'instructionView',
     onProgress: courseOps?.addProgress,
     enabled: !preview && !!topic?.path && !!courseOps?.addProgress,
     minDuration: 5,
