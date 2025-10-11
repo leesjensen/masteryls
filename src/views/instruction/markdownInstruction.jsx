@@ -38,12 +38,6 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
   }, [markdown]);
 
   function processRelativeImagePaths(md, baseUrl) {
-    // md = md.replace(/!\[([^\]]*)\]\((?!https?:\/\/|\/)([^)]+)\)/g, (match, altText, url) => {
-    //   const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
-    //   const absUrl = `${basePath}/${url.replace(/^\.\//, '')}`;
-    //   return `![${altText}](${absUrl})`;
-    // });
-
     const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
     md = md.replace(/\]\(([^\)\s]+)\)/g, (match, p1) => {
       const prefixedPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${basePath}/${p1}`;
