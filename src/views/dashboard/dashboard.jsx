@@ -2,11 +2,13 @@ import React, { useState, useRef } from 'react';
 import CourseCreationForm from './courseCreationForm.jsx';
 import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
+import Metrics from '../metrics/metrics.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
 export default function Dashboard({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
+  const [displayMetrics, setDisplayMetrics] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [showUser, setShowUser] = useState(false);
   const dialogRef = useRef(null);
@@ -57,6 +59,18 @@ export default function Dashboard({ courseOps, service, user }) {
     return <CourseCreationForm service={service} onClose={() => setDisplayCourseCreationForm(false)} onCreate={createCourse} />;
   }
 
+  if (displayMetrics) {
+    return <Metrics courseOps={courseOps} />;
+  }
+
+  if (!user) {
+    return (
+      <div className="flex flex-col h-screen">
+        <div className="m-auto text-gray-400">Please log in to access your dashboard.</div>
+      </div>
+    );
+  }
+
   if (!enrollments) {
     return (
       <div className="flex flex-col h-screen">
@@ -90,9 +104,14 @@ export default function Dashboard({ courseOps, service, user }) {
         </div>
         <div className="flex justify-between mb-6">
           {user.isRoot() && (
-            <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-              <span className="font-semibold text-amber-600">+</span> Course
-            </button>
+            <>
+              <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+                <span className="font-semibold text-amber-600">+</span> Course
+              </button>
+              <button onClick={() => setDisplayMetrics(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+                Metrics
+              </button>
+            </>
           )}
           <button onClick={courseOps.logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
             Logout

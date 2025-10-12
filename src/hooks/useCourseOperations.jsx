@@ -448,6 +448,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration, details);
   }
 
+  async function getProgress(courseId, enrollmentId, userId) {
+    return service.getProgress(courseId, enrollmentId, userId);
+  }
+
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
     if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
       for (const topicName of topicNames) {
@@ -515,6 +519,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     navigateToAdjacentTopic,
     getQuizFeedback,
     addProgress,
+    getProgress,
     enrollment,
   };
 }

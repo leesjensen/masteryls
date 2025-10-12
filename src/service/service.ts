@@ -368,6 +368,28 @@ class Service {
     }
   }
 
+  async getProgress(courseId: string, enrollmentId: string, userId: string): Promise<any[]> {
+    let query = supabase.from('progress').select('*');
+
+    if (courseId) {
+      query = query.eq('catalogId', courseId);
+    }
+    if (enrollmentId) {
+      query = query.eq('enrollmentId', enrollmentId);
+    }
+    if (userId) {
+      query = query.eq('userId', userId);
+    }
+
+    const { data, error } = await query.order('createdAt', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
   async commitGitHubFile(gitHubUrl: string, content: string | Uint8Array, token: string, commitMessage: string, blobSha?: string): Promise<string> {
     let contentBase64: string;
     if (content instanceof Uint8Array) {
