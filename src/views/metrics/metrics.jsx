@@ -20,7 +20,7 @@ export default function Metrics({ courseOps }) {
       setLoading(true);
       // For now, we'll use null for courseId, enrollmentId, and userId to get all data
       // In a real implementation, you might want to filter by current user/course
-      const metricsData = await courseOps.getMetrics(null, null, null);
+      const metricsData = await courseOps.getMetrics(null, null, null, timeRange);
       setMetrics(metricsData);
       setError(null);
     } catch (err) {
@@ -58,16 +58,89 @@ export default function Metrics({ courseOps }) {
     );
   }
 
+  // Helper function to get time range description
+  const getTimeRangeDescription = (timeRange) => {
+    switch (timeRange) {
+      case '1h': return 'Last Hour';
+      case '3h': return 'Last 3 Hours';
+      case '7d': return 'Last 7 Days';
+      case '30d': return 'Last 30 Days';
+      case '90d': return 'Last 90 Days';
+      case '1y': return 'Last Year';
+      default: return 'Last 30 Days';
+    }
+  };
+
+  if (metrics.totalActivities === 0) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Showing data for: {getTimeRangeDescription(timeRange)}
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
+                <option value="1h">Last hour</option>
+                <option value="3h">Last 3 hours</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="1y">Last year</option>
+              </select>
+              <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="text-gray-400 text-6xl mb-4">📊</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activity Data</h3>
+          <p className="text-gray-600 mb-4">
+            No learning activities found for the selected time range: {getTimeRangeDescription(timeRange)}
+          </p>
+          <p className="text-sm text-gray-500">
+            Try selecting a different time range or check back later.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Helper function to determine the number of data points to show based on time range
+  const getDataPointsToShow = (timeRange) => {
+    switch (timeRange) {
+      case '1h':
+      case '3h':
+        return Object.keys(metrics.dailyActivity).length; // Show all for short ranges
+      case '7d':
+        return 7;
+      case '30d':
+        return 30;
+      case '90d':
+        return 90;
+      case '1y':
+        return 365;
+      default:
+        return 30;
+    }
+  };
+
   // Prepare data for charts
+  const dataPointsToShow = getDataPointsToShow(timeRange);
+  const sortedDates = Object.keys(metrics.dailyActivity).sort();
+  const dailyLabels = sortedDates.slice(-dataPointsToShow);
+  
   const dailyActivityData = {
-    labels: Object.keys(metrics.dailyActivity).sort().slice(-30), // Last 30 days
+    labels: dailyLabels,
     datasets: [
       {
         label: 'Daily Activities',
-        data: Object.keys(metrics.dailyActivity)
-          .sort()
-          .slice(-30)
-          .map((date) => metrics.dailyActivity[date]),
+        data: dailyLabels.map((date) => metrics.dailyActivity[date]),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         tension: 0.4,
@@ -115,6 +188,10 @@ export default function Metrics({ courseOps }) {
       legend: {
         position: 'top',
       },
+      title: {
+        display: true,
+        text: `Activity Data (${timeRange})`,
+      },
     },
     scales: {
       y: {
@@ -126,6 +203,9 @@ export default function Metrics({ courseOps }) {
       x: {
         grid: {
           color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          maxTicksLimit: timeRange === '1h' || timeRange === '3h' ? 24 : 10, // More ticks for short ranges
         },
       },
     },
@@ -146,7 +226,17 @@ export default function Metrics({ courseOps }) {
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Showing data for: {getTimeRangeDescription(timeRange)} 
+              {metrics && (
+                <span className="ml-2">
+                  ({metrics.totalActivities} activities)
+                </span>
+              )}
+            </p>
+          </div>
           <div className="flex space-x-2">
             <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
               <option value="1h">Last hour</option>
@@ -175,6 +265,7 @@ export default function Metrics({ courseOps }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Activities</p>
               <p className="text-2xl font-semibold text-gray-900">{metrics.totalActivities.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
             </div>
           </div>
         </div>
@@ -189,6 +280,7 @@ export default function Metrics({ courseOps }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Time</p>
               <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.totalDuration / 60)} min</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
             </div>
           </div>
         </div>
@@ -203,6 +295,7 @@ export default function Metrics({ courseOps }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Avg Session</p>
               <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.averageDuration / 60)} min</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
             </div>
           </div>
         </div>
@@ -217,6 +310,7 @@ export default function Metrics({ courseOps }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Activity Types</p>
               <p className="text-2xl font-semibold text-gray-900">{Object.keys(metrics.activityTypes).length}</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
             </div>
           </div>
         </div>

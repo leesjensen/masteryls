@@ -452,12 +452,45 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return service.getProgress(courseId, enrollmentId, userId);
   }
 
-  async function getMetrics(courseId, enrollmentId, userId) {
+  async function getMetrics(courseId, enrollmentId, userId, timeRange = '30d') {
     const progressData = await service.getProgress(courseId, enrollmentId, userId);
 
-    // Process the progress data to create metrics
+    // Calculate the cutoff date based on time range
+    const now = new Date();
+    let cutoffDate;
+    
+    switch (timeRange) {
+      case '1h':
+        cutoffDate = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '3h':
+        cutoffDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '90d':
+        cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      case '1y':
+        cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Filter progress data by time range
+    const filteredProgressData = progressData.filter(activity => {
+      const activityDate = new Date(activity.createdAt);
+      return activityDate >= cutoffDate;
+    });
+
+    // Process the filtered progress data to create metrics
     const metrics = {
-      totalActivities: progressData.length,
+      totalActivities: filteredProgressData.length,
       activityTypes: {},
       dailyActivity: {},
       weeklyActivity: {},
@@ -470,7 +503,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     let totalDurationSum = 0;
     let durationCount = 0;
 
-    progressData.forEach((activity) => {
+    filteredProgressData.forEach((activity) => {
       // Activity types breakdown
       metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
 
