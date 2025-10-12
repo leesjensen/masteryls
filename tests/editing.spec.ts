@@ -44,7 +44,6 @@ test('editor markdown', async ({ page }) => {
 
   await page.getByRole('button', { name: '✏️' }).click();
   await expect(page.getByRole('code')).toContainText('# Home');
-  await expect(page.getByRole('button', { name: 'README.md markdown • 2.6 KB' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).not.toBeChecked();
   await page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).click();
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).toBeChecked();

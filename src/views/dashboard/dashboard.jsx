@@ -8,7 +8,7 @@ import { useAlert } from '../../contexts/AlertContext.jsx';
 export default function Dashboard({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
-  const [displayMetrics, setDisplayMetrics] = useState(true);
+  const [displayMetrics, setDisplayMetrics] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [showUser, setShowUser] = useState(false);
   const dialogRef = useRef(null);
