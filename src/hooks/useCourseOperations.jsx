@@ -452,6 +452,58 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return service.getProgress(courseId, enrollmentId, userId);
   }
 
+  async function getMetrics(courseId, enrollmentId, userId) {
+    const progressData = await service.getProgress(courseId, enrollmentId, userId);
+
+    // Process the progress data to create metrics
+    const metrics = {
+      totalActivities: progressData.length,
+      activityTypes: {},
+      dailyActivity: {},
+      weeklyActivity: {},
+      averageDuration: 0,
+      totalDuration: 0,
+      topActivities: {},
+      completionTrends: [],
+    };
+
+    let totalDurationSum = 0;
+    let durationCount = 0;
+
+    progressData.forEach((activity) => {
+      // Activity types breakdown
+      metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
+
+      // Daily activity
+      const date = new Date(activity.createdAt).toISOString().split('T')[0];
+      metrics.dailyActivity[date] = (metrics.dailyActivity[date] || 0) + 1;
+
+      // Weekly activity
+      const week = getWeekNumber(new Date(activity.createdAt));
+      metrics.weeklyActivity[week] = (metrics.weeklyActivity[week] || 0) + 1;
+
+      // Duration calculations
+      if (activity.duration > 0) {
+        totalDurationSum += activity.duration;
+        durationCount++;
+      }
+      metrics.totalDuration += activity.duration || 0;
+
+      // Top activities by count
+      metrics.topActivities[activity.activityId] = (metrics.topActivities[activity.activityId] || 0) + 1;
+    });
+
+    metrics.averageDuration = durationCount > 0 ? totalDurationSum / durationCount : 0;
+
+    return metrics;
+  }
+
+  function getWeekNumber(date) {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  }
+
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
     if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
       for (const topicName of topicNames) {
@@ -520,6 +572,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     getQuizFeedback,
     addProgress,
     getProgress,
+    getMetrics,
     enrollment,
   };
 }
