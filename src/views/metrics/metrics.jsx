@@ -5,7 +5,7 @@ import { Line, Bar, Doughnut } from 'react-chartjs-2';
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement);
 
-export default function Metrics({ courseOps }) {
+export default function Metrics({ courseOps, setDisplayMetrics }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,13 +61,20 @@ export default function Metrics({ courseOps }) {
   // Helper function to get time range description
   const getTimeRangeDescription = (timeRange) => {
     switch (timeRange) {
-      case '1h': return 'Last Hour';
-      case '3h': return 'Last 3 Hours';
-      case '7d': return 'Last 7 Days';
-      case '30d': return 'Last 30 Days';
-      case '90d': return 'Last 90 Days';
-      case '1y': return 'Last Year';
-      default: return 'Last 30 Days';
+      case '1h':
+        return 'Last Hour';
+      case '3h':
+        return 'Last 3 Hours';
+      case '7d':
+        return 'Last 7 Days';
+      case '30d':
+        return 'Last 30 Days';
+      case '90d':
+        return 'Last 90 Days';
+      case '1y':
+        return 'Last Year';
+      default:
+        return 'Last 30 Days';
     }
   };
 
@@ -78,9 +85,10 @@ export default function Metrics({ courseOps }) {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Showing data for: {getTimeRangeDescription(timeRange)}
-              </p>
+              <button onClick={() => setDisplayMetrics(false)} className="ml-4 px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300">
+                Close
+              </button>
+              <p className="text-sm text-gray-600 mt-1">Showing data for: {getTimeRangeDescription(timeRange)}</p>
             </div>
             <div className="flex space-x-2">
               <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
@@ -100,12 +108,8 @@ export default function Metrics({ courseOps }) {
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">📊</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activity Data</h3>
-          <p className="text-gray-600 mb-4">
-            No learning activities found for the selected time range: {getTimeRangeDescription(timeRange)}
-          </p>
-          <p className="text-sm text-gray-500">
-            Try selecting a different time range or check back later.
-          </p>
+          <p className="text-gray-600 mb-4">No learning activities found for the selected time range: {getTimeRangeDescription(timeRange)}</p>
+          <p className="text-sm text-gray-500">Try selecting a different time range or check back later.</p>
         </div>
       </div>
     );
@@ -134,7 +138,7 @@ export default function Metrics({ courseOps }) {
   const dataPointsToShow = getDataPointsToShow(timeRange);
   const sortedDates = Object.keys(metrics.dailyActivity).sort();
   const dailyLabels = sortedDates.slice(-dataPointsToShow);
-  
+
   const dailyActivityData = {
     labels: dailyLabels,
     datasets: [
@@ -228,13 +232,12 @@ export default function Metrics({ courseOps }) {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
+            <button onClick={() => setDisplayMetrics(false)} className="ml-4 px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300">
+              Close
+            </button>
             <p className="text-sm text-gray-600 mt-1">
-              Showing data for: {getTimeRangeDescription(timeRange)} 
-              {metrics && (
-                <span className="ml-2">
-                  ({metrics.totalActivities} activities)
-                </span>
-              )}
+              Showing data for: {getTimeRangeDescription(timeRange)}
+              {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
             </p>
           </div>
           <div className="flex space-x-2">

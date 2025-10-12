@@ -60,7 +60,7 @@ export default function Dashboard({ courseOps, service, user }) {
   }
 
   if (displayMetrics) {
-    return <Metrics courseOps={courseOps} />;
+    return <Metrics courseOps={courseOps} setDisplayMetrics={setDisplayMetrics} />;
   }
 
   if (!user) {
