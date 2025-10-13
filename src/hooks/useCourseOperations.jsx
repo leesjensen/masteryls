@@ -55,6 +55,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     }
   }
 
+  function courseCatalog() {
+    return service.courseCatalog();
+  }
+
   async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
     let newCatalogEntry;
     let enrollment;
@@ -444,8 +448,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function addProgress(activityId, type, duration = 0, details = {}, createdAt = undefined) {
-    const enrollmentId = enrollment ? enrollment.id : null;
-    return service.addProgress(user.id, course.id, enrollmentId, currentTopic.id, activityId, type, duration, details, createdAt);
+    return service.addProgress(user.id, course.id, enrollment.id, currentTopic.id, activityId, type, duration, details, createdAt);
   }
 
   async function getProgress(courseId, enrollmentId, userId, startDate = null, endDate = null) {
@@ -478,7 +481,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   function _generateId() {
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) => (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)).replace(/-/g, '');
+    return crypto.randomUUID();
   }
 
   function _generateTopicPath(course, topicTitle, topicType) {
@@ -496,11 +499,12 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function generateRandomData() {
-    if (!user?.id || !course?.id || !enrollment?.id || !currentTopic?.id) {
+    if (!user?.id || !course?.id || !enrollment?.id) {
       throw new Error('User, course, and enrollment must be available to generate random data');
     }
 
     const activityTypes = ['instructionView', 'videoWatch', 'quizSubmit', 'topicComplete', 'moduleComplete', 'discussion', 'assignment'];
+    const topicIds = course.allTopics.map((topic) => topic.id);
     const activityIds = ['550e8400-e29b-41d4-a716-446655440000', '6ba7b810-9dad-11d1-80b4-00c04fd430c8', '6ba7b811-9dad-11d1-80b4-00c04fd430c8', '6ba7b812-9dad-11d1-80b4-00c04fd430c8', '6ba7b813-9dad-11d1-80b4-00c04fd430c8', '6ba7b814-9dad-11d1-80b4-00c04fd430c8', '6ba7b815-9dad-11d1-80b4-00c04fd430c8', '6ba7b816-9dad-11d1-80b4-00c04fd430c8', '6ba7b817-9dad-11d1-80b4-00c04fd430c8', '6ba7b818-9dad-11d1-80b4-00c04fd430c8', '6ba7b819-9dad-11d1-80b4-00c04fd430c8', '6ba7b81a-9dad-11d1-80b4-00c04fd430c8', '6ba7b81b-9dad-11d1-80b4-00c04fd430c8'];
 
     // Generate 200-400 random progress records
@@ -519,6 +523,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       for (let i = 0; i < recordsToday; i++) {
         // Random activity type
         const activityType = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+
+        // Random topic ID
+        const topicId = topicIds[Math.floor(Math.random() * topicIds.length)];
 
         // Random activity ID
         const activityId = activityIds[Math.floor(Math.random() * activityIds.length)];
@@ -569,7 +576,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
           createdAt.setMinutes(Math.floor(Math.random() * 60));
           createdAt.setSeconds(Math.floor(Math.random() * 60));
 
-          await addProgress(activityId, activityType, duration, details, createdAt.toISOString());
+          await service.addProgress(user.id, course.id, enrollment.id, topicId, activityId, activityType, duration, details, createdAt.toISOString());
+
           totalGenerated++;
         } catch (error) {
           console.warn(`Failed to add progress record for ${activityId}:`, error);
@@ -596,6 +604,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
     setSidebarVisible,
+    courseCatalog,
     createCourse,
     loadCourse,
     closeCourse,

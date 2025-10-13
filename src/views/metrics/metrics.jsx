@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Course from '../../course.js';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 
@@ -224,14 +225,14 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
     ],
   };
 
-  const topActivitiesData = {
-    labels: Object.keys(metrics.topActivities).slice(0, 10), // Top 10 activities
+  const topTopicsData = {
+    labels: Object.keys(metrics.topTopics).slice(0, 10), // Top 10 topics
     datasets: [
       {
-        label: 'Activity Count',
-        data: Object.values(metrics.topActivities).slice(0, 10),
-        backgroundColor: 'rgba(16, 185, 129, 0.8)',
-        borderColor: 'rgb(16, 185, 129)',
+        label: 'Topic Count',
+        data: Object.values(metrics.topTopics).slice(0, 10),
+        backgroundColor: 'rgba(16, 16, 200, 0.8)',
+        borderColor: 'rgb(16, 16, 129)',
         borderWidth: 1,
       },
     ],
@@ -277,8 +278,34 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
     },
   };
 
+  async function enhancedMetrics(progressData) {
+    if (progressData) {
+      const catalog = courseOps.courseCatalog();
+      const courses = new Map();
+      const enhancedData = [];
+      for (const data of progressData) {
+        const courseEntry = catalog.find((c) => c.id === data.catalogId);
+        if (!courses.has(data.catalogId)) {
+          const course = await Course.create(courseEntry);
+          courses.set(data.catalogId, course);
+        }
+        const course = courses.get(data.catalogId);
+        const topic = course.allTopics.find((t) => t.id.replace(/-/g, '') === data.topicId.replace(/-/g, ''));
+
+        enhancedData.push({
+          ...data,
+          topicTitle: topic ? topic.title : 'Unknown Topic',
+        });
+      }
+      return enhancedData;
+    }
+
+    return progressData;
+  }
+
   async function getMetrics(courseId, enrollmentId, userId, startDate = null, endDate = null) {
-    const progressData = await courseOps.getProgress(courseId, enrollmentId, userId);
+    let progressData = await courseOps.getProgress(courseId, enrollmentId, userId);
+    progressData = await enhancedMetrics(progressData);
 
     // Calculate the cutoff dates based on custom date inputs
     const now = new Date();
@@ -300,7 +327,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
       weeklyActivity: {},
       averageDuration: 0,
       totalDuration: 0,
-      topActivities: {},
+      topTopics: {},
       completionTrends: [],
     };
 
@@ -326,8 +353,8 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
       }
       metrics.totalDuration += activity.duration || 0;
 
-      // Top activities by count
-      metrics.topActivities[activity.activityId] = (metrics.topActivities[activity.activityId] || 0) + 1;
+      // Top topics by count
+      metrics.topTopics[activity.topicTitle] = (metrics.topTopics[activity.topicTitle] || 0) + 1;
     });
 
     metrics.averageDuration = durationCount > 0 ? totalDurationSum / durationCount : 0;
@@ -422,9 +449,9 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
 
         {/* Top Activities */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Learning Activities</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Learning Topics</h3>
           <div className="h-80">
-            <Bar data={topActivitiesData} options={chartOptions} />
+            <Bar data={topTopicsData} options={chartOptions} />
           </div>
         </div>
 
