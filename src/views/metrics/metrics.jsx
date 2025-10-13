@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Course from '../../course.js';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 
@@ -12,6 +11,10 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState('');
+
+  // Get course catalog for course filter
+  const courseCatalog = courseOps.courseCatalog();
 
   // Helper function to validate custom date range
   const validateDateRange = () => {
@@ -58,14 +61,14 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
 
   useEffect(() => {
     loadMetrics();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, selectedCourseId]);
 
   const loadMetrics = async () => {
     try {
       setLoading(true);
-      // For now, we'll use null for courseId, enrollmentId, and userId to get all data
-      // In a real implementation, you might want to filter by current user/course
-      const metricsData = await getMetrics(null, null, null, startDate, endDate);
+      // Pass the selected course ID, or null for all courses
+      const courseId = selectedCourseId || null;
+      const metricsData = await getMetrics(courseId, null, null, startDate, endDate);
       setMetrics(metricsData);
       setError(null);
     } catch (err) {
@@ -116,13 +119,20 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
     }
   };
 
+  // Helper function to get course description
+  const getCourseDescription = (courseId) => {
+    if (!courseId) return 'All Courses';
+    const course = courseCatalog.find((c) => c.id === courseId);
+    return course ? course.name : 'Unknown Course';
+  };
+
   const header = (
     <div className="mb-6 flex flex-col space-y-4">
       <div className="flex flex-row justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Showing data for: {getTimeRangeDescription(startDate, endDate)}
+            Showing data for: {getCourseDescription(selectedCourseId)} • {getTimeRangeDescription(startDate, endDate)}
             {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
           </p>
         </div>
@@ -130,9 +140,20 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
           ❌
         </button>
       </div>
-      {/* Date Range Inputs */}
+      {/* Date Range and Course Filter Inputs */}
       <div className="flex flex-col space-y-2 bg-gray-100 p-4 border border-gray-200">
         <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
+          <div className="flex items-center space-x-1">
+            <label className="text-sm text-gray-600 w-16 md:w-auto">Course:</label>
+            <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm min-w-32" title="Filter by course (optional)">
+              <option value="">All Courses</option>
+              {courseCatalog.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-center space-x-1">
             <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
@@ -142,7 +163,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
           </div>
         </div>
-        {/* Quick date presets */}
+        {/* Quick date presets and course clear */}
         <div className="flex flex-wrap gap-1 text-xs">
           <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
             Today
@@ -157,11 +178,11 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             This Month
           </button>
           <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
-            Clear
+            Clear Dates
           </button>
         </div>
         {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
-        {!startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
+        {!startDate && !endDate && !selectedCourseId && <span className="text-xs text-gray-500">Leave filters empty for all data</span>}
       </div>
     </div>
   );
@@ -173,7 +194,9 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">📊</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activity Data</h3>
-          <p className="text-gray-600 mb-4">No learning activities found for the selected time range: {getTimeRangeDescription(startDate, endDate)}</p>
+          <p className="text-gray-600 mb-4">
+            No learning activities found for {getCourseDescription(selectedCourseId)} in the selected time range: {getTimeRangeDescription(startDate, endDate)}
+          </p>
           <p className="text-sm text-gray-500">Try selecting a different time range or check back later.</p>
         </div>
       </div>
@@ -225,8 +248,16 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
     ],
   };
 
+  // Helper function to truncate labels
+  const truncateLabel = (label, maxLength = 15) => {
+    if (!label) return '';
+    return label.length > maxLength ? `${label.substring(0, maxLength)}...` : label;
+  };
+
   const topTopicsData = {
-    labels: Object.keys(metrics.topTopics).slice(0, 10), // Top 10 topics
+    labels: Object.keys(metrics.topTopics)
+      .slice(0, 10)
+      .map((label) => truncateLabel(label, 20)), // Top 10 topics with truncated labels
     datasets: [
       {
         label: 'Topic Count',
@@ -263,6 +294,49 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
         },
         ticks: {
           maxTicksLimit: 10, // Reasonable number of ticks
+          maxRotation: 45, // Rotate labels up to 45 degrees
+          minRotation: 0,
+        },
+      },
+    },
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: `Top Topics`,
+      },
+      tooltip: {
+        callbacks: {
+          title: function (context) {
+            // Show full topic name in tooltip
+            const originalLabels = Object.keys(metrics.topTopics).slice(0, 10);
+            return originalLabels[context[0].dataIndex] || context[0].label;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+      x: {
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+        ticks: {
+          maxTicksLimit: 10,
+          maxRotation: 45, // Rotate labels up to 45 degrees
+          minRotation: 0,
         },
       },
     },
@@ -444,7 +518,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Learning Topics</h3>
           <div className="h-80">
-            <Bar data={topTopicsData} options={chartOptions} />
+            <Bar data={topTopicsData} options={barChartOptions} />
           </div>
         </div>
 
