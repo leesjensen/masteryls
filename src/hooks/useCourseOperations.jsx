@@ -443,9 +443,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return aiQuizFeedbackGenerator(apiKey, data);
   }
 
-  async function addProgress(activityId, type, duration = 0, details = {}) {
+  async function addProgress(activityId, type, duration = 0, details = {}, createdAt = undefined) {
     const enrollmentId = enrollment ? enrollment.id : null;
-    return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration, details);
+    return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration, details, createdAt);
   }
 
   async function getProgress(courseId, enrollmentId, userId) {
@@ -513,6 +513,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
     for (let day = 0; day < 7; day++) {
       const recordsToday = Math.min(recordsPerDay, numRecords - totalGenerated);
+      const createdAt = new Date();
+      createdAt.setDate(createdAt.getDate() - (6 - day)); // 6-day offset so day 0 is oldest
 
       for (let i = 0; i < recordsToday; i++) {
         // Random activity type
@@ -563,7 +565,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
         }
 
         try {
-          await addProgress(activityId, activityType, duration, details);
+          createdAt.setHours(Math.floor(Math.random() * 24));
+          createdAt.setMinutes(Math.floor(Math.random() * 60));
+          createdAt.setSeconds(Math.floor(Math.random() * 60));
+
+          await addProgress(activityId, activityType, duration, details, createdAt.toISOString());
           totalGenerated++;
         } catch (error) {
           console.warn(`Failed to add progress record for ${activityId}:`, error);

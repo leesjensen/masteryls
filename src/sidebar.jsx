@@ -22,10 +22,6 @@ function Sidebar({ courseOps, service, user, course, setCourse, currentTopic, ed
       )}
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents courseOps={courseOps} service={service} course={course} currentTopic={currentTopic} editorVisible={editorVisible} user={user} setCourse={setCourse} />}
-        <button onClick={() => courseOps.generateRandomData()} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md text-sm transition-colors">
-          Generate data
-        </button>
-
         {display === 'settings' && <Settings service={service} user={user} course={course} setCourse={setCourse} />}
       </aside>
     </div>

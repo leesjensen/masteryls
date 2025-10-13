@@ -346,22 +346,21 @@ class Service {
     }
   }
 
-  async addProgress(userId: string, catalogId: string, enrollmentId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}): Promise<void> {
-    const { error } = await supabase
-      .from('progress')
-      .insert([
-        {
-          userId,
-          catalogId,
-          enrollmentId,
-          activityId,
-          type,
-          duration,
-          details,
-        },
-      ])
-      .select()
-      .single();
+  async addProgress(userId: string, catalogId: string, enrollmentId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
+    const progressData: any = {
+      userId,
+      catalogId,
+      enrollmentId,
+      activityId,
+      type,
+      duration,
+      details,
+    };
+    if (createdAt !== undefined) {
+      progressData.createdAt = createdAt;
+    }
+
+    const { error } = await supabase.from('progress').insert([progressData]).select().single();
 
     if (error) {
       throw new Error(error.message);

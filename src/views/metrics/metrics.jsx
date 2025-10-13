@@ -9,7 +9,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState('1h');
+  const [timeRange, setTimeRange] = useState('7d');
 
   useEffect(() => {
     loadMetrics();
