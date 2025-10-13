@@ -125,7 +125,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
           </p>
         </div>
-        <button title="Close metrics dashboard" onClick={() => setDisplayMetrics(false)} class="w-12 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+        <button title="Close metrics dashboard" onClick={() => setDisplayMetrics(false)} className="w-12 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
           ❌
         </button>
       </div>
