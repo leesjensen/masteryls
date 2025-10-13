@@ -346,11 +346,12 @@ class Service {
     }
   }
 
-  async addProgress(userId: string, catalogId: string, enrollmentId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
+  async addProgress(userId: string, catalogId: string, enrollmentId: string, topicId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
     const progressData: any = {
       userId,
       catalogId,
       enrollmentId,
+      topicId,
       activityId,
       type,
       duration,

@@ -445,7 +445,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
   async function addProgress(activityId, type, duration = 0, details = {}, createdAt = undefined) {
     const enrollmentId = enrollment ? enrollment.id : null;
-    return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration, details, createdAt);
+    return service.addProgress(user.id, course.id, enrollmentId, currentTopic.id, activityId, type, duration, details, createdAt);
   }
 
   async function getProgress(courseId, enrollmentId, userId, startDate = null, endDate = null) {
@@ -496,7 +496,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function generateRandomData() {
-    if (!user?.id || !course?.id || !enrollment?.id) {
+    if (!user?.id || !course?.id || !enrollment?.id || !currentTopic?.id) {
       throw new Error('User, course, and enrollment must be available to generate random data');
     }
 
