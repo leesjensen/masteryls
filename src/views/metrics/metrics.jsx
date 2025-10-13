@@ -408,7 +408,6 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Activities</p>
               <p className="text-2xl font-semibold text-gray-900">{metrics.totalActivities.toLocaleString()}</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
@@ -423,7 +422,6 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Time</p>
               <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.totalDuration / 60)} min</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
@@ -438,7 +436,6 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Avg Session</p>
               <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.averageDuration / 60)} min</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
@@ -453,7 +450,6 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Activity Types</p>
               <p className="text-2xl font-semibold text-gray-900">{Object.keys(metrics.activityTypes).length}</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
