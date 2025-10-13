@@ -114,61 +114,66 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
       return 'All Time';
     }
   };
+
+  const header = (
+    <div className="mb-6 flex flex-col space-y-8">
+      <div className="flex flex-col md:flex-row md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Showing data for: {getTimeRangeDescription(startDate, endDate)}
+            {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
+          </p>
+        </div>
+        <div className="flex flex-row mt-4 md:mt-0 space-y-0 space-x-2">
+          <button onClick={loadMetrics} className="h-10 w-20 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
+            Refresh
+          </button>
+          <button onClick={() => setDisplayMetrics(false)} className="h-10 w-20 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
+            Close
+          </button>
+        </div>
+      </div>
+      {/* Date Range Inputs */}
+      <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
+          <div className="flex items-center space-x-1">
+            <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
+          </div>
+          <div className="flex items-center space-x-1">
+            <label className="text-sm text-gray-600 w-10 md:w-auto">To:</label>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
+          </div>
+        </div>
+        {/* Quick date presets */}
+        <div className="flex flex-wrap gap-1 text-xs">
+          <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
+            Today
+          </button>
+          <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
+            Yesterday
+          </button>
+          <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
+            This Week
+          </button>
+          <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
+            This Month
+          </button>
+          <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
+            Clear
+          </button>
+        </div>
+        {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
+        {!startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
+      </div>
+    </div>
+  );
+
   if (metrics.totalActivities === 0) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="mb-6">
-          <div className="flex flex-col md:flex-row md:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
-              <p className="text-sm text-gray-600 mt-1">Showing data for: {getTimeRangeDescription(startDate, endDate)}</p>
-            </div>
-            <div className="flex flex-col space-y-3 mt-4 md:mt-0 md:flex-row md:space-y-0 md:space-x-2">
-              {/* Date Range Inputs */}
-              <div className="flex flex-col space-y-2">
-                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
-                  <div className="flex items-center space-x-1">
-                    <label className="text-sm text-gray-600">From:</label>
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <label className="text-sm text-gray-600">To:</label>
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
-                  </div>
-                </div>
-
-                {/* Quick date presets */}
-                <div className="flex flex-wrap gap-1 text-xs">
-                  <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
-                    Today
-                  </button>
-                  <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
-                    Yesterday
-                  </button>
-                  <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
-                    This Week
-                  </button>
-                  <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
-                    This Month
-                  </button>
-                  <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
-                    Clear
-                  </button>
-                </div>
-
-                {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
-                {!startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
-              </div>
-
-              <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
-                Refresh
-              </button>
-              <button onClick={() => setDisplayMetrics(false)} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        {header}
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">📊</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activity Data</h3>
@@ -343,59 +348,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="mb-6 flex flex-col space-y-8">
-        <div className="flex flex-col md:flex-row md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Showing data for: {getTimeRangeDescription(startDate, endDate)}
-              {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
-            </p>
-          </div>
-          <div className="flex flex-row mt-4 md:mt-0 space-y-0 space-x-2">
-            <button onClick={loadMetrics} className="h-10 w-20 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
-              Refresh
-            </button>
-            <button onClick={() => setDisplayMetrics(false)} className="h-10 w-20 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
-              Close
-            </button>
-          </div>
-        </div>
-        {/* Date Range Inputs */}
-        <div className="flex flex-col space-y-2">
-          <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
-            <div className="flex items-center space-x-1">
-              <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
-            </div>
-            <div className="flex items-center space-x-1">
-              <label className="text-sm text-gray-600 w-10 md:w-auto">To:</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
-            </div>
-          </div>
-          {/* Quick date presets */}
-          <div className="flex flex-wrap gap-1 text-xs">
-            <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
-              Today
-            </button>
-            <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
-              Yesterday
-            </button>
-            <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
-              This Week
-            </button>
-            <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
-              This Month
-            </button>
-            <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
-              Clear
-            </button>
-          </div>
-          {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
-          {!startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
-        </div>
-      </div>
+      {header}
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
