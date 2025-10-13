@@ -93,13 +93,13 @@ export default function Dashboard({ courseOps, service, user }) {
       />
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
         <div>
-          <h1 className="font-bold text-3xl mb-2 flex items-center">
-            <a onClick={() => setShowUser(!showUser)}>{user.name}'s dashboard</a>
+          <h1 className="font-bold text-3xl mb-2 flex items-center justify-left">
             {user.isRoot() && (
-              <span title="root rights" className="text-lg text-yellow-400 ml-1">
+              <span title="root rights" className="text-lg text-yellow-400 mr-1">
                 ★
               </span>
             )}
+            <a onClick={() => setShowUser(!showUser)}>{user.name}'s dashboard</a>
           </h1>
         </div>
         <div className="flex justify-between mb-6">

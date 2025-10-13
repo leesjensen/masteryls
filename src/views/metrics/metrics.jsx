@@ -20,7 +20,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
       setLoading(true);
       // For now, we'll use null for courseId, enrollmentId, and userId to get all data
       // In a real implementation, you might want to filter by current user/course
-      const metricsData = await courseOps.getMetrics(null, null, null, timeRange);
+      const metricsData = await getMetrics(null, null, null, timeRange);
       setMetrics(metricsData);
       setError(null);
     } catch (err) {
@@ -225,25 +225,111 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
     },
   };
 
+  async function getMetrics(courseId, enrollmentId, userId, timeRange = '30d') {
+    const progressData = await courseOps.getProgress(courseId, enrollmentId, userId);
+
+    // Calculate the cutoff date based on time range
+    const now = new Date();
+    let cutoffDate;
+
+    switch (timeRange) {
+      case '1h':
+        cutoffDate = new Date(now.getTime() - 60 * 60 * 1000);
+        break;
+      case '3h':
+        cutoffDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+        break;
+      case '1d':
+        cutoffDate = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      case '90d':
+        cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        break;
+      case '1y':
+        cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Filter progress data by time range
+    const filteredProgressData = progressData.filter((activity) => {
+      const activityDate = new Date(activity.createdAt);
+      return activityDate >= cutoffDate;
+    });
+
+    // Process the filtered progress data to create metrics
+    const metrics = {
+      totalActivities: filteredProgressData.length,
+      activityTypes: {},
+      dailyActivity: {},
+      weeklyActivity: {},
+      averageDuration: 0,
+      totalDuration: 0,
+      topActivities: {},
+      completionTrends: [],
+    };
+
+    let totalDurationSum = 0;
+    let durationCount = 0;
+
+    filteredProgressData.forEach((activity) => {
+      // Activity types breakdown
+      metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
+
+      // Daily activity
+      const date = new Date(activity.createdAt).toISOString().split('T')[0];
+      metrics.dailyActivity[date] = (metrics.dailyActivity[date] || 0) + 1;
+
+      // Weekly activity
+      const week = getWeekNumber(new Date(activity.createdAt));
+      metrics.weeklyActivity[week] = (metrics.weeklyActivity[week] || 0) + 1;
+
+      // Duration calculations
+      if (activity.duration > 0) {
+        totalDurationSum += activity.duration;
+        durationCount++;
+      }
+      metrics.totalDuration += activity.duration || 0;
+
+      // Top activities by count
+      metrics.topActivities[activity.activityId] = (metrics.topActivities[activity.activityId] || 0) + 1;
+    });
+
+    metrics.averageDuration = durationCount > 0 ? totalDurationSum / durationCount : 0;
+
+    return metrics;
+  }
+
+  function getWeekNumber(date) {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  }
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
-            <button onClick={() => setDisplayMetrics(false)} className="ml-4 px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300">
-              Close
-            </button>
             <p className="text-sm text-gray-600 mt-1">
               Showing data for: {getTimeRangeDescription(timeRange)}
               {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
             </p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 mt-4 md:mt-0">
             <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
               <option value="1h">Last hour</option>
               <option value="3h">Last 3 hours</option>
+              <option value="1d">Last day</option>
               <option value="7d">Last 7 days</option>
               <option value="30d">Last 30 days</option>
               <option value="90d">Last 90 days</option>
@@ -252,10 +338,12 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
               Refresh
             </button>
+            <button onClick={() => setDisplayMetrics(false)} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm">
+              Close
+            </button>
           </div>
         </div>
       </div>
-
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
@@ -318,7 +406,6 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
           </div>
         </div>
       </div>
-
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Daily Activity Trend */}

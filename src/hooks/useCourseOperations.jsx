@@ -452,91 +452,6 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return service.getProgress(courseId, enrollmentId, userId);
   }
 
-  async function getMetrics(courseId, enrollmentId, userId, timeRange = '30d') {
-    const progressData = await service.getProgress(courseId, enrollmentId, userId);
-
-    // Calculate the cutoff date based on time range
-    const now = new Date();
-    let cutoffDate;
-
-    switch (timeRange) {
-      case '1h':
-        cutoffDate = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case '3h':
-        cutoffDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case '90d':
-        cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      case '1y':
-        cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    }
-
-    // Filter progress data by time range
-    const filteredProgressData = progressData.filter((activity) => {
-      const activityDate = new Date(activity.createdAt);
-      return activityDate >= cutoffDate;
-    });
-
-    // Process the filtered progress data to create metrics
-    const metrics = {
-      totalActivities: filteredProgressData.length,
-      activityTypes: {},
-      dailyActivity: {},
-      weeklyActivity: {},
-      averageDuration: 0,
-      totalDuration: 0,
-      topActivities: {},
-      completionTrends: [],
-    };
-
-    let totalDurationSum = 0;
-    let durationCount = 0;
-
-    filteredProgressData.forEach((activity) => {
-      // Activity types breakdown
-      metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
-
-      // Daily activity
-      const date = new Date(activity.createdAt).toISOString().split('T')[0];
-      metrics.dailyActivity[date] = (metrics.dailyActivity[date] || 0) + 1;
-
-      // Weekly activity
-      const week = getWeekNumber(new Date(activity.createdAt));
-      metrics.weeklyActivity[week] = (metrics.weeklyActivity[week] || 0) + 1;
-
-      // Duration calculations
-      if (activity.duration > 0) {
-        totalDurationSum += activity.duration;
-        durationCount++;
-      }
-      metrics.totalDuration += activity.duration || 0;
-
-      // Top activities by count
-      metrics.topActivities[activity.activityId] = (metrics.topActivities[activity.activityId] || 0) + 1;
-    });
-
-    metrics.averageDuration = durationCount > 0 ? totalDurationSum / durationCount : 0;
-
-    return metrics;
-  }
-
-  function getWeekNumber(date) {
-    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-  }
-
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
     if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
       for (const topicName of topicNames) {
@@ -695,7 +610,6 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     getQuizFeedback,
     addProgress,
     getProgress,
-    getMetrics,
     generateRandomData,
     enrollment,
   };
