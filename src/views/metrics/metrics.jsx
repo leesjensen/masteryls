@@ -280,16 +280,9 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
 
   async function enhancedMetrics(progressData) {
     if (progressData) {
-      const catalog = courseOps.courseCatalog();
-      const courses = new Map();
       const enhancedData = [];
       for (const data of progressData) {
-        const courseEntry = catalog.find((c) => c.id === data.catalogId);
-        if (!courses.has(data.catalogId)) {
-          const course = await Course.create(courseEntry);
-          courses.set(data.catalogId, course);
-        }
-        const course = courses.get(data.catalogId);
+        const course = await courseOps.getCourse(data.catalogId);
         const topic = course.allTopics.find((t) => t.id.replace(/-/g, '') === data.topicId.replace(/-/g, ''));
 
         enhancedData.push({

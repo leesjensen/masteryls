@@ -18,6 +18,7 @@ import Course from '../course';
  */
 function useCourseOperations(user, setUser, service, course, setCourse, setSettings, currentTopic, setTopic) {
   const [enrollment, setEnrollment] = React.useState(null);
+  const courseCache = React.useRef(new Map());
 
   function logout() {
     setUser(null);
@@ -117,6 +118,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
       const course = await Course.create(newCatalogEntry);
+      courseCache.current.set(course.id, course);
       setCourse(course);
       setSettings(getEnrollmentUiSettings(course.id));
       await _populateTemplateTopics(course, ['Introduction', 'Syllabus', 'Overview'], gitHubToken);
@@ -138,6 +140,15 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
         setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
       }
     });
+  }
+
+  async function getCourse(courseId) {
+    const courseEntry = courseCatalog().find((c) => c.id === courseId);
+    if (!courseCache.current.has(courseId)) {
+      const course = await Course.create(courseEntry);
+      courseCache.current.set(courseId, course);
+    }
+    return courseCache.current.get(courseId);
   }
 
   async function updateCourseStructure(updatedCourse, commitMessage = 'update course structure') {
@@ -172,6 +183,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
     const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
     await service.saveCourseSettings({ id: updatedCourse.id, gitHub: { ...updatedCourse.gitHub, commit } });
+    courseCache.current.delete(updatedCourse.id);
   }
 
   function closeCourse() {
@@ -272,6 +284,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
     const token = user.getSetting('gitHubToken', course.id);
     const [updatedCourse, updatedTopic] = await _updateTopic(token, course, topic, content, commitMessage);
+
     setCourse(updatedCourse);
 
     return updatedTopic;
@@ -605,6 +618,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     saveEnrollmentUiSettings,
     setSidebarVisible,
     courseCatalog,
+    getCourse,
     createCourse,
     loadCourse,
     closeCourse,
