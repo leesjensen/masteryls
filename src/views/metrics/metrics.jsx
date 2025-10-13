@@ -9,19 +9,11 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState('7d');
-  const [filterType, setFilterType] = useState('preset'); // 'preset' or 'custom'
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Helper function to format date for input[type="date"]
-  const formatDateForInput = (date) => {
-    return date.toISOString().split('T')[0];
-  };
-
   // Helper function to validate custom date range
   const validateDateRange = () => {
-    if (filterType !== 'custom') return true;
     if (!startDate && !endDate) return true; // Allow empty dates
     if (startDate && endDate) {
       return new Date(startDate) <= new Date(endDate);
@@ -65,14 +57,14 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
 
   useEffect(() => {
     loadMetrics();
-  }, [timeRange, filterType, startDate, endDate]);
+  }, [startDate, endDate]);
 
   const loadMetrics = async () => {
     try {
       setLoading(true);
       // For now, we'll use null for courseId, enrollmentId, and userId to get all data
       // In a real implementation, you might want to filter by current user/course
-      const metricsData = await getMetrics(null, null, null, timeRange, filterType, startDate, endDate);
+      const metricsData = await getMetrics(null, null, null, startDate, endDate);
       setMetrics(metricsData);
       setError(null);
     } catch (err) {
@@ -111,60 +103,68 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   }
 
   // Helper function to get time range description
-  const getTimeRangeDescription = (timeRange, filterType, startDate, endDate) => {
-    if (filterType === 'custom') {
-      if (startDate && endDate) {
-        return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-      } else if (startDate) {
-        return `From ${new Date(startDate).toLocaleDateString()}`;
-      } else if (endDate) {
-        return `Until ${new Date(endDate).toLocaleDateString()}`;
-      } else {
-        return 'Custom Range (no dates selected)';
-      }
-    }
-
-    switch (timeRange) {
-      case '1h':
-        return 'Last Hour';
-      case '3h':
-        return 'Last 3 Hours';
-      case '7d':
-        return 'Last 7 Days';
-      case '30d':
-        return 'Last 30 Days';
-      case '90d':
-        return 'Last 90 Days';
-      case '1y':
-        return 'Last Year';
-      default:
-        return 'Last 30 Days';
+  const getTimeRangeDescription = (startDate, endDate) => {
+    if (startDate && endDate) {
+      return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+    } else if (startDate) {
+      return `From ${new Date(startDate).toLocaleDateString()}`;
+    } else if (endDate) {
+      return `Until ${new Date(endDate).toLocaleDateString()}`;
+    } else {
+      return 'All Time';
     }
   };
-
   if (metrics.totalActivities === 0) {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="mb-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row md:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
-              <button onClick={() => setDisplayMetrics(false)} className="ml-4 px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300">
-                Close
-              </button>
-              <p className="text-sm text-gray-600 mt-1">Showing data for: {getTimeRangeDescription(timeRange, filterType, startDate, endDate)}</p>
+              <p className="text-sm text-gray-600 mt-1">Showing data for: {getTimeRangeDescription(startDate, endDate)}</p>
             </div>
-            <div className="flex space-x-2">
-              <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
-                <option value="1h">Last hour</option>
-                <option value="3h">Last 3 hours</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="1y">Last year</option>
-              </select>
-              <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+            <div className="flex flex-col space-y-3 mt-4 md:mt-0 md:flex-row md:space-y-0 md:space-x-2">
+              {/* Date Range Inputs */}
+              <div className="flex flex-col space-y-2">
+                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
+                  <div className="flex items-center space-x-1">
+                    <label className="text-sm text-gray-600">From:</label>
+                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <label className="text-sm text-gray-600">To:</label>
+                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
+                  </div>
+                </div>
+
+                {/* Quick date presets */}
+                <div className="flex flex-wrap gap-1 text-xs">
+                  <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
+                    Today
+                  </button>
+                  <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
+                    Yesterday
+                  </button>
+                  <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
+                    This Week
+                  </button>
+                  <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
+                    This Month
+                  </button>
+                  <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
+                    Clear
+                  </button>
+                </div>
+
+                {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
+                {!startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
+              </div>
+
+              <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
                 Refresh
+              </button>
+              <button onClick={() => setDisplayMetrics(false)} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
+                Close
               </button>
             </div>
           </div>
@@ -172,36 +172,16 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">📊</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activity Data</h3>
-          <p className="text-gray-600 mb-4">No learning activities found for the selected time range: {getTimeRangeDescription(timeRange, filterType, startDate, endDate)}</p>
+          <p className="text-gray-600 mb-4">No learning activities found for the selected time range: {getTimeRangeDescription(startDate, endDate)}</p>
           <p className="text-sm text-gray-500">Try selecting a different time range or check back later.</p>
         </div>
       </div>
     );
   }
 
-  // Helper function to determine the number of data points to show based on time range
-  const getDataPointsToShow = (timeRange) => {
-    switch (timeRange) {
-      case '1h':
-      case '3h':
-        return Object.keys(metrics.dailyActivity).length; // Show all for short ranges
-      case '7d':
-        return 7;
-      case '30d':
-        return 30;
-      case '90d':
-        return 90;
-      case '1y':
-        return 365;
-      default:
-        return 30;
-    }
-  };
-
   // Prepare data for charts
-  const dataPointsToShow = getDataPointsToShow(timeRange);
   const sortedDates = Object.keys(metrics.dailyActivity).sort();
-  const dailyLabels = sortedDates.slice(-dataPointsToShow);
+  const dailyLabels = sortedDates; // Show all available data points
 
   const dailyActivityData = {
     labels: dailyLabels,
@@ -223,12 +203,20 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
       {
         data: Object.values(metrics.activityTypes),
         backgroundColor: [
-          '#3B82F6', // Blue
-          '#10B981', // Green
-          '#F59E0B', // Yellow
           '#EF4444', // Red
-          '#8B5CF6', // Purple
-          '#F97316', // Orange
+          '#10B981', // Green
+          '#F59E42', // Orange
+          '#6366F1', // Indigo
+          '#FBBF24', // Amber
+          '#A21CAF', // Violet
+          '#22D3EE', // Cyan
+          '#F43F5E', // Rose
+          '#84CC16', // Lime
+          '#F472B6', // Pink
+          '#0D9488', // Teal
+          '#F87171', // Light Red
+          '#FACC15', // Gold
+          '#2563EB', // Royal Blue
         ],
         borderWidth: 2,
         borderColor: '#fff',
@@ -258,7 +246,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
       },
       title: {
         display: true,
-        text: `Activity Data (${timeRange})`,
+        text: `Activity Data`,
       },
     },
     scales: {
@@ -273,7 +261,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
           color: 'rgba(0, 0, 0, 0.1)',
         },
         ticks: {
-          maxTicksLimit: timeRange === '1h' || timeRange === '3h' ? 24 : 10, // More ticks for short ranges
+          maxTicksLimit: 10, // Reasonable number of ticks
         },
       },
     },
@@ -289,57 +277,22 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
     },
   };
 
-  async function getMetrics(courseId, enrollmentId, userId, timeRange = '30d', filterType = 'preset', startDate = null, endDate = null) {
+  async function getMetrics(courseId, enrollmentId, userId, startDate = null, endDate = null) {
     const progressData = await courseOps.getProgress(courseId, enrollmentId, userId);
 
-    // Calculate the cutoff date based on time range or custom dates
+    // Calculate the cutoff dates based on custom date inputs
     const now = new Date();
-    let cutoffStartDate, cutoffEndDate;
+    const cutoffStartDate = startDate ? new Date(startDate) : new Date(0); // Beginning of time if no start date
+    const cutoffEndDate = endDate ? new Date(endDate) : now; // Current time if no end date
 
-    if (filterType === 'custom') {
-      cutoffStartDate = startDate ? new Date(startDate) : new Date(0); // Beginning of time if no start date
-      cutoffEndDate = endDate ? new Date(endDate) : now; // Current time if no end date
-
-      // Set end date to end of day
-      cutoffEndDate.setHours(23, 59, 59, 999);
-    } else {
-      // Preset time range logic
-      cutoffEndDate = now;
-
-      switch (timeRange) {
-        case '1h':
-          cutoffStartDate = new Date(now.getTime() - 60 * 60 * 1000);
-          break;
-        case '3h':
-          cutoffStartDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-          break;
-        case '1d':
-          cutoffStartDate = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-          break;
-        case '7d':
-          cutoffStartDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30d':
-          cutoffStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90d':
-          cutoffStartDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        case '1y':
-          cutoffStartDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          cutoffStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      }
-    }
+    // Set end date to end of day
+    cutoffEndDate.setHours(23, 59, 59, 999);
 
     // Filter progress data by time range
     const filteredProgressData = progressData.filter((activity) => {
       const activityDate = new Date(activity.createdAt);
       return activityDate >= cutoffStartDate && activityDate <= cutoffEndDate;
-    });
-
-    // Process the filtered progress data to create metrics
+    }); // Process the filtered progress data to create metrics
     const metrics = {
       totalActivities: filteredProgressData.length,
       activityTypes: {},
@@ -391,83 +344,56 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col space-y-8">
         <div className="flex flex-col md:flex-row md:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
             <p className="text-sm text-gray-600 mt-1">
-              Showing data for: {getTimeRangeDescription(timeRange, filterType, startDate, endDate)}
+              Showing data for: {getTimeRangeDescription(startDate, endDate)}
               {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
             </p>
           </div>
-          <div className="flex flex-col space-y-3 mt-4 md:mt-0 md:flex-row md:space-y-0 md:space-x-2">
-            {/* Filter Type Selector */}
-            <div className="flex items-center space-x-2">
-              <label className="text-sm font-medium text-gray-700">Filter:</label>
-              <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
-                <option value="preset">Preset Duration</option>
-                <option value="custom">Custom Date Range</option>
-              </select>
-            </div>
-
-            {/* Preset Duration Selector */}
-            {filterType === 'preset' && (
-              <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
-                <option value="1h">Last hour</option>
-                <option value="3h">Last 3 hours</option>
-                <option value="1d">Last day</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="1y">Last year</option>
-              </select>
-            )}
-
-            {/* Custom Date Range Inputs */}
-            {filterType === 'custom' && (
-              <div className="flex flex-col space-y-2">
-                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
-                  <div className="flex items-center space-x-1">
-                    <label className="text-sm text-gray-600">From:</label>
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <label className="text-sm text-gray-600">To:</label>
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
-                  </div>
-                </div>
-
-                {/* Quick date presets */}
-                <div className="flex flex-wrap gap-1 text-xs">
-                  <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
-                    Today
-                  </button>
-                  <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
-                    Yesterday
-                  </button>
-                  <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
-                    This Week
-                  </button>
-                  <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
-                    This Month
-                  </button>
-                  <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
-                    Clear
-                  </button>
-                </div>
-
-                {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
-                {filterType === 'custom' && !startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
-              </div>
-            )}
-
-            <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
+          <div className="flex flex-row mt-4 md:mt-0 space-y-0 space-x-2">
+            <button onClick={loadMetrics} className="h-10 w-20 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
               Refresh
             </button>
-            <button onClick={() => setDisplayMetrics(false)} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
+            <button onClick={() => setDisplayMetrics(false)} className="h-10 w-20 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
               Close
             </button>
           </div>
+        </div>
+        {/* Date Range Inputs */}
+        <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
+            <div className="flex items-center space-x-1">
+              <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
+            </div>
+            <div className="flex items-center space-x-1">
+              <label className="text-sm text-gray-600 w-10 md:w-auto">To:</label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
+            </div>
+          </div>
+          {/* Quick date presets */}
+          <div className="flex flex-wrap gap-1 text-xs">
+            <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
+              Today
+            </button>
+            <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
+              Yesterday
+            </button>
+            <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
+              This Week
+            </button>
+            <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
+              This Month
+            </button>
+            <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
+              Clear
+            </button>
+          </div>
+          {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
+          {!startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
         </div>
       </div>
       {/* Summary Cards */}
@@ -482,7 +408,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Activities</p>
               <p className="text-2xl font-semibold text-gray-900">{metrics.totalActivities.toLocaleString()}</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
@@ -497,7 +423,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Time</p>
               <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.totalDuration / 60)} min</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
@@ -512,7 +438,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Avg Session</p>
               <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.averageDuration / 60)} min</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
@@ -527,7 +453,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Activity Types</p>
               <p className="text-2xl font-semibold text-gray-900">{Object.keys(metrics.activityTypes).length}</p>
-              <p className="text-xs text-gray-500">{getTimeRangeDescription(timeRange)}</p>
+              <p className="text-xs text-gray-500">{getTimeRangeDescription(startDate, endDate)}</p>
             </div>
           </div>
         </div>
