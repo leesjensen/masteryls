@@ -116,8 +116,8 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   };
 
   const header = (
-    <div className="mb-6 flex flex-col space-y-8">
-      <div className="flex flex-col md:flex-row md:justify-between">
+    <div className="mb-6 flex flex-col space-y-4">
+      <div className="flex flex-row justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
           <p className="text-sm text-gray-600 mt-1">
@@ -125,17 +125,12 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
           </p>
         </div>
-        <div className="flex flex-row mt-4 md:mt-0 space-y-0 space-x-2">
-          <button onClick={loadMetrics} className="h-10 w-20 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
-            Refresh
-          </button>
-          <button onClick={() => setDisplayMetrics(false)} className="h-10 w-20 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
-            Close
-          </button>
-        </div>
+        <button title="Close metrics dashboard" onClick={() => setDisplayMetrics(false)} class="w-12 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+          ❌
+        </button>
       </div>
       {/* Date Range Inputs */}
-      <div className="flex flex-col space-y-2">
+      <div className="flex flex-col space-y-2 bg-gray-100 p-4 border border-gray-200">
         <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
           <div className="flex items-center space-x-1">
             <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
