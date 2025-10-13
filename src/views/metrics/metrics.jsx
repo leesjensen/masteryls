@@ -10,17 +10,69 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('7d');
+  const [filterType, setFilterType] = useState('preset'); // 'preset' or 'custom'
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  // Helper function to format date for input[type="date"]
+  const formatDateForInput = (date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  // Helper function to validate custom date range
+  const validateDateRange = () => {
+    if (filterType !== 'custom') return true;
+    if (!startDate && !endDate) return true; // Allow empty dates
+    if (startDate && endDate) {
+      return new Date(startDate) <= new Date(endDate);
+    }
+    return true;
+  };
+
+  // Helper function to set common date ranges
+  const setDatePreset = (preset) => {
+    const today = new Date();
+    const formatDate = (date) => date.toISOString().split('T')[0];
+
+    switch (preset) {
+      case 'today':
+        setStartDate(formatDate(today));
+        setEndDate(formatDate(today));
+        break;
+      case 'yesterday':
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        setStartDate(formatDate(yesterday));
+        setEndDate(formatDate(yesterday));
+        break;
+      case 'thisWeek':
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        setStartDate(formatDate(weekStart));
+        setEndDate(formatDate(today));
+        break;
+      case 'thisMonth':
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        setStartDate(formatDate(monthStart));
+        setEndDate(formatDate(today));
+        break;
+      case 'clear':
+        setStartDate('');
+        setEndDate('');
+        break;
+    }
+  };
 
   useEffect(() => {
     loadMetrics();
-  }, [timeRange]);
+  }, [timeRange, filterType, startDate, endDate]);
 
   const loadMetrics = async () => {
     try {
       setLoading(true);
       // For now, we'll use null for courseId, enrollmentId, and userId to get all data
       // In a real implementation, you might want to filter by current user/course
-      const metricsData = await getMetrics(null, null, null, timeRange);
+      const metricsData = await getMetrics(null, null, null, timeRange, filterType, startDate, endDate);
       setMetrics(metricsData);
       setError(null);
     } catch (err) {
@@ -59,7 +111,19 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
   }
 
   // Helper function to get time range description
-  const getTimeRangeDescription = (timeRange) => {
+  const getTimeRangeDescription = (timeRange, filterType, startDate, endDate) => {
+    if (filterType === 'custom') {
+      if (startDate && endDate) {
+        return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+      } else if (startDate) {
+        return `From ${new Date(startDate).toLocaleDateString()}`;
+      } else if (endDate) {
+        return `Until ${new Date(endDate).toLocaleDateString()}`;
+      } else {
+        return 'Custom Range (no dates selected)';
+      }
+    }
+
     switch (timeRange) {
       case '1h':
         return 'Last Hour';
@@ -88,7 +152,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
               <button onClick={() => setDisplayMetrics(false)} className="ml-4 px-3 py-1 bg-gray-200 rounded-md text-sm hover:bg-gray-300">
                 Close
               </button>
-              <p className="text-sm text-gray-600 mt-1">Showing data for: {getTimeRangeDescription(timeRange)}</p>
+              <p className="text-sm text-gray-600 mt-1">Showing data for: {getTimeRangeDescription(timeRange, filterType, startDate, endDate)}</p>
             </div>
             <div className="flex space-x-2">
               <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
@@ -108,7 +172,7 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <div className="text-gray-400 text-6xl mb-4">📊</div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activity Data</h3>
-          <p className="text-gray-600 mb-4">No learning activities found for the selected time range: {getTimeRangeDescription(timeRange)}</p>
+          <p className="text-gray-600 mb-4">No learning activities found for the selected time range: {getTimeRangeDescription(timeRange, filterType, startDate, endDate)}</p>
           <p className="text-sm text-gray-500">Try selecting a different time range or check back later.</p>
         </div>
       </div>
@@ -225,43 +289,54 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
     },
   };
 
-  async function getMetrics(courseId, enrollmentId, userId, timeRange = '30d') {
+  async function getMetrics(courseId, enrollmentId, userId, timeRange = '30d', filterType = 'preset', startDate = null, endDate = null) {
     const progressData = await courseOps.getProgress(courseId, enrollmentId, userId);
 
-    // Calculate the cutoff date based on time range
+    // Calculate the cutoff date based on time range or custom dates
     const now = new Date();
-    let cutoffDate;
+    let cutoffStartDate, cutoffEndDate;
 
-    switch (timeRange) {
-      case '1h':
-        cutoffDate = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case '3h':
-        cutoffDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-        break;
-      case '1d':
-        cutoffDate = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case '90d':
-        cutoffDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      case '1y':
-        cutoffDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    if (filterType === 'custom') {
+      cutoffStartDate = startDate ? new Date(startDate) : new Date(0); // Beginning of time if no start date
+      cutoffEndDate = endDate ? new Date(endDate) : now; // Current time if no end date
+
+      // Set end date to end of day
+      cutoffEndDate.setHours(23, 59, 59, 999);
+    } else {
+      // Preset time range logic
+      cutoffEndDate = now;
+
+      switch (timeRange) {
+        case '1h':
+          cutoffStartDate = new Date(now.getTime() - 60 * 60 * 1000);
+          break;
+        case '3h':
+          cutoffStartDate = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+          break;
+        case '1d':
+          cutoffStartDate = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+          break;
+        case '7d':
+          cutoffStartDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          cutoffStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          cutoffStartDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        case '1y':
+          cutoffStartDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          cutoffStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      }
     }
 
     // Filter progress data by time range
     const filteredProgressData = progressData.filter((activity) => {
       const activityDate = new Date(activity.createdAt);
-      return activityDate >= cutoffDate;
+      return activityDate >= cutoffStartDate && activityDate <= cutoffEndDate;
     });
 
     // Process the filtered progress data to create metrics
@@ -321,24 +396,75 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
             <p className="text-sm text-gray-600 mt-1">
-              Showing data for: {getTimeRangeDescription(timeRange)}
+              Showing data for: {getTimeRangeDescription(timeRange, filterType, startDate, endDate)}
               {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
             </p>
           </div>
-          <div className="flex space-x-2 mt-4 md:mt-0">
-            <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
-              <option value="1h">Last hour</option>
-              <option value="3h">Last 3 hours</option>
-              <option value="1d">Last day</option>
-              <option value="7d">Last 7 days</option>
-              <option value="30d">Last 30 days</option>
-              <option value="90d">Last 90 days</option>
-              <option value="1y">Last year</option>
-            </select>
-            <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+          <div className="flex flex-col space-y-3 mt-4 md:mt-0 md:flex-row md:space-y-0 md:space-x-2">
+            {/* Filter Type Selector */}
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700">Filter:</label>
+              <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
+                <option value="preset">Preset Duration</option>
+                <option value="custom">Custom Date Range</option>
+              </select>
+            </div>
+
+            {/* Preset Duration Selector */}
+            {filterType === 'preset' && (
+              <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm">
+                <option value="1h">Last hour</option>
+                <option value="3h">Last 3 hours</option>
+                <option value="1d">Last day</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="1y">Last year</option>
+              </select>
+            )}
+
+            {/* Custom Date Range Inputs */}
+            {filterType === 'custom' && (
+              <div className="flex flex-col space-y-2">
+                <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
+                  <div className="flex items-center space-x-1">
+                    <label className="text-sm text-gray-600">From:</label>
+                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <label className="text-sm text-gray-600">To:</label>
+                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
+                  </div>
+                </div>
+
+                {/* Quick date presets */}
+                <div className="flex flex-wrap gap-1 text-xs">
+                  <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
+                    Today
+                  </button>
+                  <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
+                    Yesterday
+                  </button>
+                  <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
+                    This Week
+                  </button>
+                  <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
+                    This Month
+                  </button>
+                  <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
+                    Clear
+                  </button>
+                </div>
+
+                {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
+                {filterType === 'custom' && !startDate && !endDate && <span className="text-xs text-gray-500">Leave empty for all time</span>}
+              </div>
+            )}
+
+            <button onClick={loadMetrics} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm" title="Refresh metrics data">
               Refresh
             </button>
-            <button onClick={() => setDisplayMetrics(false)} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm">
+            <button onClick={() => setDisplayMetrics(false)} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 text-sm" title="Close metrics dashboard">
               Close
             </button>
           </div>

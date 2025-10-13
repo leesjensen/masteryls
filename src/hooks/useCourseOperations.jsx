@@ -448,8 +448,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return service.addProgress(user.id, course.id, enrollmentId, activityId, type, duration, details, createdAt);
   }
 
-  async function getProgress(courseId, enrollmentId, userId) {
-    return service.getProgress(courseId, enrollmentId, userId);
+  async function getProgress(courseId, enrollmentId, userId, startDate = null, endDate = null) {
+    return service.getProgress(courseId, enrollmentId, userId, startDate, endDate);
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {

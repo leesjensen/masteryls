@@ -367,7 +367,7 @@ class Service {
     }
   }
 
-  async getProgress(courseId: string, enrollmentId: string, userId: string): Promise<any[]> {
+  async getProgress(courseId: string, enrollmentId: string, userId: string, startDate?: string, endDate?: string): Promise<any[]> {
     let query = supabase.from('progress').select('*');
 
     if (courseId) {
@@ -378,6 +378,12 @@ class Service {
     }
     if (userId) {
       query = query.eq('userId', userId);
+    }
+    if (startDate) {
+      query = query.gte('createdAt', startDate);
+    }
+    if (endDate) {
+      query = query.lte('createdAt', endDate);
     }
 
     const { data, error } = await query.order('createdAt', { ascending: false });
