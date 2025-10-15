@@ -4,6 +4,7 @@ const ProgressContext = createContext();
 
 export function ProgressProvider({ children }) {
   const [progress, setProgress] = useState(null);
+  const cancelledRef = React.useRef(false);
 
   const showProgress = (progressData) => {
     setProgress(progressData);
@@ -14,14 +15,17 @@ export function ProgressProvider({ children }) {
   };
 
   const updateProgress = (updates) => {
-    setProgress((prev) => (prev ? { ...prev, ...updates } : null));
+    if (!cancelledRef.current) {
+      setProgress((prev) => (prev ? { ...prev, ...updates } : null));
+    }
   };
 
   const cancelProgress = () => {
+    setProgress({ ...progress, currentItem: 'Cancelling...' });
+    cancelledRef.current = true;
     if (progress?.onCancel) {
       progress.onCancel();
     }
-    setProgress(null);
   };
 
   return (
@@ -103,7 +107,6 @@ function ProgressOverlay({ title, currentItem, current, total, onCancel }) {
 
           {/* Current item */}
           <div className="text-center">
-            <p className="text-sm text-gray-500 mb-2">Status:</p>
             <p className="text-lg font-medium text-gray-800 break-words">{currentItem}</p>
           </div>
 
