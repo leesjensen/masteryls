@@ -4,12 +4,9 @@ function useModuleState(courseOps, course, service, currentTopic) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
 
   const toggleModule = (index) => {
-    setOpenModuleIndexes((prev) => {
-      const tocIndexes = prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index];
-      courseOps.saveEnrollmentUiSettings(course.id, { tocIndexes });
-
-      return tocIndexes;
-    });
+    const tocIndexes = openModuleIndexes.includes(index) ? openModuleIndexes.filter((i) => i !== index) : [...openModuleIndexes, index];
+    courseOps.saveEnrollmentUiSettings(course.id, { tocIndexes });
+    setOpenModuleIndexes(tocIndexes);
   };
 
   useEffect(() => {

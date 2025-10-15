@@ -7,10 +7,12 @@ export function ProgressProvider({ children }) {
   const cancelledRef = React.useRef(false);
 
   const showProgress = (progressData) => {
+    cancelledRef.current = false;
     setProgress(progressData);
   };
 
   const hideProgress = () => {
+    cancelledRef.current = false;
     setProgress(null);
   };
 
