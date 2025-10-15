@@ -6,9 +6,11 @@ import NewModuleButton from './components/NewModuleButton';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import Course from './course.js';
+import { useProgress } from './contexts/ProgressContext.jsx';
 
 function Contents({ courseOps, service, currentTopic, course, editorVisible, setCourse }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, service, currentTopic);
+  const { showProgress, updateProgress, hideProgress } = useProgress();
 
   useHotkeys(
     {
@@ -68,17 +70,34 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible, set
   }
 
   async function generateAllTopics() {
-    for (const module of course.modules) {
-      for (const topic of module.topics) {
-        if (topic.state === 'stub' && topic.description) {
-          try {
-            await courseOps.generateTopic(topic, topic.description);
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-          } catch (error) {
-            console.error(`Error generating topic "${topic.title}":`, error);
-            return;
-          }
-        }
+    const stubbedTopics = course.allTopics.filter((topic) => topic.state === 'stub' && topic.description);
+    if (stubbedTopics.length > 0) {
+      let cancelled = false;
+      showProgress({
+        title: 'Generating stubbed topics',
+        currentItem: '',
+        current: 0,
+        total: stubbedTopics.length,
+        onCancel: () => {
+          cancelled = true;
+        },
+      });
+
+      try {
+        await courseOps.generateTopics(
+          stubbedTopics,
+          async (topic, index) => {
+            const progress = { currentItem: topic.title, current: index };
+            updateProgress(progress);
+            if (index > 0) {
+              await new Promise((resolve) => setTimeout(resolve, 30000));
+              updateProgress({ ...progress, currentItem: 'Giving the gerbils a rest...' });
+            }
+          },
+          () => cancelled
+        );
+      } finally {
+        hideProgress();
       }
     }
   }

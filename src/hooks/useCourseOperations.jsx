@@ -217,14 +217,40 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
         const basicContent = await generateTopicContent(topic, prompt);
         if (basicContent) {
           const gitHubUrl = topic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
-          await service.commitGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${topic.title}`);
+          await service.updateGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${topic.title}`);
         }
 
         await updateCourseStructure(updatedCourse, `add(course) topic '${topic.title}'`);
 
         changeTopic(topic);
       } catch (error) {
-        alert(`Failed to generate topic: ${error.message}`);
+        throw new Error(`Failed to generate topic. ${error.message}`);
+      }
+    }
+  }
+
+  async function generateTopics(topicList, progressCallback, isCancelled) {
+    const token = user.getSetting('gitHubToken', course.id);
+    if (user.isEditor(course.id) && token) {
+      try {
+        const updatedCourse = Course.copy(course);
+        for (let i = 0; i < topicList.length && !isCancelled(); i++) {
+          const topic = updatedCourse.topicFromPath(topicList[i].path);
+          progressCallback && (await progressCallback(topic, i));
+          topic.state = 'stable';
+
+          const basicContent = await generateTopicContent(topic, topic.description);
+          if (basicContent) {
+            console.log('Generated content:', basicContent.substring(0, 200) + '...');
+            const gitHubUrl = topic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+            await service.updateGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${topic.title}`);
+          }
+        }
+
+        setCourse(updatedCourse);
+        await updateCourseStructure(updatedCourse, `add(course) topics`);
+      } catch (error) {
+        throw new Error(`Failed to generate topics. ${error.message}`);
       }
     }
   }
@@ -626,6 +652,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     addModule,
     addTopic,
     generateTopic,
+    generateTopics,
     getTopicMarkdown,
     removeTopic,
     renameTopic,

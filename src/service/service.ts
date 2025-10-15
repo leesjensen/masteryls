@@ -427,6 +427,11 @@ class Service {
     throw new Error(`Failed to commit file: ${commitRes.status} ${commitRes.statusText}`);
   }
 
+  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
+    const blobSha = await this._getGitHubFileSha(gitHubUrl, token);
+    return await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, blobSha);
+  }
+
   async deleteGitHubFile(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
     const blobSha = await this._getGitHubFileSha(gitHubUrl, token);
     const body = {
@@ -446,11 +451,6 @@ class Service {
     if (getRes.ok) {
       return getData.sha;
     }
-  }
-
-  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
-    const blobSha = await this._getGitHubFileSha(gitHubUrl, token);
-    return await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, blobSha);
   }
 
   async deleteGitHubFolder(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
