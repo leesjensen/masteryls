@@ -67,6 +67,22 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible, set
       .filter((module) => module.topics.length > 0);
   }
 
+  async function generateAllTopics() {
+    for (const module of course.modules) {
+      for (const topic of module.topics) {
+        if (topic.state === 'stub' && topic.description) {
+          try {
+            await courseOps.generateTopic(topic, topic.description);
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+          } catch (error) {
+            console.error(`Error generating topic "${topic.title}":`, error);
+            return;
+          }
+        }
+      }
+    }
+  }
+
   const moduleMap = editorVisible ? course.modules : filterTopicsByState(course);
   const moduleJsx = (
     <ul className="list-none p-0">
@@ -87,6 +103,9 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible, set
               </SortableContext>
             </DndContext>
             <NewModuleButton courseOps={courseOps} />
+            <div onClick={generateAllTopics} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
+              + Generate all stubbed topics
+            </div>
           </>
         ) : (
           moduleJsx

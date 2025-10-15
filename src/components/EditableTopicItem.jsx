@@ -11,15 +11,12 @@ import useClickOutside from '../hooks/useClickOutside';
  *
  * @component
  * @param {Object} props - Component props.
+ * @param {Object} props.courseOps - Course operations object containing methods for topic management.
  * @param {string|number} props.id - Unique identifier for the sortable item.
  * @param {number} props.moduleIndex - Index of the parent module.
  * @param {number} props.topicIndex - Index of the topic within the module.
- * @param {function} props.onRemoveTopic - Callback to remove the topic. Receives (moduleIndex, topicIndex).
- * @param {function} props.onRenameTopic - Callback to rename the topic. Receives (moduleIndex, topicIndex, newTitle, newType).
- * @param {Object} props.topic - Topic data object, should contain at least `title` and `type`.
- * @param {...any} props.props - Additional props passed to the underlying TopicItem.
- *
- * @returns {JSX.Element} The rendered editable topic item.
+ * @param {Object} props.topic - Topic data object for this item, should contain at least `title`, `type`, and `state`.
+ * @param {Object} props.currentTopic - Currently selected/active topic object.
  */
 export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, topic, currentTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
