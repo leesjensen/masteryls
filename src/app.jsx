@@ -125,7 +125,6 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <StartPage />,
-        errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
       },
       {
         path: 'dashboard',
