@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import Toolbar from './toolbar';
-import Instruction from './views/instruction/instruction.jsx';
+import Instruction from './components/instruction/instruction.jsx';
 import useCourseOperations from './hooks/useCourseOperations';
 
-import Editor from './views/editor/editor.jsx';
+import Editor from './components/editor/editor.jsx';
 import Sidebar from './sidebar';
 import Start from './start.jsx';
 import Dashboard from './views/dashboard/dashboard.jsx';
