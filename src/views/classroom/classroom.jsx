@@ -57,6 +57,10 @@ export default function Classroom({ courseOps, service, user, course, topic, set
     setEditorVisible((prev) => !prev);
   }
 
+  if (!course) {
+    return <div className="p-8">No course loaded.</div>;
+  }
+
   // When the course is displayed
   let content = <Instruction courseOps={courseOps} topic={topic} course={course} user={user} />;
   if (editorVisible) {

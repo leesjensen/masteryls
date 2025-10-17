@@ -15,8 +15,10 @@ export default function Dashboard({ courseOps, service, user }) {
   const { showAlert } = useAlert();
 
   React.useEffect(() => {
-    service.enrollments(user.id).then(setEnrollments);
-  }, [user.id]);
+    if (user) {
+      service.enrollments(user.id).then(setEnrollments);
+    }
+  }, [user]);
 
   const addEnrollment = async (catalogEntry) => {
     if (!enrollments.has(catalogEntry.id)) {
