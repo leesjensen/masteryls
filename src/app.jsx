@@ -116,7 +116,6 @@ function ClassroomPage() {
   return <Classroom courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
 }
 
-// Create the router configuration
 const router = createBrowserRouter([
   {
     path: '/',
@@ -124,14 +123,13 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />, // Global error boundary
     children: [
       {
-        index: true, // This replaces path="/" with exact
+        index: true,
         element: <StartPage />,
         errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
       },
       {
         path: 'dashboard',
         element: <DashboardPage />,
-        errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
         // Optional: Add a loader for data fetching
         loader: async () => {
           // You can fetch data here and it will be available via useLoaderData()
@@ -142,7 +140,6 @@ const router = createBrowserRouter([
       {
         path: 'course',
         element: <ClassroomPage />,
-        errorElement: <ErrorPage />,
         loader: async () => {
           // Example: Validate course access
           // throw new Error("Course not found"); // Test error
