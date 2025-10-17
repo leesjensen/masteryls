@@ -6,7 +6,7 @@ import VideoEditor from './VideoEditor';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
 
-export default function Editor({ courseOps, service, user, course, setCourse, currentTopic }) {
+export default function Editor({ courseOps, service, user, course, currentTopic }) {
   const [content, setContent] = React.useState('');
   const [preview, setPreview] = React.useState(false);
   const [showCommits, setShowCommits] = React.useState(false);
@@ -50,7 +50,6 @@ export default function Editor({ courseOps, service, user, course, setCourse, cu
     setDirty(false);
     setContent(markdown);
     courseOps.changeTopic(previousTopic);
-    setCourse(updatedCourse);
   }
 
   async function commit() {

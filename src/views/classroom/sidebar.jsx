@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import Contents from './contents.jsx';
-import Settings from './settings.jsx';
+import Contents from '../../contents.jsx';
+import Settings from '../../settings.jsx';
 
-function Sidebar({ courseOps, service, user, course, setCourse, currentTopic, editorVisible }) {
+function Sidebar({ courseOps, service, user, course, currentTopic, editorVisible }) {
   const [display, setDisplay] = useState('topics');
 
   function toggleDisplay(newDisplay) {
@@ -21,8 +21,8 @@ function Sidebar({ courseOps, service, user, course, setCourse, currentTopic, ed
         </div>
       )}
       <aside className="flex-1 overflow-auto">
-        {display === 'topics' && <Contents courseOps={courseOps} service={service} course={course} currentTopic={currentTopic} editorVisible={editorVisible} user={user} setCourse={setCourse} />}
-        {display === 'settings' && <Settings service={service} user={user} course={course} setCourse={setCourse} />}
+        {display === 'topics' && <Contents courseOps={courseOps} service={service} course={course} currentTopic={currentTopic} editorVisible={editorVisible} user={user} />}
+        {display === 'settings' && <Settings courseOps={courseOps} service={service} user={user} course={course} />}
       </aside>
     </div>
   );

@@ -3,7 +3,7 @@ import ConfirmDialog from './hooks/confirmDialog.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
 import UserSelect from './components/userSelect.jsx';
 
-export default function Settings({ service, user, course, setCourse }) {
+export default function Settings({ courseOps, service, user, course }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
@@ -105,7 +105,7 @@ export default function Settings({ service, user, course, setCourse }) {
       };
       service.saveCourseSettings(catalogEntry);
       const newCourse = course.updateCatalogEntry(catalogEntry);
-      setCourse(newCourse);
+      courseOps.setCurrentCourse(newCourse);
     }
 
     if (editorsChanged) {
@@ -136,7 +136,7 @@ export default function Settings({ service, user, course, setCourse }) {
 
   const deleteCourse = async () => {
     await service.deleteCourse(user, course);
-    setCourse(null);
+    courseOps.setCurrentCourse(null);
     showAlert({
       message: (
         <div className="text-xs">

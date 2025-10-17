@@ -8,7 +8,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 
-function Contents({ courseOps, service, currentTopic, course, editorVisible, setCourse }) {
+function Contents({ courseOps, service, currentTopic, course, editorVisible }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, service, currentTopic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
 
@@ -50,7 +50,7 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible, set
     const [moved] = updatedCourse.modules[fromModuleIdx].topics.splice(fromTopicIdx, 1);
     updatedCourse.modules[toModuleIdx].topics.splice(toTopicIdx, 0, moved);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    setCourse(updatedCourse);
+    courseOps.setCurrentCourse(updatedCourse);
     await courseOps.updateCourseStructure(updatedCourse, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
   };
 

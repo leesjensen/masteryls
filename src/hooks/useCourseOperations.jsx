@@ -151,6 +151,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return courseCache.current.get(courseId);
   }
 
+  function setCurrentCourse(updatedCourse) {
+    courseCache.current.set(updatedCourse.id, updatedCourse);
+    setCourse(updatedCourse);
+  }
+
   async function updateCourseStructure(updatedCourse, commitMessage = 'update course structure') {
     const token = user.getSetting('gitHubToken', updatedCourse.id);
     if (user.isEditor(updatedCourse.id) && token) {
@@ -645,6 +650,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     setSidebarVisible,
     courseCatalog,
     getCourse,
+    setCurrentCourse,
     createCourse,
     loadCourse,
     closeCourse,

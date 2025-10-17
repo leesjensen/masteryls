@@ -185,14 +185,16 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         break;
       case 'GET':
         await route.fulfill({
-          json: {
-            id: '15cb92ef-d2d0-4080-8770-999516448960',
-            name: 'Bud',
-            email: 'bud@cow.com',
-            settings: {
-              language: 'en',
+          json: [
+            {
+              id: '15cb92ef-d2d0-4080-8770-999516448960',
+              name: 'Bud',
+              email: 'bud@cow.com',
+              settings: {
+                language: 'en',
+              },
             },
-          },
+          ],
         });
         break;
     }
