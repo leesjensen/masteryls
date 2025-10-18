@@ -62,11 +62,7 @@ export default function Dashboard({ courseOps, service, user }) {
   }
 
   if (!user) {
-    return (
-      <div className="flex flex-col h-screen">
-        <div className="m-auto text-gray-400">Please log in to access your dashboard.</div>
-      </div>
-    );
+    navigate('/');
   }
 
   if (!enrollments) {

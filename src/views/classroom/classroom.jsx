@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { useParams } from 'react-router-dom';
 import Toolbar from './toolbar';
 import Sidebar from './sidebar';
 import Instruction from '../../components/instruction/instruction.jsx';
@@ -8,6 +8,16 @@ import Editor from '../../components/editor/editor.jsx';
 export default function Classroom({ courseOps, service, user, course, topic, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const isResizing = React.useRef(false);
+
+  // If the courseId in the URL changes, load that course
+  const { courseId } = useParams();
+  React.useEffect(() => {
+    if (user && courseId !== (course ? course.id : null)) {
+      service.enrollment(user.id, courseId).then((enrollment) => {
+        courseOps.loadCourse(enrollment);
+      });
+    }
+  }, [courseId, user]);
 
   React.useEffect(() => {
     if (course) {
@@ -64,7 +74,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
   }
 
   if (!course) {
-    return <div className="p-8">No course loaded.</div>;
+    return <div className="p-8" />;
   }
 
   // When the course is displayed

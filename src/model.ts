@@ -67,11 +67,7 @@ export type Enrollment = {
   id: string;
   learnerId: string;
   catalogId: string;
-  settings: {
-    currentTopic: string | null;
-    tocIndexes: number[];
-    sidebarVisible: boolean;
-  };
+  settings: {};
   progress: Progress;
   catalogEntry?: CatalogEntry;
 };

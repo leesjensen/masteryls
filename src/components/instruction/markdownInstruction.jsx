@@ -74,13 +74,20 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
     <>
       <div className="relative">
         {!preview && (
-          <button onClick={() => setDiscussionOpen(!discussionOpen)} className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6`} title="Discuss this topic">
+          <button
+            onClick={() => setDiscussionOpen(!discussionOpen)}
+            className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6`}
+            title="Discuss this topic"
+          >
             💬 Discuss
           </button>
         )}
 
-        <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>
-          {markdown ? <Markdown content={markdown} languagePlugins={languagePlugins} /> : <div className="flex items-center justify-center">...loading content</div>}
+        <div
+          ref={containerRef}
+          className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}
+        >
+          {markdown ? <Markdown content={markdown} languagePlugins={languagePlugins} /> : <div className="flex items-center justify-center" />}
         </div>
       </div>
 

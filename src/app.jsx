@@ -31,7 +31,7 @@ function RootLayout() {
   function setCourseInternal(course) {
     setCourse(course);
     if (course) {
-      navigate('/course', { replace: true });
+      navigate(`/course/${course.id}`, { replace: true });
     } else {
       navigate('/dashboard', { replace: true });
     }
@@ -73,7 +73,7 @@ function RootLayout() {
   };
 
   return (
-    <div className='app'>
+    <div className="app">
       <main>
         <Outlet context={contextValue} />
       </main>
@@ -112,13 +112,13 @@ function App() {
     {
       path: '/',
       element: <RootLayout />,
-      errorElement: <ErrorPage message='The gerbils followed the lemmings off the cliff.' />, // Global error boundary
+      errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />, // Global error boundary
       children: [
         { index: true, element: <StartPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
-        { path: 'course', element: <ClassroomPage /> },
+        { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
-        { path: '*', element: <ErrorPage message='The gerbils have gotten lost.' /> },
+        { path: '*', element: <ErrorPage message="The gerbils have gotten lost." /> },
       ],
     },
   ]);

@@ -302,6 +302,16 @@ class Service {
     return enrollments;
   }
 
+  async enrollment(userId: string, catalogId: string): Promise<Enrollment> {
+    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', userId).eq('catalogId', catalogId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { ...data[0], catalogEntry: this.catalogEntry(catalogId) };
+  }
+
   setCurrentCourse(catalogId: string): void {
     localStorage.setItem('currentCourse', catalogId);
   }
@@ -346,7 +356,17 @@ class Service {
     }
   }
 
-  async addProgress(userId: string, catalogId: string, enrollmentId: string, topicId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
+  async addProgress(
+    userId: string,
+    catalogId: string,
+    enrollmentId: string,
+    topicId: string,
+    activityId: string,
+    type: string = 'instructionView',
+    duration: number = 0,
+    details: object = {},
+    createdAt: string
+  ): Promise<void> {
     const progressData: any = {
       userId,
       catalogId,
