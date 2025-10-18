@@ -46,10 +46,10 @@ function RootLayout() {
         if (savedUser) {
           setUser(savedUser);
 
-          const enrollment = await service.currentEnrollment(savedUser.id);
-          if (enrollment) {
-            courseOps.loadCourse(enrollment);
-          }
+          // const enrollment = await service.currentEnrollment(savedUser.id);
+          // if (enrollment) {
+          //   courseOps.loadCourse(enrollment);
+          // }
         }
       } finally {
         setLoaded(true);
@@ -83,13 +83,22 @@ function RootLayout() {
 
 function App() {
   function StartPage() {
-    const { setUser, user, loaded } = useOutletContext();
+    const { courseOps, setUser, user, loaded } = useOutletContext();
     const navigate = useNavigate();
 
     useEffect(() => {
-      // If we've finished loading and there's a logged-in user, skip start and go to dashboard
-      if (loaded && user) navigate('/dashboard', { replace: true });
-    }, [loaded, user, navigate]);
+      // If we've finished loading go to where they left off
+      if (loaded && user) {
+        (async () => {
+          const enrollment = await service.currentEnrollment(user.id);
+          if (enrollment) {
+            courseOps.loadCourse(enrollment);
+          } else {
+            navigate('/dashboard', { replace: true });
+          }
+        })();
+      }
+    }, [loaded, user?.id, navigate]);
 
     return <Start setUser={setUser} />;
   }
