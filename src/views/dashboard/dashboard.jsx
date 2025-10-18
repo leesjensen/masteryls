@@ -96,6 +96,7 @@ export default function Dashboard({ courseOps, service, user }) {
                 ★
               </span>
             )}
+            {user.name}'s dashboard
           </h1>
         </div>
         <div className="flex justify-between mb-6">
