@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
 
@@ -50,9 +50,6 @@ function RootLayout() {
             courseOps.loadCourse(enrollment);
           }
         }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        // Error boundary will catch this if it bubbles up
       } finally {
         setLoaded(true);
       }
@@ -85,7 +82,14 @@ function RootLayout() {
 
 function App() {
   function StartPage() {
-    const { setUser } = useOutletContext();
+    const { setUser, user, loaded } = useOutletContext();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      // If we've finished loading and there's a logged-in user, skip start and go to dashboard
+      if (loaded && user) navigate('/dashboard', { replace: true });
+    }, [loaded, user, navigate]);
+
     return <Start setUser={setUser} />;
   }
 
