@@ -500,7 +500,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function addProgress(activityId, type, duration = 0, details = {}, createdAt = undefined) {
-    return service.addProgress(user.id, course.id, enrollment.id, currentTopic.id, activityId, type, duration, details, createdAt);
+    if (user) {
+      return service.addProgress(user.id, course.id, enrollment.id, currentTopic.id, activityId, type, duration, details, createdAt);
+    }
   }
 
   async function getProgress(courseId, enrollmentId, userId, startDate = null, endDate = null) {

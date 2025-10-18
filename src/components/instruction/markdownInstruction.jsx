@@ -73,7 +73,7 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
   return (
     <>
       <div className="relative">
-        {!preview && (
+        {user && !preview && (
           <button
             onClick={() => setDiscussionOpen(!discussionOpen)}
             className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6`}

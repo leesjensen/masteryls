@@ -13,7 +13,14 @@ const stockImages = {
   contact: 'https://images.unsplash.com/photo-1423666639041-f56000c27a9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1473&h=980',
 };
 
-const Start = ({ setUser }) => {
+const Start = ({ courseOps, setUser }) => {
+  const [catalog, setCatalog] = useState([]);
+
+  useEffect(() => {
+    const c = courseOps.courseCatalog() || [];
+    setCatalog(c);
+  }, [courseOps]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-amber-200">
       <section className="relative flex items-center justify-between mx-auto md:py-0 py-4">
@@ -22,13 +29,50 @@ const Start = ({ setUser }) => {
             <img src="/favicon.svg" alt="Mastery LS Logo" className="w-16 h-auto mb-6 mr-2" />
             <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">Mastery LS</h1>
           </div>
-          <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">Master life long learning with AI, world class content, experiential projects, and peer collaboration</p>
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">
+            Master life long learning with AI, world class content, experiential projects, and peer collaboration
+          </p>
           <Login setUser={setUser} />
         </div>
         <div className="flex-1 hidden md:block h-[48rem] relative">
           <img src={stockImages.hero} alt="Learning illustration" className="absolute inset-0 w-full h-full object-cover shadow-xl" style={{ objectPosition: 'center' }} />
         </div>
       </section>
+
+      {catalog.length > 0 && (
+        <section className="py-16 bg-white mb-10">
+          <div className="max-w-7xl mx-auto px-8">
+            <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Available courses</h2>
+
+            <div className="max-w-xl mx-auto">
+              <label className="block text-2xl font-medium text-gray-800 mb-2">
+                Browse a course without creating an account. Register to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
+              </label>
+
+              <div role="listbox" aria-label="Courses" tabIndex={0} className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
+                {catalog.map((entry) => {
+                  return (
+                    <div
+                      key={entry.id}
+                      role="option"
+                      onClick={() => {
+                        courseOps.loadCourseById(entry.id);
+                      }}
+                      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-50'}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold text-gray-900">{entry.name}</div>
+                        <div className="text-sm text-gray-500">{entry.duration || ''}</div>
+                      </div>
+                      {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-16 bg-white mb-10">
         <div className="max-w-7xl mx-auto px-8">
@@ -37,7 +81,11 @@ const Start = ({ setUser }) => {
             <PromoCard image={stockImages.instruction} title="Expert Instruction" description="Industry professionals with decades of experience." />
             <PromoCard image={stockImages.aiLearning} title="AI Adaptive Learning" description="AI-powered mentoring, feedback, personalized learning paths, and adaptive assessments." />
             <PromoCard image={stockImages.personalized} title="Experiential Projects" description="Curriculum that focuses on real-world projects to enhance learning outcomes." />
-            <PromoCard image={stockImages.collaboration} title="Collaboration" description="Tools and features that enhance teamwork and communication with instructors, mentors, peers, and AI bots." />
+            <PromoCard
+              image={stockImages.collaboration}
+              title="Collaboration"
+              description="Tools and features that enhance teamwork and communication with instructors, mentors, peers, and AI bots."
+            />
             <PromoCard image={stockImages.aiContent} title="AI Content Generation" description="AI-powered course, topic, quiz, and feedback generation." />
             <PromoCard image={stockImages.progress} title="Progress Tracking" description="Detailed analytics to monitor your learning journey and achievements." />
             <PromoCard image={stockImages.versionControl} title="GitHub based content management" description="Full version history, branching, and collaboration features powered by GitHub." />
@@ -53,7 +101,7 @@ const Start = ({ setUser }) => {
               <p className="text-amber-200 text-lg">Active Learners</p>
             </div>
             <div className="text-white">
-              <h3 className="text-4xl font-bold mb-2">3</h3>
+              <h3 className="text-4xl font-bold mb-2">{catalog.length}</h3>
               <p className="text-amber-200 text-lg">Courses Available</p>
             </div>
             <div className="text-white">
@@ -62,7 +110,7 @@ const Start = ({ setUser }) => {
             </div>
             <div className="text-white">
               <h3 className="text-4xl font-bold mb-2">16</h3>
-              <p className="text-amber-200 text-lg">Mentors Available</p>
+              <p className="text-amber-200 text-lg">Mentors Online</p>
             </div>
           </div>
         </div>
