@@ -89,7 +89,7 @@ function App() {
       }
     }, [user?.id, navigate]);
 
-    return <Start setUser={setUser} />;
+    return <Start courseOps={courseOps} setUser={setUser} />;
   }
 
   function DashboardPage() {

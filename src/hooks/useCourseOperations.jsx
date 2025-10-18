@@ -127,20 +127,27 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return enrollment;
   }
 
+  function loadCourseById(courseId) {
+    const courseEntry = courseCatalog().find((c) => c.id === courseId);
+    if (courseEntry) {
+      Course.create(courseEntry).then((loadedCourse) => {
+        service.setCurrentCourse(loadedCourse.id);
+        setCourse(loadedCourse);
+
+        const settings = getEnrollmentUiSettings(loadedCourse.id);
+        setSettings(settings);
+        if (settings.currentTopic) {
+          setTopic(loadedCourse.topicFromPath(settings.currentTopic));
+        } else {
+          setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
+        }
+      });
+    }
+  }
+
   function loadCourse(loadingEnrollment) {
     setEnrollment(loadingEnrollment);
-    Course.create(loadingEnrollment.catalogEntry).then((loadedCourse) => {
-      service.setCurrentCourse(loadedCourse.id);
-      setCourse(loadedCourse);
-
-      const settings = getEnrollmentUiSettings(loadedCourse.id);
-      setSettings(settings);
-      if (settings.currentTopic) {
-        setTopic(loadedCourse.topicFromPath(settings.currentTopic));
-      } else {
-        setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
-      }
-    });
+    loadCourseById(loadingEnrollment.catalogEntry.id);
   }
 
   async function getCourse(courseId) {
@@ -668,6 +675,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     setCurrentCourse,
     createCourse,
     loadCourse,
+    loadCourseById,
     closeCourse,
     updateCourseStructure,
     addModule,
