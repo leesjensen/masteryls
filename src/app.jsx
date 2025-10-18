@@ -30,9 +30,9 @@ function RootLayout() {
   function setCourseInternal(course) {
     setCourse(course);
     if (course) {
-      navigate(`/course/${course.id}`, { replace: true });
+      navigate(`/course/${course.id}`);
     } else {
-      navigate('/dashboard', { replace: true });
+      navigate('/dashboard');
     }
   }
 
