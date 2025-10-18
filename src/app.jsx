@@ -10,7 +10,6 @@ import ErrorPage from './components/errorPage.jsx';
 
 const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
 
-// Root layout that provides context to all routes
 function RootLayout() {
   const [loaded, setLoaded] = useState(false);
   const [user, setUser] = useState(null);
@@ -85,10 +84,8 @@ function RootLayout() {
 }
 
 function App() {
-  // Route component wrappers that use the outlet context
   function StartPage() {
     const { setUser } = useOutletContext();
-
     return <Start setUser={setUser} />;
   }
 
@@ -108,33 +105,10 @@ function App() {
       element: <RootLayout />,
       errorElement: <ErrorPage message='The gerbils followed the lemmings off the cliff.' />, // Global error boundary
       children: [
-        {
-          index: true,
-          element: <StartPage />,
-        },
-        {
-          path: 'dashboard',
-          element: <DashboardPage />,
-          // Optional: Add a loader for data fetching
-          loader: async () => {
-            // You can fetch data here and it will be available via useLoaderData()
-            // If this throws, the errorElement will catch it
-            return null;
-          },
-        },
-        {
-          path: 'course',
-          element: <ClassroomPage />,
-          loader: async () => {
-            // Example: Validate course access
-            // throw new Error("Course not found"); // Test error
-            return null;
-          },
-        },
-        {
-          path: '*',
-          element: <ErrorPage message='The gerbils have gotten lost.' />,
-        },
+        { index: true, element: <StartPage /> },
+        { path: 'dashboard', element: <DashboardPage /> },
+        { path: 'course', element: <ClassroomPage /> },
+        { path: '*', element: <ErrorPage message='The gerbils have gotten lost.' /> },
       ],
     },
   ]);
