@@ -21,7 +21,11 @@ function RootLayout() {
 
   function setUserInternal(user) {
     setUser(user);
-    navigate('/dashboard', { replace: true });
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    } else {
+      navigate('/', { replace: true });
+    }
   }
 
   function setCourseInternal(course) {
@@ -80,61 +84,61 @@ function RootLayout() {
   );
 }
 
-// Route component wrappers that use the outlet context
-function StartPage() {
-  const { setUser } = useOutletContext();
-
-  return <Start setUser={setUser} />;
-}
-
-function DashboardPage() {
-  const { courseOps, service, user } = useOutletContext();
-  return <Dashboard courseOps={courseOps} service={service} user={user} />;
-}
-
-function ClassroomPage() {
-  const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
-  return <Classroom courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
-}
-
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <RootLayout />,
-    errorElement: <ErrorPage message='The gerbils followed the lemmings off the cliff.' />, // Global error boundary
-    children: [
-      {
-        index: true,
-        element: <StartPage />,
-      },
-      {
-        path: 'dashboard',
-        element: <DashboardPage />,
-        // Optional: Add a loader for data fetching
-        loader: async () => {
-          // You can fetch data here and it will be available via useLoaderData()
-          // If this throws, the errorElement will catch it
-          return null;
-        },
-      },
-      {
-        path: 'course',
-        element: <ClassroomPage />,
-        loader: async () => {
-          // Example: Validate course access
-          // throw new Error("Course not found"); // Test error
-          return null;
-        },
-      },
-      {
-        path: '*',
-        element: <ErrorPage message='The gerbils have gotten lost.' />,
-      },
-    ],
-  },
-]);
-
 function App() {
+  // Route component wrappers that use the outlet context
+  function StartPage() {
+    const { setUser } = useOutletContext();
+
+    return <Start setUser={setUser} />;
+  }
+
+  function DashboardPage() {
+    const { courseOps, service, user } = useOutletContext();
+    return <Dashboard courseOps={courseOps} service={service} user={user} />;
+  }
+
+  function ClassroomPage() {
+    const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
+    return <Classroom courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
+  }
+
+  const router = createBrowserRouter([
+    {
+      path: '/',
+      element: <RootLayout />,
+      errorElement: <ErrorPage message='The gerbils followed the lemmings off the cliff.' />, // Global error boundary
+      children: [
+        {
+          index: true,
+          element: <StartPage />,
+        },
+        {
+          path: 'dashboard',
+          element: <DashboardPage />,
+          // Optional: Add a loader for data fetching
+          loader: async () => {
+            // You can fetch data here and it will be available via useLoaderData()
+            // If this throws, the errorElement will catch it
+            return null;
+          },
+        },
+        {
+          path: 'course',
+          element: <ClassroomPage />,
+          loader: async () => {
+            // Example: Validate course access
+            // throw new Error("Course not found"); // Test error
+            return null;
+          },
+        },
+        {
+          path: '*',
+          element: <ErrorPage message='The gerbils have gotten lost.' />,
+        },
+      ],
+    },
+  ]);
+
   return <RouterProvider router={router} />;
 }
 
