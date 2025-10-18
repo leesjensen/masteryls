@@ -12,7 +12,6 @@ import service from './service/service.js';
 const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
 
 function RootLayout() {
-  const [loaded, setLoaded] = useState(false);
   const [user, setUser] = useState(null);
   const [course, setCourse] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
@@ -41,18 +40,9 @@ function RootLayout() {
 
   React.useEffect(() => {
     (async () => {
-      try {
-        const savedUser = await service.currentUser();
-        if (savedUser) {
-          setUser(savedUser);
-
-          // const enrollment = await service.currentEnrollment(savedUser.id);
-          // if (enrollment) {
-          //   courseOps.loadCourse(enrollment);
-          // }
-        }
-      } finally {
-        setLoaded(true);
+      const savedUser = await service.currentUser();
+      if (savedUser) {
+        setUser(savedUser);
       }
     })();
   }, []);
@@ -69,7 +59,6 @@ function RootLayout() {
     setSettings,
     courseOps,
     service,
-    loaded,
   };
 
   return (
@@ -83,12 +72,12 @@ function RootLayout() {
 
 function App() {
   function StartPage() {
-    const { courseOps, setUser, user, loaded } = useOutletContext();
+    const { courseOps, setUser, user } = useOutletContext();
     const navigate = useNavigate();
 
     useEffect(() => {
-      // If we've finished loading go to where they left off
-      if (loaded && user) {
+      // Pick up where they left off
+      if (user) {
         (async () => {
           const enrollment = await service.currentEnrollment(user.id);
           if (enrollment) {
@@ -98,7 +87,7 @@ function App() {
           }
         })();
       }
-    }, [loaded, user?.id, navigate]);
+    }, [user?.id, navigate]);
 
     return <Start setUser={setUser} />;
   }
