@@ -4,9 +4,10 @@ import useCourseOperations from './hooks/useCourseOperations';
 
 import Start from './start.jsx';
 import Dashboard from './views/dashboard/dashboard.jsx';
-import service from './service/service.js';
 import Classroom from './views/classroom/classroom.jsx';
+import Metrics from './views/metrics/metrics.jsx';
 import ErrorPage from './components/errorPage.jsx';
+import service from './service/service.js';
 
 const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
 
@@ -97,6 +98,10 @@ function App() {
     const { courseOps, service, user } = useOutletContext();
     return <Dashboard courseOps={courseOps} service={service} user={user} />;
   }
+  function MetricsPage() {
+    const { courseOps } = useOutletContext();
+    return <Metrics courseOps={courseOps} />;
+  }
 
   function ClassroomPage() {
     const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
@@ -112,6 +117,7 @@ function App() {
         { index: true, element: <StartPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course', element: <ClassroomPage /> },
+        { path: 'metrics', element: <MetricsPage /> },
         { path: '*', element: <ErrorPage message='The gerbils have gotten lost.' /> },
       ],
     },

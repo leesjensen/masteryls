@@ -2,17 +2,16 @@ import React, { useState, useRef } from 'react';
 import CourseCreationForm from './courseCreationForm.jsx';
 import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
-import Metrics from '../metrics/metrics.jsx';
+import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
 export default function Dashboard({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
-  const [displayMetrics, setDisplayMetrics] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
-  const [showUser, setShowUser] = useState(false);
   const dialogRef = useRef(null);
   const { showAlert } = useAlert();
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     if (user) {
@@ -61,10 +60,6 @@ export default function Dashboard({ courseOps, service, user }) {
     return <CourseCreationForm service={service} onClose={() => setDisplayCourseCreationForm(false)} onCreate={createCourse} />;
   }
 
-  if (displayMetrics) {
-    return <Metrics courseOps={courseOps} setDisplayMetrics={setDisplayMetrics} />;
-  }
-
   if (!user) {
     return (
       <div className="flex flex-col h-screen">
@@ -101,7 +96,6 @@ export default function Dashboard({ courseOps, service, user }) {
                 ★
               </span>
             )}
-            <a onClick={() => setShowUser(!showUser)}>{user.name}'s dashboard</a>
           </h1>
         </div>
         <div className="flex justify-between mb-6">
@@ -110,7 +104,7 @@ export default function Dashboard({ courseOps, service, user }) {
               <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
                 <span className="font-semibold text-amber-600">+</span> Course
               </button>
-              <button onClick={() => setDisplayMetrics(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+              <button onClick={() => navigate('/metrics')} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
                 Metrics
               </button>
             </>
@@ -120,12 +114,20 @@ export default function Dashboard({ courseOps, service, user }) {
           </button>
         </div>
       </div>
-      {showUser && <pre className="text-gray-400 text-[12px]">{JSON.stringify(user, null, 2)}</pre>}
       <h2 className="border-t-2 border-gray-400 font-semibold mb- pt-1 text-xl text-gray-500">Your courses</h2>
       {enrollments.size > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {Array.from(enrollments.values()).map((enrollment) => {
-            return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => courseOps.loadCourse(enrollment)} remove={() => requestedEnrollmentRemoval(enrollment)} />;
+            return (
+              <CourseCard
+                user={user}
+                key={enrollment.id}
+                catalogEntry={enrollment.catalogEntry}
+                enrollment={enrollment}
+                select={() => courseOps.loadCourse(enrollment)}
+                remove={() => requestedEnrollmentRemoval(enrollment)}
+              />
+            );
           })}
         </div>
       ) : (

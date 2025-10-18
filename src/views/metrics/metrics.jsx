@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement);
 
-export default function Metrics({ courseOps, setDisplayMetrics }) {
+export default function Metrics({ courseOps }) {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -136,7 +138,11 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
           </p>
         </div>
-        <button title="Close metrics dashboard" onClick={() => setDisplayMetrics(false)} className="w-12 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+        <button
+          title="Close metrics dashboard"
+          onClick={() => navigate('/dashboard')}
+          className="w-12 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out"
+        >
           ❌
         </button>
       </div>
@@ -145,7 +151,12 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
         <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
           <div className="flex items-center space-x-1">
             <label className="text-sm text-gray-600 w-16 md:w-auto">Course:</label>
-            <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm min-w-32" title="Filter by course (optional)">
+            <select
+              value={selectedCourseId}
+              onChange={(e) => setSelectedCourseId(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm min-w-32"
+              title="Filter by course (optional)"
+            >
               <option value="">All Courses</option>
               {courseCatalog.map((course) => (
                 <option key={course.id} value={course.id}>
@@ -444,7 +455,12 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
               </svg>
             </div>
             <div className="ml-4">
@@ -536,7 +552,10 @@ export default function Metrics({ courseOps, setDisplayMetrics }) {
             </div>
             <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
               <span className="text-sm font-medium text-yellow-900">Weekly Average</span>
-              <span className="text-sm text-yellow-700">{Object.keys(metrics.weeklyActivity).length > 0 ? Math.round(Object.values(metrics.weeklyActivity).reduce((a, b) => a + b, 0) / Object.keys(metrics.weeklyActivity).length) : 0} activities</span>
+              <span className="text-sm text-yellow-700">
+                {Object.keys(metrics.weeklyActivity).length > 0 ? Math.round(Object.values(metrics.weeklyActivity).reduce((a, b) => a + b, 0) / Object.keys(metrics.weeklyActivity).length) : 0}{' '}
+                activities
+              </span>
             </div>
             <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
               <span className="text-sm font-medium text-purple-900">Learning Streak</span>
