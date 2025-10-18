@@ -10,6 +10,12 @@ export default function Classroom({ courseOps, service, user, course, topic, set
   const isResizing = React.useRef(false);
 
   React.useEffect(() => {
+    if (course) {
+      document.title = `MasteryLS - ${course.title}`;
+    }
+  }, [course]);
+
+  React.useEffect(() => {
     const minSidebarWidth = 50;
     const maxSidebarWidth = window.innerWidth * 0.75;
 

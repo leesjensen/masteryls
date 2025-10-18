@@ -62,6 +62,10 @@ export default function Metrics({ courseOps }) {
   };
 
   useEffect(() => {
+    document.title = `MasteryLS - Metrics`;
+  }, []);
+
+  useEffect(() => {
     loadMetrics();
   }, [startDate, endDate, selectedCourseId]);
 
