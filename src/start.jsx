@@ -21,6 +21,11 @@ const Start = ({ courseOps, setUser }) => {
     setCatalog(c);
   }, [courseOps]);
 
+  const scrollToCatalog = () => {
+    const el = document.getElementById('catalog-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-amber-200">
       <section className="relative flex items-center justify-between mx-auto md:py-0 py-4">
@@ -30,7 +35,14 @@ const Start = ({ courseOps, setUser }) => {
             <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">Mastery LS</h1>
           </div>
           <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">
-            Master life long learning with AI, world class content, experiential projects, and peer collaboration
+            Master life long learning with AI, world class content, experiential projects, and peer collaboration.
+          </p>
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">
+            Login to learn, or browse the{' '}
+            <button onClick={scrollToCatalog} className="text-amber-700 font-semibold hover:text-amber-600">
+              catalog
+            </button>{' '}
+            without an account.
           </p>
           <Login setUser={setUser} />
         </div>
@@ -38,41 +50,6 @@ const Start = ({ courseOps, setUser }) => {
           <img src={stockImages.hero} alt="Learning illustration" className="absolute inset-0 w-full h-full object-cover shadow-xl" style={{ objectPosition: 'center' }} />
         </div>
       </section>
-
-      {catalog.length > 0 && (
-        <section className="py-16 bg-white mb-10">
-          <div className="max-w-7xl mx-auto px-8">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Available courses</h2>
-
-            <div className="max-w-xl mx-auto">
-              <label className="block text-2xl font-medium text-gray-800 mb-2">
-                Browse a course without creating an account. Register to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
-              </label>
-
-              <div role="listbox" aria-label="Courses" tabIndex={0} className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
-                {catalog.map((entry) => {
-                  return (
-                    <div
-                      key={entry.id}
-                      role="option"
-                      onClick={() => {
-                        courseOps.loadCourseById(entry.id);
-                      }}
-                      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-50'}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold text-gray-900">{entry.name}</div>
-                        <div className="text-sm text-gray-500">{entry.duration || ''}</div>
-                      </div>
-                      {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       <section className="py-16 bg-white mb-10">
         <div className="max-w-7xl mx-auto px-8">
@@ -92,6 +69,41 @@ const Start = ({ courseOps, setUser }) => {
           </div>
         </div>
       </section>
+
+      {catalog.length > 0 && (
+        <section id="catalog-section" className="py-16 bg-amber-50 mb-10">
+          <div className="max-w-7xl mx-auto px-8">
+            <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Available courses</h2>
+
+            <div className="max-w-xl mx-auto">
+              <label className="block text-2xl font-medium text-gray-800 mb-4">
+                Browse a course without creating an account. Register to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
+              </label>
+
+              <div role="listbox" aria-label="Courses" tabIndex={0} className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
+                {catalog.map((entry) => {
+                  return (
+                    <div
+                      key={entry.id}
+                      role="option"
+                      onClick={() => {
+                        courseOps.loadCourseById(entry.id);
+                      }}
+                      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-200'}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold text-gray-900">{entry.title}</div>
+                        <div className="text-sm text-gray-500">{entry.duration || ''}</div>
+                      </div>
+                      {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="py-16 bg-amber-600 mb-10">
         <div className="max-w-7xl mx-auto px-8">
