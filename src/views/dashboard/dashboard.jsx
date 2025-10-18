@@ -17,6 +17,8 @@ export default function Dashboard({ courseOps, service, user }) {
     if (user) {
       document.title = `MasteryLS - ${user.name}`;
       service.enrollments(user.id).then(setEnrollments);
+    } else {
+      navigate('/');
     }
   }, [user]);
 
@@ -61,14 +63,10 @@ export default function Dashboard({ courseOps, service, user }) {
     return <CourseCreationForm service={service} onClose={() => setDisplayCourseCreationForm(false)} onCreate={createCourse} />;
   }
 
-  if (!user) {
-    navigate('/');
-  }
-
-  if (!enrollments) {
+  if (!user || !enrollments) {
     return (
       <div className="flex flex-col h-screen">
-        <div className="m-auto text-gray-400">Loading...</div>
+        <div className="m-auto text-gray-400" />
       </div>
     );
   }
