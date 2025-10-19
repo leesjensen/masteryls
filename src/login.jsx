@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import service from './service/service';
 import { useAlert } from './contexts/AlertContext.jsx';
 
-function Login({ setUser }) {
+function Login({ courseOps, setUser }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,8 +16,10 @@ function Login({ setUser }) {
       let user = null;
       if (showSignup) {
         user = await service.register(name, email, password);
+        courseOps.addProgress('accountCreation', 'event', 0, { method: 'signup' });
       } else {
         user = await service.login(email, password);
+        courseOps.addProgress('userLogin', 'event', 0, { method: 'login' });
       }
 
       if (user) {

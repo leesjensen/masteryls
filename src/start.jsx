@@ -44,7 +44,7 @@ const Start = ({ courseOps, setUser }) => {
             </button>{' '}
             without an account.
           </p>
-          <Login setUser={setUser} />
+          <Login courseOps={courseOps} setUser={setUser} />
         </div>
         <div className="flex-1 hidden md:block h-[48rem] relative">
           <img src={stockImages.hero} alt="Learning illustration" className="absolute inset-0 w-full h-full object-cover shadow-xl" style={{ objectPosition: 'center' }} />
