@@ -20,7 +20,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   const [enrollment, setEnrollment] = React.useState(null);
   const courseCache = React.useRef(new Map());
 
-  function logout() {
+  async function logout() {
+    await addProgress(null, null, 'userLogout', 0, { method: 'inApp' });
     setUser(null);
     service.logout();
     localStorage.clear();
@@ -499,9 +500,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return aiQuizFeedbackGenerator(apiKey, data);
   }
 
-  async function addProgress(activityId, type, duration = 0, details = {}, createdAt = undefined) {
-    if (user) {
-      return service.addProgress(user.id, course.id, enrollment.id, currentTopic.id, activityId, type, duration, details, createdAt);
+  async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {
+    const progressUser = providedUser || user;
+    if (progressUser) {
+      return service.addProgress(progressUser.id, course?.id, enrollment?.id, currentTopic?.id, activityId, type, duration, details, createdAt);
     }
   }
 

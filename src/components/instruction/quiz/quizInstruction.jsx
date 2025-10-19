@@ -33,7 +33,14 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
     }
     let controlJsx = generateQuizComponent(meta, itemsText);
     return (
-      <div className="p-2 rounded border border-gray-300 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
+      <div
+        className="p-2 rounded border border-gray-300 shadow-sm overflow-x-auto break-words whitespace-pre-line"
+        data-plugin-masteryls
+        data-plugin-masteryls-root
+        data-plugin-masteryls-id={meta.id}
+        data-plugin-masteryls-title={meta.title}
+        data-plugin-masteryls-type={meta.type}
+      >
         <fieldset>
           {meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}
           {meta.body && (
@@ -79,7 +86,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
         feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
       }
       updateQuizFeedback(id, feedback);
-      await courseOps.addProgress(id, 'quizSubmit', 0, { selected, correct, percentCorrect });
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, { selected, correct, percentCorrect });
     }
   }
 

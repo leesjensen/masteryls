@@ -70,7 +70,7 @@ export default function useProgressTracking({ activityId, activityType, onProgre
     const duration = getCurrentDuration();
     if (duration >= minDuration) {
       try {
-        await onProgress(activityId, activityType, duration);
+        await onProgress(null, activityId, activityType, duration);
         return true;
       } catch (error) {
         console.warn(`Failed to record progress for ${activityType}:`, error);

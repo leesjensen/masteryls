@@ -16,10 +16,10 @@ function Login({ courseOps, setUser }) {
       let user = null;
       if (showSignup) {
         user = await service.register(name, email, password);
-        courseOps.addProgress('accountCreation', 'event', 0, { method: 'signup' });
+        courseOps.addProgress(user, null, 'accountCreation', 0, { method: 'inApp' });
       } else {
         user = await service.login(email, password);
-        courseOps.addProgress('userLogin', 'event', 0, { method: 'login' });
+        courseOps.addProgress(user, null, 'userLogin', 0, { method: 'inApp' });
       }
 
       if (user) {
