@@ -9,7 +9,7 @@ import Metrics from './views/metrics/metrics.jsx';
 import ErrorPage from './components/errorPage.jsx';
 import service from './service/service.js';
 
-const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
+const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 
 function RootLayout() {
   const [user, setUser] = useState(null);

@@ -30,48 +30,52 @@ export default function Classroom({ courseOps, service, user, course, topic, set
   }, [course]);
 
   React.useEffect(() => {
-    const minSidebarWidth = 50;
-    const maxSidebarWidth = window.innerWidth * 0.75;
+    if (course) {
+      const minSidebarWidth = 200;
+      const maxSidebarWidth = Math.max(minSidebarWidth, window.innerWidth - minSidebarWidth);
 
-    function handleMove(clientX) {
-      if (isResizing.current) {
-        let newWidth = clientX;
-        newWidth = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, newWidth));
-        if (newWidth <= minSidebarWidth) {
-          courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: false });
-        } else {
-          courseOps.saveEnrollmentUiSettings(course.id, { sidebarWidth: newWidth });
+      function handleMove(clientX) {
+        if (isResizing.current) {
+          let newWidth = clientX;
+          //        newWidth = Math.max(minSidebarWidth, Math.min(maxSidebarWidth, newWidth));
+          if (newWidth <= minSidebarWidth) {
+            courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'start' });
+          } else if (newWidth >= maxSidebarWidth) {
+            courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'end' });
+          } else {
+            courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'split', sidebarWidth: newWidth });
+          }
         }
       }
-    }
 
-    function handleMouseMove(e) {
-      handleMove(e.clientX);
-    }
-
-    function handleTouchMove(e) {
-      e.preventDefault(); // Prevent scrolling while dragging
-      if (e.touches.length > 0) {
-        handleMove(e.touches[0].clientX);
+      function handleMouseMove(e) {
+        handleMove(e.clientX);
       }
+
+      function handleTouchMove(e) {
+        e.preventDefault(); // Prevent scrolling while dragging
+        if (e.touches.length > 0) {
+          handleMove(e.touches[0].clientX);
+        }
+      }
+
+      function handleEnd() {
+        isResizing.current = false;
+      }
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleEnd);
+      //    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      // window.addEventListener('touchend', handleEnd);
+
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleEnd);
+        //      window.removeEventListener('touchmove', handleTouchMove);
+        // window.removeEventListener('touchend', handleEnd);
+      };
     }
-
-    function handleEnd() {
-      isResizing.current = false;
-    }
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleEnd);
-    //    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    // window.addEventListener('touchend', handleEnd);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleEnd);
-      //      window.removeEventListener('touchmove', handleTouchMove);
-      // window.removeEventListener('touchend', handleEnd);
-    };
-  }, [settings.sidebarVisible]);
+  }, [course, settings.sidebarVisible]);
 
   function toggleEditor() {
     setEditorVisible((prev) => !prev);
@@ -89,6 +93,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
 
   return (
     <div className="flex flex-col h-screen">
+      {`${JSON.stringify({ course: !!course, visible: settings.sidebarVisible, width: settings.sidebarWidth })}`}
       <header className="items-center border-b-1 bg-amber-50 border-gray-200 hidden sm:block ">
         <h1 className="font-semibold text-lg text-gray-700">
           <span className="inline-block bg-white border border-gray-300 rounded-full w-[32px] px-1.5 py-0.5  m-1">💡</span> {course.title} - {topic.title}
@@ -100,25 +105,27 @@ export default function Classroom({ courseOps, service, user, course, topic, set
       </nav>
 
       <main className="flex flex-1 overflow-hidden">
-        {settings.sidebarVisible && (
-          <>
-            <div className={`overflow-hidden ${settings.sidebarVisible ? 'flex opacity-100' : 'w-0 opacity-0'}`} style={{ width: settings.sidebarWidth }}>
-              <Sidebar courseOps={courseOps} service={service} user={user} course={course} currentTopic={topic} editorVisible={editorVisible} />
-            </div>
-            <div
-              className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none"
-              onMouseDown={() => {
-                isResizing.current = true;
-              }}
-              onTouchStart={() => {
-                isResizing.current = true;
-              }}
-            />
-          </>
+        {settings.sidebarVisible !== 'start' && (
+          <div className={`flex overflow-auto`} style={settings.sidebarVisible === 'end' ? { width: '100%' } : { width: settings.sidebarWidth }}>
+            <Sidebar courseOps={courseOps} service={service} user={user} course={course} currentTopic={topic} editorVisible={editorVisible} />
+          </div>
         )}
-        <div id="editor" className="flex flex-1 h-full overflow-auto">
-          {content}
-        </div>
+        {settings.sidebarVisible === 'split' && (
+          <div
+            className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none"
+            onMouseDown={() => {
+              isResizing.current = true;
+            }}
+            onTouchStart={() => {
+              isResizing.current = true;
+            }}
+          />
+        )}
+        {settings.sidebarVisible !== 'end' && (
+          <div id="editor" className={`flex flex-1 h-full overflow-auto`}>
+            {content}
+          </div>
+        )}
       </main>
     </div>
   );

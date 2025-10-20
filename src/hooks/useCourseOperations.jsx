@@ -28,7 +28,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   function getEnrollmentUiSettings(courseId) {
-    const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: true, sidebarWidth: 300, currentTopic: null };
+    const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 
     if (courseId) {
       const settings = localStorage.getItem(`uiSettings-${courseId}`);
@@ -561,21 +561,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
     const activityTypes = ['instructionView', 'videoWatch', 'quizSubmit', 'topicComplete', 'moduleComplete', 'discussion', 'assignment'];
     const topicIds = course.allTopics.map((topic) => topic.id);
-    const activityIds = [
-      '550e8400-e29b-41d4-a716-446655440000',
-      '6ba7b810-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b811-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b812-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b813-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b814-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b815-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b816-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b817-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b818-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b819-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b81a-9dad-11d1-80b4-00c04fd430c8',
-      '6ba7b81b-9dad-11d1-80b4-00c04fd430c8',
-    ];
+    const activityIds = ['550e8400-e29b-41d4-a716-446655440000', '6ba7b810-9dad-11d1-80b4-00c04fd430c8', '6ba7b811-9dad-11d1-80b4-00c04fd430c8', '6ba7b812-9dad-11d1-80b4-00c04fd430c8', '6ba7b813-9dad-11d1-80b4-00c04fd430c8', '6ba7b814-9dad-11d1-80b4-00c04fd430c8', '6ba7b815-9dad-11d1-80b4-00c04fd430c8', '6ba7b816-9dad-11d1-80b4-00c04fd430c8', '6ba7b817-9dad-11d1-80b4-00c04fd430c8', '6ba7b818-9dad-11d1-80b4-00c04fd430c8', '6ba7b819-9dad-11d1-80b4-00c04fd430c8', '6ba7b81a-9dad-11d1-80b4-00c04fd430c8', '6ba7b81b-9dad-11d1-80b4-00c04fd430c8'];
 
     // Generate 200-400 random progress records
     const numRecords = Math.floor(Math.random() * 200) + 200;

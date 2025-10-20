@@ -51,11 +51,7 @@ test('dashboard join/leave courses', async ({ page }) => {
       id: '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5',
       catalogId: 'e453da9a-b61d-45fa-894e-de4f221462a8',
       learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
-      settings: {
-        tocIndexes: [0, 1],
-        currentTopic: null,
-        sidebarVisible: true,
-      },
+      settings: {},
       progress: {
         mastery: 0,
       },
