@@ -307,6 +307,29 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     await route.continue();
   });
 
+  // Supabase - Progress
+  await context.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'POST':
+        await route.fulfill({
+          status: 201,
+          json: {
+            id: '0546cf7c-697b-4bc5-b98d-f409d78ec550',
+            createdAt: '2025-10-21T23:13:47.033173+00:00',
+            userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
+            enrollmentId: null,
+            activityId: '77166861-eaec-440b-b701-b45445853514',
+            duration: 6,
+            type: 'instructionView',
+            details: {},
+            catalogId: 'dd48e7ef-8b47-4d99-88df-1c0295ef1c29',
+            topicId: '77166861-eaec-440b-b701-b45445853514',
+          },
+        });
+        break;
+    }
+  });
+
   // GitHub - API request for to list contents of a directory
   await context.route('https://api.github.com/**/contents', async (route) => {
     expect(route.request().method()).toBe('GET');

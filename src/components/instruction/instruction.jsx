@@ -18,7 +18,7 @@ export default function Instruction({ courseOps, topic, course, user, preview = 
     onProgress: courseOps?.addProgress,
     enabled: !preview && !!topic?.path && !!courseOps?.addProgress,
     minDuration: 5,
-    dependencies: [topic?.path, courseOps],
+    dependencies: [topic?.path],
   });
 
   const contentAvailable = topic && topic.path && (!topic.state || topic.state === 'stable');

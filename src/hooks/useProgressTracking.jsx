@@ -46,7 +46,7 @@ import { useEffect, useRef } from 'react';
  * @param {Array} options.dependencies - Additional dependencies to restart tracking (default: [])
  * @returns {Object} - Object with current session info and manual control functions
  */
-export default function useProgressTracking({ activityId, activityType, onProgress, enabled = true, minDuration = 30, dependencies = [] }) {
+export default function useProgressTracking({ activityId, activityType, onProgress, enabled = true, minDuration = 30 }) {
   const startTimeRef = useRef(null);
   const totalTimeRef = useRef(0);
   const isVisibleRef = useRef(true);
@@ -67,10 +67,18 @@ export default function useProgressTracking({ activityId, activityType, onProgre
       return false;
     }
 
+    // Accumulate any current session time before recording
+    if (startTimeRef.current && isVisibleRef.current) {
+      totalTimeRef.current += Date.now() - startTimeRef.current;
+      startTimeRef.current = Date.now(); // Reset start time for continued tracking
+    }
+
     const duration = getCurrentDuration();
     if (duration >= minDuration) {
       try {
         await onProgress(null, activityId, activityType, duration);
+        // Reset total time after successful recording
+        totalTimeRef.current = 0;
         return true;
       } catch (error) {
         console.warn(`Failed to record progress for ${activityType}:`, error);
@@ -90,7 +98,7 @@ export default function useProgressTracking({ activityId, activityType, onProgre
 
   // Function to pause tracking
   const pauseTracking = () => {
-    if (startTimeRef.current && isVisibleRef.current) {
+    if (startTimeRef.current && isVisibleRef.current && isTrackingRef.current) {
       totalTimeRef.current += Date.now() - startTimeRef.current;
     }
     isTrackingRef.current = false;
@@ -98,7 +106,7 @@ export default function useProgressTracking({ activityId, activityType, onProgre
 
   // Function to resume tracking
   const resumeTracking = () => {
-    if (!isTrackingRef.current) {
+    if (!isTrackingRef.current && enabled) {
       startTimeRef.current = Date.now();
       isVisibleRef.current = !document.hidden;
       isTrackingRef.current = true;
@@ -134,12 +142,28 @@ export default function useProgressTracking({ activityId, activityType, onProgre
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup function to record progress when effect cleans up
-    return async () => {
+    return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      await recordProgress();
+
+      // Pause tracking and accumulate any remaining time
+      if (startTimeRef.current && isVisibleRef.current && isTrackingRef.current) {
+        totalTimeRef.current += Date.now() - startTimeRef.current;
+      }
+
+      // Record progress synchronously to avoid timing issues
+      const duration = Math.round(totalTimeRef.current / 1000);
+      if (duration >= minDuration && isTrackingRef.current) {
+        // Use setTimeout to avoid blocking the cleanup
+        setTimeout(() => {
+          onProgress(null, activityId, activityType, duration).catch((error) => {
+            console.warn(`Failed to record progress for ${activityType}:`, error);
+          });
+        }, 0);
+      }
+
       isTrackingRef.current = false;
     };
-  }, [activityId, activityType, enabled, ...dependencies]);
+  }, [activityId, activityType, enabled, onProgress, minDuration]);
 
   return {
     getCurrentDuration,
