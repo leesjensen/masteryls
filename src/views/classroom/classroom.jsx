@@ -61,6 +61,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
 
       function handleEnd() {
         isResizing.current = false;
+        document.body.style.userSelect = '';
       }
 
       window.addEventListener('mousemove', handleMouseMove);
@@ -115,9 +116,11 @@ export default function Classroom({ courseOps, service, user, course, topic, set
             className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none"
             onMouseDown={() => {
               isResizing.current = true;
+              document.body.style.userSelect = 'none';
             }}
             onTouchStart={() => {
               isResizing.current = true;
+              document.body.style.userSelect = 'none';
             }}
           />
         )}
