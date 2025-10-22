@@ -228,8 +228,22 @@ export default function Metrics({ courseOps }) {
   }
 
   // Prepare data for charts
-  const sortedDates = Object.keys(metrics.dailyActivity).sort();
-  const dailyLabels = sortedDates; // Show all available data points
+  const hourlyLabels = Object.keys(metrics.hourlyActivity).sort();
+  const dailyLabels = Object.keys(metrics.dailyActivity).sort();
+
+  const hourlyActivityData = {
+    labels: hourlyLabels,
+    datasets: [
+      {
+        label: 'Hourly Activities',
+        data: hourlyLabels.map((hour) => metrics.hourlyActivity[hour]),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        fill: true,
+      },
+    ],
+  };
 
   const dailyActivityData = {
     labels: dailyLabels,
@@ -376,26 +390,6 @@ export default function Metrics({ courseOps }) {
     },
   };
 
-  async function enhancedMetrics(progressData) {
-    if (progressData) {
-      const enhancedData = [];
-      for (const data of progressData) {
-        if (data.catalogId && data.topicId) {
-          const course = await courseOps.getCourse(data.catalogId);
-          const topic = course.allTopics.find((t) => t.id.replace(/-/g, '') === data.topicId.replace(/-/g, ''));
-
-          enhancedData.push({
-            ...data,
-            topicTitle: topic ? topic.title : 'Unknown Topic',
-          });
-        }
-      }
-      return enhancedData;
-    }
-
-    return progressData;
-  }
-
   async function getMetrics(courseId, enrollmentId, userId, startDate = null, endDate = null) {
     let startDateIso = startDate ? startDate.toISOString() : null;
     let endDateIso = endDate ? endDate.toISOString() : null;
@@ -405,6 +399,7 @@ export default function Metrics({ courseOps }) {
     const metrics = {
       totalActivities: progressData.length,
       activityTypes: {},
+      hourlyActivity: {},
       dailyActivity: {},
       weeklyActivity: {},
       averageDuration: 0,
@@ -417,12 +412,18 @@ export default function Metrics({ courseOps }) {
     let durationCount = 0;
 
     progressData.forEach((activity) => {
+      const date = new Date(activity.createdAt);
+      const day = date.toISOString().split('T')[0];
+
       // Activity types breakdown
       metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
 
+      // Hourly activity
+      const hour = day + ' ' + date.getHours().toString().padStart(2, '0') + ':00';
+      metrics.hourlyActivity[hour] = (metrics.hourlyActivity[hour] || 0) + 1;
+
       // Daily activity
-      const date = new Date(activity.createdAt).toISOString().split('T')[0];
-      metrics.dailyActivity[date] = (metrics.dailyActivity[date] || 0) + 1;
+      metrics.dailyActivity[day] = (metrics.dailyActivity[day] || 0) + 1;
 
       // Weekly activity
       const week = getWeekNumber(new Date(activity.createdAt));
@@ -442,6 +443,26 @@ export default function Metrics({ courseOps }) {
     metrics.averageDuration = durationCount > 0 ? totalDurationSum / durationCount : 0;
 
     return metrics;
+  }
+
+  async function enhancedMetrics(progressData) {
+    if (progressData) {
+      const enhancedData = [];
+      for (const data of progressData) {
+        if (data.catalogId && data.topicId) {
+          const course = await courseOps.getCourse(data.catalogId);
+          const topic = course.allTopics.find((t) => t.id.replace(/-/g, '') === data.topicId.replace(/-/g, ''));
+
+          enhancedData.push({
+            ...data,
+            topicTitle: topic ? topic.title : 'Unknown Topic',
+          });
+        }
+      }
+      return enhancedData;
+    }
+
+    return progressData;
   }
 
   function getWeekNumber(date) {
@@ -513,6 +534,14 @@ export default function Metrics({ courseOps }) {
       </div>
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Hourly Activity Trend */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Hourly Activity Trend</h3>
+          <div className="h-80">
+            <Line data={hourlyActivityData} options={chartOptions} />
+          </div>
+        </div>
+
         {/* Daily Activity Trend */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Activity Trend</h3>
