@@ -128,7 +128,12 @@ export default function Metrics({ courseOps }) {
   // Helper function to get time range description
   const getTimeRangeDescription = (startDate, endDate) => {
     if (startDate && endDate) {
-      return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
+      const start = startDate.toLocaleDateString();
+      const end = endDate.toLocaleDateString();
+      if (start === end) {
+        return `On ${start}`;
+      }
+      return `${start} - ${end}`;
     } else if (startDate) {
       return `From ${startDate.toLocaleDateString()}`;
     } else if (endDate) {
@@ -392,24 +397,13 @@ export default function Metrics({ courseOps }) {
   }
 
   async function getMetrics(courseId, enrollmentId, userId, startDate = null, endDate = null) {
-    let progressData = await courseOps.getProgress(courseId, enrollmentId, userId);
+    let startDateIso = startDate ? startDate.toISOString() : null;
+    let endDateIso = endDate ? endDate.toISOString() : null;
+    let progressData = await courseOps.getProgress(courseId, enrollmentId, userId, startDateIso, endDateIso);
     progressData = await enhancedMetrics(progressData);
 
-    // Calculate the cutoff dates based on custom date inputs
-    const cutoffStartDate = startDate ?? new Date(0); // Beginning of time if no start date
-    let cutoffEndDate = endDate;
-    if (cutoffEndDate === null) {
-      cutoffEndDate = new Date();
-      cutoffEndDate.setHours(23, 59, 59, 999);
-    }
-
-    // Filter progress data by time range
-    const filteredProgressData = progressData.filter((activity) => {
-      const activityDate = new Date(activity.createdAt);
-      return activityDate >= cutoffStartDate && activityDate <= cutoffEndDate;
-    }); // Process the filtered progress data to create metrics
     const metrics = {
-      totalActivities: filteredProgressData.length,
+      totalActivities: progressData.length,
       activityTypes: {},
       dailyActivity: {},
       weeklyActivity: {},
@@ -422,7 +416,7 @@ export default function Metrics({ courseOps }) {
     let totalDurationSum = 0;
     let durationCount = 0;
 
-    filteredProgressData.forEach((activity) => {
+    progressData.forEach((activity) => {
       // Activity types breakdown
       metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
 
