@@ -196,13 +196,13 @@ export default function Metrics({ courseOps }) {
             Yesterday
           </button>
           <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
-            This Week
+            This week
           </button>
           <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
-            This Month
+            This month
           </button>
           <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
-            Clear Dates
+            All time
           </button>
         </div>
         {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
@@ -228,17 +228,37 @@ export default function Metrics({ courseOps }) {
   }
 
   // Prepare data for charts
-  const hourlyLabels = Object.keys(metrics.hourlyActivity).sort();
+  //  const hourlyLabels = Object.keys(metrics.hourlyActivity).sort();
   const dailyLabels = Object.keys(metrics.dailyActivity).sort();
 
+  // Generate hourly data with all hours in the time range
+  const generateHourlyData = () => {
+    const hourlyData = {};
+
+    const start = startDate ?? metrics.firstActivity;
+    const currentDate = new Date(start);
+    const end = endDate ?? metrics.lastActivity;
+
+    while (currentDate <= end) {
+      const hourKey = currentDate.toISOString().split('T')[0] + ' ' + currentDate.getHours().toString().padStart(2, '0') + ':00';
+      hourlyData[hourKey] = metrics.hourlyActivity[hourKey] || 0;
+      currentDate.setHours(currentDate.getHours() + 1);
+    }
+
+    return hourlyData;
+  };
+
+  const completeHourlyData = generateHourlyData();
+  const completeHourlyLabels = Object.keys(completeHourlyData).sort();
+
   const hourlyActivityData = {
-    labels: hourlyLabels,
+    labels: completeHourlyLabels,
     datasets: [
       {
         label: 'Hourly Activities',
-        data: hourlyLabels.map((hour) => metrics.hourlyActivity[hour]),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        data: completeHourlyLabels.map((hour) => completeHourlyData[hour]),
+        borderColor: 'rgb(40, 130, 40)',
+        backgroundColor: 'rgba(10, 130, 10, 0.1)',
         tension: 0.4,
         fill: true,
       },
@@ -310,13 +330,14 @@ export default function Metrics({ courseOps }) {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top',
+    plugins: {},
+    elements: {
+      line: {
+        borderWidth: 2,
       },
-      title: {
-        display: true,
-        text: `Activity Data`,
+      point: {
+        radius: 0,
+        hoverRadius: 0,
       },
     },
     scales: {
@@ -398,6 +419,8 @@ export default function Metrics({ courseOps }) {
 
     const metrics = {
       totalActivities: progressData.length,
+      firstActivity: new Date(),
+      lastActivity: new Date(),
       activityTypes: {},
       hourlyActivity: {},
       dailyActivity: {},
@@ -414,6 +437,9 @@ export default function Metrics({ courseOps }) {
     progressData.forEach((activity) => {
       const date = new Date(activity.createdAt);
       const day = date.toISOString().split('T')[0];
+
+      if (date < metrics.firstActivity) metrics.firstActivity = date;
+      if (date > metrics.lastActivity) metrics.lastActivity = date;
 
       // Activity types breakdown
       metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
