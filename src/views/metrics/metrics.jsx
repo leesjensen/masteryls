@@ -11,8 +11,8 @@ export default function Metrics({ courseOps }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
   const [selectedCourseId, setSelectedCourseId] = useState('');
 
   // Get course catalog for course filter
@@ -22,42 +22,55 @@ export default function Metrics({ courseOps }) {
   const validateDateRange = () => {
     if (!startDate && !endDate) return true; // Allow empty dates
     if (startDate && endDate) {
-      return new Date(startDate) <= new Date(endDate);
+      return startDate <= endDate;
     }
     return true;
   };
 
   // Helper function to set common date ranges
   const setDatePreset = (preset) => {
-    const today = new Date();
-    const formatDate = (date) => date.toISOString().split('T')[0];
-
     switch (preset) {
-      case 'today':
-        setStartDate(formatDate(today));
-        setEndDate(formatDate(today));
+      case 'today': {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        setStartDate(start);
+        const end = new Date();
+        setEndDate(end);
         break;
-      case 'yesterday':
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        setStartDate(formatDate(yesterday));
-        setEndDate(formatDate(yesterday));
+      }
+      case 'yesterday': {
+        const start = new Date();
+        start.setDate(start.getDate() - 1);
+        start.setHours(0, 0, 0, 0);
+        setStartDate(start);
+        const end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+        setEndDate(end);
         break;
-      case 'thisWeek':
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        setStartDate(formatDate(weekStart));
-        setEndDate(formatDate(today));
+      }
+      case 'thisWeek': {
+        const start = new Date();
+        start.setDate(start.getDate() - start.getDay());
+        start.setHours(0, 0, 0, 0);
+        setStartDate(start);
+        const end = new Date();
+        setEndDate(end);
         break;
-      case 'thisMonth':
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        setStartDate(formatDate(monthStart));
-        setEndDate(formatDate(today));
+      }
+      case 'thisMonth': {
+        let start = new Date();
+        start = new Date(start.getFullYear(), start.getMonth(), 1);
+        start.setHours(0, 0, 0, 0);
+        setStartDate(start);
+        const end = new Date();
+        setEndDate(end);
         break;
-      case 'clear':
-        setStartDate('');
-        setEndDate('');
+      }
+      case 'clear': {
+        setStartDate(null);
+        setEndDate(null);
         break;
+      }
     }
   };
 
@@ -115,11 +128,11 @@ export default function Metrics({ courseOps }) {
   // Helper function to get time range description
   const getTimeRangeDescription = (startDate, endDate) => {
     if (startDate && endDate) {
-      return `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
+      return `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`;
     } else if (startDate) {
-      return `From ${new Date(startDate).toLocaleDateString()}`;
+      return `From ${startDate.toLocaleDateString()}`;
     } else if (endDate) {
-      return `Until ${new Date(endDate).toLocaleDateString()}`;
+      return `Until ${endDate.toLocaleDateString()}`;
     } else {
       return 'All Time';
     }
@@ -383,12 +396,12 @@ export default function Metrics({ courseOps }) {
     progressData = await enhancedMetrics(progressData);
 
     // Calculate the cutoff dates based on custom date inputs
-    const now = new Date();
-    const cutoffStartDate = startDate ? new Date(startDate) : new Date(0); // Beginning of time if no start date
-    const cutoffEndDate = endDate ? new Date(endDate) : now; // Current time if no end date
-
-    // Set end date to end of day
-    cutoffEndDate.setHours(23, 59, 59, 999);
+    const cutoffStartDate = startDate ?? new Date(0); // Beginning of time if no start date
+    let cutoffEndDate = endDate;
+    if (cutoffEndDate === null) {
+      cutoffEndDate = new Date();
+      cutoffEndDate.setHours(23, 59, 59, 999);
+    }
 
     // Filter progress data by time range
     const filteredProgressData = progressData.filter((activity) => {
