@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement, Filler } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 
 // Register ChartJS components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement, Filler);
+
+const last24Hours = () => {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return date;
+};
 
 export default function Metrics({ courseOps }) {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState(last24Hours());
+  const [endDate, setEndDate] = useState(new Date());
   const [selectedCourseId, setSelectedCourseId] = useState('');
 
   // Get course catalog for course filter
@@ -66,9 +72,9 @@ export default function Metrics({ courseOps }) {
         setEndDate(end);
         break;
       }
-      case 'clear': {
-        setStartDate(null);
-        setEndDate(null);
+      case '24hours': {
+        setStartDate(last24Hours());
+        setEndDate(new Date());
         break;
       }
     }
@@ -180,15 +186,18 @@ export default function Metrics({ courseOps }) {
           </div>
           <div className="flex items-center space-x-1">
             <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
+            <input type="date" value={startDate.toISOString().split('T')[0]} onChange={(e) => setStartDate(new Date(e.target.value))} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
           </div>
           <div className="flex items-center space-x-1">
             <label className="text-sm text-gray-600 w-10 md:w-auto">To:</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
+            <input type="date" value={endDate.toISOString().split('T')[0]} onChange={(e) => setEndDate(new Date(e.target.value))} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
           </div>
         </div>
         {/* Quick date presets and course clear */}
         <div className="flex flex-wrap gap-1 text-xs">
+          <button onClick={() => setDatePreset('24hours')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
+            Last 24 hours
+          </button>
           <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
             Today
           </button>
@@ -200,9 +209,6 @@ export default function Metrics({ courseOps }) {
           </button>
           <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
             This month
-          </button>
-          <button onClick={() => setDatePreset('clear')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
-            All time
           </button>
         </div>
         {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
@@ -227,11 +233,8 @@ export default function Metrics({ courseOps }) {
     );
   }
 
-  // Prepare data for charts
-  //  const hourlyLabels = Object.keys(metrics.hourlyActivity).sort();
   const dailyLabels = Object.keys(metrics.dailyActivity).sort();
 
-  // Generate hourly data with all hours in the time range
   const generateHourlyData = () => {
     const hourlyData = {};
 
@@ -257,9 +260,11 @@ export default function Metrics({ courseOps }) {
       {
         label: 'Hourly Activities',
         data: completeHourlyLabels.map((hour) => completeHourlyData[hour]),
-        borderColor: 'rgb(40, 130, 40)',
-        backgroundColor: 'rgba(10, 130, 10, 0.1)',
+        borderWidth: 2,
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.3)',
         tension: 0.4,
+        pointRadius: 0,
         fill: true,
       },
     ],
@@ -271,9 +276,11 @@ export default function Metrics({ courseOps }) {
       {
         label: 'Daily Activities',
         data: dailyLabels.map((date) => metrics.dailyActivity[date]),
+        borderWidth: 2,
         borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.3)',
         tension: 0.4,
+        pointRadius: 3,
         fill: true,
       },
     ],
@@ -331,15 +338,6 @@ export default function Metrics({ courseOps }) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {},
-    elements: {
-      line: {
-        borderWidth: 2,
-      },
-      point: {
-        radius: 0,
-        hoverRadius: 0,
-      },
-    },
     scales: {
       y: {
         beginAtZero: true,
