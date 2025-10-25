@@ -43,6 +43,10 @@ function RootLayout() {
       const savedUser = await service.currentUser();
       if (savedUser) {
         setUser(savedUser);
+        const enrollment = await service.currentEnrollment(savedUser.id);
+        if (enrollment) {
+          courseOps.loadCourse(enrollment);
+        }
       }
     })();
   }, []);
@@ -76,7 +80,7 @@ function App() {
     const navigate = useNavigate();
 
     useEffect(() => {
-      // Pick up where they left off
+      // If the user is already logged in, load their course or go to dashboard
       if (user) {
         (async () => {
           const enrollment = await service.currentEnrollment(user.id);
