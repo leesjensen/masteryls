@@ -88,13 +88,12 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
 
   async function handleQuizClick(event, quizRoot) {
     const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
+    const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
+    const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
+    const bodyElem = quizRoot.querySelector('[data-plugin-masteryls-body]');
+    const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type === 'multiple-choice' || type === 'multiple-select') {
       if (event.target.tagName === 'INPUT') {
-        const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
-        const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
-        const bodyElem = quizRoot.querySelector('[data-plugin-masteryls-body]');
-        const body = bodyElem ? bodyElem.textContent.trim() : undefined;
-
         // read selected & correct indices from DOM
         const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
         const selected = [];
@@ -116,7 +115,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
         const matched = Math.max(0, correctSelections - incorrectSelections);
         const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
-        await onQuizSubmit?.({ id, title, type, body, choices, selected, correct, percentCorrect });
+        await onQuizSubmit({ id, title, type, body, choices, selected, correct, percentCorrect });
 
         // give visual feedback
         let ringClass = 'ring-yellow-400';
@@ -127,17 +126,16 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
       }
     } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission') {
       if (event.target.tagName === 'BUTTON') {
-        const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
-        const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
-        const bodyElem = quizRoot.querySelector('[data-plugin-masteryls-body]');
-        const body = bodyElem ? bodyElem.textContent.trim() : undefined;
+        let feedbackColor = 'ring-green-500';
+        const quizElement = quizRoot.querySelector('textarea') || quizRoot.querySelector('input[type="url"]') || quizRoot.querySelector('input[type="file"]');
+        if (quizElement && quizElement.value && quizElement.validity.valid) {
+          await onQuizSubmit({ id, title, type, body, choices: [], selected: [], correct: [], percentCorrect: 0 });
+        } else {
+          feedbackColor = 'ring-red-500';
+        }
 
-        // For these types, we won't have correct answers or percent correct
-        await onQuizSubmit?.({ id, title, type, body, choices: [], selected: [], correct: [], percentCorrect: 0 });
-
-        // give visual feedback
-        quizRoot.classList.add('ring-2', 'ring-green-500');
-        setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-green-500'), 600);
+        quizRoot.classList.add('ring-2', feedbackColor);
+        setTimeout(() => quizRoot.classList.remove('ring-2', feedbackColor), 600);
       }
     }
   }

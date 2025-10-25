@@ -1,41 +1,6 @@
 import React from 'react';
 
 export default function SubmissionQuiz({ meta }) {
-  //         const dropZone = document.getElementById('drop-zone-${meta.id}');
-  //         const fileInput = document.getElementById('file-input-${meta.id}');
-  //         const fileNamesDiv = dropZone.querySelector('.file-names');
-  //         const fileNamesList = fileNamesDiv.querySelector('ul');
-
-  // console.log("loading script", { dropZone, fileInput, fileNamesDiv });
-
-  //         dropZone.addEventListener('dragover', (e) => {
-  //           e.preventDefault();
-  //           dropZone.classList.add('border-blue-400', 'bg-blue-50');
-  //         });
-
-  //         dropZone.addEventListener('dragleave', () => {
-  //           dropZone.classList.remove('border-blue-400', 'bg-blue-50');
-  //         });
-
-  //         dropZone.addEventListener('drop', (e) => {
-  //           e.preventDefault();
-  //           fileInput.files = e.dataTransfer.files;
-  //           updateFileNames();
-  //           console.log("updateFileNames", { fileInput });
-  //         });
-
-  //         fileInput.addEventListener('change', updateFileNames);
-
-  //         function updateFileNames() {
-  //           if (fileInput.files.length > 0) {
-  //             fileNamesList.innerHTML = Array.from(fileInput.files)
-  //               .map(f => "<li>" + f.name + "</li>").join('');
-  //             fileNamesDiv.classList.remove('hidden');
-  //           } else {
-  //             fileNamesDiv.classList.add('hidden');
-  //           }
-  //         }
-
   return (
     <div>
       <div id={`drop-zone-${meta.id}`} className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors duration-200">
