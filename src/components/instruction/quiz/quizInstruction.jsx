@@ -64,26 +64,50 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
     return controlHtml;
   }
 
-  async function onQuizSubmit({ id, title, type, body, choices, selected, correct, percentCorrect }) {
-    if (selected.length > 0) {
-      const data = {
-        title,
-        type,
-        question: body,
-        choices: choices.map((choice) => '\n   -' + choice).join(''),
-        learnerAnswers: selected.map((i) => choices[i]),
-        correctAnswers: correct.map((i) => choices[i]),
-        percentCorrect: percentCorrect,
-      };
-      let feedback = '';
-      try {
-        feedback = await courseOps.getQuizFeedback(data);
-      } catch {
-        feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
-      }
-      updateQuizFeedback(id, feedback);
-      await courseOps.addProgress(null, id, 'quizSubmit', 0, { selected, correct, percentCorrect });
+  async function onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect }) {
+    if (selected.length === 0) return false;
+    const data = {
+      title,
+      type,
+      question: body,
+      choices: choices.map((choice) => '\n   -' + choice).join(''),
+      learnerAnswers: selected.map((i) => choices[i]),
+      correctAnswers: correct.map((i) => choices[i]),
+      percentCorrect: percentCorrect,
+    };
+    let feedback = '';
+    try {
+      feedback = await courseOps.getQuizFeedback(data);
+    } catch {
+      feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
     }
+    updateQuizFeedback(id, feedback);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'choice', selected, correct, percentCorrect, feedback });
+    return true;
+  }
+
+  async function onEssayQuiz({ id, title, type, body, essay }) {
+    if (!essay) return false;
+    let feedback = 'great job';
+    updateQuizFeedback(id, feedback);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'essay', essay, feedback });
+    return true;
+  }
+
+  async function onFileQuiz({ id, title, type, body, files }) {
+    if (files.length === 0) return false;
+    let feedback = 'great job';
+    updateQuizFeedback(id, feedback);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'file', files, feedback });
+    return true;
+  }
+
+  async function onUrlQuiz({ id, title, type, body, url }) {
+    if (!url) return false;
+    let feedback = 'great job';
+    updateQuizFeedback(id, feedback);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'url', url, feedback });
+    return true;
   }
 
   async function handleQuizClick(event, quizRoot) {
@@ -115,23 +139,39 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
         const matched = Math.max(0, correctSelections - incorrectSelections);
         const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
-        await onQuizSubmit({ id, title, type, body, choices, selected, correct, percentCorrect });
-
-        // give visual feedback
-        let ringClass = 'ring-yellow-400';
-        if (percentCorrect === 100) ringClass = 'ring-green-500';
-        else if (percentCorrect === 0) ringClass = 'ring-red-500';
-        quizRoot.classList.add('ring-2', ringClass);
-        setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+        if (await onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect })) {
+          // give visual feedback
+          let ringClass = 'ring-yellow-400';
+          if (percentCorrect === 100) ringClass = 'ring-green-500';
+          else if (percentCorrect === 0) ringClass = 'ring-red-500';
+          quizRoot.classList.add('ring-2', ringClass);
+          setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+        }
       }
     } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission') {
       if (event.target.tagName === 'BUTTON') {
-        let feedbackColor = 'ring-green-500';
-        const quizElement = quizRoot.querySelector('textarea') || quizRoot.querySelector('input[type="url"]') || quizRoot.querySelector('input[type="file"]');
-        if (quizElement && quizElement.value && quizElement.validity.valid) {
-          await onQuizSubmit({ id, title, type, body, choices: [], selected: [], correct: [], percentCorrect: 0 });
-        } else {
-          feedbackColor = 'ring-red-500';
+        let feedbackColor = 'ring-red-500';
+        if (type === 'essay') {
+          const quizElement = quizRoot.querySelector('textarea');
+          if (quizElement && quizElement.value && quizElement.validity.valid) {
+            if (await onEssayQuiz({ id, title, type, body, essay: quizElement.value })) {
+              feedbackColor = 'ring-green-500';
+            }
+          }
+        } else if (type === 'file-submission') {
+          const quizElement = quizRoot.querySelector('input[type="file"]');
+          if (quizElement && quizElement.value && quizElement.validity.valid) {
+            if (await onFileQuiz({ id, title, type, body, files: quizElement.files })) {
+              feedbackColor = 'ring-green-500';
+            }
+          }
+        } else if (type === 'url-submission') {
+          const quizElement = quizRoot.querySelector('input[type="url"]');
+          if (quizElement && quizElement.value && quizElement.validity.valid) {
+            if (await onUrlQuiz({ id, title, type, body, url: quizElement.value })) {
+              feedbackColor = 'ring-green-500';
+            }
+          }
         }
 
         quizRoot.classList.add('ring-2', feedbackColor);
