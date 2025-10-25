@@ -3,6 +3,7 @@ import MarkdownInstruction from '../markdownInstruction';
 import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
 import SubmissionQuiz from './submissionQuiz';
+import UrlQuiz from './urlQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
 import { updateQuizFeedback } from './feedbackStore';
@@ -33,14 +34,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
     }
     let controlJsx = generateQuizComponent(meta, itemsText);
     return (
-      <div
-        className="p-2 rounded border border-gray-300 shadow-sm overflow-x-auto break-words whitespace-pre-line"
-        data-plugin-masteryls
-        data-plugin-masteryls-root
-        data-plugin-masteryls-id={meta.id}
-        data-plugin-masteryls-title={meta.title}
-        data-plugin-masteryls-type={meta.type}
-      >
+      <div className="p-2 rounded border border-gray-300 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
           {meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}
           {meta.body && (
@@ -63,6 +57,8 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
       return <EssayQuiz meta={meta} />;
     } else if (meta.type === 'file-submission') {
       return <SubmissionQuiz meta={meta} />;
+    } else if (meta.type === 'url-submission') {
+      return <UrlQuiz meta={meta} />;
     }
 
     return controlHtml;
@@ -91,42 +87,58 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
   }
 
   async function handleQuizClick(event, quizRoot) {
-    if (event.target.tagName === 'INPUT') {
-      const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
-      const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
-      const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
-      const bodyElem = quizRoot.querySelector('[data-plugin-masteryls-body]');
-      const body = bodyElem ? bodyElem.textContent.trim() : undefined;
+    const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
+    if (type === 'multiple-choice' || type === 'multiple-select') {
+      if (event.target.tagName === 'INPUT') {
+        const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
+        const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
+        const bodyElem = quizRoot.querySelector('[data-plugin-masteryls-body]');
+        const body = bodyElem ? bodyElem.textContent.trim() : undefined;
 
-      // read selected & correct indices from DOM
-      const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
-      const selected = [];
-      const correct = [];
-      const choices = [];
-      inputs.forEach((inp) => {
-        const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
-        choices.push(inp.nextSibling.textContent.trim());
-        if (inp.checked) selected.push(idx);
-        if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
-      });
-      selected.sort((a, b) => a - b);
-      correct.sort((a, b) => a - b);
+        // read selected & correct indices from DOM
+        const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
+        const selected = [];
+        const correct = [];
+        const choices = [];
+        inputs.forEach((inp) => {
+          const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
+          choices.push(inp.nextSibling.textContent.trim());
+          if (inp.checked) selected.push(idx);
+          if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
+        });
+        selected.sort((a, b) => a - b);
+        correct.sort((a, b) => a - b);
 
-      // Calculate percent correct
-      const total = correct.length;
-      const correctSelections = selected.filter((idx) => correct.includes(idx)).length;
-      const incorrectSelections = selected.filter((idx) => !correct.includes(idx)).length;
-      const matched = Math.max(0, correctSelections - incorrectSelections);
-      const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
+        // Calculate percent correct
+        const total = correct.length;
+        const correctSelections = selected.filter((idx) => correct.includes(idx)).length;
+        const incorrectSelections = selected.filter((idx) => !correct.includes(idx)).length;
+        const matched = Math.max(0, correctSelections - incorrectSelections);
+        const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
-      await onQuizSubmit?.({ id, title, type, body, choices, selected, correct, percentCorrect });
+        await onQuizSubmit?.({ id, title, type, body, choices, selected, correct, percentCorrect });
 
-      // give visual feedback
-      let ringClass = 'ring-yellow-400';
-      if (percentCorrect === 100) ringClass = 'ring-green-500';
-      else if (percentCorrect === 0) ringClass = 'ring-red-500';
-      quizRoot.classList.add('ring-2', ringClass);
-      setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+        // give visual feedback
+        let ringClass = 'ring-yellow-400';
+        if (percentCorrect === 100) ringClass = 'ring-green-500';
+        else if (percentCorrect === 0) ringClass = 'ring-red-500';
+        quizRoot.classList.add('ring-2', ringClass);
+        setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+      }
+    } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission') {
+      if (event.target.tagName === 'BUTTON') {
+        const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
+        const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
+        const bodyElem = quizRoot.querySelector('[data-plugin-masteryls-body]');
+        const body = bodyElem ? bodyElem.textContent.trim() : undefined;
+
+        // For these types, we won't have correct answers or percent correct
+        await onQuizSubmit?.({ id, title, type, body, choices: [], selected: [], correct: [], percentCorrect: 0 });
+
+        // give visual feedback
+        quizRoot.classList.add('ring-2', 'ring-green-500');
+        setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-green-500'), 600);
+      }
     }
   }
 
