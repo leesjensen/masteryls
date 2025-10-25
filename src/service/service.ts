@@ -128,7 +128,7 @@ class Service {
 
     const index = this.catalog.findIndex((c) => c.id === catalogEntry.id);
     if (index !== -1) {
-      this.catalog[index] = catalogEntry;
+      this.catalog[index] = { ...this.catalog[index], ...catalogEntry };
     } else {
       this.catalog.push(catalogEntry);
     }
@@ -294,12 +294,12 @@ class Service {
       throw new Error(error.message);
     }
 
-    const enrollments = new Map<string, Enrollment>();
+    const result = new Map<string, Enrollment>();
     data.forEach((item) => {
-      enrollments.set(item.catalogId, { ...item, catalogEntry: this.catalogEntry(item.catalogId) });
+      result.set(item.catalogId, { ...item, catalogEntry: this.catalogEntry(item.catalogId) });
     });
 
-    return enrollments;
+    return result;
   }
 
   async enrollment(userId: string, catalogId: string): Promise<Enrollment> {
@@ -356,17 +356,7 @@ class Service {
     }
   }
 
-  async addProgress(
-    userId: string,
-    catalogId: string,
-    enrollmentId: string,
-    topicId: string,
-    activityId: string,
-    type: string = 'instructionView',
-    duration: number = 0,
-    details: object = {},
-    createdAt: string
-  ): Promise<void> {
+  async addProgress(userId: string, catalogId: string, enrollmentId: string, topicId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
     const progressData: any = {
       userId,
       catalogId,
