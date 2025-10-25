@@ -480,8 +480,14 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     switch (topic.type) {
       case 'video':
         return null;
-      case 'quiz':
-        basicContent += `## Quiz\n\n### Question 1\n\nYour question here?\n\n- [ ] Option A\n- [ ] Option B\n- [ ] Option C\n- [ ] Option D\n\n### Answer\n\nCorrect answer and explanation.\n`;
+      case 'exam':
+        basicContent += `## Exam\n\n### Question 1\n\n\`\`\`masteryls
+{"id":"39280", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+- [ ] This one has a [link](https://cow.com)
+- [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
+\`\`\`\n`;
         break;
       case 'project':
         basicContent += `## Project: ${topic.title}\n\n### Objectives\n\n- Objective 1\n- Objective 2\n\n### Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n### Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;

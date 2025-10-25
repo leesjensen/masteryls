@@ -58,7 +58,7 @@ const courseJson = {
       title: 'Module 1',
       topics: [
         { title: 'Home', path: 'README.md' },
-        { title: 'topic 1', type: 'quiz', path: 'something/more/topic1.md' },
+        { title: 'topic 1', type: 'exam', path: 'something/more/topic1.md' },
       ],
     },
     {

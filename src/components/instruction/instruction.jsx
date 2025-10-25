@@ -31,7 +31,7 @@ export default function Instruction({ courseOps, topic, course, user, preview = 
     case 'video':
       instructionComponent = <VideoInstruction topic={topic} courseOps={courseOps} />;
       break;
-    case 'quiz':
+    case 'exam':
       instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
       break;
     default:
