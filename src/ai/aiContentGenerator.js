@@ -331,6 +331,7 @@ ${Object.entries(data)
   .join('\n')}
 
 Requirements:
+- Start the response with json that indicates the percentage correct in the format: {"percentCorrect": XX}
 - Address the student directly
 - The feedback to be part of a larger conversation that is already occurring
 - Acknowledge any correct aspects of the student's answer
