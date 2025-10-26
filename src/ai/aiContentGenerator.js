@@ -96,6 +96,37 @@ Requirements:
   return makeAiRequest(apiKey, prompt);
 }
 
+export async function aiExamGenerator(apiKey, title, description) {
+  const prompt = `You are an expert educational content creator. 
+Generate 10 multiple choice or essay questions of the format:
+
+### Example question title
+\`\`\`masteryls
+{"id":"" "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+- [ ] This one has a [link](https://cow.com)
+- [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
+\`\`\`
+
+### Example question title
+\`\`\`masteryls
+{"id":"" "title":"Question title", "type":"essay", "body":"question body" }
+\`\`\`
+
+- Start with a level 1 heading using only the exact title
+- Use proper markdown formatting
+- Include overview but do not label it as "Overview"
+- Test on a first year university level student level
+- base questions on the topic ${title}
+- base questions on the content ${description}
+- prefer coding questions where applicable`;
+
+  const response = await makeAiRequest(apiKey, prompt);
+  response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
+  return response;
+}
+
 /**
  * Generates markdown content for a course overview using AI.
  *
@@ -341,7 +372,16 @@ Requirements:
 - Limit feedback to 150 words or less
 `;
 
-  return await makeAiRequest(apiKey, prompt);
+  let feedbackData = { percentCorrect: undefined };
+  let feedback = await makeAiRequest(apiKey, prompt);
+  const jsonMatch = feedback.match(/^\s*(?:```json\s*)?(\{[\s\S]*?\})(?:\s*```)?/);
+  if (jsonMatch) {
+    try {
+      feedbackData = JSON.parse(jsonMatch[1]);
+      feedback = feedback.slice(jsonMatch.index + jsonMatch[0].length).trim();
+    } catch {}
+  }
+  return { feedback, percentCorrect: feedbackData.percentCorrect };
 }
 
 /**

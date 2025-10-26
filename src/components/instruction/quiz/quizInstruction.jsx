@@ -88,35 +88,22 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
 
   async function onEssayQuiz({ id, title, type, body, precedingContent, essay }) {
     if (!essay) return false;
-    let feedback = '';
-    let feedbackData = { percentCorrect: 0 };
-    try {
-      const data = {
-        title,
-        type,
-        question: body,
-        precedingContent,
-        essay,
-      };
-      feedback = await courseOps.getEssayQuizFeedback(data);
-      const jsonMatch = feedback.match(/^\s*\{[\s\S]*?\}/);
-      if (jsonMatch) {
-        try {
-          feedbackData = JSON.parse(jsonMatch[0]);
-          feedback = feedback.slice(jsonMatch.index + jsonMatch[0].length).trim();
-        } catch {}
-      }
-    } catch {
-      feedback = `Thank you for your submission. Your essay has been received.`;
-    }
+    const data = {
+      title,
+      type,
+      question: body,
+      precedingContent,
+      essay,
+    };
+    const { feedback, percentCorrect } = await courseOps.getEssayQuizFeedback(data);
     updateQuizFeedback(id, feedback);
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'essay', essay, percentCorrect: feedbackData.percentCorrect, feedback });
-    return feedbackData.percentCorrect;
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'essay', essay, percentCorrect, feedback });
+    return percentCorrect;
   }
 
   async function onFileQuiz({ id, title, type, body, files }) {
     if (files.length === 0) return 0;
-    let feedback = 'great job';
+    let feedback = 'Submission received. Thank you!';
     updateQuizFeedback(id, feedback);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'file', files, feedback });
     return 100;
@@ -124,7 +111,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
 
   async function onUrlQuiz({ id, title, type, body, url }) {
     if (!url) return 0;
-    let feedback = 'great job';
+    let feedback = 'Submission received. Thank you!';
     updateQuizFeedback(id, feedback);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'url', url, feedback });
     return 100;

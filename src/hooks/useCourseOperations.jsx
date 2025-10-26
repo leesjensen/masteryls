@@ -1,5 +1,5 @@
 import React from 'react';
-import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiEssayQuizFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
+import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiExamGenerator, aiEssayQuizFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
 /**
@@ -476,24 +476,18 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
   async function generateTopicContent(topic, topicDescription) {
     let basicContent = `# ${topic.title}\n\n`;
+    const apiKey = user.getSetting('geminiApiKey');
 
     switch (topic.type) {
       case 'video':
         return null;
       case 'exam':
-        basicContent += `## Exam\n\n### Question 1\n\n\`\`\`masteryls
-{"id":"39280", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
-- [ ] This is **not** the right answer
-- [x] This is _the_ right answer
-- [ ] This one has a [link](https://cow.com)
-- [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
-\`\`\`\n`;
+        basicContent = await aiExamGenerator(apiKey, topic.title, topicDescription);
         break;
       case 'project':
         basicContent += `## Project: ${topic.title}\n\n### Objectives\n\n- Objective 1\n- Objective 2\n\n### Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n### Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
         break;
       default:
-        const apiKey = user.getSetting('geminiApiKey');
         basicContent = await aiTopicGenerator(apiKey, topic.title, topicDescription);
         break;
     }
@@ -508,7 +502,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
   async function getEssayQuizFeedback(data) {
     const apiKey = user.getSetting('geminiApiKey');
-    return aiEssayQuizFeedbackGenerator(apiKey, data);
+    if (apiKey) {
+      return aiEssayQuizFeedbackGenerator(apiKey, data);
+    }
+    return { feedback: `Thank you for your submission. Your essay has been recorded.`, percentCorrect: -1 };
   }
 
   async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {
