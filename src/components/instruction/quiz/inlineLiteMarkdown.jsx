@@ -50,28 +50,32 @@ export default function inlineLiteMarkdown(md) {
     ];
 
     while (remaining.length > 0) {
-      let found = false;
-      for (const { regex, render } of patterns) {
-        console.log(remaining);
-        match = regex.exec(remaining);
-        if (match && match.index !== undefined) {
-          console.log(regex, match[1]);
-          if (match.index > 0) {
-            elements.push(remaining.slice(0, match.index));
-          }
-          const key = `${keyCounter++}`;
-          const rendered = render(...match, key);
-          if (Array.isArray(rendered)) {
-            elements.push(...rendered);
-          } else {
-            elements.push(rendered);
-          }
-          remaining = remaining.slice(match.index + match[0].length);
-          found = true;
-          break;
+      let earliestMatch = null;
+      let earliestPattern = null;
+      let earliestIndex = Infinity;
+
+      // Find the earliest match among all patterns
+      for (const pattern of patterns) {
+        const match = pattern.regex.exec(remaining);
+        if (match && match.index < earliestIndex) {
+          earliestMatch = match;
+          earliestPattern = pattern;
+          earliestIndex = match.index;
         }
       }
-      if (!found) {
+
+      if (earliestMatch) {
+        if (earliestIndex > 0) {
+          elements.push(remaining.slice(0, earliestIndex));
+        }
+
+        const key = `${keyCounter++}`;
+        const rendered = earliestPattern.render(...earliestMatch, key);
+        elements.push(rendered);
+
+        remaining = remaining.slice(earliestIndex + earliestMatch[0].length);
+      } else {
+        // No more matches, add remaining text
         elements.push(remaining);
         break;
       }
