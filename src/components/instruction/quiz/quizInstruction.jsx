@@ -111,23 +111,23 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
     }
     updateQuizFeedback(id, feedback);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'essay', essay, percentCorrect: feedbackData.percentCorrect, feedback });
-    return feedbackData.percentCorrect === 100;
+    return feedbackData.percentCorrect;
   }
 
   async function onFileQuiz({ id, title, type, body, files }) {
-    if (files.length === 0) return false;
+    if (files.length === 0) return 0;
     let feedback = 'great job';
     updateQuizFeedback(id, feedback);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'file', files, feedback });
-    return true;
+    return 100;
   }
 
   async function onUrlQuiz({ id, title, type, body, url }) {
-    if (!url) return false;
+    if (!url) return 0;
     let feedback = 'great job';
     updateQuizFeedback(id, feedback);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'url', url, feedback });
-    return true;
+    return 100;
   }
 
   async function handleQuizClick(event, quizRoot) {
@@ -170,7 +170,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
       }
     } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission') {
       if (event.target.tagName === 'BUTTON') {
-        let feedbackColor = 'ring-red-500';
+        let percentCorrect = 0;
         if (type === 'essay') {
           const quizElement = quizRoot.querySelector('textarea');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
@@ -183,26 +183,23 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
               currentElement = currentElement.previousElementSibling;
             }
 
-            if (await onEssayQuiz({ id, title, type, body, precedingContent, essay: quizElement.value })) {
-              feedbackColor = 'ring-green-500';
-            }
+            percentCorrect = await onEssayQuiz({ id, title, type, body, precedingContent, essay: quizElement.value });
           }
         } else if (type === 'file-submission') {
           const quizElement = quizRoot.querySelector('input[type="file"]');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
-            if (await onFileQuiz({ id, title, type, body, files: quizElement.files })) {
-              feedbackColor = 'ring-green-500';
-            }
+            percentCorrect = await onFileQuiz({ id, title, type, body, files: quizElement.files });
           }
         } else if (type === 'url-submission') {
           const quizElement = quizRoot.querySelector('input[type="url"]');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
-            if (await onUrlQuiz({ id, title, type, body, url: quizElement.value })) {
-              feedbackColor = 'ring-green-500';
-            }
+            percentCorrect = await onUrlQuiz({ id, title, type, body, url: quizElement.value });
           }
         }
 
+        let feedbackColor = 'ring-yellow-400';
+        if (percentCorrect === 100) feedbackColor = 'ring-green-500';
+        else if (percentCorrect === 0) feedbackColor = 'ring-red-500';
         quizRoot.classList.add('ring-2', feedbackColor);
         setTimeout(() => quizRoot.classList.remove('ring-2', feedbackColor), 600);
       }
