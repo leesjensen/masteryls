@@ -162,14 +162,17 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
           const quizElement = quizRoot.querySelector('textarea');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
             let precedingContent = '';
-            let currentElement = quizRoot.previousElementSibling;
-            while (currentElement && !/^H[1-6]$/.test(currentElement.tagName)) {
-              if (currentElement.tagName === 'P') {
-                precedingContent = currentElement.textContent.trim() + '\n' + precedingContent;
+            let parentElement = quizRoot.parentElement;
+            while (parentElement) {
+              if (/^H[1-6]$/.test(parentElement.tagName)) {
+                precedingContent = Array.from(parentElement.children)
+                  .filter((child) => child.tagName === 'P')
+                  .map((child) => child.textContent.trim())
+                  .join('\n');
+                break;
               }
-              currentElement = currentElement.previousElementSibling;
+              parentElement = parentElement.parentElement;
             }
-
             percentCorrect = await onEssayQuiz({ id, title, type, body, precedingContent, essay: quizElement.value });
           }
         } else if (type === 'file-submission') {
