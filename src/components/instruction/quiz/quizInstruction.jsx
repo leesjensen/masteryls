@@ -162,17 +162,56 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
           const quizElement = quizRoot.querySelector('textarea');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
             let precedingContent = '';
-            let parentElement = quizRoot.parentElement;
-            while (parentElement) {
-              if (/^H[1-6]$/.test(parentElement.tagName)) {
-                precedingContent = Array.from(parentElement.children)
-                  .filter((child) => child.tagName === 'P')
-                  .map((child) => child.textContent.trim())
-                  .join('\n');
+
+            // Find the closest preceding heading element
+            let currentElement = quizRoot;
+            let headingElement = null;
+
+            // Walk up the DOM tree to find a heading
+            while (currentElement && currentElement !== document.body) {
+              const precedingHeading = currentElement.closest(':is(h1, h2, h3, h4, h5, h6)');
+              if (precedingHeading) {
+                headingElement = precedingHeading;
                 break;
               }
-              parentElement = parentElement.parentElement;
+              // If no heading found in current path, try previous siblings
+              let sibling = currentElement.previousElementSibling;
+              while (sibling) {
+                if (/^H[1-6]$/i.test(sibling.tagName)) {
+                  headingElement = sibling;
+                  break;
+                }
+                const nestedHeading = sibling.querySelector(':is(h1, h2, h3, h4, h5, h6)');
+                if (nestedHeading) {
+                  headingElement = nestedHeading;
+                  break;
+                }
+                sibling = sibling.previousElementSibling;
+              }
+              if (headingElement) break;
+              currentElement = currentElement.parentElement;
             }
+
+            // If we found a heading, collect all paragraphs between it and the quiz
+            if (headingElement) {
+              let walker = headingElement.nextElementSibling;
+              const paragraphs = [];
+
+              while (walker && walker !== quizRoot) {
+                if (walker.tagName === 'P') {
+                  paragraphs.push(walker.textContent.trim());
+                } else if (walker.contains(quizRoot)) {
+                  // If the walker contains our quiz, look for paragraphs inside it before the quiz
+                  const innerParagraphs = Array.from(walker.querySelectorAll('p')).filter((p) => !quizRoot.contains(p));
+                  paragraphs.push(...innerParagraphs.map((p) => p.textContent.trim()));
+                  break;
+                }
+                walker = walker.nextElementSibling;
+              }
+
+              precedingContent = paragraphs.join('\n');
+            }
+
             percentCorrect = await onEssayQuiz({ id, title, type, body, precedingContent, essay: quizElement.value });
           }
         } else if (type === 'file-submission') {
