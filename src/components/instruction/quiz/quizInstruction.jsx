@@ -92,7 +92,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
       title,
       type,
       question: body,
-      precedingContent,
+      'question context': precedingContent,
       essay,
     };
     const { feedback, percentCorrect } = await courseOps.getEssayQuizFeedback(data);
