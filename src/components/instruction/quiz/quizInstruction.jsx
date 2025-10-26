@@ -66,18 +66,18 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
 
   async function onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect }) {
     if (selected.length === 0) return false;
-    const data = {
-      title,
-      type,
-      question: body,
-      choices: choices.map((choice) => '\n   -' + choice).join(''),
-      learnerAnswers: selected.map((i) => choices[i]),
-      correctAnswers: correct.map((i) => choices[i]),
-      percentCorrect: percentCorrect,
-    };
     let feedback = '';
     try {
-      feedback = await courseOps.getQuizFeedback(data);
+      const data = {
+        title,
+        type,
+        question: body,
+        choices: choices.map((choice) => '\n   -' + choice).join(''),
+        learnerAnswers: selected.map((i) => choices[i]),
+        correctAnswers: correct.map((i) => choices[i]),
+        percentCorrect: percentCorrect,
+      };
+      feedback = await courseOps.getChoiceQuizFeedback(data);
     } catch {
       feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
     }
@@ -86,9 +86,21 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
     return true;
   }
 
-  async function onEssayQuiz({ id, title, type, body, essay }) {
+  async function onEssayQuiz({ id, title, type, body, precedingContent, essay }) {
     if (!essay) return false;
-    let feedback = 'great job';
+    let feedback = '';
+    try {
+      const data = {
+        title,
+        type,
+        question: body,
+        precedingContent,
+        essay,
+      };
+      feedback = await courseOps.getEssayQuizFeedback(data);
+    } catch {
+      feedback = `Thank you for your submission. Your essay has been received.`;
+    }
     updateQuizFeedback(id, feedback);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'essay', essay, feedback });
     return true;
@@ -154,7 +166,16 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
         if (type === 'essay') {
           const quizElement = quizRoot.querySelector('textarea');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
-            if (await onEssayQuiz({ id, title, type, body, essay: quizElement.value })) {
+            let precedingContent = '';
+            let currentElement = quizRoot.previousElementSibling;
+            while (currentElement && !/^H[1-6]$/.test(currentElement.tagName)) {
+              if (currentElement.tagName === 'P') {
+                precedingContent = currentElement.textContent.trim() + '\n' + precedingContent;
+              }
+              currentElement = currentElement.previousElementSibling;
+            }
+
+            if (await onEssayQuiz({ id, title, type, body, precedingContent, essay: quizElement.value })) {
               feedbackColor = 'ring-green-500';
             }
           }

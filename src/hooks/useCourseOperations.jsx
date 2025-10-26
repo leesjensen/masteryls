@@ -1,5 +1,5 @@
 import React from 'react';
-import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiQuizFeedbackGenerator } from '../ai/aiContentGenerator';
+import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiEssayQuizFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 
 /**
@@ -501,9 +501,14 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return basicContent;
   }
 
-  async function getQuizFeedback(data) {
+  async function getChoiceQuizFeedback(data) {
     const apiKey = user.getSetting('geminiApiKey');
-    return aiQuizFeedbackGenerator(apiKey, data);
+    return aiChoiceQuizFeedbackGenerator(apiKey, data);
+  }
+
+  async function getEssayQuizFeedback(data) {
+    const apiKey = user.getSetting('geminiApiKey');
+    return aiEssayQuizFeedbackGenerator(apiKey, data);
   }
 
   async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {
@@ -688,7 +693,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     getTopicFiles,
     discardTopicMarkdown,
     navigateToAdjacentTopic,
-    getQuizFeedback,
+    getEssayQuizFeedback,
+    getChoiceQuizFeedback,
     addProgress,
     getProgress,
     generateRandomData,

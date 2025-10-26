@@ -297,7 +297,7 @@ If the student's question is not directly related to the topic content, gently r
  * @param {Object} data - An object containing details about the quiz question and the student's answer.
  * @returns {Promise<string>} A promise that resolves to the generated feedback string.
  */
-export async function aiQuizFeedbackGenerator(apiKey, data) {
+export async function aiChoiceQuizFeedbackGenerator(apiKey, data) {
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's answer to a quiz question.
 Focus on clear explanations, encouragement, and guidance for improvement.
@@ -315,7 +315,29 @@ Requirements:
 - Only if the answer is incorrect, offer suggestions for improvement or further study
 - Only if the answer is incorrect, then start with a positive comment about the student's effort
 - Keep the tone supportive and encouraging
-- Limit feedback to around 150 words
+- Limit feedback to 150 words or less
+`;
+
+  return await makeAiRequest(apiKey, prompt);
+}
+
+export async function aiEssayQuizFeedbackGenerator(apiKey, data) {
+  const prompt = `You are an expert educational content creator.
+Generate constructive feedback for a student's essay response.
+Focus on clear explanations, encouragement, and guidance for improvement.
+
+${Object.entries(data)
+  .map(([key, value]) => `- ${key}: ${value}`)
+  .join('\n')}
+
+Requirements:
+- Address the student directly
+- The feedback to be part of a larger conversation that is already occurring
+- Acknowledge any correct aspects of the student's answer
+- Clearly explain why the student's answer is incorrect, if applicable
+- Provide the correct answer with a brief explanation
+- Keep the tone supportive and encouraging
+- Limit feedback to 150 words or less
 `;
 
   return await makeAiRequest(apiKey, prompt);
