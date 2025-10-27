@@ -8,7 +8,7 @@ import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
 import { updateQuizFeedback } from './feedbackStore';
 
-export default function QuizInstruction({ courseOps, topic, user, preview = null }) {
+export default function QuizInstruction({ courseOps, topic, user, preview = null, exam = false }) {
   /**
    * The quiz markdown format follow this example syntax:
    *
@@ -54,11 +54,11 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
       return <MultipleChoiceQuiz meta={meta} itemsText={itemsText} />;
     } else if (meta.type === 'essay') {
-      return <EssayQuiz meta={meta} />;
+      return <EssayQuiz meta={meta} exam={exam} />;
     } else if (meta.type === 'file-submission') {
-      return <SubmissionQuiz meta={meta} />;
+      return <SubmissionQuiz meta={meta} exam={exam} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlQuiz meta={meta} />;
+      return <UrlQuiz meta={meta} exam={exam} />;
     }
 
     return controlHtml;
@@ -118,6 +118,8 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
   }
 
   async function handleQuizClick(event, quizRoot) {
+    if (exam) return; // disable quiz submission during exam mode
+
     const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
     const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
     const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;

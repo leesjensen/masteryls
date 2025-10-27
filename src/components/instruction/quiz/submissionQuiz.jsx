@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-export default function SubmissionQuiz({ meta }) {
+export default function SubmissionQuiz({ meta, exam = false }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -104,9 +104,11 @@ export default function SubmissionQuiz({ meta }) {
           </div>
         )}
       </div>
-      <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-        Submit
-      </button>
+      {!exam && (
+        <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+          Submit
+        </button>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 // import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 import VideoInstruction from './videoInstruction';
+import ExamInstruction from './examInstruction';
 import QuizInstruction from './quiz/quizInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 
@@ -32,7 +33,7 @@ export default function Instruction({ courseOps, topic, course, user, preview = 
       instructionComponent = <VideoInstruction topic={topic} courseOps={courseOps} />;
       break;
     case 'exam':
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
+      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
       break;
     default:
       instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
