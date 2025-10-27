@@ -9,7 +9,6 @@ export default function inlineLiteMarkdown(md) {
   const parse = (text) => {
     const elements = [];
     let remaining = text;
-    let match;
     let keyCounter = 0;
 
     const patterns = [
