@@ -21,7 +21,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
    * ```
    */
   function injectQuiz(content) {
-    const jsonMatch = content.match(/\{[\s\S]*?\}/);
+    const jsonMatch = content.match(/^\{[\s\S]*?\}\n/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
     let itemsText = content;
 
