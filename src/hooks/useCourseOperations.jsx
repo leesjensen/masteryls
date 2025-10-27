@@ -475,20 +475,29 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function generateTopicContent(topic, topicDescription) {
-    let basicContent = `# ${topic.title}\n\n`;
     const apiKey = user.getSetting('geminiApiKey');
+    let basicContent = `
+# ${topic.title}
+
+![Course Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg)
+
+${topicDescription || 'overview content placeholder'}`;
 
     switch (topic.type) {
       case 'video':
         return null;
       case 'exam':
-        basicContent = await aiExamGenerator(apiKey, topic.title, topicDescription);
+        if (apiKey && topicDescription && topicDescription.trim().length > 0) {
+          basicContent = await aiExamGenerator(apiKey, topic.title, topicDescription);
+        }
         break;
       case 'project':
-        basicContent += `## Project: ${topic.title}\n\n### Objectives\n\n- Objective 1\n- Objective 2\n\n### Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n### Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
+        basicContent = `# Project: ${topic.title}\n\n## Objectives\n\n- Objective 1\n- Objective 2\n\n## Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n## Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
         break;
       default:
-        basicContent = await aiTopicGenerator(apiKey, topic.title, topicDescription);
+        if (apiKey && topicDescription && topicDescription.trim().length > 0) {
+          basicContent = await aiTopicGenerator(apiKey, topic.title, topicDescription);
+        }
         break;
     }
 
