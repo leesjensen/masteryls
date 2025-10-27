@@ -38,9 +38,9 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
         <fieldset>
           {meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}
           {meta.body && (
-            <p className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
+            <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
               {inlineLiteMarkdown(meta.body)}
-            </p>
+            </div>
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
