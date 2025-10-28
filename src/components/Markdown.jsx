@@ -12,6 +12,9 @@ import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function Markdown({ content, languagePlugins = [] }) {
   const customComponents = {
+    pre({ node, children, className, ...props }) {
+      return <pre style={{ padding: 0, borderRadius: 0, background: 'transparent' }}>{children}</pre>;
+    },
     code({ node, inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
@@ -35,11 +38,6 @@ export default function Markdown({ content, languagePlugins = [] }) {
             </div>
           );
         }
-        return (
-          <pre className={className} {...props}>
-            <code>{children}</code>
-          </pre>
-        );
       }
 
       // Use SyntaxHighlighter for fenced code blocks with a language
