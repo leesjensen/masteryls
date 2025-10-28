@@ -517,6 +517,18 @@ ${topicDescription || 'overview content placeholder'}`;
     return { feedback: `Thank you for your submission. Your essay has been recorded.`, percentCorrect: -1 };
   }
 
+  async function getExamState() {
+    console.log('exam state:', enrollment?.id, currentTopic?.title);
+    if (enrollment && currentTopic) {
+      const progress = await service.getProgress({ type: 'exam', topicId: currentTopic.id, enrollmentId: enrollment.id });
+      if (progress && progress.length > 0) {
+        const completedProgress = progress.find((p) => p.details?.state === 'completed');
+        return completedProgress ? 'completed' : 'inProgress';
+      }
+    }
+    return 'notStarted';
+  }
+
   async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {
     const progressUser = providedUser || user;
     if (progressUser) {
@@ -525,7 +537,7 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getProgress(courseId, enrollmentId, userId, startDate = null, endDate = null) {
-    return service.getProgress(courseId, enrollmentId, userId, startDate, endDate);
+    return service.getProgress({ courseId, enrollmentId, userId, startDate, endDate });
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
@@ -703,6 +715,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getChoiceQuizFeedback,
     addProgress,
     getProgress,
+    getExamState,
     generateRandomData,
     enrollment,
   };
