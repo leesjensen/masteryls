@@ -24,14 +24,14 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, topi
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
 
-  async function handleSubmitForm(title, prompt, type) {
+  async function handleSubmitForm(title, description, type) {
     setIsLoading(true);
     try {
       if (topic.state === 'stub') {
-        await courseOps.generateTopic(topic, prompt);
+        await courseOps.generateTopic(topic, description);
         setShowEditForm(false);
       } else {
-        courseOps.renameTopic(moduleIndex, topicIndex, title.trim(), type);
+        courseOps.renameTopic(moduleIndex, topicIndex, title, description, type);
         setShowEditForm(false);
       }
     } catch (error) {

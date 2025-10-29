@@ -344,12 +344,13 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return [updatedCourse, updatedTopic];
   }
 
-  async function renameTopic(moduleIdx, topicIdx, newTitle, newType) {
+  async function renameTopic(moduleIdx, topicIdx, newTitle, newDescription, newType) {
     if (!newTitle.trim()) return;
     const updatedCourse = Course.copy(course);
     const topic = updatedCourse.modules[moduleIdx].topics[topicIdx];
     if (!topic) return;
     topic.title = newTitle.trim();
+    topic.description = newDescription.trim();
     topic.type = newType || topic.type;
     updatedCourse.modules[moduleIdx].topics[topicIdx] = topic;
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
