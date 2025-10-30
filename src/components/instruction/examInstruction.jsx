@@ -4,28 +4,30 @@ import QuizInstruction from './quiz/quizInstruction';
 export default function ExamInstruction({ courseOps, topic, user, preview = null }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
+  const [initialProgress, setInitialProgress] = React.useState({});
 
   React.useEffect(() => {
     async function fetchExamState() {
       if (courseOps?.enrollment) {
-        setExamState(await courseOps.getExamState());
+        const state = await courseOps.getExamState();
+        setExamState(state);
+        setInitialProgress(await loadProgress());
         setLoading(false);
       }
     }
     fetchExamState();
   }, [courseOps?.enrollment]);
 
-  // We only want to do this if the exam is complete so we can show what they chose.
-  // Maybe also do this if we allow coming back later. So maybe on load and on submit
-  React.useEffect(() => {
-    if (examState.details.state === 'inProgress') {
-      const interval = setInterval(async () => {
-        const progress = await courseOps.getProgress({ topicId: topic.id, enrollmentId: courseOps.enrollment.id, type: 'quizSubmit' });
-        console.log('Existing exam progress:', progress);
-      }, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [examState]);
+  async function loadProgress() {
+    const progressItems = await courseOps.getProgress({ topicId: topic.id, enrollmentId: courseOps.enrollment.id, type: 'quizSubmit' });
+    return progressItems.reduce((acc, item) => {
+      const activityId = item.activityId;
+      if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
+        acc[activityId] = item;
+      }
+      return acc;
+    }, {});
+  }
 
   const updateState = async (state) => {
     setExamState({ details: { state } });
@@ -67,7 +69,7 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
         <button className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" onClick={() => updateState('completed')}>
           Submit exam
         </button>
-        <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} exam={true} />
+        <QuizInstruction courseOps={courseOps} topic={topic} user={user} initialProgress={initialProgress} preview={preview} exam={true} />
       </div>
     );
   }

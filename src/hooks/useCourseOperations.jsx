@@ -521,7 +521,6 @@ ${topicDescription || 'overview content placeholder'}`;
   async function getExamState() {
     if (enrollment && currentTopic) {
       const progress = await service.getProgress({ type: 'exam', topicId: currentTopic.id, enrollmentId: enrollment.id });
-      console.log('Exam progress:', progress);
       if (progress && progress.length > 0) {
         return progress[0];
       }

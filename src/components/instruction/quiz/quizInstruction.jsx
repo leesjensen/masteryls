@@ -8,7 +8,7 @@ import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
 import { updateQuizFeedback } from './feedbackStore';
 
-export default function QuizInstruction({ courseOps, topic, user, preview = null, exam = false }) {
+export default function QuizInstruction({ courseOps, topic, user, initialProgress = {}, preview = null, exam = false }) {
   /**
    * The quiz markdown format follow this example syntax:
    *
@@ -32,7 +32,11 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
       } catch {}
       itemsText = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
-    let controlJsx = generateQuizComponent(meta, itemsText);
+    const progress = initialProgress[meta.id] || {};
+    if (progress?.details?.feedback) {
+      updateQuizFeedback(meta.id, progress.details.feedback);
+    }
+    let controlJsx = generateQuizComponent(meta, itemsText, progress);
     return (
       <div className="px-4 py-4 bg-white border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
@@ -44,17 +48,17 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        {!exam && <QuizFeedback quizId={meta.id} />}
+        <QuizFeedback quizId={meta.id} />
       </div>
     );
   }
 
-  function generateQuizComponent(meta, itemsText) {
+  function generateQuizComponent(meta, itemsText, progress) {
     let controlHtml = <div></div>;
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
       return <MultipleChoiceQuiz meta={meta} itemsText={itemsText} />;
     } else if (meta.type === 'essay') {
-      return <EssayQuiz meta={meta} exam={exam} />;
+      return <EssayQuiz meta={meta} exam={exam} progress={progress} />;
     } else if (meta.type === 'file-submission') {
       return <SubmissionQuiz meta={meta} exam={exam} />;
     } else if (meta.type === 'url-submission') {
