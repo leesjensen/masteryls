@@ -49,7 +49,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        <QuizFeedback quizId={meta.id} />
+        {instructionState !== 'exam' && <QuizFeedback quizId={meta.id} />}
       </div>
     );
   }
