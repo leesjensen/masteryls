@@ -9,7 +9,7 @@ import QuizFeedback from './quizFeedback';
 import { updateQuizFeedback } from './feedbackStore';
 import { formatFileSize } from '../../../utils';
 
-export default function QuizInstruction({ courseOps, topic, user, initialProgress = {}, content = null, exam = false }) {
+export default function QuizInstruction({ courseOps, topic, user, initialProgress = {}, content = null, instructionState = 'learning' }) {
   /**
    * The quiz markdown format follow this example syntax:
    *
@@ -254,6 +254,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
           },
         ]}
         content={content}
+        instructionState={instructionState}
       />
     </>
   );

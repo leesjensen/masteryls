@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import DiscussionPanel from '../../components/DiscussionPanel';
 import Markdown from '../../components/Markdown';
 
-export default function MarkdownInstruction({ courseOps, topic, user, languagePlugins = [], content = null }) {
+export default function MarkdownInstruction({ courseOps, topic, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [discussionOpen, setDiscussionOpen] = useState(false);
@@ -73,7 +73,7 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
   return (
     <>
       <div className="relative">
-        {user && !content && topic.type !== 'exam' && (
+        {user && instructionState === 'learning' && (
           <button onClick={() => setDiscussionOpen(!discussionOpen)} className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6`} title="Discuss this topic">
             💬 Discuss
           </button>
