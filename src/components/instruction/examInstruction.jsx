@@ -1,7 +1,7 @@
 import React from 'react';
 import QuizInstruction from './quiz/quizInstruction';
 
-export default function ExamInstruction({ courseOps, topic, user, preview = null }) {
+export default function ExamInstruction({ courseOps, topic, user, content = null }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
   const [initialProgress, setInitialProgress] = React.useState({});
@@ -58,7 +58,7 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-4 text-center text-amber-400">Submitted</h2>
         <div className="relative pointer-events-none opacity-50">
-          <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} exam={true} />
+          <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} exam={true} />
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
         <button className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" onClick={() => updateState('completed')}>
           Submit exam
         </button>
-        <QuizInstruction courseOps={courseOps} topic={topic} user={user} initialProgress={initialProgress} preview={preview} exam={true} />
+        <QuizInstruction courseOps={courseOps} topic={topic} user={user} initialProgress={initialProgress} content={content} exam={true} />
       </div>
     );
   }

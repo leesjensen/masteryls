@@ -5,7 +5,7 @@ import ExamInstruction from './examInstruction';
 import QuizInstruction from './quiz/quizInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 
-export default function Instruction({ courseOps, topic, course, user, preview = null }) {
+export default function Instruction({ courseOps, topic, course, user, content = null }) {
   const containerRef = useRef(null);
 
   // const containerRef = useSwipeNavigation(
@@ -17,7 +17,7 @@ export default function Instruction({ courseOps, topic, course, user, preview = 
     activityId: topic?.id,
     activityType: 'instructionView',
     onProgress: courseOps?.addProgress,
-    enabled: !preview && !!topic?.path && !!courseOps?.addProgress,
+    enabled: !content && !!topic?.path && !!courseOps?.addProgress,
     minDuration: 5,
     dependencies: [topic?.path],
   });
@@ -33,10 +33,10 @@ export default function Instruction({ courseOps, topic, course, user, preview = 
       instructionComponent = <VideoInstruction topic={topic} courseOps={courseOps} />;
       break;
     case 'exam':
-      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
+      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} content={content} />;
       break;
     default:
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} />;
       break;
   }
 
