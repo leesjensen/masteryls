@@ -8,7 +8,7 @@ import useLatest from '../../hooks/useLatest';
 
 export default function Editor({ courseOps, service, user, course, currentTopic }) {
   const [content, setContent] = React.useState('');
-  const [preview, setPreview] = React.useState(false);
+  const [editorState, setEditorState] = React.useState(false);
   const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
 
@@ -77,7 +77,7 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
   }
 
   let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
-  if (preview) {
+  if (editorState === 'preview') {
     currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} preview={content} />;
   }
 
@@ -100,8 +100,8 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
               <h1 className={`text-lg font-bold pl-2 ${dirty ? 'text-amber-400' : 'text-gray-800'}`}>Editor</h1>
 
               <div className="flex items-center">
-                <button className="mx-1 px-3 py-1 w-18 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => setPreview((v) => !v)}>
-                  {preview ? 'Edit' : 'Preview'}
+                <button className="mx-1 px-3 py-1 w-18 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => setEditorState((v) => (v == 'preview' ? 'editing' : 'preview'))}>
+                  {editorState === 'preview' ? 'Edit' : 'Preview'}
                 </button>
                 <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
                   Discard
