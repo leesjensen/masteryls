@@ -519,15 +519,14 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getExamState() {
-    console.log('exam state:', enrollment?.id, currentTopic?.title);
     if (enrollment && currentTopic) {
       const progress = await service.getProgress({ type: 'exam', topicId: currentTopic.id, enrollmentId: enrollment.id });
+      console.log('Exam progress:', progress);
       if (progress && progress.length > 0) {
-        const completedProgress = progress.find((p) => p.details?.state === 'completed');
-        return completedProgress ? 'completed' : 'inProgress';
+        return progress;
       }
     }
-    return 'notStarted';
+    return { details: { state: 'notStarted' } };
   }
 
   async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {

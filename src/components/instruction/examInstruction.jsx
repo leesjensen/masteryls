@@ -3,14 +3,12 @@ import QuizInstruction from './quiz/quizInstruction';
 
 export default function ExamInstruction({ courseOps, topic, user, preview = null }) {
   const [loading, setLoading] = React.useState(true);
-  const [examState, setExamState] = React.useState('notStarted'); // 'notStarted', 'inProgress', 'completed'
+  const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
 
   React.useEffect(() => {
     async function fetchExamState() {
-      console.log('Fetching exam state for user:', user?.id);
       if (courseOps?.enrollment) {
-        const state = await courseOps.getExamState();
-        setExamState(state);
+        setExamState(await courseOps.getExamState());
         setLoading(false);
       }
     }
@@ -18,7 +16,7 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
   }, [courseOps?.enrollment]);
 
   const updateState = async (state) => {
-    setExamState(state);
+    setExamState({ details: { state } });
     courseOps.addProgress(null, null, 'exam', 0, { state });
   };
 
@@ -31,7 +29,7 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
         <p className="mb-6">You must be a registered user to take an exam.</p>
       </div>
     );
-  } else if (examState === 'notStarted') {
+  } else if (examState.details.state === 'notStarted') {
     return (
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-4">{topic.title}</h2>
@@ -41,16 +39,19 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
         </button>
       </div>
     );
-  } else if (examState === 'completed') {
+  } else if (examState.details.state === 'completed') {
     return (
       <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">{topic.title}</h2>
-        <p className="mb-6">You have submitted this exam.</p>
+        <h2 className="text-2xl font-bold mb-4 text-center text-amber-400">Submitted</h2>
+        <div className="relative pointer-events-none opacity-50">
+          <QuizInstruction courseOps={courseOps} topic={topic} user={user} preview={preview} exam={true} />
+        </div>
       </div>
     );
   } else {
     return (
       <div className="p-6">
+        {examState.details.state === 'completed' && <h2 className="text-2xl font-bold mb-4">{topic.title} - Submitted</h2>}
         <button className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200" onClick={() => updateState('completed')}>
           Submit exam
         </button>
