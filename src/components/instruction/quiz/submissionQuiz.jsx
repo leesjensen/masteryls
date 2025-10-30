@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { formatFileSize } from '../../../utils';
 
-export default function SubmissionQuiz({ meta, exam = false }) {
+export default function SubmissionQuiz({ meta, progress = {} }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -61,14 +62,6 @@ export default function SubmissionQuiz({ meta, exam = false }) {
     }
   }, []);
 
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
   return (
     <div>
       <div id={`drop-zone-${meta.id}`} className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 ${isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
@@ -104,11 +97,9 @@ export default function SubmissionQuiz({ meta, exam = false }) {
           </div>
         )}
       </div>
-      {!exam && (
-        <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
-          Submit
-        </button>
-      )}
+      <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+        Submit
+      </button>
     </div>
   );
 }

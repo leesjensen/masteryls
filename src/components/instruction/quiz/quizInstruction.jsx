@@ -7,6 +7,7 @@ import UrlQuiz from './urlQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
 import { updateQuizFeedback } from './feedbackStore';
+import { formatFileSize } from '../../../utils';
 
 export default function QuizInstruction({ courseOps, topic, user, initialProgress = {}, preview = null, exam = false }) {
   /**
@@ -54,18 +55,17 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
   }
 
   function generateQuizComponent(meta, itemsText, progress) {
-    let controlHtml = <div></div>;
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceQuiz meta={meta} itemsText={itemsText} />;
+      return <MultipleChoiceQuiz meta={meta} itemsText={itemsText} progress={progress} />;
     } else if (meta.type === 'essay') {
-      return <EssayQuiz meta={meta} exam={exam} progress={progress} />;
+      return <EssayQuiz meta={meta} progress={progress} />;
     } else if (meta.type === 'file-submission') {
-      return <SubmissionQuiz meta={meta} exam={exam} />;
+      return <SubmissionQuiz meta={meta} progress={progress} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlQuiz meta={meta} exam={exam} />;
+      return <UrlQuiz meta={meta} progress={progress} />;
     }
 
-    return controlHtml;
+    return null;
   }
 
   async function onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect }) {
@@ -107,9 +107,10 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
 
   async function onFileQuiz({ id, title, type, body, files }) {
     if (files.length === 0) return 0;
-    let feedback = 'Submission received. Thank you!';
+    const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
+    let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
     updateQuizFeedback(id, feedback);
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'file', files, feedback });
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'file', files: progressFiles, feedback });
     return 100;
   }
 

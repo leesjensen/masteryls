@@ -1,7 +1,7 @@
 import React from 'react';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 
-export default function MultipleChoiceQuiz({ meta, itemsText }) {
+export default function MultipleChoiceQuiz({ meta, itemsText, progress = {} }) {
   const lines = itemsText
     .split('\n')
     .map((l) => l.trim())
@@ -13,15 +13,17 @@ export default function MultipleChoiceQuiz({ meta, itemsText }) {
   });
 
   const useRadioButtons = (meta.type || '').toLowerCase() === 'multiple-choice';
+  const selectedIndices = progress.details?.selected;
 
   return (
     <div>
-      {items.map((it, i) => {
+      {items.map((choice, i) => {
+        const selected = selectedIndices && selectedIndices.includes(i);
         return (
           <div key={i} className="flex items-start gap-2">
             <label className="cursor-pointer">
-              <input className="mt-1" type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${meta.id}`} data-plugin-masteryls-index={i} {...(it.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} />
-              <span className="p-2">{inlineLiteMarkdown(it.text)}</span>
+              <input className="mt-1" type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${meta.id}`} data-plugin-masteryls-index={i} defaultChecked={selected} {...(choice.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} />
+              <span className="p-2">{inlineLiteMarkdown(choice.text)}</span>
             </label>
           </div>
         );
