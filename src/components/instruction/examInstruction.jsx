@@ -1,33 +1,20 @@
 import React from 'react';
 import QuizInstruction from './quiz/quizInstruction';
 
-export default function ExamInstruction({ courseOps, topic, user, content = null }) {
+export default function ExamInstruction({ courseOps, topic, user, initialProgress = {}, content = null }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
-  const [initialProgress, setInitialProgress] = React.useState({});
 
   React.useEffect(() => {
     async function fetchExamState() {
       if (courseOps?.enrollment) {
         const state = await courseOps.getExamState();
         setExamState(state);
-        setInitialProgress(await loadProgress());
         setLoading(false);
       }
     }
     fetchExamState();
   }, [courseOps?.enrollment]);
-
-  async function loadProgress() {
-    const progressItems = await courseOps.getProgress({ topicId: topic.id, enrollmentId: courseOps.enrollment.id, type: 'quizSubmit' });
-    return progressItems.reduce((acc, item) => {
-      const activityId = item.activityId;
-      if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
-        acc[activityId] = item;
-      }
-      return acc;
-    }, {});
-  }
 
   const updateState = async (state) => {
     setExamState({ details: { state } });
