@@ -143,6 +143,14 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     return 100;
   }
 
+  function visualFeedback(quizRoot, percentCorrect) {
+    let ringClass = 'ring-yellow-400';
+    if (percentCorrect === 100) ringClass = 'ring-green-500';
+    else if (percentCorrect === 0) ringClass = 'ring-red-500';
+    quizRoot.classList.add('ring-2', ringClass);
+    setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+  }
+
   async function handleQuizClick(event, quizRoot) {
     const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
     const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
@@ -173,12 +181,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
         const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
         if (await onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect })) {
-          // give visual feedback
-          let ringClass = 'ring-yellow-400';
-          if (percentCorrect === 100) ringClass = 'ring-green-500';
-          else if (percentCorrect === 0) ringClass = 'ring-red-500';
-          quizRoot.classList.add('ring-2', ringClass);
-          setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+          visualFeedback(quizRoot, percentCorrect);
         }
       }
     } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission') {
@@ -252,11 +255,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
           }
         }
 
-        let feedbackColor = 'ring-yellow-400';
-        if (percentCorrect === 100) feedbackColor = 'ring-green-500';
-        else if (percentCorrect === 0) feedbackColor = 'ring-red-500';
-        quizRoot.classList.add('ring-2', feedbackColor);
-        setTimeout(() => quizRoot.classList.remove('ring-2', feedbackColor), 600);
+        visualFeedback(quizRoot, percentCorrect);
       }
     }
   }
