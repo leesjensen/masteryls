@@ -412,7 +412,7 @@ export default function Metrics({ courseOps }) {
   async function getMetrics(courseId, enrollmentId, userId, startDate = null, endDate = null) {
     let startDateIso = startDate ? startDate.toISOString() : null;
     let endDateIso = endDate ? endDate.toISOString() : null;
-    let progressData = await courseOps.getProgress(courseId, enrollmentId, userId, startDateIso, endDateIso);
+    let progressData = await courseOps.getProgress({ courseId, enrollmentId, userId, startDate: startDateIso, endDate: endDateIso });
     progressData = await enhancedMetrics(progressData);
 
     const metrics = {

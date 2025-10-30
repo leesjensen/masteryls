@@ -15,6 +15,18 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
     fetchExamState();
   }, [courseOps?.enrollment]);
 
+  // We only want to do this if the exam is complete so we can show what they chose.
+  // Maybe also do this if we allow coming back later. So maybe on load and on submit
+  React.useEffect(() => {
+    if (examState.details.state === 'inProgress') {
+      const interval = setInterval(async () => {
+        const progress = await courseOps.getProgress({ topicId: topic.id, enrollmentId: courseOps.enrollment.id, type: 'quizSubmit' });
+        console.log('Existing exam progress:', progress);
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [examState]);
+
   const updateState = async (state) => {
     setExamState({ details: { state } });
     courseOps.addProgress(null, null, 'exam', 0, { state });

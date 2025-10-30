@@ -536,8 +536,8 @@ ${topicDescription || 'overview content placeholder'}`;
     }
   }
 
-  async function getProgress(courseId, enrollmentId, userId, startDate = null, endDate = null) {
-    return service.getProgress({ courseId, enrollmentId, userId, startDate, endDate });
+  async function getProgress({ courseId, enrollmentId, userId, topicId = null, type = null, startDate = null, endDate = null }) {
+    return service.getProgress({ courseId, enrollmentId, userId, topicId, type, startDate, endDate });
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
