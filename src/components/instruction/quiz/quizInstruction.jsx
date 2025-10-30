@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import MarkdownInstruction from '../markdownInstruction';
 import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
-import SubmissionQuiz from './submissionQuiz';
+import FileQuiz from './fileQuiz';
 import UrlQuiz from './urlQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
@@ -60,7 +60,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     } else if (meta.type === 'essay') {
       return <EssayQuiz meta={meta} progress={progress} />;
     } else if (meta.type === 'file-submission') {
-      return <SubmissionQuiz meta={meta} progress={progress} />;
+      return <FileQuiz meta={meta} progress={progress} />;
     } else if (meta.type === 'url-submission') {
       return <UrlQuiz meta={meta} progress={progress} />;
     }

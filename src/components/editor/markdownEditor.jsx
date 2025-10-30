@@ -198,8 +198,8 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
           <ToolbarButton onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz" text="◉" />
           <ToolbarButton onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" text="☑" />
           <ToolbarButton onClick={() => insertQuiz(defaultEssayQuizTemplate)} title="Essay Quiz" text="📝" />
-          <ToolbarButton onClick={() => insertQuiz(defaultFileSubmissionQuizTemplate)} title="File Submission Quiz" text="⬆️" />
-          <ToolbarButton onClick={() => insertQuiz(defaultUrlSubmissionQuizTemplate)} title="URL Submission Quiz" text="🌐" />
+          <ToolbarButton onClick={() => insertQuiz(defaultFileQuizTemplate)} title="File Submission Quiz" text="⬆️" />
+          <ToolbarButton onClick={() => insertQuiz(defaultUrlQuizTemplate)} title="URL Submission Quiz" text="🌐" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <ToolbarButton onClick={() => insertAiQuiz()} title="Insert AI generated quiz" text="🚀" />
           <ToolbarButton onClick={() => insertAiSection()} title="Insert AI generated section" text="✨" />
@@ -261,13 +261,13 @@ const defaultEssayQuizTemplate = `
 \`\`\`
 `;
 
-const defaultFileSubmissionQuizTemplate = `
+const defaultFileQuizTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"File submission", "type":"file-submission", "body":"Simple **submission** by file", "allowComment":true  }
 \`\`\`
 `;
 
-const defaultUrlSubmissionQuizTemplate = `
+const defaultUrlQuizTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"URL submission", "type":"url-submission", "body":"Simple **submission** by url", "allowComment":true }
 \`\`\`
