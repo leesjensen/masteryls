@@ -1,5 +1,6 @@
 import React from 'react';
 import QuizInstruction from './quiz/quizInstruction';
+import { registerListener, unregisterListener } from './quiz/feedbackStore';
 
 export default function ExamInstruction({ courseOps, topic, user, preview = null }) {
   const [loading, setLoading] = React.useState(true);
@@ -13,6 +14,14 @@ export default function ExamInstruction({ courseOps, topic, user, preview = null
       }
     }
     fetchExamState();
+
+    const listener = (quizId, feedback) => {
+      console.log('Feedback updated for quiz', quizId, feedback);
+    };
+    registerListener(listener);
+    return () => {
+      unregisterListener(listener);
+    };
   }, [courseOps?.enrollment]);
 
   const updateState = async (state) => {
