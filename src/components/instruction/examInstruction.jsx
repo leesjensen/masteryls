@@ -58,7 +58,7 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-4 text-center text-amber-400">Submitted</h2>
         <div className="relative pointer-events-none opacity-50">
-          <QuizInstruction courseOps={courseOps} topic={topic} user={user} initialProgress={initialProgress} content={content} instructionState={'reviewExam'} />
+          <QuizInstruction courseOps={courseOps} topic={topic} user={user} initialProgress={initialProgress} content={content} instructionState={'examReview'} />
         </div>
       </div>
     );

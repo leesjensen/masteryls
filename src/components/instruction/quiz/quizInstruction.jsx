@@ -9,18 +9,39 @@ import QuizFeedback from './quizFeedback';
 import { updateQuizFeedback } from './feedbackStore';
 import { formatFileSize } from '../../../utils';
 
+/**
+ * QuizInstruction component that renders interactive quiz content within markdown instruction.
+ * Supports multiple quiz types including multiple choice, essay, file submission, and URL submission.
+ *
+ * @component
+ * @param {Object} props - The component props
+ * @param {Object} props.courseOps - Course operations object containing methods for quiz feedback and progress tracking
+ * @param {string} props.topic - The current topic identifier
+ * @param {Object} props.user - User object containing user information
+ * @param {Object} [props.initialProgress={}] - Initial progress data for quizzes, keyed by activity ID
+ * @param {string|null} [props.content=null] - Use this content instead of loading the topic content
+ * @param {string} [props.instructionState='learning'] - Current instruction state ('learning', 'exam', or 'examReview')
+ *
+ * @description
+ * The quiz markdown format follows this syntax:
+ * ```
+ * {"id":"39283", "title":"Multiple choice", "type":"multiple-choice" }
+ * - [ ] This is **not** the right answer
+ * - [x] This is _the_ right answer
+ * - [ ] This one has a [link](https://cow.com)
+ * - [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
+ * ```
+ *
+ * Supported quiz types:
+ * - multiple-choice: Single correct answer selection
+ * - multiple-select: Multiple correct answers selection
+ * - essay: Text-based essay responses
+ * - file-submission: File upload submissions
+ * - url-submission: URL link submissions
+ *
+ * @returns {JSX.Element} The rendered quiz instruction component
+ */
 export default function QuizInstruction({ courseOps, topic, user, initialProgress = {}, content = null, instructionState = 'learning' }) {
-  /**
-   * The quiz markdown format follow this example syntax:
-   *
-   * ```masteryls
-   * {"id":"39283", "title":"Multiple choice", "type":"multiple-choice" }
-   * - [ ] This is **not** the right answer
-   * - [x] This is _the_ right answer
-   * - [ ] This one has a [link](https://cow.com)
-   * - [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
-   * ```
-   */
   function injectQuiz(content) {
     const jsonMatch = content.match(/^\{[\s\S]*?\}(?:\n|$)/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
