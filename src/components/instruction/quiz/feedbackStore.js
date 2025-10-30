@@ -15,14 +15,6 @@ export const getQuizFeedback = (quizId) => {
   return feedbackStore.get(quizId);
 };
 
-export const registerListener = (listener) => {
-  listeners.add(listener);
-};
-
-export const unregisterListener = (listener) => {
-  listeners.delete(listener);
-};
-
 // Hook to subscribe to feedback changes for a specific quiz
 export const useQuizFeedback = (quizId) => {
   const [feedback, setFeedback] = useState(() => getQuizFeedback(quizId));
@@ -34,10 +26,10 @@ export const useQuizFeedback = (quizId) => {
       }
     };
 
-    registerListener(listener);
+    listeners.add(listener);
 
     return () => {
-      unregisterListener(listener);
+      listeners.delete(listener);
     };
   }, [quizId]);
 

@@ -44,7 +44,7 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        <QuizFeedback quizId={meta.id} />
+        {!exam && <QuizFeedback quizId={meta.id} />}
       </div>
     );
   }
@@ -118,8 +118,6 @@ export default function QuizInstruction({ courseOps, topic, user, preview = null
   }
 
   async function handleQuizClick(event, quizRoot) {
-    if (exam) return; // disable quiz submission during exam mode
-
     const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
     const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
     const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
