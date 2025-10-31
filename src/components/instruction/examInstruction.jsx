@@ -62,7 +62,7 @@ export default function ExamInstruction({ courseOps, topic, user, initialProgres
         <h2 className="text-2xl w-full bg-blue-50 font-bold border-1 border-blue-200 py-4 mb-4 text-center text-blue-500">
           Submitted
           <div className="mb-4 text-lg pt-2 text-blue-400 font-normal text-center">
-            {examStats.answered} out of {examStats.count} questions answered with an average score of {examStats.percentCorrect.toFixed(2)}%.
+            {examStats.answered} out of {examStats.count} questions submitted with an <em>AI reviewed</em> score of {examStats.percentCorrect.toFixed(2)}%
           </div>
         </h2>
 
