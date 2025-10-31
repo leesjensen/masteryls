@@ -1,7 +1,7 @@
 import React from 'react';
 import QuizInstruction from './quiz/quizInstruction';
 
-export default function ExamInstruction({ courseOps, topic, user, content = null }) {
+export default function ExamInstruction({ courseOps, topic, user, content = null, instructionState = 'learning' }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
 
@@ -28,6 +28,14 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-4">{topic.title}</h2>
         <p className="mb-6">You must be a registered user to take an exam.</p>
+      </div>
+    );
+  }
+  if (instructionState === 'preview') {
+    return (
+      <div className="p-6">
+        <h2 className="text-2xl w-full bg-blue-50 font-bold border-1 border-blue-200 py-4 mb-4 text-center text-blue-500">Preview</h2>
+        <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'preview'} />
       </div>
     );
   } else if (examState.details.state === 'notStarted') {

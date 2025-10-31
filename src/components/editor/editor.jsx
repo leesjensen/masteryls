@@ -78,7 +78,7 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
 
   let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
   if (editorState === 'preview') {
-    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} content={content} />;
+    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} content={content} instructionState={editorState} />;
   }
 
   const editorComponent = (type) => {

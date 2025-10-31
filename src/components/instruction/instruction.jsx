@@ -6,7 +6,7 @@ import QuizInstruction from './quiz/quizInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 import { addQuizProgress } from './quiz/quizProgressStore';
 
-export default function Instruction({ courseOps, topic, course, user, content = null }) {
+export default function Instruction({ courseOps, topic, course, user, content = null, instructionState = 'learning' }) {
   const containerRef = useRef(null);
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
@@ -53,10 +53,10 @@ export default function Instruction({ courseOps, topic, course, user, content = 
       instructionComponent = <VideoInstruction topic={topic} courseOps={courseOps} />;
       break;
     case 'exam':
-      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} content={content} />;
+      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={instructionState} />;
       break;
     default:
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={instructionState} />;
       break;
   }
 
