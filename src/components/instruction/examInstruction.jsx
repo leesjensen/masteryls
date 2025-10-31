@@ -4,7 +4,6 @@ import QuizInstruction from './quiz/quizInstruction';
 export default function ExamInstruction({ courseOps, topic, user, content = null }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
-  const [examStats, setExamStats] = React.useState({ count: 0, answered: 0, percentCorrect: 0 });
 
   React.useEffect(() => {
     async function fetchExamState() {
@@ -21,21 +20,6 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
     setExamState({ details: { state } });
     courseOps.addProgress(null, null, 'exam', 0, { state });
   };
-
-  // React.useEffect(() => {
-  //   if (initialProgress) {
-  //     let sum = 0;
-  //     let count = Object.keys(initialProgress).length;
-  //     let answered = 0;
-  //     Object.values(initialProgress).forEach((item) => {
-  //       if (item.details?.percentCorrect !== undefined) {
-  //         sum += item.details?.percentCorrect || 0;
-  //         answered++;
-  //       }
-  //     });
-  //     setExamStats({ count, answered, percentCorrect: count > 0 ? sum / count : 0 });
-  //   }
-  // }, [initialProgress]);
 
   if (loading) {
     return <div />;
@@ -61,9 +45,9 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
       <div className="p-6">
         <h2 className="text-2xl w-full bg-blue-50 font-bold border-1 border-blue-200 py-4 mb-4 text-center text-blue-500">
           Submitted
-          <div className="mb-4 text-lg pt-2 text-blue-400 font-normal text-center">
-            {examStats.answered} out of {examStats.count} questions submitted with an <em>AI reviewed</em> score of {examStats.percentCorrect.toFixed(2)}%
-          </div>
+          {/* <div className="mb-4 text-lg pt-2 text-blue-400 font-normal text-center">
+            {quizzes.current.answered} out of {quizzes.current.count} questions submitted with an <em>AI reviewed</em> score of {quizzes.current.percentCorrect.toFixed(2)}%
+          </div> */}
         </h2>
 
         <div className="relative pointer-events-none opacity-75">

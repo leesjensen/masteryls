@@ -58,6 +58,7 @@ export default function QuizInstruction({ courseOps, topic, user, content = null
       } catch {}
       itemsText = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
+
     let controlJsx = generateQuizComponent(meta, itemsText);
     return (
       <div className="px-4 py-4 bg-white border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>

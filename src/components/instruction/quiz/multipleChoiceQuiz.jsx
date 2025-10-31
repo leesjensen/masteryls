@@ -4,7 +4,6 @@ import { useQuizFeedback } from './feedbackStore';
 
 export default function MultipleChoiceQuiz({ quizId, quizType, itemsText }) {
   const progress = useQuizFeedback(quizId) || {};
-  console.log(`MultipleChoiceQuiz progress ${quizId}:`, progress);
 
   const lines = itemsText
     .split('\n')
@@ -24,7 +23,6 @@ export default function MultipleChoiceQuiz({ quizId, quizType, itemsText }) {
     <div>
       {choices.map((choice, i) => {
         const selected = selectedIndices && selectedIndices.includes(i);
-        console.log(`Choice ${i}: selected=${selected}, correct=${choice.correct}`);
         return (
           <div key={i} className="flex items-start gap-2">
             <label className="cursor-pointer">
