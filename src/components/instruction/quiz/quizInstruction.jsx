@@ -52,6 +52,11 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     feedbackUpdatesRef.current.clear();
   });
 
+  /**
+   * injectQuiz responds to a Markdown processor request to render a quiz.
+   * @param {string} content - The raw quiz markdown content
+   * @returns {JSX.Element} Quiz JSX element
+   */
   function injectQuiz(content) {
     const jsonMatch = content.match(/^\{[\s\S]*?\}(?:\n|$)/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
@@ -100,75 +105,11 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     return null;
   }
 
-  async function onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect }) {
-    if (selected.length === 0) return false;
-    let feedback = '';
-    try {
-      const data = {
-        title,
-        type,
-        question: body,
-        choices: choices.map((choice) => '\n   -' + choice).join(''),
-        learnerAnswers: selected.map((i) => choices[i]),
-        correctAnswers: correct.map((i) => choices[i]),
-        percentCorrect: percentCorrect,
-      };
-      feedback = await courseOps.getChoiceQuizFeedback(data);
-    } catch {
-      feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
-    }
-    const details = { type: 'choice', selected, correct, percentCorrect, feedback };
-    updateQuizFeedback(id, details);
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
-    return true;
-  }
-
-  async function onEssayQuiz({ id, title, type, body, precedingContent, essay }) {
-    if (!essay) return false;
-    const data = {
-      title,
-      type,
-      question: body,
-      'question context': precedingContent,
-      essay,
-    };
-    const { feedback, percentCorrect } = await courseOps.getEssayQuizFeedback(data);
-    const details = { type: 'essay', essay, percentCorrect, feedback };
-    updateQuizFeedback(id, details);
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
-    return percentCorrect;
-  }
-
-  async function onFileQuiz({ id, title, type, body, files }) {
-    if (files.length === 0) return 0;
-    const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
-    let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
-    updateQuizFeedback(id, { text: feedback, percentCorrect });
-    const details = { type: 'file', files: progressFiles, feedback };
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
-    return 100;
-  }
-
-  async function onUrlQuiz({ id, title, type, body, url }) {
-    if (!url) return 0;
-    let feedback = 'Submission received. Thank you!';
-    updateQuizFeedback(id, { text: feedback, percentCorrect: 100 });
-    const details = { type: 'url', url, feedback };
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
-    return 100;
-  }
-
-  function visualFeedback(quizRoot, percentCorrect) {
-    let ringClass = 'ring-blue-400';
-    if (instructionState !== 'exam') {
-      if (percentCorrect === 100) ringClass = 'ring-green-500';
-      else if (percentCorrect === 0) ringClass = 'ring-red-500';
-      else ringClass = 'ring-yellow-400';
-    }
-    quizRoot.classList.add('ring-4', ringClass);
-    //    setTimeout(() => quizRoot.classList.remove('ring-4', 'ring-blue-400', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
-  }
-
+  /**
+   * Handles click events on quiz elements.
+   * @param {Event} event - The click event
+   * @param {HTMLElement} quizRoot - The root element of the quiz
+   */
   async function handleQuizClick(event, quizRoot) {
     const type = quizRoot.getAttribute('data-plugin-masteryls-type') || undefined;
     const id = quizRoot.getAttribute('data-plugin-masteryls-id') || undefined;
@@ -276,6 +217,75 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
         visualFeedback(quizRoot, percentCorrect);
       }
     }
+  }
+
+  async function onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect }) {
+    if (selected.length === 0) return false;
+    let feedback = '';
+    try {
+      const data = {
+        title,
+        type,
+        question: body,
+        choices: choices.map((choice) => '\n   -' + choice).join(''),
+        learnerAnswers: selected.map((i) => choices[i]),
+        correctAnswers: correct.map((i) => choices[i]),
+        percentCorrect: percentCorrect,
+      };
+      feedback = await courseOps.getChoiceQuizFeedback(data);
+    } catch {
+      feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
+    }
+    const details = { type: 'choice', selected, correct, percentCorrect, feedback };
+    updateQuizFeedback(id, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return true;
+  }
+
+  async function onEssayQuiz({ id, title, type, body, precedingContent, essay }) {
+    if (!essay) return false;
+    const data = {
+      title,
+      type,
+      question: body,
+      'question context': precedingContent,
+      essay,
+    };
+    const { feedback, percentCorrect } = await courseOps.getEssayQuizFeedback(data);
+    const details = { type: 'essay', essay, percentCorrect, feedback };
+    updateQuizFeedback(id, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return percentCorrect;
+  }
+
+  async function onFileQuiz({ id, title, type, body, files }) {
+    if (files.length === 0) return 0;
+    const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
+    let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
+    updateQuizFeedback(id, { text: feedback, percentCorrect });
+    const details = { type: 'file', files: progressFiles, feedback };
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return 100;
+  }
+
+  async function onUrlQuiz({ id, title, type, body, url }) {
+    if (!url) return 0;
+    let feedback = 'Submission received. Thank you!';
+    updateQuizFeedback(id, { text: feedback, percentCorrect: 100 });
+    const details = { type: 'url', url, feedback };
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return 100;
+  }
+
+  function visualFeedback(quizRoot, percentCorrect) {
+    let ringClass = 'ring-blue-400';
+    if (instructionState !== 'exam') {
+      if (percentCorrect === 100) ringClass = 'ring-green-500';
+      else if (percentCorrect === 0) ringClass = 'ring-red-500';
+      else ringClass = 'ring-yellow-400';
+    }
+    quizRoot.classList.add('ring-4', ringClass);
+    //    setTimeout(() => quizRoot.classList.remove('ring-4', 'ring-blue-400', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
   }
 
   return (
