@@ -88,13 +88,13 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
 
   function generateQuizComponent(meta, itemsText, progress) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceQuiz meta={meta} itemsText={itemsText} progress={progress} />;
+      return <MultipleChoiceQuiz quizId={meta.id} quizType={meta.type} itemsText={itemsText} progress={progress} />;
     } else if (meta.type === 'essay') {
-      return <EssayQuiz meta={meta} progress={progress} />;
+      return <EssayQuiz quizId={meta.id} progress={progress} />;
     } else if (meta.type === 'file-submission') {
-      return <FileQuiz meta={meta} progress={progress} />;
+      return <FileQuiz quizId={meta.id} progress={progress} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlQuiz meta={meta} progress={progress} />;
+      return <UrlQuiz quizId={meta.id} progress={progress} />;
     }
 
     return null;
