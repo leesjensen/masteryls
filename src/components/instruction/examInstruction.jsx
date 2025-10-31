@@ -43,8 +43,8 @@ export default function ExamInstruction({ courseOps, topic, user, initialProgres
   } else if (examState.details.state === 'completed') {
     return (
       <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4 text-center text-amber-400">Submitted</h2>
-        <div className="relative pointer-events-none opacity-50">
+        <h2 className="text-2xl w-full bg-amber-50 font-bold border-1 border-amber-200 py-4 mb-4 text-center text-amber-500">Submitted</h2>
+        <div className="relative pointer-events-none opacity-75">
           <QuizInstruction courseOps={courseOps} topic={topic} user={user} initialProgress={initialProgress} content={content} instructionState={'examReview'} />
         </div>
       </div>
@@ -52,7 +52,6 @@ export default function ExamInstruction({ courseOps, topic, user, initialProgres
   } else {
     return (
       <div className="p-6">
-        {examState.details.state === 'completed' && <h2 className="text-2xl font-bold mb-4">{topic.title} - Submitted</h2>}
         <button className="mt-3 px-6 py-1 bg-amber-400 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200" onClick={() => updateState('completed')}>
           Submit exam
         </button>

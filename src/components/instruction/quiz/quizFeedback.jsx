@@ -10,7 +10,7 @@ export default function QuizFeedback({ quizId }) {
 
   return (
     <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900 relative">
-      {feedback.percentCorrect !== undefined && <div className="absolute bottom-0 right-0 px-1 bg-blue-100 text-white text-sm font-semibold rounded-br-sm">{feedback.percentCorrect}%</div>}
+      {feedback.percentCorrect !== undefined && <div className={`absolute bottom-0 right-0 px-1 w-12 text-center bg-blue-100 text-white text-sm font-semibold rounded-br-sm`}>{feedback.percentCorrect}%</div>}
       <div>{inlineLiteMarkdown(feedback.text)}</div>
     </div>
   );
