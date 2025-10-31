@@ -67,7 +67,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     const progress = initialProgress[meta.id] || {};
     if (progress?.details?.feedback) {
       // Schedule feedback update for after render
-      feedbackUpdatesRef.current.add({ quizId: meta.id, feedback: progress.details.feedback });
+      feedbackUpdatesRef.current.add({ quizId: meta.id, feedback: { text: progress.details.feedback, percentCorrect: progress.details.percentCorrect } });
     }
     let controlJsx = generateQuizComponent(meta, itemsText, progress);
     return (
@@ -115,9 +115,9 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
       };
       feedback = await courseOps.getChoiceQuizFeedback(data);
     } catch {
-      feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Nice try. Review the material see where you went wrong.`}`;
+      feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
     }
-    updateQuizFeedback(id, feedback);
+    updateQuizFeedback(id, { text: feedback, percentCorrect });
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'choice', selected, correct, percentCorrect, feedback });
     return true;
   }
@@ -132,7 +132,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
       essay,
     };
     const { feedback, percentCorrect } = await courseOps.getEssayQuizFeedback(data);
-    updateQuizFeedback(id, feedback);
+    updateQuizFeedback(id, { text: feedback, percentCorrect });
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'essay', essay, percentCorrect, feedback });
     return percentCorrect;
   }
@@ -141,7 +141,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     if (files.length === 0) return 0;
     const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
     let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
-    updateQuizFeedback(id, feedback);
+    updateQuizFeedback(id, { text: feedback, percentCorrect });
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'file', files: progressFiles, feedback });
     return 100;
   }
@@ -149,7 +149,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
   async function onUrlQuiz({ id, title, type, body, url }) {
     if (!url) return 0;
     let feedback = 'Submission received. Thank you!';
-    updateQuizFeedback(id, feedback);
+    updateQuizFeedback(id, { text: feedback, percentCorrect: 100 });
     await courseOps.addProgress(null, id, 'quizSubmit', 0, { type: 'url', url, feedback });
     return 100;
   }
