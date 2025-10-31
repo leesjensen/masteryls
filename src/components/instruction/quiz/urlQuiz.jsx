@@ -1,7 +1,9 @@
 import React from 'react';
+import { useQuizFeedback } from './feedbackStore';
 
-export default function UrlQuiz({ quizId, progress = {} }) {
-  const existingUrl = progress.details?.url || '';
+export default function UrlQuiz({ quizId }) {
+  const progress = useQuizFeedback(quizId) || {};
+  const existingUrl = progress.url || '';
 
   return (
     <div>

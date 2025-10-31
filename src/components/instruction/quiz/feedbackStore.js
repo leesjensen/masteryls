@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 let feedbackStore = new Map();
 const listeners = new Set();
 
+// Add feedback for a specific quiz
+export const addQuizFeedback = (quizId, details) => {
+  feedbackStore.set(quizId, details);
+  listeners.forEach((listener) => listener(quizId, details));
+};
+
 // Update feedback for a specific quiz
 export const updateQuizFeedback = (quizId, details) => {
   feedbackStore.set(quizId, details);

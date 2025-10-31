@@ -4,16 +4,20 @@ import VideoInstruction from './videoInstruction';
 import ExamInstruction from './examInstruction';
 import QuizInstruction from './quiz/quizInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
+import { addQuizFeedback } from './quiz/feedbackStore';
 
 export default function Instruction({ courseOps, topic, course, user, content = null }) {
   const containerRef = useRef(null);
-  const [initialProgress, setInitialProgress] = React.useState({});
+  const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
     async function fetchExamState() {
       if (courseOps?.enrollment) {
         courseOps.getQuizProgress().then((progress) => {
-          setInitialProgress(progress);
+          Object.entries(progress).forEach(([key, value]) => {
+            addQuizFeedback(key, value.details || {});
+          });
+          setLoadingProgress(false);
         });
       }
     }
@@ -34,6 +38,10 @@ export default function Instruction({ courseOps, topic, course, user, content = 
     dependencies: [topic?.path],
   });
 
+  if (loadingProgress) {
+    return null;
+  }
+
   const contentAvailable = topic && topic.path && (!topic.state || topic.state === 'stable');
   if (!contentAvailable) {
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
@@ -45,10 +53,10 @@ export default function Instruction({ courseOps, topic, course, user, content = 
       instructionComponent = <VideoInstruction topic={topic} courseOps={courseOps} />;
       break;
     case 'exam':
-      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} content={content} initialProgress={initialProgress} />;
+      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} content={content} />;
       break;
     default:
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} initialProgress={initialProgress} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} />;
       break;
   }
 

@@ -1,7 +1,9 @@
 import React from 'react';
+import { useQuizFeedback } from './feedbackStore';
 
-export default function EssayQuiz({ quizId, progress = {} }) {
-  const value = progress?.details?.essay || '';
+export default function EssayQuiz({ quizId }) {
+  const progress = useQuizFeedback(quizId) || {};
+  const value = progress.essay || '';
   return (
     <div>
       <textarea name={`quiz-${quizId.id}`} className="w-full h-32 p-3 border bg-white border-gray-300 rounded-lg resize-y transition-colors duration-200 placeholder-gray-400" placeholder="Enter your answer here..." defaultValue={value}></textarea>

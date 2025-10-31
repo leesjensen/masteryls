@@ -18,7 +18,6 @@ import { formatFileSize } from '../../../utils';
  * @param {Object} props.courseOps - Course operations object containing methods for quiz feedback and progress tracking
  * @param {string} props.topic - The current topic identifier
  * @param {Object} props.user - User object containing user information
- * @param {Object} [props.initialProgress={}] - Initial progress data for quizzes, keyed by activity ID
  * @param {string|null} [props.content=null] - Use this content instead of loading the topic content
  * @param {string} [props.instructionState='learning'] - Current instruction state ('learning', 'exam', or 'examReview')
  *
@@ -41,17 +40,7 @@ import { formatFileSize } from '../../../utils';
  *
  * @returns {JSX.Element} The rendered quiz instruction component
  */
-export default function QuizInstruction({ courseOps, topic, user, initialProgress = {}, content = null, instructionState = 'learning' }) {
-  const feedbackUpdatesRef = useRef(new Set());
-
-  // Effect to handle feedback updates after render
-  useEffect(() => {
-    feedbackUpdatesRef.current.forEach(({ quizId, details }) => {
-      updateQuizFeedback(quizId, details);
-    });
-    feedbackUpdatesRef.current.clear();
-  });
-
+export default function QuizInstruction({ courseOps, topic, user, content = null, instructionState = 'learning' }) {
   /**
    * injectQuiz responds to a Markdown processor request to render a quiz.
    * @param {string} content - The raw quiz markdown content
@@ -69,12 +58,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
       } catch {}
       itemsText = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
-    const progress = initialProgress[meta.id] || {};
-    if (progress?.details?.feedback) {
-      // Schedule feedback update for after render
-      feedbackUpdatesRef.current.add({ quizId: meta.id, details: progress.details });
-    }
-    let controlJsx = generateQuizComponent(meta, itemsText, progress);
+    let controlJsx = generateQuizComponent(meta, itemsText);
     return (
       <div className="px-4 py-4 bg-white border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
@@ -91,15 +75,15 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     );
   }
 
-  function generateQuizComponent(meta, itemsText, progress) {
+  function generateQuizComponent(meta, itemsText) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceQuiz quizId={meta.id} quizType={meta.type} itemsText={itemsText} progress={progress} />;
+      return <MultipleChoiceQuiz quizId={meta.id} quizType={meta.type} itemsText={itemsText} />;
     } else if (meta.type === 'essay') {
-      return <EssayQuiz quizId={meta.id} progress={progress} />;
+      return <EssayQuiz quizId={meta.id} />;
     } else if (meta.type === 'file-submission') {
-      return <FileQuiz quizId={meta.id} progress={progress} />;
+      return <FileQuiz quizId={meta.id} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlQuiz quizId={meta.id} progress={progress} />;
+      return <UrlQuiz quizId={meta.id} />;
     }
 
     return null;

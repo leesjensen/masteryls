@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { formatFileSize } from '../../../utils';
 
-export default function FileQuiz({ quizId, progress = {} }) {
+export default function FileQuiz({ quizId }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);

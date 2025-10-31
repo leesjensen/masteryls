@@ -1,7 +1,7 @@
 import React from 'react';
 import QuizInstruction from './quiz/quizInstruction';
 
-export default function ExamInstruction({ courseOps, topic, user, initialProgress = {}, content = null }) {
+export default function ExamInstruction({ courseOps, topic, user, content = null }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
   const [examStats, setExamStats] = React.useState({ count: 0, answered: 0, percentCorrect: 0 });
@@ -22,20 +22,20 @@ export default function ExamInstruction({ courseOps, topic, user, initialProgres
     courseOps.addProgress(null, null, 'exam', 0, { state });
   };
 
-  React.useEffect(() => {
-    if (initialProgress) {
-      let sum = 0;
-      let count = Object.keys(initialProgress).length;
-      let answered = 0;
-      Object.values(initialProgress).forEach((item) => {
-        if (item.details?.percentCorrect !== undefined) {
-          sum += item.details?.percentCorrect || 0;
-          answered++;
-        }
-      });
-      setExamStats({ count, answered, percentCorrect: count > 0 ? sum / count : 0 });
-    }
-  }, [initialProgress]);
+  // React.useEffect(() => {
+  //   if (initialProgress) {
+  //     let sum = 0;
+  //     let count = Object.keys(initialProgress).length;
+  //     let answered = 0;
+  //     Object.values(initialProgress).forEach((item) => {
+  //       if (item.details?.percentCorrect !== undefined) {
+  //         sum += item.details?.percentCorrect || 0;
+  //         answered++;
+  //       }
+  //     });
+  //     setExamStats({ count, answered, percentCorrect: count > 0 ? sum / count : 0 });
+  //   }
+  // }, [initialProgress]);
 
   if (loading) {
     return <div />;
@@ -67,7 +67,7 @@ export default function ExamInstruction({ courseOps, topic, user, initialProgres
         </h2>
 
         <div className="relative pointer-events-none opacity-75">
-          <QuizInstruction courseOps={courseOps} topic={topic} user={user} initialProgress={initialProgress} content={content} instructionState={'examReview'} />
+          <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'examReview'} />
         </div>
       </div>
     );
@@ -78,7 +78,7 @@ export default function ExamInstruction({ courseOps, topic, user, initialProgres
         <button className="mt-3 px-6 py-1 bg-amber-400 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200" onClick={() => updateState('completed')}>
           Submit exam
         </button>
-        <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} initialProgress={initialProgress} instructionState={'exam'} />
+        <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'exam'} />
       </div>
     );
   }
