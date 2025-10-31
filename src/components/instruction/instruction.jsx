@@ -12,24 +12,13 @@ export default function Instruction({ courseOps, topic, course, user, content = 
   React.useEffect(() => {
     async function fetchExamState() {
       if (courseOps?.enrollment) {
-        loadProgress().then((progress) => {
+        courseOps.getQuizProgress().then((progress) => {
           setInitialProgress(progress);
         });
       }
     }
     fetchExamState();
   }, [topic, courseOps?.enrollment]);
-
-  async function loadProgress() {
-    const progressItems = await courseOps.getProgress({ topicId: topic.id, enrollmentId: courseOps.enrollment.id, type: 'quizSubmit' });
-    return progressItems.reduce((acc, item) => {
-      const activityId = item.activityId;
-      if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
-        acc[activityId] = item;
-      }
-      return acc;
-    }, {});
-  }
 
   // const containerRef = useSwipeNavigation(
   //   useCallback(() => courseOps.navigateToAdjacentTopic('next'), [course, topic]),

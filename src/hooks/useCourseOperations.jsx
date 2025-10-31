@@ -539,6 +539,17 @@ ${topicDescription || 'overview content placeholder'}`;
     return service.getProgress({ courseId, enrollmentId, userId, topicId, type, startDate, endDate });
   }
 
+  async function getQuizProgress() {
+    const progressItems = await getProgress({ topicId: currentTopic.id, enrollmentId: enrollment.id, type: 'quizSubmit' });
+    return progressItems.reduce((acc, item) => {
+      const activityId = item.activityId;
+      if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
+        acc[activityId] = item;
+      }
+      return acc;
+    }, {});
+  }
+
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
     if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
       for (const topicName of topicNames) {
@@ -714,6 +725,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getChoiceQuizFeedback,
     addProgress,
     getProgress,
+    getQuizProgress,
     getExamState,
     generateRandomData,
     enrollment,

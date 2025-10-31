@@ -162,7 +162,7 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
       else ringClass = 'ring-yellow-400';
     }
     quizRoot.classList.add('ring-4', ringClass);
-    setTimeout(() => quizRoot.classList.remove('ring-4', 'ring-blue-400', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+    //    setTimeout(() => quizRoot.classList.remove('ring-4', 'ring-blue-400', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
   }
 
   async function handleQuizClick(event, quizRoot) {
