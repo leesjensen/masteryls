@@ -5,9 +5,9 @@ let feedbackStore = new Map();
 const listeners = new Set();
 
 // Update feedback for a specific quiz
-export const updateQuizFeedback = (quizId, feedback) => {
-  feedbackStore.set(quizId, feedback);
-  listeners.forEach((listener) => listener(quizId, feedback));
+export const updateQuizFeedback = (quizId, details) => {
+  feedbackStore.set(quizId, details);
+  listeners.forEach((listener) => listener(quizId, details));
 };
 
 // Get feedback for a specific quiz
@@ -17,12 +17,12 @@ export const getQuizFeedback = (quizId) => {
 
 // Hook to subscribe to feedback changes for a specific quiz
 export const useQuizFeedback = (quizId) => {
-  const [feedback, setFeedback] = useState(() => getQuizFeedback(quizId));
+  const [details, setDetails] = useState(() => getQuizFeedback(quizId));
 
   useEffect(() => {
-    const listener = (updatedQuizId, newFeedback) => {
+    const listener = (updatedQuizId, newDetails) => {
       if (updatedQuizId === quizId) {
-        setFeedback(newFeedback);
+        setDetails(newDetails);
       }
     };
 
@@ -33,5 +33,5 @@ export const useQuizFeedback = (quizId) => {
     };
   }, [quizId]);
 
-  return feedback;
+  return details;
 };
