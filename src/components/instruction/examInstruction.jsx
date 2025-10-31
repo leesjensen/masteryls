@@ -58,7 +58,7 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
           </div> */}
         </h2>
 
-        <div className="relative pointer-events-none opacity-75">
+        <div className="relative pointer-events-none opacity-75 select-none">
           <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'examReview'} />
         </div>
       </div>
