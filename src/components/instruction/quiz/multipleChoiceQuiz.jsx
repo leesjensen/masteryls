@@ -1,9 +1,9 @@
 import React from 'react';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
-import { useQuizFeedback } from './feedbackStore';
+import { useQuizProgressStore } from './quizProgressStore';
 
 export default function MultipleChoiceQuiz({ quizId, quizType, itemsText }) {
-  const progress = useQuizFeedback(quizId) || {};
+  const progress = useQuizProgressStore(quizId) || {};
 
   const lines = itemsText
     .split('\n')

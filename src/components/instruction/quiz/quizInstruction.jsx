@@ -6,7 +6,7 @@ import FileQuiz from './fileQuiz';
 import UrlQuiz from './urlQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
-import { updateQuizFeedback } from './feedbackStore';
+import { updateQuizProgress } from './quizProgressStore';
 import { formatFileSize } from '../../../utils';
 
 /**
@@ -222,7 +222,7 @@ export default function QuizInstruction({ courseOps, topic, user, content = null
       feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
     }
     const details = { type: 'choice', selected, correct, percentCorrect, feedback };
-    updateQuizFeedback(id, details);
+    updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;
   }
@@ -238,7 +238,7 @@ export default function QuizInstruction({ courseOps, topic, user, content = null
     };
     const { feedback, percentCorrect } = await courseOps.getEssayQuizFeedback(data);
     const details = { type: 'essay', essay, percentCorrect, feedback };
-    updateQuizFeedback(id, details);
+    updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
   }
@@ -247,7 +247,7 @@ export default function QuizInstruction({ courseOps, topic, user, content = null
     if (files.length === 0) return 0;
     const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
     let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
-    updateQuizFeedback(id, { text: feedback, percentCorrect });
+    updateQuizProgress(id, { text: feedback, percentCorrect });
     const details = { type: 'file', files: progressFiles, feedback };
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;
@@ -256,7 +256,7 @@ export default function QuizInstruction({ courseOps, topic, user, content = null
   async function onUrlQuiz({ id, title, type, body, url }) {
     if (!url) return 0;
     let feedback = 'Submission received. Thank you!';
-    updateQuizFeedback(id, { text: feedback, percentCorrect: 100 });
+    updateQuizProgress(id, { text: feedback, percentCorrect: 100 });
     const details = { type: 'url', url, feedback };
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;

@@ -1,8 +1,8 @@
 import React from 'react';
-import { useQuizFeedback } from './feedbackStore';
+import { useQuizProgressStore } from './quizProgressStore';
 
 export default function EssayQuiz({ quizId }) {
-  const progress = useQuizFeedback(quizId) || {};
+  const progress = useQuizProgressStore(quizId) || {};
   const value = progress.essay || '';
   return (
     <div>

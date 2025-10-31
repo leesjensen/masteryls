@@ -4,7 +4,7 @@ import VideoInstruction from './videoInstruction';
 import ExamInstruction from './examInstruction';
 import QuizInstruction from './quiz/quizInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
-import { addQuizFeedback } from './quiz/feedbackStore';
+import { addQuizProgress } from './quiz/quizProgressStore';
 
 export default function Instruction({ courseOps, topic, course, user, content = null }) {
   const containerRef = useRef(null);
@@ -15,7 +15,7 @@ export default function Instruction({ courseOps, topic, course, user, content = 
       if (courseOps?.enrollment) {
         courseOps.getQuizProgress().then((progress) => {
           Object.entries(progress).forEach(([key, value]) => {
-            addQuizFeedback(key, value.details || {});
+            addQuizProgress(key, value.details || {});
           });
           setLoadingProgress(false);
         });
