@@ -18,7 +18,7 @@ export default function Instruction({ courseOps, topic, course, user, content = 
       }
     }
     fetchExamState();
-  }, [courseOps?.enrollment]);
+  }, [topic, courseOps?.enrollment]);
 
   async function loadProgress() {
     const progressItems = await courseOps.getProgress({ topicId: topic.id, enrollmentId: courseOps.enrollment.id, type: 'quizSubmit' });

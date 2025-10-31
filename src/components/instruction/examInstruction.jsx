@@ -56,7 +56,7 @@ export default function ExamInstruction({ courseOps, topic, user, initialProgres
         <button className="mt-3 px-6 py-1 bg-amber-400 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200" onClick={() => updateState('completed')}>
           Submit exam
         </button>
-        <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'exam'} />
+        <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} initialProgress={initialProgress} instructionState={'exam'} />
       </div>
     );
   }

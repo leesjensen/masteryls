@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MarkdownInstruction from '../markdownInstruction';
 import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
@@ -42,6 +42,16 @@ import { formatFileSize } from '../../../utils';
  * @returns {JSX.Element} The rendered quiz instruction component
  */
 export default function QuizInstruction({ courseOps, topic, user, initialProgress = {}, content = null, instructionState = 'learning' }) {
+  const feedbackUpdatesRef = useRef(new Set());
+
+  // Effect to handle feedback updates after render
+  useEffect(() => {
+    feedbackUpdatesRef.current.forEach(({ quizId, feedback }) => {
+      updateQuizFeedback(quizId, feedback);
+    });
+    feedbackUpdatesRef.current.clear();
+  });
+
   function injectQuiz(content) {
     const jsonMatch = content.match(/^\{[\s\S]*?\}(?:\n|$)/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
@@ -56,7 +66,8 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
     }
     const progress = initialProgress[meta.id] || {};
     if (progress?.details?.feedback) {
-      updateQuizFeedback(meta.id, progress.details.feedback);
+      // Schedule feedback update for after render
+      feedbackUpdatesRef.current.add({ quizId: meta.id, feedback: progress.details.feedback });
     }
     let controlJsx = generateQuizComponent(meta, itemsText, progress);
     return (
@@ -144,11 +155,14 @@ export default function QuizInstruction({ courseOps, topic, user, initialProgres
   }
 
   function visualFeedback(quizRoot, percentCorrect) {
-    let ringClass = 'ring-yellow-400';
-    if (percentCorrect === 100) ringClass = 'ring-green-500';
-    else if (percentCorrect === 0) ringClass = 'ring-red-500';
-    quizRoot.classList.add('ring-2', ringClass);
-    setTimeout(() => quizRoot.classList.remove('ring-2', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+    let ringClass = 'ring-blue-400';
+    if (instructionState !== 'exam') {
+      if (percentCorrect === 100) ringClass = 'ring-green-500';
+      else if (percentCorrect === 0) ringClass = 'ring-red-500';
+      else ringClass = 'ring-yellow-400';
+    }
+    quizRoot.classList.add('ring-4', ringClass);
+    setTimeout(() => quizRoot.classList.remove('ring-4', 'ring-blue-400', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
   }
 
   async function handleQuizClick(event, quizRoot) {
