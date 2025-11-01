@@ -26,7 +26,13 @@ export default function Classroom({ courseOps, service, user, course, topic, set
 
   React.useEffect(() => {
     if (course) {
-      updateAppBar(course.title, null);
+      const appBarTools = (
+        <button title="Close metrics dashboard" onClick={() => courseOps.closeCourse()} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+          ❌
+        </button>
+      );
+
+      updateAppBar(course.title, appBarTools);
     }
   }, [course]);
 
