@@ -4,9 +4,9 @@ import useCourseOperations from './hooks/useCourseOperations';
 
 import Start from './start.jsx';
 import AppBar from './appBar.jsx';
-import Dashboard from './views/dashboard/dashboard.jsx';
-import Classroom from './views/classroom/classroom.jsx';
-import Metrics from './views/metrics/metrics.jsx';
+import DashboardView from './views/dashboard/dashboardView.jsx';
+import ClassroomView from './views/classroom/classroomView.jsx';
+import MetricsView from './views/metrics/metricsView.jsx';
 import CreateCourseView from './views/createCourse/createCourseView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
 import ErrorPage from './components/errorPage.jsx';
@@ -124,12 +124,12 @@ function StartPage() {
 
 function DashboardPage() {
   const { courseOps, service, user } = useOutletContext();
-  return <Dashboard courseOps={courseOps} service={service} user={user} />;
+  return <DashboardView courseOps={courseOps} service={service} user={user} />;
 }
 
 function MetricsPage() {
   const { courseOps } = useOutletContext();
-  return <Metrics courseOps={courseOps} />;
+  return <MetricsView courseOps={courseOps} />;
 }
 
 function CreateCoursePage() {
@@ -144,7 +144,7 @@ function ProgressPage() {
 
 function ClassroomPage() {
   const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
-  return <Classroom courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
+  return <ClassroomView courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
 }
 
 export default App;

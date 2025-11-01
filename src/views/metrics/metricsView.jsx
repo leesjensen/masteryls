@@ -13,7 +13,7 @@ const last24Hours = () => {
   return date;
 };
 
-export default function Metrics({ courseOps }) {
+export default function MetricsView({ courseOps }) {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);

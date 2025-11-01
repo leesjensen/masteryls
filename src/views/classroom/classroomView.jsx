@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import Toolbar from './toolbar';
-import Sidebar from './sidebar';
+import Toolbar from './toolbar.jsx';
+import Sidebar from './sidebar.jsx';
 import Instruction from '../../components/instruction/instruction.jsx';
 import Editor from '../../components/editor/editor.jsx';
-import { updateAppBar } from '../../hooks/useAppBarState';
+import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 
-export default function Classroom({ courseOps, service, user, course, topic, settings }) {
+export default function ClassroomView({ courseOps, service, user, course, topic, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const isResizing = React.useRef(false);
 

@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import CourseCreationForm from './courseCreationForm.jsx';
-import CourseCard from './courseCard';
+import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
-import { updateAppBar } from '../../hooks/useAppBarState';
+import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 
-export default function Dashboard({ courseOps, service, user }) {
+export default function DashboardView({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
   const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
