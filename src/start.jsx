@@ -34,9 +34,7 @@ const Start = ({ courseOps, setUser }) => {
             <img src="/favicon.svg" alt="Mastery LS Logo" className="w-16 h-auto mb-6 mr-2" />
             <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">Mastery LS</h1>
           </div>
-          <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">
-            Master life long learning with AI, world class content, experiential projects, and peer collaboration.
-          </p>
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">Master life long learning with AI, world class content, experiential projects, and peer collaboration.</p>
           <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">
             Login to learn, or browse the{' '}
             <button onClick={scrollToCatalog} className="text-amber-700 font-semibold hover:text-amber-600">
@@ -58,11 +56,7 @@ const Start = ({ courseOps, setUser }) => {
             <PromoCard image={stockImages.instruction} title="Expert Instruction" description="Industry professionals with decades of experience." />
             <PromoCard image={stockImages.aiLearning} title="AI Adaptive Learning" description="AI-powered mentoring, feedback, personalized learning paths, and adaptive assessments." />
             <PromoCard image={stockImages.personalized} title="Experiential Projects" description="Curriculum that focuses on real-world projects to enhance learning outcomes." />
-            <PromoCard
-              image={stockImages.collaboration}
-              title="Collaboration"
-              description="Tools and features that enhance teamwork and communication with instructors, mentors, peers, and AI bots."
-            />
+            <PromoCard image={stockImages.collaboration} title="Collaboration" description="Tools and features that enhance teamwork and communication with instructors, mentors, peers, and AI bots." />
             <PromoCard image={stockImages.aiContent} title="AI Content Generation" description="AI-powered course, topic, quiz, and feedback generation." />
             <PromoCard image={stockImages.progress} title="Progress Tracking" description="Detailed analytics to monitor your learning journey and achievements." />
             <PromoCard image={stockImages.versionControl} title="GitHub based content management" description="Full version history, branching, and collaboration features powered by GitHub." />
@@ -149,14 +143,14 @@ const Start = ({ courseOps, setUser }) => {
                 </div>
               </div>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 hidden sm:block">
               <img src={stockImages.contact} alt="Contact us" className="w-full h-auto rounded-lg shadow-lg" />
             </div>
           </div>
         </div>
       </section>
 
-      <footer className="bg-gray-900 py-8">
+      <footer className="bg-gray-600 py-8">
         <div className="max-w-7xl mx-auto px-8">
           <p className="text-center text-gray-200">&copy; 2025 Mastery LS. All rights reserved.</p>
         </div>

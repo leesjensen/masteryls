@@ -4,6 +4,7 @@ import Toolbar from './toolbar';
 import Sidebar from './sidebar';
 import Instruction from '../../components/instruction/instruction.jsx';
 import Editor from '../../components/editor/editor.jsx';
+import { updateToolbarTitle } from '../../hooks/useToolbarState';
 
 export default function Classroom({ courseOps, service, user, course, topic, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
@@ -25,7 +26,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
 
   React.useEffect(() => {
     if (course) {
-      document.title = `${course.title}`;
+      updateToolbarTitle(course.title);
     }
   }, [course]);
 

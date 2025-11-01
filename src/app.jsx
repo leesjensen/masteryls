@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
+import { updateToolbarTitle } from './hooks/useToolbarState';
 
 import Start from './start.jsx';
 import AppBar from './appBar.jsx';
@@ -86,10 +87,9 @@ function RootLayout() {
     service,
   };
 
-  const showAppBar = location.pathname !== '/';
   return (
     <div className="app">
-      {showAppBar && <AppBar />}
+      <AppBar />
       <div className="flex flex-col" style={{ height: 'calc(100vh - 50px)' }}>
         <Outlet context={contextValue} />
       </div>
@@ -102,7 +102,7 @@ function StartPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    document.title = 'Welcome';
+    updateToolbarTitle('Get started');
   }, []);
 
   useEffect(() => {

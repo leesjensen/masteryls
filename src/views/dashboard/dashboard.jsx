@@ -4,6 +4,7 @@ import CourseCard from './courseCard';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
+import { updateToolbarTitle } from '../../hooks/useToolbarState';
 
 export default function Dashboard({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
@@ -15,7 +16,7 @@ export default function Dashboard({ courseOps, service, user }) {
 
   React.useEffect(() => {
     if (user) {
-      document.title = `Dashboard`;
+      updateToolbarTitle('Dashboard');
       service.enrollments(user.id).then(setEnrollments);
     } else {
       navigate('/');
