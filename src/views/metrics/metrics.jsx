@@ -157,11 +157,11 @@ export default function Metrics({ courseOps }) {
   };
 
   const header = (
-    <div className="mb-6 flex flex-col space-y-4">
+    <nav className="mb-6 flex flex-col space-y-4">
       <div className="flex flex-row justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Learning Analytics Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Metrics</h1>
+          <p className="text-sm hidden md:block text-gray-600 mt-1">
             Showing data for: {getCourseDescription(selectedCourseId)} • {getTimeRangeDescription(startDate, endDate)}
             {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
           </p>
@@ -194,27 +194,29 @@ export default function Metrics({ courseOps }) {
           </div>
         </div>
         {/* Quick date presets and course clear */}
-        <div className="flex flex-wrap gap-1 text-xs">
-          <button onClick={() => setDatePreset('24hours')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
-            Last 24 hours
-          </button>
-          <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
-            Today
-          </button>
-          <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
-            Yesterday
-          </button>
-          <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
-            This week
-          </button>
-          <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
-            This month
-          </button>
+        <div className="hidden sm:block">
+          <div className="flex flex-wrap gap-1 text-xs">
+            <button onClick={() => setDatePreset('24hours')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Clear dates">
+              Last 24 hours
+            </button>
+            <button onClick={() => setDatePreset('today')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to today">
+              Today
+            </button>
+            <button onClick={() => setDatePreset('yesterday')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to yesterday">
+              Yesterday
+            </button>
+            <button onClick={() => setDatePreset('thisWeek')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this week">
+              This week
+            </button>
+            <button onClick={() => setDatePreset('thisMonth')} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700" title="Set to this month">
+              This month
+            </button>
+          </div>
         </div>
         {!validateDateRange() && <span className="text-xs text-red-600">Start date must be before end date</span>}
         {!startDate && !endDate && !selectedCourseId && <span className="text-xs text-gray-500">Leave filters empty for all data</span>}
       </div>
-    </div>
+    </nav>
   );
 
   if (metrics.totalActivities === 0) {
@@ -498,121 +500,125 @@ export default function Metrics({ courseOps }) {
   return (
     <div className="p-6 bg-gray-50 flex flex-col" style={{ height: 'calc(100vh - 42px)' }}>
       {header}
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
+      <main className="flex-1 overflow-auto p-2 border border-gray-200">
+        <div>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Activities</p>
+                  <p className="text-2xl font-semibold text-gray-900">{metrics.totalActivities.toLocaleString()}</p>
+                </div>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Activities</p>
-              <p className="text-2xl font-semibold text-gray-900">{metrics.totalActivities.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Time</p>
+                  <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.totalDuration / 60)} min</p>
+                </div>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Time</p>
-              <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.totalDuration / 60)} min</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Avg Session</p>
+                  <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.averageDuration / 60)} min</p>
+                </div>
+              </div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Avg Session</p>
-              <p className="text-2xl font-semibold text-gray-900">{Math.round(metrics.averageDuration / 60)} min</p>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Activity Types</p>
-              <p className="text-2xl font-semibold text-gray-900">{Object.keys(metrics.activityTypes).length}</p>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Activity Types</p>
+                  <p className="text-2xl font-semibold text-gray-900">{Object.keys(metrics.activityTypes).length}</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Hourly Activity Trend */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Hourly Activity Trend</h3>
-          <div className="h-80">
-            <Line data={hourlyActivityData} options={chartOptions} />
-          </div>
-        </div>
+          {/* Charts Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Hourly Activity Trend */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Hourly Activity Trend</h3>
+              <div className="h-80">
+                <Line data={hourlyActivityData} options={chartOptions} />
+              </div>
+            </div>
 
-        {/* Daily Activity Trend */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Activity Trend</h3>
-          <div className="h-80">
-            <Line data={dailyActivityData} options={chartOptions} />
-          </div>
-        </div>
+            {/* Daily Activity Trend */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Activity Trend</h3>
+              <div className="h-80">
+                <Line data={dailyActivityData} options={chartOptions} />
+              </div>
+            </div>
 
-        {/* Activity Types Distribution */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Types Distribution</h3>
-          <div className="h-80">
-            <Doughnut data={activityTypesData} options={doughnutOptions} />
-          </div>
-        </div>
+            {/* Activity Types Distribution */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Types Distribution</h3>
+              <div className="h-80">
+                <Doughnut data={activityTypesData} options={doughnutOptions} />
+              </div>
+            </div>
 
-        {/* Top Activities */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Learning Topics</h3>
-          <div className="h-80">
-            <Bar data={topTopicsData} options={barChartOptions} />
-          </div>
-        </div>
+            {/* Top Activities */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Learning Topics</h3>
+              <div className="h-80">
+                <Bar data={topTopicsData} options={barChartOptions} />
+              </div>
+            </div>
 
-        {/* Learning Insights */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Insights</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm font-medium text-blue-900">Most Active Day</span>
-              <span className="text-sm text-blue-700">{Object.keys(metrics.dailyActivity).reduce((a, b) => (metrics.dailyActivity[a] > metrics.dailyActivity[b] ? a : b)) || 'No data'}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-              <span className="text-sm font-medium text-green-900">Primary Activity Type</span>
-              <span className="text-sm text-green-700">{Object.keys(metrics.activityTypes).reduce((a, b) => (metrics.activityTypes[a] > metrics.activityTypes[b] ? a : b)) || 'No data'}</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-              <span className="text-sm font-medium text-yellow-900">Weekly Average</span>
-              <span className="text-sm text-yellow-700">{Object.keys(metrics.weeklyActivity).length > 0 ? Math.round(Object.values(metrics.weeklyActivity).reduce((a, b) => a + b, 0) / Object.keys(metrics.weeklyActivity).length) : 0} activities</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-              <span className="text-sm font-medium text-purple-900">Learning Streak</span>
-              <span className="text-sm text-purple-700">{Object.keys(metrics.dailyActivity).length} days active</span>
+            {/* Learning Insights */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Insights</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span className="text-sm font-medium text-blue-900">Most Active Day</span>
+                  <span className="text-sm text-blue-700">{Object.keys(metrics.dailyActivity).reduce((a, b) => (metrics.dailyActivity[a] > metrics.dailyActivity[b] ? a : b)) || 'No data'}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <span className="text-sm font-medium text-green-900">Primary Activity Type</span>
+                  <span className="text-sm text-green-700">{Object.keys(metrics.activityTypes).reduce((a, b) => (metrics.activityTypes[a] > metrics.activityTypes[b] ? a : b)) || 'No data'}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                  <span className="text-sm font-medium text-yellow-900">Weekly Average</span>
+                  <span className="text-sm text-yellow-700">{Object.keys(metrics.weeklyActivity).length > 0 ? Math.round(Object.values(metrics.weeklyActivity).reduce((a, b) => a + b, 0) / Object.keys(metrics.weeklyActivity).length) : 0} activities</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                  <span className="text-sm font-medium text-purple-900">Learning Streak</span>
+                  <span className="text-sm text-purple-700">{Object.keys(metrics.dailyActivity).length} days active</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
