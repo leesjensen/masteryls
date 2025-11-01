@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
-import { updateAppBar } from './hooks/useAppBarState';
 
 import Start from './start.jsx';
 import AppBar from './appBar.jsx';
 import Dashboard from './views/dashboard/dashboard.jsx';
 import Classroom from './views/classroom/classroom.jsx';
 import Metrics from './views/metrics/metrics.jsx';
+import CreateCourseView from './views/createCourse/createCourseView.jsx';
+import ProgressView from './views/progress/ProgressView.jsx';
 import ErrorPage from './components/errorPage.jsx';
 import service from './service/service.js';
 
@@ -22,6 +23,8 @@ function App() {
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
+        { path: 'create-course', element: <CreateCoursePage /> },
+        { path: 'progress', element: <ProgressPage /> },
         { path: '*', element: <ErrorPage message="The gerbils have gotten lost." /> },
       ],
     },
@@ -38,7 +41,6 @@ function RootLayout() {
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [settings, setSettings] = useState(defaultUiSettings);
   const navigate = useNavigate();
-  const location = useLocation();
 
   function setUserInternal(user) {
     setUser(user);
@@ -124,9 +126,20 @@ function DashboardPage() {
   const { courseOps, service, user } = useOutletContext();
   return <Dashboard courseOps={courseOps} service={service} user={user} />;
 }
+
 function MetricsPage() {
   const { courseOps } = useOutletContext();
   return <Metrics courseOps={courseOps} />;
+}
+
+function CreateCoursePage() {
+  const { courseOps } = useOutletContext();
+  return <CreateCourseView courseOps={courseOps} />;
+}
+
+function ProgressPage() {
+  const { courseOps } = useOutletContext();
+  return <ProgressView courseOps={courseOps} />;
 }
 
 function ClassroomPage() {
