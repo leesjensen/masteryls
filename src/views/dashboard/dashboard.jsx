@@ -14,9 +14,23 @@ export default function Dashboard({ courseOps, service, user }) {
   const { showAlert } = useAlert();
   const navigate = useNavigate();
 
+  const appBarTools = (
+    <div>
+      <button title="New course" onClick={() => setDisplayCourseCreationForm(true)} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+        +
+      </button>
+      <button title="Metrics" onClick={() => navigate('/metrics')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+        📊
+      </button>
+      <button title="Logout" onClick={courseOps.logout} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+        ❌
+      </button>
+    </div>
+  );
+
   React.useEffect(() => {
     if (user) {
-      updateAppBar('Dashboard', null);
+      updateAppBar(`${user.name}'s Dashboard`, appBarTools);
       service.enrollments(user.id).then(setEnrollments);
     } else {
       navigate('/');
@@ -75,33 +89,6 @@ export default function Dashboard({ courseOps, service, user }) {
   return (
     <>
       <div className="flex-1 overflow-auto p-8 bg-white">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <div>
-            <h1 className="font-bold text-3xl mb-2 flex items-center justify-left">
-              {user.isRoot() && (
-                <span title="root rights" className="text-lg text-yellow-400 mr-1">
-                  ★
-                </span>
-              )}
-              {user.name}'s dashboard
-            </h1>
-          </div>
-          <div className="flex justify-between mb-6">
-            {user.isRoot() && (
-              <>
-                <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-                  <span className="font-semibold text-amber-600">+</span> Course
-                </button>
-                <button onClick={() => navigate('/metrics')} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-                  Metrics
-                </button>
-              </>
-            )}
-            <button onClick={courseOps.logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-              Logout
-            </button>
-          </div>
-        </div>
         <h2 className="border-t-2 border-gray-400 font-semibold mb- pt-1 text-xl text-gray-500">Your courses</h2>
         {enrollments.size > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
