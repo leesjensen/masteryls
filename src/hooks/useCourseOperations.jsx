@@ -593,107 +593,6 @@ ${topicDescription || 'overview content placeholder'}`;
     return `${course.links.gitHub.rawUrl}/instruction/${slugTitle}/${slugTitle}.md`;
   }
 
-  async function generateRandomData() {
-    if (!user?.id || !course?.id || !enrollment?.id) {
-      throw new Error('User, course, and enrollment must be available to generate random data');
-    }
-
-    const activityTypes = ['instructionView', 'videoWatch', 'quizSubmit', 'topicComplete', 'moduleComplete', 'discussion', 'assignment'];
-    const topicIds = course.allTopics.map((topic) => topic.id);
-    const activityIds = ['550e8400-e29b-41d4-a716-446655440000', '6ba7b810-9dad-11d1-80b4-00c04fd430c8', '6ba7b811-9dad-11d1-80b4-00c04fd430c8', '6ba7b812-9dad-11d1-80b4-00c04fd430c8', '6ba7b813-9dad-11d1-80b4-00c04fd430c8', '6ba7b814-9dad-11d1-80b4-00c04fd430c8', '6ba7b815-9dad-11d1-80b4-00c04fd430c8', '6ba7b816-9dad-11d1-80b4-00c04fd430c8', '6ba7b817-9dad-11d1-80b4-00c04fd430c8', '6ba7b818-9dad-11d1-80b4-00c04fd430c8', '6ba7b819-9dad-11d1-80b4-00c04fd430c8', '6ba7b81a-9dad-11d1-80b4-00c04fd430c8', '6ba7b81b-9dad-11d1-80b4-00c04fd430c8'];
-
-    // Generate 200-400 random progress records
-    const numRecords = Math.floor(Math.random() * 200) + 200;
-    const recordsPerDay = Math.ceil(numRecords / 7); // Distribute over 7 days
-
-    console.log(`Generating ${numRecords} random progress records distributed over 7 days...`);
-
-    let totalGenerated = 0;
-
-    for (let day = 0; day < 7; day++) {
-      const recordsToday = Math.min(recordsPerDay, numRecords - totalGenerated);
-      const createdAt = new Date();
-      createdAt.setDate(createdAt.getDate() - (6 - day)); // 6-day offset so day 0 is oldest
-
-      for (let i = 0; i < recordsToday; i++) {
-        // Random activity type
-        const activityType = activityTypes[Math.floor(Math.random() * activityTypes.length)];
-
-        // Random topic ID
-        const topicId = topicIds[Math.floor(Math.random() * topicIds.length)];
-
-        // Random activity ID
-        const activityId = activityIds[Math.floor(Math.random() * activityIds.length)];
-
-        // Random duration based on activity type
-        let duration = 0;
-        switch (activityType) {
-          case 'instructionView':
-            duration = Math.floor(Math.random() * 300) + 60; // 1-5 minutes
-            break;
-          case 'videoWatch':
-            duration = Math.floor(Math.random() * 1200) + 300; // 5-20 minutes
-            break;
-          case 'quizSubmit':
-            duration = Math.floor(Math.random() * 600) + 120; // 2-10 minutes
-            break;
-          case 'topicComplete':
-            duration = Math.floor(Math.random() * 1800) + 600; // 10-30 minutes
-            break;
-          case 'moduleComplete':
-            duration = Math.floor(Math.random() * 3600) + 1800; // 30-60 minutes
-            break;
-          case 'discussion':
-            duration = Math.floor(Math.random() * 900) + 180; // 3-15 minutes
-            break;
-          case 'assignment':
-            duration = Math.floor(Math.random() * 7200) + 1800; // 30-120 minutes
-            break;
-        }
-
-        // Random details based on activity type
-        const details = {};
-        if (activityType === 'quizSubmit') {
-          details.score = Math.floor(Math.random() * 100);
-          details.attempts = Math.floor(Math.random() * 3) + 1;
-        } else if (activityType === 'videoWatch') {
-          details.percentWatched = Math.floor(Math.random() * 100);
-          details.playbackSpeed = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0][Math.floor(Math.random() * 6)];
-        } else if (activityType === 'assignment') {
-          details.status = ['submitted', 'draft', 'graded'][Math.floor(Math.random() * 3)];
-          if (details.status === 'graded') {
-            details.grade = Math.floor(Math.random() * 100);
-          }
-        }
-
-        try {
-          createdAt.setHours(Math.floor(Math.random() * 24));
-          createdAt.setMinutes(Math.floor(Math.random() * 60));
-          createdAt.setSeconds(Math.floor(Math.random() * 60));
-
-          await service.addProgress(user.id, course.id, enrollment.id, topicId, activityId, activityType, duration, details, createdAt.toISOString());
-
-          totalGenerated++;
-        } catch (error) {
-          console.warn(`Failed to add progress record for ${activityId}:`, error);
-        }
-
-        // Small delay between records to avoid overwhelming the database
-        if (i % 5 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
-      }
-
-      // Progress update
-      console.log(`Generated ${totalGenerated}/${numRecords} records (Day ${day + 1}/7)`);
-
-      if (totalGenerated >= numRecords) break;
-    }
-
-    console.log(`Successfully generated ${totalGenerated} random progress records`);
-    return { success: true, recordsGenerated: totalGenerated };
-  }
-
   return {
     logout,
     getEnrollmentUiSettings,
@@ -727,7 +626,6 @@ ${topicDescription || 'overview content placeholder'}`;
     getProgress,
     getQuizProgress,
     getExamState,
-    generateRandomData,
     enrollment,
   };
 }
