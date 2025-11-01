@@ -9,6 +9,7 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
 
   React.useEffect(() => {
     async function fetchExamState() {
+      console.log('Fetching exam state...', courseOps?.enrollment);
       if (courseOps?.enrollment) {
         const state = await courseOps.getExamState();
         setExamState(state);
@@ -91,7 +92,7 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-blue-500">Submitted</div>
           <p className="my-4">
-            The exam is now in <b>read-only</b> mode and has been graded by AI. This exam will be reviewed by a mentor who will provide your final score.
+            The exam is in <b>read-only</b> mode and has been graded by AI. This exam will be reviewed by a mentor who will provide your final score.
           </p>
           {examState.details.results.ai && (
             <ul className="text-start list-disc list-inside">

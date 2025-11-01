@@ -70,6 +70,8 @@ function RootLayout() {
         const enrollment = await service.currentEnrollment(savedUser.id);
         if (enrollment) {
           navigate(`/course/${enrollment.catalogId}`);
+        } else {
+          navigate('/dashboard');
         }
       }
     })();
@@ -103,22 +105,6 @@ function RootLayout() {
 
 function StartPage() {
   const { courseOps, setUser, user } = useOutletContext();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // If the user is already logged in, load their course or go to dashboard
-    if (user) {
-      (async () => {
-        const enrollment = await service.currentEnrollment(user.id);
-        if (enrollment) {
-          courseOps.loadCourse(enrollment);
-        } else {
-          navigate('/dashboard');
-        }
-      })();
-    }
-  }, [user?.id, navigate]);
-
   return <Start courseOps={courseOps} setUser={setUser} />;
 }
 

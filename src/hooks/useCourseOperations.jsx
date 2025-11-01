@@ -128,7 +128,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return enrollment;
   }
 
-  function loadCourseById(courseId) {
+  async function loadCourseById(courseId) {
+    if (user) {
+      const enrollment = await service.enrollment(user.id, courseId);
+      setEnrollment(enrollment);
+    }
     const courseEntry = courseCatalog().find((c) => c.id === courseId);
     if (courseEntry) {
       Course.create(courseEntry).then((loadedCourse) => {
@@ -144,11 +148,6 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
         }
       });
     }
-  }
-
-  function loadCourse(loadingEnrollment) {
-    setEnrollment(loadingEnrollment);
-    loadCourseById(loadingEnrollment.catalogEntry.id);
   }
 
   async function getCourse(courseId) {
@@ -604,7 +603,6 @@ ${topicDescription || 'overview content placeholder'}`;
     getCourse,
     setCurrentCourse,
     createCourse,
-    loadCourse,
     loadCourseById,
     closeCourse,
     updateCourseStructure,

@@ -13,14 +13,8 @@ export default function ClassroomView({ courseOps, service, user, course, topic,
   // If the courseId in the URL changes, load that course
   const { courseId } = useParams();
   React.useEffect(() => {
-    if (courseId !== (course ? course.id : null)) {
-      if (user == null) {
-        courseOps.loadCourseById(courseId);
-      } else {
-        service.enrollment(user.id, courseId).then((enrollment) => {
-          courseOps.loadCourse(enrollment);
-        });
-      }
+    if (courseId !== null) {
+      courseOps.loadCourseById(courseId);
     }
   }, [courseId, user]);
 
