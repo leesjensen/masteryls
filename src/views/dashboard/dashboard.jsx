@@ -23,7 +23,7 @@ export default function Dashboard({ courseOps, service, user }) {
         📊
       </button>
       <button title="Logout" onClick={courseOps.logout} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-        ❌
+        ⏻
       </button>
     </div>
   );
