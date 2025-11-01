@@ -85,7 +85,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 42px)' }}>
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 50px)' }}>
       <nav>
         <Toolbar courseOps={courseOps} user={user} course={course} settings={settings} topic={topic} editing={editorVisible} toggleEditor={toggleEditor} />
       </nav>

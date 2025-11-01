@@ -72,7 +72,60 @@ export default function Dashboard({ courseOps, service, user }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-6 p-8 bg-white">
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 50px)' }}>
+      <div className="flex-1 overflow-auto p-8 bg-white">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+          <div>
+            <h1 className="font-bold text-3xl mb-2 flex items-center justify-left">
+              {user.isRoot() && (
+                <span title="root rights" className="text-lg text-yellow-400 mr-1">
+                  ★
+                </span>
+              )}
+              {user.name}'s dashboard
+            </h1>
+          </div>
+          <div className="flex justify-between mb-6">
+            {user.isRoot() && (
+              <>
+                <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+                  <span className="font-semibold text-amber-600">+</span> Course
+                </button>
+                <button onClick={() => navigate('/metrics')} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+                  Metrics
+                </button>
+              </>
+            )}
+            <button onClick={courseOps.logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
+              Logout
+            </button>
+          </div>
+        </div>
+        <h2 className="border-t-2 border-gray-400 font-semibold mb- pt-1 text-xl text-gray-500">Your courses</h2>
+        {enrollments.size > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {Array.from(enrollments.values()).map((enrollment) => {
+              return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => courseOps.loadCourse(enrollment)} remove={() => requestedEnrollmentRemoval(enrollment)} />;
+            })}
+          </div>
+        ) : (
+          <div className="text-gray-400 text-base m-4">You are not enrolled in any courses. Select one below to get started.</div>
+        )}
+
+        {!service.allEnrolled(enrollments) && (
+          <div className="my-8">
+            <h2 className="border-t-2 border-gray-400 font-semibold mb-6 pt-1 text-xl text-gray-500">Join a course</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {service
+                .courseCatalog()
+                .filter((catalogEntry) => !enrollments.has(catalogEntry.id))
+                .map((catalogEntry) => (
+                  <CourseCard user={user} key={catalogEntry.id} catalogEntry={catalogEntry} select={() => addEnrollment(catalogEntry)} />
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
       <ConfirmDialog
         dialogRef={dialogRef}
         title="Delete enrollment"
@@ -83,66 +136,6 @@ export default function Dashboard({ courseOps, service, user }) {
           </p>
         }
       />
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-        <div>
-          <h1 className="font-bold text-3xl mb-2 flex items-center justify-left">
-            {user.isRoot() && (
-              <span title="root rights" className="text-lg text-yellow-400 mr-1">
-                ★
-              </span>
-            )}
-            {user.name}'s dashboard
-          </h1>
-        </div>
-        <div className="flex justify-between mb-6">
-          {user.isRoot() && (
-            <>
-              <button onClick={() => setDisplayCourseCreationForm(true)} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-                <span className="font-semibold text-amber-600">+</span> Course
-              </button>
-              <button onClick={() => navigate('/metrics')} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-                Metrics
-              </button>
-            </>
-          )}
-          <button onClick={courseOps.logout} className="mx-2 px-4 py-2 bg-white text-gray-800 rounded-lg shadow hover:bg-gray-100 transition-colors">
-            Logout
-          </button>
-        </div>
-      </div>
-      <h2 className="border-t-2 border-gray-400 font-semibold mb- pt-1 text-xl text-gray-500">Your courses</h2>
-      {enrollments.size > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {Array.from(enrollments.values()).map((enrollment) => {
-            return (
-              <CourseCard
-                user={user}
-                key={enrollment.id}
-                catalogEntry={enrollment.catalogEntry}
-                enrollment={enrollment}
-                select={() => courseOps.loadCourse(enrollment)}
-                remove={() => requestedEnrollmentRemoval(enrollment)}
-              />
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-gray-400 text-base m-4">You are not enrolled in any courses. Select one below to get started.</div>
-      )}
-
-      {!service.allEnrolled(enrollments) && (
-        <div className="my-8">
-          <h2 className="border-t-2 border-gray-400 font-semibold mb-6 pt-1 text-xl text-gray-500">Join a course</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {service
-              .courseCatalog()
-              .filter((catalogEntry) => !enrollments.has(catalogEntry.id))
-              .map((catalogEntry) => (
-                <CourseCard user={user} key={catalogEntry.id} catalogEntry={catalogEntry} select={() => addEnrollment(catalogEntry)} />
-              ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
