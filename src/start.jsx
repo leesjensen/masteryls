@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Login from './login.jsx';
+import { updateToolbarTitle } from './hooks/useToolbarState';
 
 const stockImages = {
   hero: 'masteryls-hero.avif',
@@ -15,6 +16,10 @@ const stockImages = {
 
 const Start = ({ courseOps, setUser }) => {
   const [catalog, setCatalog] = useState([]);
+
+  useEffect(() => {
+    updateToolbarTitle('Get started');
+  }, []);
 
   useEffect(() => {
     const c = courseOps.courseCatalog() || [];

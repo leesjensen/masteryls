@@ -104,10 +104,6 @@ function StartPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    updateToolbarTitle('Get started');
-  }, []);
-
-  useEffect(() => {
     // If the user is already logged in, load their course or go to dashboard
     if (user) {
       (async () => {
