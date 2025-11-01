@@ -85,13 +85,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <header className="items-center border-b-1 bg-gray-900 border-gray-200 hidden sm:block ">
-        <h1 className="font-semibold text-lg text-gray-50">
-          <span className="inline-block bg-white border border-gray-300 rounded-full w-[32px] px-1.5 py-0.5  m-1">💡</span> {course.title} - {topic.title}
-        </h1>
-      </header>
-
+    <div className="flex flex-col" style={{ height: 'calc(100vh - 42px)' }}>
       <nav>
         <Toolbar courseOps={courseOps} user={user} course={course} settings={settings} topic={topic} editing={editorVisible} toggleEditor={toggleEditor} />
       </nav>

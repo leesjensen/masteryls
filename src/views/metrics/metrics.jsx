@@ -496,7 +496,7 @@ export default function Metrics({ courseOps }) {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 flex flex-col" style={{ height: 'calc(100vh - 42px)' }}>
       {header}
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
 
 import Start from './start.jsx';
+import AppBar from './appBar.jsx';
 import Dashboard from './views/dashboard/dashboard.jsx';
 import Classroom from './views/classroom/classroom.jsx';
 import Metrics from './views/metrics/metrics.jsx';
@@ -17,6 +18,7 @@ function RootLayout() {
   const [topic, setTopic] = React.useState({ title: '', path: '' });
   const [settings, setSettings] = useState(defaultUiSettings);
   const navigate = useNavigate();
+  const location = useLocation();
 
   function setUserInternal(user) {
     setUser(user);
@@ -65,11 +67,11 @@ function RootLayout() {
     service,
   };
 
+  const showAppBar = location.pathname !== '/';
   return (
     <div className="app">
-      <main>
-        <Outlet context={contextValue} />
-      </main>
+      {showAppBar && <AppBar />}
+      <Outlet context={contextValue} />
     </div>
   );
 }
