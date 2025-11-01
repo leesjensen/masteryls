@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement, Filler } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
-import { updateToolbarTitle } from '../../hooks/useToolbarState';
+import { updateAppBar } from '../../hooks/useAppBarState';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement, Filler);
@@ -82,7 +82,7 @@ export default function Metrics({ courseOps }) {
   };
 
   useEffect(() => {
-    updateToolbarTitle('Metrics');
+    updateAppBar('Metrics', <div className="bg-amber-100">close</div>);
   }, []);
 
   useEffect(() => {

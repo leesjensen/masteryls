@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
-import { updateToolbarTitle } from './hooks/useToolbarState';
+import { updateAppBar } from './hooks/useAppBarState';
 
 import Start from './start.jsx';
 import AppBar from './appBar.jsx';
