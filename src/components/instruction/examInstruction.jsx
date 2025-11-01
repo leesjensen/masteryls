@@ -90,7 +90,9 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
       <div className="p-6">
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-blue-500">Submitted</div>
-          <p className="my-4">The exam is now in read-only mode and has been graded by UI. If the exam is configured to be graded by a mentor, you will receive feedback shortly.</p>
+          <p className="my-4">
+            The exam is now in <b>read-only</b> mode and has been graded by AI. This exam will be reviewed by a mentor who will provide your final score.
+          </p>
           {examState.details.results.ai && (
             <ul className="text-start list-disc list-inside">
               <li className="text-sm text-blue-400 font-normal">
