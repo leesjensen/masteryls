@@ -88,9 +88,11 @@ function RootLayout() {
   };
 
   return (
-    <div className="app">
-      <AppBar />
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 50px)' }}>
+    <div className="app flex flex-col h-screen">
+      <div className="flex-[0_0_42px]">
+        <AppBar />
+      </div>
+      <div className="flex-1 flex flex-col overflow-auto">
         <Outlet context={contextValue} />
       </div>
     </div>
