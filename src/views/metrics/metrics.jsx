@@ -81,8 +81,14 @@ export default function Metrics({ courseOps }) {
     }
   };
 
+  const appBarTools = (
+    <button title="Close metrics dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+      ❌
+    </button>
+  );
+
   useEffect(() => {
-    updateAppBar('Metrics', <div className="bg-amber-100">close</div>);
+    updateAppBar('Metrics', appBarTools);
   }, []);
 
   useEffect(() => {
@@ -158,21 +164,17 @@ export default function Metrics({ courseOps }) {
   };
 
   const header = (
-    <nav className="m-4 flex flex-col">
+    <nav className="mb-4 flex flex-col border-0 border-gray-300 bg-white">
       <div className="flex flex-row justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Metrics</h1>
           <p className="my-1 text-sm hidden md:block text-gray-600 mt-1">
             Showing data for: {getCourseDescription(selectedCourseId)} • {getTimeRangeDescription(startDate, endDate)}
             {metrics && <span className="ml-2">({metrics.totalActivities} activities)</span>}
           </p>
         </div>
-        <button title="Close metrics dashboard" onClick={() => navigate('/dashboard')} className="w-12 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-          ❌
-        </button>
       </div>
       {/* Date Range and Course Filter Inputs */}
-      <div className="flex flex-col space-y-2 bg-gray-100 p-4 border border-gray-200">
+      <div className="flex flex-col space-y-2 bg-white p-4 border border-gray-200">
         <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
           <div className="flex items-center space-x-1">
             <label className="text-sm text-gray-600 w-16 md:w-auto">Course:</label>
@@ -500,7 +502,7 @@ export default function Metrics({ courseOps }) {
 
   return (
     <>
-      <div className="flex-1 m-6 flex flex-col bg-gray-50">
+      <div className="flex-1 m-6 flex flex-col bg-white">
         {header}
         <main className="flex-1 overflow-auto p-2 border border-gray-200">
           <div>
