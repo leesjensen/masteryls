@@ -9,7 +9,6 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
 
   React.useEffect(() => {
     async function fetchExamState() {
-      console.log('Fetching exam state...', courseOps?.enrollment);
       if (courseOps?.enrollment) {
         const state = await courseOps.getExamState();
         setExamState(state);
@@ -23,6 +22,7 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
     const details = { state };
     if (state === 'completed') {
       details.results = { ai: calculateExamStats() };
+      details.completedAt = new Date().toISOString();
     }
 
     setExamState({ details });
@@ -92,15 +92,19 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-blue-500">Submitted</div>
           <p className="my-4">
-            The exam is in <b>read-only</b> mode and has been graded by AI. This exam will be reviewed by a mentor who will provide your final score.
+            The exam is in <b>read-only</b> mode and has been graded by AI. This exam will be reviewed by a mentor who will provide your final mastery award.
           </p>
           {examState.details.results.ai && (
             <ul className="text-start list-disc list-inside">
+              {examState.details.completedAt && <li className="text-sm text-blue-400 font-normal">Submitted on {new Date(examState.details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</li>}
               <li className="text-sm text-blue-400 font-normal">
                 {examState.details.results.ai.totalAnsweredQuestions}/{examState.details.results.ai.totalQuestions} questions submitted
               </li>
               <li className="text-sm text-blue-400 font-normal">
-                <em>AI reviewed</em> {examState.details.results.ai.totalGradedQuestions} of the questions for a score of {examState.details.results.ai.percentCorrect.toFixed(2)}%
+                <b>AI reviewed</b> {examState.details.results.ai.totalGradedQuestions} of the questions for a {examState.details.results.ai.percentCorrect.toFixed(2)}% mastery award
+              </li>
+              <li className="text-sm text-blue-400 font-normal">
+                <b>Mentor review</b> is pending
               </li>
             </ul>
           )}

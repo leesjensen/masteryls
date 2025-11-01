@@ -19,7 +19,8 @@ function App() {
       element: <RootLayout />,
       errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
       children: [
-        { index: true, element: <StartPage /> },
+        { index: true, element: <LoadingPage /> },
+        { path: '/start', element: <StartPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
@@ -47,7 +48,7 @@ function RootLayout() {
     if (user) {
       navigate('/dashboard');
     } else {
-      navigate('/');
+      navigate('/start');
     }
   }
 
@@ -73,6 +74,8 @@ function RootLayout() {
         } else {
           navigate('/dashboard');
         }
+      } else {
+        navigate('/start');
       }
     })();
   }, []);
@@ -98,6 +101,20 @@ function RootLayout() {
       </div>
       <div className="flex-1 flex flex-col overflow-auto">
         <Outlet context={contextValue} />
+      </div>
+    </div>
+  );
+}
+
+function LoadingPage() {
+  return (
+    <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-50to-gray-200">
+      <div className="text-center">
+        <div className="inline-block">
+          <div className="w-16 h-16 border-8 border-amber-200 border-t-amber-600 rounded-full animate-spin mx-auto mb-4"></div>
+        </div>
+        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Loading</h2>
+        <p className="text-gray-600">The gerbils are working hard to get your content ready!</p>
       </div>
     </div>
   );

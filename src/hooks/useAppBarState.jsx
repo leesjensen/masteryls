@@ -1,6 +1,6 @@
 import React, { useSyncExternalStore } from 'react';
 
-let state = { title: 'unset', tools: null };
+let state = { title: 'Mastery LS', tools: null };
 const listeners = new Set();
 
 const subscribe = (listener) => {
