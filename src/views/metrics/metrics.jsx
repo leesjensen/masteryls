@@ -81,7 +81,7 @@ export default function Metrics({ courseOps }) {
   };
 
   useEffect(() => {
-    document.title = `MasteryLS - Metrics`;
+    document.title = `Metrics`;
   }, []);
 
   useEffect(() => {

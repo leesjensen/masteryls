@@ -10,9 +10,28 @@ import Metrics from './views/metrics/metrics.jsx';
 import ErrorPage from './components/errorPage.jsx';
 import service from './service/service.js';
 
-const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
+function App() {
+  const router = createBrowserRouter([
+    {
+      path: '/',
+      element: <RootLayout />,
+      errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
+      children: [
+        { index: true, element: <StartPage /> },
+        { path: 'dashboard', element: <DashboardPage /> },
+        { path: 'course/:courseId', element: <ClassroomPage /> },
+        { path: 'metrics', element: <MetricsPage /> },
+        { path: '*', element: <ErrorPage message="The gerbils have gotten lost." /> },
+      ],
+    },
+  ]);
+
+  return <RouterProvider router={router} />;
+}
 
 function RootLayout() {
+  const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
+
   const [user, setUser] = useState(null);
   const [course, setCourse] = React.useState(null);
   const [topic, setTopic] = React.useState({ title: '', path: '' });
@@ -23,9 +42,9 @@ function RootLayout() {
   function setUserInternal(user) {
     setUser(user);
     if (user) {
-      navigate('/dashboard', { replace: true });
+      navigate('/dashboard');
     } else {
-      navigate('/', { replace: true });
+      navigate('/');
     }
   }
 
@@ -47,7 +66,7 @@ function RootLayout() {
         setUser(savedUser);
         const enrollment = await service.currentEnrollment(savedUser.id);
         if (enrollment) {
-          courseOps.loadCourse(enrollment);
+          navigate(`/course/${enrollment.catalogId}`);
         }
       }
     })();
@@ -78,58 +97,43 @@ function RootLayout() {
   );
 }
 
-function App() {
-  function StartPage() {
-    const { courseOps, setUser, user } = useOutletContext();
-    const navigate = useNavigate();
+function StartPage() {
+  const { courseOps, setUser, user } = useOutletContext();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-      // If the user is already logged in, load their course or go to dashboard
-      if (user) {
-        (async () => {
-          const enrollment = await service.currentEnrollment(user.id);
-          if (enrollment) {
-            courseOps.loadCourse(enrollment);
-          } else {
-            navigate('/dashboard', { replace: true });
-          }
-        })();
-      }
-    }, [user?.id, navigate]);
+  useEffect(() => {
+    document.title = 'Welcome';
+  }, []);
 
-    return <Start courseOps={courseOps} setUser={setUser} />;
-  }
+  useEffect(() => {
+    // If the user is already logged in, load their course or go to dashboard
+    if (user) {
+      (async () => {
+        const enrollment = await service.currentEnrollment(user.id);
+        if (enrollment) {
+          courseOps.loadCourse(enrollment);
+        } else {
+          navigate('/dashboard');
+        }
+      })();
+    }
+  }, [user?.id, navigate]);
 
-  function DashboardPage() {
-    const { courseOps, service, user } = useOutletContext();
-    return <Dashboard courseOps={courseOps} service={service} user={user} />;
-  }
-  function MetricsPage() {
-    const { courseOps } = useOutletContext();
-    return <Metrics courseOps={courseOps} />;
-  }
+  return <Start courseOps={courseOps} setUser={setUser} />;
+}
 
-  function ClassroomPage() {
-    const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
-    return <Classroom courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
-  }
+function DashboardPage() {
+  const { courseOps, service, user } = useOutletContext();
+  return <Dashboard courseOps={courseOps} service={service} user={user} />;
+}
+function MetricsPage() {
+  const { courseOps } = useOutletContext();
+  return <Metrics courseOps={courseOps} />;
+}
 
-  const router = createBrowserRouter([
-    {
-      path: '/',
-      element: <RootLayout />,
-      errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />, // Global error boundary
-      children: [
-        { index: true, element: <StartPage /> },
-        { path: 'dashboard', element: <DashboardPage /> },
-        { path: 'course/:courseId', element: <ClassroomPage /> },
-        { path: 'metrics', element: <MetricsPage /> },
-        { path: '*', element: <ErrorPage message="The gerbils have gotten lost." /> },
-      ],
-    },
-  ]);
-
-  return <RouterProvider router={router} />;
+function ClassroomPage() {
+  const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
+  return <Classroom courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
 }
 
 export default App;

@@ -15,7 +15,7 @@ export default function Dashboard({ courseOps, service, user }) {
 
   React.useEffect(() => {
     if (user) {
-      document.title = `MasteryLS - ${user.name}`;
+      document.title = `Dashboard`;
       service.enrollments(user.id).then(setEnrollments);
     } else {
       navigate('/');

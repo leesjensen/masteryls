@@ -540,6 +540,8 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getQuizProgress() {
+    if (!enrollment || !currentTopic) return {};
+
     const progressItems = await getProgress({ topicId: currentTopic.id, enrollmentId: enrollment.id, type: 'quizSubmit' });
     return progressItems.reduce((acc, item) => {
       const activityId = item.activityId;

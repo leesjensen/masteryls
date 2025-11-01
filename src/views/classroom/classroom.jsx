@@ -25,7 +25,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
 
   React.useEffect(() => {
     if (course) {
-      document.title = `MasteryLS - ${course.title}`;
+      document.title = `${course.title}`;
     }
   }, [course]);
 
@@ -79,9 +79,11 @@ export default function Classroom({ courseOps, service, user, course, topic, set
     return <div className="p-8" />;
   }
 
-  let content = <Instruction courseOps={courseOps} topic={topic} course={course} user={user} />;
+  let content = null;
   if (editorVisible) {
     content = <Editor courseOps={courseOps} service={service} user={user} course={course} currentTopic={topic} />;
+  } else {
+    content = <Instruction courseOps={courseOps} topic={topic} course={course} user={user} />;
   }
 
   return (
@@ -98,7 +100,7 @@ export default function Classroom({ courseOps, service, user, course, topic, set
         )}
         {settings.sidebarVisible === 'split' && <div className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none" onMouseDown={splitterMouseDown} />}
         {settings.sidebarVisible !== 'end' && (
-          <div id="editor" className={`flex flex-1 h-full overflow-auto`}>
+          <div id="content" className={`flex flex-1 h-full overflow-auto`}>
             {content}
           </div>
         )}

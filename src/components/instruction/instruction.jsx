@@ -12,14 +12,12 @@ export default function Instruction({ courseOps, topic, course, user, content = 
 
   React.useEffect(() => {
     async function fetchExamState() {
-      if (courseOps?.enrollment) {
-        courseOps.getQuizProgress().then((progress) => {
-          Object.entries(progress).forEach(([key, value]) => {
-            addQuizProgress(key, value.details || {});
-          });
-          setLoadingProgress(false);
+      courseOps.getQuizProgress().then((progress) => {
+        Object.entries(progress).forEach(([key, value]) => {
+          addQuizProgress(key, value.details || {});
         });
-      }
+        setLoadingProgress(false);
+      });
     }
     fetchExamState();
   }, [topic, courseOps?.enrollment]);
