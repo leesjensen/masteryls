@@ -498,7 +498,7 @@ export default function Metrics({ courseOps }) {
   }
 
   return (
-    <div className="p-6 bg-gray-50 flex flex-col" style={{ height: 'calc(100vh - 50px)' }}>
+    <>
       {header}
       <main className="flex-1 overflow-auto p-2 border border-gray-200">
         <div>
@@ -619,6 +619,6 @@ export default function Metrics({ courseOps }) {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

@@ -72,7 +72,7 @@ export default function Dashboard({ courseOps, service, user }) {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 50px)' }}>
+    <>
       <div className="flex-1 overflow-auto p-8 bg-white">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
           <div>
@@ -136,6 +136,6 @@ export default function Dashboard({ courseOps, service, user }) {
           </p>
         }
       />
-    </div>
+    </>
   );
 }
