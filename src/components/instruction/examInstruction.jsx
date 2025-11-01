@@ -1,9 +1,11 @@
 import React from 'react';
 import QuizInstruction from './quiz/quizInstruction';
+import { getQuizProgress } from './quiz/quizProgressStore';
 
 export default function ExamInstruction({ courseOps, topic, user, content = null, instructionState = 'learning' }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
+  const quizIds = React.useRef([]);
 
   React.useEffect(() => {
     async function fetchExamState() {
@@ -17,8 +19,39 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
   }, [courseOps?.enrollment]);
 
   const updateState = async (state) => {
-    setExamState({ details: { state } });
-    courseOps.addProgress(null, null, 'exam', 0, { state });
+    const details = { state };
+    if (state === 'completed') {
+      details.results = { ai: calculateExamStats() };
+    }
+
+    setExamState({ details });
+    courseOps.addProgress(null, null, 'exam', 0, details);
+  };
+
+  const quizStateReporter = (quizId) => {
+    quizIds.current.push(quizId);
+  };
+
+  const calculateExamStats = () => {
+    let totalAnsweredQuestions = 0;
+    let totalGradedQuestions = 0;
+    let totalPercentCorrect = 0;
+    let totalQuestions = quizIds.current.length;
+
+    quizIds.current.forEach((quizId) => {
+      const quiz = getQuizProgress(quizId);
+      if (quiz && quiz.feedback) {
+        totalAnsweredQuestions++;
+        if (quiz.percentCorrect !== undefined) {
+          totalPercentCorrect += quiz.percentCorrect;
+          totalGradedQuestions++;
+        }
+      }
+    });
+
+    const percentCorrect = totalGradedQuestions > 0 ? Math.round((totalPercentCorrect / totalGradedQuestions) * 100) / 100 : 0;
+
+    return { totalQuestions, totalAnsweredQuestions, totalGradedQuestions, percentCorrect };
   };
 
   if (loading) {
@@ -34,29 +67,41 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
   if (instructionState === 'preview') {
     return (
       <div className="p-6">
-        <h2 className="text-2xl w-full bg-blue-50 font-bold border-1 border-blue-200 py-4 mb-4 text-center text-blue-500">Preview</h2>
+        <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
+          <div className="text-2xl font-bold text-blue-500">Preview</div>
+        </div>
         <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'preview'} />
       </div>
     );
   } else if (examState.details.state === 'notStarted') {
     return (
       <div className="p-6">
-        <h2 className="text-2xl w-full bg-blue-50 font-bold border-1 border-blue-200 py-4 mb-4 text-center text-blue-500">{topic.title}</h2>
-        <p className="mb-6">{topic.description}</p>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => updateState('inProgress')}>
-          Start exam
-        </button>
+        <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
+          <div className="text-2xl font-bold text-blue-500">{topic.title}</div>
+          <p className="my-4">{topic.description}</p>
+          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => updateState('inProgress')}>
+            Start exam
+          </button>
+        </div>
       </div>
     );
   } else if (examState.details.state === 'completed') {
     return (
       <div className="p-6">
-        <h2 className="text-2xl w-full bg-blue-50 font-bold border-1 border-blue-200 py-4 mb-4 text-center text-blue-500">
-          Submitted
-          {/* <div className="mb-4 text-lg pt-2 text-blue-400 font-normal text-center">
-            {quizzes.current.answered} out of {quizzes.current.count} questions submitted with an <em>AI reviewed</em> score of {quizzes.current.percentCorrect.toFixed(2)}%
-          </div> */}
-        </h2>
+        <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
+          <div className="text-2xl font-bold text-blue-500">Submitted</div>
+          <p className="my-4">The exam is now in read-only mode and has been graded by UI. If the exam is configured to be graded by a mentor, you will receive feedback shortly.</p>
+          {examState.details.results.ai && (
+            <ul className="text-start list-disc list-inside">
+              <li className="text-sm text-blue-400 font-normal">
+                {examState.details.results.ai.totalAnsweredQuestions}/{examState.details.results.ai.totalQuestions} questions submitted
+              </li>
+              <li className="text-sm text-blue-400 font-normal">
+                <em>AI reviewed</em> {examState.details.results.ai.totalGradedQuestions} of the questions for a score of {examState.details.results.ai.percentCorrect.toFixed(2)}%
+              </li>
+            </ul>
+          )}
+        </div>
 
         <div className="relative pointer-events-none opacity-75 select-none">
           <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'examReview'} />
@@ -66,11 +111,15 @@ export default function ExamInstruction({ courseOps, topic, user, content = null
   } else {
     return (
       <div className="p-6">
-        <h2 className="text-2xl w-full bg-amber-50 font-bold border-1 border-amber-200 py-4 mb-4 text-center text-amber-500">In progress</h2>
-        <button className="mt-3 px-6 py-1 bg-amber-400 text-white rounded-lg hover:bg-amber-700 transition-colors duration-200" onClick={() => updateState('completed')}>
-          Submit exam
-        </button>
-        <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'exam'} />
+        <div className="bg-amber-50 border-1 border-amber-200 p-4 flex flex-col items-start">
+          <div className="text-2xl font-bold text-amber-500">{topic.title}</div>
+          <p className="my-4">Carefully review your answers before submitting.</p>
+          <button className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700" onClick={() => updateState('completed')}>
+            Submit exam
+          </button>
+        </div>
+
+        <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={'exam'} quizStateReporter={quizStateReporter} />
       </div>
     );
   }
