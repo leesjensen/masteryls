@@ -378,8 +378,8 @@ class Service {
     }
   }
 
-  async getProgress({ type, courseId, enrollmentId, userId, topicId, startDate, endDate }: { type?: string; courseId?: string; enrollmentId?: string; userId?: string; topicId?: string; startDate?: string; endDate?: string }): Promise<any[]> {
-    let query = supabase.from('progress').select('*');
+  async getProgress({ type, courseId, enrollmentId, userId, topicId, startDate, endDate, page = 1, limit = 100 }: { type?: string; courseId?: string; enrollmentId?: string; userId?: string; topicId?: string; startDate?: string; endDate?: string; page?: number; limit?: number }): Promise<{ data: any[]; totalCount: number; hasMore: boolean }> {
+    let query = supabase.from('progress').select('*', { count: 'exact' });
 
     if (courseId) {
       query = query.eq('catalogId', courseId);
@@ -403,13 +403,18 @@ class Service {
       query = query.lte('createdAt', endDate);
     }
 
-    const { data, error } = await query.order('createdAt', { ascending: false });
+    const offset = (page - 1) * limit;
+    const { data, error, count } = await query.order('createdAt', { ascending: false }).range(offset, offset + limit - 1);
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return data;
+    return {
+      data: data || [],
+      totalCount: count || 0,
+      hasMore: (count || 0) > offset + limit,
+    };
   }
 
   async commitGitHubFile(gitHubUrl: string, content: string | Uint8Array, token: string, commitMessage: string, blobSha?: string): Promise<string> {

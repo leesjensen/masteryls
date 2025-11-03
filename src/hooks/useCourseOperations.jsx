@@ -542,8 +542,8 @@ ${topicDescription || 'overview content placeholder'}`;
     }
   }
 
-  async function getProgress({ courseId, enrollmentId, userId, topicId = null, type = null, startDate = null, endDate = null }) {
-    return service.getProgress({ courseId, enrollmentId, userId, topicId, type, startDate, endDate });
+  async function getProgress({ courseId, enrollmentId, userId, topicId = null, type = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
+    return service.getProgress({ courseId, enrollmentId, userId, topicId, type, startDate, endDate, page, limit });
   }
 
   async function getQuizProgress() {
