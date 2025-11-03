@@ -17,6 +17,7 @@ export default function ProgressView({ courseOps, service, user }) {
     key: 'createdAt',
     direction: 'desc',
   });
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const appBarTools = (
     <button title="Close progress dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
@@ -101,6 +102,63 @@ export default function ProgressView({ courseOps, service, user }) {
       return 0;
     });
   }, [progressRecords, sortConfig]);
+
+  // Group consecutive events with the same course and type
+  const groupedRecords = React.useMemo(() => {
+    if (!sortedRecords.length) return [];
+
+    const groups = [];
+    let currentGroup = null;
+
+    for (let i = 0; i < sortedRecords.length; i++) {
+      const record = sortedRecords[i];
+      const groupKey = `${record.catalogId || 'no-course'}-${record.type}-${record.topicId || 'no-topic'}`;
+
+      // Check if this record should be grouped with the previous one
+      const shouldGroup =
+        currentGroup &&
+        currentGroup.groupKey === groupKey &&
+        // Only group if events are within a reasonable time window (e.g., 1 hour)
+        new Date(record.createdAt) - new Date(currentGroup.lastEvent.createdAt) < 3600000;
+
+      if (shouldGroup) {
+        currentGroup.events.push(record);
+        currentGroup.totalDuration += record.duration || 0;
+        currentGroup.lastEvent = record;
+        currentGroup.eventCount++;
+      } else {
+        // Start a new group
+        currentGroup = {
+          id: `group-${i}`,
+          groupKey,
+          type: record.type,
+          catalogId: record.catalogId,
+          topicId: record.topicId,
+          firstEvent: record,
+          lastEvent: record,
+          events: [record],
+          totalDuration: record.duration || 0,
+          eventCount: 1,
+          createdAt: record.createdAt, // Use first event's timestamp for sorting
+        };
+        groups.push(currentGroup);
+      }
+    }
+
+    return groups;
+  }, [sortedRecords]);
+
+  const toggleGroupExpansion = (groupId) => {
+    setExpandedGroups((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
@@ -210,18 +268,19 @@ export default function ProgressView({ courseOps, service, user }) {
             {!loading && !error && (
               <>
                 <div className="mb-4 text-sm text-gray-600">
-                  Showing {sortedRecords.length} progress record{sortedRecords.length !== 1 ? 's' : ''}
+                  Showing {groupedRecords.length} progress group{groupedRecords.length !== 1 ? 's' : ''}({sortedRecords.length} total record{sortedRecords.length !== 1 ? 's' : ''})
                 </div>
 
-                {sortedRecords.length === 0 ? (
+                {groupedRecords.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">No progress records found. Start learning to see your progress here!</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expand</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('createdAt')}>
-                            Date & Time
+                            Date & Time Range
                             {sortConfig.key === 'createdAt' && <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('type')}>
@@ -230,25 +289,61 @@ export default function ProgressView({ courseOps, service, user }) {
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Events</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('duration')}>
-                            Duration
+                            Total Duration
                             {sortConfig.key === 'duration' && <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>}
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {sortedRecords.map((record, index) => (
-                          <tr key={record.id || index} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(record.createdAt)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(record.type)}`}>{record.type}</span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.catalogId || 'N/A'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.topicId || 'N/A'}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDuration(record.duration)}</td>
-                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{record.details && Object.keys(record.details).length > 0 ? JSON.stringify(record.details) : '-'}</td>
-                          </tr>
+                        {groupedRecords.map((group) => (
+                          <React.Fragment key={group.id}>
+                            {/* Group Row */}
+                            <tr className={`hover:bg-gray-50 ${group.eventCount > 1 ? 'bg-blue-50' : ''}`}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {group.eventCount > 1 ? (
+                                  <button onClick={() => toggleGroupExpansion(group.id)} className="text-blue-600 hover:text-blue-800 focus:outline-none">
+                                    {expandedGroups.has(group.id) ? '▼' : '▶'}
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-400">—</span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <div>
+                                  <div className="font-medium">{formatDate(group.firstEvent.createdAt)}</div>
+                                  {group.eventCount > 1 && <div className="text-xs text-gray-500">to {formatDate(group.lastEvent.createdAt)}</div>}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(group.type)}`}>{group.type}</span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.catalogId || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.topicId || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
+                            </tr>
+
+                            {/* Expanded Individual Events */}
+                            {group.eventCount > 1 &&
+                              expandedGroups.has(group.id) &&
+                              group.events.map((event, eventIndex) => (
+                                <tr key={`${group.id}-event-${eventIndex}`} className="bg-gray-50">
+                                  <td className="px-6 py-2 whitespace-nowrap">
+                                    <span className="text-gray-400 ml-4">└</span>
+                                  </td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700 pl-8">{formatDate(event.createdAt)}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap">
+                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(event.type)}`}>{event.type}</span>
+                                  </td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.catalogId || 'N/A'}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.topicId || 'N/A'}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">—</td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{formatDuration(event.duration)}</td>
+                                </tr>
+                              ))}
+                          </React.Fragment>
                         ))}
                       </tbody>
                     </table>
