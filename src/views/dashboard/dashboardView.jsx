@@ -35,8 +35,6 @@ export default function DashboardView({ courseOps, service, user }) {
     if (user) {
       updateAppBar(`${user.name}'s Dashboard`, appBarTools);
       service.enrollments(user.id).then(setEnrollments);
-    } else {
-      navigate('/start');
     }
   }, [user]);
 

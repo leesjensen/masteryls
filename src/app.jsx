@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
 
@@ -20,7 +20,7 @@ function App() {
       errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
       children: [
         { index: true, element: <LoadingPage /> },
-        { path: '/start', element: <StartPage /> },
+        { path: 'start', element: <StartPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
@@ -38,10 +38,11 @@ function RootLayout() {
   const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 
   const [user, setUser] = useState(null);
-  const [course, setCourse] = React.useState(null);
-  const [topic, setTopic] = React.useState({ title: '', path: '' });
+  const [course, setCourse] = useState(null);
+  const [topic, setTopic] = useState({ title: '', path: '' });
   const [settings, setSettings] = useState(defaultUiSettings);
   const navigate = useNavigate();
+  const location = useLocation();
 
   function setUserInternal(user) {
     setUser(user);
@@ -68,11 +69,13 @@ function RootLayout() {
       const savedUser = await service.currentUser();
       if (savedUser) {
         setUser(savedUser);
-        const enrollment = await service.currentEnrollment(savedUser.id);
-        if (enrollment) {
-          navigate(`/course/${enrollment.catalogId}`);
-        } else {
-          navigate('/dashboard');
+        if (location.pathname === '/') {
+          const enrollment = await service.currentEnrollment(savedUser.id);
+          if (enrollment) {
+            navigate(`/course/${enrollment.catalogId}`);
+          } else {
+            navigate('/dashboard');
+          }
         }
       } else {
         navigate('/start');
