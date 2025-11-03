@@ -9,7 +9,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 
 const last24Hours = () => {
   const date = new Date();
-  date.setDate(date.getDate() - 1);
+  date.setDate(date.getDate() - 7);
   return date;
 };
 
@@ -74,7 +74,9 @@ export default function MetricsView({ courseOps }) {
         break;
       }
       case '24hours': {
-        setStartDate(last24Hours());
+        const start = new Date();
+        start.setDate(start.getDate() - 1);
+        setStartDate(start);
         setEndDate(new Date());
         break;
       }
@@ -221,22 +223,6 @@ export default function MetricsView({ courseOps }) {
       </div>
     </nav>
   );
-
-  if (metrics.totalActivities === 0) {
-    return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        {header}
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <div className="text-gray-400 text-6xl mb-4">📊</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Activity Data</h3>
-          <p className="text-gray-600 mb-4">
-            No learning activities found for {getCourseDescription(selectedCourseId)} in the selected time range: {getTimeRangeDescription(startDate, endDate)}
-          </p>
-          <p className="text-sm text-gray-500">Try selecting a different time range or check back later.</p>
-        </div>
-      </div>
-    );
-  }
 
   const dailyLabels = Object.keys(metrics.dailyActivity).sort();
 
@@ -582,44 +568,48 @@ export default function MetricsView({ courseOps }) {
                 </div>
               </div>
 
-              {/* Activity Types Distribution */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Types Distribution</h3>
-                <div className="h-80">
-                  <Doughnut data={activityTypesData} options={doughnutOptions} />
-                </div>
-              </div>
+              {metrics.totalActivities > 0 && (
+                <>
+                  {/* Activity Types Distribution */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Types Distribution</h3>
+                    <div className="h-80">
+                      <Doughnut data={activityTypesData} options={doughnutOptions} />
+                    </div>
+                  </div>
 
-              {/* Top Activities */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Learning Topics</h3>
-                <div className="h-80">
-                  <Bar data={topTopicsData} options={barChartOptions} />
-                </div>
-              </div>
+                  {/* Top Activities */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Learning Topics</h3>
+                    <div className="h-80">
+                      <Bar data={topTopicsData} options={barChartOptions} />
+                    </div>
+                  </div>
 
-              {/* Learning Insights */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Insights</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm font-medium text-blue-900">Most Active Day</span>
-                    <span className="text-sm text-blue-700">{Object.keys(metrics.dailyActivity).reduce((a, b) => (metrics.dailyActivity[a] > metrics.dailyActivity[b] ? a : b)) || 'No data'}</span>
+                  {/* Learning Insights */}
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Learning Insights</h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span className="text-sm font-medium text-blue-900">Most Active Day</span>
+                        <span className="text-sm text-blue-700">{Object.keys(metrics.dailyActivity).reduce((a, b) => (metrics.dailyActivity[a] > metrics.dailyActivity[b] ? a : b)) || 'No data'}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                        <span className="text-sm font-medium text-green-900">Primary Activity Type</span>
+                        <span className="text-sm text-green-700">{Object.keys(metrics.activityTypes).reduce((a, b) => (metrics.activityTypes[a] > metrics.activityTypes[b] ? a : b)) || 'No data'}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                        <span className="text-sm font-medium text-yellow-900">Weekly Average</span>
+                        <span className="text-sm text-yellow-700">{Object.keys(metrics.weeklyActivity).length > 0 ? Math.round(Object.values(metrics.weeklyActivity).reduce((a, b) => a + b, 0) / Object.keys(metrics.weeklyActivity).length) : 0} activities</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                        <span className="text-sm font-medium text-purple-900">Learning Streak</span>
+                        <span className="text-sm text-purple-700">{Object.keys(metrics.dailyActivity).length} days active</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                    <span className="text-sm font-medium text-green-900">Primary Activity Type</span>
-                    <span className="text-sm text-green-700">{Object.keys(metrics.activityTypes).reduce((a, b) => (metrics.activityTypes[a] > metrics.activityTypes[b] ? a : b)) || 'No data'}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                    <span className="text-sm font-medium text-yellow-900">Weekly Average</span>
-                    <span className="text-sm text-yellow-700">{Object.keys(metrics.weeklyActivity).length > 0 ? Math.round(Object.values(metrics.weeklyActivity).reduce((a, b) => a + b, 0) / Object.keys(metrics.weeklyActivity).length) : 0} activities</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                    <span className="text-sm font-medium text-purple-900">Learning Streak</span>
-                    <span className="text-sm text-purple-700">{Object.keys(metrics.dailyActivity).length} days active</span>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </main>
