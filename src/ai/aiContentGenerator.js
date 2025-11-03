@@ -69,14 +69,15 @@ Requirements:
  * @param {string} description - A description of the instructional topic.
  * @returns {Promise<string>} A promise that resolves to the generated markdown content.
  */
-export async function aiTopicGenerator(apiKey, title, description) {
+export async function aiTopicGenerator(apiKey, courseDescription, title, description) {
   const prompt = `You are an expert educational content creator.
 Generate comprehensive, well-structured markdown content for online courses.
 Focus on clear explanations, practical examples, and pedagogically sound structure.
 
 Create comprehensive markdown content for an instructional topic titled "${title}".
 
-Description: ${description}
+Topic Description: ${description}
+Course Description: ${courseDescription}
 
 Requirements:
 - Start with a level 1 heading using only the exact title
@@ -96,8 +97,14 @@ Requirements:
   return makeAiRequest(apiKey, prompt);
 }
 
-export async function aiExamGenerator(apiKey, title, description) {
+export async function aiExamGenerator(apiKey, courseDescription, title, description) {
   const prompt = `You are an expert educational content creator. 
+
+Create markdown content for an instructional exam.
+
+Topic Description: ${description}
+Course Description: ${courseDescription}
+
 Generate 10 multiple choice or essay questions of the format:
 
 ### Example question title
@@ -157,9 +164,9 @@ ${modules.map((module) => `- ${module.title}: ${module.description}`).join('\n')
 Requirements:
 - The response must be valid GitHub-flavored markdown
 - Make the content upbeat and engaging
-- Include a Markdown formatted image at the top for the URL https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/byulogo.png
+- Include a Markdown formatted image at the top of the document ![BYU Logo](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/byulogo.png)
 - Include a level 1 heading using only the exact course title
-- After the level 1 heading include a Markdown formatted image the URL https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg
+- After the level 1 heading include a Markdown formatted image ![Course Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg)
 - Prefer paragraph text where appropriate
 - Include introductory paragraphs that provide an overview of the entire course but do not label it as "Overview"
 - Include a level 2 section containing a bulleted list of course outcomes

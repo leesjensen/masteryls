@@ -20,7 +20,7 @@ export default function CreateCourse({ courseOps }) {
 
   const create = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) => {
     try {
-      if (await service.verifyGitHubAccount(gitHubToken)) {
+      if (await courseOps.service.verifyGitHubAccount(gitHubToken)) {
         await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
         navigate('/dashboard');
       } else {

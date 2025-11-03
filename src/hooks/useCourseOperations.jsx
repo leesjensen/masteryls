@@ -164,7 +164,11 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   function setCurrentCourse(updatedCourse) {
-    courseCache.current.set(updatedCourse.id, updatedCourse);
+    if (updatedCourse) {
+      courseCache.current.set(updatedCourse.id, updatedCourse);
+    } else {
+      courseCache.current.delete(course.id);
+    }
     setCourse(updatedCourse);
   }
 
@@ -483,7 +487,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     let basicContent = `
 # ${topic.title}
 
-![Course Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg)
+![Topic Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg)
 
 ${topicDescription || 'overview content placeholder'}`;
 
@@ -492,7 +496,7 @@ ${topicDescription || 'overview content placeholder'}`;
         return null;
       case 'exam':
         if (apiKey && topicDescription && topicDescription.trim().length > 0) {
-          basicContent = await aiExamGenerator(apiKey, topic.title, topicDescription);
+          basicContent = await aiExamGenerator(apiKey, course.description, topic.title, topicDescription);
         }
         break;
       case 'project':
@@ -500,7 +504,7 @@ ${topicDescription || 'overview content placeholder'}`;
         break;
       default:
         if (apiKey && topicDescription && topicDescription.trim().length > 0) {
-          basicContent = await aiTopicGenerator(apiKey, topic.title, topicDescription);
+          basicContent = await aiTopicGenerator(apiKey, course.description, topic.title, topicDescription);
         }
         break;
     }
@@ -632,6 +636,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getQuizProgress,
     getExamState,
     enrollment,
+    service,
   };
 }
 
