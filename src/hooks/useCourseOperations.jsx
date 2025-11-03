@@ -528,8 +528,8 @@ ${topicDescription || 'overview content placeholder'}`;
   async function getExamState() {
     if (enrollment && currentTopic) {
       const progress = await service.getProgress({ type: 'exam', topicId: currentTopic.id, enrollmentId: enrollment.id });
-      if (progress && progress.length > 0) {
-        return progress[0];
+      if (progress && progress.data.length > 0) {
+        return progress.data[0];
       }
     }
     return { details: { state: 'notStarted' } };
@@ -550,7 +550,7 @@ ${topicDescription || 'overview content placeholder'}`;
     if (!enrollment || !currentTopic) return {};
 
     const progressItems = await getProgress({ topicId: currentTopic.id, enrollmentId: enrollment.id, type: 'quizSubmit' });
-    return progressItems.reduce((acc, item) => {
+    return progressItems.data.reduce((acc, item) => {
       const activityId = item.activityId;
       if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
         acc[activityId] = item;

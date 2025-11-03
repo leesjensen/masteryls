@@ -46,12 +46,12 @@ export default function ProgressView({ courseOps, service, user }) {
       setError(null);
 
       // Get all progress records for the current user
-      const allProgress = await courseOps.getProgress({
+      const progressSearchResult = await courseOps.getProgress({
         userId: user.id,
         ...filter,
       });
 
-      setProgressRecords(allProgress || []);
+      setProgressRecords(progressSearchResult.data || []);
     } catch (err) {
       setError(`Failed to fetch progress data: ${err.message}`);
       console.error('Error fetching progress:', err);
