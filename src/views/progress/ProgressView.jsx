@@ -154,7 +154,15 @@ export default function ProgressView({ courseOps, service, user }) {
           record.courseTitle = courseTitle;
           record.topicTitle = topicTitle;
 
-          const groupKey = `${record.catalogId || 'no-course'}-${record.type}-${record.topicId || 'no-topic'}`;
+          // Different grouping logic for instructionView vs other types
+          let groupKey;
+          if (record.type === 'instructionView') {
+            // For instructionView, group by course ID only (not topic)
+            groupKey = `${record.catalogId || 'no-course'}-${record.type}`;
+          } else {
+            // For other types, group by course, type, and topic
+            groupKey = `${record.catalogId || 'no-course'}-${record.type}-${record.topicId || 'no-topic'}`;
+          }
 
           // Check if this record should be grouped with the previous one
           const shouldGroup =
@@ -168,6 +176,10 @@ export default function ProgressView({ courseOps, service, user }) {
             currentGroup.totalDuration += record.duration || 0;
             currentGroup.lastEvent = record;
             currentGroup.eventCount++;
+            // For instructionView groups, track unique topics
+            if (currentGroup.type === 'instructionView' && currentGroup.uniqueTopics) {
+              currentGroup.uniqueTopics.add(record.topicId);
+            }
           } else {
             // Start a new group
             currentGroup = {
@@ -184,6 +196,8 @@ export default function ProgressView({ courseOps, service, user }) {
               totalDuration: record.duration || 0,
               eventCount: 1,
               createdAt: record.createdAt, // Use first event's timestamp for sorting
+              // For instructionView groups, track unique topics
+              uniqueTopics: record.type === 'instructionView' ? new Set([record.topicId]) : null,
             };
             groups.push(currentGroup);
           }
@@ -451,7 +465,7 @@ export default function ProgressView({ courseOps, service, user }) {
                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(group.type)}`}>{group.type}</span>
                               </td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.courseTitle || 'N/A'}</td>
-                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.topicTitle || 'N/A'}</td>
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.type === 'instructionView' && group.uniqueTopics && group.uniqueTopics.size > 1 ? `${group.uniqueTopics.size} topics` : group.topicTitle || 'N/A'}</td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
                             </tr>
