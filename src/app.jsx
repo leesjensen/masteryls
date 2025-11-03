@@ -144,8 +144,8 @@ function CreateCoursePage() {
 }
 
 function ProgressPage() {
-  const { courseOps } = useOutletContext();
-  return <ProgressView courseOps={courseOps} />;
+  const { courseOps, service, user } = useOutletContext();
+  return <ProgressView courseOps={courseOps} service={service} user={user} />;
 }
 
 function ClassroomPage() {
