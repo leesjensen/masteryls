@@ -48,6 +48,14 @@ export default class Course {
     return null;
   }
 
+  topicFromId(id) {
+    const topic = this.allTopics.find((t) => t.id === id);
+    if (topic) {
+      return topic;
+    }
+    return null;
+  }
+
   topicFromTitle(title, defaultToFirst = true) {
     const topic = this.allTopics.find((t) => t.title === title);
     if (topic) {

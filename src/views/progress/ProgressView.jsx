@@ -20,6 +20,8 @@ export default function ProgressView({ courseOps, service, user }) {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(100);
+  const [groupedRecords, setGroupedRecords] = useState([]);
+  const [groupingInProgress, setGroupingInProgress] = useState(false);
 
   const appBarTools = (
     <button title="Close progress dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
@@ -85,6 +87,14 @@ export default function ProgressView({ courseOps, service, user }) {
     }));
   };
 
+  const getTitles = async (courseId, topicId) => {
+    const course = courseId && (await courseOps.getCourse(courseId));
+    if (!course) return { course: 'N/A', topic: 'N/A' };
+
+    const topic = topicId && course.topicFromId(topicId);
+    return { course: course.title, topic: topic ? topic.title : 'N/A' };
+  };
+
   const sortedRecords = React.useMemo(() => {
     if (!progressRecords.length) return [];
 
@@ -105,50 +115,74 @@ export default function ProgressView({ courseOps, service, user }) {
     });
   }, [progressRecords, sortConfig]);
 
-  // Group consecutive events with the same course and type
-  const groupedRecords = React.useMemo(() => {
-    if (!sortedRecords.length) return [];
-
-    const groups = [];
-    let currentGroup = null;
-
-    for (let i = 0; i < sortedRecords.length; i++) {
-      const record = sortedRecords[i];
-      const groupKey = `${record.catalogId || 'no-course'}-${record.type}-${record.topicId || 'no-topic'}`;
-
-      // Check if this record should be grouped with the previous one
-      const shouldGroup =
-        currentGroup &&
-        currentGroup.groupKey === groupKey &&
-        // Only group if events are within a reasonable time window (e.g., 1 hour)
-        new Date(record.createdAt) - new Date(currentGroup.lastEvent.createdAt) < 3600000;
-
-      if (shouldGroup) {
-        currentGroup.events.push(record);
-        currentGroup.totalDuration += record.duration || 0;
-        currentGroup.lastEvent = record;
-        currentGroup.eventCount++;
-      } else {
-        // Start a new group
-        currentGroup = {
-          id: `group-${i}`,
-          groupKey,
-          type: record.type,
-          catalogId: record.catalogId,
-          topicId: record.topicId,
-          firstEvent: record,
-          lastEvent: record,
-          events: [record],
-          totalDuration: record.duration || 0,
-          eventCount: 1,
-          createdAt: record.createdAt, // Use first event's timestamp for sorting
-        };
-        groups.push(currentGroup);
+  // Group consecutive events with the same course and type (async)
+  useEffect(() => {
+    const groupRecords = async () => {
+      if (!sortedRecords.length) {
+        setGroupedRecords([]);
+        return;
       }
-    }
 
-    return groups;
-  }, [sortedRecords]);
+      setGroupingInProgress(true);
+
+      try {
+        const groups = [];
+        let currentGroup = null;
+
+        for (let i = 0; i < sortedRecords.length; i++) {
+          const record = sortedRecords[i];
+
+          // Get titles for course and topic
+          const { course: courseTitle, topic: topicTitle } = await getTitles(record.catalogId, record.topicId);
+          record.courseTitle = courseTitle;
+          record.topicTitle = topicTitle;
+
+          const groupKey = `${record.catalogId || 'no-course'}-${record.type}-${record.topicId || 'no-topic'}`;
+
+          // Check if this record should be grouped with the previous one
+          const shouldGroup =
+            currentGroup &&
+            currentGroup.groupKey === groupKey &&
+            // Only group if events are within a reasonable time window (e.g., 1 hour)
+            new Date(record.createdAt) - new Date(currentGroup.lastEvent.createdAt) < 3600000;
+
+          if (shouldGroup) {
+            currentGroup.events.push(record);
+            currentGroup.totalDuration += record.duration || 0;
+            currentGroup.lastEvent = record;
+            currentGroup.eventCount++;
+          } else {
+            // Start a new group
+            currentGroup = {
+              id: `group-${i}`,
+              groupKey,
+              type: record.type,
+              catalogId: record.catalogId,
+              topicId: record.topicId,
+              courseTitle: record.courseTitle,
+              topicTitle: record.topicTitle,
+              firstEvent: record,
+              lastEvent: record,
+              events: [record],
+              totalDuration: record.duration || 0,
+              eventCount: 1,
+              createdAt: record.createdAt, // Use first event's timestamp for sorting
+            };
+            groups.push(currentGroup);
+          }
+        }
+
+        setGroupedRecords(groups);
+      } catch (error) {
+        console.error('Error grouping records:', error);
+        setGroupedRecords([]);
+      } finally {
+        setGroupingInProgress(false);
+      }
+    };
+
+    groupRecords();
+  }, [sortedRecords, courseOps]);
 
   const toggleGroupExpansion = (groupId) => {
     setExpandedGroups((prev) => {
@@ -281,10 +315,10 @@ export default function ProgressView({ courseOps, service, user }) {
             </div>
 
             {/* Loading State */}
-            {loading && (
+            {(loading || groupingInProgress) && (
               <div className="text-center py-8">
                 <div className="inline-block w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                <p className="mt-2 text-gray-600">Loading progress data...</p>
+                <p className="mt-2 text-gray-600">{loading ? 'Loading progress data...' : 'Processing and grouping records...'}</p>
               </div>
             )}
 
@@ -299,11 +333,11 @@ export default function ProgressView({ courseOps, service, user }) {
             )}
 
             {/* Progress Table */}
-            {!loading && !error && (
+            {!loading && !error && !groupingInProgress && (
               <>
                 <div className="mb-4 flex justify-between items-center">
                   <div className="text-sm text-gray-600">
-                    Showing {paginatedRecords.length} of {groupedRecords.length} progress group{groupedRecords.length !== 1 ? 's' : ''}({sortedRecords.length} total record{sortedRecords.length !== 1 ? 's' : ''})
+                    Showing {paginatedRecords.length} of {groupedRecords.length} progress group{groupedRecords.length !== 1 ? 's' : ''} ({sortedRecords.length} total record{sortedRecords.length !== 1 ? 's' : ''})
                     {totalPages > 1 && (
                       <span className="ml-2">
                         (Page {currentPage} of {totalPages})
@@ -395,8 +429,8 @@ export default function ProgressView({ courseOps, service, user }) {
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(group.type)}`}>{group.type}</span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.catalogId || 'N/A'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.topicId || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.courseTitle || 'N/A'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.topicTitle || 'N/A'}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
                             </tr>
@@ -413,8 +447,8 @@ export default function ProgressView({ courseOps, service, user }) {
                                   <td className="px-6 py-2 whitespace-nowrap">
                                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(event.type)}`}>{event.type}</span>
                                   </td>
-                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.catalogId || 'N/A'}</td>
-                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.topicId || 'N/A'}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.courseTitle || 'N/A'}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.topicTitle || 'N/A'}</td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">—</td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{formatDuration(event.duration)}</td>
                                 </tr>
