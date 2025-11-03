@@ -22,6 +22,11 @@ export default function ProgressView({ courseOps, service, user }) {
   const [itemsPerPage] = useState(100);
   const [groupedRecords, setGroupedRecords] = useState([]);
   const [groupingInProgress, setGroupingInProgress] = useState(false);
+  const [paginationInfo, setPaginationInfo] = useState({
+    totalRecords: 0,
+    hasMore: false,
+    currentPage: 1,
+  });
 
   const appBarTools = (
     <button title="Close progress dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
@@ -37,7 +42,7 @@ export default function ProgressView({ courseOps, service, user }) {
     fetchProgressData();
   }, [user]);
 
-  const fetchProgressData = async () => {
+  const fetchProgressData = async (page = currentPage) => {
     if (!user || !courseOps) {
       setLoading(false);
       return;
@@ -47,13 +52,23 @@ export default function ProgressView({ courseOps, service, user }) {
       setLoading(true);
       setError(null);
 
-      // Get all progress records for the current user
+      // Get paginated progress records for the current user
       const progressSearchResult = await courseOps.getProgress({
         userId: user.id,
+        page: page,
+        limit: itemsPerPage,
         ...filter,
       });
 
-      setProgressRecords(progressSearchResult.data || []);
+      // Extract data and pagination info from the response
+      const { data = [], hasMore = false, totalCount = 0 } = progressSearchResult;
+
+      setProgressRecords(data);
+      setPaginationInfo({
+        totalRecords: totalCount,
+        hasMore: hasMore,
+        currentPage: page,
+      });
     } catch (err) {
       setError(`Failed to fetch progress data: ${err.message}`);
       console.error('Error fetching progress:', err);
@@ -67,7 +82,8 @@ export default function ProgressView({ courseOps, service, user }) {
   };
 
   const applyFilters = () => {
-    fetchProgressData();
+    setCurrentPage(1); // Reset to first page when applying filters
+    fetchProgressData(1);
   };
 
   const clearFilters = () => {
@@ -77,7 +93,8 @@ export default function ProgressView({ courseOps, service, user }) {
       startDate: '',
       endDate: '',
     });
-    setTimeout(() => fetchProgressData(), 0);
+    setCurrentPage(1); // Reset to first page when clearing filters
+    setTimeout(() => fetchProgressData(1), 0);
   };
 
   const handleSort = (key) => {
@@ -196,18 +213,17 @@ export default function ProgressView({ courseOps, service, user }) {
     });
   };
 
-  // Pagination logic
-  const paginatedRecords = React.useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return groupedRecords.slice(startIndex, endIndex);
-  }, [groupedRecords, currentPage, itemsPerPage]);
+  // Pagination logic - now using server-side pagination
+  const paginatedRecords = groupedRecords; // All records are already paginated from server
 
-  const totalPages = Math.ceil(groupedRecords.length / itemsPerPage);
+  const totalPages = Math.ceil(paginationInfo.totalRecords / itemsPerPage);
 
   const goToPage = (page) => {
-    setCurrentPage(page);
-    setExpandedGroups(new Set()); // Collapse all groups when changing pages
+    if (page !== currentPage && page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      setExpandedGroups(new Set()); // Collapse all groups when changing pages
+      fetchProgressData(page); // Fetch new page from server
+    }
   };
 
   const goToPreviousPage = () => {
@@ -217,15 +233,20 @@ export default function ProgressView({ courseOps, service, user }) {
   };
 
   const goToNextPage = () => {
-    if (currentPage < totalPages) {
+    if (paginationInfo.hasMore) {
       goToPage(currentPage + 1);
     }
   };
 
-  // Reset to first page when filters change
+  // Reset to first page and refetch when filters or sorting change
   useEffect(() => {
-    setCurrentPage(1);
-    setExpandedGroups(new Set());
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+      setExpandedGroups(new Set());
+      fetchProgressData(1);
+    } else {
+      fetchProgressData(currentPage);
+    }
   }, [filter, sortConfig]);
 
   const formatDate = (dateString) => {
@@ -337,10 +358,10 @@ export default function ProgressView({ courseOps, service, user }) {
               <>
                 <div className="mb-4 flex justify-between items-center">
                   <div className="text-sm text-gray-600">
-                    Showing {paginatedRecords.length} of {groupedRecords.length} progress group{groupedRecords.length !== 1 ? 's' : ''} ({sortedRecords.length} total record{sortedRecords.length !== 1 ? 's' : ''})
+                    Showing {paginatedRecords.length} of {paginationInfo.totalRecords} progress record{paginationInfo.totalRecords !== 1 ? 's' : ''}
                     {totalPages > 1 && (
                       <span className="ml-2">
-                        (Page {currentPage} of {totalPages})
+                        (Page {paginationInfo.currentPage} of {totalPages})
                       </span>
                     )}
                   </div>
@@ -358,23 +379,23 @@ export default function ProgressView({ courseOps, service, user }) {
                           let pageNum;
                           if (totalPages <= 5) {
                             pageNum = i + 1;
-                          } else if (currentPage <= 3) {
+                          } else if (paginationInfo.currentPage <= 3) {
                             pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
+                          } else if (paginationInfo.currentPage >= totalPages - 2) {
                             pageNum = totalPages - 4 + i;
                           } else {
-                            pageNum = currentPage - 2 + i;
+                            pageNum = paginationInfo.currentPage - 2 + i;
                           }
 
                           return (
-                            <button key={pageNum} onClick={() => goToPage(pageNum)} className={`px-3 py-1 text-sm rounded ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                            <button key={pageNum} onClick={() => goToPage(pageNum)} className={`px-3 py-1 text-sm rounded ${paginationInfo.currentPage === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
                               {pageNum}
                             </button>
                           );
                         })}
                       </div>
 
-                      <button onClick={goToNextPage} disabled={currentPage === totalPages} className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <button onClick={goToNextPage} disabled={!paginationInfo.hasMore} className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
                         Next
                       </button>
                     </div>
@@ -411,28 +432,28 @@ export default function ProgressView({ courseOps, service, user }) {
                           <React.Fragment key={group.id}>
                             {/* Group Row */}
                             <tr className={`hover:bg-gray-50 ${group.eventCount > 1 ? 'bg-blue-50' : ''}`}>
-                              <td className="px-6 py-4 whitespace-nowrap">
+                              <td className="px-6 py-2 whitespace-nowrap">
                                 {group.eventCount > 1 ? (
                                   <button onClick={() => toggleGroupExpansion(group.id)} className="text-blue-600 hover:text-blue-800 focus:outline-none">
                                     {expandedGroups.has(group.id) ? '▼' : '▶'}
                                   </button>
                                 ) : (
-                                  <span className="text-gray-400">—</span>
+                                  <span className="text-gray-400 text-2xl">•</span>
                                 )}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">
                                 <div>
                                   <div className="font-medium">{formatDate(group.firstEvent.createdAt)}</div>
                                   {group.eventCount > 1 && <div className="text-xs text-gray-500">to {formatDate(group.lastEvent.createdAt)}</div>}
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
+                              <td className="px-6 py-2 whitespace-nowrap">
                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(group.type)}`}>{group.type}</span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.courseTitle || 'N/A'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.topicTitle || 'N/A'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.courseTitle || 'N/A'}</td>
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.topicTitle || 'N/A'}</td>
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
                             </tr>
 
                             {/* Expanded Individual Events */}
@@ -441,7 +462,7 @@ export default function ProgressView({ courseOps, service, user }) {
                               group.events.map((event, eventIndex) => (
                                 <tr key={`${group.id}-event-${eventIndex}`} className="bg-gray-50">
                                   <td className="px-6 py-2 whitespace-nowrap">
-                                    <span className="text-gray-400 ml-4">└</span>
+                                    <span className="text-gray-400 ml-4"> </span>
                                   </td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700 pl-8">{formatDate(event.createdAt)}</td>
                                   <td className="px-6 py-2 whitespace-nowrap">
