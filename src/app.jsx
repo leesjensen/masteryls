@@ -24,7 +24,7 @@ function App() {
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
-        { path: 'create-course', element: <CreateCoursePage /> },
+        { path: 'createCourse', element: <CreateCoursePage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: '*', element: <ErrorPage message="The gerbils have gotten lost." /> },
       ],
