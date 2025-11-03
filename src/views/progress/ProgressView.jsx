@@ -18,6 +18,8 @@ export default function ProgressView({ courseOps, service, user }) {
     direction: 'desc',
   });
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(100);
 
   const appBarTools = (
     <button title="Close progress dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
@@ -160,6 +162,38 @@ export default function ProgressView({ courseOps, service, user }) {
     });
   };
 
+  // Pagination logic
+  const paginatedRecords = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return groupedRecords.slice(startIndex, endIndex);
+  }, [groupedRecords, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(groupedRecords.length / itemsPerPage);
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    setExpandedGroups(new Set()); // Collapse all groups when changing pages
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  };
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setExpandedGroups(new Set());
+  }, [filter, sortConfig]);
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
   };
@@ -267,11 +301,53 @@ export default function ProgressView({ courseOps, service, user }) {
             {/* Progress Table */}
             {!loading && !error && (
               <>
-                <div className="mb-4 text-sm text-gray-600">
-                  Showing {groupedRecords.length} progress group{groupedRecords.length !== 1 ? 's' : ''}({sortedRecords.length} total record{sortedRecords.length !== 1 ? 's' : ''})
+                <div className="mb-4 flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    Showing {paginatedRecords.length} of {groupedRecords.length} progress group{groupedRecords.length !== 1 ? 's' : ''}({sortedRecords.length} total record{sortedRecords.length !== 1 ? 's' : ''})
+                    {totalPages > 1 && (
+                      <span className="ml-2">
+                        (Page {currentPage} of {totalPages})
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center space-x-2">
+                      <button onClick={goToPreviousPage} disabled={currentPage === 1} className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Previous
+                      </button>
+
+                      <div className="flex items-center space-x-1">
+                        {/* Show page numbers */}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+
+                          return (
+                            <button key={pageNum} onClick={() => goToPage(pageNum)} className={`px-3 py-1 text-sm rounded ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button onClick={goToNextPage} disabled={currentPage === totalPages} className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {groupedRecords.length === 0 ? (
+                {paginatedRecords.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">No progress records found. Start learning to see your progress here!</div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -297,7 +373,7 @@ export default function ProgressView({ courseOps, service, user }) {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {groupedRecords.map((group) => (
+                        {paginatedRecords.map((group) => (
                           <React.Fragment key={group.id}>
                             {/* Group Row */}
                             <tr className={`hover:bg-gray-50 ${group.eventCount > 1 ? 'bg-blue-50' : ''}`}>
