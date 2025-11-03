@@ -34,9 +34,7 @@ export default function CreateCourse({ courseOps }) {
   return (
     <>
       <div className="flex-1 m-6 flex flex-col bg-white">
-        <main className="flex-1 overflow-auto p-2 border border-gray-200">
-          <CourseCreationForm courseOps={courseOps} onClose={() => setDisplayCourseCreationForm(false)} onCreate={create} />
-        </main>
+        <CourseCreationForm courseOps={courseOps} onClose={() => setDisplayCourseCreationForm(false)} onCreate={create} />
       </div>
     </>
   );
