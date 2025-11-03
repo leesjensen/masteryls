@@ -1,17 +1,13 @@
 import React, { useState, useRef } from 'react';
-import CourseCreationForm from './courseCreationForm.jsx';
 import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useAlert } from '../../contexts/AlertContext.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 
 export default function DashboardView({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
-  const [displayCourseCreationForm, setDisplayCourseCreationForm] = useState(false);
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const dialogRef = useRef(null);
-  const { showAlert } = useAlert();
   const navigate = useNavigate();
 
   const appBarTools = (
@@ -60,24 +56,6 @@ export default function DashboardView({ courseOps, service, user }) {
     });
     setPendingEnrollmentRemoval(null);
   };
-
-  const createCourse = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) => {
-    try {
-      if (await service.verifyGitHubAccount(gitHubToken)) {
-        const enrollment = await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
-        setEnrollments((prev) => new Map(prev).set(enrollment.catalogEntry.id, enrollment));
-        setDisplayCourseCreationForm(false);
-      } else {
-        showAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
-      }
-    } catch (error) {
-      showAlert({ message: `Error creating course: ${error.message}`, type: 'error' });
-    }
-  };
-
-  if (displayCourseCreationForm) {
-    return <CourseCreationForm service={service} onClose={() => setDisplayCourseCreationForm(false)} onCreate={createCourse} />;
-  }
 
   if (!user || !enrollments) {
     return (

@@ -62,6 +62,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return service.courseCatalog();
   }
 
+  async function getTemplateRepositories(gitHubAccount) {
+    return service.getTemplateRepositories(gitHubAccount);
+  }
+
   async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
     let newCatalogEntry;
     let enrollment;
@@ -602,6 +606,7 @@ ${topicDescription || 'overview content placeholder'}`;
     courseCatalog,
     getCourse,
     setCurrentCourse,
+    getTemplateRepositories,
     createCourse,
     loadCourseById,
     closeCourse,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function CourseCreationForm({ service, onClose, onCreate }) {
+export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [name, setName] = useState('');
@@ -16,7 +16,7 @@ export default function CourseCreationForm({ service, onClose, onCreate }) {
 
   React.useEffect(() => {
     if (gitHubSourceAccount.trim()) {
-      service
+      courseOps
         .getTemplateRepositories(gitHubSourceAccount)
         .then((templates) => {
           setGitHubTemplates(templates);
