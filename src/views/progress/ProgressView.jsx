@@ -295,6 +295,11 @@ export default function ProgressView({ courseOps, service, user }) {
     return colors[type] || colors.default;
   };
 
+  const navigateToTopic = (courseId, topicId) => {
+    console.log('Navigating to topic:', topicId, 'in course:', courseId);
+    navigate(`/course/${courseId}`);
+  };
+
   if (!user) {
     return (
       <div className="flex-1 m-6 flex flex-col bg-white">
@@ -439,6 +444,7 @@ export default function ProgressView({ courseOps, service, user }) {
                             Total Duration
                             {sortConfig.key === 'duration' && <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>}
                           </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Navigate</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -468,6 +474,15 @@ export default function ProgressView({ courseOps, service, user }) {
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.type === 'instructionView' && group.uniqueTopics && group.uniqueTopics.size > 1 ? `${group.uniqueTopics.size} topics` : group.topicTitle || 'N/A'}</td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
+                              <td className="px-6 py-2 whitespace-nowrap">
+                                {group.catalogId && group.topicId && !(group.type === 'instructionView' && group.uniqueTopics && group.uniqueTopics.size > 1) ? (
+                                  <button onClick={() => navigateToTopic(group.catalogId, group.topicId)} className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                                    Go to Topic
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-400 text-xs"></span>
+                                )}
+                              </td>
                             </tr>
 
                             {/* Expanded Individual Events */}
@@ -486,6 +501,15 @@ export default function ProgressView({ courseOps, service, user }) {
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.topicTitle || 'N/A'}</td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">—</td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{formatDuration(event.duration)}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap">
+                                    {event.catalogId && event.topicId ? (
+                                      <button onClick={() => navigateToTopic(event.catalogId, event.topicId)} className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
+                                        Go to Topic
+                                      </button>
+                                    ) : (
+                                      <span className="text-gray-400 text-xs">—</span>
+                                    )}
+                                  </td>
                                 </tr>
                               ))}
                           </React.Fragment>
