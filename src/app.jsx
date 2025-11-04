@@ -23,6 +23,7 @@ function App() {
         { path: 'start', element: <StartPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
+        { path: 'course/:courseId/topic/:topicId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'createCourse', element: <CreateCoursePage /> },
         { path: 'progress', element: <ProgressPage /> },
@@ -56,7 +57,9 @@ function RootLayout() {
   function setCourseInternal(course) {
     setCourse(course);
     if (course) {
-      navigate(`/course/${course.id}`);
+      if (!location.pathname.startsWith(`/course/${course.id}`)) {
+        navigate(`/course/${course.id}`);
+      }
     } else {
       navigate('/dashboard');
     }

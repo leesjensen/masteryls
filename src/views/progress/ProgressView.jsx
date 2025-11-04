@@ -296,8 +296,7 @@ export default function ProgressView({ courseOps, service, user }) {
   };
 
   const navigateToTopic = (courseId, topicId) => {
-    console.log('Navigating to topic:', topicId, 'in course:', courseId);
-    navigate(`/course/${courseId}`);
+    navigate(`/course/${courseId}/topic/${topicId}`);
   };
 
   if (!user) {

@@ -11,7 +11,7 @@ export default function ClassroomView({ courseOps, service, user, course, topic,
   const isResizing = React.useRef(false);
 
   // If the courseId in the URL changes, load that course
-  const { courseId } = useParams();
+  const { courseId, topicId } = useParams();
   React.useEffect(() => {
     if (courseId !== null) {
       courseOps.loadCourseById(courseId);
