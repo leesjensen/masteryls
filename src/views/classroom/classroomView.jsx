@@ -14,7 +14,7 @@ export default function ClassroomView({ courseOps, service, user, course, topic,
   const { courseId, topicId } = useParams();
   React.useEffect(() => {
     if (courseId !== null) {
-      courseOps.loadCourseById(courseId);
+      courseOps.loadCourseById(courseId, topicId);
     }
   }, [courseId, user]);
 

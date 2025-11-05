@@ -132,25 +132,29 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return enrollment;
   }
 
-  async function loadCourseById(courseId) {
+  async function loadCourseById(courseId, topicId = null) {
     if (user) {
       const enrollment = await service.enrollment(user.id, courseId);
       setEnrollment(enrollment);
     }
     const courseEntry = courseCatalog().find((c) => c.id === courseId);
     if (courseEntry) {
-      Course.create(courseEntry).then((loadedCourse) => {
-        service.setCurrentCourse(loadedCourse.id);
-        setCourse(loadedCourse);
+      const loadedCourse = await Course.create(courseEntry);
+      service.setCurrentCourse(loadedCourse.id);
+      setCourse(loadedCourse);
 
-        const settings = getEnrollmentUiSettings(loadedCourse.id);
-        setSettings(settings);
-        if (settings.currentTopic) {
-          setTopic(loadedCourse.topicFromPath(settings.currentTopic));
-        } else {
-          setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
-        }
-      });
+      if (topicId) {
+        const topic = await loadedCourse.topicFromId(topicId);
+        saveEnrollmentUiSettings(courseId, { currentTopic: topic.path });
+      }
+
+      const settings = getEnrollmentUiSettings(loadedCourse.id);
+      setSettings(settings);
+      if (settings.currentTopic) {
+        setTopic(loadedCourse.topicFromPath(settings.currentTopic));
+      } else {
+        setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
+      }
     }
   }
 
