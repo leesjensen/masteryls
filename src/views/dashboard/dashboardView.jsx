@@ -29,7 +29,7 @@ export default function DashboardView({ courseOps, service, user }) {
 
   React.useEffect(() => {
     if (user) {
-      updateAppBar(`${user.name}'s Dashboard`, appBarTools);
+      updateAppBar({ title: `${user.name}'s Dashboard`, tools: appBarTools });
       service.enrollments(user.id).then(setEnrollments);
     }
   }, [user]);

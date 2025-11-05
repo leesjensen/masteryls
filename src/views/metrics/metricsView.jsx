@@ -90,7 +90,7 @@ export default function MetricsView({ courseOps }) {
   );
 
   useEffect(() => {
-    updateAppBar('Metrics', appBarTools);
+    updateAppBar({ title: 'Metrics', tools: appBarTools });
   }, []);
 
   useEffect(() => {

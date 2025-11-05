@@ -42,7 +42,7 @@ export default function Instruction({ courseOps, topic, course, user, content = 
 
   const contentAvailable = topic && topic.path && (!topic.state || topic.state === 'stable');
   if (!contentAvailable) {
-    return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
+    return null;
   }
 
   let instructionComponent;

@@ -10,9 +10,9 @@ const subscribe = (listener) => {
 
 const getSnapshot = () => state;
 
-export const updateAppBar = (title, tools) => {
+export const updateAppBar = ({ title, navTitle, tools }) => {
   if (title !== undefined) {
-    document.title = `MLS ${title}`;
+    document.title = `MLS ${navTitle || title}`;
     state = { ...state, title };
   }
   if (tools !== undefined) {

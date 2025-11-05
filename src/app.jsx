@@ -54,18 +54,24 @@ function RootLayout() {
     }
   }
 
-  function setCourseInternal(course) {
-    setCourse(course);
-    if (course) {
-      if (!location.pathname.startsWith(`/course/${course.id}`)) {
-        navigate(`/course/${course.id}`);
+  function setCourseInternal(newCourse) {
+    setCourse(newCourse);
+    if (newCourse) {
+      if (!location.pathname.startsWith(`/course/${newCourse.id}`)) {
+        navigate(`/course/${newCourse.id}`);
       }
     } else {
       navigate('/dashboard');
     }
   }
 
-  const courseOps = useCourseOperations(user, setUserInternal, service, course, setCourseInternal, setSettings, topic, setTopic);
+  function setTopicInternal(newTopic) {
+    if (course && topic.id != newTopic.id) navigate(`/course/${course.id}/topic/${newTopic.id}`);
+
+    setTopic(newTopic);
+  }
+
+  const courseOps = useCourseOperations(user, setUserInternal, service, course, setCourseInternal, setSettings, topic, setTopicInternal);
 
   React.useEffect(() => {
     (async () => {

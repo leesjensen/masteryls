@@ -26,9 +26,9 @@ export default function ClassroomView({ courseOps, service, user, course, topic,
         </button>
       );
 
-      updateAppBar(course.title, appBarTools);
+      updateAppBar({ title: course?.title, navTitle: topic?.title, tools: appBarTools });
     }
-  }, [course]);
+  }, [course, topic]);
 
   function splitterMouseDown() {
     isResizing.current = true;

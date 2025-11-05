@@ -35,7 +35,7 @@ export default function ProgressView({ courseOps, service, user }) {
   );
 
   useEffect(() => {
-    updateAppBar('Progress', appBarTools);
+    updateAppBar({ title: 'Progress', tools: appBarTools });
   }, []);
 
   useEffect(() => {

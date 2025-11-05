@@ -18,7 +18,7 @@ const Start = ({ courseOps, setUser }) => {
   const [catalog, setCatalog] = useState([]);
 
   useEffect(() => {
-    updateAppBar('Get started', null);
+    updateAppBar({ title: 'Get started' });
   }, []);
 
   useEffect(() => {

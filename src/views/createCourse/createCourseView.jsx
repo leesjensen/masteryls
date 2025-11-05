@@ -15,7 +15,7 @@ export default function CreateCourse({ courseOps }) {
   );
 
   useEffect(() => {
-    updateAppBar('Create course', appBarTools);
+    updateAppBar({ title: 'Create course', tools: appBarTools });
   }, []);
 
   const create = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) => {

@@ -406,10 +406,6 @@ class Service {
     const offset = (page - 1) * limit;
     const { data, error, count } = await query.order('createdAt', { ascending: false }).range(offset, offset + limit - 1);
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
     return {
       data: data || [],
       totalCount: count || 0,
