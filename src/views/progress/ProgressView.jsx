@@ -19,7 +19,7 @@ export default function ProgressView({ courseOps, service, user }) {
   });
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(100);
+  const [itemsPerPage] = useState(75);
   const [groupedRecords, setGroupedRecords] = useState([]);
   const [groupingInProgress, setGroupingInProgress] = useState(false);
   const [paginationInfo, setPaginationInfo] = useState({
@@ -288,7 +288,7 @@ export default function ProgressView({ courseOps, service, user }) {
       instructionView: 'bg-blue-100 text-blue-800',
       videoView: 'bg-purple-100 text-purple-800',
       quizSubmit: 'bg-green-100 text-green-800',
-      exam: 'bg-red-100 text-red-800',
+      exam: 'bg-amber-100 text-amber-800',
       userLogout: 'bg-gray-100 text-gray-800',
       default: 'bg-gray-100 text-gray-800',
     };
