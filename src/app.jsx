@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
 
 import Start from './start.jsx';
@@ -159,6 +160,14 @@ function ProgressPage() {
 
 function ClassroomPage() {
   const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
+
+  const { courseId, topicId } = useParams();
+  React.useEffect(() => {
+    if (courseId !== null) {
+      courseOps.loadCourseById(courseId, topicId);
+    }
+  }, [courseId, topicId, user]);
+
   return <ClassroomView courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
 }
 

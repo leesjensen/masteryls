@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
 import Toolbar from './toolbar.jsx';
 import Sidebar from './sidebar.jsx';
 import Instruction from '../../components/instruction/instruction.jsx';
@@ -9,14 +8,6 @@ import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 export default function ClassroomView({ courseOps, service, user, course, topic, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const isResizing = React.useRef(false);
-
-  // If the courseId in the URL changes, load that course
-  const { courseId, topicId } = useParams();
-  React.useEffect(() => {
-    if (courseId !== null) {
-      courseOps.loadCourseById(courseId, topicId);
-    }
-  }, [courseId, user]);
 
   React.useEffect(() => {
     if (course) {
