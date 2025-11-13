@@ -35,32 +35,6 @@ jobs:
               url: '${{ secrets.SUPABASE_URL }}',
               key: '${{ secrets.SUPABASE_KEY }}',
             },
-            courses: [
-              {
-                id: 'cs329',
-                title: 'QA & DevOps',
-                description: 'Description for QA & DevOps',
-                canvas: 'https://byu.instructure.com/courses/31151',
-                chat: 'https://discord.com/channels/748656649287368704',
-                gitHub: { token: '${{ secrets.GITHUB_TOKEN }}', account: 'devops329', repository: 'devops' },
-              },
-              {
-                id: 'cs240',
-                title: 'Software Construction',
-                description: 'Description for Software Construction',
-                canvas: 'https://byu.instructure.com/courses/31151',
-                chat: 'https://discord.com/channels/748656649287368704',
-                gitHub: { token: '${{ secrets.GITHUB_TOKEN }}', account: 'softwareconstruction240', repository: 'softwareconstruction' },
-              },
-              {
-                id: 'cs260',
-                title: 'Web Programming',
-                description: 'Description for Web Programming',
-                canvas: 'https://byu.instructure.com/courses/31151',
-                chat: 'https://discord.com/channels/748656649287368704',
-                gitHub: { token: '${{ secrets.GITHUB_TOKEN }}', account: 'webprogramming260', repository: 'webprogramming' },
-              },
-            ],
           };
           EOF
 

@@ -16,16 +16,16 @@ test('quiz multiple choice', async ({ page }) => {
   await initBasicCourse({ page, topicMarkdown: quizMarkdown });
   await navigateToCourse(page);
 
-  // await page.getByText('topic 1').click();
+  await page.getByText('topic 1').click();
 
-  // await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeVisible();
-  // await expect(page.getByRole('radio', { name: 'This is not the right answer' })).toBeVisible();
-  // await expect(page.getByRole('radio', { name: 'This one has a link' })).toBeVisible();
-  // await expect(page.getByRole('group')).toContainText('Simple multiple choice question');
-  // await expect(page.getByRole('img', { name: 'Stock Photo' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'This is not the right answer' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'This one has a link' })).toBeVisible();
+  await expect(page.getByRole('group')).toContainText('Simple multiple choice question');
+  await expect(page.getByRole('img', { name: 'Stock Photo' })).toBeVisible();
 
-  // await page.getByRole('radio', { name: 'This is the right answer' }).check();
-  // await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeChecked();
+  await page.getByRole('radio', { name: 'This is the right answer' }).check();
+  await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeChecked();
 });
 
 test('quiz multiple select', async ({ page }) => {

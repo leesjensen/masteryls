@@ -4,7 +4,7 @@ const catalog = [
   {
     id: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
     name: 'cs329',
-    title: 'QA & DevOps',
+    title: 'Rocket Science',
     description: 'This course provides you with the experience and skills necessary to deploy, manage, and ensure the quality of a modern software application. This includes automated testing at all levels, continuous integration and deployment pipelines, application monitoring, failure detection, alerting, and elastic application scaling.',
     links: {
       chat: 'https://discord.com/channels/748656649287368704',
@@ -46,7 +46,7 @@ const catalog = [
 ];
 
 const courseJson = {
-  title: 'QA & DevOps',
+  title: 'Rocket Science',
   schedule: 'schedule/schedule.md',
   syllabus: 'instruction/syllabus/syllabus.md',
   links: {
@@ -381,7 +381,7 @@ async function navigateToCourse(page: any) {
 
   await _register(page);
 
-  await page.getByRole('button', { name: 'Q QA & DevOps' }).click();
+  await page.getByRole('button', { name: 'Rocket Science' }).click();
 }
 
 async function register(page: any) {

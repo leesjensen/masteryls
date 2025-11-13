@@ -5,11 +5,10 @@ test('load from course.json', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourse(page);
 
-  await expect(page.getByRole('banner')).toContainText('💡 QA & DevOps');
+  await expect(page.getByRole('banner')).toContainText('💡 Rocket Science');
   await expect(page.getByRole('button', { name: '▶', exact: true })).toBeVisible();
   await expect(page.getByText('Module 1')).toBeVisible();
   await expect(page.getByText('markdown!')).toBeVisible();
-  console.log('Course loaded from course.json');
 });
 
 test('load from modules.md', async ({ page }) => {
@@ -38,7 +37,7 @@ test('load from modules.md', async ({ page }) => {
 
   await navigateToCourse(page);
 
-  await expect(page.getByRole('banner')).toContainText('💡 QA & DevOps');
+  await expect(page.getByRole('banner')).toContainText('💡 Rocket Science');
   await expect(page.getByText('안녕하세요')).toBeVisible();
   await expect(page.getByText('markdown!')).toBeVisible();
 });
@@ -47,7 +46,7 @@ test('instruction types all', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourse(page);
 
-  await expect(page.getByRole('banner')).toContainText('💡 QA & DevOps');
+  await expect(page.getByRole('banner')).toContainText('💡 Rocket Science');
   await expect(page.getByRole('button', { name: '▶', exact: true })).toBeVisible();
   await expect(page.getByText('Module 1')).toBeVisible();
 

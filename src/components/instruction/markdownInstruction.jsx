@@ -17,12 +17,15 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
     }
 
     if (topic.path) {
-      setIsLoading(true);
-      courseOps.getTopicMarkdown(topic).then((md) => {
-        md = processRelativeImagePaths(md, topic.path);
-        setMarkdown(md);
-        setIsLoading(false);
-      });
+      console.log(topic);
+      if (!isLoading) {
+        setIsLoading(true);
+        courseOps.getTopicMarkdown(topic).then((md) => {
+          md = processRelativeImagePaths(md, topic.path);
+          setMarkdown(md);
+          setIsLoading(false);
+        });
+      }
     }
   }, [topic]);
 

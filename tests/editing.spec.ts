@@ -66,7 +66,7 @@ test('settings', async ({ page }) => {
   await navigateToCourse(page);
 
   await page.getByText('Settings').click();
-  await expect(page.getByRole('textbox', { name: 'Course Title' })).toHaveValue('QA & DevOps');
+  await expect(page.getByRole('textbox', { name: 'Course Title' })).toHaveValue('Rocket Science');
 });
 
 test('settings editing', async ({ page }) => {
@@ -80,7 +80,7 @@ test('settings editing', async ({ page }) => {
 
   await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Enter course title' }).click();
-  await page.getByRole('textbox', { name: 'Enter course title' }).fill('QA & DevOpsx');
+  await page.getByRole('textbox', { name: 'Enter course title' }).fill('Rocket Sciencex');
   await page.getByRole('button', { name: 'Save Changes' }).click();
 
   await expect(page.getByText('Settings saved')).toBeVisible();

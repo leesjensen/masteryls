@@ -65,7 +65,7 @@ A course definition is read from the `course.json` file found in the root of the
 
 ```json
 {
-  "title": "QA & DevOps",
+  "title": "Rocket Science",
   "schedule": "schedule/schedule.md",
   "syllabus": "instruction/syllabus/syllabus.md",
   "links": {
