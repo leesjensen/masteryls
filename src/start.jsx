@@ -14,7 +14,7 @@ const stockImages = {
   contact: 'https://images.unsplash.com/photo-1423666639041-f56000c27a9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1473&h=980',
 };
 
-const Start = ({ courseOps, setUser }) => {
+const Start = ({ courseOps }) => {
   const [catalog, setCatalog] = useState([]);
 
   useEffect(() => {
@@ -47,7 +47,7 @@ const Start = ({ courseOps, setUser }) => {
             </button>{' '}
             without an account.
           </p>
-          <Login courseOps={courseOps} setUser={setUser} />
+          <Login courseOps={courseOps} />
         </div>
         <div className="flex-1 hidden md:block h-[48rem] relative">
           <img src={stockImages.hero} alt="Learning illustration" className="absolute inset-0 w-full h-full object-cover shadow-xl" style={{ objectPosition: 'center' }} />

@@ -57,15 +57,15 @@ const courseJson = {
     {
       title: 'Module 1',
       topics: [
-        { title: 'Home', path: 'README.md' },
-        { title: 'topic 1', type: 'exam', path: 'something/more/topic1.md' },
+        { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
+        { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'topic 1', type: 'exam', path: 'something/more/topic1.md' },
       ],
     },
     {
       title: 'Module 2',
       topics: [
-        { title: 'topic 2', path: 'something/more/topic2.md' },
-        { title: 'topic 3', type: 'video', path: 'https://youtu.be/4-LwodVujTg' },
+        { id: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b', title: 'topic 2', path: 'something/more/topic2.md' },
+        { id: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c', title: 'topic 3', type: 'video', path: 'https://youtu.be/4-LwodVujTg' },
       ],
     },
   ],
@@ -369,7 +369,10 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
   // GitHub - Get any markdown file
   await context.route('https://raw.githubusercontent.com/**/*.md', async (route) => {
     expect(route.request().method()).toBe('GET');
-    await route.fulfill({ body: topicMarkdown });
+    await route.fulfill({
+      body: topicMarkdown,
+      contentType: 'text/plain; charset=utf-8',
+    });
   });
 }
 

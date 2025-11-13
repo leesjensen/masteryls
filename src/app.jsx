@@ -95,15 +95,11 @@ function RootLayout() {
 
   // Pass all shared state through Outlet context
   const contextValue = {
-    user,
-    setUser: setUserInternal,
-    course,
-    setCourse: setCourseInternal,
-    topic,
-    setTopic,
-    settings,
-    setSettings,
     courseOps,
+    user,
+    course,
+    topic,
+    settings,
     service,
   };
 
@@ -134,8 +130,8 @@ function LoadingPage() {
 }
 
 function StartPage() {
-  const { courseOps, setUser, user } = useOutletContext();
-  return <Start courseOps={courseOps} setUser={setUser} />;
+  const { courseOps } = useOutletContext();
+  return <Start courseOps={courseOps} />;
 }
 
 function DashboardPage() {
@@ -159,7 +155,7 @@ function ProgressPage() {
 }
 
 function ClassroomPage() {
-  const { courseOps, service, user, course, topic, settings, setCourse } = useOutletContext();
+  const { courseOps, service, user, course, topic, settings } = useOutletContext();
 
   const { courseId, topicId } = useParams();
   React.useEffect(() => {
@@ -168,7 +164,7 @@ function ClassroomPage() {
     }
   }, [courseId, topicId, user]);
 
-  return <ClassroomView courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} setCourse={setCourse} />;
+  return <ClassroomView courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} />;
 }
 
 export default App;

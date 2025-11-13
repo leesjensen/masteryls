@@ -20,6 +20,10 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   const [enrollment, setEnrollment] = React.useState(null);
   const courseCache = React.useRef(new Map());
 
+  async function login(user) {
+    setUser(user);
+  }
+
   async function logout() {
     await addProgress(null, null, 'userLogout', 0, { method: 'inApp' });
     setUser(null);
@@ -610,6 +614,7 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   return {
+    login,
     logout,
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
