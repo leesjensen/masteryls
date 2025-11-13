@@ -133,7 +133,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function loadCourseById(courseId, topicId = null) {
-    if (user) {
+    if (user?.id) {
       const enrollment = await service.enrollment(user.id, courseId);
       setEnrollment(enrollment);
     }
@@ -145,7 +145,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
       if (topicId) {
         const topic = await loadedCourse.topicFromId(topicId);
-        saveEnrollmentUiSettings(courseId, { currentTopic: topic.path });
+        if (topic) {
+          saveEnrollmentUiSettings(courseId, { currentTopic: topic.path });
+        }
       }
 
       const settings = getEnrollmentUiSettings(loadedCourse.id);
@@ -319,10 +321,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function getTopicMarkdown(topic) {
-    // We want to move the cache here.
-    // if (this.markdownCache.has(topic.path)) {
-    //   return this.markdownCache.get(topic.path);
-    // }
+    if (course && course.markdownCache.has(topic.path)) {
+      return course.markdownCache.get(topic.path);
+    }
 
     let url = topic.path;
     if (topic.commit) {
@@ -410,7 +411,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   async function _downloadTopicMarkdown(topicUrl) {
     const response = await fetch(topicUrl);
     const markdown = await response.text();
-    //    this.markdownCache.set(topicUrl, markdown);
+    if (course) {
+      course.markdownCache.set(topicUrl, markdown);
+    }
 
     return markdown;
   }

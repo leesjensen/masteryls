@@ -9,6 +9,7 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByRole('button', { name: '▶', exact: true })).toBeVisible();
   await expect(page.getByText('Module 1')).toBeVisible();
   await expect(page.getByText('markdown!')).toBeVisible();
+  console.log('Course loaded from course.json');
 });
 
 test('load from modules.md', async ({ page }) => {
