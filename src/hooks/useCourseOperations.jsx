@@ -136,34 +136,6 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
     return enrollment;
   }
 
-  async function loadCourseById(courseId, topicId = null) {
-    if (user?.id) {
-      const enrollment = await service.enrollment(user.id, courseId);
-      setEnrollment(enrollment);
-    }
-    const courseEntry = courseCatalog().find((c) => c.id === courseId);
-    if (courseEntry) {
-      const loadedCourse = await Course.create(courseEntry);
-      service.setCurrentCourse(loadedCourse.id);
-      setCourse(loadedCourse);
-
-      if (topicId) {
-        const topic = await loadedCourse.topicFromId(topicId);
-        if (topic) {
-          saveEnrollmentUiSettings(courseId, { currentTopic: topic.path });
-        }
-      }
-
-      const settings = getEnrollmentUiSettings(loadedCourse.id);
-      setSettings(settings);
-      if (settings.currentTopic) {
-        setTopic(loadedCourse.topicFromPath(settings.currentTopic));
-      } else {
-        setTopic(loadedCourse.allTopics[0] || { title: '', path: '' });
-      }
-    }
-  }
-
   async function getCourse(courseId) {
     const courseEntry = courseCatalog().find((c) => c.id === courseId);
     if (!courseCache.current.has(courseId)) {
@@ -624,7 +596,6 @@ ${topicDescription || 'overview content placeholder'}`;
     setCurrentCourse,
     getTemplateRepositories,
     createCourse,
-    loadCourseById,
     closeCourse,
     updateCourseStructure,
     addModule,

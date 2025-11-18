@@ -1,3 +1,5 @@
+import Course from './course';
+
 export type Role = {
   user: string;
   right: string;
@@ -73,3 +75,9 @@ export type Enrollment = {
 };
 
 export type Enrollments = Map<string, Enrollment>;
+
+export type LearningSession = {
+  course: Course;
+  topic: Topic;
+  enrollment: Enrollment;
+};

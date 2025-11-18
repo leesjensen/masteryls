@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Login from './login.jsx';
+import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from './hooks/useAppBarState';
 
 const stockImages = {
@@ -16,6 +17,7 @@ const stockImages = {
 
 const Start = ({ courseOps }) => {
   const [catalog, setCatalog] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     updateAppBar({ title: 'Get started' });
@@ -86,7 +88,7 @@ const Start = ({ courseOps }) => {
                       key={entry.id}
                       role="option"
                       onClick={() => {
-                        courseOps.loadCourseById(entry.id);
+                        navigate(`/course/${entry.id}`);
                       }}
                       className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-200'}
                     >

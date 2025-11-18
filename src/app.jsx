@@ -40,9 +40,8 @@ function RootLayout() {
   const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 
   const [user, setUser] = useState(null);
-  const [course, setCourse] = useState(null);
-  const [topic, setTopic] = useState({ title: '', path: '' });
   const [settings, setSettings] = useState(defaultUiSettings);
+  const [learningSession, setLearningSession] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -56,8 +55,8 @@ function RootLayout() {
   }
 
   function setCourseInternal(newCourse) {
-    setCourse(newCourse);
     if (newCourse) {
+      service.setCurrentCourse(newCourse.id);
       if (!location.pathname.startsWith(`/course/${newCourse.id}`)) {
         navigate(`/course/${newCourse.id}`);
       }
@@ -67,12 +66,10 @@ function RootLayout() {
   }
 
   function setTopicInternal(newTopic) {
-    if (course && topic.id != newTopic.id) navigate(`/course/${course.id}/topic/${newTopic.id}`);
-
-    setTopic(newTopic);
+    if (learningSession && learningSession.topic.id != newTopic.id) navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
   }
 
-  const courseOps = useCourseOperations(user, setUserInternal, service, course, setCourseInternal, setSettings, topic, setTopicInternal);
+  const courseOps = useCourseOperations(user, setUserInternal, service, learningSession.course, setCourseInternal, setSettings, learningSession.topic, setTopicInternal);
 
   React.useEffect(() => {
     (async () => {
@@ -97,10 +94,10 @@ function RootLayout() {
   const contextValue = {
     courseOps,
     user,
-    course,
-    topic,
     settings,
     service,
+    learningSession,
+    setLearningSession,
   };
 
   return (
@@ -155,16 +152,44 @@ function ProgressPage() {
 }
 
 function ClassroomPage() {
-  const { courseOps, service, user, course, topic, settings } = useOutletContext();
+  const { courseOps, service, user, learningSession, setLearningSession, settings } = useOutletContext();
+  const navigate = useNavigate();
 
   const { courseId, topicId } = useParams();
   React.useEffect(() => {
-    if (courseId !== null) {
-      courseOps.loadCourseById(courseId, topicId);
+    if (courseId !== null && (!learningSession || learningSession.course.id !== courseId)) {
+      loadCourseById(navigate, courseOps, courseId, topicId, setLearningSession);
     }
   }, [courseId, topicId, user]);
 
-  return <ClassroomView courseOps={courseOps} service={service} user={user} course={course} topic={topic} settings={settings} />;
+  if (!learningSession) {
+    return null;
+  }
+
+  return <ClassroomView courseOps={courseOps} service={service} user={user} course={learningSession.course} topic={learningSession.topic} settings={settings} />;
+}
+async function loadCourseById(navigate, courseOps, courseId, topicId, setLearningSession) {
+  // if (user?.id) {
+  //   const enrollment = await service.enrollment(user.id, courseId);
+  //   setEnrollment(enrollment);
+  // }
+  const course = await courseOps.getCourse(courseId);
+  if (course) {
+    let topic;
+    if (!topicId) {
+      topic = course.allTopics[0] || { title: '', path: '' };
+      navigate(`/course/${courseId}/topic/${topic.id}`);
+    } else {
+      topic = await course.topicFromId(topicId);
+      if (topic) {
+        courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.path });
+        setLearningSession({ course, topic });
+      }
+    }
+  }
+
+  // const settings = getEnrollmentUiSettings(course.id);
+  // courseOps.setSettings(settings);
 }
 
 export default App;

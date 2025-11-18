@@ -72,7 +72,7 @@ export default function DashboardView({ courseOps, service, user }) {
         {enrollments.size > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {Array.from(enrollments.values()).map((enrollment) => {
-              return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => courseOps.loadCourseById(enrollment.catalogId)} remove={() => requestedEnrollmentRemoval(enrollment)} />;
+              return <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} select={() => navigate(`/course/${enrollment.catalogId}`)} remove={() => requestedEnrollmentRemoval(enrollment)} />;
             })}
           </div>
         ) : (
