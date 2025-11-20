@@ -17,7 +17,6 @@ import Course from '../course';
  * @param {Function} setTopic - Function to update current topic
  */
 function useCourseOperations(user, setUser, service, learningSession, setCourse, setSettings, setTopic) {
-  const [enrollment, setEnrollment] = React.useState(null);
   const courseCache = React.useRef(new Map());
 
   async function login(user) {
@@ -522,8 +521,8 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getExamState() {
-    if (enrollment && learningSession?.topic) {
-      const progress = await service.getProgress({ type: 'exam', topicId: learningSession.topic.id, enrollmentId: enrollment.id });
+    if (learningSession?.enrollment && learningSession?.topic) {
+      const progress = await service.getProgress({ type: 'exam', topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
       if (progress && progress.data.length > 0) {
         return progress.data[0];
       }
@@ -534,7 +533,7 @@ ${topicDescription || 'overview content placeholder'}`;
   async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {
     const progressUser = providedUser || user;
     if (progressUser) {
-      return service.addProgress(progressUser.id, learningSession?.course?.id, enrollment?.id, learningSession?.topic?.id, activityId, type, duration, details, createdAt);
+      return service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, activityId, type, duration, details, createdAt);
     }
   }
 
@@ -543,9 +542,9 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getQuizProgress() {
-    if (!enrollment || !learningSession?.topic) return {};
+    if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
-    const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: enrollment.id, type: 'quizSubmit' });
+    const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, type: 'quizSubmit' });
     return progressItems.data.reduce((acc, item) => {
       const activityId = item.activityId;
       if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
@@ -631,7 +630,6 @@ ${topicDescription || 'overview content placeholder'}`;
     getProgress,
     getQuizProgress,
     getExamState,
-    enrollment,
     service,
   };
 }

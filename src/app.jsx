@@ -164,27 +164,27 @@ function ClassroomPage() {
   React.useEffect(() => {
     (async () => {
       if (courseId !== null) {
-        let enrollment = null;
         let course = learningSession?.course;
         if (!course || course.id !== courseId) {
           course = await courseOps.getCourse(courseId);
           service.setCourseUiSettings(courseId);
-
-          if (user?.id) {
-            enrollment = await service.enrollment(user.id, courseId);
-          }
         }
 
         let topic = learningSession?.topic;
         if (!topicId) {
           topic = course.allTopics[0] || { title: '', path: '' };
           navigate(`/course/${courseId}/topic/${topic.id}`);
+          return;
         } else if (!topic || topic.id !== topicId) {
           topic = await course.topicFromId(topicId);
           if (topic) {
             courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
-            setLearningSession({ course, topic, enrollment });
           }
+        }
+
+        if (course != null && topic != null) {
+          const enrollment = user?.id ? await service.enrollment(user.id, course.id) : null;
+          setLearningSession({ course, topic, enrollment });
         }
       }
     })();
