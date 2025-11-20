@@ -196,27 +196,5 @@ function ClassroomPage() {
 
   return <ClassroomView courseOps={courseOps} service={service} user={user} course={learningSession.course} topic={learningSession.topic} settings={settings} />;
 }
-async function loadCourseById(navigate, courseOps, courseId, topicId, setLearningSession) {
-  // if (user?.id) {
-  //   const enrollment = await service.enrollment(user.id, courseId);
-  //   setEnrollment(enrollment);
-  // }
-  // const course = await courseOps.getCourse(courseId);
-  // if (course) {
-  //   let topic;
-  //   if (!topicId) {
-  //     topic = course.allTopics[0] || { title: '', path: '' };
-  //     navigate(`/course/${courseId}/topic/${topic.id}`);
-  //   } else {
-  //     topic = await course.topicFromId(topicId);
-  //     if (topic) {
-  //       courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
-  //       setLearningSession({ course, topic });
-  //     }
-  //   }
-  // }
-  // const settings = getEnrollmentUiSettings(course.id);
-  // courseOps.setSettings(settings);
-}
 
 export default App;
