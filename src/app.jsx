@@ -69,7 +69,7 @@ function RootLayout() {
     if (learningSession && learningSession.topic.id != newTopic.id) navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
   }
 
-  const courseOps = useCourseOperations(user, setUserInternal, service, learningSession.course, setCourseInternal, setSettings, learningSession.topic, setTopicInternal);
+  const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setCourseInternal, setSettings, setTopicInternal);
 
   React.useEffect(() => {
     (async () => {

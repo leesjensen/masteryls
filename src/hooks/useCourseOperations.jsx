@@ -9,14 +9,14 @@ import Course from '../course';
 /**
  * Custom hook for course operations
  * @param {Object} user - The current user object
+ * @param {Object} learningSession - The current learning session
  * @param {Function} setUser - Function to update user state
  * @param {Service} service - The service instance with GitHub operations
  * @param {Object} course - The current course object
  * @param {Function} setCourse - Function to update course state
- * @param {Object} currentTopic - The currently selected topic
  * @param {Function} setTopic - Function to update current topic
  */
-function useCourseOperations(user, setUser, service, course, setCourse, setSettings, currentTopic, setTopic) {
+function useCourseOperations(user, setUser, service, learningSession, setCourse, setSettings, setTopic) {
   const [enrollment, setEnrollment] = React.useState(null);
   const courseCache = React.useRef(new Map());
 
@@ -56,8 +56,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   function setSidebarVisible(visible) {
-    if (course) {
-      saveEnrollmentUiSettings(course.id, { sidebarVisible: visible });
+    if (learningSession?.course) {
+      saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: visible });
       setSettings((prev) => ({ ...prev, sidebarVisible: visible }));
     }
   }
@@ -148,8 +148,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   function setCurrentCourse(updatedCourse) {
     if (updatedCourse) {
       courseCache.current.set(updatedCourse.id, updatedCourse);
-    } else {
-      courseCache.current.delete(course.id);
+    } else if (learningSession?.course) {
+      courseCache.current.delete(learningSession.course.id);
     }
     setCourse(updatedCourse);
   }
@@ -195,8 +195,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function addModule(title) {
+    if (!learningSession?.course) return;
     if (!title.trim()) return;
-    const updatedCourse = Course.copy(course);
+    const updatedCourse = Course.copy(learningSession.course);
     updatedCourse.modules.push({
       id: _generateId(),
       title: title.trim(),
@@ -208,6 +209,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function generateTopic(topic, prompt) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
       try {
@@ -233,6 +236,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function generateTopics(topicList, progressCallback, isCancelled) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
       try {
@@ -259,6 +264,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function addTopic(moduleIndex, topicTitle, topicDescription, topicType) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     topicTitle = topicTitle.trim();
     topicType = topicType || 'instruction';
     if (!topicTitle) return;
@@ -297,6 +304,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function getTopicMarkdown(topic) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     if (course && course.markdownCache.has(topic.path)) {
       return course.markdownCache.get(topic.path);
     }
@@ -334,6 +343,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
 
   async function renameTopic(moduleIdx, topicIdx, newTitle, newDescription, newType) {
     if (!newTitle.trim()) return;
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     const updatedCourse = Course.copy(course);
     const topic = updatedCourse.modules[moduleIdx].topics[topicIdx];
     if (!topic) return;
@@ -347,6 +358,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function removeTopic(moduleIndex, topicIndex) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     const topic = course.modules[moduleIndex].topics[topicIndex];
     if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
 
@@ -364,7 +377,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
       await updateCourseStructure(updatedCourse, `remove(course) topic ${topic.title}`);
 
       // If the removed topic was the current topic, navigate to the first topic
-      if (currentTopic && currentTopic.path === topic.path) {
+      if (learningSession?.topic && learningSession.topic.path === topic.path) {
         const firstTopic = updatedCourse.allTopics[0];
         if (firstTopic) {
           changeTopic(firstTopic);
@@ -376,6 +389,8 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function discardTopicMarkdown(updatedTopic) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     const updatedCourse = Course.copy(course);
     const topic = updatedCourse.topicFromPath(updatedTopic.path);
 
@@ -387,15 +402,17 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   async function _downloadTopicMarkdown(topicUrl) {
     const response = await fetch(topicUrl);
     const markdown = await response.text();
-    if (course) {
-      course.markdownCache.set(topicUrl, markdown);
+    if (learningSession?.course) {
+      learningSession.course.markdownCache.set(topicUrl, markdown);
     }
 
     return markdown;
   }
 
   function changeTopic(newTopic) {
-    if (newTopic.path !== currentTopic.path) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
+    if (newTopic.path !== learningSession.topic.path) {
       saveEnrollmentUiSettings(course.id, { currentTopic: newTopic.path });
     }
 
@@ -403,13 +420,17 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   function navigateToAdjacentTopic(direction = 'prev') {
-    const adjacentTopic = course.adjacentTopic(currentTopic.path, direction);
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
+    const adjacentTopic = course.adjacentTopic(learningSession.topic.path, direction);
     if (adjacentTopic) {
       changeTopic(adjacentTopic);
     }
   }
 
   async function deleteTopicFiles(topic, files) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
 
     files.forEach(async (file) => {
@@ -420,11 +441,13 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function addTopicFiles(files) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
-    const commitMessage = `enhance(topic) ${currentTopic.title} with new file`;
+    const commitMessage = `enhance(topic) ${learningSession.topic.title} with new file`;
 
     files.forEach(async (file) => {
-      const contentPath = currentTopic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
+      const contentPath = learningSession.topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}/${file.name}`;
 
       const reader = new FileReader();
@@ -437,7 +460,9 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
 
   async function getTopicFiles() {
-    let fetchUrl = currentTopic.path.substring(0, currentTopic.path.lastIndexOf('/'));
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
+    let fetchUrl = learningSession.topic.path.substring(0, learningSession.topic.path.lastIndexOf('/'));
     fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
     const token = user.getSetting('gitHubToken', course.id);
     const res = await service.makeGitHubApiRequest(token, fetchUrl);
@@ -458,7 +483,7 @@ function useCourseOperations(user, setUser, service, course, setCourse, setSetti
   }
   function _getTopicPath() {
     let topicPath = '';
-    const match = currentTopic.path.match(/\/main\/(.+\/)[^\/]+\.md$/);
+    const match = learningSession.topic.path.match(/\/main\/(.+\/)[^\/]+\.md$/);
     if (match) {
       topicPath = match[1];
     }
@@ -509,8 +534,8 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getExamState() {
-    if (enrollment && currentTopic) {
-      const progress = await service.getProgress({ type: 'exam', topicId: currentTopic.id, enrollmentId: enrollment.id });
+    if (enrollment && learningSession?.topic) {
+      const progress = await service.getProgress({ type: 'exam', topicId: learningSession.topic.id, enrollmentId: enrollment.id });
       if (progress && progress.data.length > 0) {
         return progress.data[0];
       }
@@ -521,7 +546,7 @@ ${topicDescription || 'overview content placeholder'}`;
   async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {
     const progressUser = providedUser || user;
     if (progressUser) {
-      return service.addProgress(progressUser.id, course?.id, enrollment?.id, currentTopic?.id, activityId, type, duration, details, createdAt);
+      return service.addProgress(progressUser.id, learningSession?.course?.id, enrollment?.id, learningSession?.topic?.id, activityId, type, duration, details, createdAt);
     }
   }
 
@@ -530,9 +555,9 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getQuizProgress() {
-    if (!enrollment || !currentTopic) return {};
+    if (!enrollment || !learningSession?.topic) return {};
 
-    const progressItems = await getProgress({ topicId: currentTopic.id, enrollmentId: enrollment.id, type: 'quizSubmit' });
+    const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: enrollment.id, type: 'quizSubmit' });
     return progressItems.data.reduce((acc, item) => {
       const activityId = item.activityId;
       if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
