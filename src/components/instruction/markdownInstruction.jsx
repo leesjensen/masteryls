@@ -17,7 +17,6 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
     }
 
     if (topic.path) {
-      console.log(topic);
       if (!isLoading) {
         setIsLoading(true);
         courseOps.getTopicMarkdown(topic).then((md) => {

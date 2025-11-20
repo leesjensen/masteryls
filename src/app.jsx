@@ -56,17 +56,19 @@ function RootLayout() {
 
   function setCourseInternal(newCourse) {
     if (newCourse) {
-      service.setCurrentCourse(newCourse.id);
       if (!location.pathname.startsWith(`/course/${newCourse.id}`)) {
         navigate(`/course/${newCourse.id}`);
       }
     } else {
+      service.removeCourseUiSettings();
       navigate('/dashboard');
     }
   }
 
   function setTopicInternal(newTopic) {
-    if (learningSession && learningSession.topic.id != newTopic.id) navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
+    if (learningSession && learningSession.topic.id != newTopic.id) {
+      navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
+    }
   }
 
   const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setCourseInternal, setSettings, setTopicInternal);
@@ -79,7 +81,9 @@ function RootLayout() {
         if (location.pathname === '/') {
           const enrollment = await service.currentEnrollment(savedUser.id);
           if (enrollment) {
-            navigate(`/course/${enrollment.catalogId}`);
+            const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
+            const topicPath = enrollmentUiSettings?.currentTopic ? `/topic/${enrollmentUiSettings.currentTopic}` : '';
+            navigate(`/course/${enrollment.catalogId}${topicPath}`);
           } else {
             navigate('/dashboard');
           }
@@ -156,10 +160,34 @@ function ClassroomPage() {
   const navigate = useNavigate();
 
   const { courseId, topicId } = useParams();
+  console.log('ClassroomPage render', { courseId, topicId, user, learningSession });
   React.useEffect(() => {
-    if (courseId !== null && (!learningSession || learningSession.course.id !== courseId)) {
-      loadCourseById(navigate, courseOps, courseId, topicId, setLearningSession);
-    }
+    (async () => {
+      if (courseId !== null) {
+        let enrollment = null;
+        let course = learningSession?.course;
+        if (!course || course.id !== courseId) {
+          course = await courseOps.getCourse(courseId);
+          service.setCourseUiSettings(courseId);
+
+          if (user?.id) {
+            enrollment = await service.enrollment(user.id, courseId);
+          }
+        }
+
+        let topic = learningSession?.topic;
+        if (!topicId) {
+          topic = course.allTopics[0] || { title: '', path: '' };
+          navigate(`/course/${courseId}/topic/${topic.id}`);
+        } else if (!topic || topic.id !== topicId) {
+          topic = await course.topicFromId(topicId);
+          if (topic) {
+            courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+            setLearningSession({ course, topic, enrollment });
+          }
+        }
+      }
+    })();
   }, [courseId, topicId, user]);
 
   if (!learningSession) {
@@ -173,21 +201,20 @@ async function loadCourseById(navigate, courseOps, courseId, topicId, setLearnin
   //   const enrollment = await service.enrollment(user.id, courseId);
   //   setEnrollment(enrollment);
   // }
-  const course = await courseOps.getCourse(courseId);
-  if (course) {
-    let topic;
-    if (!topicId) {
-      topic = course.allTopics[0] || { title: '', path: '' };
-      navigate(`/course/${courseId}/topic/${topic.id}`);
-    } else {
-      topic = await course.topicFromId(topicId);
-      if (topic) {
-        courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.path });
-        setLearningSession({ course, topic });
-      }
-    }
-  }
-
+  // const course = await courseOps.getCourse(courseId);
+  // if (course) {
+  //   let topic;
+  //   if (!topicId) {
+  //     topic = course.allTopics[0] || { title: '', path: '' };
+  //     navigate(`/course/${courseId}/topic/${topic.id}`);
+  //   } else {
+  //     topic = await course.topicFromId(topicId);
+  //     if (topic) {
+  //       courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+  //       setLearningSession({ course, topic });
+  //     }
+  //   }
+  // }
   // const settings = getEnrollmentUiSettings(course.id);
   // courseOps.setSettings(settings);
 }

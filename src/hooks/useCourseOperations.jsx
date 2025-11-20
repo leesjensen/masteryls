@@ -28,27 +28,15 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     await addProgress(null, null, 'userLogout', 0, { method: 'inApp' });
     setUser(null);
     service.logout();
-    localStorage.clear();
   }
 
   function getEnrollmentUiSettings(courseId) {
-    const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
-
-    if (courseId) {
-      const settings = localStorage.getItem(`uiSettings-${courseId}`);
-      if (settings) {
-        return JSON.parse(settings);
-      } else {
-        localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(defaultEnrollmentSettings));
-      }
-    }
-    return defaultEnrollmentSettings;
+    return service.getEnrollmentUiSettings(courseId);
   }
 
   function saveEnrollmentUiSettings(courseId, updatedSettings) {
     if (courseId) {
-      const settings = { ...getEnrollmentUiSettings(courseId), ...updatedSettings };
-      localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(settings));
+      const settings = service.saveEnrollmentUiSettings(courseId, updatedSettings);
       setSettings(settings);
       return settings;
     }
@@ -191,7 +179,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
 
   function closeCourse() {
     setCourse(null);
-    service.removeCurrentCourse();
+    service.removeCourseUiSettings();
   }
 
   async function addModule(title) {
@@ -215,7 +203,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     if (user.isEditor(course.id) && token) {
       try {
         const updatedCourse = Course.copy(course);
-        topic = updatedCourse.topicFromPath(topic.path);
+        topic = updatedCourse.topicFromId(topic.id);
         topic.description = prompt;
         topic.state = 'stable';
         setCourse(updatedCourse);
@@ -243,7 +231,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
       try {
         const updatedCourse = Course.copy(course);
         for (let i = 0; i < topicList.length && !isCancelled(); i++) {
-          const topic = updatedCourse.topicFromPath(topicList[i].path);
+          const topic = updatedCourse.topicFromId(topicList[i].id);
           progressCallback && (await progressCallback(topic, i));
           topic.state = 'stable';
 
@@ -332,7 +320,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
 
     const updatedCourse = Course.copy(course);
-    const updatedTopic = updatedCourse.topicFromPath(topic.path);
+    const updatedTopic = updatedCourse.topicFromId(topic.id);
 
     const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
     updatedTopic.commit = commit;
@@ -392,7 +380,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     if (!learningSession?.course) return;
     const course = learningSession.course;
     const updatedCourse = Course.copy(course);
-    const topic = updatedCourse.topicFromPath(updatedTopic.path);
+    const topic = updatedCourse.topicFromId(updatedTopic.id);
 
     const markdown = await _downloadTopicMarkdown(topic.path);
     updatedCourse.markdownCache.set(topic.path, markdown);
@@ -413,7 +401,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     if (!learningSession?.course) return;
     const course = learningSession.course;
     if (newTopic.path !== learningSession.topic.path) {
-      saveEnrollmentUiSettings(course.id, { currentTopic: newTopic.path });
+      saveEnrollmentUiSettings(course.id, { currentTopic: newTopic.id });
     }
 
     setTopic(newTopic);

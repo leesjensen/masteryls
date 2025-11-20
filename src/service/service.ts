@@ -255,6 +255,7 @@ class Service {
   }
 
   async logout() {
+    localStorage.clear();
     await supabase.auth.signOut();
   }
 
@@ -276,13 +277,30 @@ class Service {
     );
   }
 
+  getEnrollmentUiSettings(courseId: string | undefined) {
+    const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
+
+    if (courseId) {
+      const settings = localStorage.getItem(`uiSettings-${courseId}`);
+      if (settings) {
+        return JSON.parse(settings);
+      } else {
+        localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(defaultEnrollmentSettings));
+      }
+    }
+    return defaultEnrollmentSettings;
+  }
+
+  saveEnrollmentUiSettings(courseId: string, updatedSettings: object) {
+    const settings = { ...this.getEnrollmentUiSettings(courseId), ...updatedSettings };
+    localStorage.setItem(`uiSettings-${courseId}`, JSON.stringify(settings));
+    return settings;
+  }
+
   async currentEnrollment(learnerId: string): Promise<Enrollment | null> {
     const currentCourse = localStorage.getItem('currentCourse');
     if (currentCourse) {
-      const enrollments = await this.enrollments(learnerId);
-      if (enrollments) {
-        return enrollments.get(currentCourse) || null;
-      }
+      return this.enrollment(learnerId, currentCourse);
     }
     return null;
   }
@@ -302,21 +320,21 @@ class Service {
     return result;
   }
 
-  async enrollment(userId: string, catalogId: string): Promise<Enrollment> {
-    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', userId).eq('catalogId', catalogId);
+  async enrollment(learnerId: string, catalogId: string): Promise<Enrollment | null> {
+    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', learnerId).eq('catalogId', catalogId);
 
     if (error) {
-      throw new Error(error.message);
+      return null;
     }
 
     return { ...data[0], catalogEntry: this.catalogEntry(catalogId) };
   }
 
-  setCurrentCourse(catalogId: string): void {
+  setCourseUiSettings(catalogId: string): void {
     localStorage.setItem('currentCourse', catalogId);
   }
 
-  removeCurrentCourse(): void {
+  removeCourseUiSettings(): void {
     localStorage.removeItem('currentCourse');
   }
 
