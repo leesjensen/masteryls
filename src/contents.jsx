@@ -106,7 +106,7 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible }) {
   const moduleJsx = (
     <ul className="list-none p-0">
       {moduleMap.map((module, moduleIndex) => (
-        <ModuleSection key={moduleIndex} courseOps={courseOps} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} editorVisible={editorVisible} />
+        <ModuleSection key={moduleIndex} courseOps={courseOps} course={course} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} editorVisible={editorVisible} />
       ))}
     </ul>
   );
