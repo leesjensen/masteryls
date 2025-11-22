@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
@@ -14,14 +14,26 @@ import ErrorPage from './components/errorPage.jsx';
 import service from './service/service.js';
 
 function App() {
+  const [user, setUser] = useState(undefined);
+  console.log('App render', { user });
+
+  React.useEffect(() => {
+    (async () => {
+      setUser(await service.currentUser());
+    })();
+  }, []);
+
+  if (user === undefined) {
+    return <LoadingPage />;
+  }
+
   const router = createBrowserRouter([
     {
       path: '/',
-      element: <RootLayout />,
+      element: <RootLayout initialUser={user} />,
       errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
       children: [
-        { index: true, element: <LoadingPage /> },
-        { path: 'start', element: <StartPage /> },
+        { index: true, element: <StartPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'course/:courseId/topic/:topicId', element: <ClassroomPage /> },
@@ -36,21 +48,36 @@ function App() {
   return <RouterProvider router={router} />;
 }
 
-function RootLayout() {
+function RootLayout({ initialUser }) {
   const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(initialUser);
   const [settings, setSettings] = useState(defaultUiSettings);
   const [learningSession, setLearningSession] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  React.useEffect(() => {
+    (async () => {
+      if (location.pathname === '/' && initialUser) {
+        const enrollment = await service.currentEnrollment(initialUser.id);
+        if (enrollment) {
+          const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
+          const topicPath = enrollmentUiSettings?.currentTopic ? `/topic/${enrollmentUiSettings.currentTopic}` : '';
+          navigate(`/course/${enrollment.catalogId}${topicPath}`);
+        } else {
+          navigate('/dashboard');
+        }
+      }
+    })();
+  }, []);
 
   function setUserInternal(user) {
     setUser(user);
     if (user) {
       navigate('/dashboard');
     } else {
-      navigate('/start');
+      navigate('/');
     }
   }
 
@@ -72,27 +99,6 @@ function RootLayout() {
   }
 
   const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setCourseInternal, setSettings, setTopicInternal);
-
-  React.useEffect(() => {
-    (async () => {
-      const savedUser = await service.currentUser();
-      if (savedUser) {
-        setUser(savedUser);
-        if (location.pathname === '/') {
-          const enrollment = await service.currentEnrollment(savedUser.id);
-          if (enrollment) {
-            const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
-            const topicPath = enrollmentUiSettings?.currentTopic ? `/topic/${enrollmentUiSettings.currentTopic}` : '';
-            navigate(`/course/${enrollment.catalogId}${topicPath}`);
-          } else {
-            navigate('/dashboard');
-          }
-        }
-      } else {
-        navigate('/start');
-      }
-    })();
-  }, []);
 
   // Pass all shared state through Outlet context
   const contextValue = {
