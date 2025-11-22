@@ -5,14 +5,23 @@ import service from './service/service.js';
 
 function App() {
   const [user, setUser] = useState(undefined);
+  const [showLoading, setShowLoading] = useState(false);
   console.log('App render', { user });
 
   React.useEffect(() => {
     service.currentUser().then((u) => setUser(u));
   }, []);
 
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoading(true);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   if (user === undefined) {
-    return <LoadingPage />;
+    return showLoading ? <LoadingPage /> : null;
   }
 
   return <RouterProvider router={createRouter(user)} />;
@@ -26,7 +35,12 @@ function LoadingPage() {
           <div className="w-16 h-16 border-8 border-amber-200 border-t-amber-600 rounded-full animate-spin mx-auto mb-4"></div>
         </div>
         <h2 className="text-2xl font-semibold text-gray-800 mb-2">Mastery LS is Loading</h2>
-        <p className="text-gray-600">The gerbils are working hard to get your content ready!</p>
+        <p className="text-gray-600">
+          It is taking longer than expected to load your content. If this continues please contact{' '}
+          <a href="mailto:support@masterls.com" className="text-blue-600 hover:underline">
+            customer support.
+          </a>
+        </p>
       </div>
     </div>
   );
