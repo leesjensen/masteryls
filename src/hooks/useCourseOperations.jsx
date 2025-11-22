@@ -104,7 +104,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
       await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
       const course = await Course.create(newCatalogEntry);
       setCourse(course);
-      setTopic(course.allTopics[0]);
+      changeTopic(course.allTopics[0]);
 
       const settings = saveEnrollmentUiSettings(course.id, { editing: true });
       setSettings(settings);
