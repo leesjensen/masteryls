@@ -344,34 +344,25 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     await updateCourseStructure(updatedCourse, `rename(course) topic ${topic.title} with type ${topic.type}`);
   }
 
-  async function removeTopic(moduleIndex, topicIndex) {
-    if (!learningSession?.course) return;
-    const course = learningSession.course;
-    const topic = course.modules[moduleIndex].topics[topicIndex];
-    if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
+  async function removeTopic(moduleIndex, topicIndex, course, topic) {
+    const token = user.getSetting('gitHubToken', course.id);
+    const contentPath = topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
+    const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
+    await service.deleteGitHubFolder(gitHubUrl, token, `remove(topic) ${topic.title}`);
 
-    try {
-      const token = user.getSetting('gitHubToken', course.id);
-      const contentPath = topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
-      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
-      await service.deleteGitHubFolder(gitHubUrl, token, `remove(topic) ${topic.title}`);
+    const updatedCourse = Course.copy(course);
+    updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
+    updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
-      const updatedCourse = Course.copy(course);
-      updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
-      updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
+    setCourse(updatedCourse);
+    await updateCourseStructure(updatedCourse, `remove(course) topic ${topic.title}`);
 
-      setCourse(updatedCourse);
-      await updateCourseStructure(updatedCourse, `remove(course) topic ${topic.title}`);
-
-      // If the removed topic was the current topic, navigate to the first topic
-      if (learningSession?.topic && learningSession.topic.path === topic.path) {
-        const firstTopic = updatedCourse.allTopics[0];
-        if (firstTopic) {
-          changeTopic(firstTopic);
-        }
+    // If the removed topic was the current topic, navigate to the first topic
+    if (learningSession?.topic && learningSession.topic.path === topic.path) {
+      const firstTopic = updatedCourse.allTopics[0];
+      if (firstTopic) {
+        changeTopic(firstTopic);
       }
-    } catch (error) {
-      alert(`Failed to remove topic: ${error.message}`);
     }
   }
 
@@ -397,12 +388,6 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
   }
 
   function changeTopic(newTopic) {
-    if (!learningSession?.course) return;
-    const course = learningSession.course;
-    if (newTopic.path !== learningSession.topic.path) {
-      saveEnrollmentUiSettings(course.id, { currentTopic: newTopic.id });
-    }
-
     setTopic(newTopic);
   }
 

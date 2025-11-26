@@ -41,6 +41,12 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
     }
   }
 
+  function removeTopic() {
+    if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
+
+    courseOps.removeTopic(moduleIndex, topicIndex, course, topic);
+  }
+
   useClickOutside(editorRef, () => {
     setShowEditForm(false);
   });
@@ -67,7 +73,7 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
           <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600  pr-1" title="Edit this topic">
             e
           </button>
-          <button onClick={() => courseOps.removeTopic(moduleIndex, topicIndex)} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
+          <button onClick={removeTopic} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
             x
           </button>
           <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500  pr-1" title="Drag to reorder">
