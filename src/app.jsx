@@ -82,7 +82,7 @@ function App({ initialUser }) {
     }
   }
 
-  const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setCourseInternal, setSettings, setTopicInternal);
+  const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setLearningSession, setSettings);
 
   // Pass all shared state through Outlet context
   const contextValue = {

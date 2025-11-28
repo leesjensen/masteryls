@@ -13,10 +13,9 @@ import Course from '../course';
  * @param {Function} setUser - Function to update user state
  * @param {Service} service - The service instance with GitHub operations
  * @param {Object} course - The current course object
- * @param {Function} setCourse - Function to update course state
- * @param {Function} setTopic - Function to update current topic
+ * @param {Function} setLearningSession - Function to update learning session state
  */
-function useCourseOperations(user, setUser, service, learningSession, setCourse, setSettings, setTopic) {
+function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings, setTopic) {
   const courseCache = React.useRef(new Map());
 
   async function login(user) {
@@ -103,8 +102,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
       setUpdateMessage('Finalizing course creation');
       await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
       const course = await Course.create(newCatalogEntry);
-      setCourse(course);
-      changeTopic(course.allTopics[0]);
+      setLearningSession({ enrollment, course, topic: course.allTopics[0] });
 
       const settings = saveEnrollmentUiSettings(course.id, { editing: true });
       setSettings(settings);
@@ -116,7 +114,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
 
       const course = await Course.create(newCatalogEntry);
       courseCache.current.set(course.id, course);
-      setCourse(course);
+      setLearningSession({ enrollment, course, topic: course.allTopics[0] });
       setSettings(getEnrollmentUiSettings(course.id));
       await _populateTemplateTopics(course, ['Introduction', 'Syllabus', 'Overview'], gitHubToken);
     }
@@ -138,7 +136,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     } else if (learningSession?.course) {
       courseCache.current.delete(learningSession.course.id);
     }
-    setCourse(updatedCourse);
+    setLearningSession({ updatedCourse, topic: updatedCourse.allTopics[0] });
   }
 
   async function updateCourseStructure(updatedCourse, commitMessage = 'update course structure') {
@@ -186,7 +184,8 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
       topics: [],
     });
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    setCourse(updatedCourse);
+    setLearningSession({ ...learningSession, course: updatedCourse });
+
     await updateCourseStructure(updatedCourse, `add(module) ${title.trim()}`);
   }
 
@@ -200,7 +199,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
         topic = updatedCourse.topicFromId(topic.id);
         topic.description = prompt;
         topic.state = 'stable';
-        setCourse(updatedCourse);
+        setLearningSession({ ...learningSession, course: updatedCourse, topic });
 
         const basicContent = await generateTopicContent(topic, prompt);
         if (basicContent) {
@@ -237,7 +236,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
           }
         }
 
-        setCourse(updatedCourse);
+        setLearningSession({ ...learningSession, course: updatedCourse });
         await updateCourseStructure(updatedCourse, `add(course) topics`);
       } catch (error) {
         throw new Error(`Failed to generate topics. ${error.message}`);
@@ -268,7 +267,6 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
         module.topics.push(newTopic);
 
         updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-        setCourse(updatedCourse);
 
         const basicContent = await generateTopicContent(newTopic, topicDescription);
         if (basicContent) {
@@ -277,8 +275,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
         }
 
         await updateCourseStructure(updatedCourse, `add(course) topic '${newTopic.title}'`);
-
-        changeTopic(newTopic);
+        setLearningSession({ ...learningSession, course: updatedCourse, topic: newTopic });
       } catch (error) {
         alert(`Failed to add topic: ${error.message}`);
       }
@@ -304,7 +301,7 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     const token = user.getSetting('gitHubToken', learningSession.course.id);
     const [updatedCourse, updatedTopic] = await _updateTopic(token, learningSession.course, topic, content, commitMessage);
 
-    setCourse(updatedCourse);
+    setLearningSession({ ...learningSession, topic: updatedTopic, course: updatedCourse });
 
     return updatedTopic;
   }
@@ -335,7 +332,8 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     topic.type = newType || topic.type;
     updatedCourse.modules[moduleIdx].topics[topicIdx] = topic;
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    setCourse(updatedCourse);
+    setLearningSession({ ...learningSession, course: updatedCourse });
+
     await updateCourseStructure(updatedCourse, `rename(course) topic ${topic.title} with type ${topic.type}`);
   }
 
@@ -349,16 +347,18 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
-    setCourse(updatedCourse);
     await updateCourseStructure(updatedCourse, `remove(course) topic ${topic.title}`);
 
     // If the removed topic was the current topic, navigate to the first topic
-    if (learningSession?.topic && learningSession.topic.path === topic.path) {
+    let currentTopic = learningSession?.topic;
+    if (currentTopic && currentTopic.path === topic.path) {
       const firstTopic = updatedCourse.allTopics[0];
       if (firstTopic) {
-        changeTopic(firstTopic);
+        currentTopic = firstTopic;
       }
     }
+
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: currentTopic });
   }
 
   async function discardTopicMarkdown(updatedTopic) {
