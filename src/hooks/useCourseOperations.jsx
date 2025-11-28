@@ -176,11 +176,6 @@ function useCourseOperations(user, setUser, service, learningSession, setCourse,
     courseCache.current.delete(updatedCourse.id);
   }
 
-  function closeCourse() {
-    setCourse(null);
-    service.removeCourseUiSettings();
-  }
-
   async function addModule(title) {
     if (!learningSession?.course) return;
     if (!title.trim()) return;
@@ -593,7 +588,6 @@ ${topicDescription || 'overview content placeholder'}`;
     setCurrentCourse,
     getTemplateRepositories,
     createCourse,
-    closeCourse,
     updateCourseStructure,
     addModule,
     addTopic,

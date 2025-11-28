@@ -72,7 +72,6 @@ function RootLayout({ initialUser }) {
         navigate(`/course/${newCourse.id}`);
       }
     } else {
-      service.removeCourseUiSettings();
       navigate('/dashboard');
     }
   }
@@ -114,6 +113,7 @@ function StartPage() {
 
 function DashboardPage() {
   const { courseOps, service, user } = useOutletContext();
+  service.removeCourseUiSettings();
   return <DashboardView courseOps={courseOps} service={service} user={user} />;
 }
 
