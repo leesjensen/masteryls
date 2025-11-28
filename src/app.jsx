@@ -171,5 +171,5 @@ function ClassroomPage() {
     return null;
   }
 
-  return <ClassroomView courseOps={courseOps} service={service} user={user} course={learningSession.course} topic={learningSession.topic} settings={settings} />;
+  return <ClassroomView courseOps={courseOps} service={service} user={user} learningSession={learningSession} settings={settings} />;
 }

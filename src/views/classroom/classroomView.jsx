@@ -6,22 +6,22 @@ import Editor from '../../components/editor/editor.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { useNavigate } from 'react-router-dom';
 
-export default function ClassroomView({ courseOps, service, user, course, topic, settings }) {
+export default function ClassroomView({ courseOps, service, user, learningSession, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const isResizing = React.useRef(false);
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    if (course) {
+    if (learningSession.course) {
       const appBarTools = (
         <button title="Close metrics dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
           ❌
         </button>
       );
 
-      updateAppBar({ title: course?.title, navTitle: topic?.title, tools: appBarTools });
+      updateAppBar({ title: learningSession.course?.title, navTitle: learningSession.topic?.title, tools: appBarTools });
     }
-  }, [course, topic]);
+  }, [learningSession]);
 
   function splitterMouseDown() {
     isResizing.current = true;
@@ -29,7 +29,7 @@ export default function ClassroomView({ courseOps, service, user, course, topic,
   }
 
   React.useEffect(() => {
-    if (course) {
+    if (learningSession) {
       function handleMove(clientX) {
         const minSidebarWidth = 150;
         const maxSidebarWidth = Math.max(minSidebarWidth, window.innerWidth - minSidebarWidth);
@@ -37,11 +37,11 @@ export default function ClassroomView({ courseOps, service, user, course, topic,
         if (isResizing.current) {
           let newWidth = clientX;
           if (newWidth <= minSidebarWidth) {
-            courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'start' });
+            courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'start' });
           } else if (newWidth >= maxSidebarWidth) {
-            courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'end' });
+            courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'end' });
           } else {
-            courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'split', sidebarWidth: newWidth });
+            courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'split', sidebarWidth: newWidth });
           }
         }
       }
@@ -63,33 +63,33 @@ export default function ClassroomView({ courseOps, service, user, course, topic,
         window.removeEventListener('mouseup', handleEnd);
       };
     }
-  }, [course, settings.sidebarVisible]);
+  }, [learningSession, settings.sidebarVisible]);
 
   function toggleEditor() {
     setEditorVisible((prev) => !prev);
   }
 
-  if (!course) {
+  if (!learningSession?.course) {
     return <div className="p-8" />;
   }
 
   let content = null;
   if (editorVisible) {
-    content = <Editor courseOps={courseOps} service={service} user={user} course={course} currentTopic={topic} />;
+    content = <Editor courseOps={courseOps} service={service} user={user} course={learningSession.course} currentTopic={learningSession.topic} />;
   } else {
-    content = <Instruction courseOps={courseOps} topic={topic} course={course} user={user} />;
+    content = <Instruction courseOps={courseOps} course={learningSession.course} topic={learningSession.topic} user={user} />;
   }
 
   return (
     <>
       <nav>
-        <Toolbar courseOps={courseOps} user={user} course={course} settings={settings} topic={topic} editing={editorVisible} toggleEditor={toggleEditor} />
+        <Toolbar courseOps={courseOps} user={user} course={learningSession.course} settings={settings} topic={learningSession.topic} editing={editorVisible} toggleEditor={toggleEditor} />
       </nav>
 
       <main className="flex flex-1 overflow-hidden">
         {settings.sidebarVisible !== 'start' && (
           <div className={`flex overflow-auto`} style={settings.sidebarVisible === 'end' ? { width: '100%' } : { width: settings.sidebarWidth }}>
-            <Sidebar courseOps={courseOps} service={service} user={user} course={course} currentTopic={topic} editorVisible={editorVisible} />
+            <Sidebar courseOps={courseOps} service={service} user={user} course={learningSession.course} currentTopic={learningSession.topic} editorVisible={editorVisible} />
           </div>
         )}
         {settings.sidebarVisible === 'split' && <div className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none" onMouseDown={splitterMouseDown} />}
