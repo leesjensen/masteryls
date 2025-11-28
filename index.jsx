@@ -1,7 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
-import { createRouter } from './src/rootLayout.jsx';
+import { createAppRouter } from './src/app.jsx';
 import service from './src/service/service.js';
 import { AlertProvider } from './src/contexts/AlertContext.jsx';
 import { ProgressProvider } from './src/contexts/ProgressContext.jsx';
@@ -20,11 +20,10 @@ async function loadApp() {
   try {
     user = await service.currentUser();
   } catch (err) {
-    console.error('Error fetching current user during bootstrap', err);
     user = null;
   }
 
-  const router = createRouter(user);
+  const router = createAppRouter(user);
 
   clearTimeout(loadingTimer);
 
