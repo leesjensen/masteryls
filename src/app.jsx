@@ -20,11 +20,13 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  const router = React.useMemo(() => createRouter(user), [user]);
+
   if (user === undefined) {
     return showLoading ? <LoadingPage /> : null;
   }
 
-  return <RouterProvider router={createRouter(user)} />;
+  return <RouterProvider router={router} />;
 }
 
 function LoadingPage() {
