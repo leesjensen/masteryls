@@ -7,22 +7,31 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
+import { useNavigate } from 'react-router-dom';
 
 function Contents({ courseOps, service, currentTopic, course, editorVisible }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, service, currentTopic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
+  const navigate = useNavigate();
 
   useHotkeys(
     {
       'ALT+ArrowRight': (e) => {
-        courseOps.navigateToAdjacentTopic('next');
+        navigateToTopic('next');
       },
       'ALT+ArrowLeft': (e) => {
-        courseOps.navigateToAdjacentTopic('prev');
+        navigateToTopic('prev');
       },
     },
     { target: undefined }
   );
+
+  function navigateToTopic(direction) {
+    const newTopic = courseOps.getAdjacentTopic(direction);
+    if (newTopic) {
+      navigate(`/course/${course.id}/topic/${newTopic.id}`);
+    }
+  }
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;

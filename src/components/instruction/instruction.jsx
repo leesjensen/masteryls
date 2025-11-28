@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-// import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 import VideoInstruction from './videoInstruction';
 import ExamInstruction from './examInstruction';
 import QuizInstruction from './quiz/quizInstruction';
@@ -21,11 +20,6 @@ export default function Instruction({ courseOps, topic, course, user, content = 
     }
     fetchExamState();
   }, [topic, courseOps?.enrollment]);
-
-  // const containerRef = useSwipeNavigation(
-  //   useCallback(() => courseOps.navigateToAdjacentTopic('next'), [course, topic]),
-  //   useCallback(() => courseOps.navigateToAdjacentTopic('prev'), [course, topic])
-  // );
 
   useProgressTracking({
     activityId: topic?.id,

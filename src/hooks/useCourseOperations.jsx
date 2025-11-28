@@ -386,13 +386,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     setTopic(newTopic);
   }
 
-  function navigateToAdjacentTopic(direction = 'prev') {
+  function getAdjacentTopic(direction = 'prev') {
     if (!learningSession?.course) return;
     const course = learningSession.course;
-    const adjacentTopic = course.adjacentTopic(learningSession.topic.path, direction);
-    if (adjacentTopic) {
-      changeTopic(adjacentTopic);
-    }
+    return course.adjacentTopic(learningSession.topic.path, direction);
   }
 
   async function deleteTopicFiles(topic, files) {
