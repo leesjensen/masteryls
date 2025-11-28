@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import Course from '../../course';
 import VideoInstruction from '../instruction/videoInstruction';
 
-export default function VideoEditor({ currentTopic, course, setCourse, changeTopic }) {
-  const [url, setUrl] = useState(currentTopic?.path || '');
+export default function VideoEditor({ topic }) {
+  const [url, setUrl] = useState(topic?.path || '');
   const [dirty, setDirty] = useState(false);
 
   React.useEffect(() => {
-    setUrl(currentTopic?.path || '');
+    setUrl(topic?.path || '');
     setDirty(false);
-  }, [currentTopic]);
+  }, [topic]);
 
   const handleUrlChange = (e) => {
     setUrl(e.target.value);
@@ -17,24 +17,24 @@ export default function VideoEditor({ currentTopic, course, setCourse, changeTop
   };
 
   const handleSave = async () => {
-    if (!dirty) return;
-    // This should be an updateTopicVideo function in Course class
-    const updatedTopic = { ...currentTopic, path: url };
-    const updatedCourse = await Course.create({ ...course });
-    for (const module of updatedCourse.modules) {
-      const topicIdx = module.topics.findIndex((t) => t.id === updatedTopic.id);
-      if (topicIdx !== -1) {
-        module.topics[topicIdx] = updatedTopic;
-        break;
-      }
-    }
-    setCourse(updatedCourse);
-    changeTopic(updatedTopic);
-    setDirty(false);
+    // if (!dirty) return;
+    // // This should be an updateTopicVideo function in Course class
+    // const updatedTopic = { ...currentTopic, path: url };
+    // const updatedCourse = await Course.create({ ...course });
+    // for (const module of updatedCourse.modules) {
+    //   const topicIdx = module.topics.findIndex((t) => t.id === updatedTopic.id);
+    //   if (topicIdx !== -1) {
+    //     module.topics[topicIdx] = updatedTopic;
+    //     break;
+    //   }
+    // }
+    // setCourse(updatedCourse);
+    // changeTopic(updatedTopic);
+    // setDirty(false);
   };
 
   return (
-    <>
+    <div className="flex-1 flex flex-col overflow-hidden">
       <div className="p-2 border-b border-gray-200 text-sm text-gray-500 flex items-center gap-2">
         <strong>URL</strong>
         <input type="text" value={url} onChange={handleUrlChange} className="border rounded px-2 py-1 text-sm flex-1" style={{ minWidth: '200px' }} />
@@ -42,7 +42,7 @@ export default function VideoEditor({ currentTopic, course, setCourse, changeTop
           Save
         </button>
       </div>
-      <VideoInstruction topic={{ ...currentTopic, path: url }} />
-    </>
+      <VideoInstruction topic={{ ...topic, path: url }} />
+    </div>
   );
 }

@@ -15,7 +15,7 @@ import Course from '../course';
  * @param {Object} course - The current course object
  * @param {Function} setLearningSession - Function to update learning session state
  */
-function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings, setTopic) {
+function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings) {
   const courseCache = React.useRef(new Map());
 
   async function login(user) {
@@ -383,7 +383,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   function changeTopic(newTopic) {
-    setTopic(newTopic);
+    //setTopic(newTopic);
+    //
+    console.log('changeTopic', newTopic);
   }
 
   function getAdjacentTopic(direction = 'prev') {

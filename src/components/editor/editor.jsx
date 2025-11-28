@@ -6,7 +6,7 @@ import VideoEditor from './VideoEditor';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
 
-export default function Editor({ courseOps, service, user, course, currentTopic }) {
+export default function Editor({ courseOps, service, user, learningSession }) {
   const [content, setContent] = React.useState('');
   const [editorState, setEditorState] = React.useState(false);
   const [showCommits, setShowCommits] = React.useState(false);
@@ -20,11 +20,11 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
   // Ref to access MarkdownEditor's insert functionality
   const markdownEditorRef = React.useRef(null);
 
-  const contentAvailable = !!(currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable'));
+  const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'stable'));
 
   React.useEffect(() => {
     if (contentAvailable) {
-      courseOps.getTopicMarkdown(currentTopic).then((markdown) => {
+      courseOps.getTopicMarkdown(learningSession.topic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
       });
@@ -37,7 +37,7 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
         }
       };
     }
-  }, [course, currentTopic]);
+  }, [learningSession]);
 
   function handleEditorChange(value) {
     if (committing) return;
@@ -46,7 +46,7 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
   }
 
   async function discard() {
-    const [updatedCourse, previousTopic, markdown] = await courseOps.discardTopicMarkdown(currentTopic);
+    const [updatedCourse, previousTopic, markdown] = await courseOps.discardTopicMarkdown(learningSession.topic);
     setDirty(false);
     setContent(markdown);
     courseOps.changeTopic(previousTopic);
@@ -57,7 +57,7 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
 
     setCommitting(true);
     try {
-      const updatedTopic = await courseOps.updateTopic(currentTopic, contentRef.current);
+      const updatedTopic = await courseOps.updateTopic(learningSession.topic, contentRef.current);
       setDirty(false);
       courseOps.changeTopic(updatedTopic);
     } catch (error) {
@@ -76,15 +76,15 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
   }
 
-  let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={currentTopic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
+  let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
   if (editorState === 'preview') {
-    currentEditor = <Instruction courseOps={courseOps} topic={currentTopic} course={course} user={user} content={content} instructionState={editorState} />;
+    currentEditor = <Instruction courseOps={courseOps} topic={learningSession.topic} course={learningSession.course} user={user} content={content} instructionState={editorState} />;
   }
 
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
-        return <VideoEditor currentTopic={currentTopic} course={course} setCourse={setCourse} />;
+        return <VideoEditor topic={learningSession.topic} />;
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -114,15 +114,15 @@ export default function Editor({ courseOps, service, user, course, currentTopic 
                 </button>
               </div>
             </div>
-            {showCommits && <EditorCommits currentTopic={currentTopic} course={course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
+            {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
             <div className="flex-8/10 flex overflow-hidden">{currentEditor}</div>
             <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles courseOps={courseOps} course={course} currentTopic={currentTopic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
+              <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
             </div>
           </div>
         );
     }
   };
 
-  return editorComponent(currentTopic?.type);
+  return editorComponent(learningSession.topic?.type);
 }
