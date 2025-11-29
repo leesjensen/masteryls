@@ -8,7 +8,6 @@ export default function EditorCommits({ currentTopic, course, user, service, set
   // Fetch commits
   useEffect(() => {
     async function fetchCommits() {
-      console.log('Fetching commits for topic:', currentTopic.commit);
       if (course && currentTopic && currentTopic.path && course.links?.gitHub?.apiUrl) {
         const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
         const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
