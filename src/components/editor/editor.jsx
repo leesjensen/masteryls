@@ -6,7 +6,7 @@ import VideoEditor from './VideoEditor';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
 
-export default function Editor({ courseOps, service, user, learningSession, setLearningSession }) {
+export default function Editor({ courseOps, service, user, learningSession }) {
   const [content, setContent] = React.useState('');
   const [editorState, setEditorState] = React.useState(false);
   const [showCommits, setShowCommits] = React.useState(false);
@@ -46,10 +46,9 @@ export default function Editor({ courseOps, service, user, learningSession, setL
   }
 
   async function discard() {
-    const [updatedCourse, previousTopic, markdown] = await courseOps.discardTopicMarkdown(learningSession.topic);
+    const markdown = await courseOps.discardTopicMarkdown(learningSession.topic);
     setDirty(false);
     setContent(markdown);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: previousTopic });
   }
 
   async function commit() {
@@ -57,9 +56,8 @@ export default function Editor({ courseOps, service, user, learningSession, setL
 
     setCommitting(true);
     try {
-      const updatedTopic = await courseOps.updateTopic(learningSession.topic, contentRef.current);
+      await courseOps.updateTopic(learningSession.topic, contentRef.current);
       setDirty(false);
-      //      setLearningSession({ ...learningSession, topic: updatedTopic });
     } catch (error) {
       alert('Failed to commit changes. Please try again.');
     } finally {

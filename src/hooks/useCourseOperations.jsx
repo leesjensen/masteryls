@@ -370,7 +370,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const markdown = await _downloadTopicMarkdown(topic.path);
     updatedCourse.markdownCache.set(topic.path, markdown);
-    return [updatedCourse, topic, markdown];
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: topic });
+
+    return markdown;
   }
 
   async function _downloadTopicMarkdown(topicUrl) {
