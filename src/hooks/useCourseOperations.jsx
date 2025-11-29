@@ -171,7 +171,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
     await service.saveCourseSettings({ id: updatedCourse.id, gitHub: { ...updatedCourse.gitHub, commit } });
-    courseCache.current.delete(updatedCourse.id);
+    courseCache.current.set(updatedCourse.id, updatedCourse);
 
     const updatedLearningSession = { ...learningSession, course: updatedCourse };
     if (updatedTopic) {
