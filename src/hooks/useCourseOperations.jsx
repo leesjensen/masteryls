@@ -139,14 +139,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     setLearningSession({ updatedCourse, topic: updatedCourse.allTopics[0] });
   }
 
-  async function updateCourseStructure(updatedCourse, commitMessage = 'update course structure') {
+  async function updateCourseStructure(updatedCourse, updatedTopic, commitMessage = 'update course structure') {
     const token = user.getSetting('gitHubToken', updatedCourse.id);
     if (user.isEditor(updatedCourse.id) && token) {
-      await _updateCourseStructure(token, updatedCourse, commitMessage);
+      await _updateCourseStructure(token, updatedCourse, updatedTopic, commitMessage);
     }
   }
 
-  async function _updateCourseStructure(token, updatedCourse, commitMessage = 'update course structure') {
+  async function _updateCourseStructure(token, updatedCourse, updatedTopic, commitMessage = 'update course structure') {
     const courseData = {
       title: updatedCourse.title,
       schedule: updatedCourse.schedule ? updatedCourse.schedule.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
@@ -172,6 +172,13 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
     await service.saveCourseSettings({ id: updatedCourse.id, gitHub: { ...updatedCourse.gitHub, commit } });
     courseCache.current.delete(updatedCourse.id);
+
+    const updatedLearningSession = { ...learningSession, course: updatedCourse };
+    if (updatedTopic) {
+      updatedLearningSession.topic = updatedTopic;
+    }
+
+    setLearningSession(updatedLearningSession);
   }
 
   async function addModule(title) {
@@ -184,22 +191,20 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       topics: [],
     });
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    setLearningSession({ ...learningSession, course: updatedCourse });
 
-    await updateCourseStructure(updatedCourse, `add(module) ${title.trim()}`);
+    await updateCourseStructure(updatedCourse, null, `add(module) ${title.trim()}`);
   }
 
-  async function generateTopic(topic, prompt) {
+  async function generateTopic(topicId, prompt) {
     if (!learningSession?.course) return;
     const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
       try {
         const updatedCourse = Course.copy(course);
-        topic = updatedCourse.topicFromId(topic.id);
+        const topic = updatedCourse.topicFromId(topicId);
         topic.description = prompt;
         topic.state = 'stable';
-        setLearningSession({ ...learningSession, course: updatedCourse, topic });
 
         const basicContent = await generateTopicContent(topic, prompt);
         if (basicContent) {
@@ -207,9 +212,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           await service.updateGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${topic.title}`);
         }
 
-        await updateCourseStructure(updatedCourse, `add(course) topic '${topic.title}'`);
-
-        changeTopic(topic);
+        await updateCourseStructure(updatedCourse, topic, `add(course) topic '${topic.title}'`);
       } catch (error) {
         throw new Error(`Failed to generate topic. ${error.message}`);
       }
@@ -236,8 +239,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           }
         }
 
-        setLearningSession({ ...learningSession, course: updatedCourse });
-        await updateCourseStructure(updatedCourse, `add(course) topics`);
+        await updateCourseStructure(updatedCourse, null, `add(course) topics`);
       } catch (error) {
         throw new Error(`Failed to generate topics. ${error.message}`);
       }
@@ -274,8 +276,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           await service.commitGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
         }
 
-        await updateCourseStructure(updatedCourse, `add(course) topic '${newTopic.title}'`);
-        setLearningSession({ ...learningSession, course: updatedCourse, topic: newTopic });
+        await updateCourseStructure(updatedCourse, newTopic, `add(course) topic '${newTopic.title}'`);
       } catch (error) {
         alert(`Failed to add topic: ${error.message}`);
       }
@@ -300,11 +301,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
     const token = user.getSetting('gitHubToken', learningSession.course.id);
-    const [updatedCourse, updatedTopic] = await _updateTopic(token, learningSession.course, topic, content, commitMessage);
-
-    setLearningSession({ ...learningSession, topic: updatedTopic, course: updatedCourse });
-
-    return updatedTopic;
+    await _updateTopic(token, learningSession.course, topic, content, commitMessage);
   }
 
   async function _updateTopic(token, course, topic, content, commitMessage = `update(${topic.title})`) {
@@ -316,9 +313,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
     updatedTopic.commit = commit;
-    await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
-
-    return [updatedCourse, updatedTopic];
+    await _updateCourseStructure(token, updatedCourse, updatedTopic, `update(course) topic ${topic.title}`);
   }
 
   async function renameTopic(moduleIdx, topicIdx, newTitle, newDescription, newType) {
@@ -333,9 +328,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     topic.type = newType || topic.type;
     updatedCourse.modules[moduleIdx].topics[topicIdx] = topic;
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    setLearningSession({ ...learningSession, course: updatedCourse });
 
-    await updateCourseStructure(updatedCourse, `rename(course) topic ${topic.title} with type ${topic.type}`);
+    await updateCourseStructure(updatedCourse, topic, `rename(course) topic ${topic.title} with type ${topic.type}`);
   }
 
   async function removeTopic(moduleIndex, topicIndex, course, topic) {
@@ -348,8 +342,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
-    await updateCourseStructure(updatedCourse, `remove(course) topic ${topic.title}`);
-
     // If the removed topic was the current topic, navigate to the first topic
     let currentTopic = learningSession?.topic;
     if (currentTopic && currentTopic.path === topic.path) {
@@ -359,7 +351,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       }
     }
 
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: currentTopic });
+    await updateCourseStructure(updatedCourse, currentTopic, `remove(course) topic ${topic.title}`);
   }
 
   async function discardTopicMarkdown(updatedTopic) {
@@ -383,12 +375,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     return markdown;
-  }
-
-  function changeTopic(newTopic) {
-    //setTopic(newTopic);
-    //
-    console.log('changeTopic', newTopic);
   }
 
   function getAdjacentTopic(direction = 'prev') {
@@ -599,7 +585,6 @@ ${topicDescription || 'overview content placeholder'}`;
     removeTopic,
     renameTopic,
     updateTopic,
-    changeTopic,
     getAdjacentTopic,
     addTopicFiles,
     deleteTopicFiles,

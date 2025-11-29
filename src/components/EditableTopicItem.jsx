@@ -28,7 +28,7 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
     setIsLoading(true);
     try {
       if (topic.state === 'stub') {
-        await courseOps.generateTopic(topic, description);
+        await courseOps.generateTopic(topic.id, description);
         setShowEditForm(false);
       } else {
         courseOps.renameTopic(moduleIndex, topicIndex, title, description, type);

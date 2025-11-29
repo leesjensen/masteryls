@@ -59,8 +59,7 @@ function Contents({ courseOps, service, currentTopic, course, editorVisible }) {
     const [moved] = updatedCourse.modules[fromModuleIdx].topics.splice(fromTopicIdx, 1);
     updatedCourse.modules[toModuleIdx].topics.splice(toTopicIdx, 0, moved);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    courseOps.setCurrentCourse(updatedCourse);
-    await courseOps.updateCourseStructure(updatedCourse, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
+    await courseOps.updateCourseStructure(updatedCourse, null, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
   };
 
   if (!course) {
