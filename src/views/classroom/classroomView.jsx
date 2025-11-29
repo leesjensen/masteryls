@@ -6,7 +6,7 @@ import Editor from '../../components/editor/editor.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { useNavigate } from 'react-router-dom';
 
-export default function ClassroomView({ courseOps, service, user, learningSession, settings }) {
+export default function ClassroomView({ courseOps, service, user, learningSession, setLearningSession, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const isResizing = React.useRef(false);
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ export default function ClassroomView({ courseOps, service, user, learningSessio
 
   let content = null;
   if (editorVisible) {
-    content = <Editor courseOps={courseOps} service={service} user={user} learningSession={learningSession} />;
+    content = <Editor courseOps={courseOps} service={service} user={user} learningSession={learningSession} setLearningSession={setLearningSession} />;
   } else {
     content = <Instruction courseOps={courseOps} course={learningSession.course} topic={learningSession.topic} user={user} />;
   }

@@ -9,7 +9,7 @@ export default function Toolbar({ courseOps, user, course, settings, topic, edit
 
   function displaySchedule() {
     courseOps.setSidebarVisible('start');
-    courseOps.changeTopic({ name: 'Schedule', path: course.schedule });
+    navigate(`/course/${course.id}/topic/${course.schedule}`);
   }
 
   function getNextWindowState() {
@@ -20,7 +20,7 @@ export default function Toolbar({ courseOps, user, course, settings, topic, edit
   }
 
   function navigateToTopic(direction) {
-    const newTopic = courseOps.navigateToAdjacentTopic(direction);
+    const newTopic = courseOps.getAdjacentTopic(direction);
     if (newTopic) {
       navigate(`/course/${course.id}/topic/${newTopic.id}`);
     }

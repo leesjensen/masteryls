@@ -104,8 +104,6 @@ async function load(catalogEntry) {
   courseData.id = catalogEntry.id;
   courseData.links = catalogEntry.links || {};
   courseData.links.gitHub = gitHubLinks;
-  courseData.schedule = courseData.schedule ? `${gitHubLinks.rawUrl}/${courseData.schedule}` : undefined;
-  courseData.syllabus = courseData.syllabus ? `${gitHubLinks.rawUrl}/${courseData.syllabus}` : undefined;
   courseData.gitHub = catalogEntry.gitHub;
 
   for (const module of courseData.modules) {

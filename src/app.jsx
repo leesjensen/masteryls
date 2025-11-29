@@ -66,22 +66,6 @@ function App({ initialUser }) {
     }
   }
 
-  function setCourseInternal(newCourse) {
-    if (newCourse) {
-      if (!location.pathname.startsWith(`/course/${newCourse.id}`)) {
-        navigate(`/course/${newCourse.id}`);
-      }
-    } else {
-      navigate('/dashboard');
-    }
-  }
-
-  function setTopicInternal(newTopic) {
-    if (learningSession && learningSession.topic.id != newTopic.id) {
-      navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
-    }
-  }
-
   const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setLearningSession, setSettings);
 
   // Pass all shared state through Outlet context
@@ -171,5 +155,5 @@ function ClassroomPage() {
     return null;
   }
 
-  return <ClassroomView courseOps={courseOps} service={service} user={user} learningSession={learningSession} settings={settings} />;
+  return <ClassroomView courseOps={courseOps} service={service} user={user} learningSession={learningSession} setLearningSession={setLearningSession} settings={settings} />;
 }

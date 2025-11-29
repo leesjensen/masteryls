@@ -10,9 +10,7 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
 
   useEffect(() => {
     if (content) {
-      const md = processRelativeImagePaths(content, topic.path);
-      setMarkdown(md);
-      setIsLoading(false);
+      load(content, topic.path);
       return;
     }
 
@@ -20,9 +18,7 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
       if (!isLoading) {
         setIsLoading(true);
         courseOps.getTopicMarkdown(topic).then((md) => {
-          md = processRelativeImagePaths(md, topic.path);
-          setMarkdown(md);
-          setIsLoading(false);
+          load(md, topic.path);
         });
       }
     }
@@ -39,11 +35,17 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
     }
   }, [markdown]);
 
+  function load(content, path) {
+    const md = processRelativeImagePaths(content, path);
+    setMarkdown(md);
+    setIsLoading(false);
+  }
+
   function processRelativeImagePaths(md, baseUrl) {
     const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
-    md = md.replace(/\]\(([^\)\s]+)\)/g, (match, p1) => {
-      const prefixedPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${basePath}/${p1}`;
-      return `](${prefixedPath})`;
+    md = md.replace(/!\[(.+)\]\(([^\)\s]+)\)/g, (match, p1, p2) => {
+      const prefixedPath = p2.startsWith('/') || p2.startsWith('http') ? p2 : `${basePath}/${p2}`;
+      return `![${p1}](${prefixedPath})`;
     });
     md = md.replace(/ src="([^"]+)"/g, (match, p1) => {
       const fullPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${basePath}/${p1}`;
@@ -82,7 +84,7 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
         )}
 
         <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>
-          {markdown ? <Markdown content={markdown} languagePlugins={languagePlugins} /> : <div className="flex items-center justify-center" />}
+          {markdown ? <Markdown topic={topic} content={markdown} languagePlugins={languagePlugins} /> : <div className="flex items-center justify-center" />}
         </div>
       </div>
 

@@ -10,7 +10,7 @@ import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-export default function Markdown({ content, languagePlugins = [] }) {
+export default function Markdown({ topic, content, languagePlugins = [] }) {
   const customComponents = {
     pre({ node, children, className, ...props }) {
       return <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }}>{children}</pre>;
