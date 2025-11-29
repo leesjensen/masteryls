@@ -249,8 +249,9 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     if (files.length === 0) return 0;
     const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
     let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
-    updateQuizProgress(id, { text: feedback, percentCorrect });
+    //    updateQuizProgress(id, { feedback, percentCorrect: 100 });
     const details = { type, files: progressFiles, feedback };
+    updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;
   }
@@ -258,8 +259,9 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
   async function onUrlQuiz({ id, title, type, body, url }) {
     if (!url) return 0;
     let feedback = 'Submission received. Thank you!';
-    updateQuizProgress(id, { text: feedback, percentCorrect: 100 });
+    //    updateQuizProgress(id, { feedback, percentCorrect: 100 });
     const details = { type, url, feedback };
+    updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;
   }
