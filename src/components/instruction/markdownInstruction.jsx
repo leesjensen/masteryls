@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import DiscussionPanel from '../../components/DiscussionPanel';
 import Markdown from '../../components/Markdown';
 
-export default function MarkdownInstruction({ courseOps, topic, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
+export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [discussionOpen, setDiscussionOpen] = useState(false);
@@ -10,25 +10,25 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
 
   useEffect(() => {
     if (content) {
-      load(content, topic.path);
+      load(content, learningSession.topic.path);
       return;
     }
 
-    if (topic.path) {
+    if (learningSession.topic.path) {
       if (!isLoading) {
         setIsLoading(true);
-        courseOps.getTopicMarkdown(topic).then((md) => {
-          load(md, topic.path);
+        courseOps.getTopicMarkdown(learningSession.topic).then((md) => {
+          load(md, learningSession.topic.path);
         });
       }
     }
-  }, [topic]);
+  }, [learningSession]);
 
   useEffect(() => {
     if (markdown) {
       // Reset scroll to top of the scrollable container
-      if (topic.anchor) {
-        scrollToAnchor(topic.anchor, containerRef);
+      if (learningSession.topic.anchor) {
+        scrollToAnchor(learningSession.topic.anchor, containerRef);
       } else if (containerRef.current) {
         containerRef.current.scrollTo({ top: 0, behavior: 'auto' });
       }
@@ -84,11 +84,11 @@ export default function MarkdownInstruction({ courseOps, topic, user, languagePl
         )}
 
         <div ref={containerRef} className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>
-          {markdown ? <Markdown topic={topic} content={markdown} languagePlugins={languagePlugins} /> : <div className="flex items-center justify-center" />}
+          {markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} /> : <div className="flex items-center justify-center" />}
         </div>
       </div>
 
-      <DiscussionPanel isOpen={discussionOpen} onClose={() => setDiscussionOpen(false)} topicTitle={topic?.title || 'Current Topic'} topicContent={markdown} user={user} />
+      <DiscussionPanel isOpen={discussionOpen} onClose={() => setDiscussionOpen(false)} topicTitle={learningSession.topic?.title || 'Current Topic'} topicContent={markdown} user={user} />
     </>
   );
 }

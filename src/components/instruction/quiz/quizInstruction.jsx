@@ -16,7 +16,7 @@ import { formatFileSize } from '../../../utils';
  * @component
  * @param {Object} props - The component props
  * @param {Object} props.courseOps - Course operations object containing methods for quiz feedback and progress tracking
- * @param {string} props.topic - The current topic identifier
+ * @param {string} props.learningSession - The current learning session identifier
  * @param {Object} props.user - User object containing user information
  * @param {string|null} [props.content=null] - Use this content instead of loading the topic content
  * @param {string} [props.instructionState='learning'] - Current instruction state ('learning', 'exam', or 'examReview')
@@ -40,7 +40,7 @@ import { formatFileSize } from '../../../utils';
  *
  * @returns {JSX.Element} The rendered quiz instruction component
  */
-export default function QuizInstruction({ courseOps, topic, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
+export default function QuizInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
   /**
    * injectQuiz responds to a Markdown processor request to render a quiz.
    * @param {string} content - The raw quiz markdown content
@@ -279,7 +279,7 @@ export default function QuizInstruction({ courseOps, topic, user, content = null
     <>
       <MarkdownInstruction
         courseOps={courseOps}
-        topic={topic}
+        learningSession={learningSession}
         user={user}
         languagePlugins={[
           {

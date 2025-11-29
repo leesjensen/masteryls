@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
@@ -10,7 +11,8 @@ import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-export default function Markdown({ topic, content, languagePlugins = [] }) {
+export default function Markdown({ learningSession, content, languagePlugins = [] }) {
+  const navigate = useNavigate();
   const customComponents = {
     pre({ node, children, className, ...props }) {
       return <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }}>{children}</pre>;
@@ -67,6 +69,8 @@ export default function Markdown({ topic, content, languagePlugins = [] }) {
             e.preventDefault();
             if (href?.startsWith('http')) {
               window.open(href, '_blank', 'noopener,noreferrer');
+            } else if (href?.startsWith('/')) {
+              navigate(href);
             } else {
               const match = href?.match(/^([^#]*)(#.*)?$/);
               const hrefPath = match?.[1];
@@ -75,10 +79,11 @@ export default function Markdown({ topic, content, languagePlugins = [] }) {
               if (!hrefPath && hrefAnchor) {
                 scrollToAnchor(hrefAnchor, containerRef);
               } else if (hrefPath) {
-                const resolvedUrl = new URL(hrefPath, topic.path).toString();
-                const targetTopic = course.topicFromPath(resolvedUrl, false);
+                const resolvedUrl = new URL(hrefPath, learningSession.topic.path).toString();
+                const targetTopic = learningSession.course.topicFromPath(resolvedUrl, false);
                 if (targetTopic) {
-                  courseOps.changeTopic({ ...targetTopic, anchor: hrefAnchor });
+                  const anchor = hrefAnchor ? `#${hrefAnchor}` : '';
+                  navigate(`/course/${learningSession.course.id}/topic/${targetTopic.id}${anchor}`);
                 }
               }
             }

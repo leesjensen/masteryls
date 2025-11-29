@@ -77,7 +77,7 @@ export default function ClassroomView({ courseOps, service, user, learningSessio
   if (editorVisible) {
     content = <Editor courseOps={courseOps} service={service} user={user} learningSession={learningSession} setLearningSession={setLearningSession} />;
   } else {
-    content = <Instruction courseOps={courseOps} course={learningSession.course} topic={learningSession.topic} user={user} />;
+    content = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} />;
   }
 
   return (

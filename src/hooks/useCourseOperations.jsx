@@ -283,7 +283,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function getTopicMarkdown(topic) {
-    if (!learningSession?.course) return;
+    if (!learningSession?.course || learningSession.topic?.type === 'video') return '';
+
     const course = learningSession.course;
     if (course && course.markdownCache.has(topic.path)) {
       return course.markdownCache.get(topic.path);

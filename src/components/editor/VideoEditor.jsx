@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import Course from '../../course';
 import VideoInstruction from '../instruction/videoInstruction';
 
-export default function VideoEditor({ topic }) {
-  const [url, setUrl] = useState(topic?.path || '');
+export default function VideoEditor({ learningSession }) {
+  const [url, setUrl] = useState(learningSession?.topic?.path || '');
   const [dirty, setDirty] = useState(false);
 
   React.useEffect(() => {
-    setUrl(topic?.path || '');
+    setUrl(learningSession?.topic?.path || '');
     setDirty(false);
-  }, [topic]);
+  }, [learningSession]);
 
   const handleUrlChange = (e) => {
     setUrl(e.target.value);
@@ -42,7 +41,7 @@ export default function VideoEditor({ topic }) {
           Save
         </button>
       </div>
-      <VideoInstruction topic={{ ...topic, path: url }} />
+      <VideoInstruction learningSession={{ ...learningSession, topic: { ...learningSession.topic, path: url } }} />
     </div>
   );
 }

@@ -59,7 +59,7 @@ export default function Editor({ courseOps, service, user, learningSession, setL
     try {
       const updatedTopic = await courseOps.updateTopic(learningSession.topic, contentRef.current);
       setDirty(false);
-      setLearningSession({ ...learningSession, topic: updatedTopic });
+      //      setLearningSession({ ...learningSession, topic: updatedTopic });
     } catch (error) {
       alert('Failed to commit changes. Please try again.');
     } finally {
@@ -76,15 +76,23 @@ export default function Editor({ courseOps, service, user, learningSession, setL
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
   }
 
-  let currentEditor = <MarkdownEditor ref={markdownEditorRef} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
-  if (editorState === 'preview') {
-    currentEditor = <Instruction courseOps={courseOps} topic={learningSession.topic} course={learningSession.course} user={user} content={content} instructionState={editorState} />;
+  function getEditor() {
+    let editor;
+    if (learningSession.topic?.type === 'video') {
+      editor = <VideoEditor learningSession={learningSession} />;
+    } else {
+      editor = <MarkdownEditor ref={markdownEditorRef} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
+      if (editorState === 'preview') {
+        editor = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={editorState} />;
+      }
+    }
+    return editor;
   }
 
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
-        return <VideoEditor topic={learningSession.topic} />;
+        return getEditor();
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -115,7 +123,7 @@ export default function Editor({ courseOps, service, user, learningSession, setL
               </div>
             </div>
             {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
-            <div className="flex-8/10 flex overflow-hidden">{currentEditor}</div>
+            <div className="flex-8/10 flex overflow-hidden">{getEditor()}</div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
             </div>

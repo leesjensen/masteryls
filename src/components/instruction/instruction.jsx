@@ -5,7 +5,7 @@ import QuizInstruction from './quiz/quizInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 import { addQuizProgress } from './quiz/quizProgressStore';
 
-export default function Instruction({ courseOps, topic, course, user, content = null, instructionState = 'learning' }) {
+export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const containerRef = useRef(null);
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
@@ -19,36 +19,36 @@ export default function Instruction({ courseOps, topic, course, user, content = 
       });
     }
     fetchExamState();
-  }, [topic, courseOps?.enrollment]);
+  }, [learningSession, courseOps?.enrollment]);
 
   useProgressTracking({
-    activityId: topic?.id,
+    activityId: learningSession.topic?.id,
     activityType: 'instructionView',
     onProgress: courseOps?.addProgress,
-    enabled: !content && !!topic?.path && !!courseOps?.addProgress,
+    enabled: !content && !!learningSession.topic?.path && !!courseOps?.addProgress,
     minDuration: 5,
-    dependencies: [topic?.path],
+    dependencies: [learningSession.topic?.path],
   });
 
   if (loadingProgress) {
     return null;
   }
 
-  const contentAvailable = topic && topic.path && (!topic.state || topic.state === 'stable');
+  const contentAvailable = learningSession.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'stable');
   if (!contentAvailable) {
     return null;
   }
 
   let instructionComponent;
-  switch (topic.type) {
+  switch (learningSession.topic.type) {
     case 'video':
-      instructionComponent = <VideoInstruction topic={topic} courseOps={courseOps} />;
+      instructionComponent = <VideoInstruction learningSession={learningSession} courseOps={courseOps} />;
       break;
     case 'exam':
-      instructionComponent = <ExamInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={instructionState} />;
+      instructionComponent = <ExamInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
       break;
     default:
-      instructionComponent = <QuizInstruction courseOps={courseOps} topic={topic} user={user} content={content} instructionState={instructionState} />;
+      instructionComponent = <QuizInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
       break;
   }
 
