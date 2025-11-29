@@ -22,7 +22,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         });
       }
     }
-  }, [learningSession]);
+  }, [learningSession, content]);
 
   useEffect(() => {
     if (markdown) {

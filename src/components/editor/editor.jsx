@@ -31,7 +31,7 @@ export default function Editor({ courseOps, service, user, learningSession }) {
 
       return async () => {
         if (dirtyRef.current) {
-          if (window.confirm('Do you want to commit your changes?')) {
+          if (window.confirm('You have unsaved changes. Do you want to commit them before leaving?')) {
             await commit();
           }
         }
@@ -75,10 +75,8 @@ export default function Editor({ courseOps, service, user, learningSession }) {
   }
 
   function getEditor() {
-    let editor;
-    if (learningSession.topic?.type === 'video') {
-      editor = <VideoEditor learningSession={learningSession} />;
-    } else {
+    let editor = null;
+    if (learningSession.topic?.type !== 'video') {
       editor = <MarkdownEditor ref={markdownEditorRef} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
       if (editorState === 'preview') {
         editor = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={editorState} />;
@@ -90,7 +88,7 @@ export default function Editor({ courseOps, service, user, learningSession }) {
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
-        return getEditor();
+        return <VideoEditor learningSession={learningSession} />;
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -103,7 +101,7 @@ export default function Editor({ courseOps, service, user, learningSession }) {
               </div>
             )}
             <div className="basis-[32px] pt-2 flex items-center justify-between">
-              <h1 className={`text-lg font-bold pl-2 ${dirty ? 'text-amber-400' : 'text-gray-800'}`}>Editor</h1>
+              <h1 className={`text-lg font-bold pl-2 text-gray-800`}>Editor{dirty ? '*' : ''}</h1>
 
               <div className="flex items-center">
                 <button className="mx-1 px-3 py-1 w-18 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => setEditorState((v) => (v == 'preview' ? 'editing' : 'preview'))}>
