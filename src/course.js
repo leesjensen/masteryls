@@ -24,7 +24,7 @@ export default class Course {
     return newCourse;
   }
 
-  updateCatalogEntry(catalogEntry) {
+  copyWithNewSettings(catalogEntry) {
     const newCourse = Course.copy(this);
     Object.assign(newCourse, catalogEntry);
     return newCourse;

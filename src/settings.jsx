@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import ConfirmDialog from './hooks/confirmDialog.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
 import UserSelect from './components/userSelect.jsx';
+import { useNavigate } from 'react-router-dom';
 
 export default function Settings({ courseOps, service, user, course }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const dialogRef = useRef(null);
+  const navigate = useNavigate();
   const { showAlert } = useAlert();
   const [users, setUsers] = useState([]);
   const [selectedEditors, setSelectedEditors] = useState([]);
@@ -104,7 +106,7 @@ export default function Settings({ courseOps, service, user, course }) {
         },
       };
       service.saveCourseSettings(catalogEntry);
-      const newCourse = course.updateCatalogEntry(catalogEntry);
+      const newCourse = course.copyWithNewSettings(catalogEntry);
       courseOps.setCurrentCourse(newCourse);
     }
 
@@ -137,6 +139,7 @@ export default function Settings({ courseOps, service, user, course }) {
   const deleteCourse = async () => {
     await service.deleteCourse(user, course);
     courseOps.setCurrentCourse(null);
+    navigate('/dashboard');
     showAlert({
       message: (
         <div className="text-xs">
