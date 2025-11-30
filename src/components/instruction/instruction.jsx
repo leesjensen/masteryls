@@ -6,7 +6,6 @@ import useProgressTracking from '../../hooks/useProgressTracking';
 import { addQuizProgress } from './quiz/quizProgressStore';
 
 export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
-  const containerRef = useRef(null);
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
@@ -52,9 +51,5 @@ export default function Instruction({ courseOps, learningSession, user, content 
       break;
   }
 
-  return (
-    <section ref={containerRef} className="flex-1 overflow-auto rounded-xs border border-gray-200">
-      {instructionComponent}
-    </section>
-  );
+  return instructionComponent;
 }

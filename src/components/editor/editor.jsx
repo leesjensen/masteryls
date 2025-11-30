@@ -8,7 +8,7 @@ import useLatest from '../../hooks/useLatest';
 
 export default function Editor({ courseOps, service, user, learningSession }) {
   const [content, setContent] = React.useState('');
-  const [editorState, setEditorState] = React.useState(false);
+  const [editorState, setEditorState] = React.useState('learning'); // 'editing' | 'preview'
   const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
 

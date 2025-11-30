@@ -278,21 +278,19 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
   }
 
   return (
-    <>
-      <MarkdownInstruction
-        courseOps={courseOps}
-        learningSession={learningSession}
-        user={user}
-        languagePlugins={[
-          {
-            lang: 'masteryls',
-            handler: handleQuizClick,
-            processor: injectQuiz,
-          },
-        ]}
-        content={content}
-        instructionState={instructionState}
-      />
-    </>
+    <MarkdownInstruction
+      courseOps={courseOps}
+      learningSession={learningSession}
+      user={user}
+      languagePlugins={[
+        {
+          lang: 'masteryls',
+          handler: handleQuizClick,
+          processor: injectQuiz,
+        },
+      ]}
+      content={content}
+      instructionState={instructionState}
+    />
   );
 }
