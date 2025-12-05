@@ -425,9 +425,15 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         });
         break;
       case 'GET':
+        let json: any = progress;
+        const viewType = route
+          .request()
+          .url()
+          .match(/type=eq\.(\w+)/)?.[1];
+        json = viewType ? progress.filter((p) => p.type === viewType) : progress;
         await route.fulfill({
           status: 200,
-          json: progress,
+          json,
         });
         break;
     }
@@ -508,7 +514,15 @@ async function navigateToMetrics(page: any) {
 
   await _register(page);
 
-  //  await page.getByRole('button', { name: 'Rocket Science' }).click();
+  await page.getByRole('button', { name: '📊' }).click();
+}
+
+async function navigateToProgress(page: any) {
+  await page.goto('http://localhost:5173/');
+
+  await _register(page);
+
+  await page.getByRole('button', { name: '🏅' }).click();
 }
 
 async function navigateToCourse(page: any) {
@@ -532,4 +546,4 @@ async function _register(page: any) {
   await page.getByRole('button', { name: 'Create Account' }).click();
 }
 
-export { initBasicCourse, navigateToCourse, navigateToMetrics, register };
+export { initBasicCourse, navigateToCourse, navigateToMetrics, navigateToProgress, register };
