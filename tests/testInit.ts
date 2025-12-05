@@ -58,7 +58,7 @@ const courseJson = {
       title: 'Module 1',
       topics: [
         { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
-        { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'topic 1', type: 'exam', path: 'something/more/topic1.md' },
+        { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'topic 1', type: 'instruction', path: 'something/more/topic1.md' },
       ],
     },
     {
@@ -185,16 +185,14 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         break;
       case 'GET':
         await route.fulfill({
-          json: [
-            {
-              id: '15cb92ef-d2d0-4080-8770-999516448960',
-              name: 'Bud',
-              email: 'bud@cow.com',
-              settings: {
-                language: 'en',
-              },
+          json: {
+            id: '15cb92ef-d2d0-4080-8770-999516448960',
+            name: 'Bud',
+            email: 'bud@cow.com',
+            settings: {
+              language: 'en',
             },
-          ],
+          },
         });
         break;
     }
@@ -263,43 +261,51 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     if (route.request().method() === 'POST') {
       await route.fulfill({
         json: {
-          id: '15cb92ef-d2d0-4080-8770-999516448960',
-          aud: 'authenticated',
-          role: 'authenticated',
-          email: 'bud@cow.com',
-          phone: '',
-          confirmation_sent_at: '2025-09-01T14:16:59.817650523Z',
-          app_metadata: {
-            provider: 'email',
-            providers: ['email'],
-          },
-          user_metadata: {
+          access_token: 'eyJhbGce1iJIUzI1NiIsImtpZCI6IjZoWjRjczBYNDFhcB2OaGoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3ZsY3NhdnRmanl2eXByeWpmd2lzLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJjZmNmZWZkZS02Y2FiLTRkMTktYmRmOC0zNzU5NzJjNmRlM2UiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY0OTYzMzc0LCJpYXQiOjE3NjQ5NTk3NzQsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJ0ZXN0QHRlc3QuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiY2ZjZmVmZGUtNmNhYi00ZDE5LWJkZjgtMzc1OTcyYzZkZTNlIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NjQ5NTk3NzR9XSwic2Vzc2lvbl9pZCI6Ijc0ZDY4NmU4LTAxZDYtNGQyNS05NDFkLWQ2Y2I0MDJmNmVhMiIsImlzX2Fub255bW91cyI6ZmFsc2V9.IhIVaQtdMUrLn5brBPAM9DvGfna-F5MDe2KLifjGuhI',
+          token_type: 'bearer',
+          expires_in: 3600,
+          expires_at: 1764963374,
+          refresh_token: 'gvk2nv5a3qf6',
+          user: {
+            id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+            aud: 'authenticated',
+            role: 'authenticated',
             email: 'bud@cow.com',
-            email_verified: false,
-            phone_verified: false,
-            sub: '15cb92ef-d2d0-4080-8770-999516448960',
-          },
-          identities: [
-            {
-              identity_id: 'da62636e-7136-4157-b189-fabd7e220a30',
-              id: '15cb92ef-d2d0-4080-8770-999516448960',
-              user_id: '15cb92ef-d2d0-4080-8770-999516448960',
-              identity_data: {
-                email: 'bud@cow.com',
-                email_verified: false,
-                phone_verified: false,
-                sub: '15cb92ef-d2d0-4080-8770-999516448960',
-              },
+            email_confirmed_at: '2025-12-05T18:36:14.729328472Z',
+            phone: '',
+            last_sign_in_at: '2025-12-05T18:36:14.745357585Z',
+            app_metadata: {
               provider: 'email',
-              last_sign_in_at: '2025-09-01T14:13:46.21866Z',
-              created_at: '2025-09-01T14:13:46.218719Z',
-              updated_at: '2025-09-01T14:13:46.218719Z',
-              email: 'bud@cow.com',
+              providers: ['email'],
             },
-          ],
-          created_at: '2025-09-01T14:13:46.154132Z',
-          updated_at: '2025-09-01T14:17:00.166842Z',
-          is_anonymous: false,
+            user_metadata: {
+              email: 'bud@cow.com',
+              email_verified: true,
+              phone_verified: false,
+              sub: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+            },
+            identities: [
+              {
+                identity_id: 'dfe107de-6dbe-4188-810c-7676e493937d',
+                id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+                user_id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+                identity_data: {
+                  email: 'bud@cow.com',
+                  email_verified: true,
+                  phone_verified: false,
+                  sub: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+                },
+                provider: 'email',
+                last_sign_in_at: '2025-12-05T18:36:14.69506583Z',
+                created_at: '2025-12-05T18:36:14.695757Z',
+                updated_at: '2025-12-05T18:36:14.695757Z',
+                email: 'bud@cow.com',
+              },
+            ],
+            created_at: '2025-12-05T18:36:14.648528Z',
+            updated_at: '2025-12-05T18:36:14.797412Z',
+            is_anonymous: false,
+          },
         },
       });
       return;
@@ -325,6 +331,12 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
             catalogId: 'dd48e7ef-8b47-4d99-88df-1c0295ef1c29',
             topicId: '77166861-eaec-440b-b701-b45445853514',
           },
+        });
+        break;
+      case 'GET':
+        await route.fulfill({
+          status: 200,
+          json: [],
         });
         break;
     }

@@ -18,7 +18,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
       });
     }
     fetchExamState();
-  }, [learningSession, courseOps?.enrollment]);
+  }, [learningSession]);
 
   useProgressTracking({
     activityId: learningSession.topic?.id,

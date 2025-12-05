@@ -121,7 +121,6 @@ function ClassroomPage() {
   const navigate = useNavigate();
 
   const { courseId, topicId } = useParams();
-  console.log('ClassroomPage render', { courseId, topicId, user, learningSession });
   React.useEffect(() => {
     (async () => {
       if (courseId !== null) {
@@ -155,5 +154,5 @@ function ClassroomPage() {
     return null;
   }
 
-  return <ClassroomView courseOps={courseOps} service={service} user={user} learningSession={learningSession} setLearningSession={setLearningSession} settings={settings} />;
+  return <ClassroomView courseOps={courseOps} service={service} user={user} learningSession={learningSession} settings={settings} />;
 }
