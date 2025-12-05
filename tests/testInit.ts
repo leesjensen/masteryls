@@ -163,6 +163,53 @@ graph TD;
 ![relative image](path/relative.svg)
 `;
 
+const supabaseAuthTokenResponse = {
+  access_token: 'eyJhbGce1iJIUzI1NiIsImtpZCI6IjZoWjRjczBYNDFhcB2OaGoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3ZsY3NhdnRmanl2eXByeWpmd2lzLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJjZmNmZWZkZS02Y2FiLTRkMTktYmRmOC0zNzU5NzJjNmRlM2UiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY0OTYzMzc0LCJpYXQiOjE3NjQ5NTk3NzQsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJ0ZXN0QHRlc3QuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiY2ZjZmVmZGUtNmNhYi00ZDE5LWJkZjgtMzc1OTcyYzZkZTNlIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NjQ5NTk3NzR9XSwic2Vzc2lvbl9pZCI6Ijc0ZDY4NmU4LTAxZDYtNGQyNS05NDFkLWQ2Y2I0MDJmNmVhMiIsImlzX2Fub255bW91cyI6ZmFsc2V9.IhIVaQtdMUrLn5brBPAM9DvGfna-F5MDe2KLifjGuhI',
+  token_type: 'bearer',
+  expires_in: 360000,
+  refresh_token: 'gvk2nv5a3qf6',
+  user: {
+    id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: 'bud@cow.com',
+    email_confirmed_at: '2025-12-05T18:36:14.729328472Z',
+    phone: '',
+    last_sign_in_at: '2025-12-05T18:36:14.745357585Z',
+    app_metadata: {
+      provider: 'email',
+      providers: ['email'],
+    },
+    user_metadata: {
+      email: 'bud@cow.com',
+      email_verified: true,
+      phone_verified: false,
+      sub: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+    },
+    identities: [
+      {
+        identity_id: 'dfe107de-6dbe-4188-810c-7676e493937d',
+        id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+        user_id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+        identity_data: {
+          email: 'bud@cow.com',
+          email_verified: true,
+          phone_verified: false,
+          sub: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
+        },
+        provider: 'email',
+        last_sign_in_at: '2025-12-05T18:36:14.69506583Z',
+        created_at: '2025-12-05T18:36:14.695757Z',
+        updated_at: '2025-12-05T18:36:14.695757Z',
+        email: 'bud@cow.com',
+      },
+    ],
+    created_at: '2025-12-05T18:36:14.648528Z',
+    updated_at: '2025-12-05T18:36:14.797412Z',
+    is_anonymous: false,
+  },
+};
+
 async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: { page: any; topicMarkdown?: string }) {
   const context = page.context();
 
@@ -256,57 +303,22 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     }
   });
 
+  // Supabase - Refresh token
+  await context.route(/.*supabase.co\/auth\/v1\/token(\?.+)?/, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        json: supabaseAuthTokenResponse,
+      });
+      return;
+    }
+    await route.continue();
+  });
+
   // Supabase - Sign up
   await context.route('**/auth/v1/signup', async (route) => {
     if (route.request().method() === 'POST') {
       await route.fulfill({
-        json: {
-          access_token: 'eyJhbGce1iJIUzI1NiIsImtpZCI6IjZoWjRjczBYNDFhcB2OaGoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3ZsY3NhdnRmanl2eXByeWpmd2lzLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJjZmNmZWZkZS02Y2FiLTRkMTktYmRmOC0zNzU5NzJjNmRlM2UiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY0OTYzMzc0LCJpYXQiOjE3NjQ5NTk3NzQsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJ0ZXN0QHRlc3QuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiY2ZjZmVmZGUtNmNhYi00ZDE5LWJkZjgtMzc1OTcyYzZkZTNlIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NjQ5NTk3NzR9XSwic2Vzc2lvbl9pZCI6Ijc0ZDY4NmU4LTAxZDYtNGQyNS05NDFkLWQ2Y2I0MDJmNmVhMiIsImlzX2Fub255bW91cyI6ZmFsc2V9.IhIVaQtdMUrLn5brBPAM9DvGfna-F5MDe2KLifjGuhI',
-          token_type: 'bearer',
-          expires_in: 3600,
-          expires_at: 1764963374,
-          refresh_token: 'gvk2nv5a3qf6',
-          user: {
-            id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
-            aud: 'authenticated',
-            role: 'authenticated',
-            email: 'bud@cow.com',
-            email_confirmed_at: '2025-12-05T18:36:14.729328472Z',
-            phone: '',
-            last_sign_in_at: '2025-12-05T18:36:14.745357585Z',
-            app_metadata: {
-              provider: 'email',
-              providers: ['email'],
-            },
-            user_metadata: {
-              email: 'bud@cow.com',
-              email_verified: true,
-              phone_verified: false,
-              sub: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
-            },
-            identities: [
-              {
-                identity_id: 'dfe107de-6dbe-4188-810c-7676e493937d',
-                id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
-                user_id: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
-                identity_data: {
-                  email: 'bud@cow.com',
-                  email_verified: true,
-                  phone_verified: false,
-                  sub: 'cfcfefde-6cab-4d19-bdf8-375972c6de3e',
-                },
-                provider: 'email',
-                last_sign_in_at: '2025-12-05T18:36:14.69506583Z',
-                created_at: '2025-12-05T18:36:14.695757Z',
-                updated_at: '2025-12-05T18:36:14.695757Z',
-                email: 'bud@cow.com',
-              },
-            ],
-            created_at: '2025-12-05T18:36:14.648528Z',
-            updated_at: '2025-12-05T18:36:14.797412Z',
-            is_anonymous: false,
-          },
-        },
+        json: supabaseAuthTokenResponse,
       });
       return;
     }
@@ -384,6 +396,30 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     await route.fulfill({
       body: topicMarkdown,
       contentType: 'text/plain; charset=utf-8',
+    });
+  });
+
+  await context.route('https://generativelanguage.googleapis.com/**/*:generateContent', async (route) => {
+    expect(route.request().method()).toBe('POST');
+    await route.fulfill({
+      status: 200,
+      json: {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: 'Great job! You correctly identified "The right answer" as the correct choice.\n\nKeep up the great work! You\'re on the right track.\n',
+                },
+              ],
+              role: 'model',
+            },
+            finishReason: 'STOP',
+          },
+        ],
+        modelVersion: 'gemini-2.0-flash',
+        responseId: '5kUzaZSOGtmnmtkPkLLpkA4',
+      },
     });
   });
 }

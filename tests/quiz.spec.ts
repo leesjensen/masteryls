@@ -26,6 +26,8 @@ test('quiz multiple choice', async ({ page }) => {
 
   await page.getByRole('radio', { name: 'This is the right answer' }).check();
   await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeChecked();
+
+  await expect(page.locator('pre')).toContainText('Great job!');
 });
 
 test('quiz multiple select', async ({ page }) => {
