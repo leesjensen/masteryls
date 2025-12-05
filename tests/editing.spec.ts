@@ -1,8 +1,6 @@
 import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, navigateToCourse } from './testInit';
 
-test('editor enabled', async ({ page }) => {});
-
 async function initWithEditingRights({ page }) {
   await initBasicCourse({ page });
 
