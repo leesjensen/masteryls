@@ -1,5 +1,24 @@
 import { expect } from 'playwright-test-coverage';
 
+const users = [
+  {
+    id: '15cb92ef-d2d0-4080-8770-999516448960',
+    name: 'Bud',
+    email: 'bud@cow.com',
+    settings: {
+      language: 'en',
+    },
+  },
+  {
+    id: 'afcfefde-6cab-4d49-bdf8-375972c6de3e',
+    name: 'Sally',
+    email: 'sally@bud.com',
+    settings: {
+      language: 'en',
+    },
+  },
+];
+
 const catalog = [
   {
     id: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
@@ -221,6 +240,9 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
           json: catalog,
         });
         break;
+      case 'POST':
+        await route.fulfill({ status: 201 });
+        break;
     }
   });
 
@@ -231,15 +253,12 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         await route.fulfill({ status: 201 });
         break;
       case 'GET':
+        let json: any = users;
+        if (route.request().url().includes('id=eq.')) {
+          json = users[0];
+        }
         await route.fulfill({
-          json: {
-            id: '15cb92ef-d2d0-4080-8770-999516448960',
-            name: 'Bud',
-            email: 'bud@cow.com',
-            settings: {
-              language: 'en',
-            },
-          },
+          json,
         });
         break;
     }
