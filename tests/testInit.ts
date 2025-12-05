@@ -182,6 +182,77 @@ graph TD;
 ![relative image](path/relative.svg)
 `;
 
+const progress = [
+  {
+    id: '0546cf7c-697b-4bc5-b98d-f409d78ec550',
+    createdAt: '2025-10-21T23:13:47.033173+00:00',
+    userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
+    enrollmentId: null,
+    activityId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+    duration: 6,
+    type: 'instructionView',
+    details: {},
+    catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+    topicId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+  },
+  {
+    id: '8373eef7-eb64-4eed-bf4d-cc600df9148c',
+    createdAt: '2025-12-05T23:17:55.454606+00:00',
+    userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
+    enrollmentId: 'bea019b9-46b4-4593-9dcd-0db2e87cbb90',
+    activityId: 'b6c7df2a-699f-43a8-8508-08630dcc5cc6',
+    duration: 4175,
+    type: 'instructionView',
+    details: {},
+    catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+    topicId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+  },
+  {
+    id: '42b0d4e3-d558-48aa-836b-034260571c1e',
+    createdAt: '2025-12-05T20:51:51.110791+00:00',
+    userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
+    enrollmentId: 'bea019b9-46b4-4593-9dcd-0db2e87cbb90',
+    activityId: 'a3b2a9f8-25e3-4ca4-8cca-42f3eb20537d',
+    duration: 0,
+    type: 'quizSubmit',
+    details: {
+      type: 'multiple-choice',
+      correct: [2],
+      feedback: 'Great job! You correctly identified "The right answer" as the correct choice.\n\nKeep up the great work! You\'re on the right track.',
+      selected: [2],
+      percentCorrect: 100,
+    },
+    catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+    topicId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+  },
+  {
+    id: 'c1d243cc-3384-4f74-8319-65f6e9281481',
+    createdAt: '2025-12-05T20:51:34.160867+00:00',
+    userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
+    enrollmentId: 'bea019b9-46b4-4593-9dcd-0db2e87cbb90',
+    activityId: 'b6c7df2a-699f-43a8-8508-08630dcc5cc6',
+    duration: 15,
+    type: 'instructionView',
+    details: {},
+    catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+    topicId: 'b6c7df2a-699f-43a8-8508-08630dcc5cc6',
+  },
+  {
+    id: 'baae3d83-0859-4e13-ad9b-6310f272ce95',
+    createdAt: '2025-12-05T20:51:09.433119+00:00',
+    userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
+    enrollmentId: 'd5384777-4137-41fa-bfb6-bfdb9f4c7aa3',
+    activityId: null,
+    duration: 0,
+    type: 'userLogin',
+    details: {
+      method: 'inApp',
+    },
+    catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+    topicId: 'b6c7df2a-699f-43a8-8508-08630dcc5cc6',
+  },
+];
+
 const supabaseAuthTokenResponse = {
   access_token: 'eyJhbGce1iJIUzI1NiIsImtpZCI6IjZoWjRjczBYNDFhcB2OaGoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3ZsY3NhdnRmanl2eXByeWpmd2lzLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJjZmNmZWZkZS02Y2FiLTRkMTktYmRmOC0zNzU5NzJjNmRlM2UiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY0OTYzMzc0LCJpYXQiOjE3NjQ5NTk3NzQsImVtYWlsIjoidGVzdEB0ZXN0LmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJ0ZXN0QHRlc3QuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiY2ZjZmVmZGUtNmNhYi00ZDE5LWJkZjgtMzc1OTcyYzZkZTNlIn0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NjQ5NTk3NzR9XSwic2Vzc2lvbl9pZCI6Ijc0ZDY4NmU4LTAxZDYtNGQyNS05NDFkLWQ2Y2I0MDJmNmVhMiIsImlzX2Fub255bW91cyI6ZmFsc2V9.IhIVaQtdMUrLn5brBPAM9DvGfna-F5MDe2KLifjGuhI',
   token_type: 'bearer',
@@ -350,24 +421,13 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
       case 'POST':
         await route.fulfill({
           status: 201,
-          json: {
-            id: '0546cf7c-697b-4bc5-b98d-f409d78ec550',
-            createdAt: '2025-10-21T23:13:47.033173+00:00',
-            userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
-            enrollmentId: null,
-            activityId: '77166861-eaec-440b-b701-b45445853514',
-            duration: 6,
-            type: 'instructionView',
-            details: {},
-            catalogId: 'dd48e7ef-8b47-4d99-88df-1c0295ef1c29',
-            topicId: '77166861-eaec-440b-b701-b45445853514',
-          },
+          json: progress[0],
         });
         break;
       case 'GET':
         await route.fulfill({
           status: 200,
-          json: [],
+          json: progress,
         });
         break;
     }
@@ -443,6 +503,14 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
   });
 }
 
+async function navigateToMetrics(page: any) {
+  await page.goto('http://localhost:5173/');
+
+  await _register(page);
+
+  //  await page.getByRole('button', { name: 'Rocket Science' }).click();
+}
+
 async function navigateToCourse(page: any) {
   await page.goto('http://localhost:5173/');
 
@@ -464,4 +532,4 @@ async function _register(page: any) {
   await page.getByRole('button', { name: 'Create Account' }).click();
 }
 
-export { initBasicCourse, navigateToCourse, register };
+export { initBasicCourse, navigateToCourse, navigateToMetrics, register };
