@@ -9,14 +9,14 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
 
   React.useEffect(() => {
     async function fetchExamState() {
-      if (courseOps?.enrollment) {
+      if (learningSession?.enrollment) {
         const state = await courseOps.getExamState();
         setExamState(state);
         setLoading(false);
       }
     }
     fetchExamState();
-  }, [courseOps?.enrollment]);
+  }, [learningSession?.enrollment]);
 
   const updateState = async (state) => {
     const details = { state };
@@ -60,7 +60,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
   } else if (!user) {
     return (
       <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">{topic.title}</h2>
+        <h2 className="text-2xl font-bold mb-4">{learningSession?.topic.title}</h2>
         <p className="mb-6">You must be a registered user to take an exam.</p>
       </div>
     );
@@ -78,8 +78,8 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
     return (
       <div className="p-6">
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
-          <div className="text-2xl font-bold text-blue-500">{topic.title}</div>
-          <p className="my-4">{topic.description}</p>
+          <div className="text-2xl font-bold text-blue-500">{learningSession?.topic.title}</div>
+          <p className="my-4">{learningSession?.topic.description}</p>
           <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => updateState('inProgress')}>
             Start exam
           </button>
@@ -119,7 +119,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
     return (
       <div className="p-6">
         <div className="bg-amber-50 border-1 border-amber-200 p-4 flex flex-col items-start">
-          <div className="text-2xl font-bold text-amber-500">{topic.title}</div>
+          <div className="text-2xl font-bold text-amber-500">{learningSession?.topic.title}</div>
           <p className="my-4">Carefully review your answers before submitting.</p>
           <button className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700" onClick={() => updateState('completed')}>
             Submit exam
