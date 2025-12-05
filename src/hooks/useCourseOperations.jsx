@@ -389,8 +389,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const token = user.getSetting('gitHubToken', course.id);
 
     files.forEach(async (file) => {
-      const contentPath = topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
-      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}/${file}`;
+      const contentPath = topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}${file}`;
       await service.deleteGitHubFile(gitHubUrl, token, `remove(topic) file ${file}`);
     });
   }
@@ -402,8 +402,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const commitMessage = `enhance(topic) ${learningSession.topic.title} with new file`;
 
     files.forEach(async (file) => {
-      const contentPath = learningSession.topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
-      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}/${file.name}`;
+      const contentPath = learningSession.topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}${file.name}`;
 
       const reader = new FileReader();
       reader.onload = () => {
