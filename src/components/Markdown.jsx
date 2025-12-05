@@ -71,6 +71,10 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               window.open(href, '_blank', 'noopener,noreferrer');
             } else if (href?.startsWith('/')) {
               navigate(href);
+            } else if (href?.startsWith('./')) {
+              const currentPath = window.location.pathname;
+              const newPath = new URL(href, window.location.origin + currentPath).pathname;
+              navigate(newPath);
             } else {
               const match = href?.match(/^([^#]*)(#.*)?$/);
               const hrefPath = match?.[1];
@@ -84,6 +88,8 @@ export default function Markdown({ learningSession, content, languagePlugins = [
                 if (targetTopic) {
                   const anchor = hrefAnchor ? `#${hrefAnchor}` : '';
                   navigate(`/course/${learningSession.course.id}/topic/${targetTopic.id}${anchor}`);
+                } else {
+                  window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
                 }
               }
             }
