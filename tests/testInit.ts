@@ -352,10 +352,9 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
           json: [
             {
               user: '15cb92ef-d2d0-4080-8770-999516448960',
-              right: 'editor',
-              object: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+              right: 'root',
               settings: {
-                token: 'xxxx',
+                geminiApiKey: 'xxxx',
               },
             },
             {
@@ -363,7 +362,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
               right: 'editor',
               object: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
               settings: {
-                token: 'xxxx',
+                gitHubToken: 'yyyy',
               },
             },
           ],

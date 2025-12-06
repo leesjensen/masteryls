@@ -75,6 +75,9 @@ test('quiz essay', async ({ page }) => {
   await page.getByRole('textbox').click();
   await page.getByRole('textbox').fill('example text');
   await expect(page.getByRole('textbox')).toHaveValue('example text');
+
+  await page.getByRole('button', { name: 'Submit essay' }).click();
+  await expect(page.locator('pre')).toContainText('Keep up the great work!');
 });
 
 test('quiz submission file', async ({ page }) => {
@@ -92,6 +95,23 @@ test('quiz submission file', async ({ page }) => {
 
   await expect(page.getByText('File submission', { exact: true })).toBeVisible();
   await expect(page.getByText('Simple file submission question')).toBeVisible();
+
+  // Set the files using a file chooser interception
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.getByText('Click to upload').click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: 'test.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('test file content'),
+  });
+
+  // Wait for the file to be processed and displayed in the UI
+  await expect(page.locator('text=Selected files')).toBeVisible();
+  await expect(page.locator('text=test.txt')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Submit files' }).click();
+  await expect(page.locator('pre')).toContainText('Submission received. Total files: 1. Total size: 17 Bytes.');
 });
 
 test('quiz submission url', async ({ page }) => {
@@ -109,4 +129,15 @@ test('quiz submission url', async ({ page }) => {
 
   await expect(page.getByText('URL submission', { exact: true })).toBeVisible();
   await expect(page.getByText('Simple url submission question')).toBeVisible();
+
+  const urlInput = page.locator('input[type="url"]');
+  await urlInput.click();
+  await urlInput.clear();
+  await urlInput.fill('https://cow.com');
+  await expect(urlInput).toHaveValue('https://cow.com');
+
+  await page.getByRole('button', { name: 'Submit URL' }).click();
+
+  //await page.getByText('Submission received.').waitFor({ timeout: 10000 });
+  await expect(page.getByText('Submission received.')).toBeVisible();
 });
