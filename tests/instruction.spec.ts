@@ -82,3 +82,32 @@ test('video', async ({ page }) => {
 
   await expect(page.locator('iframe[title="YouTube video player"]')).toBeVisible();
 });
+
+test('exam', async ({ page }) => {
+  const quizMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123456", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: quizMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('exam').click();
+  await page.getByRole('button', { name: 'Start exam' }).click();
+  await expect(page.getByRole('main')).toContainText('Carefully review your answers before submitting.');
+  await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeVisible();
+
+  await page.getByRole('radio', { name: 'This is the right answer' }).check();
+  await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeChecked();
+  await expect(page.locator('pre')).not.toContainText('Great job!');
+
+  await page.getByRole('button', { name: 'Submit exam' }).click();
+
+  await expect(page.getByRole('main')).toContainText('Submitted');
+  await expect(page.getByRole('main')).toContainText('1/1 questions submitted');
+  await expect(page.locator('pre')).toContainText('Great job!');
+});

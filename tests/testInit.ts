@@ -78,6 +78,7 @@ const courseJson = {
       topics: [
         { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
         { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'topic 1', type: 'instruction', path: 'something/more/topic1.md' },
+        { id: '564d5e6f-9999-9c0d-1e2f-ffff5c6d7777', title: 'exam', type: 'exam', path: 'something/exam.md' },
       ],
     },
     {
