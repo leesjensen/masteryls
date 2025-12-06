@@ -60,8 +60,8 @@ export const useAlert = () => {
  */
 function AlertDialog({ message, type, onClose }) {
   return (
-    <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-start z-[9999]">
-      <div className={`mt-16 min-w-[300px] p-4 rounded-sm shadow-2xl border-l-16 bg-white ${type === 'error' ? 'border-red-700 text-red-700' : 'bg-white border-blue-700 text-blue-700'}`}>
+    <div className="fixed inset-0 bg-gray-400/50 flex justify-center items-start z-[9999]" onClick={onClose}>
+      <div className={`mt-16 min-w-[300px] p-4 rounded-sm shadow-2xl border-l-16 bg-white ${type === 'error' ? 'border-red-700 text-red-700' : 'bg-white border-blue-700 text-blue-700'}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center">
           <span>{message}</span>
           <button onClick={onClose} className="ml-4 text-4xl font-bold hover:opacity-70 focus:outline-none">
