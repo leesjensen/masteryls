@@ -531,6 +531,18 @@ class Service {
     return fetch(url, request);
   }
 
+  async makeCanvasApiRequest(endpoint: string, method: string = 'GET', body?: object) {
+    const { data, error } = await supabase.functions.invoke('canvas', {
+      body: { endpoint, method, body },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
   async _loadUser({ id }: { id: string }) {
     const { data, error } = await supabase.from('user').select('id, name, email, settings').eq('id', id).single();
 

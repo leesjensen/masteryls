@@ -74,11 +74,11 @@ export default function Settings({ courseOps, user, course }) {
   };
 
   const handleExport = async () => {
-    //await courseOps.service.exportCourseToCanvas(course);
+    await courseOps.exportToCanvas(course);
     showAlert({
       message: (
         <div className="text-xs">
-          <div>Course export to Canvas initiated. Check your email for the download link.</div>
+          <div>Course export to Canvas initiated.</div>
         </div>
       ),
     });

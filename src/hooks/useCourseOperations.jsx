@@ -522,6 +522,11 @@ ${topicDescription || 'overview content placeholder'}`;
     }, {});
   }
 
+  async function exportToCanvas(course) {
+    const response = await service.makeCanvasApiRequest('/courses/20802', 'GET');
+    console.log('Canvas course response:', response);
+  }
+
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
     if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
       for (const topicName of topicNames) {
@@ -596,6 +601,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getProgress,
     getQuizProgress,
     getExamState,
+    exportToCanvas,
     service,
   };
 }
