@@ -92,8 +92,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
       setUpdateMessage('Creating roles and enrollment');
       await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
-      setUser(await service.currentUser());
-      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
       setUpdateMessage('Saving course structure');
       const gitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
@@ -102,21 +100,23 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       setUpdateMessage('Finalizing course creation');
       await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
       const course = await Course.create(newCatalogEntry);
-      setLearningSession({ enrollment, course, topic: course.allTopics[0] });
 
-      const settings = saveEnrollmentUiSettings(course.id, { editing: true });
-      setSettings(settings);
+      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
+      // setLearningSession({ enrollment, course, topic: course.allTopics[0] });
+
+      // const settings = saveEnrollmentUiSettings(course.id, { editing: true });
+      // setSettings(settings);
     } else {
       newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
       await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
-      setUser(await service.currentUser());
-      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
       const course = await Course.create(newCatalogEntry);
       courseCache.current.set(course.id, course);
-      setLearningSession({ enrollment, course, topic: course.allTopics[0] });
-      setSettings(getEnrollmentUiSettings(course.id));
-      await _populateTemplateTopics(course, ['Introduction', 'Syllabus', 'Overview'], gitHubToken);
+
+      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
+      // setLearningSession({ enrollment, course, topic: course.allTopics[0] });
+      // setSettings(getEnrollmentUiSettings(course.id));
+      // await _populateTemplateTopics(course, ['Introduction', 'Syllabus', 'Overview'], gitHubToken);
     }
     return enrollment;
   }

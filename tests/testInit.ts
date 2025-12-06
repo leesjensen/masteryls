@@ -313,7 +313,10 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         });
         break;
       case 'POST':
-        await route.fulfill({ status: 201 });
+        const postData = route.request().postDataJSON();
+        const responseJson = Array.isArray(postData) ? postData[0] : postData;
+        responseJson.id = '6660aaa7-0ff3-4267-b25e-4a7c3c99999';
+        await route.fulfill({ status: 201, json: responseJson });
         break;
     }
   });
@@ -340,7 +343,9 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
   await context.route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
-        await route.fulfill({ status: 201 });
+        const responseJson = route.request().postDataJSON();
+        responseJson.id = 'aaa0aaa7-0ff3-4267-b25e-4a7c3cfffff';
+        await route.fulfill({ status: 201, json: responseJson });
         break;
       case 'GET':
         await route.fulfill({
@@ -446,17 +451,26 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     await route.fulfill({ json: topicFiles });
   });
 
-  // GitHub - API request for specific file
+  // GitHub - request for README.md file
   await context.route('https://api.github.com/**/contents/README.md', async (route) => {
     switch (route.request().method()) {
       case 'PUT':
-        await route.fulfill({ status: 201 });
+        await route.fulfill({ status: 201, json: { commit: { sha: 'fakecommitsha123' } } });
         break;
       case 'GET':
         await route.fulfill({ json: topicFiles[0] });
         break;
-      default:
-        await route.continue();
+    }
+  });
+
+  // GitHub - request for course.json
+  await context.route('https://api.github.com/**/contents/course.json', async (route) => {
+    switch (route.request().method()) {
+      case 'PUT':
+        await route.fulfill({ status: 201, json: { commit: { sha: 'fakecommitsha123' } } });
+        break;
+      case 'GET':
+        await route.fulfill({ json: courseJson });
         break;
     }
   });
@@ -485,6 +499,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     });
   });
 
+  // Google Gemini API - generateContent
   await context.route('https://generativelanguage.googleapis.com/**/*:generateContent', async (route) => {
     expect(route.request().method()).toBe('POST');
     await route.fulfill({
@@ -508,6 +523,12 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
       },
     });
   });
+}
+
+async function navigateToDashboard(page: any) {
+  await page.goto('http://localhost:5173/');
+
+  await _register(page);
 }
 
 async function navigateToMetrics(page: any) {
@@ -547,4 +568,4 @@ async function _register(page: any) {
   await page.getByRole('button', { name: 'Create Account' }).click();
 }
 
-export { initBasicCourse, navigateToCourse, navigateToMetrics, navigateToProgress, register };
+export { initBasicCourse, navigateToDashboard, navigateToCourse, navigateToMetrics, navigateToProgress, register };
