@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function EditorCommits({ currentTopic, course, user, service, setContent, setDiffContent, setDirty }) {
+export default function EditorCommits({ currentTopic, course, user, courseOps, setContent, setDiffContent, setDirty }) {
   const [topicCommits, setTopicCommits] = useState([]);
   const [currentCommit, setCurrentCommit] = useState(currentTopic.commit);
   const [diffCommit, setDiffCommit] = useState(null);
@@ -12,7 +12,7 @@ export default function EditorCommits({ currentTopic, course, user, service, set
         const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
         const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
         const commitsUrl = `${repoApiUrl}/commits?path=${filePath}&cachebust=${Date.now()}`;
-        const commits = await service.getTopicCommits(user.getSetting('gitHubToken', course.id), commitsUrl);
+        const commits = await courseOps.service.getTopicCommits(user.getSetting('gitHubToken', course.id), commitsUrl);
         setTopicCommits(commits);
         setCurrentCommit(currentTopic.commit);
       }
@@ -23,12 +23,12 @@ export default function EditorCommits({ currentTopic, course, user, service, set
     if (contentAvailable) {
       fetchCommits();
     }
-  }, [course, currentTopic, user, service]);
+  }, [course, currentTopic, user]);
 
   const loadCommit = async (commit) => {
     const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
     const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
-    return service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
+    return courseOps.service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
   };
 
   const handleApplyCommit = async (commit) => {

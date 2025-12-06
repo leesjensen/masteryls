@@ -6,7 +6,7 @@ import Editor from '../../components/editor/editor.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { useNavigate } from 'react-router-dom';
 
-export default function ClassroomView({ courseOps, service, user, learningSession, settings }) {
+export default function ClassroomView({ courseOps, user, learningSession, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const isResizing = React.useRef(false);
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ export default function ClassroomView({ courseOps, service, user, learningSessio
 
   let content = null;
   if (editorVisible) {
-    content = <Editor courseOps={courseOps} service={service} user={user} learningSession={learningSession} />;
+    content = <Editor courseOps={courseOps} user={user} learningSession={learningSession} />;
   } else {
     content = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} />;
   }
@@ -89,7 +89,7 @@ export default function ClassroomView({ courseOps, service, user, learningSessio
       <main className="flex flex-1 overflow-hidden">
         {settings.sidebarVisible !== 'start' && (
           <div className={`flex overflow-auto`} style={settings.sidebarVisible === 'end' ? { width: '100%' } : { width: settings.sidebarWidth }}>
-            <Sidebar courseOps={courseOps} service={service} user={user} course={learningSession.course} currentTopic={learningSession.topic} editorVisible={editorVisible} />
+            <Sidebar courseOps={courseOps} user={user} course={learningSession.course} currentTopic={learningSession.topic} editorVisible={editorVisible} />
           </div>
         )}
         {settings.sidebarVisible === 'split' && <div className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none" onMouseDown={splitterMouseDown} />}

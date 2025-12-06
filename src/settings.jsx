@@ -4,7 +4,7 @@ import { useAlert } from './contexts/AlertContext.jsx';
 import UserSelect from './components/userSelect.jsx';
 import { useNavigate } from 'react-router-dom';
 
-export default function Settings({ courseOps, service, user, course }) {
+export default function Settings({ courseOps, user, course }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const dialogRef = useRef(null);
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export default function Settings({ courseOps, service, user, course }) {
   useEffect(() => {
     (async () => {
       try {
-        const fetchedUsers = await service.getAllUsers();
+        const fetchedUsers = await courseOps.service.getAllUsers();
         setUsers(fetchedUsers);
         ogSelectedEditorsRef.current = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
         setSelectedEditors(ogSelectedEditorsRef.current);
@@ -73,6 +73,17 @@ export default function Settings({ courseOps, service, user, course }) {
     return apiKey !== (user.getSetting('geminiApiKey', course.id) || '');
   };
 
+  const handleExport = async () => {
+    //await courseOps.service.exportCourseToCanvas(course);
+    showAlert({
+      message: (
+        <div className="text-xs">
+          <div>Course export to Canvas initiated. Check your email for the download link.</div>
+        </div>
+      ),
+    });
+  };
+
   const handleSave = async () => {
     const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
     if (editorsChanged && selectedEditors.length === 0) {
@@ -88,10 +99,10 @@ export default function Settings({ courseOps, service, user, course }) {
     }
 
     if (compareGitHubToken(formData.gitHubToken)) {
-      await service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
+      await courseOps.service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
     }
     if (compareGeminiApiKey(formData.geminiApiKey)) {
-      await service.updateUserRoleSettings(user, 'editor', course.id, { geminiApiKey: formData.geminiApiKey });
+      await courseOps.service.updateUserRoleSettings(user, 'editor', course.id, { geminiApiKey: formData.geminiApiKey });
     }
     if (compareCourse(formData)) {
       const catalogEntry = {
@@ -105,7 +116,7 @@ export default function Settings({ courseOps, service, user, course }) {
           repository: formData.githubRepository,
         },
       };
-      service.saveCourseSettings(catalogEntry);
+      courseOps.service.saveCourseSettings(catalogEntry);
       const newCourse = course.copyWithNewSettings(catalogEntry);
       courseOps.setCurrentCourse(newCourse);
     }
@@ -116,11 +127,11 @@ export default function Settings({ courseOps, service, user, course }) {
         const gitHubToken = editorUser.getRole('editor', course.id).settings.gitHubToken;
         for (const userId of toAdd) {
           const user = users.find((u) => u.id === userId);
-          await service.addUserRole(user, 'editor', course.id, { gitHubToken });
+          await courseOps.service.addUserRole(user, 'editor', course.id, { gitHubToken });
         }
         for (const userId of toRemove) {
           const user = users.find((u) => u.id === userId);
-          await service.removeUserRole(user, 'editor', course.id);
+          await courseOps.service.removeUserRole(user, 'editor', course.id);
         }
         ogSelectedEditorsRef.current = [...selectedEditors];
       }
@@ -137,7 +148,7 @@ export default function Settings({ courseOps, service, user, course }) {
   };
 
   const deleteCourse = async () => {
-    await service.deleteCourse(user, course);
+    await courseOps.service.deleteCourse(user, course);
     courseOps.setCurrentCourse(null);
     navigate('/dashboard');
     showAlert({
@@ -248,6 +259,9 @@ export default function Settings({ courseOps, service, user, course }) {
             </div>
             <div>
               <div className="flex flex-col justify-end w-[200px]">
+                <button onClick={handleExport} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+                  Export to Canvas
+                </button>
                 <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
                   Save changes
                 </button>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-function useModuleState(courseOps, course, service, currentTopic) {
+function useModuleState(courseOps, course, currentTopic) {
   const [openModuleIndexes, setOpenModuleIndexes] = useState([]);
 
   const toggleModule = (index) => {
@@ -19,7 +19,7 @@ function useModuleState(courseOps, course, service, currentTopic) {
       }
     }
     setOpenModuleIndexes(settings.tocIndexes);
-  }, [currentTopic, course, service]);
+  }, [currentTopic, course]);
 
   return {
     openModuleIndexes,

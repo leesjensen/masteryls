@@ -6,7 +6,7 @@ import VideoEditor from './VideoEditor';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
 
-export default function Editor({ courseOps, service, user, learningSession }) {
+export default function Editor({ courseOps, user, learningSession }) {
   const [content, setContent] = React.useState('');
   const [editorState, setEditorState] = React.useState('learning'); // 'editing' | 'preview'
   const [showCommits, setShowCommits] = React.useState(false);
@@ -118,7 +118,7 @@ export default function Editor({ courseOps, service, user, learningSession }) {
                 </button>
               </div>
             </div>
-            {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} service={service} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
+            {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} courseOps={courseOps} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
             <div className="flex-8/10 flex overflow-hidden">{getEditor()}</div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />

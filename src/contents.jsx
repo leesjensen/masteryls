@@ -9,8 +9,8 @@ import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
-function Contents({ courseOps, service, currentTopic, course, editorVisible }) {
-  const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, service, currentTopic);
+function Contents({ courseOps, currentTopic, course, editorVisible }) {
+  const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, currentTopic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
   const navigate = useNavigate();
 
