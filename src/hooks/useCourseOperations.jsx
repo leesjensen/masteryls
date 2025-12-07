@@ -1,6 +1,8 @@
 import React from 'react';
+import ReactDOMServer from 'react-dom/server';
 import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiExamGenerator, aiEssayQuizFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
+import MarkdownStatic from '../components/MarkdownStatic';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -523,8 +525,58 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function exportToCanvas(course) {
-    const response = await service.makeCanvasApiRequest('/courses/20802', 'GET');
-    console.log('Canvas course response:', response);
+    const module = course.modules[0];
+
+    // const topic = module.topics[1];
+    // const md = await getTopicMarkdown(topic);
+    // const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+    // console.log('Exported HTML:', html);
+
+    const canvasModule = await createCanvasModule(module);
+    const canvasPage1 = await createCanvasPage(course, module.topics[0]);
+    await addPageToModule(canvasModule, canvasPage1);
+    const canvasPage2 = await createCanvasPage(course, module.topics[1]);
+    await addPageToModule(canvasModule, canvasPage2);
+  }
+
+  async function createCanvasModule(module) {
+    const body = {
+      module: {
+        name: module.title,
+        published: true,
+      },
+    };
+
+    return service.makeCanvasApiRequest('/courses/20802/modules', 'POST', body);
+  }
+
+  async function createCanvasPage(course, topic) {
+    const md = await getTopicMarkdown(topic);
+    const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+
+    const body = {
+      wiki_page: {
+        title: topic.title,
+        body: html,
+        published: true,
+        front_page: false,
+      },
+    };
+
+    return service.makeCanvasApiRequest('/courses/20802/pages', 'POST', body);
+  }
+
+  async function addPageToModule(canvasModule, canvasPage) {
+    const body = {
+      module_item: {
+        type: 'Page',
+        page_url: canvasPage.url,
+        title: canvasPage.title,
+        published: true,
+      },
+    };
+
+    return service.makeCanvasApiRequest(`/courses/20802/modules/${canvasModule.id}/items`, 'POST', body);
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {
