@@ -525,6 +525,7 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function exportToCanvas(course) {
+    const canvasCourseId = 33932;
     const module = course.modules[0];
 
     // const topic = module.topics[1];
@@ -532,14 +533,21 @@ ${topicDescription || 'overview content placeholder'}`;
     // const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
     // console.log('Exported HTML:', html);
 
-    const canvasModule = await createCanvasModule(module);
-    const canvasPage1 = await createCanvasPage(course, module.topics[0]);
-    await addPageToModule(canvasModule, canvasPage1);
-    const canvasPage2 = await createCanvasPage(course, module.topics[1]);
-    await addPageToModule(canvasModule, canvasPage2);
+    const canvasModule = await createCanvasModule(module, canvasCourseId);
+    await createCanvasPage(course, module.topics[0], canvasCourseId, canvasModule);
+    await createCanvasPage(course, module.topics[1], canvasCourseId, canvasModule);
+
+    //    const result = await deleteCanvasCourse(canvasCourseId);
+    //    console.log('Delete Canvas Course Result:', result);
   }
 
-  async function createCanvasModule(module) {
+  async function deleteCanvasCourse(canvasCourseId) {
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}`, 'DELETE', {
+      event: 'delete',
+    });
+  }
+
+  async function createCanvasModule(module, canvasCourseId) {
     const body = {
       module: {
         name: module.title,
@@ -547,10 +555,10 @@ ${topicDescription || 'overview content placeholder'}`;
       },
     };
 
-    return service.makeCanvasApiRequest('/courses/20802/modules', 'POST', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules`, 'POST', body);
   }
 
-  async function createCanvasPage(course, topic) {
+  async function createCanvasPage(course, topic, canvasCourseId, canvasModule = null) {
     const md = await getTopicMarkdown(topic);
     const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
 
@@ -563,10 +571,15 @@ ${topicDescription || 'overview content placeholder'}`;
       },
     };
 
-    return service.makeCanvasApiRequest('/courses/20802/pages', 'POST', body);
+    const canvasPage = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages`, 'POST', body);
+
+    if (canvasModule) {
+      await addPageToModule(canvasModule, canvasPage, canvasCourseId);
+    }
+    return canvasPage;
   }
 
-  async function addPageToModule(canvasModule, canvasPage) {
+  async function addPageToModule(canvasModule, canvasPage, canvasCourseId) {
     const body = {
       module_item: {
         type: 'Page',
@@ -576,7 +589,7 @@ ${topicDescription || 'overview content placeholder'}`;
       },
     };
 
-    return service.makeCanvasApiRequest(`/courses/20802/modules/${canvasModule.id}/items`, 'POST', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {

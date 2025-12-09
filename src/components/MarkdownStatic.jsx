@@ -24,7 +24,11 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
 
       // Throw away masteryls plugin blocks in static rendering
       if (!inline && language === 'masteryls') {
-        return null;
+        return (
+          <div>
+            This <a href={`https://masteryls.com/course/${course.id}/topic/${topic.id}`}>Mastery LS quiz</a> is not available in Canvas.
+          </div>
+        );
       }
 
       // Use SyntaxHighlighter for fenced code blocks with a language
