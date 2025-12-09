@@ -18,8 +18,8 @@ export default function Settings({ courseOps, user, course }) {
     description: course.description || '',
     githubAccount: course.gitHub.account,
     githubRepository: course.gitHub.repository,
-    gitHubToken: user.getSetting('gitHubToken', course.id) || '',
-    geminiApiKey: user.getSetting('geminiApiKey', course.id) || '',
+    gitHubToken: user?.getSetting('gitHubToken', course.id) || '',
+    geminiApiKey: user?.getSetting('geminiApiKey', course.id) || '',
   });
 
   const editorVisible = user.isEditor(course.id);
@@ -66,11 +66,11 @@ export default function Settings({ courseOps, user, course }) {
   };
 
   const compareGitHubToken = (token) => {
-    return token !== (user.getSetting('gitHubToken', course.id) || '');
+    return token !== (user?.getSetting('gitHubToken', course.id) || '');
   };
 
   const compareGeminiApiKey = (apiKey) => {
-    return apiKey !== (user.getSetting('geminiApiKey', course.id) || '');
+    return apiKey !== (user?.getSetting('geminiApiKey', course.id) || '');
   };
 
   const handleExport = async () => {
@@ -265,7 +265,7 @@ export default function Settings({ courseOps, user, course }) {
                 <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
                   Save changes
                 </button>
-                {user.isEditor(course.id) && user.isRoot() && (
+                {user?.isEditor(course.id) && user?.isRoot() && (
                   <button onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
                     Delete course
                   </button>
