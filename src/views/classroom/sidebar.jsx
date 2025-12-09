@@ -3,7 +3,7 @@ import Contents from '../../contents.jsx';
 import Settings from '../../settings.jsx';
 
 function Sidebar({ courseOps, user, course, currentTopic, editorVisible }) {
-  const [display, setDisplay] = useState('settings');
+  const [display, setDisplay] = useState('topics'); // 'topics' or 'settings'
 
   function toggleDisplay(newDisplay) {
     setDisplay(newDisplay);

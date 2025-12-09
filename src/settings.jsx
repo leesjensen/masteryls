@@ -22,7 +22,6 @@ export default function Settings({ courseOps, user, course }) {
     geminiApiKey: user?.getSetting('geminiApiKey', course.id) || '',
   });
 
-  const editorVisible = user.isEditor(course.id);
   const moduleCount = course.modules.length || 0;
   const topicCount = course.allTopics.length || 0;
 
@@ -159,6 +158,12 @@ export default function Settings({ courseOps, user, course }) {
       ),
     });
   };
+
+  if (!user) {
+    return null;
+  }
+
+  const editorVisible = user.isEditor(course.id);
 
   return (
     <div className="h-full overflow-auto p-4">
