@@ -50,9 +50,21 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
 
     // Static link handler - just render regular anchor tags
     a({ href, children, ...props }) {
-      //   if (href && href.startsWith('../')) {
-      //     href = href.replace(/^\.\.\//, '../pages/');
-      //   }
+      const guidMatch = href?.match(/^\.\/([a-f0-9-]+)$/i);
+      if (guidMatch) {
+        const topicId = guidMatch[1];
+        const targetTopic = course.topicFromId(topicId);
+        if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
+          href = `./${targetTopic.externalRefs.canvasPageId}`;
+        }
+      } else if (href?.startsWith('../') || href?.startsWith('./')) {
+        const resolvedUrl = new URL(href, topic.path).toString();
+        const targetTopic = course.topicFromPath(resolvedUrl, false);
+        if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
+          href = `./${targetTopic.externalRefs.canvasPageId}`;
+        }
+      }
+
       return (
         <a href={href} {...props}>
           {children}

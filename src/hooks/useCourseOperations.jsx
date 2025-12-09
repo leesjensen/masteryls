@@ -154,8 +154,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       schedule: updatedCourse.schedule ? updatedCourse.schedule.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
       syllabus: updatedCourse.syllabus ? updatedCourse.syllabus.replace(`${updatedCourse.links.gitHub.rawUrl}/`, '') : undefined,
       links: updatedCourse.links ? Object.fromEntries(Object.entries(updatedCourse.links).filter(([key]) => key !== 'gitHub')) : undefined,
+      externalRefs: updatedCourse.externalRefs,
       modules: updatedCourse.modules.map((module) => ({
         title: module.title,
+        externalRefs: module.externalRefs,
         topics: module.topics.map((topic) => ({
           title: topic.title,
           type: topic.type,
@@ -164,6 +166,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           state: topic.state,
           description: topic.description,
           commit: topic.commit,
+          externalRefs: topic.externalRefs,
         })),
       })),
     };
@@ -526,25 +529,26 @@ ${topicDescription || 'overview content placeholder'}`;
 
   async function exportToCanvas(course) {
     const canvasCourseId = 33932;
-    const module = course.modules[0];
 
-    // const topic = module.topics[1];
-    // const md = await getTopicMarkdown(topic);
-    // const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
-    // console.log('Exported HTML:', html);
+    const updatedCourse = Course.copy(course);
+    updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
 
-    const canvasModule = await createCanvasModule(module, canvasCourseId);
-    await createCanvasPage(course, module.topics[0], canvasCourseId, canvasModule);
-    await createCanvasPage(course, module.topics[1], canvasCourseId, canvasModule);
+    for (const module of updatedCourse.modules) {
+      const canvasModule = await createCanvasModule(module, canvasCourseId);
+      module.externalRefs = { ...module.externalRefs, canvasModuleId: canvasModule.id };
+      for (const topic of module.topics) {
+        const canvasPage = await createCanvasPage(topic, canvasCourseId, canvasModule);
+        topic.externalRefs = { ...topic.externalRefs, canvasPageId: canvasPage.page_id };
+      }
 
-    //    const result = await deleteCanvasCourse(canvasCourseId);
-    //    console.log('Delete Canvas Course Result:', result);
-  }
+      for (const topic of module.topics) {
+        await updateCanvasPage(updatedCourse, topic, canvasCourseId);
+      }
 
-  async function deleteCanvasCourse(canvasCourseId) {
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}`, 'DELETE', {
-      event: 'delete',
-    });
+      await updateCourseStructure(updatedCourse, null, (commitMessage = `exported to canvas courseId ${canvasCourseId}`));
+
+      break;
+    }
   }
 
   async function createCanvasModule(module, canvasCourseId) {
@@ -558,14 +562,11 @@ ${topicDescription || 'overview content placeholder'}`;
     return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules`, 'POST', body);
   }
 
-  async function createCanvasPage(course, topic, canvasCourseId, canvasModule = null) {
-    const md = await getTopicMarkdown(topic);
-    const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
-
+  async function createCanvasPage(topic, canvasCourseId, canvasModule = null) {
     const body = {
       wiki_page: {
         title: topic.title,
-        body: html,
+        body: `<h1>${topic.title}</h1>`,
         published: true,
         front_page: false,
       },
@@ -577,6 +578,21 @@ ${topicDescription || 'overview content placeholder'}`;
       await addPageToModule(canvasModule, canvasPage, canvasCourseId);
     }
     return canvasPage;
+  }
+
+  async function updateCanvasPage(course, topic, canvasCourseId) {
+    const md = await getTopicMarkdown(topic);
+    const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+
+    const body = {
+      wiki_page: {
+        title: topic.title,
+        body: html,
+        published: true,
+      },
+    };
+
+    await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${topic.externalRefs.canvasPageId}`, 'PUT', body);
   }
 
   async function addPageToModule(canvasModule, canvasPage, canvasCourseId) {
