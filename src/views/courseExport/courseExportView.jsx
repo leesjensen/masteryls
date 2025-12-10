@@ -8,10 +8,10 @@ export default function CourseExportView({ courseOps }) {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
 
-  const create = async (courseId, canvasCourseId, setUpdateMessage) => {
+  const create = async (courseId, canvasCourseId, deleteExisting, setUpdateMessage) => {
     try {
       const course = await courseOps.getCourse(courseId);
-      await courseOps.exportToCanvas(course, canvasCourseId, setUpdateMessage);
+      await courseOps.exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage);
       navigate('/dashboard');
       showAlert({ message: `${course.title} exported successfully`, type: 'info' });
     } catch (error) {

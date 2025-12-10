@@ -531,9 +531,14 @@ ${topicDescription || 'overview content placeholder'}`;
     }, {});
   }
 
-  async function exportToCanvas(course, canvasCourseId, setUpdateMessage) {
+  async function exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
     const updatedCourse = Course.copy(course);
     updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
+
+    if (deleteExisting) {
+      setUpdateMessage(`Cleaning up existing Canvas course content`);
+      await cleanCanvasCourse(canvasCourseId);
+    }
 
     for (const module of updatedCourse.modules) {
       setUpdateMessage(`Creating module '${module.title}' in Canvas`);
@@ -549,12 +554,10 @@ ${topicDescription || 'overview content placeholder'}`;
         setUpdateMessage(`Exporting topic '${topic.title}' to Canvas`);
         await updateCanvasPage(updatedCourse, topic, canvasCourseId);
       }
-
-      setUpdateMessage(`Updating course information`);
-      await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
-
-      break;
     }
+
+    setUpdateMessage(`Updating course information`);
+    await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
   }
 
   async function createCanvasModule(module, canvasCourseId) {
@@ -587,8 +590,17 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function updateCanvasPage(course, topic, canvasCourseId) {
-    const md = await getTopicMarkdown(topic);
-    const html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+    let html = '';
+    if (topic.type === 'video') {
+      const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+      const match = topic.path.match(regExp);
+      if (match) {
+        html = `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="https://www.youtube.com/embed/${match[1]}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
+      }
+    } else {
+      const md = await getTopicMarkdown(topic);
+      html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+    }
 
     const body = {
       wiki_page: {
@@ -612,6 +624,37 @@ ${topicDescription || 'overview content placeholder'}`;
     };
 
     return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
+  }
+
+  async function cleanCanvasCourse(canvasCourseId) {
+    let pagePos = 1;
+    const desiredCount = 2;
+    let count = desiredCount;
+    const pages = [];
+    while (count == desiredCount) {
+      const canvasPages = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages?page=${pagePos}&per_page=${desiredCount}`, 'GET');
+      pages.push(...canvasPages);
+      count = canvasPages.length;
+      pagePos++;
+    }
+
+    for (const page of pages) {
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${page.page_id}`, 'DELETE');
+    }
+
+    count = desiredCount;
+    const modules = [];
+    pagePos = 1;
+    while (count == desiredCount) {
+      const canvasModules = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules?page=${pagePos}&per_page=${desiredCount}`, 'GET');
+      modules.push(...canvasModules);
+      count = canvasModules.length;
+      pagePos++;
+    }
+
+    for (const module of modules) {
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.id}`, 'DELETE');
+    }
   }
 
   async function _populateTemplateTopics(course, topicNames, gitHubToken) {

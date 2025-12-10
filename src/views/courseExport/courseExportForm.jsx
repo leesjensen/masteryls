@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 export default function CourseExportForm({ courseOps, onClose, onCreate }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
   const [courseId, setCourseId] = useState('');
+  const [deleteExisting, setDeleteExisting] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('Initializing');
 
@@ -11,7 +12,7 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
     if (onCreate) {
       setIsLoading(true);
       setUpdateMessage('Exporting your course...');
-      await onCreate(courseId, canvasCourseId, setUpdateMessage);
+      await onCreate(courseId, canvasCourseId, deleteExisting, setUpdateMessage);
 
       setIsLoading(false);
     }
@@ -69,6 +70,12 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
               </option>
             ))}
           </select>
+          <div className="mt-3 flex items-center space-x-2">
+            <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
+            <label htmlFor="delete-existing" className="text-sm text-gray-700">
+              Delete existing pages and modules
+            </label>
+          </div>
         </div>
 
         <div className="flex items-center justify-end space-x-3 pt-2 border-t">

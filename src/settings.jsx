@@ -244,16 +244,20 @@ export default function Settings({ courseOps, user, course }) {
 
             {course.externalRefs && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{key}</label>
-                {Object.entries(course.externalRefs).map(([key, ref]) => (
-                  <div key={key}>
-                    <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">
-                      <a href={ref.url} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline block truncate" style={{ maxWidth: '100%' }} title={ref.url}>
-                        {ref.url}
-                      </a>
+                <label className="block text-sm font-medium text-gray-700 mb-1">External references</label>
+                {Object.entries(course.externalRefs).map(([key, ref]) => {
+                  if (key !== 'canvasCourseId') return null;
+                  const url = `https://byu.instructure.com/courses/${ref}`;
+                  return (
+                    <div key={key}>
+                      <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline block truncate" style={{ maxWidth: '100%' }} title={ref.url}>
+                          {url}
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
