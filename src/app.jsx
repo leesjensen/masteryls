@@ -27,7 +27,7 @@ export function createAppRouter(user) {
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'createCourse', element: <CreateCoursePage /> },
         { path: 'progress', element: <ProgressPage /> },
-        { path: '*', element: <ErrorPage message="The gerbils have gotten lost." /> },
+        { path: '*', element: <ErrorPage user={user} message="The gerbils have gotten lost." /> },
       ],
     },
   ]);
@@ -145,6 +145,8 @@ function ClassroomPage() {
         if (course != null && topic != null) {
           const enrollment = user?.id ? await service.enrollment(user.id, course.id) : null;
           setLearningSession({ course, topic, enrollment });
+        } else {
+          navigate('/lost');
         }
       }
     })();
