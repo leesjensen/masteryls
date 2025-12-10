@@ -65,7 +65,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     // Root-relative URL: Specific course and topic.
     //     /course/abc/topic/def
     //     /course/51a72d23-50ab-4147-a1db-27a062aed771/topic/140d86ce9e9b4ce59fd095bb959c9df4
-    // Relative URL: either a topic or a resource of a topic in the current course.
+    // Relative URL: relative path to either a topic or a resource of current topic in the current course.
     //     main.java - resource in current topic
     //     ./main.java - resource in current topic
     //     ../simon/simon.md
@@ -80,10 +80,6 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               window.open(href, '_blank', 'noopener,noreferrer');
             } else if (href?.startsWith('/')) {
               navigate(href);
-            } else if (href?.startsWith('./')) {
-              const currentPath = window.location.pathname;
-              const newPath = new URL(href, window.location.origin + currentPath).pathname;
-              navigate(newPath);
             } else {
               const match = href?.match(/^([^#]*)(#.*)?$/);
               const hrefPath = match?.[1];
