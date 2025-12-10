@@ -14,10 +14,14 @@ import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 export default function Markdown({ learningSession, content, languagePlugins = [] }) {
   const navigate = useNavigate();
   const customComponents = {
-    pre({ children }) {
-      return <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }}>{children}</pre>;
+    pre({ node, children, ...props }) {
+      return (
+        <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }} {...props}>
+          {children}
+        </pre>
+      );
     },
-    code({ inline, className, children, ...props }) {
+    code({ node, inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
@@ -70,7 +74,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     //     ./main.java - resource in current topic
     //     ../simon/simon.md
     //     ../../readme.md
-    a({ href, children }) {
+    a({ node, href, children, ...props }) {
       return (
         <a
           href={href}
@@ -99,6 +103,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               }
             }
           }}
+          {...props}
         >
           {children}
         </a>

@@ -15,10 +15,14 @@ import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
  */
 export default function MarkdownStatic({ course, topic, content, languagePlugins = [] }) {
   const customComponents = {
-    pre({ children }) {
-      return <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }}>{children}</pre>;
+    pre({ node, children, ...props }) {
+      return (
+        <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }} {...props}>
+          {children}
+        </pre>
+      );
     },
-    code({ className, children }) {
+    code({ node, inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
@@ -35,7 +39,7 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       if (!inline && language) {
         const codeText = String(children).replace(/\n$/, '');
         return (
-          <SyntaxHighlighter language={language} style={ghcolors} PreTag="div" {...props}>
+          <SyntaxHighlighter language={language} style={ghcolors} PreTag="div">
             {codeText}
           </SyntaxHighlighter>
         );
@@ -48,34 +52,56 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       );
     },
 
-    // Static link handler - just render regular anchor tags
-    a({ href, children }) {
-      const guidMatch = href?.match(/^\.\/([a-f0-9-]+)$/i);
-      if (guidMatch) {
-        const topicId = guidMatch[1];
-        const targetTopic = course.topicFromId(topicId);
-        if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
-          href = `./${targetTopic.externalRefs.canvasPageId}`;
+    a({ node, href, children, ...props }) {
+      let src = null;
+      if (href?.startsWith('http')) {
+        src = href;
+      } else if (href?.startsWith('/')) {
+        const match = href.match(/\/course\/([^/]+)\/topic\/([^/]+)/);
+        if (match) {
+          const [, courseId, topicId] = match;
+          if (courseId === course.id) {
+            const targetTopic = course.topicFromId(topicId);
+            if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
+              src = `./${targetTopic.externalRefs.canvasPageId}`;
+            }
+          } else {
+            // we could look up the course and see if it has a canvasCourseId, but for now, just link to the masteryls site
+            src = `https://masteryls.com/course/${courseId}/topic/${topicId}`;
+          }
         }
-      } else if (href?.startsWith('../') || href?.startsWith('./')) {
-        const resolvedUrl = new URL(href, topic.path).toString();
+      } else {
+        const match = href?.match(/^([^#]*)(#.*)?$/);
+        const hrefPath = match?.[1];
+        const hrefAnchor = match?.[2];
+
+        const resolvedUrl = new URL(hrefPath, topic.path).toString();
         const targetTopic = course.topicFromPath(resolvedUrl, false);
         if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
-          href = `./${targetTopic.externalRefs.canvasPageId}`;
+          src = `./${targetTopic.externalRefs.canvasPageId}${hrefAnchor || ''}`;
+        } else {
+          src = resolvedUrl + (hrefAnchor || '');
         }
       }
 
-      return <a href={href}>{children}</a>;
+      if (src) {
+        return (
+          <a href={src} {...props}>
+            {children}
+          </a>
+        );
+      }
+      return children;
     },
 
-    source({ src, ...props }) {
+    source({ node, src, ...props }) {
       if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/')) {
         src = new URL(src, topic.path).href;
       }
       return <source src={src} {...props} />;
     },
 
-    img({ src, ...props }) {
+    img({ node, src, ...props }) {
       if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/')) {
         src = new URL(src, topic.path).href;
       }
