@@ -177,7 +177,7 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
           </button>
 
           <button type="submit" disabled={!isValid} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`}>
-            Create Course
+            Export course
           </button>
         </div>
       </form>

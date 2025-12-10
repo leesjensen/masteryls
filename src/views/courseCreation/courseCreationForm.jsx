@@ -71,7 +71,7 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
       )}
       <div className="px-6 py-4 border-b">
         <h2 className="text-xl font-semibold text-gray-800">Create a Course</h2>
-        <p className="text-sm text-gray-500 mt-1">Add a title and short description for your new course.</p>
+        <p className="text-sm text-gray-500 mt-1">This will create a new GitHub repository and populate it with course content.</p>
       </div>
 
       <form className="p-6 space-y-4" onSubmit={handleSubmit}>

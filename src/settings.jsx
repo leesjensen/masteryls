@@ -72,17 +72,6 @@ export default function Settings({ courseOps, user, course }) {
     return apiKey !== (user?.getSetting('geminiApiKey', course.id) || '');
   };
 
-  const handleExport = async () => {
-    await courseOps.exportToCanvas(course);
-    showAlert({
-      message: (
-        <div className="text-xs">
-          <div>Course export to Canvas initiated.</div>
-        </div>
-      ),
-    });
-  };
-
   const handleSave = async () => {
     const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
     if (editorsChanged && selectedEditors.length === 0) {
@@ -252,6 +241,21 @@ export default function Settings({ courseOps, user, course }) {
                 </div>
               </div>
             )}
+
+            {course.externalRefs && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{key}</label>
+                {Object.entries(course.externalRefs).map(([key, ref]) => (
+                  <div key={key}>
+                    <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">
+                      <a href={ref.url} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:underline block truncate" style={{ maxWidth: '100%' }} title={ref.url}>
+                        {ref.url}
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         {editorVisible && (
@@ -264,9 +268,6 @@ export default function Settings({ courseOps, user, course }) {
             </div>
             <div>
               <div className="flex flex-col justify-end w-[200px]">
-                <button onClick={handleExport} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
-                  Export to Canvas
-                </button>
                 <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
                   Save changes
                 </button>

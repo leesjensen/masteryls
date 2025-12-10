@@ -545,7 +545,7 @@ ${topicDescription || 'overview content placeholder'}`;
         await updateCanvasPage(updatedCourse, topic, canvasCourseId);
       }
 
-      //await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
+      await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
 
       break;
     }
