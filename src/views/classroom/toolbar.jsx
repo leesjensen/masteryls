@@ -1,8 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 
 export default function Toolbar({ courseOps, user, course, settings, topic, editing, toggleEditor }) {
   const navigate = useNavigate();
+  const { showAlert } = useAlert();
+
   function gitHubUrl(url) {
     return url.replace(course.links.gitHub.rawUrl, course.links.gitHub.url);
   }
@@ -26,6 +29,11 @@ export default function Toolbar({ courseOps, user, course, settings, topic, edit
     }
   }
 
+  async function updateCanvasPage() {
+    await courseOps.updateCanvasPage(course, topic, course.externalRefs.canvasCourseId);
+    showAlert({ message: `${topic.title} exported successfully`, type: 'info' });
+  }
+
   const nextSidebarState = getNextWindowState();
 
   return (
@@ -39,6 +47,11 @@ export default function Toolbar({ courseOps, user, course, settings, topic, edit
         {user && user.isEditor(course.id) && (
           <button title="Edit topic" className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => toggleEditor()}>
             {editing ? '📘' : '✏️'}
+          </button>
+        )}
+        {user && user.isEditor(course.id) && topic.externalRefs?.canvasPageId && course.externalRefs?.canvasCourseId && (
+          <button title="Edit topic" className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={() => updateCanvasPage()}>
+            ⬇️
           </button>
         )}
         {course.schedule && (

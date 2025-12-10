@@ -551,8 +551,13 @@ ${topicDescription || 'overview content placeholder'}`;
       }
 
       for (const topic of module.topics) {
-        setUpdateMessage(`Exporting topic '${topic.title}' to Canvas`);
-        await updateCanvasPage(updatedCourse, topic, canvasCourseId);
+        try {
+          setUpdateMessage(`Exporting topic '${topic.title}' to Canvas`);
+          await updateCanvasPage(updatedCourse, topic, canvasCourseId);
+        } catch (error) {
+          console.error(`Failed to export topic '${topic.title}' to Canvas: ${error.message}`);
+          setUpdateMessage(`Failed to export topic '${topic.title}' to Canvas: ${error.message}`);
+        }
       }
     }
 
@@ -610,7 +615,7 @@ ${topicDescription || 'overview content placeholder'}`;
       },
     };
 
-    await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${topic.externalRefs.canvasPageId}`, 'PUT', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${topic.externalRefs.canvasPageId}`, 'PUT', body);
   }
 
   async function addPageToModule(canvasModule, canvasPage, canvasCourseId) {
@@ -732,6 +737,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getQuizProgress,
     getExamState,
     exportToCanvas,
+    updateCanvasPage,
     service,
   };
 }
