@@ -15,10 +15,10 @@ import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
  */
 export default function MarkdownStatic({ course, topic, content, languagePlugins = [] }) {
   const customComponents = {
-    pre({ node, children, className, ...props }) {
+    pre({ children }) {
       return <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }}>{children}</pre>;
     },
-    code({ node, inline, className, children, ...props }) {
+    code({ className, children }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
@@ -49,7 +49,7 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
     },
 
     // Static link handler - just render regular anchor tags
-    a({ href, children, ...props }) {
+    a({ href, children }) {
       const guidMatch = href?.match(/^\.\/([a-f0-9-]+)$/i);
       if (guidMatch) {
         const topicId = guidMatch[1];
@@ -65,11 +65,7 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
         }
       }
 
-      return (
-        <a href={href} {...props}>
-          {children}
-        </a>
-      );
+      return <a href={href}>{children}</a>;
     },
 
     source({ src, ...props }) {

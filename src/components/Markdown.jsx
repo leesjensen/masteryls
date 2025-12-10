@@ -14,10 +14,10 @@ import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 export default function Markdown({ learningSession, content, languagePlugins = [] }) {
   const navigate = useNavigate();
   const customComponents = {
-    pre({ node, children, className, ...props }) {
+    pre({ children }) {
       return <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }}>{children}</pre>;
     },
-    code({ node, inline, className, children, ...props }) {
+    code({ inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
@@ -59,12 +59,21 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       );
     },
 
-    // Custom link handler
-    a({ href, children, ...props }) {
+    // Custom link handler for internal navigation
+    // Absolute URL: open in new tab.
+    //     https://cow.com
+    // Root-relative URL: Specific course and topic.
+    //     /course/abc/topic/def
+    //     /course/51a72d23-50ab-4147-a1db-27a062aed771/topic/140d86ce9e9b4ce59fd095bb959c9df4
+    // Relative URL: either a topic or a resource of a topic in the current course.
+    //     main.java - resource in current topic
+    //     ./main.java - resource in current topic
+    //     ../simon/simon.md
+    //     ../../readme.md
+    a({ href, children }) {
       return (
         <a
           href={href}
-          {...props}
           onClick={(e) => {
             e.preventDefault();
             if (href?.startsWith('http')) {
