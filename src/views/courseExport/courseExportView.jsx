@@ -8,14 +8,12 @@ export default function CourseExportView({ courseOps }) {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
 
-  const create = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) => {
+  const create = async (courseId, canvasCourseId, setUpdateMessage) => {
     try {
-      if (await courseOps.service.verifyGitHubAccount(gitHubToken)) {
-        await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
-        navigate('/dashboard');
-      } else {
-        showAlert({ message: 'The provided GitHub token does not have the necessary permissions to export a course.', type: 'error' });
-      }
+      const course = await courseOps.getCourse(courseId);
+      await courseOps.exportToCanvas(course, canvasCourseId, setUpdateMessage);
+      navigate('/dashboard');
+      showAlert({ message: `${course.title} exported successfully`, type: 'info' });
     } catch (error) {
       showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
     }

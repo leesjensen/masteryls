@@ -125,6 +125,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   async function getCourse(courseId) {
     const courseEntry = courseCatalog().find((c) => c.id === courseId);
+    if (!courseEntry) {
+      throw new Error(`Course with ID '${courseId}' not found in catalog.`);
+    }
+
     if (!courseCache.current.has(courseId)) {
       const course = await Course.create(courseEntry);
       courseCache.current.set(courseId, course);
@@ -527,24 +531,26 @@ ${topicDescription || 'overview content placeholder'}`;
     }, {});
   }
 
-  async function exportToCanvas(course) {
-    const canvasCourseId = 33932;
-
+  async function exportToCanvas(course, canvasCourseId, setUpdateMessage) {
     const updatedCourse = Course.copy(course);
     updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
 
     for (const module of updatedCourse.modules) {
+      setUpdateMessage(`Creating module '${module.title}' in Canvas`);
       const canvasModule = await createCanvasModule(module, canvasCourseId);
       module.externalRefs = { ...module.externalRefs, canvasModuleId: canvasModule.id };
       for (const topic of module.topics) {
+        setUpdateMessage(`Creating topic '${topic.title}' in Canvas`);
         const canvasPage = await createCanvasPage(topic, canvasCourseId, canvasModule);
         topic.externalRefs = { ...topic.externalRefs, canvasPageId: canvasPage.page_id };
       }
 
       for (const topic of module.topics) {
+        setUpdateMessage(`Exporting topic '${topic.title}' to Canvas`);
         await updateCanvasPage(updatedCourse, topic, canvasCourseId);
       }
 
+      setUpdateMessage(`Updating course information`);
       await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
 
       break;
