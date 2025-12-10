@@ -8,7 +8,8 @@ import AppBar from './appBar.jsx';
 import DashboardView from './views/dashboard/dashboardView.jsx';
 import ClassroomView from './views/classroom/classroomView.jsx';
 import MetricsView from './views/metrics/metricsView.jsx';
-import CreateCourseView from './views/createCourse/createCourseView.jsx';
+import CourseCreationView from './views/courseCreation/courseCreationView.jsx';
+import CourseExportView from './views/courseExport/courseExportView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
 import ErrorPage from './components/errorPage.jsx';
 import service from './service/service.js';
@@ -25,7 +26,8 @@ export function createAppRouter(user) {
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'course/:courseId/topic/:topicId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
-        { path: 'createCourse', element: <CreateCoursePage /> },
+        { path: 'courseCreation', element: <CourseCreationPage /> },
+        { path: 'courseExport', element: <CourseExportPage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: '*', element: <ErrorPage user={user} message="The gerbils have gotten lost." /> },
       ],
@@ -106,9 +108,14 @@ function MetricsPage() {
   return <MetricsView courseOps={courseOps} />;
 }
 
-function CreateCoursePage() {
+function CourseCreationPage() {
   const { courseOps } = useOutletContext();
-  return <CreateCourseView courseOps={courseOps} />;
+  return <CourseCreationView courseOps={courseOps} />;
+}
+
+function CourseExportPage() {
+  const { courseOps } = useOutletContext();
+  return <CourseExportView courseOps={courseOps} />;
 }
 
 function ProgressPage() {
