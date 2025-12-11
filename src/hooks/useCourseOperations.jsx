@@ -93,8 +93,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
 
       setUpdateMessage('Creating roles and enrollment');
-      await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
-
+      setUser(await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken }));
       setUpdateMessage('Saving course structure');
       const gitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
       const commit = await service.commitGitHubFile(gitHubUrl, courseText, gitHubToken, 'add(course) generated content structure');
@@ -104,21 +103,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       const course = await Course.create(newCatalogEntry);
 
       enrollment = await service.createEnrollment(user.id, newCatalogEntry);
-      // setLearningSession({ enrollment, course, topic: course.allTopics[0] });
-
-      // const settings = saveEnrollmentUiSettings(course.id, { editing: true });
-      // setSettings(settings);
     } else {
       newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-      await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken });
+      setUser(await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken }));
 
       const course = await Course.create(newCatalogEntry);
       courseCache.current.set(course.id, course);
 
       enrollment = await service.createEnrollment(user.id, newCatalogEntry);
-      // setLearningSession({ enrollment, course, topic: course.allTopics[0] });
-      // setSettings(getEnrollmentUiSettings(course.id));
-      // await _populateTemplateTopics(course, ['Introduction', 'Syllabus', 'Overview'], gitHubToken);
     }
     return enrollment;
   }
@@ -139,10 +131,11 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   function setCurrentCourse(updatedCourse) {
     if (updatedCourse) {
       courseCache.current.set(updatedCourse.id, updatedCourse);
+      setLearningSession({ course: updatedCourse, topic: updatedCourse.allTopics[0] });
     } else if (learningSession?.course) {
       courseCache.current.delete(learningSession.course.id);
+      setLearningSession(null);
     }
-    setLearningSession({ updatedCourse, topic: updatedCourse.allTopics[0] });
   }
 
   async function updateCourseStructure(updatedCourse, updatedTopic, commitMessage = 'update course structure') {

@@ -184,7 +184,7 @@ class Service {
     return users;
   }
 
-  async addUserRole(user: User, right: string, objectId: string | null, settings: any = {}): Promise<Role> {
+  async addUserRole(user: User, right: string, objectId: string | null, settings: any = {}): Promise<User> {
     const newRole: Role = {
       user: user.id,
       right,
@@ -195,8 +195,7 @@ class Service {
     if (error) {
       throw new Error(error.message);
     }
-
-    return newRole;
+    return new User({ ...user, roles: [newRole, ...(user.roles || [])] });
   }
 
   async removeUserRole(user: User, right: string, objectId: string | null): Promise<void> {
