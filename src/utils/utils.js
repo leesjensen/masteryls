@@ -1,3 +1,7 @@
+export function generateId() {
+  return crypto.randomUUID();
+}
+
 export const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;

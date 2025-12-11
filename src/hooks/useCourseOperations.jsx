@@ -3,6 +3,7 @@ import ReactDOMServer from 'react-dom/server';
 import { aiCourseGenerator, aiCourseOverviewGenerator, aiTopicGenerator, aiExamGenerator, aiEssayQuizFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
+import { generateId } from '../utils/utils';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -60,7 +61,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
     let newCatalogEntry;
-    let enrollment;
     if (generateWithAi) {
       const apiKey = user.getSetting('geminiApiKey');
 
@@ -76,10 +76,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
       clearInterval(messageInterval);
 
-      //const response = await fetch('/cs460.course.json');
-      //const courseJson = await response.json();
-      // const courseText = JSON.stringify(courseJson, null, 2);
-
       catalogEntry.outcomes = courseJson.outcomes || [];
 
       setUpdateMessage('Creating course repository');
@@ -91,34 +87,26 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       const overview = await aiCourseOverviewGenerator(apiKey, courseJson);
       const overviewGitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/README.md`;
       await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
-
-      setUpdateMessage('Creating roles and enrollment');
-      setUser(await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken }));
-      setUpdateMessage('Saving course structure');
-      const gitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
-      const commit = await service.commitGitHubFile(gitHubUrl, courseText, gitHubToken, 'add(course) generated content structure');
-
-      setUpdateMessage('Finalizing course creation');
-      await service.saveCourseSettings({ id: newCatalogEntry.id, gitHub: { ...newCatalogEntry.gitHub, commit } });
-      const course = await Course.create(newCatalogEntry);
-
-      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
     } else {
       newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
-      setUser(await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken }));
-
-      const course = await Course.create(newCatalogEntry);
-      courseCache.current.set(course.id, course);
-
-      enrollment = await service.createEnrollment(user.id, newCatalogEntry);
     }
+
+    setUpdateMessage('Creating roles and enrollment');
+    setUser(await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken }));
+
+    setUpdateMessage('Saving course structure');
+    const course = await Course.create(newCatalogEntry);
+    updateCourseStructure(course, null, 'add(course) generated structure');
+
+    enrollment = await service.createEnrollment(user.id, newCatalogEntry);
+
     return enrollment;
   }
 
   async function getCourse(courseId) {
     const courseEntry = courseCatalog().find((c) => c.id === courseId);
     if (!courseEntry) {
-      throw new Error(`Course with ID '${courseId}' not found in catalog.`);
+      return null;
     }
 
     if (!courseCache.current.has(courseId)) {
@@ -159,7 +147,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           title: topic.title,
           type: topic.type,
           path: topic.path.replace(`${updatedCourse.links.gitHub.rawUrl}/`, ''),
-          id: topic.id || _generateId(),
+          id: topic.id || generateId(),
           state: topic.state,
           description: topic.description,
           commit: topic.commit,
@@ -188,7 +176,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (!title.trim()) return;
     const updatedCourse = Course.copy(learningSession.course);
     updatedCourse.modules.push({
-      id: _generateId(),
+      id: generateId(),
       title: title.trim(),
       topics: [],
     });
@@ -259,7 +247,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (user.isEditor(course.id) && token) {
       try {
         const newTopic = {
-          id: _generateId(),
+          id: generateId(),
           title: topicTitle,
           type: topicType,
           path: _generateTopicPath(course, topicTitle, topicType),
@@ -653,35 +641,6 @@ ${topicDescription || 'overview content placeholder'}`;
     for (const module of modules) {
       await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.id}`, 'DELETE');
     }
-  }
-
-  async function _populateTemplateTopics(course, topicNames, gitHubToken) {
-    if (gitHubToken && course.gitHub && course.gitHub.account && course.gitHub.repository) {
-      for (const topicName of topicNames) {
-        const topic = course.topicFromTitle(topicName);
-        if (!topic) continue;
-        const markdown = await getTopicMarkdown(topic);
-
-        let variableFound = false;
-        const replacedMarkdown = markdown.replace(/%%MASTERYLS_(\w+)%%/g, (_, variable) => {
-          variableFound = true;
-          const key = variable.toLowerCase();
-          const value = course[key] ?? '';
-          if (typeof value === 'string') {
-            return value;
-          } else if (Array.isArray(value)) {
-            return value.reduce((acc, item) => acc + `- ${item}\n`, '');
-          }
-        });
-        if (variableFound) {
-          await _updateTopic(gitHubToken, course, topic, replacedMarkdown, `update(topic) with template variables`);
-        }
-      }
-    }
-  }
-
-  function _generateId() {
-    return crypto.randomUUID();
   }
 
   function _generateTopicPath(course, topicTitle, topicType) {

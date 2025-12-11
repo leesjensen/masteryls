@@ -1,3 +1,5 @@
+import { generateId } from './utils/utils.js';
+
 export default class Course {
   static async create(catalogEntry) {
     const courseData = await load(catalogEntry);
@@ -113,7 +115,6 @@ async function load(catalogEntry) {
       } else if (!topic.path.startsWith('http')) {
         topic.path = `${gitHubLinks.rawUrl}/${topic.path}`;
       }
-      topic.id = topic.id || generateId();
     }
   }
 
@@ -122,19 +123,33 @@ async function load(catalogEntry) {
 
 // This is a fallback for when course.json is not found
 async function loadCourseFromModulesMarkdown(catalogEntry, gitHub) {
-  const instructionPath = catalogEntry.gitHub.instructionPath ?? 'instruction';
-  const instructionModules = catalogEntry.gitHub.instructionModules ?? 'modules.md';
-  const instructionUrl = `${gitHub.rawUrl}/${instructionPath}/`;
-  const response = await fetch(`${instructionUrl}${instructionModules}`);
-  const markdownContent = await response.text();
-
+  const [instructionUrl, markdownContent] = await getModulesMarkdown(catalogEntry, gitHub);
   const modules = parseModulesMarkdown(gitHub, instructionUrl, markdownContent);
 
   return { ...catalogEntry, modules, links: { gitHub } };
 }
 
-function generateId() {
-  return crypto.randomUUID();
+async function getModulesMarkdown(catalogEntry, gitHub) {
+  let instructionPath = 'instruction';
+  let instructionModules = 'modules.md';
+  let instructionUrl = `${gitHub.rawUrl}/${instructionPath}/`;
+  let modulesMarkdownUrl = `${instructionUrl}${instructionModules}`;
+
+  let response = await fetch(modulesMarkdownUrl);
+  if (!response.ok) {
+    // Special case for CS 260 GitHub repo structure
+    instructionPath = 'profile';
+    instructionModules = 'instructionTopics.md';
+    instructionUrl = `${gitHub.rawUrl}/${instructionPath}/`;
+    modulesMarkdownUrl = `${instructionUrl}${instructionModules}`;
+    response = await fetch(modulesMarkdownUrl);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Unable to load modules`);
+  }
+
+  return [instructionUrl, await response.text()];
 }
 
 function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
@@ -186,6 +201,7 @@ function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
     modules.push(currentModule);
   }
   for (const module of modules) {
+    module.id = generateId();
     for (const topic of module.topics) {
       topic.id = generateId();
     }

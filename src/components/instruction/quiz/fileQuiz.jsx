@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { formatFileSize } from '../../../utils';
+import { formatFileSize } from '../../../utils/utils';
 
 export default function FileQuiz({ quizId }) {
   const [selectedFiles, setSelectedFiles] = useState([]);

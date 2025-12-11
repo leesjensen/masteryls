@@ -7,7 +7,7 @@ import UrlQuiz from './urlQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
 import { updateQuizProgress } from './quizProgressStore';
-import { formatFileSize } from '../../../utils';
+import { formatFileSize } from '../../../utils/utils';
 
 /**
  * QuizInstruction component that renders interactive quiz content within markdown instruction.
