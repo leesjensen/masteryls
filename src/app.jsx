@@ -134,18 +134,22 @@ function ClassroomPage() {
         let course = learningSession?.course;
         if (!course || course.id !== courseId) {
           course = await courseOps.getCourse(courseId);
-          service.setCourseUiSettings(courseId);
+          if (course) {
+            service.setCourseUiSettings(courseId);
+          }
         }
 
         let topic = learningSession?.topic;
-        if (!topicId) {
-          topic = course.allTopics[0] || { title: '', path: '' };
-          navigate(`/course/${courseId}/topic/${topic.id}`);
-          return;
-        } else if (!topic || topic.id !== topicId) {
-          topic = await course.topicFromId(topicId);
-          if (topic) {
-            courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+        if (course) {
+          if (!topicId) {
+            topic = course.allTopics[0] || { title: '', path: '' };
+            navigate(`/course/${courseId}/topic/${topic.id}`);
+            return;
+          } else if (!topic || topic.id !== topicId) {
+            topic = await course.topicFromId(topicId);
+            if (topic) {
+              courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+            }
           }
         }
 
