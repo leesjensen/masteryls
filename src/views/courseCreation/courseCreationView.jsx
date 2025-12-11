@@ -13,7 +13,7 @@ export default function CourseCreationView({ courseOps }) {
       if (await courseOps.service.verifyGitHubAccount(gitHubToken)) {
         await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
         navigate('/dashboard');
-        courseOps.setUser(courseOps.service.currentUser()); // Refresh user roles
+        courseOps.loginUser(courseOps.service.currentUser()); // Refresh user roles
       } else {
         showAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
       }
