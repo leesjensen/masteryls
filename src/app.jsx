@@ -130,35 +130,37 @@ function ClassroomPage() {
   const { courseId, topicId } = useParams();
   React.useEffect(() => {
     (async () => {
-      if (courseId !== null) {
-        let course = learningSession?.course;
-        if (!course || course.id !== courseId) {
-          course = await courseOps.getCourse(courseId);
-          if (course) {
-            service.setCourseUiSettings(courseId);
-          }
-        }
-
-        let topic = learningSession?.topic;
-        if (course) {
-          if (!topicId) {
-            topic = course.allTopics[0] || { title: '', path: '' };
-            navigate(`/course/${courseId}/topic/${topic.id}`);
-            return;
-          } else if (!topic || topic.id !== topicId) {
-            topic = await course.topicFromId(topicId);
-            if (topic) {
-              courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+      try {
+        if (courseId !== null) {
+          let course = learningSession?.course;
+          if (!course || course.id !== courseId) {
+            course = await courseOps.getCourse(courseId);
+            if (course) {
+              service.setCourseUiSettings(courseId);
             }
           }
-        }
 
-        if (course != null && topic != null) {
+          let topic = learningSession?.topic;
+          if (course) {
+            if (!topicId) {
+              topic = course.allTopics[0] || { title: '', path: '' };
+              navigate(`/course/${courseId}/topic/${topic.id}`);
+              return;
+            } else if (!topic || topic.id !== topicId) {
+              topic = await course.topicFromId(topicId);
+              if (topic) {
+                courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+              }
+            }
+          }
+
+          if (!course || !topic) throw new Error('Course or topic not found');
+
           const enrollment = user?.id ? await service.enrollment(user.id, course.id) : null;
           setLearningSession({ course, topic, enrollment });
-        } else {
-          navigate('/lost');
         }
+      } catch (error) {
+        navigate('/error', { state: { message: `Unable to load course: ${error.message}` } });
       }
     })();
   }, [courseId, topicId, user]);

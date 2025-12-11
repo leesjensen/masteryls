@@ -73,22 +73,28 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       // clearInterval(messageInterval);
       // catalogEntry.outcomes = courseJson.outcomes || [];
       // setUpdateMessage('Creating course repository');
-      // newCatalogEntry = await service.createCourseEmpty(catalogEntry, gitHubToken);
+      // newCatalogEntry = await service.createCourseEmpty(user, catalogEntry, gitHubToken);
       // setUpdateMessage('Creating course overview');
       // const overview = await aiCourseOverviewGenerator(apiKey, courseJson);
       // const overviewGitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/README.md`;
       // await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
     } else {
-      newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+      setUpdateMessage('Creating course from template');
+      newCatalogEntry = await service.createCourseFromTemplate(user, sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+
+      setUpdateMessage('Parsing course resources');
       newCatalogEntry = await loadCourseFromModulesMarkdown(newCatalogEntry);
     }
 
-    setUpdateMessage('Creating roles and enrollment');
-    setUser(await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken }));
+    const gitHubLinks = {
+      url: `https://github.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/blob/main`,
+      apiUrl: `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents`,
+      rawUrl: `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`,
+    };
+    newCatalogEntry = { ...newCatalogEntry, links: { gitHub: gitHubLinks } };
 
-    setUpdateMessage('Saving course structure');
-    //    const course = await Course.create(newCatalogEntry);
-    updateCourseStructure(newCatalogEntry, null, 'add(course) generated structure');
+    setUpdateMessage('Saving course');
+    _updateCourseStructure(gitHubToken, newCatalogEntry, null, 'add(course) generated structure');
 
     enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
@@ -105,22 +111,28 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function getModulesMarkdown(gitHubUrl) {
-    let instructionPath = 'instruction';
-    let instructionModules = 'modules.md';
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    let attemptCount = 0;
+    // Since we are reading right after creating, we may need to retry a few times
+    while (attemptCount < 3) {
+      let instructionPath = 'instruction';
+      let instructionModules = 'modules.md';
 
-    let response = await fetch(`${gitHubUrl}/${instructionPath}/${instructionModules}`);
-    if (!response.ok) {
-      // Special case for CS 260 GitHub repo structure
-      instructionPath = 'profile';
-      instructionModules = 'instructionTopics.md';
-      response = await fetch(`${gitHubUrl}/${instructionPath}/${instructionModules}`);
+      let response = await fetch(`${gitHubUrl}/${instructionPath}/${instructionModules}`);
+      if (!response.ok) {
+        // Special case for CS 260 GitHub repo structure
+        instructionPath = 'profile';
+        instructionModules = 'instructionTopics.md';
+        response = await fetch(`${gitHubUrl}/${instructionPath}/${instructionModules}`);
+      }
+
+      if (response.ok) {
+        return [instructionPath, await response.text()];
+      }
+      attemptCount++;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-
-    if (!response.ok) {
-      throw new Error(`Unable to load modules`);
-    }
-
-    return [instructionPath, await response.text()];
+    throw new Error(`Unable to load modules`);
   }
 
   function parseModulesMarkdown(gitHubUrl, instructionPath, modulesMarkdown) {
@@ -159,9 +171,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       if (topicMatch && currentModule) {
         let prefix = topicMatch[1] ? topicMatch[1] : '';
         let title = topicMatch[2] ? topicMatch[2].trim() : '';
-        let relPath = topicMatch[3] ? topicMatch[3].trim() : '';
-        const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(relPath);
-        const path = isAbsoluteUrl ? relPath : new URL(relPath, instructionPath).toString();
+        const path = `${instructionPath}/${topicMatch[3] ? topicMatch[3].trim() : ''}`;
+        // const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(relPath);
+        // const path = isAbsoluteUrl ? relPath : new URL(relPath, instructionUrl).toString();
+
         currentModule.topics.push({
           title: `${prefix}${title}`,
           path: path,

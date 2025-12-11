@@ -78,13 +78,13 @@ class Service {
     return resp.ok;
   }
 
-  async createCourseEmpty(catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
-    const newCatalogEntry = await this.createCourseFromTemplate('csinstructiontemplate', 'emptycourse', catalogEntry, gitHubToken);
+  async createCourseEmpty(editor: User, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+    const newCatalogEntry = await this.createCourseFromTemplate(editor, 'csinstructiontemplate', 'emptycourse', catalogEntry, gitHubToken);
 
     return newCatalogEntry;
   }
 
-  async createCourseFromTemplate(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+  async createCourseFromTemplate(editor: User, templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     try {
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
         const targetOwner = catalogEntry.gitHub.account;
@@ -114,8 +114,10 @@ class Service {
     if (error) {
       throw new Error(error.message);
     }
+    catalogEntry = data;
+    this.catalog.push(catalogEntry);
 
-    this.catalog.push(data);
+    await this.addUserRole(editor, 'editor', catalogEntry.id, { gitHubToken });
 
     return data;
   }
