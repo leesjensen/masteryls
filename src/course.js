@@ -95,22 +95,11 @@ async function load(catalogEntry) {
     courseUrl = courseUrl.replace('main', catalogEntry.gitHub.commit);
   }
 
-  // const response = await fetch(courseUrl);
-  // if (!response.ok) {
-  //   throw new Error(`Unable to load course.json`);
-  // }
-  const courseData = {
-    modules: [
-      {
-        title: 'Course info',
-        topics: [
-          { title: 'Home', path: `${gitHubLinks.rawUrl}/README.md`, id: generateId() },
-          { title: 'Syllabus', path: `${gitHubLinks.rawUrl}/syllabus/syllabus.md`, id: generateId() },
-          { title: 'Schedule', path: `${gitHubLinks.rawUrl}/schedule/schedule.md`, id: generateId() },
-        ],
-      },
-    ],
-  };
+  const response = await fetch(courseUrl);
+  if (!response.ok) {
+    throw new Error(`Unable to load course.json`);
+  }
+  const courseData = await response.json();
   courseData.name = catalogEntry.name || '';
   courseData.title = catalogEntry.title || '';
   courseData.description = catalogEntry.description || '';
