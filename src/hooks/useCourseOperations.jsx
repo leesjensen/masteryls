@@ -658,7 +658,9 @@ ${topicDescription || 'overview content placeholder'}`;
         html = `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="https://www.youtube.com/embed/${match[1]}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
       }
     } else {
-      const md = await getTopicMarkdown(topic);
+      let md = await getTopicMarkdown(topic);
+      // Canvas inserts its own title header, so remove any top-level headers from the markdown
+      md = md.replace(/^\w*#+\s.+\n/gm, '');
       html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
     }
 
