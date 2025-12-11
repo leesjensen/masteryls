@@ -95,11 +95,22 @@ async function load(catalogEntry) {
     courseUrl = courseUrl.replace('main', catalogEntry.gitHub.commit);
   }
 
-  const response = await fetch(courseUrl);
-  if (!response.ok) {
-    return loadCourseFromModulesMarkdown(catalogEntry, gitHubLinks);
-  }
-  const courseData = await response.json();
+  // const response = await fetch(courseUrl);
+  // if (!response.ok) {
+  //   throw new Error(`Unable to load course.json`);
+  // }
+  const courseData = {
+    modules: [
+      {
+        title: 'Course info',
+        topics: [
+          { title: 'Home', path: `${gitHubLinks.rawUrl}/README.md`, id: generateId() },
+          { title: 'Syllabus', path: `${gitHubLinks.rawUrl}/syllabus/syllabus.md`, id: generateId() },
+          { title: 'Schedule', path: `${gitHubLinks.rawUrl}/schedule/schedule.md`, id: generateId() },
+        ],
+      },
+    ],
+  };
   courseData.name = catalogEntry.name || '';
   courseData.title = catalogEntry.title || '';
   courseData.description = catalogEntry.description || '';
@@ -110,102 +121,11 @@ async function load(catalogEntry) {
 
   for (const module of courseData.modules) {
     for (const topic of module.topics) {
-      if (topic.type && topic.type === 'video') {
-        topic.path = `${topic.path}`;
-      } else if (!topic.path.startsWith('http')) {
+      if (!topic.path.startsWith('http')) {
         topic.path = `${gitHubLinks.rawUrl}/${topic.path}`;
       }
     }
   }
 
   return courseData;
-}
-
-// This is a fallback for when course.json is not found
-async function loadCourseFromModulesMarkdown(catalogEntry, gitHub) {
-  const [instructionUrl, markdownContent] = await getModulesMarkdown(catalogEntry, gitHub);
-  const modules = parseModulesMarkdown(gitHub, instructionUrl, markdownContent);
-
-  return { ...catalogEntry, modules, links: { gitHub } };
-}
-
-async function getModulesMarkdown(catalogEntry, gitHub) {
-  let instructionPath = 'instruction';
-  let instructionModules = 'modules.md';
-  let instructionUrl = `${gitHub.rawUrl}/${instructionPath}/`;
-  let modulesMarkdownUrl = `${instructionUrl}${instructionModules}`;
-
-  let response = await fetch(modulesMarkdownUrl);
-  if (!response.ok) {
-    // Special case for CS 260 GitHub repo structure
-    instructionPath = 'profile';
-    instructionModules = 'instructionTopics.md';
-    instructionUrl = `${gitHub.rawUrl}/${instructionPath}/`;
-    modulesMarkdownUrl = `${instructionUrl}${instructionModules}`;
-    response = await fetch(modulesMarkdownUrl);
-  }
-
-  if (!response.ok) {
-    throw new Error(`Unable to load modules`);
-  }
-
-  return [instructionUrl, await response.text()];
-}
-
-function parseModulesMarkdown(gitHub, instructionUrl, markdownContent) {
-  const lines = markdownContent.split('\n');
-
-  const modules = [
-    {
-      title: 'Course info',
-      topics: [
-        { title: 'Home', path: `${gitHub.rawUrl}/README.md` },
-        { title: 'Syllabus', path: `${gitHub.rawUrl}/syllabus/syllabus.md` },
-        { title: 'Schedule', path: `${gitHub.rawUrl}/schedule/schedule.md` },
-      ],
-    },
-  ];
-  let currentModule = null;
-
-  const moduleRegex = /^##\s+(.*)$/;
-  const topicRegex = /^-\s(.*\s)?\[(.+?)\]\((.+?)\)$/;
-
-  for (const line of lines) {
-    const moduleMatch = line.match(moduleRegex);
-    if (moduleMatch) {
-      if (currentModule) {
-        modules.push(currentModule);
-      }
-      currentModule = {
-        title: moduleMatch[1].trim(),
-        topics: [],
-      };
-      continue;
-    }
-
-    const topicMatch = line.match(topicRegex);
-    if (topicMatch && currentModule) {
-      let prefix = topicMatch[1] ? topicMatch[1] : '';
-      let title = topicMatch[2] ? topicMatch[2].trim() : '';
-      let relPath = topicMatch[3] ? topicMatch[3].trim() : '';
-      const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(relPath);
-      const path = isAbsoluteUrl ? relPath : new URL(relPath, instructionUrl).toString();
-      currentModule.topics.push({
-        title: `${prefix}${title}`,
-        path: path,
-      });
-    }
-  }
-
-  if (currentModule) {
-    modules.push(currentModule);
-  }
-  for (const module of modules) {
-    module.id = generateId();
-    for (const topic of module.topics) {
-      topic.id = generateId();
-    }
-  }
-
-  return modules;
 }

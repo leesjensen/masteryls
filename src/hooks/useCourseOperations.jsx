@@ -62,45 +62,119 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
     let newCatalogEntry;
     if (generateWithAi) {
-      const apiKey = user.getSetting('geminiApiKey');
-
-      setUpdateMessage('Using AI to create course topics');
-
-      const messages = ['The gerbil is digging', 'The hamster is running', 'The beaver is building', 'The squirrel is gathering nuts'];
-      const messageInterval = setInterval(() => {
-        setUpdateMessage(messages[Math.floor(Math.random() * messages.length)]);
-      }, 3000);
-
-      const courseText = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
-      const courseJson = JSON.parse(courseText);
-
-      clearInterval(messageInterval);
-
-      catalogEntry.outcomes = courseJson.outcomes || [];
-
-      setUpdateMessage('Creating course repository');
-
-      newCatalogEntry = await service.createCourseEmpty(catalogEntry, gitHubToken);
-
-      setUpdateMessage('Creating course overview');
-
-      const overview = await aiCourseOverviewGenerator(apiKey, courseJson);
-      const overviewGitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/README.md`;
-      await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
+      // const apiKey = user.getSetting('geminiApiKey');
+      // setUpdateMessage('Using AI to create course topics');
+      // const messages = ['The gerbil is digging', 'The hamster is running', 'The beaver is building', 'The squirrel is gathering nuts'];
+      // const messageInterval = setInterval(() => {
+      //   setUpdateMessage(messages[Math.floor(Math.random() * messages.length)]);
+      // }, 3000);
+      // const courseText = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
+      // const courseJson = JSON.parse(courseText);
+      // clearInterval(messageInterval);
+      // catalogEntry.outcomes = courseJson.outcomes || [];
+      // setUpdateMessage('Creating course repository');
+      // newCatalogEntry = await service.createCourseEmpty(catalogEntry, gitHubToken);
+      // setUpdateMessage('Creating course overview');
+      // const overview = await aiCourseOverviewGenerator(apiKey, courseJson);
+      // const overviewGitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/README.md`;
+      // await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
     } else {
       newCatalogEntry = await service.createCourseFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
+      newCatalogEntry = await loadCourseFromModulesMarkdown(newCatalogEntry);
     }
 
     setUpdateMessage('Creating roles and enrollment');
     setUser(await service.addUserRole(user, 'editor', newCatalogEntry.id, { gitHubToken }));
 
     setUpdateMessage('Saving course structure');
-    const course = await Course.create(newCatalogEntry);
-    updateCourseStructure(course, null, 'add(course) generated structure');
+    //    const course = await Course.create(newCatalogEntry);
+    updateCourseStructure(newCatalogEntry, null, 'add(course) generated structure');
 
     enrollment = await service.createEnrollment(user.id, newCatalogEntry);
 
     return enrollment;
+  }
+
+  // This is a fallback for when course.json is not found
+  async function loadCourseFromModulesMarkdown(catalogEntry) {
+    const gitHubUrl = `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`;
+    const [instructionPath, modulesMarkdown] = await getModulesMarkdown(gitHubUrl);
+    const modules = parseModulesMarkdown(gitHubUrl, instructionPath, modulesMarkdown);
+
+    return { ...catalogEntry, modules };
+  }
+
+  async function getModulesMarkdown(gitHubUrl) {
+    let instructionPath = 'instruction';
+    let instructionModules = 'modules.md';
+
+    let response = await fetch(`${gitHubUrl}/${instructionPath}/${instructionModules}`);
+    if (!response.ok) {
+      // Special case for CS 260 GitHub repo structure
+      instructionPath = 'profile';
+      instructionModules = 'instructionTopics.md';
+      response = await fetch(`${gitHubUrl}/${instructionPath}/${instructionModules}`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Unable to load modules`);
+    }
+
+    return [instructionPath, await response.text()];
+  }
+
+  function parseModulesMarkdown(gitHubUrl, instructionPath, modulesMarkdown) {
+    const lines = modulesMarkdown.split('\n');
+
+    const modules = [
+      {
+        title: 'Course info',
+        topics: [
+          { title: 'Home', path: `${gitHubUrl}/README.md` },
+          { title: 'Syllabus', path: `${gitHubUrl}/syllabus/syllabus.md` },
+          { title: 'Schedule', path: `${gitHubUrl}/schedule/schedule.md` },
+        ],
+      },
+    ];
+    let currentModule = null;
+
+    const moduleRegex = /^##\s+(.*)$/;
+    const topicRegex = /^-\s(.*\s)?\[(.+?)\]\((.+?)\)$/;
+
+    for (const line of lines) {
+      const moduleMatch = line.match(moduleRegex);
+      if (moduleMatch) {
+        if (currentModule) {
+          modules.push(currentModule);
+        }
+        currentModule = {
+          title: moduleMatch[1].trim(),
+          id: generateId(),
+          topics: [],
+        };
+        continue;
+      }
+
+      const topicMatch = line.match(topicRegex);
+      if (topicMatch && currentModule) {
+        let prefix = topicMatch[1] ? topicMatch[1] : '';
+        let title = topicMatch[2] ? topicMatch[2].trim() : '';
+        let relPath = topicMatch[3] ? topicMatch[3].trim() : '';
+        const isAbsoluteUrl = /^(?:[a-z]+:)?\/\//i.test(relPath);
+        const path = isAbsoluteUrl ? relPath : new URL(relPath, instructionPath).toString();
+        currentModule.topics.push({
+          title: `${prefix}${title}`,
+          path: path,
+          id: generateId(),
+        });
+      }
+    }
+
+    if (currentModule) {
+      modules.push(currentModule);
+    }
+
+    return modules;
   }
 
   async function getCourse(courseId) {
