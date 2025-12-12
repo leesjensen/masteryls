@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 
 export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
-  const [title, setTitle] = useState('x');
-  const [description, setDescription] = useState('x');
-  const [name, setName] = useState('x');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [name, setName] = useState('');
   const [gitHubToken, setGitHubToken] = useState('');
-  const [gitHubAccount, setGitHubAccount] = useState('byucsstudent');
-  const [gitHubRepo, setGitHubRepo] = useState('x');
-  const [gitHubSourceAccount, setGitHubSourceAccount] = useState('webprogramming260');
-  const [gitHubSourceRepo, setGitHubSourceRepo] = useState('.github');
+  const [gitHubAccount, setGitHubAccount] = useState('');
+  const [gitHubRepo, setGitHubRepo] = useState('');
+  const [gitHubSourceAccount, setGitHubSourceAccount] = useState('');
+  const [gitHubSourceRepo, setGitHubSourceRepo] = useState('');
   const [gitHubTemplates, setGitHubTemplates] = useState([]);
   const [generateWithAi, setGenerateWithAi] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

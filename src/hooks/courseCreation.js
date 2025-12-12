@@ -73,16 +73,7 @@ async function getModulesMarkdown(gitHubUrl) {
 function parseModulesMarkdown(gitHubUrl, instructionPath, modulesMarkdown) {
   const lines = modulesMarkdown.split('\n');
 
-  const modules = [
-    {
-      title: 'Course info',
-      topics: [
-        { id: generateId(), title: 'Home', path: `${gitHubUrl}/README.md` },
-        { id: generateId(), title: 'Syllabus', path: `${gitHubUrl}/syllabus/syllabus.md` },
-        { id: generateId(), title: 'Schedule', path: `${gitHubUrl}/schedule/schedule.md` },
-      ],
-    },
-  ];
+  const modules = [];
   let currentModule = null;
 
   const moduleRegex = /^##\s+(.*)$/;
@@ -99,6 +90,14 @@ function parseModulesMarkdown(gitHubUrl, instructionPath, modulesMarkdown) {
         id: generateId(),
         topics: [],
       };
+
+      if (modules.length === 0) {
+        currentModule.topics.push({
+          title: 'Home',
+          path: `README.md`,
+          id: generateId(),
+        });
+      }
       continue;
     }
 

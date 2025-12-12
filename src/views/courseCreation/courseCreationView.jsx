@@ -11,7 +11,7 @@ export default function CourseCreationView({ courseOps }) {
   const create = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) => {
     try {
       if (await courseOps.service.verifyGitHubAccount(gitHubToken)) {
-        //        await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
+        await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
         navigate('/dashboard');
         courseOps.login(await courseOps.service.currentUser()); // Refresh user roles
       } else {
