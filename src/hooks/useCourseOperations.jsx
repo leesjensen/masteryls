@@ -261,7 +261,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
     updatedTopic.commit = commit;
 
-    updatedCourse = await _updateCourseStructure(token, updatedCourse, updatedTopic, `update(course) topic ${topic.title}`);
+    updatedCourse = await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
     setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
   }
 
@@ -547,6 +547,7 @@ ${topicDescription || 'overview content placeholder'}`;
       // Canvas inserts its own title header, so remove any top-level headers from the markdown
       md = md.replace(/^\w*#+\s.+\n/gm, '');
       html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+      console.log(`update canvas page ${md.length}, ${html.length}`);
     }
 
     const body = {
