@@ -73,14 +73,14 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       } else {
         const match = href?.match(/^([^#]*)(#.*)?$/);
         const hrefPath = match?.[1];
-        const hrefAnchor = match?.[2];
+        const hrefAnchor = match?.[2] || '';
 
         const resolvedUrl = new URL(hrefPath, topic.path).toString();
         const targetTopic = course.topicFromPath(resolvedUrl, false);
         if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
-          src = `./${targetTopic.externalRefs.canvasPageId}${hrefAnchor || ''}`;
+          src = `/courses/${course.externalRefs.canvasCourseId}/pages/${targetTopic.externalRefs.canvasPageId}${hrefAnchor}`;
         } else {
-          src = resolvedUrl + (hrefAnchor || '');
+          src = resolvedUrl + hrefAnchor;
         }
       }
 

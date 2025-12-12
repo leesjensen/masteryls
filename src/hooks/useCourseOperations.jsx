@@ -73,13 +73,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (!courseCache.current.has(courseId)) {
       const course = await Course.create(courseEntry);
       courseCache.current.set(courseId, course);
+      return course;
     }
     return courseCache.current.get(courseId);
   }
 
   function setCurrentCourse(updatedCourse) {
     if (updatedCourse) {
-      courseCache.current.set(updatedCourse.id, updatedCourse);
+      courseCache.current.delete(updatedCourse.id);
       setLearningSession({ course: updatedCourse, topic: updatedCourse.allTopics[0] });
     } else if (learningSession?.course) {
       courseCache.current.delete(learningSession.course.id);
@@ -547,7 +548,6 @@ ${topicDescription || 'overview content placeholder'}`;
       // Canvas inserts its own title header, so remove any top-level headers from the markdown
       md = md.replace(/^\w*#\s.+\n/gm, '');
       html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
-      console.log(`update canvas page ${md.length}, ${html.length}`);
     }
 
     const body = {
