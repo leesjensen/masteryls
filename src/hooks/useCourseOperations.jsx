@@ -477,7 +477,7 @@ ${topicDescription || 'overview content placeholder'}`;
 
     if (deleteExisting) {
       setUpdateMessage(`Cleaning up existing Canvas course content`);
-      await cleanCanvasCourse(canvasCourseId);
+      await cleanCanvasCourse(canvasCourseId, setUpdateMessage);
     }
 
     for (const module of updatedCourse.modules) {
@@ -574,9 +574,9 @@ ${topicDescription || 'overview content placeholder'}`;
     return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
   }
 
-  async function cleanCanvasCourse(canvasCourseId) {
+  async function cleanCanvasCourse(canvasCourseId, setUpdateMessage) {
     let pagePos = 1;
-    const desiredCount = 2;
+    const desiredCount = 20;
     let count = desiredCount;
     const pages = [];
     while (count == desiredCount) {
@@ -587,6 +587,7 @@ ${topicDescription || 'overview content placeholder'}`;
     }
 
     for (const page of pages) {
+      setUpdateMessage(`Deleting Canvas page '${page.title}'`);
       await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${page.page_id}`, 'DELETE');
     }
 
@@ -601,6 +602,7 @@ ${topicDescription || 'overview content placeholder'}`;
     }
 
     for (const module of modules) {
+      setUpdateMessage(`Deleting Canvas module '${module.name}'`);
       await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.id}`, 'DELETE');
     }
   }
