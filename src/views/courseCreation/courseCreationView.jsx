@@ -11,9 +11,9 @@ export default function CourseCreationView({ courseOps }) {
   const create = async (generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) => {
     try {
       if (await courseOps.service.verifyGitHubAccount(gitHubToken)) {
-        await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
+        //        await courseOps.createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage);
         navigate('/dashboard');
-        courseOps.login(courseOps.service.currentUser()); // Refresh user roles
+        courseOps.login(await courseOps.service.currentUser()); // Refresh user roles
       } else {
         showAlert({ message: 'The provided GitHub token does not have the necessary permissions to create a course.', type: 'error' });
       }
