@@ -56,7 +56,7 @@ Requirements:
 - The course contains a capstone project that integrates the topics covered in each module
 - Each topic should have a concise, descriptive title
 `;
-  return makeAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(apiKey, prompt);
 }
 
 /**
@@ -94,7 +94,7 @@ Requirements:
 - Include common challenges and solutions
 - Provide a summary`;
 
-  return makeAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(apiKey, prompt);
 }
 
 export async function aiExamGenerator(apiKey, courseDescription, title, description) {
@@ -129,7 +129,7 @@ Generate 10 multiple choice or essay questions of the format:
 - base questions on the content ${description}
 - prefer coding questions where applicable`;
 
-  const response = await makeAiRequest(apiKey, prompt);
+  const response = await makeSimpleAiRequest(apiKey, prompt);
   response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
   return response;
 }
@@ -174,7 +174,7 @@ Requirements:
 - Conclude with a motivational call to action encouraging learners to begin the course
 `;
 
-  return makeAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(apiKey, prompt);
 }
 
 /**
@@ -214,7 +214,7 @@ Requirements:
 - Ensure that the section is educational and reinforces key concepts from the topic
 `;
 
-  return makeAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(apiKey, prompt);
 }
 
 /**
@@ -254,7 +254,7 @@ Requirements:
 - The quiz should be challenging but fair, suitable for learners who have studied the topic
 `;
 
-  return makeAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(apiKey, prompt);
 }
 
 /**
@@ -282,7 +282,7 @@ Requirements:
 - Ensure that the response is educational and reinforces key concepts from the topic
 `;
 
-  return makeAiRequest(apiKey, fullPrompt);
+  return makeSimpleAiRequest(apiKey, fullPrompt);
 }
 
 /**
@@ -293,11 +293,21 @@ Requirements:
  * @param {string} apiKey - The API key for authenticating with the AI service.
  * @param {string} topicTitle - The title of the topic being discussed.
  * @param {string} topicContent - The content of the topic being discussed.
- * @param {string} userPrompt - The student's question or comment about the topic.
+ * @param {object[]} messages - The student's question or comment about the topic.
  * @returns {Promise<string>} A promise that resolves to the generated discussion response.
  */
-export async function aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, userPrompt) {
-  const prompt = `
+export async function aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, messages) {
+  const instructions = createDiscussionInstructions(topicTitle, topicContent);
+  const contents = createDiscussionContents(messages);
+
+  return makeAiRequest(apiKey, instructions, contents);
+}
+
+function createDiscussionInstructions(topicTitle, topicContent) {
+  return {
+    parts: [
+      {
+        text: `
 You are a knowledgeable teaching assistant helping a student understand course material. 
 You have access to the following topic content that the student is currently studying:
 
@@ -305,9 +315,6 @@ TOPIC: ${topicTitle}
 
 CONTENT:
 ${topicContent}
-
-The student has asked the following question or made this comment about the topic:
-"${userPrompt}"
 
 Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
@@ -321,9 +328,16 @@ Please provide a helpful, educational response that:
 - Is conversational and supportive in tone
 - Stays focused on the educational content and avoids unrelated topics
 
-If the student's question is not directly related to the topic content, gently redirect them back to the material while still being helpful.`;
+If the student's question is not directly related to the topic content, gently redirect them back to the material while still being helpful.`,
+      },
+    ],
+  };
+}
 
-  return makeAiRequest(apiKey, prompt);
+function createDiscussionContents(messages) {
+  return messages.map((msg) => {
+    return { role: msg.type, parts: [{ text: msg.content }] };
+  });
 }
 
 /**
@@ -356,7 +370,7 @@ Requirements:
 - Limit feedback to 150 words or less
 `;
 
-  return await makeAiRequest(apiKey, prompt);
+  return await makeSimpleAiRequest(apiKey, prompt);
 }
 
 export async function aiEssayQuizFeedbackGenerator(apiKey, data) {
@@ -380,7 +394,7 @@ Requirements:
 `;
 
   let feedbackData = { percentCorrect: undefined };
-  let feedback = await makeAiRequest(apiKey, prompt);
+  let feedback = await makeSimpleAiRequest(apiKey, prompt);
   const jsonMatch = feedback.match(/^\s*(?:```json\s*)?(\{[\s\S]*?\})(?:\s*```)?/);
   if (jsonMatch) {
     try {
@@ -395,12 +409,40 @@ Requirements:
  * Sends a prompt to the Gemini generative language model and returns the generated content.
  *
  * @async
- * @function makeAiRequest
+ * @function makeSimpleAiRequest
  * @param {string} apiKey - The API key for authenticating with the Google Generative Language API.
  * @param {string} prompt - The prompt text to send to the AI model.
  * @returns {Promise<string>} The generated content from the AI model.
  */
-async function makeAiRequest(apiKey, prompt) {
+async function makeSimpleAiRequest(apiKey, prompt) {
+  const contents = [
+    {
+      parts: [
+        {
+          text: prompt,
+        },
+      ],
+    },
+  ];
+  return makeAiRequest(apiKey, null, contents);
+}
+
+/**
+ * Sends a prompt to the Gemini generative language model and returns the generated content.
+ *
+ * @async
+ * @function makeAiRequest
+ * @param {string} apiKey - The API key for authenticating with the Google Generative Language API.
+ * @param {string|null} instructions - The system instructions to send to the AI model.
+ * @param {Array} contents - The contents to send to the AI model.
+ * @returns {Promise<string>} The generated content from the AI model.
+ */
+async function makeAiRequest(apiKey, instructions, contents) {
+  const body = {
+    ...(instructions && { system_instruction: instructions }),
+    contents,
+  };
+
   const model = 'gemini-2.5-flash';
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
@@ -409,18 +451,7 @@ async function makeAiRequest(apiKey, prompt) {
         'Content-Type': 'application/json',
         'X-goog-api-key': apiKey,
       },
-      body: JSON.stringify({
-        ...standardRequestBody,
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

@@ -15,6 +15,7 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
 
   useEffect(() => {
     scrollToBottom();
+    inputRef.current?.focus();
   }, [messages]);
 
   useEffect(() => {
@@ -42,11 +43,11 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     setIsLoading(true);
 
     try {
-      const response = await aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, userMessage);
+      const response = await aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, newMessages);
       setMessages((prev) => [
         ...prev,
         {
-          type: 'assistant',
+          type: 'model',
           content: response,
           timestamp: Date.now(),
         },
