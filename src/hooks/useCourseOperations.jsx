@@ -545,7 +545,7 @@ ${topicDescription || 'overview content placeholder'}`;
     } else {
       let md = await getTopicMarkdown(topic);
       // Canvas inserts its own title header, so remove any top-level headers from the markdown
-      md = md.replace(/^\w*#+\s.+\n/gm, '');
+      md = md.replace(/^\w*#\s.+\n/gm, '');
       html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
       console.log(`update canvas page ${md.length}, ${html.length}`);
     }
