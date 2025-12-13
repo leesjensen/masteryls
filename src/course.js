@@ -1,13 +1,17 @@
 import { generateId } from './utils/utils.js';
 
 export default class Course {
-  static async create(catalogEntry) {
-    const courseData = await load(catalogEntry);
-    return new Course(courseData);
+  static async load(catalogEntry) {
+    try {
+      const courseDefinition = await loadFromDefinition(catalogEntry);
+      return new Course(courseDefinition);
+    } catch (error) {
+      return null;
+    }
   }
 
-  constructor(courseData = { modules: [] }) {
-    Object.assign(this, courseData);
+  constructor(courseDefinition = { modules: [] }) {
+    Object.assign(this, courseDefinition);
 
     this.markdownCache = new Map();
     this.allTopics = this.modules.flatMap((m) => m.topics);
@@ -88,41 +92,41 @@ export default class Course {
   }
 }
 
-async function load(catalogEntry) {
+async function loadFromDefinition(catalogEntry) {
   const gitHubLinks = {
     url: `https://github.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/blob/main`,
     apiUrl: `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents`,
     rawUrl: `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`,
   };
 
-  let courseUrl = `${gitHubLinks.rawUrl}/course.json`;
+  let courseDefinitionUrl = `${gitHubLinks.rawUrl}/course.json`;
   if (catalogEntry.gitHub.commit) {
-    courseUrl = courseUrl.replace('main', catalogEntry.gitHub.commit);
+    courseDefinitionUrl = courseDefinitionUrl.replace('main', catalogEntry.gitHub.commit);
   }
 
-  const response = await fetch(courseUrl);
+  const response = await fetch(courseDefinitionUrl);
   if (!response.ok) {
-    throw new Error(`Unable to load course.json`);
+    throw new Error(`Unable to load course data file from ${courseDefinitionUrl}`);
   }
-  const courseData = await response.json();
-  courseData.name = catalogEntry.name || '';
-  courseData.title = catalogEntry.title || '';
-  courseData.description = catalogEntry.description || '';
-  courseData.id = catalogEntry.id;
-  courseData.links = catalogEntry.links || {};
-  courseData.links.gitHub = gitHubLinks;
-  courseData.gitHub = catalogEntry.gitHub;
 
-  for (const module of courseData.modules) {
+  // Prefer the information in the catalog entry
+  const courseDefinition = await response.json();
+  courseDefinition.name = catalogEntry.name || '';
+  courseDefinition.title = catalogEntry.title || '';
+  courseDefinition.description = catalogEntry.description || '';
+  courseDefinition.id = catalogEntry.id;
+  courseDefinition.links = catalogEntry.links || {};
+  courseDefinition.links.gitHub = gitHubLinks;
+  courseDefinition.gitHub = catalogEntry.gitHub;
+
+  // Make the topic paths absolute while executing (these are not stored in the course definition)
+  for (const module of courseDefinition.modules) {
     for (const topic of module.topics) {
       if (!topic.path.startsWith('http')) {
         topic.path = `${gitHubLinks.rawUrl}/${topic.path}`;
       }
-      if (!topic.id) {
-        topic.id = generateId();
-      }
     }
   }
 
-  return courseData;
+  return courseDefinition;
 }

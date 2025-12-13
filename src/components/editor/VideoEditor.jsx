@@ -16,20 +16,11 @@ export default function VideoEditor({ learningSession }) {
   };
 
   const handleSave = async () => {
-    // if (!dirty) return;
-    // // This should be an updateTopicVideo function in Course class
-    // const updatedTopic = { ...currentTopic, path: url };
-    // const updatedCourse = await Course.create({ ...course });
-    // for (const module of updatedCourse.modules) {
-    //   const topicIdx = module.topics.findIndex((t) => t.id === updatedTopic.id);
-    //   if (topicIdx !== -1) {
-    //     module.topics[topicIdx] = updatedTopic;
-    //     break;
-    //   }
-    // }
-    // setCourse(updatedCourse);
-    // changeTopic(updatedTopic);
-    // setDirty(false);
+    if (!dirty) return;
+
+    // TODO: update the topic path and commit
+
+    setDirty(false);
   };
 
   return (

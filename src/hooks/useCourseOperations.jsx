@@ -71,8 +71,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     if (!courseCache.current.has(courseId)) {
-      const course = await Course.create(courseEntry);
-      courseCache.current.set(courseId, course);
+      const course = await Course.load(courseEntry);
+      if (course) {
+        courseCache.current.set(courseId, course);
+      }
       return course;
     }
     return courseCache.current.get(courseId);
@@ -123,7 +125,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const gitHubUrl = `${course.links.gitHub.apiUrl}/course.json`;
 
     const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
-    await service.saveCourseSettings({ id: course.id, gitHub: { ...course.gitHub, commit } });
+    await service.saveCatalogEntry({ id: course.id, gitHub: { ...course.gitHub, commit } });
     courseCache.current.set(course.id, course);
 
     return course;

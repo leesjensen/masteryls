@@ -78,13 +78,11 @@ class Service {
     return resp.ok;
   }
 
-  async createCourseEmpty(editor: User, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
-    const newCatalogEntry = await this.createCourseFromTemplate(editor, 'csinstructiontemplate', 'emptycourse', catalogEntry, gitHubToken);
-
-    return newCatalogEntry;
+  async createCourseRepoFromDefaultTemplate(catalogEntry: CatalogEntry, gitHubToken: string): Promise<void> {
+    await this.createCourseRepoFromTemplate('csinstructiontemplate', 'emptycourse', catalogEntry, gitHubToken);
   }
 
-  async createCourseFromTemplate(editor: User, templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+  async createCourseRepoFromTemplate(templateOwner: string, templateRepo: string, catalogEntry: CatalogEntry, gitHubToken: string): Promise<void> {
     try {
       if (gitHubToken && catalogEntry.gitHub && catalogEntry.gitHub.account && catalogEntry.gitHub.repository) {
         const targetOwner = catalogEntry.gitHub.account;
@@ -109,7 +107,9 @@ class Service {
     } catch (err: any) {
       throw new Error(`Failed to create course from template: ${err?.message || err}`);
     }
+  }
 
+  async createCatalogEntry(editor: User, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
     const { data, error } = await supabase.from('catalog').insert([catalogEntry]).select().single();
     if (error) {
       throw new Error(error.message);
@@ -119,10 +119,10 @@ class Service {
 
     await this.addUserRole(editor, 'editor', catalogEntry.id, { gitHubToken });
 
-    return data;
+    return catalogEntry;
   }
 
-  async saveCourseSettings(catalogEntry: CatalogEntry): Promise<void> {
+  async saveCatalogEntry(catalogEntry: CatalogEntry): Promise<void> {
     const { error } = await supabase.from('catalog').upsert(catalogEntry);
     if (error) {
       throw new Error(error.message);
@@ -432,7 +432,12 @@ class Service {
     };
   }
 
-  async commitGitHubFile(gitHubUrl: string, content: string | Uint8Array, token: string, commitMessage: string, blobSha?: string): Promise<string> {
+  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
+    const commitSha = await this._getGitHubFileSha(gitHubUrl, token);
+    return await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, commitSha);
+  }
+
+  async commitGitHubFile(gitHubUrl: string, content: string | Uint8Array, token: string, commitMessage: string, commitSha?: string): Promise<string> {
     let contentBase64: string;
     if (content instanceof Uint8Array) {
       contentBase64 = btoa(
@@ -451,28 +456,22 @@ class Service {
       content: contentBase64,
     };
 
-    if (blobSha) {
-      body.sha = blobSha;
+    if (commitSha) {
+      body.sha = commitSha;
     }
 
     const commitRes = await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
-    if (commitRes.ok) {
-      const commitData = await commitRes.json();
-      return commitData.commit.sha;
-    }
-    throw new Error(`Failed to commit file: ${commitRes.status} ${commitRes.statusText}`);
-  }
+    if (!commitRes.ok) throw new Error(`Failed to commit file: ${commitRes.status} ${commitRes.statusText}`);
 
-  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
-    const blobSha = await this._getGitHubFileSha(gitHubUrl, token);
-    return await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, blobSha);
+    const commitData = await commitRes.json();
+    return commitData.commit.sha;
   }
 
   async deleteGitHubFile(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
-    const blobSha = await this._getGitHubFileSha(gitHubUrl, token);
+    const commitSha = await this._getGitHubFileSha(gitHubUrl, token);
     const body = {
       message: commitMessage,
-      sha: blobSha,
+      sha: commitSha,
     };
 
     const deleteRes = await this.makeGitHubApiRequest(token, gitHubUrl, 'DELETE', body);

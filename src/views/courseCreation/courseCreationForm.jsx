@@ -69,7 +69,7 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
           </div>
         </div>
       )}
-      <div className="px-6 py-4 border-b">
+      <div className="px-6 py-4">
         <h2 className="text-xl font-semibold text-gray-800">Create a Course</h2>
         <p className="text-sm text-gray-500 mt-1">This will create a new GitHub repository and populate it with course content.</p>
       </div>
@@ -171,7 +171,7 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-end space-x-3 pt-2 border-t">
+        <div className="flex items-center justify-end space-x-3 pt-2">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">
             Cancel
           </button>

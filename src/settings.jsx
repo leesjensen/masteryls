@@ -104,7 +104,7 @@ export default function Settings({ courseOps, user, course }) {
           repository: formData.githubRepository,
         },
       };
-      courseOps.service.saveCourseSettings(catalogEntry);
+      courseOps.service.saveCatalogEntry(catalogEntry);
       const newCourse = course.copyWithNewSettings(catalogEntry);
       courseOps.setCurrentCourse(newCourse);
     }
