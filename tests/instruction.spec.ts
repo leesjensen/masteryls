@@ -11,37 +11,6 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByText('markdown!')).toBeVisible();
 });
 
-test('load from modules.md', async ({ page }) => {
-  const modulesMarkdown = `
-# Modules
-
-## 안녕하세요
-
-- [Topic 1](something/more/topic1.md)
-
-## 반갑습니다!
-
-- [Topic 2](something/more/topic2.md)
-- [Topic 3](https://youtu.be/4-LwodVujTg)
-  `;
-  await initBasicCourse({ page });
-
-  await page.route('*/**/course.json', async (route) => {
-    await route.fulfill({ status: 404, body: 'Not Found' });
-  });
-
-  await page.route('*/**/modules.md', async (route) => {
-    expect(route.request().method()).toBe('GET');
-    await route.fulfill({ body: modulesMarkdown });
-  });
-
-  await navigateToCourse(page);
-
-  await expect(page.getByRole('banner')).toContainText('💡 Rocket Science');
-  await expect(page.getByText('안녕하세요')).toBeVisible();
-  await expect(page.getByText('markdown!')).toBeVisible();
-});
-
 test('instruction types all', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourse(page);

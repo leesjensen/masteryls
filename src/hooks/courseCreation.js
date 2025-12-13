@@ -61,9 +61,8 @@ async function loadCourseDefinition(service, catalogEntry, gitHubToken) {
 
 // This is a fallback for when course.json is not found
 async function createCourseDefinitionFromModulesMarkdown(service, catalogEntry, gitHubToken) {
-  const gitHubRepoUrl = `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`;
-  const modulesMarkdown = await getModulesMarkdown(gitHubRepoUrl);
-  const modules = parseModulesMarkdown(gitHubRepoUrl, modulesMarkdown);
+  const modulesMarkdown = await getModulesMarkdown(catalogEntry);
+  const modules = parseModulesMarkdown(modulesMarkdown);
 
   const courseDefinition = { title: catalogEntry.title, modules };
   await commitCourseDefinition(service, catalogEntry, courseDefinition, gitHubToken, service.commitGitHubFile.bind(service));
@@ -77,8 +76,9 @@ async function commitCourseDefinition(service, catalogEntry, courseDefinition, g
   await service.saveCatalogEntry({ id: catalogEntry.id, gitHub: { ...catalogEntry.gitHub, commit } });
 }
 
-async function getModulesMarkdown(gitHubUrl) {
-  let response = await fetch(`${gitHubUrl}/instruction/modules.md`);
+async function getModulesMarkdown(catalogEntry) {
+  const gitHubRepoUrl = `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`;
+  let response = await fetch(`${gitHubRepoUrl}/instruction/modules.md`);
   if (!response.ok) throw new Error(`Unable to load modules`);
   return await response.text();
 }
@@ -95,22 +95,13 @@ function parseModulesMarkdown(modulesMarkdown) {
   for (const line of lines) {
     const moduleMatch = line.match(moduleRegex);
     if (moduleMatch) {
-      if (currentModule) {
-        modules.push(currentModule);
-      }
       currentModule = {
         title: moduleMatch[1].trim(),
         id: generateId(),
         topics: [],
       };
+      modules.push(currentModule);
 
-      if (modules.length === 0) {
-        currentModule.topics.push({
-          title: 'Home',
-          path: `README.md`,
-          id: generateId(),
-        });
-      }
       continue;
     }
 
@@ -128,9 +119,21 @@ function parseModulesMarkdown(modulesMarkdown) {
     }
   }
 
-  if (currentModule) {
-    modules.push(currentModule);
+  // Create a default module if none was found
+  if (currentModule === null) {
+    modules.push({
+      title: 'Course info',
+      id: generateId(),
+      topics: [],
+    });
   }
+
+  // Add the Home topic to point to the repository readme
+  modules[0].topics.unshift({
+    title: 'Home',
+    path: `README.md`,
+    id: generateId(),
+  });
 
   return modules;
 }
