@@ -233,10 +233,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function getTopicMarkdown(topic) {
-    if (!learningSession?.course || learningSession.topic?.type === 'video') return '';
+  async function getTopicMarkdown(course, topic) {
+    if (!course || !topic || topic?.type === 'video') return '';
 
-    const course = learningSession.course;
     if (course && course.markdownCache.has(topic.path)) {
       return course.markdownCache.get(topic.path);
     }
@@ -483,6 +482,7 @@ ${topicDescription || 'overview content placeholder'}`;
       await cleanCanvasCourse(canvasCourseId, setUpdateMessage);
     }
 
+    // create the modules and pages first
     for (const module of updatedCourse.modules) {
       setUpdateMessage(`Creating module '${module.title}' in Canvas`);
       const canvasModule = await createCanvasModule(module, canvasCourseId);
@@ -492,7 +492,11 @@ ${topicDescription || 'overview content placeholder'}`;
         const canvasPage = await createCanvasPage(topic, canvasCourseId, canvasModule);
         topic.externalRefs = { ...topic.externalRefs, canvasPageId: canvasPage.page_id };
       }
+    }
 
+    // now update the modules and pages with content
+    for (const module of updatedCourse.modules) {
+      await publishCanvasModule(module, canvasCourseId);
       for (const topic of module.topics) {
         try {
           setUpdateMessage(`Exporting topic '${topic.title}' to Canvas`);
@@ -517,6 +521,16 @@ ${topicDescription || 'overview content placeholder'}`;
     };
 
     return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules`, 'POST', body);
+  }
+
+  async function publishCanvasModule(module, canvasCourseId) {
+    const body = {
+      module: {
+        published: true,
+      },
+    };
+
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.externalRefs.canvasModuleId}`, 'PUT', body);
   }
 
   async function createCanvasPage(topic, canvasCourseId, canvasModule = null) {
@@ -546,7 +560,7 @@ ${topicDescription || 'overview content placeholder'}`;
         html = `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="https://www.youtube.com/embed/${match[1]}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
       }
     } else {
-      let md = await getTopicMarkdown(topic);
+      let md = await getTopicMarkdown(course, topic);
       // Canvas inserts its own title header, so remove any top-level headers from the markdown
       md = md.replace(/^\w*#\s.+\n/gm, '');
       html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);

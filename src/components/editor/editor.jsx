@@ -24,7 +24,7 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   React.useEffect(() => {
     if (contentAvailable) {
-      courseOps.getTopicMarkdown(learningSession.topic).then((markdown) => {
+      courseOps.getTopicMarkdown(learningSession.course, learningSession.topic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
       });
