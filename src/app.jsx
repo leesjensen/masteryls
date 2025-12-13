@@ -143,7 +143,8 @@ function ClassroomPage() {
           let topic = learningSession?.topic;
           if (course) {
             if (!topicId) {
-              topic = course.allTopics[0] || { title: '', path: '' };
+              topic = course.defaultTopic();
+              if (!topic) throw new Error('No default topic found for course');
               navigate(`/course/${courseId}/topic/${topic.id}`);
               return;
             } else if (!topic || topic.id !== topicId) {
@@ -160,7 +161,7 @@ function ClassroomPage() {
           setLearningSession({ course, topic, enrollment });
         }
       } catch (error) {
-        navigate('/error', { state: { message: `Unable to load course: ${error.message}` } });
+        navigate('/error', { state: { error: `Unable to load course: ${error.message}` } });
       }
     })();
   }, [courseId, topicId, user]);

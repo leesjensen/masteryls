@@ -36,6 +36,11 @@ export default class Course {
     return this.modules.findIndex((module) => module.topics.some((topic) => topic.path === path));
   }
 
+  defaultTopic() {
+    if (this.allTopics.length === 0 || !this.allTopics[0].id) return null;
+    return this.allTopics[0];
+  }
+
   adjacentTopic(path, direction = 'prev') {
     let topicIndex = this.allTopics.findIndex((t) => t.path === path);
     topicIndex += direction === 'prev' ? -1 : 1;
@@ -112,6 +117,9 @@ async function load(catalogEntry) {
     for (const topic of module.topics) {
       if (!topic.path.startsWith('http')) {
         topic.path = `${gitHubLinks.rawUrl}/${topic.path}`;
+      }
+      if (!topic.id) {
+        topic.id = generateId();
       }
     }
   }
