@@ -84,6 +84,10 @@ async function getModulesMarkdown(catalogEntry) {
 }
 
 function parseModulesMarkdown(modulesMarkdown) {
+  // used to resolve relative paths
+  const stubRootUrl = 'https://stub.com/';
+  const stubContentUrl = `${stubRootUrl}instruction/`;
+
   const lines = modulesMarkdown.split('\n');
 
   const modules = [];
@@ -109,7 +113,7 @@ function parseModulesMarkdown(modulesMarkdown) {
     if (topicMatch && currentModule) {
       let prefix = topicMatch[1] ? topicMatch[1] : '';
       let title = topicMatch[2] ? topicMatch[2].trim() : '';
-      const path = `instruction/${topicMatch[3] ? topicMatch[3].trim() : ''}`;
+      const path = new URL(topicMatch[3], stubContentUrl).toString().replace(stubRootUrl, '');
 
       currentModule.topics.push({
         title: `${prefix}${title}`,
