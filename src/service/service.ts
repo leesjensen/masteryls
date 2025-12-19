@@ -50,13 +50,9 @@ class Service {
     return this.catalog.find((c) => c.id === catalogId);
   }
 
-  async getTemplateRepositories(gitHubAccount: string): Promise<string[]> {
+  async getTemplateRepositories(gitHubToken: string, gitHubAccount: string): Promise<string[]> {
     const url = `https://api.github.com/users/${gitHubAccount}/repos?per_page=100`;
-    const resp = await fetch(url, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-      },
-    });
+    const resp = await this.makeGitHubApiRequest(gitHubToken, url);
 
     if (!resp.ok) {
       const errText = await resp.text().catch(() => resp.statusText);
@@ -68,13 +64,7 @@ class Service {
   }
 
   async verifyGitHubAccount(gitHubToken: string): Promise<boolean> {
-    const resp = await fetch('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${gitHubToken}`,
-        Accept: 'application/vnd.github+json',
-      },
-    });
-
+    const resp = await this.makeGitHubApiRequest(gitHubToken, 'https://api.github.com/user');
     return resp.ok;
   }
 
@@ -139,13 +129,7 @@ class Service {
   async deleteCourse(user: User, catalogEntry: CatalogEntry): Promise<void> {
     const token = user.getSetting('gitHubToken', catalogEntry.id);
     if (token) {
-      const deleteResp = await fetch(`https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
-        },
-      });
+      const deleteResp = await this.makeGitHubApiRequest(token, `https://api.github.com/repos/${catalogEntry.gitHub?.account}/${catalogEntry.gitHub?.repository}`, 'DELETE');
       if (!deleteResp.ok) {
         const errText = await deleteResp.text().catch(() => deleteResp.statusText);
         throw new Error(`Failed to delete course: ${deleteResp.status} ${errText}`);

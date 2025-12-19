@@ -57,7 +57,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function getTemplateRepositories(gitHubAccount) {
-    return service.getTemplateRepositories(gitHubAccount);
+    const token = user.getSetting('gitHubToken');
+
+    return service.getTemplateRepositories(token, gitHubAccount);
   }
 
   async function createCourse(generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
