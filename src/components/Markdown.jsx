@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,9 +10,11 @@ import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { scrollToAnchor } from '../utils/utils';
 
 export default function Markdown({ learningSession, content, languagePlugins = [] }) {
   const navigate = useNavigate();
+  const containerRef = React.useRef(null);
   const customComponents = {
     pre({ node, children, ...props }) {
       return (
@@ -145,8 +147,10 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   const components = { ...customComponents, MermaidBlock };
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
-      {content}
-    </ReactMarkdown>
+    <div ref={containerRef}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }
