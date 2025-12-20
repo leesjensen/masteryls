@@ -28,12 +28,6 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     e.preventDefault();
     if (!userInput.trim() || isLoading) return;
 
-    const apiKey = user.getSetting('geminiApiKey');
-    if (!apiKey) {
-      alert('Please configure your Gemini API key in settings to use the discussion feature.');
-      return;
-    }
-
     const userMessage = userInput.trim();
     setUserInput('');
 
@@ -43,7 +37,7 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     setIsLoading(true);
 
     try {
-      const response = await aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, newMessages);
+      const response = await aiDiscussionResponseGenerator(topicTitle, topicContent, newMessages);
       setMessages((prev) => [
         ...prev,
         {

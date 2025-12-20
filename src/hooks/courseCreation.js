@@ -6,13 +6,12 @@ export async function createCourseInternal(service, user, generateWithAi, source
     // This is broken. It doesn't create the catalog entry in supabase, or commit course.json to repo. This needs a full review to match
     // what creating from a template does.
     //
-    // const apiKey = user.getSetting('geminiApiKey');
     // setUpdateMessage('Using AI to create course topics');
     // const messages = ['The gerbil is digging', 'The hamster is running', 'The beaver is building', 'The squirrel is gathering nuts'];
     // const messageInterval = setInterval(() => {
     //   setUpdateMessage(messages[Math.floor(Math.random() * messages.length)]);
     // }, 3000);
-    // const courseJson = await aiCourseGenerator(apiKey, catalogEntry.title, catalogEntry.description);
+    // const courseJson = await aiCourseGenerator(catalogEntry.title, catalogEntry.description);
     // const courseDefinition = JSON.parse(courseJson);
     // clearInterval(messageInterval);
     // catalogEntry.outcomes = courseDefinition.outcomes || [];

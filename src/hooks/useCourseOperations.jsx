@@ -399,7 +399,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function generateTopicContent(topic, topicDescription) {
-    const apiKey = user.getSetting('geminiApiKey');
     let basicContent = `
 # ${topic.title}
 
@@ -411,16 +410,16 @@ ${topicDescription || 'overview content placeholder'}`;
       case 'video':
         return null;
       case 'exam':
-        if (apiKey && topicDescription && topicDescription.trim().length > 0) {
-          basicContent = await aiExamGenerator(apiKey, course.description, topic.title, topicDescription);
+        if (topicDescription && topicDescription.trim().length > 0) {
+          basicContent = await aiExamGenerator(learningSession.course.description, topic.title, topicDescription);
         }
         break;
       case 'project':
         basicContent = `# Project: ${topic.title}\n\n## Objectives\n\n- Objective 1\n- Objective 2\n\n## Instructions\n\n1. Step 1\n2. Step 2\n3. Step 3\n\n## Deliverables\n\n- Deliverable 1\n- Deliverable 2\n`;
         break;
       default:
-        if (apiKey && topicDescription && topicDescription.trim().length > 0) {
-          basicContent = await aiTopicGenerator(apiKey, course.description, topic.title, topicDescription);
+        if (topicDescription && topicDescription.trim().length > 0) {
+          basicContent = await aiTopicGenerator(learningSession.course.description, topic.title, topicDescription);
         }
         break;
     }
@@ -429,15 +428,11 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getChoiceQuizFeedback(data) {
-    const apiKey = user.getSetting('geminiApiKey');
-    return aiChoiceQuizFeedbackGenerator(apiKey, data);
+    return aiChoiceQuizFeedbackGenerator(data);
   }
 
   async function getEssayQuizFeedback(data) {
-    const apiKey = user.getSetting('geminiApiKey');
-    if (apiKey) {
-      return aiEssayQuizFeedbackGenerator(apiKey, data);
-    }
+    return aiEssayQuizFeedbackGenerator(data);
     return { feedback: `Thank you for your submission. Your essay has been recorded.`, percentCorrect: -1 };
   }
 

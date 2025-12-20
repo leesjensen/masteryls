@@ -19,7 +19,6 @@ export default function Settings({ courseOps, user, course }) {
     githubAccount: course.gitHub.account,
     githubRepository: course.gitHub.repository,
     gitHubToken: user?.getSetting('gitHubToken', course.id) || '',
-    geminiApiKey: user?.getSetting('geminiApiKey', course.id) || '',
   });
 
   const moduleCount = course.modules.length || 0;
@@ -42,8 +41,7 @@ export default function Settings({ courseOps, user, course }) {
     const [editorsChanged, ,] = compareEditors(selectedEditors);
     const courseChanged = compareCourse(formData);
     const tokenChanged = compareGitHubToken(formData.gitHubToken);
-    const apiKeyChanged = compareGeminiApiKey(formData.geminiApiKey);
-    setSettingsDirty(tokenChanged || courseChanged || editorsChanged || apiKeyChanged);
+    setSettingsDirty(tokenChanged || courseChanged || editorsChanged);
   }, [selectedEditors, formData]);
 
   const handleInputChange = (field, value) => {
@@ -68,10 +66,6 @@ export default function Settings({ courseOps, user, course }) {
     return token !== (user?.getSetting('gitHubToken', course.id) || '');
   };
 
-  const compareGeminiApiKey = (apiKey) => {
-    return apiKey !== (user?.getSetting('geminiApiKey', course.id) || '');
-  };
-
   const handleSave = async () => {
     const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
     if (editorsChanged && selectedEditors.length === 0) {
@@ -89,9 +83,7 @@ export default function Settings({ courseOps, user, course }) {
     if (compareGitHubToken(formData.gitHubToken)) {
       await courseOps.service.updateUserRoleSettings(user, 'editor', course.id, { gitHubToken: formData.gitHubToken });
     }
-    if (compareGeminiApiKey(formData.geminiApiKey)) {
-      await courseOps.service.updateUserRoleSettings(user, 'editor', course.id, { geminiApiKey: formData.geminiApiKey });
-    }
+
     if (compareCourse(formData)) {
       const catalogEntry = {
         id: course.id,
@@ -217,16 +209,6 @@ export default function Settings({ courseOps, user, course }) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">GitHub token</label>
                   <input type="text" value={formData.gitHubToken} onChange={(e) => handleInputChange('gitHubToken', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub token" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
-                  <input type="password" value={formData.geminiApiKey} onChange={(e) => handleInputChange('geminiApiKey', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter Gemini API key for AI discussions" />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Required for topic discussions. Get your key from{' '}
-                    <a href="https://ai.google.dev/gemini-api" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      Google AI Studio
-                    </a>
-                  </p>
                 </div>
               </>
             )}

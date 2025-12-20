@@ -353,9 +353,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
             {
               user: '15cb92ef-d2d0-4080-8770-999516448960',
               right: 'root',
-              settings: {
-                geminiApiKey: 'xxxx',
-              },
+              settings: {},
             },
             {
               user: '15cb92ef-d2d0-4080-8770-999516448960',
@@ -394,6 +392,49 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         break;
       case 'DELETE':
         await route.fulfill({ status: 204 });
+        break;
+    }
+  });
+
+  // Supabase - Gemini function access
+  await context.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'OPTIONS':
+        await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+        break;
+      case 'POST':
+        await route.fulfill({
+          json: {
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: 'Fantastic job on this question! You correctly selected the right answer.',
+                    },
+                  ],
+                  role: 'model',
+                },
+                finishReason: 'STOP',
+                index: 0,
+              },
+            ],
+            usageMetadata: {
+              promptTokenCount: 245,
+              candidatesTokenCount: 56,
+              totalTokenCount: 863,
+              promptTokensDetails: [
+                {
+                  modality: 'TEXT',
+                  tokenCount: 245,
+                },
+              ],
+              thoughtsTokenCount: 562,
+            },
+            modelVersion: 'gemini-2.5-flash',
+            responseId: 'Rt1GaZm-Ns6sjMcPrMj-mAk',
+          },
+        });
         break;
     }
   });

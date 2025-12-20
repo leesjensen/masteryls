@@ -136,8 +136,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
 
     if (subject) {
       const topic = currentTopic.description || currentTopic.title;
-      const apiKey = user.getSetting('geminiApiKey');
-      const response = '\n' + (await aiSectionGenerator(apiKey, topic, subject)) + '\n';
+      const response = '\n' + (await aiSectionGenerator(topic, subject)) + '\n';
       insertText(response);
     }
   };
@@ -153,9 +152,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
 
     if (subject) {
       const topic = currentTopic.description || currentTopic.title;
-      const apiKey = user.getSetting('geminiApiKey');
-      let response = '\n' + (await aiQuizGenerator(apiKey, topic, subject)) + '\n';
-
+      let response = '\n' + (await aiQuizGenerator(topic, subject)) + '\n';
       insertText(response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`));
     }
   };
@@ -171,8 +168,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
 
     if (subject) {
       const topic = currentTopic.description || currentTopic.title;
-      const apiKey = user.getSetting('geminiApiKey');
-      const response = '\n' + (await aiGeneralPromptResponse(apiKey, topic, subject)) + '\n';
+      const response = '\n' + (await aiGeneralPromptResponse(topic, subject)) + '\n';
       insertText(response);
     }
   };

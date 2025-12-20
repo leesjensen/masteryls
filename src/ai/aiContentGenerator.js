@@ -4,15 +4,14 @@ import service from '../service/service';
  * Generates a course structure in JSON format using AI, based on the provided title and description.
  *
  * @async
- * @param {string} apiKey - The API key required for AI content generation.
  * @param {string} title - The exact title of the course to be generated.
  * @param {string} description - The description of the course, relevant to the topics included.
  * @returns {Promise<string>} A promise that resolves to a raw JSON string representing the course structure.
  *
  * @example
- * const courseJson = await aiCourseGenerator(apiKey, "Introduction to AI", "Learn the fundamentals of artificial intelligence.");
+ * const courseJson = await aiCourseGenerator("Introduction to AI", "Learn the fundamentals of artificial intelligence.");
  */
-export async function aiCourseGenerator(apiKey, title, description) {
+export async function aiCourseGenerator(title, description) {
   title = title.trim();
   description = description.trim();
 
@@ -58,7 +57,7 @@ Requirements:
 - The course contains a capstone project that integrates the topics covered in each module
 - Each topic should have a concise, descriptive title
 `;
-  return makeSimpleAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(prompt);
 }
 
 /**
@@ -66,12 +65,12 @@ Requirements:
  *
  * @async
  * @function aiTopicGenerator
- * @param {string} apiKey - The API key required for AI content generation.
+ * @param {string} courseDescription - A description of the course.
  * @param {string} title - The title of the instructional topic.
  * @param {string} description - A description of the instructional topic.
  * @returns {Promise<string>} A promise that resolves to the generated markdown content.
  */
-export async function aiTopicGenerator(apiKey, courseDescription, title, description) {
+export async function aiTopicGenerator(courseDescription, title, description) {
   const prompt = `You are an expert educational content creator.
 Generate comprehensive, well-structured markdown content for online courses.
 Focus on clear explanations, practical examples, and pedagogically sound structure.
@@ -96,10 +95,10 @@ Requirements:
 - Include common challenges and solutions
 - Provide a summary`;
 
-  return makeSimpleAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(prompt);
 }
 
-export async function aiExamGenerator(apiKey, courseDescription, title, description) {
+export async function aiExamGenerator(courseDescription, title, description) {
   const prompt = `You are an expert educational content creator. 
 
 Create markdown content for an instructional exam.
@@ -131,7 +130,7 @@ Generate 10 multiple choice or essay questions of the format:
 - base questions on the content ${description}
 - prefer coding questions where applicable`;
 
-  const response = await makeSimpleAiRequest(apiKey, prompt);
+  const response = await makeSimpleAiRequest(prompt);
   response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
   return response;
 }
@@ -140,7 +139,6 @@ Generate 10 multiple choice or essay questions of the format:
  * Generates markdown content for a course overview using AI.
  *
  * @async
- * @param {string} apiKey - The API key used for authentication with the AI service.
  * @param {Object} course - The course object containing title, description and modules.
  * @param {string} course.title - The title of the course.
  * @param {string} course.description - The description of the course.
@@ -149,7 +147,7 @@ Generate 10 multiple choice or essay questions of the format:
  * @param {string} course.modules[].description - The description of a module.
  * @returns {Promise<string>} A promise that resolves to the generated markdown content.
  */
-export async function aiCourseOverviewGenerator(apiKey, course) {
+export async function aiCourseOverviewGenerator(course) {
   const modules = course.modules.map((module) => ({
     title: module.title,
     description: module.description,
@@ -176,19 +174,18 @@ Requirements:
 - Conclude with a motivational call to action encouraging learners to begin the course
 `;
 
-  return makeSimpleAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(prompt);
 }
 
 /**
  * Generates a topic section.
  *
  * @async
- * @param {string} apiKey - The API key to use for the AI service.
  * @param {string} topic - The instructional topic for the section.
  * @param {string} subject - The specific subject for the section.
  * @returns {Promise<string>} A promise that resolves to the generated section in markdown format.
  */
-export async function aiSectionGenerator(apiKey, topic, subject) {
+export async function aiSectionGenerator(topic, subject) {
   const prompt = `You are an expert educational content creator.
 Generate a section for a course topic that uses the following format:
 
@@ -216,19 +213,18 @@ Requirements:
 - Ensure that the section is educational and reinforces key concepts from the topic
 `;
 
-  return makeSimpleAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(prompt);
 }
 
 /**
  * Generates a multiple-choice quiz question using AI based on the provided topic and subject.
  *
  * @async
- * @param {string} apiKey - The API key to use for the AI service.
  * @param {string} topic - The instructional topic for the quiz question.
  * @param {string} subject - The specific subject for the quiz question.
  * @returns {Promise<string>} A promise that resolves to the generated quiz question in markdown format.
  */
-export async function aiQuizGenerator(apiKey, topic, subject) {
+export async function aiQuizGenerator(topic, subject) {
   const prompt = `You are an expert educational content creator.
 Generate a multiple choice quiz that uses the following format:
 
@@ -256,19 +252,18 @@ Requirements:
 - The quiz should be challenging but fair, suitable for learners who have studied the topic
 `;
 
-  return makeSimpleAiRequest(apiKey, prompt);
+  return makeSimpleAiRequest(prompt);
 }
 
 /**
  * Generates a response to a general prompt.
  *
  * @async
- * @param {string} apiKey - The API key to use for the AI service.
  * @param {string} topic - The instructional topic for the prompt.
  * @param {string} prompt - The general prompt.
  * @returns {Promise<string>} A promise that resolves to the prompt response.
  */
-export async function aiGeneralPromptResponse(apiKey, topic, prompt) {
+export async function aiGeneralPromptResponse(topic, prompt) {
   const fullPrompt = `You are an expert educational content creator.
 Generate a response to the following prompt:
 
@@ -284,7 +279,7 @@ Requirements:
 - Ensure that the response is educational and reinforces key concepts from the topic
 `;
 
-  return makeSimpleAiRequest(apiKey, fullPrompt);
+  return makeSimpleAiRequest(fullPrompt);
 }
 
 /**
@@ -292,17 +287,16 @@ Requirements:
  *
  * @async
  * @function aiDiscussionResponseGenerator
- * @param {string} apiKey - The API key for authenticating with the AI service.
  * @param {string} topicTitle - The title of the topic being discussed.
  * @param {string} topicContent - The content of the topic being discussed.
  * @param {object[]} messages - The student's question or comment about the topic.
  * @returns {Promise<string>} A promise that resolves to the generated discussion response.
  */
-export async function aiDiscussionResponseGenerator(apiKey, topicTitle, topicContent, messages) {
+export async function aiDiscussionResponseGenerator(topicTitle, topicContent, messages) {
   const instructions = createDiscussionInstructions(topicTitle, topicContent);
   const contents = createDiscussionContents(messages);
 
-  return makeAiRequest(apiKey, instructions, contents);
+  return makeAiRequest(instructions, contents);
 }
 
 function createDiscussionInstructions(topicTitle, topicContent) {
@@ -347,11 +341,10 @@ function createDiscussionContents(messages) {
  *
  * @async
  * @function aiQuizFeedbackGenerator
- * @param {string} apiKey - The API key used to authenticate the AI request.
  * @param {Object} data - An object containing details about the quiz question and the student's answer.
  * @returns {Promise<string>} A promise that resolves to the generated feedback string.
  */
-export async function aiChoiceQuizFeedbackGenerator(apiKey, data) {
+export async function aiChoiceQuizFeedbackGenerator(data) {
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's answer to a quiz question.
 Focus on clear explanations, encouragement, and guidance for improvement.
@@ -372,10 +365,10 @@ Requirements:
 - Limit feedback to 150 words or less
 `;
 
-  return await makeSimpleAiRequest(apiKey, prompt);
+  return await makeSimpleAiRequest(prompt);
 }
 
-export async function aiEssayQuizFeedbackGenerator(apiKey, data) {
+export async function aiEssayQuizFeedbackGenerator(data) {
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's essay response.
 Focus on clear explanations, encouragement, and guidance for improvement.
@@ -396,7 +389,7 @@ Requirements:
 `;
 
   let feedbackData = { percentCorrect: undefined };
-  let feedback = await makeSimpleAiRequest(apiKey, prompt);
+  let feedback = await makeSimpleAiRequest(prompt);
   const jsonMatch = feedback.match(/^\s*(?:```json\s*)?(\{[\s\S]*?\})(?:\s*```)?/);
   if (jsonMatch) {
     try {
@@ -412,11 +405,10 @@ Requirements:
  *
  * @async
  * @function makeSimpleAiRequest
- * @param {string} apiKey - The API key for authenticating with the Google Generative Language API.
  * @param {string} prompt - The prompt text to send to the AI model.
  * @returns {Promise<string>} The generated content from the AI model.
  */
-async function makeSimpleAiRequest(apiKey, prompt) {
+async function makeSimpleAiRequest(prompt) {
   const contents = [
     {
       parts: [
@@ -426,7 +418,7 @@ async function makeSimpleAiRequest(apiKey, prompt) {
       ],
     },
   ];
-  return makeAiRequest(apiKey, null, contents);
+  return makeAiRequest(null, contents);
 }
 
 /**
@@ -434,12 +426,11 @@ async function makeSimpleAiRequest(apiKey, prompt) {
  *
  * @async
  * @function makeAiRequest
- * @param {string} apiKey - The API key for authenticating with the Google Generative Language API.
  * @param {string|null} instructions - The system instructions to send to the AI model.
  * @param {Array} contents - The contents to send to the AI model.
  * @returns {Promise<string>} The generated content from the AI model.
  */
-async function makeAiRequest(apiKey, instructions, contents) {
+async function makeAiRequest(instructions, contents) {
   const body = {
     ...standardRequestBody,
     ...(instructions && { system_instruction: instructions }),

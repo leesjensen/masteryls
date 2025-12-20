@@ -77,7 +77,7 @@ test('quiz essay', async ({ page }) => {
   await expect(page.getByRole('textbox')).toHaveValue('example text');
 
   await page.getByRole('button', { name: 'Submit essay' }).click();
-  await expect(page.locator('pre')).toContainText('Keep up the great work!');
+  await expect(page.locator('pre')).toContainText('Fantastic job on this question!');
 });
 
 test('quiz submission file', async ({ page }) => {
