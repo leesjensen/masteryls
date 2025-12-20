@@ -1,3 +1,8 @@
+import { createClient } from '@supabase/supabase-js';
+import config from '../../config';
+
+const supabase = createClient(config.supabase.url, config.supabase.key);
+
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
  *
@@ -443,23 +448,15 @@ async function makeAiRequest(apiKey, instructions, contents) {
     contents,
   };
 
-  const model = 'gemini-2.5-flash';
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-goog-api-key': apiKey,
-      },
-      body: JSON.stringify(body),
+    const { data, error } = await supabase.functions.invoke('gemini', {
+      body: { method: 'POST', body },
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`AI error: ${response.status} ${response.statusText} - ${errorData.error?.message || 'Unknown error'}`);
+    if (error) {
+      throw new Error(error.message);
     }
 
-    const data = await response.json();
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
       throw new Error('Invalid response format from AI');
     }
