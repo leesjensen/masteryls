@@ -4,6 +4,7 @@ import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
 import FileQuiz from './fileQuiz';
 import UrlQuiz from './urlQuiz';
+import TeachingQuiz from './teachingQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
 import { updateQuizProgress } from './quizProgressStore';
@@ -87,6 +88,8 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
       return <FileQuiz quizId={meta.id} />;
     } else if (meta.type === 'url-submission') {
       return <UrlQuiz quizId={meta.id} />;
+    } else if (meta.type === 'teaching') {
+      return <TeachingQuiz quizId={meta.id} />;
     }
 
     return null;
