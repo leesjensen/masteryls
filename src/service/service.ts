@@ -2,44 +2,24 @@ import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
 import { User, CatalogEntry, Enrollment, Role } from '../model';
 
-const supabase = createClient(config.supabase.url, config.supabase.key);
-
 class Service {
-  async getTopicContentAtCommit(gitHubToken: string, repoApiUrl: string, filePath: string, commitSha: string): Promise<string> {
-    const url = `${repoApiUrl}/contents/${filePath}?ref=${commitSha}`;
-    const res = await this.makeGitHubApiRequest(gitHubToken, url);
-    if (!res.ok) return '';
-    const data = await res.json();
-    if (data && data.content) {
-      // GitHub returns base64 encoded content
-      try {
-        return atob(data.content.replace(/\n/g, ''));
-      } catch {
-        return '';
-      }
-    }
-    return '';
-  }
-  async getTopicCommits(gitHubToken: string, fileUrl: string): Promise<any[]> {
-    const res = await this.makeGitHubApiRequest(gitHubToken, fileUrl);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  }
   catalog: CatalogEntry[] = [];
+  supabase;
 
-  constructor(catalog: CatalogEntry[]) {
+  constructor(catalog: CatalogEntry[], supabase: any) {
     this.catalog = catalog;
+    this.supabase = supabase;
   }
 
   static async create() {
+    const supabase = createClient(config.supabase.url, config.supabase.key);
     const { data, error } = await supabase.from('catalog').select('id, name, title, description, links, gitHub');
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return new Service(data);
+    return new Service(data, supabase);
   }
 
   courseCatalog(): CatalogEntry[] {
@@ -100,7 +80,7 @@ class Service {
   }
 
   async createCatalogEntry(editor: User, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
-    const { data, error } = await supabase.from('catalog').insert([catalogEntry]).select().single();
+    const { data, error } = await this.supabase.from('catalog').insert([catalogEntry]).select().single();
     if (error) {
       throw new Error(error.message);
     }
@@ -113,7 +93,7 @@ class Service {
   }
 
   async saveCatalogEntry(catalogEntry: CatalogEntry): Promise<void> {
-    const { error } = await supabase.from('catalog').upsert(catalogEntry);
+    const { error } = await this.supabase.from('catalog').upsert(catalogEntry);
     if (error) {
       throw new Error(error.message);
     }
@@ -135,7 +115,7 @@ class Service {
         throw new Error(`Failed to delete course: ${deleteResp.status} ${errText}`);
       }
 
-      const { error } = await supabase.from('catalog').delete().eq('id', catalogEntry.id);
+      const { error } = await this.supabase.from('catalog').delete().eq('id', catalogEntry.id);
       if (error) {
         throw new Error(error.message);
       }
@@ -145,19 +125,19 @@ class Service {
   }
 
   async currentUser(): Promise<User | null> {
-    const session = await supabase.auth.getSession();
+    const session = await this.supabase.auth.getSession();
     if (session.data.session?.user) {
       try {
         return await this._loadUser({ id: session.data.session.user.id });
       } catch {
-        supabase.auth.signOut();
+        this.supabase.auth.signOut();
       }
     }
     return null;
   }
 
   async getAllUsers(): Promise<User[]> {
-    const { data, error } = await supabase.from('user').select('id, name, email, settings');
+    const { data, error } = await this.supabase.from('user').select('id, name, email, settings');
     if (error) {
       throw new Error(error.message);
     }
@@ -177,7 +157,7 @@ class Service {
       object: objectId,
       settings,
     };
-    const { error } = await supabase.from('role').insert(newRole);
+    const { error } = await this.supabase.from('role').insert(newRole);
     if (error) {
       throw new Error(error.message);
     }
@@ -185,9 +165,9 @@ class Service {
   }
 
   async removeUserRole(user: User, right: string, objectId: string | null): Promise<void> {
-    const { error } = await supabase.from('role').delete().eq('user', user.id).eq('right', right).eq('object', objectId);
+    const { error } = await this.supabase.from('role').delete().eq('user', user.id).eq('right', right).eq('object', objectId);
 
-    let query = supabase.from('role').delete().eq('user', user.id);
+    let query = this.supabase.from('role').delete().eq('user', user.id);
     query = objectId === null ? query.is('object', null) : query.eq('object', objectId);
     query = query.eq('right', right);
 
@@ -200,7 +180,7 @@ class Service {
     const role = user.getRole(right, objectId);
     if (role) {
       role.settings = { ...role.settings, ...settings };
-      let query = supabase.from('role').update({ settings: role.settings }).eq('user', role.user);
+      let query = this.supabase.from('role').update({ settings: role.settings }).eq('user', role.user);
 
       query = role.object === null ? query.is('object', null) : query.eq('object', role.object);
       query = query.eq('right', role.right);
@@ -212,7 +192,7 @@ class Service {
   }
 
   async register(name: string, email: string, password: string): Promise<User | null> {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await this.supabase.auth.signUp({ email, password });
     if (error || !data.user) {
       throw new Error(error?.message || 'Unable to register');
     }
@@ -223,7 +203,7 @@ class Service {
       name,
       settings: { language: 'en' },
     };
-    const { error: upsertError } = await supabase.from('user').upsert(userData);
+    const { error: upsertError } = await this.supabase.from('user').upsert(userData);
     if (upsertError) {
       throw new Error(upsertError.message);
     }
@@ -232,7 +212,7 @@ class Service {
   }
 
   async login(email: string, password: string): Promise<User | null> {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) {
       throw new Error(error?.message || 'Unable to login');
     }
@@ -241,11 +221,11 @@ class Service {
 
   async logout() {
     localStorage.clear();
-    await supabase.auth.signOut();
+    await this.supabase.auth.signOut();
   }
 
   async deleteUser(user: User): Promise<void> {
-    const { error } = await supabase.from('user').delete().eq('id', user.id);
+    const { error } = await this.supabase.from('user').delete().eq('id', user.id);
     if (error) {
       throw new Error(error.message);
     }
@@ -291,7 +271,7 @@ class Service {
   }
 
   async enrollments(id: string): Promise<Map<string, Enrollment>> {
-    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', id);
+    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', id);
 
     if (error) {
       throw new Error(error.message);
@@ -306,7 +286,7 @@ class Service {
   }
 
   async enrollment(learnerId: string, catalogId: string): Promise<Enrollment | null> {
-    const { data, error } = await supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', learnerId).eq('catalogId', catalogId);
+    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', learnerId).eq('catalogId', catalogId);
 
     if (error) {
       return null;
@@ -324,7 +304,7 @@ class Service {
   }
 
   async createEnrollment(learnerId: string, catalogEntry: CatalogEntry): Promise<Enrollment> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('enrollment')
       .insert([
         {
@@ -346,14 +326,14 @@ class Service {
 
   async saveEnrollment(enrollment: Enrollment) {
     const { catalogEntry: catalogEntry, ...enrollmentData } = enrollment;
-    const { error } = await supabase.from('enrollment').upsert(enrollmentData);
+    const { error } = await this.supabase.from('enrollment').upsert(enrollmentData);
     if (error) {
       throw new Error(error.message);
     }
   }
 
   async deleteEnrollment(enrollment: Enrollment): Promise<void> {
-    const { error } = await supabase.from('enrollment').delete().eq('id', enrollment.id);
+    const { error } = await this.supabase.from('enrollment').delete().eq('id', enrollment.id);
     if (error) {
       throw new Error(error.message);
     }
@@ -374,7 +354,7 @@ class Service {
       progressData.createdAt = createdAt;
     }
 
-    const { error } = await supabase.from('progress').insert([progressData]).select().single();
+    const { error } = await this.supabase.from('progress').insert([progressData]).select().single();
 
     if (error) {
       throw new Error(error.message);
@@ -382,7 +362,7 @@ class Service {
   }
 
   async getProgress({ type, courseId, enrollmentId, userId, topicId, startDate, endDate, page = 1, limit = 100 }: { type?: string; courseId?: string; enrollmentId?: string; userId?: string; topicId?: string; startDate?: string; endDate?: string; page?: number; limit?: number }): Promise<{ data: any[]; totalCount: number; hasMore: boolean }> {
-    let query = supabase.from('progress').select('*', { count: 'exact' });
+    let query = this.supabase.from('progress').select('*', { count: 'exact' });
 
     if (courseId) {
       query = query.eq('catalogId', courseId);
@@ -414,6 +394,28 @@ class Service {
       totalCount: count || 0,
       hasMore: (count || 0) > offset + limit,
     };
+  }
+
+  async getTopicContentAtCommit(gitHubToken: string, repoApiUrl: string, filePath: string, commitSha: string): Promise<string> {
+    const url = `${repoApiUrl}/contents/${filePath}?ref=${commitSha}`;
+    const res = await this.makeGitHubApiRequest(gitHubToken, url);
+    if (!res.ok) return '';
+    const data = await res.json();
+    if (data && data.content) {
+      // GitHub returns base64 encoded content
+      try {
+        return atob(data.content.replace(/\n/g, ''));
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  }
+  async getTopicCommits(gitHubToken: string, fileUrl: string): Promise<any[]> {
+    const res = await this.makeGitHubApiRequest(gitHubToken, fileUrl);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   }
 
   async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
@@ -516,7 +518,7 @@ class Service {
   }
 
   async makeCanvasApiRequest(endpoint: string, method: string = 'GET', body?: object) {
-    const { data, error } = await supabase.functions.invoke('canvas', {
+    const { data, error } = await this.supabase.functions.invoke('canvas', {
       body: { endpoint, method, body },
     });
 
@@ -527,8 +529,24 @@ class Service {
     return data;
   }
 
+  async makeGeminiApiRequest(body: object) {
+    const { data, error } = await this.supabase.functions.invoke('gemini', {
+      body: { method: 'POST', body },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+      throw new Error('Invalid response format from AI');
+    }
+
+    return data.candidates[0].content.parts[0].text;
+  }
+
   async _loadUser({ id }: { id: string }) {
-    const { data, error } = await supabase.from('user').select('id, name, email, settings').eq('id', id).single();
+    const { data, error } = await this.supabase.from('user').select('id, name, email, settings').eq('id', id).single();
 
     if (error) {
       throw new Error(error.message);
@@ -540,7 +558,7 @@ class Service {
   }
 
   async _loadUserRoles({ id }: { id: string }) {
-    const { data, error } = await supabase.from('role').select('user, right, object, settings').eq('user', id);
+    const { data, error } = await this.supabase.from('role').select('user, right, object, settings').eq('user', id);
 
     if (error) {
       throw new Error(error.message);

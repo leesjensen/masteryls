@@ -1,7 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import config from '../../config';
-
-const supabase = createClient(config.supabase.url, config.supabase.key);
+import service from '../service/service';
 
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
@@ -444,24 +441,13 @@ async function makeSimpleAiRequest(apiKey, prompt) {
  */
 async function makeAiRequest(apiKey, instructions, contents) {
   const body = {
+    ...standardRequestBody,
     ...(instructions && { system_instruction: instructions }),
     contents,
   };
 
   try {
-    const { data, error } = await supabase.functions.invoke('gemini', {
-      body: { method: 'POST', body },
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-      throw new Error('Invalid response format from AI');
-    }
-
-    const responseText = data.candidates[0].content.parts[0].text;
+    const responseText = await service.makeGeminiApiRequest(body);
     const cleanedText = responseText.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
 
     return cleanedText;
