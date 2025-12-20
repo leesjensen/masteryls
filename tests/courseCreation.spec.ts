@@ -1,5 +1,5 @@
 import { test, expect } from 'playwright-test-coverage';
-import { initBasicCourse, navigateToDashboard } from './testInit';
+import { initBasicCourse, navigateToDashboard, navigateToCourse } from './testInit';
 
 test('create course', async ({ page }) => {
   // GitHub - get a user (used to validate token)
