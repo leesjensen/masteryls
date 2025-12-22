@@ -7,7 +7,7 @@ import UrlQuiz from './urlQuiz';
 import TeachingQuiz from './teachingQuiz';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import QuizFeedback from './quizFeedback';
-import { updateQuizProgress } from './quizProgressStore';
+import { updateQuizProgress, getQuizProgress } from './quizProgressStore';
 import { formatFileSize } from '../../../utils/utils';
 
 /**
@@ -153,7 +153,9 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
             percentCorrect = await onUrlQuiz({ id, title, type, body, url: quizElement.value });
           }
         } else if (type === 'teaching') {
-          const quizElement = quizRoot.querySelector('button[id="submit-session"]');
+          if (event.target.id !== 'submit-session') return;
+          const progress = getQuizProgress(id);
+          const messages = progress?.messages || [];
           percentCorrect = await onTeachingQuiz({ id, title, type, body, messages });
         }
 
@@ -258,7 +260,6 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     if (files.length === 0) return 0;
     const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
     let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
-    //    updateQuizProgress(id, { feedback, percentCorrect: 100 });
     const details = { type, files: progressFiles, feedback };
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
@@ -268,7 +269,6 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
   async function onUrlQuiz({ id, title, type, body, url }) {
     if (!url) return 0;
     let feedback = 'Submission received. Thank you!';
-    //    updateQuizProgress(id, { feedback, percentCorrect: 100 });
     const details = { type, url, feedback };
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
@@ -278,15 +278,13 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
   async function onTeachingQuiz({ id, title, type, body, messages }) {
     if (messages.length === 0) return 0;
     const lastMessage = messages[messages.length - 1];
-    const percentMatch = lastMessage.match(/Understanding Score:\s*(\d+)%/);
+    const percentMatch = lastMessage.content?.match(/Understanding Score:\s*(\d+)%/);
     const percentCorrect = percentMatch ? parseInt(percentMatch[1], 10) : 0;
-    let feedback = lastMessage;
+    let feedback = 'Session submitted';
     const details = { type, messages, percentCorrect, feedback };
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
-    // No-op for now
-    return;
   }
 
   function visualFeedback(quizRoot, percentCorrect) {
