@@ -25,10 +25,6 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
   }, [messages]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
     if (!isLoading) {
       inputRef.current?.focus();
     }
@@ -82,7 +78,7 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
 
           {messages.map((message) => (
             <div key={message.timestamp} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] px-3 py-2 rounded-lg border text-sm break-words whitespace-pre-wrap ${message.type === 'user' ? 'bg-blue-600 text-white border-blue-600' : message.type === 'error' ? 'border-red-600 text-red-700 bg-red-50' : 'border-gray-300 bg-white text-gray-800'}`}>
+              <div className={`max-w-[80%] px-3 py-2 rounded-lg border text-sm break-words whitespace-pre-wrap ${message.type === 'user' ? 'bg-blue-300 text-white border-blue-600' : message.type === 'error' ? 'border-red-600 text-red-700 bg-red-50' : 'border-gray-300 bg-white text-gray-800'}`}>
                 {message.type === 'model' ? (
                   <div className="markdown-body">
                     <Markdown content={message.content} />
@@ -103,8 +99,8 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
 
         <form onSubmit={handleSubmit} className="border-t border-gray-200 px-4 py-3 flex gap-2">
           <input ref={inputRef} type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="As a teacher, respond to the learner ..." className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" disabled={isLoading} />
-          <button type="submit" disabled={!userInput.trim() || isLoading} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-            Answer
+          <button type="submit" disabled={!userInput.trim() || isLoading} className="px-4 py-2 bg-white border-1 border-gray-400 text-gray-800 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed">
+            ▶️
           </button>
         </form>
       </div>
