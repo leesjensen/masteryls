@@ -133,63 +133,13 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
           visualFeedback(quizRoot, percentCorrect);
         }
       }
-    } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission') {
+    } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission' || type === 'teaching') {
       if (event.target.tagName === 'BUTTON') {
         let percentCorrect = 0;
         if (type === 'essay') {
           const quizElement = quizRoot.querySelector('textarea');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
-            let precedingContent = '';
-
-            // Find the closest preceding heading element
-            let currentElement = quizRoot;
-            let headingElement = null;
-
-            // Walk up the DOM tree to find a heading
-            while (currentElement && currentElement !== document.body) {
-              const precedingHeading = currentElement.closest(':is(h1, h2, h3, h4, h5, h6)');
-              if (precedingHeading) {
-                headingElement = precedingHeading;
-                break;
-              }
-              // If no heading found in current path, try previous siblings
-              let sibling = currentElement.previousElementSibling;
-              while (sibling) {
-                if (/^H[1-6]$/i.test(sibling.tagName)) {
-                  headingElement = sibling;
-                  break;
-                }
-                const nestedHeading = sibling.querySelector(':is(h1, h2, h3, h4, h5, h6)');
-                if (nestedHeading) {
-                  headingElement = nestedHeading;
-                  break;
-                }
-                sibling = sibling.previousElementSibling;
-              }
-              if (headingElement) break;
-              currentElement = currentElement.parentElement;
-            }
-
-            // If we found a heading, collect all paragraphs between it and the quiz
-            if (headingElement) {
-              let walker = headingElement.nextElementSibling;
-              const paragraphs = [];
-
-              while (walker && walker !== quizRoot) {
-                if (walker.tagName === 'P') {
-                  paragraphs.push(walker.textContent.trim());
-                } else if (walker.contains(quizRoot)) {
-                  // If the walker contains our quiz, look for paragraphs inside it before the quiz
-                  const innerParagraphs = Array.from(walker.querySelectorAll('p')).filter((p) => !quizRoot.contains(p));
-                  paragraphs.push(...innerParagraphs.map((p) => p.textContent.trim()));
-                  break;
-                }
-                walker = walker.nextElementSibling;
-              }
-
-              precedingContent = paragraphs.join('\n');
-            }
-
+            let precedingContent = getPrecedingContent(quizRoot);
             percentCorrect = await onEssayQuiz({ id, title, type, body, precedingContent, essay: quizElement.value });
           }
         } else if (type === 'file-submission') {
@@ -202,11 +152,67 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
           if (quizElement && quizElement.value && quizElement.validity.valid) {
             percentCorrect = await onUrlQuiz({ id, title, type, body, url: quizElement.value });
           }
+        } else if (type === 'teaching') {
+          const quizElement = quizRoot.querySelector('button[id="submit-session"]');
+          percentCorrect = await onTeachingQuiz({ id, title, type, body, messages });
         }
 
         visualFeedback(quizRoot, percentCorrect);
       }
     }
+  }
+
+  function getPrecedingContent(quizRoot) {
+    let precedingContent = '';
+    // Find the closest preceding heading element
+    let currentElement = quizRoot;
+    let headingElement = null;
+
+    // Walk up the DOM tree to find a heading
+    while (currentElement && currentElement !== document.body) {
+      const precedingHeading = currentElement.closest(':is(h1, h2, h3, h4, h5, h6)');
+      if (precedingHeading) {
+        headingElement = precedingHeading;
+        break;
+      }
+      // If no heading found in current path, try previous siblings
+      let sibling = currentElement.previousElementSibling;
+      while (sibling) {
+        if (/^H[1-6]$/i.test(sibling.tagName)) {
+          headingElement = sibling;
+          break;
+        }
+        const nestedHeading = sibling.querySelector(':is(h1, h2, h3, h4, h5, h6)');
+        if (nestedHeading) {
+          headingElement = nestedHeading;
+          break;
+        }
+        sibling = sibling.previousElementSibling;
+      }
+      if (headingElement) break;
+      currentElement = currentElement.parentElement;
+    }
+
+    // If we found a heading, collect all paragraphs between it and the quiz
+    if (headingElement) {
+      let walker = headingElement.nextElementSibling;
+      const paragraphs = [];
+
+      while (walker && walker !== quizRoot) {
+        if (walker.tagName === 'P') {
+          paragraphs.push(walker.textContent.trim());
+        } else if (walker.contains(quizRoot)) {
+          // If the walker contains our quiz, look for paragraphs inside it before the quiz
+          const innerParagraphs = Array.from(walker.querySelectorAll('p')).filter((p) => !quizRoot.contains(p));
+          paragraphs.push(...innerParagraphs.map((p) => p.textContent.trim()));
+          break;
+        }
+        walker = walker.nextElementSibling;
+      }
+
+      precedingContent = paragraphs.join('\n');
+    }
+    return precedingContent;
   }
 
   async function onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect }) {
@@ -267,6 +273,20 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;
+  }
+
+  async function onTeachingQuiz({ id, title, type, body, messages }) {
+    if (messages.length === 0) return 0;
+    const lastMessage = messages[messages.length - 1];
+    const percentMatch = lastMessage.match(/Understanding Score:\s*(\d+)%/);
+    const percentCorrect = percentMatch ? parseInt(percentMatch[1], 10) : 0;
+    let feedback = lastMessage;
+    const details = { type, messages, percentCorrect, feedback };
+    updateQuizProgress(id, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return percentCorrect;
+    // No-op for now
+    return;
   }
 
   function visualFeedback(quizRoot, percentCorrect) {

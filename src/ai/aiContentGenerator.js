@@ -309,10 +309,12 @@ Respond to what the user is attempting to explain in a positive and constructive
 - Prefer short responses of less than 50 words with one or two concise paragraphs
 - Respond positively when the teacher is correct
 - Ask for clarification when the teacher is incorrect
-- Directly addresses the teacher's explanation or comment
-- References specific parts of the topic content when relevant
-- If the teacher is incorrect then sometimes respond by saying that you don't understand
-- Stays focused on the educational content and avoids unrelated topics
+- Directly address the teacher's explanation
+- Never answer the question yourself unless the teacher has already answered it
+- Only reference content that is found in this conversation
+- If the teacher is incorrect then ask for clarification on specific points
+- Stay focused on the educational content and avoid unrelated topics
+- At the end of your response, return a percentage score of how well the teacher has answered the question in the format: "Understanding Score: XX%"
 
 If the student's question is not directly related to the topic content, gently redirect them back to the material while still being helpful.`,
       },
@@ -473,15 +475,10 @@ async function makeAiRequest(instructions, contents) {
     contents,
   };
 
-  try {
-    const responseText = await service.makeGeminiApiRequest(body);
-    const cleanedText = responseText.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
+  const responseText = await service.makeGeminiApiRequest(body);
+  const cleanedText = responseText.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
 
-    return cleanedText;
-  } catch (error) {
-    console.error('Error generating AI content:', error);
-    throw new Error(`Failed to generate AI content: ${error.message}`);
-  }
+  return cleanedText;
 }
 
 const standardRequestBody = {

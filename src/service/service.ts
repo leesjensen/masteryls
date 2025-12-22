@@ -538,6 +538,10 @@ class Service {
       throw new Error(error.message);
     }
 
+    if (data.error) {
+      throw new Error((data.error.message || 'Error from AI service').split('.')[0]);
+    }
+
     if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
       throw new Error('Invalid response format from AI');
     }
