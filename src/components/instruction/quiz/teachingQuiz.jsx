@@ -78,7 +78,7 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
 
           {messages.map((message) => (
             <div key={message.timestamp} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] px-3 py-2 rounded-lg border text-sm break-words whitespace-pre-wrap ${message.type === 'user' ? 'bg-blue-300 text-white border-blue-600' : message.type === 'error' ? 'border-red-600 text-red-700 bg-red-50' : 'border-gray-300 bg-white text-gray-800'}`}>
+              <div className={`max-w-[80%] px-3 py-2 rounded-lg border text-sm break-words whitespace-pre-wrap ${message.type === 'user' ? 'bg-blue-50 text-blue-700 border-blue-600' : message.type === 'error' ? 'border-red-600 text-red-700 bg-red-50' : 'border-gray-300 bg-white text-gray-800'}`}>
                 {message.type === 'model' ? (
                   <div className="markdown-body">
                     <Markdown content={message.content} />
