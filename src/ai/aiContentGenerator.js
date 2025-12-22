@@ -283,24 +283,58 @@ Requirements:
 }
 
 /**
+ * Generates a discussion response for a teaching quiz where the user is taking on the role of a teacher to an AI student.
+ *
+ * @async
+ * @function aiTeachingResponseGenerator
+ * @param {string} topicTitle - The title of the topic being discussed.
+ * @param {string} topicContent - The content of the topic being discussed.
+ * @param {object[]} messages - The conversation between the user and the AI student.
+ * @returns {Promise<string>} A promise that resolves to the generated discussion response.
+ */
+export async function aiTeachingResponseGenerator(topicTitle, topicContent, messages) {
+  const instructions = {
+    parts: [
+      {
+        text: `
+You are a student trying understand course material. The user is responding to your questions as a teacher.
+You have access to the following topic content that you are currently studying:
+
+TOPIC: ${topicTitle}
+
+CONTENT: ${topicContent}
+
+Respond to what the user is attempting to explain in a positive and constructive manner. 
+- The response must be valid GitHub-flavored markdown
+- Prefer short responses of less than 50 words with one or two concise paragraphs
+- Respond positively when the teacher is correct
+- Ask for clarification when the teacher is incorrect
+- Directly addresses the teacher's explanation or comment
+- References specific parts of the topic content when relevant
+- If the teacher is incorrect then sometimes respond by saying that you don't understand
+- Stays focused on the educational content and avoids unrelated topics
+
+If the student's question is not directly related to the topic content, gently redirect them back to the material while still being helpful.`,
+      },
+    ],
+  };
+  const contents = createDiscussionContents(messages);
+
+  return makeAiRequest(instructions, contents);
+}
+
+/**
  * Generates a discussion response for a student based on the provided topic content and user prompt.
  *
  * @async
  * @function aiDiscussionResponseGenerator
  * @param {string} topicTitle - The title of the topic being discussed.
  * @param {string} topicContent - The content of the topic being discussed.
- * @param {object[]} messages - The student's question or comment about the topic.
+ * @param {object[]} messages - The conversation between the user and the AI teacher.
  * @returns {Promise<string>} A promise that resolves to the generated discussion response.
  */
 export async function aiDiscussionResponseGenerator(topicTitle, topicContent, messages) {
-  const instructions = createDiscussionInstructions(topicTitle, topicContent);
-  const contents = createDiscussionContents(messages);
-
-  return makeAiRequest(instructions, contents);
-}
-
-function createDiscussionInstructions(topicTitle, topicContent) {
-  return {
+  const instructions = {
     parts: [
       {
         text: `
@@ -309,8 +343,7 @@ You have access to the following topic content that the student is currently stu
 
 TOPIC: ${topicTitle}
 
-CONTENT:
-${topicContent}
+CONTENT: ${topicContent}
 
 Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
@@ -328,6 +361,9 @@ If the student's question is not directly related to the topic content, gently r
       },
     ],
   };
+  const contents = createDiscussionContents(messages);
+
+  return makeAiRequest(instructions, contents);
 }
 
 function createDiscussionContents(messages) {

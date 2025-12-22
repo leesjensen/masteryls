@@ -89,7 +89,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     } else if (meta.type === 'url-submission') {
       return <UrlQuiz quizId={meta.id} />;
     } else if (meta.type === 'teaching') {
-      return <TeachingQuiz quizId={meta.id} />;
+      return <TeachingQuiz quizId={meta.id} topicTitle={meta.title} question={meta.question} />;
     }
 
     return null;
