@@ -369,9 +369,11 @@ If the student's question is not directly related to the topic content, gently r
 }
 
 function createDiscussionContents(messages) {
-  return messages.map((msg) => {
-    return { role: msg.type, parts: [{ text: msg.content }] };
-  });
+  return messages
+    .filter((msg) => msg.type === 'model' || msg.type === 'user')
+    .map((msg) => {
+      return { role: msg.type, parts: [{ text: msg.content }] };
+    });
 }
 
 /**
