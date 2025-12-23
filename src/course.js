@@ -118,6 +118,7 @@ async function loadFromDefinition(catalogEntry) {
   courseDefinition.links = catalogEntry.links || {};
   courseDefinition.links.gitHub = gitHubLinks;
   courseDefinition.gitHub = catalogEntry.gitHub;
+  courseDefinition.settings = catalogEntry.settings || { state: 'published' };
 
   // Make the topic paths absolute while executing (these are not stored in the course definition)
   for (const module of courseDefinition.modules) {

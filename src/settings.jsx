@@ -90,11 +90,12 @@ export default function Settings({ courseOps, user, course }) {
         name: formData.name,
         title: formData.title,
         description: formData.description,
-        links: course.links,
         gitHub: {
           account: formData.githubAccount,
           repository: formData.githubRepository,
         },
+        links: course.links,
+        settings: course.settings,
       };
       courseOps.service.saveCatalogEntry(catalogEntry);
       const newCourse = course.copyWithNewSettings(catalogEntry);
