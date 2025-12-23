@@ -13,7 +13,7 @@ class Service {
 
   static async create() {
     const supabase = createClient(config.supabase.url, config.supabase.key);
-    const { data, error } = await supabase.from('catalog').select('id, name, title, description, links, gitHub');
+    const { data, error } = await supabase.from('catalog').select('id, name, title, description, gitHub');
 
     if (error) {
       throw new Error(error.message);
@@ -80,19 +80,14 @@ class Service {
   }
 
   async createCatalogEntry(editor: User, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
-    const { data, error } = await this.supabase.from('catalog').insert([catalogEntry]).select().single();
-    if (error) {
-      throw new Error(error.message);
-    }
-    catalogEntry = data;
-    this.catalog.push(catalogEntry);
-
+    await this.saveCatalogEntry(catalogEntry);
     await this.addUserRole(editor, 'editor', catalogEntry.id, { gitHubToken });
 
     return catalogEntry;
   }
 
   async saveCatalogEntry(catalogEntry: CatalogEntry): Promise<void> {
+    delete catalogEntry.links;
     const { error } = await this.supabase.from('catalog').upsert(catalogEntry);
     if (error) {
       throw new Error(error.message);
@@ -278,7 +273,7 @@ class Service {
     }
 
     const result = new Map<string, Enrollment>();
-    data.forEach((item) => {
+    data.forEach((item: any) => {
       result.set(item.catalogId, { ...item, catalogEntry: this.catalogEntry(item.catalogId) });
     });
 

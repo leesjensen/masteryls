@@ -1,14 +1,5 @@
 {
   "title": "Advanced Web Framework Programmingx",
-  "description": "This course gives an advanced survey of the common web frameworks such as React, Vue, and Svelte. We then dive into the implementation details of each framework. This includes how each framework implements DOM interactions, manages state, handles reactivity, routing, and integrating HTML, JavaScript, and CSS. Different framework approaches are compared and contrasted with discussions of performance, scalability, and developer productivity. You then create your own web framework that renders components, manages state, enables reactivity, handles routing, and integrates HTML, CSS, and JavaScript. Over the duration of the course you demonstrate your mastery by defining and creating a modern web application using the framework you have created.",
-  "outcomes": [
-    "Understand the core concepts and architecture of modern web frameworks.",
-    "Gain in-depth knowledge of popular web frameworks such as React, Vue, and Svelte.",
-    "Learn how to implement key features of web frameworks including component rendering, state management, reactivity, and routing.",
-    "Develop skills to build a custom web framework from scratch.",
-    "Apply best practices in web development including performance optimization, accessibility, security, and testing.",
-    "Demonstrate mastery by designing and implementing a modern web application using a custom-built web framework."
-  ],
   "modules": [
     {
       "title": "Web Framework Fundamentals",

@@ -14,7 +14,6 @@ export async function createCourseInternal(service, user, generateWithAi, source
     // const courseJson = await aiCourseGenerator(catalogEntry.title, catalogEntry.description);
     // const courseDefinition = JSON.parse(courseJson);
     // clearInterval(messageInterval);
-    // catalogEntry.outcomes = courseDefinition.outcomes || [];
     // setUpdateMessage('Creating course repository');
     // await service.createCourseRepoFromDefaultTemplate(catalogEntry, gitHubToken);
     // catalogEntry = await service.createCatalogEntry(user, catalogEntry, gitHubToken);
