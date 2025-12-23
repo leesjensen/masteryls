@@ -13,7 +13,7 @@ class Service {
 
   static async create() {
     const supabase = createClient(config.supabase.url, config.supabase.key);
-    const { data, error } = await supabase.from('catalog').select('id, name, title, description, gitHub');
+    const { data, error } = await supabase.from('catalog').select('id, name, title, description, gitHub, settings');
 
     if (error) {
       throw new Error(error.message);
