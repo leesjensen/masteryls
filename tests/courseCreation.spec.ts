@@ -24,7 +24,7 @@ import { initBasicCourse, navigateToDashboard, navigateToCourse } from './testIn
 //             "title": "Example module title",
 //             "description": "Description for example module.",
 //             "topics": [
-//                 { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md", "type": "instruction", "state": "stable" },
+//                 { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md", "type": "instruction", "state": "published" },
 //                 { "title": "Topic 1", "description": "Description for topic 1.", "path": "instruction/topic-1/topic-1.md", "type": "instruction", "state": "stub" },
 //                 { "title": "Topic 2", "description": "Description for topic 2.", "path": "instruction/topic-2/topic-2.md", "type": "instruction", "state": "stub" },
 //                 { "title": "Topic 3", "description": "Description for topic 3.", "path": "instruction/topic-3/topic-3.md", "type": "instruction", "state": "stub" }

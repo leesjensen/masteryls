@@ -20,7 +20,7 @@ export default function Editor({ courseOps, user, learningSession }) {
   // Ref to access MarkdownEditor's insert functionality
   const markdownEditorRef = React.useRef(null);
 
-  const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'stable'));
+  const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
 
   React.useEffect(() => {
     if (contentAvailable) {

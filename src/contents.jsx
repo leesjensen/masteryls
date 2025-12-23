@@ -72,7 +72,7 @@ function Contents({ courseOps, currentTopic, course, editorVisible }) {
     return course.modules
       .map((module) => ({
         ...module,
-        topics: module.topics.filter((topic) => !topic.state || topic.state === 'stable'),
+        topics: module.topics.filter((topic) => !topic.state || topic.state === 'published'),
       }))
       .filter((module) => module.topics.length > 0);
   }

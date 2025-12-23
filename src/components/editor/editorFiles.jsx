@@ -7,7 +7,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
   const lastSelectedIndexRef = React.useRef(-1);
 
   React.useEffect(() => {
-    const contentAvailable = !!(currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable'));
+    const contentAvailable = !!(currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'published'));
 
     if (contentAvailable) {
       async function fetchFiles() {

@@ -7,7 +7,7 @@ function TopicItem({ course, topic, currentTopic }) {
   return (
     <li className="mb-0.5 flex justify-between items-center group">
       <div className="flex flex-row">
-        {topic.state && topic.state !== 'stable' && (
+        {topic.state && topic.state !== 'published' && (
           <span className="text-xs text-white bg-gray-500 rounded px-1 mr-1" title={`This topic is in "${topic.state}" state`}>
             {topic.state}
           </span>

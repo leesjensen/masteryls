@@ -51,7 +51,7 @@ export default class Course {
 
     while (topicIndex >= 0 && topicIndex < this.allTopics.length) {
       const topic = this.allTopics[topicIndex];
-      if (topic && (!topic.state || topic.state === 'stable')) {
+      if (topic && (!topic.state || topic.state === 'published')) {
         return topic;
       }
       topicIndex += direction === 'prev' ? -1 : 1;

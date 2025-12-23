@@ -9,7 +9,7 @@
           "title": "Overview",
           "description": "Course introduction and objectives.",
           "path": "README.md",
-          "state": "stable"
+          "state": "published"
         },
         {
           "title": "The Document Object Model (DOM)",

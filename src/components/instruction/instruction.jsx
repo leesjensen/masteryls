@@ -33,7 +33,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
     return null;
   }
 
-  const contentAvailable = learningSession.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'stable');
+  const contentAvailable = learningSession.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published');
   if (!contentAvailable) {
     return null;
   }

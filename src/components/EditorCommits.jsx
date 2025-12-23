@@ -18,7 +18,7 @@ export default function EditorCommits({ currentTopic, course, user, courseOps, s
       }
     }
 
-    const contentAvailable = currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'stable');
+    const contentAvailable = currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'published');
 
     if (contentAvailable) {
       fetchCommits();

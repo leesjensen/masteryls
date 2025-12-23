@@ -156,7 +156,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         const updatedCourse = Course.copy(course);
         const topic = updatedCourse.topicFromId(topicId);
         topic.description = prompt;
-        topic.state = 'stable';
+        topic.state = 'published';
 
         const basicContent = await generateTopicContent(topic, prompt);
         if (basicContent) {
@@ -181,7 +181,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         for (let i = 0; i < topicList.length && !isCancelled(); i++) {
           const topic = updatedCourse.topicFromId(topicList[i].id);
           progressCallback && (await progressCallback(topic, i));
-          topic.state = 'stable';
+          topic.state = 'published';
 
           const basicContent = await generateTopicContent(topic, topic.description);
           if (basicContent) {
