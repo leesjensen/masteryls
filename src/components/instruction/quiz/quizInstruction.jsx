@@ -277,7 +277,6 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
 
   async function onTeachingQuiz({ id, title, type, body, messages }) {
     if (messages.length === 0) return 0;
-    const lastMessage = messages[messages.length - 1];
     const percentMatch = lastMessage.content?.match(/Understanding Score:\s*(\d+)%/);
     const percentCorrect = percentMatch ? parseInt(percentMatch[1], 10) : 0;
     let feedback = 'Session submitted';
