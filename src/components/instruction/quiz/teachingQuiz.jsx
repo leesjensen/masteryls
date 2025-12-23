@@ -39,6 +39,12 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
     });
   };
 
+  const handleClear = () => {
+    const cleared = messages.slice(0, 1);
+    setMessages(cleared);
+    persistMessages(cleared);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const trimmed = userInput.trim();
@@ -104,9 +110,14 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
           </button>
         </form>
       </div>
-      <button id="submit-session" score="30" className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-        Submit session
-      </button>
+      <div className="flex gap-2 mt-4">
+        <button id="submit-session" score="30" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+          Submit session
+        </button>
+        <button onClick={handleClear} type="button" className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 disabled:opacity-50">
+          Clear
+        </button>
+      </div>
     </div>
   );
 }
