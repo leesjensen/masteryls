@@ -226,17 +226,6 @@ class Service {
     }
   }
 
-  allEnrolled(enrollments: Map<string, Enrollment>) {
-    return (
-      this.catalog.filter((course) => {
-        if (course.id) {
-          return !enrollments.has(course.id);
-        }
-        return false;
-      }).length === 0
-    );
-  }
-
   getEnrollmentUiSettings(courseId: string | undefined) {
     const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 

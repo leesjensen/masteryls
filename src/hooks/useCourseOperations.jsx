@@ -53,7 +53,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   function courseCatalog() {
-    return service.courseCatalog();
+    const unfilteredCatalog = service.courseCatalog();
+    return unfilteredCatalog.filter((entry) => entry.settings?.state === 'published' || user?.isEditor(entry.id));
   }
 
   async function getTemplateRepositories(gitHubAccount) {

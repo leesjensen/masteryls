@@ -44,6 +44,17 @@ export default function DashboardView({ courseOps, service, user }) {
     }
   };
 
+  const allEnrolled = (enrollments) => {
+    return (
+      courseOps.courseCatalog().filter((course) => {
+        if (course.id) {
+          return !enrollments.has(course.id);
+        }
+        return false;
+      }).length === 0
+    );
+  };
+
   const requestedEnrollmentRemoval = async (enrollment) => {
     setPendingEnrollmentRemoval(enrollment);
     dialogRef.current.showModal();
@@ -82,11 +93,11 @@ export default function DashboardView({ courseOps, service, user }) {
           <div className="text-gray-400 text-base m-4">You are not enrolled in any courses. Select one below to get started.</div>
         )}
 
-        {!service.allEnrolled(enrollments) && (
+        {!allEnrolled(enrollments) && (
           <div className="my-8">
             <h2 className="border-t-2 border-gray-400 font-semibold mb-6 pt-1 text-xl text-gray-500">Join a course</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {service
+              {courseOps
                 .courseCatalog()
                 .filter((catalogEntry) => !enrollments.has(catalogEntry.id))
                 .map((catalogEntry) => (
