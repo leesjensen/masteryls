@@ -17,7 +17,6 @@ const stockImages = {
 
 const Start = ({ courseOps }) => {
   const [catalog, setCatalog] = useState([]);
-  const navigate = useNavigate();
 
   useEffect(() => {
     updateAppBar({ title: 'Get started', tools: null });
@@ -56,7 +55,27 @@ const Start = ({ courseOps }) => {
         </div>
       </section>
 
-      <section className="py-16 bg-white mb-10">
+      {catalog.length > 0 && (
+        <section id="catalog-section" className="py-16 bg-amber-50">
+          <div className="max-w-7xl mx-auto px-8">
+            <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Try a course</h2>
+
+            <div className="max-w-xl mx-auto">
+              <label className="block text-xl font-medium text-gray-800 mb-4">
+                Browse a course without creating an account. Register to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
+              </label>
+
+              <div role="listbox" aria-label="Courses" tabIndex={0} className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
+                {catalog.map((entry) => (
+                  <CourseEntry key={entry.id} entry={entry} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-8">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Why Learn with Mastery LS?</h2>
           <div className="grid md:grid-cols-3 gap-8">
@@ -71,42 +90,7 @@ const Start = ({ courseOps }) => {
         </div>
       </section>
 
-      {catalog.length > 0 && (
-        <section id="catalog-section" className="py-16 bg-amber-50 mb-10">
-          <div className="max-w-7xl mx-auto px-8">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Available courses</h2>
-
-            <div className="max-w-xl mx-auto">
-              <label className="block text-2xl font-medium text-gray-800 mb-4">
-                Browse a course without creating an account. Register to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
-              </label>
-
-              <div role="listbox" aria-label="Courses" tabIndex={0} className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
-                {catalog.map((entry) => {
-                  return (
-                    <div
-                      key={entry.id}
-                      role="option"
-                      onClick={() => {
-                        navigate(`/course/${entry.id}`);
-                      }}
-                      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-200'}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold text-gray-900">{entry.title}</div>
-                        <div className="text-sm text-gray-500">{entry.duration || ''}</div>
-                      </div>
-                      {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <section className="py-16 bg-amber-600 mb-10">
+      <section className="py-16 bg-amber-600">
         <div className="max-w-7xl mx-auto px-8">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div className="text-white">
@@ -172,6 +156,25 @@ function PromoCard({ image, title, description }) {
       <img src={image} alt={title} className="w-full h-48 object-cover rounded-lg mb-6 hover:scale-103 transition-transform duration-300" />
       <h3 className="text-2xl font-semibold text-gray-900 mb-4">{title}</h3>
       <p className="text-gray-600 leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function CourseEntry({ entry }) {
+  const navigate = useNavigate();
+  return (
+    <div
+      role="option"
+      onClick={() => {
+        navigate(`/course/${entry.id}`);
+      }}
+      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-200'}
+    >
+      <div className="flex items-center justify-between">
+        <div className="font-semibold text-amber-600">{entry.title}</div>
+        <div className="text-sm text-gray-500">{entry.duration || ''}</div>
+      </div>
+      {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}
     </div>
   );
 }
