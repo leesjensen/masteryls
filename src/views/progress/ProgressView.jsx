@@ -106,10 +106,10 @@ export default function ProgressView({ courseOps, service, user }) {
 
   const getTitles = async (courseId, topicId) => {
     const course = courseId && (await courseOps.getCourse(courseId));
-    if (!course) return { course: 'N/A', topic: 'N/A' };
+    if (!course) return { course: '—', topic: '—' };
 
     const topic = topicId && course.topicFromId(topicId);
-    return { course: course.title, topic: topic ? topic.title : 'N/A' };
+    return { course: course.title, topic: topic ? topic.title : '—' };
   };
 
   const sortedRecords = React.useMemo(() => {
@@ -469,8 +469,8 @@ export default function ProgressView({ courseOps, service, user }) {
                               <td className="px-6 py-2 whitespace-nowrap">
                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(group.type)}`}>{group.type}</span>
                               </td>
-                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.courseTitle || 'N/A'}</td>
-                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.type === 'instructionView' && group.uniqueTopics && group.uniqueTopics.size > 1 ? `${group.uniqueTopics.size} topics` : group.topicTitle || 'N/A'}</td>
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.courseTitle || '—'}</td>
+                              <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.type === 'instructionView' && group.uniqueTopics && group.uniqueTopics.size > 1 ? `${group.uniqueTopics.size} topics` : group.topicTitle || '—'}</td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
                               <td className="px-6 py-2 whitespace-nowrap">
@@ -496,8 +496,8 @@ export default function ProgressView({ courseOps, service, user }) {
                                   <td className="px-6 py-2 whitespace-nowrap">
                                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getActivityTypeColor(event.type)}`}>{event.type}</span>
                                   </td>
-                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.courseTitle || 'N/A'}</td>
-                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.topicTitle || 'N/A'}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.courseTitle || '—'}</td>
+                                  <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{event.topicTitle || '—'}</td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">—</td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{formatDuration(event.duration)}</td>
                                   <td className="px-6 py-2 whitespace-nowrap">
