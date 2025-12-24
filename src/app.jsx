@@ -125,6 +125,7 @@ function ProgressPage() {
 
 function ClassroomPage() {
   const { courseOps, service, user, learningSession, setLearningSession, settings } = useOutletContext();
+  const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
 
   const { courseId, topicId } = useParams();
@@ -161,10 +162,14 @@ function ClassroomPage() {
           setLearningSession({ course, topic, enrollment });
         }
       } catch (error) {
-        throw new Error(`Unable to load course: ${error.message}`);
+        setErrorMsg(`Unable to load course: ${error.message}`);
       }
     })();
   }, [courseId, topicId, user]);
+
+  if (errorMsg) {
+    throw new Error(errorMsg);
+  }
 
   if (!learningSession) {
     return null;
