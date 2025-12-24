@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 
 export default function DashboardView({ courseOps, service, user }) {
+  if (!user) throw new Error('Viewing the dashboard requires a user');
+
   const [enrollments, setEnrollments] = useState();
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const dialogRef = useRef(null);
@@ -71,7 +73,7 @@ export default function DashboardView({ courseOps, service, user }) {
     setPendingEnrollmentRemoval(null);
   };
 
-  if (!user || !enrollments) {
+  if (!enrollments) {
     return (
       <div className="flex flex-col h-screen">
         <div className="m-auto text-gray-400" />

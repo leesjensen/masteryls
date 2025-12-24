@@ -13,8 +13,9 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
 
   React.useEffect(() => {
     if (learningSession.course) {
+      const url = user ? `/dashboard` : `/`;
       const appBarTools = (
-        <button title="Close metrics dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+        <button title="Close metrics dashboard" onClick={() => navigate(url)} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
           ❌
         </button>
       );

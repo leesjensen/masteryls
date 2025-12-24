@@ -20,7 +20,7 @@ const Start = ({ courseOps }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    updateAppBar({ title: 'Get started' });
+    updateAppBar({ title: 'Get started', tools: null });
   }, []);
 
   useEffect(() => {

@@ -19,7 +19,7 @@ export function createAppRouter(user) {
     {
       path: '/',
       element: <App initialUser={user} />,
-      errorElement: <ErrorPage message="The gerbils followed the lemmings off the cliff." />,
+      errorElement: <ErrorPage user={user} />,
       children: [
         { index: true, element: <StartPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
@@ -29,7 +29,7 @@ export function createAppRouter(user) {
         { path: 'courseCreation', element: <CourseCreationPage /> },
         { path: 'courseExport', element: <CourseExportPage /> },
         { path: 'progress', element: <ProgressPage /> },
-        { path: '*', element: <ErrorPage user={user} message="The gerbils have gotten lost." /> },
+        { path: '*', element: <ErrorPage user={user} message="It seems we have gotten lost." /> },
       ],
     },
   ]);
@@ -161,7 +161,7 @@ function ClassroomPage() {
           setLearningSession({ course, topic, enrollment });
         }
       } catch (error) {
-        navigate('/error', { state: { error: `Unable to load course: ${error.message}` } });
+        throw new Error(`Unable to load course: ${error.message}`);
       }
     })();
   }, [courseId, topicId, user]);
