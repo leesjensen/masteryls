@@ -36,26 +36,23 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     setMessages(newMessages);
     setIsLoading(true);
 
+    let type = 'model';
+    let content;
     try {
-      const response = await aiDiscussionResponseGenerator(topicTitle, topicContent, newMessages);
-      setMessages((prev) => [
-        ...prev,
-        {
-          type: 'model',
-          content: response,
-          timestamp: Date.now(),
-        },
-      ]);
+      content = await aiDiscussionResponseGenerator(topicTitle, topicContent, newMessages);
     } catch (error) {
+      type = 'error';
+      content = `Sorry, I encountered an error: ${error.message}`;
+    } finally {
       setMessages((prev) => [
         ...prev,
         {
-          type: 'error',
-          content: `Sorry, I encountered an error: ${error.message}`,
+          type,
+          content,
           timestamp: Date.now(),
         },
       ]);
-    } finally {
+
       setIsLoading(false);
     }
   };
