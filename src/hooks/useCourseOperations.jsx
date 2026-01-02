@@ -434,7 +434,6 @@ ${topicDescription || 'overview content placeholder'}`;
 
   async function getEssayQuizFeedback(data) {
     return aiEssayQuizFeedbackGenerator(data);
-    return { feedback: `Thank you for your submission. Your essay has been recorded.`, percentCorrect: -1 };
   }
 
   async function getExamState() {
