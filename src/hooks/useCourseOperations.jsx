@@ -180,7 +180,12 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     updatedCourse.modules.splice(moduleIndex, 1);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
-    await updateCourseStructure(updatedCourse, null, `remove(module) ${mod.title}`);
+    // If the removed module was the current module, navigate to the first topic
+    let currentTopic = null;
+    if (learningSession.topic?.path && mod.topics.some((t) => t.path === learningSession.topic.path)) {
+      currentTopic = updatedCourse.allTopics.length > 0 ? updatedCourse.allTopics[0] : null;
+    }
+    await updateCourseStructure(updatedCourse, currentTopic, `remove(module) ${mod.title}`);
   }
 
   async function generateTopic(topicId, prompt) {
