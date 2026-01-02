@@ -148,6 +148,20 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     await updateCourseStructure(updatedCourse, null, `add(module) ${title.trim()}`);
   }
 
+  async function renameModule(moduleIndex, newTitle) {
+    if (!newTitle || !newTitle.trim()) return;
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
+    const updatedCourse = Course.copy(course);
+    const mod = updatedCourse.modules[moduleIndex];
+    if (!mod) return;
+    mod.title = newTitle.trim();
+    updatedCourse.modules[moduleIndex] = mod;
+    updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
+
+    await updateCourseStructure(updatedCourse, null, `rename(module) ${mod.title}`);
+  }
+
   async function generateTopic(topicId, prompt) {
     if (!learningSession?.course) return;
     const course = learningSession.course;
@@ -647,6 +661,7 @@ ${topicDescription || 'overview content placeholder'}`;
     createCourse,
     updateCourseStructure,
     addModule,
+    renameModule,
     addTopic,
     generateTopic,
     generateTopics,
