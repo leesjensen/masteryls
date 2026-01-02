@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 export default function CourseExportForm({ courseOps, onClose, onCreate }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
   const [courseId, setCourseId] = useState('');
-  const [deleteExisting, setDeleteExisting] = useState(true);
+  const [deleteExisting, setDeleteExisting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('Initializing');
 
@@ -45,21 +45,17 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
           </div>
         </div>
       )}
-      <div className="px-6 py-4 border-b">
+      <div className="px-6 py-4">
         <h2 className="text-xl font-semibold text-gray-800">Export a Course</h2>
-        <p className="text-sm text-gray-500 mt-1">Export all modules and topics to a Canvas course. This will not create the course, only export the content.</p>
+        <p className="text-sm text-gray-500 mt-1">Export all modules and topics to a Canvas course.</p>
+        <p className="text-sm text-gray-500 mt-2">
+          <b>Note: </b>This will not create the course, only export the MasteryLS content to the Canvas course.
+        </p>
       </div>
 
       <form className="p-6 space-y-4" onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="course-name" className="block text-sm font-medium text-gray-700 mb-1">
-            Canvas course ID
-          </label>
-          <input id="course-name" name="name" value={canvasCourseId} onChange={(e) => setCanvasCourseId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Canvas course ID (e.g. 12345)" />
-        </div>
-
-        <div>
-          <label htmlFor="course-title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="course-title" className="block text-lg font-medium text-gray-700 mb-1">
             Course
           </label>
           <select id="course-title" name="title" required value={courseId} onChange={(e) => setCourseId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
@@ -70,6 +66,13 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="course-name" className="block text-lg font-medium text-gray-700 mb-1">
+            Canvas course ID
+          </label>
+          <input id="course-name" name="name" value={canvasCourseId} onChange={(e) => setCanvasCourseId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Canvas course ID (e.g. 12345)" />
           <div className="mt-3 flex items-center space-x-2">
             <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
             <label htmlFor="delete-existing" className="text-sm text-gray-700">
@@ -78,7 +81,7 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-end space-x-3 pt-2 border-t">
+        <div className="flex items-center justify-end space-x-3 pt-2">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">
             Cancel
           </button>
