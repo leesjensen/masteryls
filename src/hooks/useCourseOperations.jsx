@@ -97,7 +97,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
       const updatedCourse = await _updateCourseStructure(token, course, commitMessage);
-      setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+      const topic = updatedTopic || learningSession.topic;
+      setLearningSession({ ...learningSession, course: updatedCourse, topic });
     }
   }
 

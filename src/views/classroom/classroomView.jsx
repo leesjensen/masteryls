@@ -84,7 +84,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   return (
     <>
       <nav>
-        <Toolbar courseOps={courseOps} user={user} course={learningSession.course} settings={settings} topic={learningSession.topic} editing={editorVisible} toggleEditor={toggleEditor} />
+        <Toolbar courseOps={courseOps} user={user} learningSession={learningSession} settings={settings} editing={editorVisible} toggleEditor={toggleEditor} />
       </nav>
 
       <main className="flex flex-1 overflow-hidden">
