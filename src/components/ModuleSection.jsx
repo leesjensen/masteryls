@@ -3,11 +3,13 @@ import { EditableTopicItem } from './EditableTopicItem';
 import TopicItem from './TopicItem';
 import NewTopicButton from './NewTopicButton';
 import useClickOutside from '../hooks/useClickOutside';
+import ConfirmDialog from '../hooks/confirmDialog.jsx';
 
 function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible }) {
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState(module.title || '');
+  const dialogRef = React.useRef(null);
 
   React.useEffect(() => {
     setNewTitle(module.title || '');
@@ -30,6 +32,7 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
 
   async function handleRemoveModule() {
     try {
+      if (dialogRef.current && dialogRef.current.close) dialogRef.current.close();
       await courseOps.removeModule(moduleIndex);
     } catch (err) {
       console.error('remove module failed', err);
@@ -56,7 +59,7 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
               <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1" title="Edit this module">
                 e
               </button>
-              <button onClick={handleRemoveModule} className="font-semibold text-gray-400 hover:text-red-600 pr-1" title="Remove this module">
+              <button onClick={() => dialogRef.current.showModal()} className="font-semibold text-gray-400 hover:text-red-600 pr-1" title="Remove this module">
                 x
               </button>
             </div>
@@ -70,7 +73,13 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
               <button onClick={handleSubmitRename} className="px-2 py-1 bg-blue-600 text-white rounded text-xs">
                 Save
               </button>
-              <button onClick={() => { setShowEditForm(false); setNewTitle(module.title || ''); }} className="px-2 py-1 bg-gray-600 text-white rounded text-xs">
+              <button
+                onClick={() => {
+                  setShowEditForm(false);
+                  setNewTitle(module.title || '');
+                }}
+                className="px-2 py-1 bg-gray-600 text-white rounded text-xs"
+              >
                 Cancel
               </button>
             </div>
@@ -87,6 +96,17 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
             )}
           </ul>
         )}
+        <ConfirmDialog
+          dialogRef={dialogRef}
+          title="Delete module"
+          confirmed={handleRemoveModule}
+          message={
+            <p>
+              Are you sure you want to delete the module <b>{module.title}</b>?
+            </p>
+          }
+          confirmButtonText="Delete"
+        />
       </li>
     </div>
   );
