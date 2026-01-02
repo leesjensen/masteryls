@@ -162,6 +162,26 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     await updateCourseStructure(updatedCourse, null, `rename(module) ${mod.title}`);
   }
 
+  async function removeModule(moduleIndex) {
+    if (!learningSession?.course) return;
+    const course = learningSession.course;
+    const mod = course.modules[moduleIndex];
+    if (!mod) return;
+
+    // Remove topics in reverse order to avoid index shifting
+    for (let i = mod.topics.length - 1; i >= 0; i--) {
+      const topic = mod.topics[i];
+      await removeTopic(moduleIndex, i, course, topic);
+    }
+
+    // Remove the module itself and commit
+    const updatedCourse = Course.copy(learningSession.course);
+    updatedCourse.modules.splice(moduleIndex, 1);
+    updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
+
+    await updateCourseStructure(updatedCourse, null, `remove(module) ${mod.title}`);
+  }
+
   async function generateTopic(topicId, prompt) {
     if (!learningSession?.course) return;
     const course = learningSession.course;
@@ -662,6 +682,7 @@ ${topicDescription || 'overview content placeholder'}`;
     updateCourseStructure,
     addModule,
     renameModule,
+    removeModule,
     addTopic,
     generateTopic,
     generateTopics,
