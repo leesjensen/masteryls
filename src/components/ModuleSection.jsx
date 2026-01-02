@@ -1,5 +1,6 @@
 import React from 'react';
 import { EditableTopicItem } from './EditableTopicItem';
+import { useNavigate } from 'react-router-dom';
 import TopicItem from './TopicItem';
 import NewTopicButton from './NewTopicButton';
 import useClickOutside from '../hooks/useClickOutside';
@@ -10,6 +11,7 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState(module.title || '');
   const dialogRef = React.useRef(null);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     setNewTitle(module.title || '');
@@ -34,6 +36,11 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
     try {
       if (dialogRef.current && dialogRef.current.close) dialogRef.current.close();
       await courseOps.removeModule(moduleIndex);
+
+      // If the removed module was the current module, navigate to the default topic
+      if (currentTopic?.path && module.topics.some((t) => t.path === currentTopic.path)) {
+        navigate(`/course/${course.id}/topic/${course.defaultTopic().id}`);
+      }
     } catch (err) {
       console.error('remove module failed', err);
     }

@@ -179,13 +179,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const updatedCourse = Course.copy(learningSession.course);
     updatedCourse.modules.splice(moduleIndex, 1);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-
-    // If the removed module was the current module, navigate to the first topic
-    let currentTopic = null;
-    if (learningSession.topic?.path && mod.topics.some((t) => t.path === learningSession.topic.path)) {
-      currentTopic = updatedCourse.allTopics.length > 0 ? updatedCourse.allTopics[0] : null;
-    }
-    await updateCourseStructure(updatedCourse, currentTopic, `remove(module) ${mod.title}`);
+    await updateCourseStructure(updatedCourse, null, `remove(module) ${mod.title}`);
   }
 
   async function generateTopic(topicId, prompt) {
@@ -329,8 +323,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function removeTopic(moduleIndex, topicIndex, course, topic) {
     const token = user.getSetting('gitHubToken', course.id);
     const contentPath = topic.path.match(/\/main\/(.+)\/[^\/]+\.md$/);
-    const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
-    await service.deleteGitHubFolder(gitHubUrl, token, `remove(topic) ${topic.title}`);
+    if (contentPath) {
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
+      await service.deleteGitHubFolder(gitHubUrl, token, `remove(topic) ${topic.title}`);
+    }
 
     const updatedCourse = Course.copy(course);
     updatedCourse.modules[moduleIndex].topics.splice(topicIndex, 1);
