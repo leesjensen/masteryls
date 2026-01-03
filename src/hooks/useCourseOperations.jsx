@@ -270,7 +270,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function getTopicMarkdown(course, topic, commit = null) {
+  async function getTopic(course, topic, commit = null) {
     if (!course || !topic || topic?.type === 'video') return '';
 
     if (!commit && topic.commit) {
@@ -581,7 +581,7 @@ ${topicDescription || 'overview content placeholder'}`;
         html = `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="https://www.youtube.com/embed/${match[1]}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
       }
     } else {
-      let md = await getTopicMarkdown(course, topic);
+      let md = await getTopic(course, topic);
       // Canvas inserts its own title header, so remove any top-level headers from the markdown
       md = md.replace(/^\w*#\s.+\n/gm, '');
       html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
@@ -676,7 +676,7 @@ ${topicDescription || 'overview content placeholder'}`;
     addTopic,
     generateTopic,
     generateTopics,
-    getTopicMarkdown,
+    getTopic,
     removeTopic,
     renameTopic,
     updateTopic,

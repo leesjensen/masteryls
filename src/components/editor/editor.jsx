@@ -24,7 +24,7 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   React.useEffect(() => {
     if (contentAvailable) {
-      courseOps.getTopicMarkdown(learningSession.course, learningSession.topic).then((markdown) => {
+      courseOps.getTopic(learningSession.course, learningSession.topic).then((markdown) => {
         setContent(markdown);
         setDirty(false);
       });
@@ -46,7 +46,7 @@ export default function Editor({ courseOps, user, learningSession }) {
   }
 
   async function discard() {
-    const markdown = await courseOps.getTopicMarkdown(learningSession.course, learningSession.topic);
+    const markdown = await courseOps.getTopic(learningSession.course, learningSession.topic);
     setDirty(false);
     setContent(markdown);
   }
