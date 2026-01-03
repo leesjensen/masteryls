@@ -63,8 +63,10 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     quizStateReporter?.(meta.id);
 
     let controlJsx = generateQuizComponent(meta, itemsText);
+    const progress = getQuizProgress(meta.id);
+    const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-blue-50' : 'bg-white';
     return (
-      <div className="px-4 py-4 bg-white border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line" data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
+      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
           {meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}
           {meta.body && (
@@ -108,7 +110,8 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type === 'multiple-choice' || type === 'multiple-select') {
       if (event.target.tagName === 'INPUT') {
-        // read selected & correct indices from DOM
+        submissionFeedback(quizRoot);
+
         const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
         const selected = [];
         const correct = [];
@@ -130,11 +133,13 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
         const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
         if (await onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect })) {
-          visualFeedback(quizRoot, percentCorrect);
+          gradedFeedback(quizRoot, percentCorrect);
         }
       }
     } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission' || type === 'teaching') {
       if (event.target.tagName === 'BUTTON') {
+        submissionFeedback(quizRoot);
+
         let percentCorrect = 0;
         if (type === 'essay') {
           const quizElement = quizRoot.querySelector('textarea');
@@ -159,7 +164,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
           percentCorrect = await onTeachingQuiz({ id, title, type, body, messages });
         }
 
-        visualFeedback(quizRoot, percentCorrect);
+        gradedFeedback(quizRoot, percentCorrect);
       }
     }
   }
@@ -286,15 +291,20 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     return percentCorrect;
   }
 
-  function visualFeedback(quizRoot, percentCorrect) {
+  function submissionFeedback(quizRoot) {
+    quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-blue-50', 'bg-white');
+    quizRoot.classList.add('ring-2', 'ring-gray-400', 'bg-gray-50');
+  }
+
+  function gradedFeedback(quizRoot, percentCorrect) {
     let ringClass = 'ring-blue-400';
     if (instructionState !== 'exam') {
       if (percentCorrect === 100) ringClass = 'ring-green-500';
       else if (percentCorrect === 0) ringClass = 'ring-red-500';
       else ringClass = 'ring-yellow-400';
     }
-    quizRoot.classList.add('ring-4', ringClass);
-    //    setTimeout(() => quizRoot.classList.remove('ring-4', 'ring-blue-400', 'ring-yellow-400', 'ring-green-500', 'ring-red-500'), 600);
+    quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-gray-50', 'bg-white');
+    quizRoot.classList.add('ring-2', ringClass, 'bg-blue-50');
   }
 
   return (
