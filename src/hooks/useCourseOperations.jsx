@@ -105,8 +105,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function _updateCourseStructure(token, course, commitMessage = 'update course structure') {
     const courseData = {
       title: course.title,
-      schedule: course.schedule ? course.schedule.replace(`${course.links.gitHub.rawUrl}/`, '') : undefined,
-      syllabus: course.syllabus ? course.syllabus.replace(`${course.links.gitHub.rawUrl}/`, '') : undefined,
       links: course.links ? Object.fromEntries(Object.entries(course.links).filter(([key]) => key !== 'gitHub')) : undefined,
       externalRefs: course.externalRefs,
       modules: course.modules.map((module) => ({
