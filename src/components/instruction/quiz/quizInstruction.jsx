@@ -64,7 +64,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
 
     let controlJsx = generateQuizComponent(meta, itemsText);
     const progress = getQuizProgress(meta.id);
-    const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-blue-50' : 'bg-white';
+    const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-white';
     return (
       <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
@@ -304,7 +304,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
       else ringClass = 'ring-yellow-400';
     }
     quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-gray-50', 'bg-white');
-    quizRoot.classList.add('ring-2', ringClass, 'bg-blue-50');
+    quizRoot.classList.add('ring-2', ringClass, 'bg-gray-50');
   }
 
   return (
