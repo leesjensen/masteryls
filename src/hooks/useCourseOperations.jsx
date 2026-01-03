@@ -270,16 +270,20 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function getTopicMarkdown(course, topic) {
+  async function getTopicMarkdown(course, topic, commit = null) {
     if (!course || !topic || topic?.type === 'video') return '';
+
+    if (!commit && topic.commit) {
+      commit = topic.commit;
+    }
 
     if (course && course.markdownCache.has(topic.path)) {
       return course.markdownCache.get(topic.path);
     }
 
     let url = topic.path;
-    if (topic.commit) {
-      url = topic.path.replace(/(\/main\/)/, `/${topic.commit}/`);
+    if (commit) {
+      url = topic.path.replace(/(\/main\/)/, `/${commit}/`);
     }
 
     return _downloadTopicMarkdown(url);

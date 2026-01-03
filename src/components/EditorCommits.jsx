@@ -26,9 +26,7 @@ export default function EditorCommits({ currentTopic, course, user, courseOps, s
   }, [course, currentTopic, user]);
 
   const loadCommit = async (commit) => {
-    const repoApiUrl = course.links.gitHub.apiUrl.replace(/\/contents.*/, '');
-    const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
-    return courseOps.service.getTopicContentAtCommit(user.getSetting('gitHubToken', course.id), repoApiUrl, filePath, commit.sha);
+    return courseOps.getTopicMarkdown(course, currentTopic, commit.sha);
   };
 
   const handleApplyCommit = async (commit) => {
