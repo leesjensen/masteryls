@@ -23,7 +23,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
       </button>
 
       <div className="col-start-1 row-start-1 justify-self-end self-start flex flex-row gap-1 z-10 translate-x-3 -translate-y-3">
-        {catalogEntry.settings.state === 'unpublished' && (
+        {catalogEntry.settings?.state === 'unpublished' && (
           <div className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow cursor-default">
             <span title="unpublished" className="text-gray-600 text-xl">
               ⊘

@@ -19,7 +19,7 @@ test('dashboard register error', async ({ page }) => {
   await expect(page.locator('#root')).toContainText('Login failed. Please try again. User already registered');
 });
 
-test('dashboard join/leave courses', async ({ page }) => {
+test('dashboard join/leave course', async ({ page }) => {
   let enrollments: Enrollment[] = [];
   await initBasicCourse({ page });
 
@@ -49,7 +49,7 @@ test('dashboard join/leave courses', async ({ page }) => {
   enrollments = [
     {
       id: '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5',
-      catalogId: 'e453da9a-b61d-45fa-894e-de4f221462a8',
+      catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
       learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
       settings: {},
       progress: {
@@ -58,8 +58,8 @@ test('dashboard join/leave courses', async ({ page }) => {
     },
   ];
 
-  await page.getByRole('button', { name: 'W Web Programming' }).click();
-  await expect(page.getByRole('button', { name: 'W Web Programming' })).toBeVisible();
+  await page.getByRole('button', { name: 'R Rocket Science' }).click();
+  await expect(page.getByRole('button', { name: 'R Rocket Science' })).toBeVisible();
   await expect(page.locator('#root')).toContainText('0% complete');
 
   enrollments = [];

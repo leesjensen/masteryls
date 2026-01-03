@@ -18,7 +18,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     if (learningSession.topic.path) {
       if (!isLoading) {
         setIsLoading(true);
-        courseOps.getTopic(learningSession.course, learningSession.topic).then((md) => {
+        courseOps.getTopic(learningSession.topic).then((md) => {
           load(md, learningSession.topic.path);
         });
       }

@@ -26,7 +26,7 @@ export default function EditorCommits({ currentTopic, course, user, courseOps, s
   }, [course, currentTopic, user]);
 
   const loadCommit = async (commit) => {
-    return courseOps.getTopic(course, currentTopic, commit.sha);
+    return courseOps.getTopic(currentTopic, commit.sha);
   };
 
   const handleApplyCommit = async (commit) => {
