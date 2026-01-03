@@ -277,16 +277,22 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       commit = topic.commit;
     }
 
-    if (course && course.markdownCache.has(topic.path)) {
-      return course.markdownCache.get(topic.path);
-    }
-
     let url = topic.path;
     if (commit) {
       url = topic.path.replace(/(\/main\/)/, `/${commit}/`);
     }
 
-    return _downloadTopicMarkdown(url);
+    if (course && course.markdownCache.has(url)) {
+      return course.markdownCache.get(url);
+    }
+
+    const response = await fetch(url);
+    const markdown = await response.text();
+    if (course) {
+      course.markdownCache.set(url, markdown);
+    }
+
+    return markdown;
   }
 
   async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
@@ -303,6 +309,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
     updatedTopic.commit = commit;
+    course.markdownCache.set(topic.path, content);
 
     updatedCourse = await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
     setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
@@ -346,29 +353,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     await updateCourseStructure(updatedCourse, currentTopic, `remove(course) topic ${topic.title}`);
-  }
-
-  async function discardTopicMarkdown(updatedTopic) {
-    if (!learningSession?.course) return;
-    const course = learningSession.course;
-    const updatedCourse = Course.copy(course);
-    const topic = updatedCourse.topicFromId(updatedTopic.id);
-
-    const markdown = await _downloadTopicMarkdown(topic.path);
-    updatedCourse.markdownCache.set(topic.path, markdown);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: topic });
-
-    return markdown;
-  }
-
-  async function _downloadTopicMarkdown(topicUrl) {
-    const response = await fetch(topicUrl);
-    const markdown = await response.text();
-    if (learningSession?.course) {
-      learningSession.course.markdownCache.set(topicUrl, markdown);
-    }
-
-    return markdown;
   }
 
   function getAdjacentTopic(direction = 'prev') {
@@ -700,7 +684,6 @@ ${topicDescription || 'overview content placeholder'}`;
     addTopicFiles,
     deleteTopicFiles,
     getTopicFiles,
-    discardTopicMarkdown,
     getEssayQuizFeedback,
     getChoiceQuizFeedback,
     addProgress,

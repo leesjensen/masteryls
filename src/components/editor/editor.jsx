@@ -46,7 +46,7 @@ export default function Editor({ courseOps, user, learningSession }) {
   }
 
   async function discard() {
-    const markdown = await courseOps.discardTopicMarkdown(learningSession.topic);
+    const markdown = await courseOps.getTopicMarkdown(learningSession.course, learningSession.topic);
     setDirty(false);
     setContent(markdown);
   }
