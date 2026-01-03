@@ -493,6 +493,9 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
+
     const updatedCourse = Course.copy(course);
     updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
 
