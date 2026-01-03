@@ -62,9 +62,9 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
             {module.title}
           </button>
           {editorVisible && (
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1" title="Edit this module">
-                e
+            <div className="flex items-center">
+              <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1  text-[6pt]" title="Edit this module">
+                ✏️
               </button>
               <button onClick={() => dialogRef.current.showModal()} className="font-semibold text-gray-400 hover:text-red-600 pr-1" title="Remove this module">
                 x

@@ -70,15 +70,15 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
           </div>
         </div>
         <div className="flex flex-row justify-between items-center">
-          <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600  pr-1" title="Edit this topic">
-            e
+          <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500 pr-1" title="Drag to reorder">
+            ≡
+          </span>
+          <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1 text-[6pt]" title="Edit this topic">
+            ✏️
           </button>
           <button onClick={removeTopic} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
             x
           </button>
-          <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500  pr-1" title="Drag to reorder">
-            ≡
-          </span>
         </div>
       </div>
     </div>
