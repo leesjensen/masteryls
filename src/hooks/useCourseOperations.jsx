@@ -451,11 +451,11 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getChoiceQuizFeedback(data) {
-    return aiChoiceQuizFeedbackGenerator(data);
+    return aiChoiceQuizFeedbackGenerator(data, user);
   }
 
   async function getEssayQuizFeedback(data) {
-    return aiEssayQuizFeedbackGenerator(data);
+    return aiEssayQuizFeedbackGenerator(data, user);
   }
 
   async function getExamState() {

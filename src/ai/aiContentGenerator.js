@@ -384,7 +384,7 @@ function createDiscussionContents(messages) {
  * @param {Object} data - An object containing details about the quiz question and the student's answer.
  * @returns {Promise<string>} A promise that resolves to the generated feedback string.
  */
-export async function aiChoiceQuizFeedbackGenerator(data) {
+export async function aiChoiceQuizFeedbackGenerator(data, user) {
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's answer to a quiz question.
 Focus on clear explanations, encouragement, and guidance for improvement.
@@ -405,10 +405,10 @@ Requirements:
 - Limit feedback to 150 words or less
 `;
 
-  return await makeSimpleAiRequest(prompt);
+  return await makeSimpleAiRequest(prompt, user);
 }
 
-export async function aiEssayQuizFeedbackGenerator(data) {
+export async function aiEssayQuizFeedbackGenerator(data, user) {
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's essay response.
 Focus on clear explanations, encouragement, and guidance for improvement.
@@ -429,7 +429,7 @@ Requirements:
 `;
 
   let feedbackData = { percentCorrect: undefined };
-  let feedback = await makeSimpleAiRequest(prompt);
+  let feedback = await makeSimpleAiRequest(prompt, user);
   const jsonMatch = feedback.match(/^\s*(?:```json\s*)?(\{[\s\S]*?\})(?:\s*```)?/);
   if (jsonMatch) {
     try {
@@ -448,7 +448,7 @@ Requirements:
  * @param {string} prompt - The prompt text to send to the AI model.
  * @returns {Promise<string>} The generated content from the AI model.
  */
-async function makeSimpleAiRequest(prompt) {
+async function makeSimpleAiRequest(prompt, user) {
   const contents = [
     {
       parts: [
@@ -458,7 +458,7 @@ async function makeSimpleAiRequest(prompt) {
       ],
     },
   ];
-  return makeAiRequest(null, contents);
+  return makeAiRequest(null, contents, user);
 }
 
 /**
@@ -470,7 +470,7 @@ async function makeSimpleAiRequest(prompt) {
  * @param {Array} contents - The contents to send to the AI model.
  * @returns {Promise<string>} The generated content from the AI model.
  */
-async function makeAiRequest(instructions, contents) {
+async function makeAiRequest(instructions, contents, user) {
   const body = {
     ...standardRequestBody,
     ...(instructions && { system_instruction: instructions }),
@@ -478,7 +478,10 @@ async function makeAiRequest(instructions, contents) {
   };
 
   const responseText = await service.makeGeminiApiRequest(body);
-  const cleanedText = responseText.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
+  let cleanedText = responseText.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
+  if (user && user.name) {
+    cleanedText = cleanedText.replace(/\[Student Name\]/i, user.name);
+  }
 
   return cleanedText;
 }
