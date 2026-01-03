@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export default function EditorCommits({ currentTopic, course, user, courseOps, setContent, setDiffContent, setDirty }) {
   const [topicCommits, setTopicCommits] = useState([]);
-  const [currentCommit, setCurrentCommit] = useState(currentTopic.commit);
+  const [currentCommit, setCurrentCommit] = useState(null);
   const [diffCommit, setDiffCommit] = useState(null);
 
   // Fetch commits
@@ -13,8 +13,9 @@ export default function EditorCommits({ currentTopic, course, user, courseOps, s
         const filePath = currentTopic.path.replace(course.links.gitHub.rawUrl + '/', '');
         const commitsUrl = `${repoApiUrl}/commits?path=${filePath}&cachebust=${Date.now()}`;
         const commits = await courseOps.service.getTopicCommits(user.getSetting('gitHubToken', course.id), commitsUrl);
+
         setTopicCommits(commits);
-        setCurrentCommit(currentTopic.commit);
+        setCurrentCommit(currentTopic.commit || commits[0]?.sha);
         setDiffCommit(null);
       }
     }
