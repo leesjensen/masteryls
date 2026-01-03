@@ -26,6 +26,7 @@ export default function Editor({ courseOps, user, learningSession }) {
     if (contentAvailable) {
       courseOps.getTopic(learningSession.topic).then((markdown) => {
         setContent(markdown);
+        setDiffContent(null);
         setDirty(false);
       });
 

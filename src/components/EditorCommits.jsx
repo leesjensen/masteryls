@@ -15,6 +15,7 @@ export default function EditorCommits({ currentTopic, course, user, courseOps, s
         const commits = await courseOps.service.getTopicCommits(user.getSetting('gitHubToken', course.id), commitsUrl);
         setTopicCommits(commits);
         setCurrentCommit(currentTopic.commit);
+        setDiffCommit(null);
       }
     }
 
