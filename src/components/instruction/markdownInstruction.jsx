@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import DiscussionPanel from '../../components/DiscussionPanel';
 import Markdown from '../../components/Markdown';
 import { scrollToAnchor } from '../../utils/utils';
+import '../markdown.css';
 
 export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
   const [markdown, setMarkdown] = useState('');
