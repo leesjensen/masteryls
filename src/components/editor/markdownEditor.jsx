@@ -3,7 +3,7 @@ import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
 
-const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, content, diffContent, onChange, commit, user }, ref) {
+const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit }, ref) {
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
@@ -92,6 +92,27 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
   const insertQuiz = (quizTemplate) => {
     const quizWithUuid = quizTemplate.replace(/"id":""/, `"id":"${crypto.randomUUID()}"`);
     insertText(quizWithUuid);
+  };
+
+  const insertLink = () => {
+    if (!course || !Array.isArray(course.allTopics) || course.allTopics.length === 0) {
+      window.alert('No topics available to link.');
+      return;
+    }
+
+    const topics = course.allTopics;
+    const list = topics.map((t, i) => `${i + 1}. ${t.title || t.description || t.path || '(untitled)'}`).join('\n');
+
+    const choice = window.prompt(`Select a topic to insert (enter number):\n\n${list}`);
+    if (!choice) return;
+
+    const index = parseInt(choice, 10) - 1;
+    if (!Number.isFinite(index) || index < 0 || index >= topics.length) return;
+
+    const topic = topics[index];
+    const markdown = `[${topic.title}](/course/${course.id}/topic/${topic.id})`;
+
+    insertText(markdown);
   };
 
   const prefixInsertText = (text) => {
@@ -188,7 +209,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ currentTopic, 
           <ToolbarButton onClick={() => insertText(defaultTableTemplate)} title="Table" text="⊞" />
           <ToolbarButton onClick={() => prefixInsertText('- ')} title="Bullet List" text="•" />
           <ToolbarButton onClick={() => prefixInsertText('1. ')} title="Numbered List" text="1." />
-          <ToolbarButton onClick={() => wrapSelection('[', '](url)', true)} title="Link" text="🔗" />
+          <ToolbarButton onClick={() => insertLink()} title="Link" text="🔗" />
           <ToolbarButton onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100&q=80)')} title="Image" text="🖼️" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <ToolbarButton onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz" text="◉" />

@@ -78,7 +78,7 @@ export default function Editor({ courseOps, user, learningSession }) {
   function getEditor() {
     let editor = null;
     if (learningSession.topic?.type !== 'video') {
-      editor = <MarkdownEditor ref={markdownEditorRef} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} user={user} />;
+      editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} />;
       if (editorState === 'preview') {
         editor = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={editorState} />;
       }
