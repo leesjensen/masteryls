@@ -128,7 +128,6 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
             Send
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-1">Press Enter to send • Requires Gemini API key</p>
       </form>
     </div>
   );
