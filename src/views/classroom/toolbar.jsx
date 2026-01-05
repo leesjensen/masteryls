@@ -59,8 +59,8 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
             💬
           </button>
         )}
-        {learningSession.course.externalRefs?.canvasCourseId && (
-          <button title="Canvas course site" className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out flex items-center justify-center" onClick={() => window.open(`https://byu.instructure.com/courses/${learningSession.course.externalRefs.canvasCourseId}`, '_blank')}>
+        {learningSession.course.externalRefs?.canvasCourseId && learningSession.topic.externalRefs?.canvasPageId && (
+          <button title="Canvas course site" className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out flex items-center justify-center" onClick={() => window.open(`https://byu.instructure.com/courses/${learningSession.course.externalRefs.canvasCourseId}/pages/${learningSession.topic.externalRefs.canvasPageId}`, '_blank')}>
             <svg width="16" height="16" x="0px" y="0px" viewBox="298 -66.2 217 244.4" xmlns="http://www.w3.org/2000/svg">
               <g>
                 <g>
