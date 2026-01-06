@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 
 export default function CourseCard({ user, catalogEntry, enrollment, select, remove }) {
+  const colorGenerator = (title) => {
+    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-yellow-500', 'bg-red-500', 'bg-indigo-500', 'bg-teal-500', 'bg-amber-500', 'bg-cyan-500'];
+    let hash = 0;
+    for (let i = 0; i < title.length; i++) {
+      hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   return (
     <div className="grid grid-cols-1 grid-rows-1 relative">
       <button key={catalogEntry.id} type="button" onClick={() => select(catalogEntry)} className="col-start-1 row-start-1 flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-102 hover:shadow-lg cursor-pointer">
-        <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrollment ? 'bg-amber-500' : 'bg-gray-300'}`}>
+        <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrollment ? colorGenerator(catalogEntry.title) : 'bg-gray-300'}`}>
           <span className="text-white text-6xl font-bold">{catalogEntry.title[0]}</span>
         </div>
 
