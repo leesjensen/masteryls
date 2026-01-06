@@ -14,13 +14,15 @@ export default function DashboardView({ courseOps, service, user }) {
 
   const appBarTools = (
     <div>
-      <button title="New course" onClick={() => navigate('/courseCreation')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-        +
-      </button>
       {user.isRoot() && (
-        <button title="Export course" onClick={() => navigate('/courseExport')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-          ⬇️
-        </button>
+        <>
+          <button title="New course" onClick={() => navigate('/courseCreation')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+            +
+          </button>
+          <button title="Export course" onClick={() => navigate('/courseExport')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
+            ⬇️
+          </button>
+        </>
       )}
       <button title="Progress" onClick={() => navigate('/progress')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
         🏅
