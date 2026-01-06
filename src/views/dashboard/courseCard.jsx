@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 export default function CourseCard({ user, catalogEntry, enrollment, select, remove }) {
   const colorGenerator = (title) => {
-    const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-yellow-500', 'bg-red-500', 'bg-indigo-500', 'bg-teal-500', 'bg-amber-500', 'bg-cyan-500'];
+    const colors = ['bg-cyan-700', 'bg-red-700', 'bg-yellow-600', 'bg-purple-700', 'bg-amber-500', 'bg-red-700', 'bg-indigo-700', 'bg-teal-700', 'bg-green-700'];
     let hash = 0;
     for (let i = 0; i < title.length; i++) {
       hash = title.charCodeAt(i) + ((hash << 5) - hash);
