@@ -6,7 +6,9 @@ export default function AppBar() {
   return (
     <header className="flex flex-row items-center justify-between pr-2 border-b-1 bg-gray-600 border-gray-500 h-[42px]">
       <h1 className="pl-1 font-medium text-lg text-gray-50 flex items-center min-w-0">
-        <span className="hidden sm:inline-block bg-white border border-gray-300 rounded-full w-[32px] px-1.5 py-0.25  ml-1 mr-2">💡</span>{' '}
+        <span className="hidden sm:inline-flex items-center justify-center bg-white border border-gray-300 rounded-full w-[32px] h-[32px] ml-1 mr-2">
+          <img src="favicon.ico" alt="MasteryLS logo" className=" w-[20px] h-[20px]" />
+        </span>{' '}
         <span className="overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0">{title}</span>
       </h1>
       <div className="whitespace-nowrap ml-2">{tools}</div>
