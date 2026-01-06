@@ -37,10 +37,13 @@ const Start = ({ courseOps }) => {
       <section className="relative flex items-center justify-between mx-auto md:py-0 py-4">
         <div className="flex-1 px-8 md:justify-items-end">
           <div className="flex flex-row">
-            <img src="/favicon.svg" alt="Mastery LS Logo" className="w-16 h-auto mb-6 mr-2" />
-            <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">Mastery LS</h1>
+            <img src="/favicon.png" alt="Mastery LS Logo" className="w-16 h-auto mb-6 mr-2" />
+            <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
+              <span className="text-[#20508b]">Mastery</span>
+              <span className="text-[#3dbcab]">LS</span>
+            </h1>
           </div>
-          <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">Master life long learning with AI, world class content, experiential projects, and peer collaboration.</p>
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">Power your learning with AI-driven insights, expert content, and experiential projects.</p>
           <p className="text-xl text-gray-600 mb-8 leading-relaxed md:text-right max-w-[600px]">
             Login to learn, or browse the{' '}
             <button onClick={scrollToCatalog} className="text-amber-700 font-semibold hover:text-amber-600">
