@@ -33,10 +33,10 @@ const Start = ({ courseOps }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-amber-200">
-      <section className="relative flex items-center justify-between mx-auto md:py-0 py-4">
+    <div>
+      <section className="relative flex justify-between mx-auto py-0  pb-4 bg-gradient-to-br from-amber-50 to-amber-200">
         <div className="flex-1 px-8 md:justify-items-end">
-          <div className="flex flex-row">
+          <div className="flex flex-row pt-2">
             <img src="/favicon.png" alt="Mastery LS Logo" className="w-16 h-auto mb-6 mr-2" />
             <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
               <span className="text-[#20508b]">Mastery</span>
