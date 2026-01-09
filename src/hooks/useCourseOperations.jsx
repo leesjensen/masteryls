@@ -717,6 +717,7 @@ ${topicDescription || 'overview content placeholder'}`;
   return {
     login,
     logout,
+    user,
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
     setSidebarVisible,

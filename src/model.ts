@@ -26,7 +26,7 @@ export class User {
     return !!this.roles?.some((r) => rights.includes(r.right) && (!object || r.object === object));
   }
 
-  isRoot(object: string | undefined): boolean {
+  isRoot(): boolean {
     return this.isRole(['root']);
   }
 
