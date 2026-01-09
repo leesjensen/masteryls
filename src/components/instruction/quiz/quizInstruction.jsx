@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import MarkdownInstruction from '../markdownInstruction';
 import EssayQuiz from './essayQuiz';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
+import SurveyQuiz from './surveyQuiz';
 import FileQuiz from './fileQuiz';
 import UrlQuiz from './urlQuiz';
 import TeachingQuiz from './teachingQuiz';
@@ -76,7 +77,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        {instructionState !== 'exam' && <QuizFeedback quizId={meta.id} />}
+        {instructionState !== 'exam' && meta.type !== 'survey' && <QuizFeedback quizId={meta.id} />}
       </div>
     );
   }
@@ -84,6 +85,8 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
   function generateQuizComponent(meta, itemsText) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
       return <MultipleChoiceQuiz quizId={meta.id} quizType={meta.type} itemsText={itemsText} />;
+    } else if (meta.type === 'survey') {
+      return <SurveyQuiz quizId={meta.id} topicTitle={meta.title} itemsText={itemsText} />;
     } else if (meta.type === 'essay') {
       return <EssayQuiz quizId={meta.id} />;
     } else if (meta.type === 'file-submission') {
@@ -108,7 +111,12 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     const title = quizRoot.getAttribute('data-plugin-masteryls-title') || undefined;
     const bodyElem = quizRoot.querySelector('[data-plugin-masteryls-body]');
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
-    if (type === 'multiple-choice' || type === 'multiple-select') {
+    if (type === 'survey') {
+      if (event.target.tagName === 'INPUT') {
+        gradedFeedback(quizRoot, -1);
+        await onSurveyQuiz({ id, type, selected: [Number(event.target.getAttribute('data-plugin-masteryls-index'))] });
+      }
+    } else if (type === 'multiple-choice' || type === 'multiple-select') {
       if (event.target.tagName === 'INPUT') {
         submissionFeedback(quizRoot);
 
@@ -222,6 +230,14 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     return precedingContent;
   }
 
+  async function onSurveyQuiz({ id, type, selected }) {
+    if (selected.length === 0) return false;
+    const details = { type, selected };
+    updateQuizProgress(id, details);
+    await courseOps.addProgress(null, id, 'surveySubmit', 0, details);
+    return true;
+  }
+
   async function onChoiceQuiz({ id, title, type, body, choices, selected, correct, percentCorrect }) {
     if (selected.length === 0) return false;
     let feedback = '';
@@ -298,7 +314,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
 
   function gradedFeedback(quizRoot, percentCorrect) {
     let ringClass = 'ring-blue-400';
-    if (instructionState !== 'exam') {
+    if (instructionState !== 'exam' && percentCorrect >= 0) {
       if (percentCorrect === 100) ringClass = 'ring-green-500';
       else if (percentCorrect === 0) ringClass = 'ring-red-500';
       else ringClass = 'ring-yellow-400';
