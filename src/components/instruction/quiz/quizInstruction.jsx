@@ -239,7 +239,6 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
   }
 
   async function onSurveyQuiz({ id, type, selected }) {
-    if (selected.length === 0) return false;
     const details = { type, selected };
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
