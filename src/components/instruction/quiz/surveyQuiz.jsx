@@ -8,7 +8,7 @@ export default function SurveyQuiz({ quizId, itemsText, multipleSelect, courseOp
 
   function generateResults() {
     courseOps.getSurveySummary(quizId).then((summary) => {
-      const counts = Object.values(summary);
+      const counts = Object.values(summary.votes);
       const totalVotes = counts.reduce((sum, val) => sum + val, 0);
 
       setSurveyResults(
@@ -16,7 +16,7 @@ export default function SurveyQuiz({ quizId, itemsText, multipleSelect, courseOp
           <div className="space-y-4">
             {choices.map((choice, i) => {
               // summary keys are strings like "2", so we access via summary[i]
-              const count = summary[i] || 0;
+              const count = summary.votes[i] || 0;
               const percentageOfTotal = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
               const barWidth = percentageOfTotal; //maxVotes > 0 ? (count / maxVotes) * 100 : 0;
 
@@ -34,7 +34,7 @@ export default function SurveyQuiz({ quizId, itemsText, multipleSelect, courseOp
                 </div>
               );
             })}
-            <div className="mt-4 pt-2 border-t text-right text-xs text-gray-400 italic">Total respondents: {totalVotes}</div>
+            <div className="mt-4 pt-2 border-t text-right text-xs text-gray-400 italic">Total respondents: {summary.voters}</div>
           </div>
           <button className="mb-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onClick={() => generateResults()}>
             Refresh

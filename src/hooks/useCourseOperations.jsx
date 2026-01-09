@@ -497,7 +497,7 @@ ${topicDescription || 'overview content placeholder'}`;
   async function getSurveySummary(activityId) {
     const progressItems = await getProgress({ activityId, type: 'quizSubmit', limit: 1000 });
     // Only use the user's latest submission
-    const users = progressItems.data.reduce((acc, item) => {
+    const voters = progressItems.data.reduce((acc, item) => {
       const userId = item.userId;
       if (!acc[userId] || new Date(item.creationDate) > new Date(acc[userId].creationDate)) {
         acc[userId] = item;
@@ -505,15 +505,15 @@ ${topicDescription || 'overview content placeholder'}`;
       return acc;
     }, {});
 
-    const results = {};
-    Object.values(users).forEach((userProgress) => {
+    const votes = {};
+    Object.values(voters).forEach((userProgress) => {
       const answers = userProgress.details.selected;
       answers.forEach((answer) => {
-        results[answer] = results[answer] ? (results[answer] += 1) : 1;
+        votes[answer] = votes[answer] ? (votes[answer] += 1) : 1;
       });
     });
 
-    return results;
+    return { voters: Object.keys(voters).length, votes };
   }
 
   async function repairCanvas(course, canvasCourseId, setUpdateMessage) {
