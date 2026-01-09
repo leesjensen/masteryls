@@ -477,8 +477,8 @@ ${topicDescription || 'overview content placeholder'}`;
     }
   }
 
-  async function getProgress({ courseId, enrollmentId, userId, topicId = null, type = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
-    return service.getProgress({ courseId, enrollmentId, userId, topicId, type, startDate, endDate, page, limit });
+  async function getProgress({ courseId, enrollmentId, userId, topicId = null, activityId = null, type = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
+    return service.getProgress({ courseId, enrollmentId, userId, topicId, activityId, type, startDate, endDate, page, limit });
   }
 
   async function getQuizProgress() {
@@ -492,6 +492,28 @@ ${topicDescription || 'overview content placeholder'}`;
       }
       return acc;
     }, {});
+  }
+
+  async function getSurveySummary(activityId) {
+    const progressItems = await getProgress({ activityId, type: 'quizSubmit', limit: 1000 });
+    // Only use the user's latest submission
+    const users = progressItems.data.reduce((acc, item) => {
+      const userId = item.userId;
+      if (!acc[userId] || new Date(item.creationDate) > new Date(acc[userId].creationDate)) {
+        acc[userId] = item;
+      }
+      return acc;
+    }, {});
+
+    const results = {};
+    Object.values(users).forEach((userProgress) => {
+      const answers = userProgress.details.selected;
+      answers.forEach((answer) => {
+        results[answer] = results[answer] ? (results[answer] += 1) : 1;
+      });
+    });
+
+    return results;
   }
 
   async function repairCanvas(course, canvasCourseId, setUpdateMessage) {
@@ -723,6 +745,7 @@ ${topicDescription || 'overview content placeholder'}`;
     addProgress,
     getProgress,
     getQuizProgress,
+    getSurveySummary,
     getExamState,
     repairCanvas,
     exportToCanvas,

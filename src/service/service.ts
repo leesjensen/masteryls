@@ -345,7 +345,7 @@ class Service {
     }
   }
 
-  async getProgress({ type, courseId, enrollmentId, userId, topicId, startDate, endDate, page = 1, limit = 100 }: { type?: string; courseId?: string; enrollmentId?: string; userId?: string; topicId?: string; startDate?: string; endDate?: string; page?: number; limit?: number }): Promise<{ data: any[]; totalCount: number; hasMore: boolean }> {
+  async getProgress({ type, courseId, enrollmentId, userId, topicId, activityId, startDate, endDate, page = 1, limit = 100 }: { type?: string; courseId?: string; enrollmentId?: string; userId?: string; topicId?: string; activityId?: string; startDate?: string; endDate?: string; page?: number; limit?: number }): Promise<{ data: any[]; totalCount: number; hasMore: boolean }> {
     let query = this.supabase.from('progress').select('*', { count: 'exact' });
 
     if (courseId) {
@@ -359,6 +359,9 @@ class Service {
     }
     if (topicId) {
       query = query.eq('topicId', topicId);
+    }
+    if (activityId) {
+      query = query.eq('activityId', activityId);
     }
     if (type) {
       query = query.eq('type', type);

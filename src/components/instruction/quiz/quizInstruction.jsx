@@ -86,7 +86,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
       return <MultipleChoiceQuiz quizId={meta.id} quizType={meta.type} itemsText={itemsText} />;
     } else if (meta.type === 'survey') {
-      return <SurveyQuiz quizId={meta.id} topicTitle={meta.title} itemsText={itemsText} />;
+      return <SurveyQuiz quizId={meta.id} itemsText={itemsText} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
       return <EssayQuiz quizId={meta.id} />;
     } else if (meta.type === 'file-submission') {
@@ -114,7 +114,15 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     if (type === 'survey') {
       if (event.target.tagName === 'INPUT') {
         gradedFeedback(quizRoot, -1);
-        await onSurveyQuiz({ id, type, selected: [Number(event.target.getAttribute('data-plugin-masteryls-index'))] });
+        const inputs = Array.from(quizRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
+        const selected = [];
+        inputs.forEach((inp) => {
+          const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
+          if (inp.checked) selected.push(idx);
+        });
+        selected.sort((a, b) => a - b);
+
+        await onSurveyQuiz({ id, type, selected });
       }
     } else if (type === 'multiple-choice' || type === 'multiple-select') {
       if (event.target.tagName === 'INPUT') {
@@ -234,7 +242,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     if (selected.length === 0) return false;
     const details = { type, selected };
     updateQuizProgress(id, details);
-    await courseOps.addProgress(null, id, 'surveySubmit', 0, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;
   }
 
