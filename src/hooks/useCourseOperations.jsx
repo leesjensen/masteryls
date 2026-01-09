@@ -97,8 +97,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
       const updatedCourse = await _updateCourseStructure(token, course, commitMessage);
-      const topic = updatedTopic || learningSession.topic;
-      setLearningSession({ ...learningSession, course: updatedCourse, topic });
+      const topic = updatedTopic || learningSession?.topic;
+      if (topic) {
+        setLearningSession({ ...learningSession, course: updatedCourse, topic });
+      }
     }
   }
 
@@ -492,6 +494,37 @@ ${topicDescription || 'overview content placeholder'}`;
     }, {});
   }
 
+  async function repairCanvas(course, canvasCourseId, setUpdateMessage) {
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
+
+    const updatedCourse = Course.copy(course);
+    updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
+
+    let pagePos = 1;
+    const desiredCount = 20;
+    let count = desiredCount;
+    const pages = [];
+    while (count == desiredCount) {
+      const canvasPages = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages?page=${pagePos}&per_page=${desiredCount}`, 'GET');
+      pages.push(...canvasPages);
+      count = canvasPages.length;
+      pagePos++;
+    }
+
+    for (const page of pages) {
+      setUpdateMessage(`Updating Canvas page reference for '${page.title}'`);
+      const topic = updatedCourse.allTopics.find((topic) => topic.title === page.title);
+      if (topic) {
+        topic.externalRefs = { ...topic.externalRefs, canvasPageId: page.page_id };
+        console.log(`Checking page '${page.title}' topic:${page.page_id}`);
+      }
+    }
+
+    setUpdateMessage(`Updating course information`);
+    await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
+  }
+
   async function exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
     const token = user.getSetting('gitHubToken', course.id);
     if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
@@ -691,6 +724,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getProgress,
     getQuizProgress,
     getExamState,
+    repairCanvas,
     exportToCanvas,
     updateCanvasPage,
     service,

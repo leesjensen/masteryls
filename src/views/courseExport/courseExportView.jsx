@@ -2,22 +2,9 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import CourseExportForm from './courseExportForm.jsx';
-import { useAlert } from '../../contexts/AlertContext.jsx';
 
 export default function CourseExportView({ courseOps }) {
   const navigate = useNavigate();
-  const { showAlert } = useAlert();
-
-  const create = async (courseId, canvasCourseId, deleteExisting, setUpdateMessage) => {
-    try {
-      const course = await courseOps.getCourse(courseId);
-      await courseOps.exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage);
-      navigate('/dashboard');
-      showAlert({ message: `${course.title} exported successfully`, type: 'info' });
-    } catch (error) {
-      showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
-    }
-  };
 
   const close = () => {
     navigate('/dashboard');
@@ -36,7 +23,7 @@ export default function CourseExportView({ courseOps }) {
   return (
     <>
       <div className="flex-1 m-6 flex flex-col bg-white">
-        <CourseExportForm courseOps={courseOps} onClose={close} onCreate={create} />
+        <CourseExportForm courseOps={courseOps} onClose={close} />
       </div>
     </>
   );

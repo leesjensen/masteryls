@@ -1,24 +1,49 @@
 import React, { useState } from 'react';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 
-export default function CourseExportForm({ courseOps, onClose, onCreate }) {
+export default function CourseExportForm({ courseOps, onClose }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
-  const [courseId, setCourseId] = useState('');
+  const [course, setCourse] = useState();
   const [deleteExisting, setDeleteExisting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('Initializing');
+  const { showAlert } = useAlert();
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (onCreate) {
-      setIsLoading(true);
-      setUpdateMessage('Exporting your course...');
-      await onCreate(courseId, canvasCourseId, deleteExisting, setUpdateMessage);
-
-      setIsLoading(false);
+  async function selectCourse(courseId) {
+    const course = await courseOps.getCourse(courseId);
+    setCourse(course);
+    if (course.externalRefs?.canvasCourseId) {
+      setCanvasCourseId(course.externalRefs.canvasCourseId);
+    } else {
+      setCanvasCourseId('');
     }
   }
 
-  const isValid = courseId.trim();
+  async function beginExport() {
+    setIsLoading(true);
+    try {
+      setUpdateMessage('Exporting course...');
+      await courseOps.exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage);
+      showAlert({ message: `${course.title} exported successfully`, type: 'info' });
+      onClose();
+    } catch (error) {
+      showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
+    }
+    setIsLoading(false);
+  }
+
+  async function repairRefs() {
+    setIsLoading(true);
+    try {
+      setUpdateMessage('Repairing references...');
+      await courseOps.repairCanvas(course, canvasCourseId, setUpdateMessage);
+      showAlert({ message: `${course.title} repaired successfully`, type: 'info' });
+      //      onClose();
+    } catch (error) {
+      showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
+    }
+    setIsLoading(false);
+  }
 
   return (
     <>
@@ -53,12 +78,12 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
         </p>
       </div>
 
-      <form className="p-6 space-y-4" onSubmit={handleSubmit}>
+      <form className="p-6 space-y-4">
         <div>
           <label htmlFor="course-title" className="block text-lg font-medium text-gray-700 mb-1">
             Course
           </label>
-          <select id="course-title" name="title" required value={courseId} onChange={(e) => setCourseId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+          <select id="course-title" name="title" required onChange={(e) => selectCourse(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
             <option value="">Select a course</option>
             {courseOps.courseCatalog().map((course) => (
               <option key={course.id} value={course.id}>
@@ -86,8 +111,11 @@ export default function CourseExportForm({ courseOps, onClose, onCreate }) {
             Cancel
           </button>
 
-          <button type="submit" disabled={!isValid} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`}>
+          <button disabled={!course || course.externalRefs?.canvasCourseId || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginExport}>
             Export course
+          </button>
+          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={repairRefs}>
+            Repair
           </button>
         </div>
       </form>
