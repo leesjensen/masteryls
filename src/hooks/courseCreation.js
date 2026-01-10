@@ -1,26 +1,44 @@
 import { generateId } from '../utils/utils';
-//import { aiCourseGenerator, aiCourseOverviewGenerator } from '../ai/aiContentGenerator';
+import { aiCourseGenerator, aiCourseOverviewGenerator } from '../ai/aiContentGenerator';
+
+function assignCourseIds(courseDefinition) {
+  for (const module of courseDefinition.modules) {
+    for (const topic of module.topics) {
+      topic.id = generateId();
+    }
+  }
+  return courseDefinition;
+}
 
 export async function createCourseInternal(service, user, generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
   if (generateWithAi) {
-    // This is broken. It doesn't create the catalog entry in supabase, or commit course.json to repo. This needs a full review to match
-    // what creating from a template does.
-    //
-    // setUpdateMessage('Using AI to create course topics');
-    // const messages = ['The gerbil is digging', 'The hamster is running', 'The beaver is building', 'The squirrel is gathering nuts'];
-    // const messageInterval = setInterval(() => {
-    //   setUpdateMessage(messages[Math.floor(Math.random() * messages.length)]);
-    // }, 3000);
-    // const courseJson = await aiCourseGenerator(catalogEntry.title, catalogEntry.description);
-    // const courseDefinition = JSON.parse(courseJson);
-    // clearInterval(messageInterval);
-    // setUpdateMessage('Creating course repository');
-    // await service.createCourseRepoFromDefaultTemplate(catalogEntry, gitHubToken);
-    // catalogEntry = await service.createCatalogEntry(user, catalogEntry, gitHubToken);
-    // setUpdateMessage('Creating course overview');
-    // const overview = await aiCourseOverviewGenerator(apiKey, courseDefinition);
-    // const overviewGitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/README.md`;
-    // await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
+    setUpdateMessage('Using AI to create course');
+    const messages = ['The gerbil is digging', 'The hamster is running', 'The beaver is building', 'The squirrel is gathering nuts', 'The spider is spinning a web'];
+    const messageInterval = setInterval(() => {
+      setUpdateMessage(messages[Math.floor(Math.random() * messages.length)]);
+    }, 3000);
+    const courseJson = await aiCourseGenerator(catalogEntry.title, catalogEntry.description);
+    clearInterval(messageInterval);
+
+    const courseDefinition = JSON.parse(courseJson);
+    courseDefinition.title = catalogEntry.title;
+    courseDefinition.description = catalogEntry.description;
+    assignCourseIds(courseDefinition);
+
+    setUpdateMessage('Creating course repository');
+    await service.createCourseRepoFromDefaultTemplate(catalogEntry, gitHubToken);
+
+    setUpdateMessage('Waiting for course repository to be ready');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    setUpdateMessage('Configuring course definition');
+    catalogEntry = await service.createCatalogEntry(user, catalogEntry, gitHubToken);
+    await commitCourseDefinition(service, catalogEntry, courseDefinition, gitHubToken, service.updateGitHubFile.bind(service));
+
+    setUpdateMessage('Creating course overview');
+    const overview = await aiCourseOverviewGenerator(courseDefinition);
+    const overviewGitHubUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/README.md`;
+    await service.commitGitHubFile(overviewGitHubUrl, overview, gitHubToken, 'add(course) generated overview');
   } else {
     setUpdateMessage('Creating course repository');
     await service.createCourseRepoFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
@@ -28,9 +46,8 @@ export async function createCourseInternal(service, user, generateWithAi, source
     setUpdateMessage('Waiting for course repository to be ready');
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
-    catalogEntry = await service.createCatalogEntry(user, catalogEntry, gitHubToken);
-
     setUpdateMessage('Configuring course definition');
+    catalogEntry = await service.createCatalogEntry(user, catalogEntry, gitHubToken);
     if (!(await loadCourseDefinition(service, catalogEntry, gitHubToken))) {
       await createCourseDefinitionFromModulesMarkdown(service, catalogEntry, gitHubToken);
     }
@@ -45,13 +62,7 @@ async function loadCourseDefinition(service, catalogEntry, gitHubToken) {
   if (!response.ok) return false;
 
   const courseDefinition = await response.json();
-
-  // Overwrite and IDs that might exist to avoid collisions
-  for (const module of courseDefinition.modules) {
-    for (const topic of module.topics) {
-      topic.id = generateId();
-    }
-  }
+  assignCourseIds(courseDefinition);
 
   await commitCourseDefinition(service, catalogEntry, courseDefinition, gitHubToken, service.updateGitHubFile.bind(service));
   return true;

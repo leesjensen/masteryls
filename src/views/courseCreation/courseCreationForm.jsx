@@ -7,8 +7,8 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
   const [gitHubToken, setGitHubToken] = useState('');
   const [gitHubAccount, setGitHubAccount] = useState('');
   const [gitHubRepo, setGitHubRepo] = useState('');
-  const [gitHubSourceAccount, setGitHubSourceAccount] = useState('');
-  const [gitHubSourceRepo, setGitHubSourceRepo] = useState('');
+  const [gitHubSourceAccount, setGitHubSourceAccount] = useState('csinstructiontemplate');
+  const [gitHubSourceRepo, setGitHubSourceRepo] = useState('examplecourse');
   const [gitHubTemplates, setGitHubTemplates] = useState([]);
   const [generateWithAi, setGenerateWithAi] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

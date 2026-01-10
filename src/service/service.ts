@@ -58,6 +58,11 @@ class Service {
         const targetOwner = catalogEntry.gitHub.account;
         const targetRepo = catalogEntry.gitHub.repository;
 
+        let description = catalogEntry.description || 'Course repository generated from template';
+        if (description.length > 300) {
+          description = description.substring(0, 297) + '...';
+        }
+
         const url = `https://api.github.com/repos/${templateOwner}/${templateRepo}/generate`;
         const resp = await fetch(url, {
           method: 'POST',
@@ -66,7 +71,7 @@ class Service {
             Accept: 'application/vnd.github.baptiste-preview+json, application/vnd.github+json',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ owner: targetOwner, name: targetRepo, description: catalogEntry.description, private: false }),
+          body: JSON.stringify({ owner: targetOwner, name: targetRepo, description, private: false }),
         });
 
         if (resp.status !== 201) {
@@ -80,6 +85,7 @@ class Service {
   }
 
   async createCatalogEntry(editor: User, catalogEntry: CatalogEntry, gitHubToken: string): Promise<CatalogEntry> {
+    catalogEntry.settings = catalogEntry.settings || { state: 'unpublished', deleteProtected: false };
     await this.saveCatalogEntry(catalogEntry);
     await this.addUserRole(editor, 'editor', catalogEntry.id, { gitHubToken });
 
@@ -88,10 +94,11 @@ class Service {
 
   async saveCatalogEntry(catalogEntry: CatalogEntry): Promise<void> {
     delete catalogEntry.links;
-    const { error } = await this.supabase.from('catalog').upsert(catalogEntry);
+    const { data, error } = await this.supabase.from('catalog').upsert(catalogEntry).select('id').single();
     if (error) {
       throw new Error(error.message);
     }
+    catalogEntry.id = data.id;
 
     const index = this.catalog.findIndex((c) => c.id === catalogEntry.id);
     if (index !== -1) {
