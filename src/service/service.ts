@@ -27,7 +27,10 @@ class Service {
   }
 
   catalogEntry(catalogId: string) {
-    return this.catalog.find((c) => c.id === catalogId);
+    const entry = this.catalog.find((c) => c.id === catalogId);
+    if (!entry || entry.settings?.state !== 'published') return null;
+
+    return entry;
   }
 
   async getTemplateRepositories(gitHubToken: string, gitHubAccount: string): Promise<string[]> {
@@ -270,7 +273,10 @@ class Service {
 
     const result = new Map<string, Enrollment>();
     data.forEach((item: any) => {
-      result.set(item.catalogId, { ...item, catalogEntry: this.catalogEntry(item.catalogId) });
+      const entry = this.catalogEntry(item.catalogId);
+      if (entry) {
+        result.set(item.catalogId, { ...item, catalogEntry: entry });
+      }
     });
 
     return result;
