@@ -118,6 +118,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           path: topic.path.replace(`${course.links.gitHub.rawUrl}/`, ''),
           id: topic.id || generateId(),
           state: topic.state,
+          interactions: topic.interactions,
           description: topic.description,
           commit: topic.commit,
           externalRefs: topic.externalRefs,
@@ -306,6 +307,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     let updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
+    updatedTopic.interactions = _extractInteractionIds(content);
 
     const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
     updatedTopic.commit = commit;
@@ -712,6 +714,17 @@ ${topicDescription || 'overview content placeholder'}`;
       .replace(/--+/g, '-')
       .trim('-');
     return `${course.links.gitHub.rawUrl}/instruction/${slugTitle}/${slugTitle}.md`;
+  }
+
+  function _extractInteractionIds(content) {
+    const regex = /```masteryls\s*\{"id":"([^"]+)"/g;
+    const interactionIds = [];
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      interactionIds.push(match[1]);
+    }
+    return interactionIds;
   }
 
   return {
