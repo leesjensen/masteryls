@@ -65,7 +65,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
 
     let controlJsx = generateQuizComponent(meta, itemsText);
     const progress = getQuizProgress(meta.id);
-    const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-white';
+    const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
     return (
       <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
         <fieldset>
