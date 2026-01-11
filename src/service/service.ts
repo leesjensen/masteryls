@@ -264,8 +264,8 @@ class Service {
     return null;
   }
 
-  async enrollments(id: string): Promise<Map<string, Enrollment>> {
-    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', id);
+  async enrollments(learnerId: string): Promise<Map<string, Enrollment>> {
+    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', learnerId);
 
     if (error) {
       throw new Error(error.message);
@@ -280,6 +280,16 @@ class Service {
     });
 
     return result;
+  }
+
+  async allEnrollments(catalogId: string): Promise<any> {
+    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('catalogId', catalogId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
   }
 
   async enrollment(learnerId: string, catalogId: string): Promise<Enrollment | null> {

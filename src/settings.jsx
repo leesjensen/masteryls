@@ -10,6 +10,7 @@ export default function Settings({ courseOps, user, course }) {
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const [users, setUsers] = useState([]);
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
   const [selectedEditors, setSelectedEditors] = useState([]);
   const ogSelectedEditorsRef = useRef([]);
   const [formData, setFormData] = useState({
@@ -27,16 +28,14 @@ export default function Settings({ courseOps, user, course }) {
   const topicCount = course.allTopics.length || 0;
 
   useEffect(() => {
-    (async () => {
-      try {
-        const fetchedUsers = await courseOps.service.getAllUsers();
-        setUsers(fetchedUsers);
-        ogSelectedEditorsRef.current = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
-        setSelectedEditors(ogSelectedEditorsRef.current);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    })();
+    courseOps.service.allEnrollments(course.id).then((enrollments) => {
+      setEnrollmentCount(enrollments.length);
+    });
+    courseOps.service.getAllUsers().then((fetchedUsers) => {
+      setUsers(fetchedUsers);
+      ogSelectedEditorsRef.current = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
+      setSelectedEditors(ogSelectedEditorsRef.current);
+    });
   }, []);
 
   useEffect(() => {
@@ -196,6 +195,10 @@ export default function Settings({ courseOps, user, course }) {
             <div className="bg-white rounded-lg p-2 shadow-sm border">
               <div className="text-xl font-bold text-gray-800">{topicCount}</div>
               <div className="text-sm text-gray-600">Topics</div>
+            </div>
+            <div className="bg-white rounded-lg p-2 shadow-sm border">
+              <div className="text-xl font-bold text-gray-800">{enrollmentCount}</div>
+              <div className="text-sm text-gray-600">Enrollments</div>
             </div>
           </div>
         </div>
