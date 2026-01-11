@@ -31,8 +31,8 @@ export default function Markdown({ learningSession, content, languagePlugins = [
         // masteryls quiz blocks
         const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
         if (plugin?.processor) {
-          const content = String(children).replace(/\n$/, '');
-          const pluginJsx = plugin.processor(content);
+          const quizBlock = String(children).replace(/\n$/, '');
+          const pluginJsx = plugin.processor(quizBlock);
           return (
             <div
               onClick={(e) => {
