@@ -41,8 +41,76 @@
    1. API access for notifications
    1. TouchSpeed: Keyboard assisted grading automation
    1. TouchSpeed: Keyboard assisted feedback generation
+   1. Synchronize content to Canvas
 
-## Functionality
+
+## Architecture
+
+MasteryLS is a web-based Learning System (LS) designed for content mastery and maintainable course creation, leveraging GitHub for content storage, Supabase for backend services, and Gemini AI for content generation and learner feedback.
+
+### High-Level Architecture
+
+The application is a Single Page Application (SPA) built with React and Vite. It interacts with several external services to provide a seamless learning experience:
+
+
+![Architecture Diagram Small](architectureMd.png)
+
+-   **Frontend**: React application served via Vite.
+-   **Backend**: Supabase (BaaS) for authentication, database, and real-time features.
+-   **Content Storage**: GitHub repositories store course content (Markdown, code), allowing for version control and community contribution.
+-   **Integrations**: Canvas LMS (via Supabase Edge Functions), Gemini AI (via Supabase Edge Functions).
+
+### Technology Stack
+
+#### Frontend
+-   **Framework**: React 18+ (with React Router v6 for routing).
+-   **Build Tool**: Vite.
+-   **Styling**: TailwindCSS v4.
+-   **Editor**: Monaco Editor (for code editing).
+-   **Markdown**: `react-markdown`, `remark-gfm`, `rehype-raw` for rich content rendering.
+-   **Drag & Drop**: `@dnd-kit` for interactive UI elements.
+
+#### Backend / Services
+-   **Supabase**:
+    -   **Auth**: User management and authentication.
+    -   **Database**: PostgreSQL for storing User profiles, Enrollments, Progress, and Roles.
+    -   **Edge Functions**: Proxy for calling external APIs (Canvas, Gemini) to keep secrets secure.
+-   **GitHub API**: Used to fetch course content, templates, and manage user commits for projects.
+
+#### Testing
+-   **E2E/Component**: Playwright.
+-   **Coverage**: Istanbul / NYC.
+
+### Core Concepts & Data Model
+
+The application revolves around a few key entities (defined in `src/model.ts`):
+
+1.  **User**: A registered learner or instructor. Uses Supabase Auth.
+2.  **Course (CatalogEntry)**: Represents a course. Metadata is stored in Supabase (`catalog` table), but the actual content is in a GitHub repository.
+3.  **Enrollment**: Links a `User` to a `Course`. Tracks progress and user-specific settings.
+4.  **Topic**: A unit of learning within a course (Video, Instruction, Project, Exam).
+5.  **Role**: Defines permissions (e.g., `admin`, `editor`) for a user on a specific object (Course) or globally.
+6.  **LearningSession**: A runtime state combining the current Course, Topic, and Enrollment.
+
+### Project Structure
+
+-   **`src/app.jsx`**: Main entry point, sets up the Router and global Contexts.
+-   **`src/service/`**: Contains `service.ts` (singleton), which handles all data fetching and business logic (Supabase, GitHub, etc.).
+-   **`src/views/`**: Feature-based directory structure (e.g., `dashboard`, `classroom`, `courseCreation`).
+-   **`src/components/`**: Reusable UI components.
+-   **`src/hooks/`**: Custom hooks, encompassing complex logic like `useCourseOperations`.
+
+### Key User Flows
+
+1.  **Authentication**: Users sign in via Supabase Auth.
+2.  **Course Creation**: Instructors create a new course. The system uses the GitHub API to generate a new repository from a template (`csinstructiontemplate`).
+3.  **Learning**:
+    -   User selects a course (Enrollment).
+    -   Content is fetched from the associated GitHub repository.
+    -   Progress is tracked in Supabase.
+    -   For coding assignments, users can edit code (Monaco) and commit back to GitHub.
+
+## Implementation
 
 ### Configuration
 
