@@ -95,6 +95,9 @@ The application revolves around a few key entities (defined in `src/model.ts`):
 
 ### Project Structure
 
+![alt text](projectStructure.png)
+
+- **`src/index.html`**: Browser entry point.
 - **`src/app.jsx`**: Main entry point, sets up the Router and global Contexts.
 - **`src/service/`**: Contains `service.ts` (singleton), which handles all data fetching and business logic (Supabase, GitHub, etc.).
 - **`src/views/`**: Feature-based directory structure (e.g., `dashboard`, `classroom`, `courseCreation`).
