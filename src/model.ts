@@ -52,7 +52,7 @@ export type CatalogEntry = {
     account: string;
     repository: string;
   };
-  settings: {};
+  settings: any;
 };
 
 export type Topic = {
