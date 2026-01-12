@@ -1,4 +1,4 @@
-# Mastery LS
+<img src="public/masteryls-logo.png" alt="Mastery LS" width="200">
 
 **Mastery LS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.
 
@@ -43,7 +43,6 @@
    1. TouchSpeed: Keyboard assisted feedback generation
    1. Synchronize content to Canvas
 
-
 ## Architecture
 
 MasteryLS is a web-based Learning System (LS) designed for content mastery and maintainable course creation, leveraging GitHub for content storage, Supabase for backend services, and Gemini AI for content generation and learner feedback.
@@ -52,34 +51,36 @@ MasteryLS is a web-based Learning System (LS) designed for content mastery and m
 
 The application is a Single Page Application (SPA) built with React and Vite. It interacts with several external services to provide a seamless learning experience:
 
+![Architecture Diagram](architectureMd.png)
 
-![Architecture Diagram Small](architectureMd.png)
-
--   **Frontend**: React application served via Vite.
--   **Backend**: Supabase (BaaS) for authentication, database, and real-time features.
--   **Content Storage**: GitHub repositories store course content (Markdown, code), allowing for version control and community contribution.
--   **Integrations**: Canvas LMS (via Supabase Edge Functions), Gemini AI (via Supabase Edge Functions).
+- **Frontend**: React application served via Vite.
+- **Backend**: Supabase (BaaS) for authentication, database, and real-time features.
+- **Content Storage**: GitHub repositories store course content (Markdown, code), allowing for version control and community contribution.
+- **Integrations**: Canvas LMS (via Supabase Edge Functions), Gemini AI (via Supabase Edge Functions).
 
 ### Technology Stack
 
 #### Frontend
--   **Framework**: React 18+ (with React Router v6 for routing).
--   **Build Tool**: Vite.
--   **Styling**: TailwindCSS v4.
--   **Editor**: Monaco Editor (for code editing).
--   **Markdown**: `react-markdown`, `remark-gfm`, `rehype-raw` for rich content rendering.
--   **Drag & Drop**: `@dnd-kit` for interactive UI elements.
+
+- **Framework**: React 18+ (with React Router v6 for routing).
+- **Build Tool**: Vite.
+- **Styling**: TailwindCSS v4.
+- **Editor**: Monaco Editor (for code editing).
+- **Markdown**: `react-markdown`, `remark-gfm`, `rehype-raw` for rich content rendering.
+- **Drag & Drop**: `@dnd-kit` for interactive UI elements.
 
 #### Backend / Services
--   **Supabase**:
-    -   **Auth**: User management and authentication.
-    -   **Database**: PostgreSQL for storing User profiles, Enrollments, Progress, and Roles.
-    -   **Edge Functions**: Proxy for calling external APIs (Canvas, Gemini) to keep secrets secure.
--   **GitHub API**: Used to fetch course content, templates, and manage user commits for projects.
+
+- **Supabase**:
+  - **Auth**: User management and authentication.
+  - **Database**: PostgreSQL for storing User profiles, Enrollments, Progress, and Roles.
+  - **Edge Functions**: Proxy for calling external APIs (Canvas, Gemini) to keep secrets secure.
+- **GitHub API**: Used to fetch course content, templates, and manage user commits for projects.
 
 #### Testing
--   **E2E/Component**: Playwright.
--   **Coverage**: Istanbul / NYC.
+
+- **E2E/Component**: Playwright.
+- **Coverage**: Istanbul / NYC.
 
 ### Core Concepts & Data Model
 
@@ -94,21 +95,26 @@ The application revolves around a few key entities (defined in `src/model.ts`):
 
 ### Project Structure
 
--   **`src/app.jsx`**: Main entry point, sets up the Router and global Contexts.
--   **`src/service/`**: Contains `service.ts` (singleton), which handles all data fetching and business logic (Supabase, GitHub, etc.).
--   **`src/views/`**: Feature-based directory structure (e.g., `dashboard`, `classroom`, `courseCreation`).
--   **`src/components/`**: Reusable UI components.
--   **`src/hooks/`**: Custom hooks, encompassing complex logic like `useCourseOperations`.
+- **`src/app.jsx`**: Main entry point, sets up the Router and global Contexts.
+- **`src/service/`**: Contains `service.ts` (singleton), which handles all data fetching and business logic (Supabase, GitHub, etc.).
+- **`src/views/`**: Feature-based directory structure (e.g., `dashboard`, `classroom`, `courseCreation`).
+- **`src/components/`**: Reusable UI components.
+- **`src/hooks/`**: Custom hooks, encompassing complex logic like `useCourseOperations`.
 
 ### Key User Flows
 
 1.  **Authentication**: Users sign in via Supabase Auth.
-2.  **Course Creation**: Instructors create a new course. The system uses the GitHub API to generate a new repository from a template (`csinstructiontemplate`).
-3.  **Learning**:
-    -   User selects a course (Enrollment).
-    -   Content is fetched from the associated GitHub repository.
-    -   Progress is tracked in Supabase.
-    -   For coding assignments, users can edit code (Monaco) and commit back to GitHub.
+    - Roles for learnes, editors, and root administrators.
+1.  **Learning**:
+    - User selects a course (Enrollment).
+    - Content is fetched from the associated GitHub repository.
+    - Progress is tracked in Supabase.
+    - Interactions use AI for grading and feedback.
+    - Discussions with AI for self directed learning.
+1.  **Editors**:
+    - Instructors create a new course. The system uses the GitHub API to generate a new repository from a template (`csinstructiontemplate`).
+    - Edit markdown content (Monaco) and commit back to GitHub.
+    - Generate content with Gemini AI.
 
 ## Implementation
 
@@ -171,12 +177,10 @@ In order for a GitHub repo to function as the source for a Mastery LS course it 
 │   ├── topic3
 │   │   ├── topic3.md
 │   │   └── topic3.png
-│   └── template
-│       └── template.md
-├── syllabus
-│   └── syllabus.md
+│   └── syllabus
+│       └── syllabus.md
 └── schedule
-    └── schedule.md
+    └── schedule.md
 ```
 
 #### Modules
