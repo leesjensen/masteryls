@@ -94,7 +94,7 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
     <div>
       <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
         <div ref={listRef} className="max-h-80 overflow-y-auto px-4 py-3 space-y-3">
-          {messages.length === 0 && <div className="text-center text-gray-500 text-sm py-6">Start teaching by asking a question.</div>}
+          {messages.length === 0 && <div className="text-center text-gray-500 text-sm py-6">In this interaction, you are teacher trying to help a learner.</div>}
 
           {messages.map((message) => (
             <div key={message.timestamp} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
