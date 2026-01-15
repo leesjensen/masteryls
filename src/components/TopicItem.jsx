@@ -17,7 +17,7 @@ function TopicItem({ course, topic, currentTopic }) {
         </span>
         <a onClick={() => navigate(`/course/${course.id}/topic/${topic.id}`)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
           {topic.title}
-          {topic.interactions?.length && '✨'}
+          {!!topic.interactions?.length && '✨'}
         </a>
       </div>
     </li>

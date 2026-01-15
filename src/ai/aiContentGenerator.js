@@ -71,7 +71,7 @@ Requirements:
  * @param {string} description - A description of the instructional topic.
  * @returns {Promise<string>} A promise that resolves to the generated markdown content.
  */
-export async function aiTopicGenerator(courseDescription, title, description) {
+export async function aiTopicGenerator(courseDescription, title, description, moduleTitle, otherTopicDescriptions) {
   const prompt = `You are an expert educational content creator.
 Generate comprehensive, well-structured markdown content for online courses.
 Focus on clear explanations, practical examples, and pedagogically sound structure.
@@ -79,6 +79,8 @@ Focus on clear explanations, practical examples, and pedagogically sound structu
 Create comprehensive markdown content for an instructional topic titled "${title}".
 
 Topic Description: ${description}
+Module Title: ${moduleTitle}
+Other topics in the Module: ${otherTopicDescriptions}
 Course Description: ${courseDescription}
 
 Requirements:

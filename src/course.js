@@ -87,6 +87,10 @@ export default class Course {
     return null;
   }
 
+  moduleFromTopic(topic) {
+    return this.modules.find((module) => module.topics.find((t) => t.path === topic.path));
+  }
+
   map(op) {
     return this.modules.map(op);
   }

@@ -446,7 +446,12 @@ ${topicDescription || 'overview content placeholder'}`;
         break;
       default:
         if (topicDescription && topicDescription.trim().length > 0) {
-          basicContent = await aiTopicGenerator(learningSession.course.description, topic.title, topicDescription);
+          const module = learningSession.course.moduleFromTopic(topic);
+          const otherTopicDescriptions = module.topics
+            .map((t) => (t.id !== topic.id ? t.title : null))
+            .filter(Boolean)
+            .join('; ');
+          basicContent = await aiTopicGenerator(learningSession.course.description, topic.title, topicDescription, module.title, otherTopicDescriptions);
         }
         break;
     }
