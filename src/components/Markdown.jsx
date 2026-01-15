@@ -75,7 +75,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       }
 
       return (
-        <code className={className} {...props}>
+        <code style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }} {...props}>
           {children}
         </code>
       );
