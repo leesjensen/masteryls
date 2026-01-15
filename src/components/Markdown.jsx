@@ -52,7 +52,23 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       if (!inline && language) {
         const codeText = String(children).replace(/\n$/, '');
         return (
-          <SyntaxHighlighter language={language} style={ghcolors} PreTag="div" {...props}>
+          <SyntaxHighlighter
+            language={language}
+            style={ghcolors}
+            PreTag="div"
+            wrapLongLines
+            customStyle={{
+              margin: 0, // optional: removes default margin that can mess with layout
+            }}
+            codeTagProps={{
+              style: {
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word', // wrap long words/tokens
+                overflowWrap: 'anywhere', // extra help for super-long tokens
+              },
+            }}
+            {...props}
+          >
             {codeText}
           </SyntaxHighlighter>
         );
