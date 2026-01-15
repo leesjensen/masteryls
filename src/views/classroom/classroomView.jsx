@@ -20,7 +20,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
         </button>
       );
 
-      updateAppBar({ title: learningSession.course?.title, navTitle: learningSession.topic?.title, tools: appBarTools });
+      updateAppBar({ title: learningSession.course?.title, tools: appBarTools });
     }
   }, [learningSession]);
 
