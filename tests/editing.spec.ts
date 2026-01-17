@@ -1,39 +1,13 @@
 import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, navigateToCourse } from './testInit';
 
-async function initWithEditingRights({ page }) {
+async function initAndOpenBasicCourse({ page }) {
   await initBasicCourse({ page });
-
-  await page.route(/.*\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
-    switch (route.request().method()) {
-      case 'POST':
-        await route.fulfill({ status: 201 });
-        break;
-      case 'GET':
-        await route.fulfill({
-          json: [
-            {
-              id: '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5',
-              catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
-              learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
-              settings: {},
-              progress: {
-                mastery: 0,
-              },
-            },
-          ],
-        });
-        break;
-      case 'DELETE':
-        await route.fulfill({ status: 204 });
-        break;
-    }
-  });
+  await navigateToCourse(page);
 }
 
 test('editor markdown', async ({ page }) => {
-  await initWithEditingRights({ page });
-  await navigateToCourse(page);
+  await initAndOpenBasicCourse({ page });
 
   await page.getByRole('button', { name: '✏️' }).click();
   await expect(page.getByRole('code')).toContainText('# Home');
@@ -43,8 +17,7 @@ test('editor markdown', async ({ page }) => {
 });
 
 test('editor commit', async ({ page }) => {
-  await initWithEditingRights({ page });
-  await navigateToCourse(page);
+  await initAndOpenBasicCourse({ page });
 
   await page.getByRole('button', { name: '✏️' }).click();
   await expect(page.getByRole('code')).toContainText('# Home');
@@ -60,16 +33,14 @@ test('editor commit', async ({ page }) => {
 });
 
 test('settings', async ({ page }) => {
-  await initWithEditingRights({ page });
-  await navigateToCourse(page);
+  await initAndOpenBasicCourse({ page });
 
   await page.getByText('Settings').click();
   await expect(page.getByRole('textbox', { name: 'Course Title' })).toHaveValue('Rocket Science');
 });
 
 test('settings editing', async ({ page }) => {
-  await initWithEditingRights({ page });
-  await navigateToCourse(page);
+  await initAndOpenBasicCourse({ page });
 
   await page.getByRole('button', { name: '✏️' }).click();
   await page.getByText('Settings').click();

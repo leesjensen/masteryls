@@ -373,8 +373,20 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
   await context.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
-        await route.fulfill({ status: 201 });
-        break;
+        console.log('Enrollment POST called');
+        await route.fulfill({
+          status: 201,
+          json: {
+            id: '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5',
+            catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+            learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
+            settings: {},
+            progress: {
+              mastery: 0,
+            },
+          },
+        });
+        return;
       case 'GET':
         await route.fulfill({
           json: [
@@ -389,11 +401,12 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
             },
           ],
         });
-        break;
+        return;
       case 'DELETE':
         await route.fulfill({ status: 204 });
-        break;
+        return;
     }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
   // Supabase - Gemini function access
@@ -401,7 +414,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     switch (route.request().method()) {
       case 'OPTIONS':
         await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
-        break;
+        return;
       case 'POST':
         await route.fulfill({
           json: {
@@ -435,8 +448,9 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
             responseId: 'Rt1GaZm-Ns6sjMcPrMj-mAk',
           },
         });
-        break;
+        return;
     }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
   // Supabase - Refresh token
@@ -447,7 +461,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
       });
       return;
     }
-    await route.continue();
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
   // Supabase - Sign up
@@ -458,7 +472,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
       });
       return;
     }
-    await route.continue();
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
   // Supabase - Progress
@@ -466,10 +480,10 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     switch (route.request().method()) {
       case 'POST':
         await route.fulfill({
-          status: 201,
+          status: 200,
           json: progress[0],
         });
-        break;
+        return;
       case 'GET':
         let json: any = progress;
         const viewType = route
@@ -481,8 +495,9 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
           status: 200,
           json,
         });
-        break;
+        return;
     }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
   // GitHub - API request for to list contents of a directory
@@ -592,7 +607,11 @@ async function navigateToCourse(page: any) {
 
   await _register(page);
 
+  // Enroll in the course
   await page.getByRole('button', { name: 'Rocket Science' }).click();
+
+  // Open the course
+  await page.getByRole('button', { name: 'R Rocket Science This course' }).click();
 }
 
 async function register(page: any) {

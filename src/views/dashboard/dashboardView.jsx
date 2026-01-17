@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 
 export default function DashboardView({ courseOps, service, user }) {
-  if (!user) throw new Error('Viewing the dashboard requires a user');
+  if (!user) return null;
 
   const [enrollments, setEnrollments] = useState();
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
@@ -46,6 +46,8 @@ export default function DashboardView({ courseOps, service, user }) {
   const addEnrollment = async (catalogEntry) => {
     if (!enrollments.has(catalogEntry.id)) {
       const newEnrollment = await service.createEnrollment(user.id, catalogEntry);
+      if (!newEnrollment) throw new Error('Failed to create enrollment');
+
       setEnrollments((prev) => new Map(prev).set(catalogEntry.id, newEnrollment));
     }
   };
