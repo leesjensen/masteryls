@@ -39,7 +39,14 @@ export default function DashboardView({ courseOps, service, user }) {
   React.useEffect(() => {
     if (user) {
       updateAppBar({ title: `${user.name}'s Dashboard`, tools: appBarTools });
-      service.enrollments(user.id).then(setEnrollments);
+      service.enrollments(user.id).then((learnerEnrollments) => {
+        const filteredEnrollments = new Map(
+          Array.from(learnerEnrollments.entries()).filter(([catalogId, entry]) => {
+            return entry.catalogEntry.settings?.state === 'published' || user.isEditor();
+          }),
+        );
+        setEnrollments(filteredEnrollments);
+      });
     }
   }, [user]);
 

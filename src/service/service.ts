@@ -41,10 +41,7 @@ class Service {
    * @returns The CatalogEntry if found and published, otherwise null.
    */
   catalogEntry(catalogId: string) {
-    const entry = this.catalog.find((c) => c.id === catalogId);
-    if (!entry || entry.settings?.state !== 'published') return null;
-
-    return entry;
+    return this.catalog.find((c) => c.id === catalogId);
   }
 
   /**
@@ -619,7 +616,7 @@ class Service {
       contentBase64 = btoa(
         Array.from(content)
           .map((byte) => String.fromCharCode(byte))
-          .join('')
+          .join(''),
       );
     } else if (typeof content == 'string') {
       contentBase64 = btoa(new TextEncoder().encode(content).reduce((data, byte) => data + String.fromCharCode(byte), ''));
