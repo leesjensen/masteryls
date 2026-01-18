@@ -22,12 +22,15 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
         </pre>
       );
     },
-    code({ node, inline, className, children, ...props }) {
+    code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
+      // In react-markdown v10+, determine inline vs block by checking for language class
+      // Fenced code blocks have a language-* class, inline code doesn't
+      const isInline = !match;
 
       // Throw away masteryls plugin blocks in static rendering
-      if (!inline && language === 'masteryls') {
+      if (!isInline && language === 'masteryls') {
         return (
           <div>
             This <a href={`https://masteryls.com/course/${course.id}/topic/${topic.id}`}>Mastery LS quiz</a> is not available in Canvas.
@@ -36,7 +39,7 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       }
 
       // Use SyntaxHighlighter for fenced code blocks with a language
-      if (!inline && language) {
+      if (!isInline && language) {
         const codeText = String(children).replace(/\n$/, '');
         return (
           <SyntaxHighlighter language={language} style={ghcolors} PreTag="div">
