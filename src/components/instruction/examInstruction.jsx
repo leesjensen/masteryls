@@ -1,6 +1,6 @@
 import React from 'react';
 import InteractionInstruction from './interaction/InteractionInstruction';
-import { getQuizProgress } from './interaction/interactionProgressStore';
+import { getInteractionProgress } from './interaction/interactionProgressStore';
 
 export default function ExamInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const [loading, setLoading] = React.useState(true);
@@ -40,7 +40,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
     let totalQuestions = quizIds.current.length;
 
     quizIds.current.forEach((quizId) => {
-      const quiz = getQuizProgress(quizId);
+      const quiz = getInteractionProgress(quizId);
       if (quiz && quiz.feedback) {
         totalAnsweredQuestions++;
         if (quiz.percentCorrect !== undefined) {

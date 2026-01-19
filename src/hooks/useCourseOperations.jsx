@@ -492,7 +492,7 @@ ${topicDescription || 'overview content placeholder'}`;
     return service.getProgress({ courseId, enrollmentId, userId, topicId, activityId, type, startDate, endDate, page, limit });
   }
 
-  async function getQuizProgress() {
+  async function getInteractionProgress() {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
     const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, type: 'quizSubmit' });
@@ -768,7 +768,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getPromptResponse,
     addProgress,
     getProgress,
-    getQuizProgress,
+    getInteractionProgress,
     getSurveySummary,
     getExamState,
     repairCanvas,

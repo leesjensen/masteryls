@@ -1,33 +1,33 @@
 import { useState, useEffect } from 'react';
 
-// Global quiz progress store
+// Global interaction progress store
 let progressStore = new Map();
 const listeners = new Set();
 
-// Add quiz progress for a specific quiz
-export const addQuizProgress = (quizId, details) => {
-  progressStore.set(quizId, details);
-  listeners.forEach((listener) => listener(quizId, details));
+// Add interaction progress for a specific interaction
+export const addInteractionProgress = (interactionId, details) => {
+  progressStore.set(interactionId, details);
+  listeners.forEach((listener) => listener(interactionId, details));
 };
 
-// Update quiz progress for a specific quiz
-export const updateQuizProgress = (quizId, details) => {
-  progressStore.set(quizId, details);
-  listeners.forEach((listener) => listener(quizId, details));
+// Update interaction progress for a specific interaction
+export const updateInteractionProgress = (interactionId, details) => {
+  progressStore.set(interactionId, details);
+  listeners.forEach((listener) => listener(interactionId, details));
 };
 
-// Get quiz progress for a specific quiz
-export const getQuizProgress = (quizId) => {
-  return progressStore.get(quizId);
+// Get interaction progress for a specific interaction
+export const getInteractionProgress = (interactionId) => {
+  return progressStore.get(interactionId);
 };
 
-// Hook to subscribe to quiz progress changes for a specific quiz
-export const useInteractionProgressStore = (quizId) => {
-  const [details, setDetails] = useState(() => getQuizProgress(quizId));
+// Hook to subscribe to interaction progress changes for a specific interaction
+export const useInteractionProgressStore = (interactionId) => {
+  const [details, setDetails] = useState(() => getInteractionProgress(interactionId));
 
   useEffect(() => {
-    const listener = (updatedQuizId, newDetails) => {
-      if (updatedQuizId === quizId) {
+    const listener = (updatedInteractionId, newDetails) => {
+      if (updatedInteractionId === interactionId) {
         setDetails(newDetails);
       }
     };
@@ -37,7 +37,7 @@ export const useInteractionProgressStore = (quizId) => {
     return () => {
       listeners.delete(listener);
     };
-  }, [quizId]);
+  }, [interactionId]);
 
   return details;
 };

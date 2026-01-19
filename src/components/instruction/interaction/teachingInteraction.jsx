@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { aiTeachingResponseGenerator } from '../../../ai/aiContentGenerator';
 import Markdown from '../../Markdown';
-import { updateQuizProgress, useInteractionProgressStore } from './interactionProgressStore';
+import { updateInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
 
 export default function TeachingInteraction({ quizId, topicTitle, question }) {
   const progress = useInteractionProgressStore(quizId) || {};
@@ -31,7 +31,7 @@ export default function TeachingInteraction({ quizId, topicTitle, question }) {
   }, [isLoading]);
 
   const persistMessages = (messages) => {
-    updateQuizProgress(quizId, {
+    updateInteractionProgress(quizId, {
       ...progress,
       type: 'TeachingInteraction',
       messages,

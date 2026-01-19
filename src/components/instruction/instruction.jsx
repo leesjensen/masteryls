@@ -3,16 +3,16 @@ import VideoInstruction from './videoInstruction';
 import ExamInstruction from './examInstruction';
 import InteractionInstruction from './interaction/interactionInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
-import { addQuizProgress } from './interaction/interactionProgressStore';
+import { addInteractionProgress } from './interaction/interactionProgressStore';
 
 export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
     async function fetchExamState() {
-      courseOps.getQuizProgress().then((progress) => {
+      courseOps.getInteractionProgress().then((progress) => {
         Object.entries(progress).forEach(([key, value]) => {
-          addQuizProgress(key, value.details || {});
+          addInteractionProgress(key, value.details || {});
         });
         setLoadingProgress(false);
       });
