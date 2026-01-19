@@ -451,7 +451,7 @@ Requirements:
  * @param {string} prompt - The prompt text to send to the AI model.
  * @returns {Promise<string>} The generated content from the AI model.
  */
-async function makeSimpleAiRequest(prompt, user) {
+export async function makeSimpleAiRequest(prompt, user) {
   const contents = [
     {
       parts: [

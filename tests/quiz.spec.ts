@@ -80,6 +80,29 @@ test('quiz essay', async ({ page }) => {
   await expect(page.locator('pre')).toContainText('Fantastic job on this question!');
 });
 
+test('interaction prompt', async ({ page }) => {
+  const markdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123459", "title":"Prompt", "type":"prompt", "body":"Simple **prompt** question" }
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: markdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+
+  await expect(page.getByText('Prompt', { exact: true })).toBeVisible();
+  await expect(page.getByText('Simple prompt question')).toBeVisible();
+
+  await page.getByRole('textbox').click();
+  await page.getByRole('textbox').fill('example prompt');
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.locator('pre')).toContainText('Fantastic job on this question!');
+});
+
 test('quiz submission file', async ({ page }) => {
   const quizMarkdown = `
 # Quiz

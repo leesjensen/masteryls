@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import MarkdownInstruction from '../markdownInstruction';
 import EssayInteraction from './essayInteraction';
+import PromptInteraction from './promptInteraction';
 import MultipleChoiceInteraction from './multipleChoiceInteraction';
 import SurveyInteraction from './surveyInteraction';
 import FileInteraction from './fileInteraction';
@@ -95,6 +96,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       return <UrlInteraction quizId={meta.id} />;
     } else if (meta.type === 'teaching') {
       return <TeachingInteraction quizId={meta.id} topicTitle={meta.title} question={meta.question} />;
+    } else if (meta.type === 'prompt') {
+      return <PromptInteraction interactionId={meta.id} />;
     }
 
     return null;
@@ -152,32 +155,37 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           gradedFeedback(quizRoot, percentCorrect);
         }
       }
-    } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission' || type === 'teaching') {
+    } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission' || type === 'teaching' || type === 'prompt') {
       if (event.target.tagName === 'BUTTON') {
         submissionFeedback(quizRoot);
 
         let percentCorrect = 0;
         if (type === 'essay') {
-          const quizElement = quizRoot.querySelector('textarea');
-          if (quizElement && quizElement.value && quizElement.validity.valid) {
+          const interactionElement = quizRoot.querySelector('textarea');
+          if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             let precedingContent = getPrecedingContent(quizRoot);
-            percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: quizElement.value });
+            percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value });
           }
         } else if (type === 'file-submission') {
-          const quizElement = quizRoot.querySelector('input[type="file"]');
-          if (quizElement && quizElement.value && quizElement.validity.valid) {
-            percentCorrect = await onFileInteraction({ id, title, type, body, files: quizElement.files });
+          const interactionElement = quizRoot.querySelector('input[type="file"]');
+          if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
+            percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files });
           }
         } else if (type === 'url-submission') {
-          const quizElement = quizRoot.querySelector('input[type="url"]');
-          if (quizElement && quizElement.value && quizElement.validity.valid) {
-            percentCorrect = await onUrlInteraction({ id, title, type, body, url: quizElement.value });
+          const interactionElement = quizRoot.querySelector('input[type="url"]');
+          if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
+            percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value });
           }
         } else if (type === 'teaching') {
           if (event.target.id !== 'submit-session') return;
           const progress = getQuizProgress(id);
           const messages = progress?.messages || [];
           percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
+        } else if (type === 'prompt') {
+          const interactionElement = quizRoot.querySelector('textarea');
+          if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
+            percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value });
+          }
         }
 
         gradedFeedback(quizRoot, percentCorrect);
@@ -282,6 +290,15 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
+  }
+
+  async function onPromptInteraction({ id, type, body, prompt }) {
+    if (!prompt) return false;
+    const feedback = await courseOps.getPromptResponse(prompt);
+    const details = { type, prompt, feedback };
+    updateQuizProgress(id, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return -1;
   }
 
   async function onFileInteraction({ id, title, type, body, files }) {

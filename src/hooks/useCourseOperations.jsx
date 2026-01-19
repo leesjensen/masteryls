@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -467,6 +467,10 @@ ${topicDescription || 'overview content placeholder'}`;
     return aiEssayInteractionFeedbackGenerator(data, user);
   }
 
+  async function getPromptResponse(data) {
+    return makeSimpleAiRequest(data, user);
+  }
+
   async function getExamState() {
     if (learningSession?.enrollment && learningSession?.topic) {
       const progress = await service.getProgress({ type: 'exam', topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
@@ -761,6 +765,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getTopicFiles,
     getEssayInteractionFeedback,
     getChoiceInteractionFeedback,
+    getPromptResponse,
     addProgress,
     getProgress,
     getQuizProgress,
