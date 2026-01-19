@@ -607,11 +607,8 @@ async function navigateToCourse(page: any) {
 
   await _register(page);
 
-  // Enroll in the course
-  await page.getByRole('button', { name: 'Rocket Science' }).click();
-
   // Open the course
-  await page.getByRole('button', { name: 'R Rocket Science This course' }).click();
+  await page.getByRole('button', { name: 'Rocket Science' }).click();
 }
 
 async function register(page: any) {

@@ -411,7 +411,7 @@ Requirements:
   return await makeSimpleAiRequest(prompt, user);
 }
 
-export async function aiEssayQuizFeedbackGenerator(data, user) {
+export async function aiEssayInteractionFeedbackGenerator(data, user) {
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's essay response.
 Focus on clear explanations, encouragement, and guidance for improvement.

@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { aiTopicGenerator, aiExamGenerator, aiEssayQuizFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
+import { aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -463,8 +463,8 @@ ${topicDescription || 'overview content placeholder'}`;
     return aiChoiceQuizFeedbackGenerator(data, user);
   }
 
-  async function getEssayQuizFeedback(data) {
-    return aiEssayQuizFeedbackGenerator(data, user);
+  async function getEssayInteractionFeedback(data) {
+    return aiEssayInteractionFeedbackGenerator(data, user);
   }
 
   async function getExamState() {
@@ -759,7 +759,7 @@ ${topicDescription || 'overview content placeholder'}`;
     addTopicFiles,
     deleteTopicFiles,
     getTopicFiles,
-    getEssayQuizFeedback,
+    getEssayInteractionFeedback,
     getChoiceQuizFeedback,
     addProgress,
     getProgress,

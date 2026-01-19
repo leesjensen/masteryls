@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuizProgressStore } from './quizProgressStore';
 
-export default function EssayQuiz({ quizId }) {
+export default function EssayInteraction({ quizId }) {
   const progress = useQuizProgressStore(quizId) || {};
   const value = progress.essay || '';
   return (

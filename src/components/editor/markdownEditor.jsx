@@ -15,7 +15,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       insertText,
       insertFiles,
     }),
-    []
+    [],
   );
 
   function handleEditorDidMount(editor, monaco) {
@@ -214,7 +214,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <ToolbarButton onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz" text="◉" />
           <ToolbarButton onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" text="☑" />
-          <ToolbarButton onClick={() => insertQuiz(defaultEssayQuizTemplate)} title="Essay Quiz" text="📝" />
+          <ToolbarButton onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" text="📝" />
           <ToolbarButton onClick={() => insertQuiz(defaultFileQuizTemplate)} title="File Submission Quiz" text="⬆️" />
           <ToolbarButton onClick={() => insertQuiz(defaultUrlQuizTemplate)} title="URL Submission Quiz" text="🌐" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
@@ -272,7 +272,7 @@ const defaultMultipleChoiceQuizTemplate = `
 - [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
 \`\`\`
 `;
-const defaultEssayQuizTemplate = `
+const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"Essay", "type":"essay", "body":"Simple **essay** question" }
 \`\`\`

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MarkdownInstruction from '../markdownInstruction';
-import EssayQuiz from './essayQuiz';
+import EssayInteraction from './essayInteraction';
 import MultipleChoiceQuiz from './multipleChoiceQuiz';
 import SurveyQuiz from './surveyQuiz';
 import FileQuiz from './fileQuiz';
@@ -88,7 +88,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     } else if (meta.type === 'survey') {
       return <SurveyQuiz quizId={meta.id} itemsText={itemsText} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
-      return <EssayQuiz quizId={meta.id} />;
+      return <EssayInteraction quizId={meta.id} />;
     } else if (meta.type === 'file-submission') {
       return <FileQuiz quizId={meta.id} />;
     } else if (meta.type === 'url-submission') {
@@ -161,7 +161,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
           const quizElement = quizRoot.querySelector('textarea');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
             let precedingContent = getPrecedingContent(quizRoot);
-            percentCorrect = await onEssayQuiz({ id, title, type, body, precedingContent, essay: quizElement.value });
+            percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: quizElement.value });
           }
         } else if (type === 'file-submission') {
           const quizElement = quizRoot.querySelector('input[type="file"]');
@@ -268,7 +268,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     return true;
   }
 
-  async function onEssayQuiz({ id, title, type, body, precedingContent, essay }) {
+  async function onEssayInteraction({ id, title, type, body, precedingContent, essay }) {
     if (!essay) return false;
     const data = {
       title,
@@ -277,7 +277,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
       'question context': precedingContent,
       essay,
     };
-    const { feedback, percentCorrect } = await courseOps.getEssayQuizFeedback(data);
+    const { feedback, percentCorrect } = await courseOps.getEssayInteractionFeedback(data);
     const details = { type, essay, percentCorrect, feedback };
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
