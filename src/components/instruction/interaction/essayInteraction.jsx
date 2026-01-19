@@ -1,8 +1,8 @@
 import React from 'react';
-import { useQuizProgressStore } from './quizProgressStore';
+import { useInteractionProgressStore } from './interactionProgressStore';
 
 export default function EssayInteraction({ quizId }) {
-  const progress = useQuizProgressStore(quizId) || {};
+  const progress = useInteractionProgressStore(quizId) || {};
   const value = progress.essay || '';
   return (
     <div>

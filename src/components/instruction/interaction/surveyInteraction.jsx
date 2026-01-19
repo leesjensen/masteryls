@@ -1,9 +1,9 @@
 import React from 'react';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
-import { useQuizProgressStore } from './quizProgressStore';
+import { useInteractionProgressStore } from './interactionProgressStore';
 
-export default function SurveyQuiz({ quizId, itemsText, multipleSelect, courseOps }) {
-  const progress = useQuizProgressStore(quizId) || {};
+export default function SurveyInteraction({ quizId, itemsText, multipleSelect, courseOps }) {
+  const progress = useInteractionProgressStore(quizId) || {};
   const [surveyResults, setSurveyResults] = React.useState(null);
 
   function generateResults() {
@@ -39,7 +39,7 @@ export default function SurveyQuiz({ quizId, itemsText, multipleSelect, courseOp
           <button className="mb-4 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onClick={() => generateResults()}>
             Refresh
           </button>
-        </div>
+        </div>,
       );
     });
   }

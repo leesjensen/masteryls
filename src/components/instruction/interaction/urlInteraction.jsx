@@ -1,8 +1,8 @@
 import React from 'react';
-import { useQuizProgressStore } from './quizProgressStore';
+import { useInteractionProgressStore } from './interactionProgressStore';
 
-export default function UrlQuiz({ quizId }) {
-  const progress = useQuizProgressStore(quizId) || {};
+export default function UrlInteraction({ quizId }) {
+  const progress = useInteractionProgressStore(quizId) || {};
   const existingUrl = progress.url || '';
 
   return (

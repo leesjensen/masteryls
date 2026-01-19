@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceQuizFeedbackGenerator } from '../ai/aiContentGenerator';
+import { aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -459,8 +459,8 @@ ${topicDescription || 'overview content placeholder'}`;
     return basicContent;
   }
 
-  async function getChoiceQuizFeedback(data) {
-    return aiChoiceQuizFeedbackGenerator(data, user);
+  async function getChoiceInteractionFeedback(data) {
+    return aiChoiceInteractionFeedbackGenerator(data, user);
   }
 
   async function getEssayInteractionFeedback(data) {
@@ -760,7 +760,7 @@ ${topicDescription || 'overview content placeholder'}`;
     deleteTopicFiles,
     getTopicFiles,
     getEssayInteractionFeedback,
-    getChoiceQuizFeedback,
+    getChoiceInteractionFeedback,
     addProgress,
     getProgress,
     getQuizProgress,

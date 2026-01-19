@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
 import VideoInstruction from './videoInstruction';
 import ExamInstruction from './examInstruction';
-import QuizInstruction from './quiz/quizInstruction';
+import InteractionInstruction from './interaction/interactionInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
-import { addQuizProgress } from './quiz/quizProgressStore';
+import { addQuizProgress } from './interaction/interactionProgressStore';
 
 export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const [loadingProgress, setLoadingProgress] = React.useState(true);
@@ -47,7 +47,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
       instructionComponent = <ExamInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
       break;
     default:
-      instructionComponent = <QuizInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
+      instructionComponent = <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
       break;
   }
 

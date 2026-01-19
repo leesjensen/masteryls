@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { formatFileSize } from '../../../utils/utils';
 
-export default function FileQuiz({ quizId }) {
+export default function FileInteraction({ quizId }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -17,7 +17,7 @@ export default function FileQuiz({ quizId }) {
         handleFileSelect(event.target.files);
       }
     },
-    [handleFileSelect]
+    [handleFileSelect],
   );
 
   const handleDragOver = useCallback((event) => {
@@ -52,7 +52,7 @@ export default function FileQuiz({ quizId }) {
         }
       }
     },
-    [handleFileSelect]
+    [handleFileSelect],
   );
 
   const removeFile = useCallback((indexToRemove) => {

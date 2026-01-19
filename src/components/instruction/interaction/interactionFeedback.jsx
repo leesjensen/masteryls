@@ -1,9 +1,9 @@
 import React from 'react';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
-import { useQuizProgressStore } from './quizProgressStore';
+import { useInteractionProgressStore } from './interactionProgressStore';
 
-export default function QuizFeedback({ quizId }) {
-  const details = useQuizProgressStore(quizId);
+export default function InteractionFeedback({ quizId }) {
+  const details = useInteractionProgressStore(quizId);
   if (!details) {
     return null;
   }

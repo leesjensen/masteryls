@@ -1,6 +1,6 @@
 import React from 'react';
-import QuizInstruction from './quiz/quizInstruction';
-import { getQuizProgress } from './quiz/quizProgressStore';
+import InteractionInstruction from './interaction/InteractionInstruction';
+import { getQuizProgress } from './interaction/interactionProgressStore';
 
 export default function ExamInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const [loading, setLoading] = React.useState(true);
@@ -71,7 +71,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-blue-500">Preview</div>
         </div>
-        <QuizInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'preview'} />
+        <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'preview'} />
       </div>
     );
   } else if (examState.details.state === 'notStarted') {
@@ -111,7 +111,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         </div>
 
         <div className="relative pointer-events-none opacity-75 select-none">
-          <QuizInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'examReview'} />
+          <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'examReview'} />
         </div>
       </div>
     );
@@ -126,7 +126,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
           </button>
         </div>
 
-        <QuizInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'exam'} quizStateReporter={quizStateReporter} />
+        <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'exam'} quizStateReporter={quizStateReporter} />
       </div>
     );
   }

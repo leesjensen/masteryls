@@ -22,7 +22,7 @@ export const getQuizProgress = (quizId) => {
 };
 
 // Hook to subscribe to quiz progress changes for a specific quiz
-export const useQuizProgressStore = (quizId) => {
+export const useInteractionProgressStore = (quizId) => {
   const [details, setDetails] = useState(() => getQuizProgress(quizId));
 
   useEffect(() => {

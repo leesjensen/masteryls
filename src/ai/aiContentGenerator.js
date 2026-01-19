@@ -383,11 +383,11 @@ function createDiscussionContents(messages) {
  * Generates constructive feedback for a student's answer to a quiz question.
  *
  * @async
- * @function aiQuizFeedbackGenerator
+ * @function aiInteractionFeedbackGenerator
  * @param {Object} data - An object containing details about the quiz question and the student's answer.
  * @returns {Promise<string>} A promise that resolves to the generated feedback string.
  */
-export async function aiChoiceQuizFeedbackGenerator(data, user) {
+export async function aiChoiceInteractionFeedbackGenerator(data, user) {
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's answer to a quiz question.
 Focus on clear explanations, encouragement, and guidance for improvement.

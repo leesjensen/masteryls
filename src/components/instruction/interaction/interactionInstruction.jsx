@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MarkdownInstruction from '../markdownInstruction';
 import EssayInteraction from './essayInteraction';
-import MultipleChoiceQuiz from './multipleChoiceQuiz';
-import SurveyQuiz from './surveyQuiz';
-import FileQuiz from './fileQuiz';
-import UrlQuiz from './urlQuiz';
-import TeachingQuiz from './teachingQuiz';
+import MultipleChoiceInteraction from './multipleChoiceInteraction';
+import SurveyInteraction from './surveyInteraction';
+import FileInteraction from './fileInteraction';
+import UrlInteraction from './urlInteraction';
+import TeachingInteraction from './teachingInteraction';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
-import QuizFeedback from './quizFeedback';
-import { updateQuizProgress, getQuizProgress } from './quizProgressStore';
+import InteractionFeedback from './interactionFeedback';
+import { updateQuizProgress, getQuizProgress } from './interactionProgressStore';
 import { formatFileSize } from '../../../utils/utils';
 
 /**
- * QuizInstruction component that renders interactive quiz content within markdown instruction.
+ * InteractionInstruction component that renders interactive quiz content within markdown instruction.
  * Supports multiple quiz types including multiple choice, essay, file submission, and URL submission.
  *
  * @component
@@ -42,7 +42,7 @@ import { formatFileSize } from '../../../utils/utils';
  *
  * @returns {JSX.Element} The rendered quiz instruction component
  */
-export default function QuizInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
+export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
   /**
    * injectQuiz responds to a Markdown processor request to render a quiz.
    * @param {string} content - The raw quiz markdown content
@@ -77,24 +77,24 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
           )}
         </fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        {instructionState !== 'exam' && meta.type !== 'survey' && <QuizFeedback quizId={meta.id} />}
+        {instructionState !== 'exam' && meta.type !== 'survey' && <InteractionFeedback quizId={meta.id} />}
       </div>
     );
   }
 
   function generateQuizComponent(meta, itemsText) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceQuiz quizId={meta.id} quizType={meta.type} itemsText={itemsText} />;
+      return <MultipleChoiceInteraction quizId={meta.id} quizType={meta.type} itemsText={itemsText} />;
     } else if (meta.type === 'survey') {
-      return <SurveyQuiz quizId={meta.id} itemsText={itemsText} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
+      return <SurveyInteraction quizId={meta.id} itemsText={itemsText} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
       return <EssayInteraction quizId={meta.id} />;
     } else if (meta.type === 'file-submission') {
-      return <FileQuiz quizId={meta.id} />;
+      return <FileInteraction quizId={meta.id} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlQuiz quizId={meta.id} />;
+      return <UrlInteraction quizId={meta.id} />;
     } else if (meta.type === 'teaching') {
-      return <TeachingQuiz quizId={meta.id} topicTitle={meta.title} question={meta.question} />;
+      return <TeachingInteraction quizId={meta.id} topicTitle={meta.title} question={meta.question} />;
     }
 
     return null;
@@ -122,7 +122,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
         });
         selected.sort((a, b) => a - b);
 
-        await onSurveyQuiz({ id, type, selected });
+        await onSurveyInteraction({ id, type, selected });
       }
     } else if (type === 'multiple-choice' || type === 'multiple-select') {
       if (event.target.tagName === 'INPUT') {
@@ -166,18 +166,18 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
         } else if (type === 'file-submission') {
           const quizElement = quizRoot.querySelector('input[type="file"]');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
-            percentCorrect = await onFileQuiz({ id, title, type, body, files: quizElement.files });
+            percentCorrect = await onFileInteraction({ id, title, type, body, files: quizElement.files });
           }
         } else if (type === 'url-submission') {
           const quizElement = quizRoot.querySelector('input[type="url"]');
           if (quizElement && quizElement.value && quizElement.validity.valid) {
-            percentCorrect = await onUrlQuiz({ id, title, type, body, url: quizElement.value });
+            percentCorrect = await onUrlInteraction({ id, title, type, body, url: quizElement.value });
           }
         } else if (type === 'teaching') {
           if (event.target.id !== 'submit-session') return;
           const progress = getQuizProgress(id);
           const messages = progress?.messages || [];
-          percentCorrect = await onTeachingQuiz({ id, title, type, body, messages });
+          percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
         }
 
         gradedFeedback(quizRoot, percentCorrect);
@@ -238,7 +238,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     return precedingContent;
   }
 
-  async function onSurveyQuiz({ id, type, selected }) {
+  async function onSurveyInteraction({ id, type, selected }) {
     const details = { type, selected };
     updateQuizProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
@@ -258,7 +258,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
         correctAnswers: correct.map((i) => choices[i]),
         percentCorrect: percentCorrect,
       };
-      feedback = await courseOps.getChoiceQuizFeedback(data);
+      feedback = await courseOps.getChoiceInteractionFeedback(data);
     } catch {
       feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
     }
@@ -284,7 +284,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     return percentCorrect;
   }
 
-  async function onFileQuiz({ id, title, type, body, files }) {
+  async function onFileInteraction({ id, title, type, body, files }) {
     if (files.length === 0) return 0;
     const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
     let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
@@ -294,7 +294,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     return 100;
   }
 
-  async function onUrlQuiz({ id, title, type, body, url }) {
+  async function onUrlInteraction({ id, title, type, body, url }) {
     if (!url) return 0;
     let feedback = 'Submission received. Thank you!';
     const details = { type, url, feedback };
@@ -303,7 +303,7 @@ export default function QuizInstruction({ courseOps, learningSession, user, cont
     return 100;
   }
 
-  async function onTeachingQuiz({ id, title, type, body, messages }) {
+  async function onTeachingInteraction({ id, title, type, body, messages }) {
     if (messages.length === 0) return 0;
     const percentMatch = messages[messages.length - 1].content?.match(/Understanding Score:\s*(\d+)%/);
     const percentCorrect = percentMatch ? parseInt(percentMatch[1], 10) : 0;

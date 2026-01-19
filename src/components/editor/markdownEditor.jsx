@@ -212,11 +212,11 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <ToolbarButton onClick={() => insertLink()} title="Link" text="🔗" />
           <ToolbarButton onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100&q=80)')} title="Image" text="🖼️" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <ToolbarButton onClick={() => insertQuiz(defaultMultipleChoiceQuizTemplate)} title="Multiple Choice Quiz" text="◉" />
+          <ToolbarButton onClick={() => insertQuiz(defaultMultipleChoiceInteractionTemplate)} title="Multiple Choice Quiz" text="◉" />
           <ToolbarButton onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" text="☑" />
           <ToolbarButton onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" text="📝" />
-          <ToolbarButton onClick={() => insertQuiz(defaultFileQuizTemplate)} title="File Submission Quiz" text="⬆️" />
-          <ToolbarButton onClick={() => insertQuiz(defaultUrlQuizTemplate)} title="URL Submission Quiz" text="🌐" />
+          <ToolbarButton onClick={() => insertQuiz(defaultFileInteractionTemplate)} title="File Submission Quiz" text="⬆️" />
+          <ToolbarButton onClick={() => insertQuiz(defaultUrlInteractionTemplate)} title="URL Submission Quiz" text="🌐" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <ToolbarButton onClick={() => insertAiQuiz()} title="Insert AI generated quiz" text="🚀" />
           <ToolbarButton onClick={() => insertAiSection()} title="Insert AI generated section" text="✨" />
@@ -263,7 +263,7 @@ const defaultMultipleSelectQuizTemplate = `
 \`\`\`
 `;
 
-const defaultMultipleChoiceQuizTemplate = `
+const defaultMultipleChoiceInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
 - [ ] This is **not** the right answer
@@ -278,13 +278,13 @@ const defaultEssayInteractionTemplate = `
 \`\`\`
 `;
 
-const defaultFileQuizTemplate = `
+const defaultFileInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"File submission", "type":"file-submission", "body":"Simple **submission** by file", "allowComment":true  }
 \`\`\`
 `;
 
-const defaultUrlQuizTemplate = `
+const defaultUrlInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"URL submission", "type":"url-submission", "body":"Simple **submission** by url", "allowComment":true }
 \`\`\`

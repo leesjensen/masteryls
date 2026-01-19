@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { aiTeachingResponseGenerator } from '../../../ai/aiContentGenerator';
 import Markdown from '../../Markdown';
-import { updateQuizProgress, useQuizProgressStore } from './quizProgressStore';
+import { updateQuizProgress, useInteractionProgressStore } from './interactionProgressStore';
 
-export default function TeachingQuiz({ quizId, topicTitle, question }) {
-  const progress = useQuizProgressStore(quizId) || {};
+export default function TeachingInteraction({ quizId, topicTitle, question }) {
+  const progress = useInteractionProgressStore(quizId) || {};
   const initialQuestion = progress.messages || (question ? [{ type: 'model', content: question, timestamp: Date.now() }] : []);
   const [messages, setMessages] = useState(initialQuestion);
   const [userInput, setUserInput] = useState('');
@@ -33,7 +33,7 @@ export default function TeachingQuiz({ quizId, topicTitle, question }) {
   const persistMessages = (messages) => {
     updateQuizProgress(quizId, {
       ...progress,
-      type: 'teachingQuiz',
+      type: 'TeachingInteraction',
       messages,
       lastUpdated: Date.now(),
     });
