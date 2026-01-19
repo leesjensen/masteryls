@@ -433,7 +433,7 @@ Requirements:
 
   let feedbackData = { percentCorrect: undefined };
   let feedback = await makeSimpleAiRequest(prompt, user);
-  const jsonMatch = feedback.match(/^\s*(?:```json\s*)?(\{[\s\S]*?\})(?:\s*```)?/);
+  const jsonMatch = feedback.match(/^\s*(?:`+json\s*)?(\{[\s\S]*?\})(?:\s*`+)?/);
   if (jsonMatch) {
     try {
       feedbackData = JSON.parse(jsonMatch[1]);
