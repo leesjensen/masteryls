@@ -254,7 +254,9 @@ const defaultTableTemplate = `\n
 
 const defaultMultipleSelectQuizTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Multiple select", "type":"multiple-select", "body": "A **multiple select** question can have multiple answers. Incorrect selections count against correct ones when calculating the correct percentage." }
+{"id":"", "title":"Multiple select", "type":"multiple-select" }
+A **multiple select** question can have multiple answers. Incorrect selections count against correct ones when calculating the correct percentage."
+
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
 - [ ] This is **not** the right answer
@@ -265,7 +267,9 @@ const defaultMultipleSelectQuizTemplate = `
 
 const defaultMultipleChoiceInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+{"id":"", "title":"Multiple choice", "type":"multiple-choice" }
+Simple **multiple choice** question"
+
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
 - [ ] This one has a [link](https://cow.com)
@@ -274,19 +278,22 @@ const defaultMultipleChoiceInteractionTemplate = `
 `;
 const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Essay", "type":"essay", "body":"Simple **essay** question" }
+{"id":"", "title":"Essay", "type":"essay" }
+Simple **essay** question"
 \`\`\`
 `;
 
 const defaultFileInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"File submission", "type":"file-submission", "body":"Simple **submission** by file", "allowComment":true  }
+{"id":"", "title":"File submission", "type":"file-submission", "allowComment":true  }
+Simple **submission** by file
 \`\`\`
 `;
 
 const defaultUrlInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"URL submission", "type":"url-submission", "body":"Simple **submission** by url", "allowComment":true }
+{"id":"", "title":"URL submission", "type":"url-submission", "allowComment":true }
+Simple **submission** by url
 \`\`\`
 `;
 

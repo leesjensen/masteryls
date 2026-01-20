@@ -56,7 +56,9 @@ test('exam', async ({ page }) => {
   const quizMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123456", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123456", "title":"Multiple choice", "type":"multiple-choice" }
+Simple **multiple choice** question
+
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
 \`\`\`

@@ -5,7 +5,9 @@ test('quiz multiple choice', async ({ page }) => {
   const quizMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123456", "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123456", "title":"Multiple choice", "type":"multiple-choice" }
+Simple **multiple choice** question
+
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
 - [ ] This one has a [link](https://cow.com)
@@ -34,7 +36,9 @@ test('quiz multiple select', async ({ page }) => {
   const quizMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123499", "title":"Multiple select", "type":"multiple-select", "body":"Simple **multiple select** question" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123499", "title":"Multiple select", "type":"multiple-select"}
+Simple **multiple select** question
+
 - [x] Good 1
 - [ ] Bad 1
 - [ ] Bad 2
@@ -60,7 +64,8 @@ test('quiz essay', async ({ page }) => {
   const quizMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123452", "title":"Essay", "type":"essay", "body":"Simple **essay** question" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123452", "title":"Essay", "type":"essay" }
+Simple **essay** question
 \`\`\`
 `;
 
@@ -84,7 +89,8 @@ test('interaction prompt', async ({ page }) => {
   const markdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123459", "title":"Prompt", "type":"prompt", "body":"Simple **prompt** question" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123459", "title":"Prompt", "type":"prompt" }
+Simple **prompt** question
 \`\`\`
 `;
 
@@ -107,7 +113,8 @@ test('quiz submission file', async ({ page }) => {
   const quizMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123451", "title":"File submission", "type":"file-submission", "allowComment":true, "body":"Simple **file submission** question" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123451", "title":"File submission", "type":"file-submission", "allowComment":true }
+Simple **file submission** question
 \`\`\`
 `;
 
@@ -141,7 +148,8 @@ test('quiz submission url', async ({ page }) => {
   const quizMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123457", "title":"URL submission", "type":"url-submission", "allowComment":true, "body":"Simple **url submission** question" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123457", "title":"URL submission", "type":"url-submission", "allowComment":true }
+Simple **url submission** question
 \`\`\`
 `;
 

@@ -113,7 +113,8 @@ Generate 10 multiple choice or essay questions of the format:
 
 ### Example question title
 \`\`\`masteryls
-{"id":"" "title":"Multiple choice", "type":"multiple-choice", "body":"Simple **multiple choice** question" }
+{"id":"" "title":"Multiple choice", "type":"multiple-choice"}
+Simple **multiple choice** question
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
 - [ ] This one has a [link](https://cow.com)
@@ -122,7 +123,8 @@ Generate 10 multiple choice or essay questions of the format:
 
 ### Example question title
 \`\`\`masteryls
-{"id":"" "title":"Question title", "type":"essay", "body":"question body" }
+{"id":"" "title":"Question title", "type":"essay" }
+question body
 \`\`\`
 
 - Start with a level 1 heading using only the exact title
@@ -197,7 +199,9 @@ Generate a section for a course topic that uses the following format:
 Multiple paragraphs of section content. Examples, lists, mermaid diagrams, and code examples are preferred.
 
 \`\`\`masteryls
-{"id":"", "title":"question title", "type":"multiple-choice", "body":"question text" }
+{"id":"", "title":"question title", "type":"multiple-choice"}
+question text
+
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
 - [ ] This is also wrong
@@ -232,7 +236,9 @@ export async function aiQuizGenerator(topic, subject) {
 Generate a multiple choice quiz that uses the following format:
 
 \`\`\`masteryls
-{"id":"", "title":"question title", "type":"multiple-choice", "body":"question text" }
+{"id":"", "title":"question title", "type":"multiple-choice"}
+question text
+
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
 - [ ] This is also wrong
