@@ -4,7 +4,7 @@ import { useInteractionProgressStore } from './interactionProgressStore';
 
 export default function InteractionFeedback({ quizId }) {
   const details = useInteractionProgressStore(quizId);
-  if (!details) {
+  if (!details || !details.feedback) {
     return null;
   }
 
