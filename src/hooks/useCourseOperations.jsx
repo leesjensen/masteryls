@@ -474,7 +474,7 @@ ${topicDescription || 'overview content placeholder'}`;
 
   async function getExamState() {
     if (learningSession?.enrollment && learningSession?.topic) {
-      const progress = await service.getProgress({ type: 'exam', topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
+      const progress = await service.getProgress({ types: ['exam'], topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
       if (progress && progress.data.length > 0) {
         return progress.data[0];
       }
@@ -489,14 +489,14 @@ ${topicDescription || 'overview content placeholder'}`;
     }
   }
 
-  async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, type = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
-    return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, type, startDate, endDate, page, limit });
+  async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, types = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
+    return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
   }
 
-  async function getInteractionProgress() {
+  async function getProgressOfType(types = ['quizSubmit']) {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
-    const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, type: 'quizSubmit' });
+    const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, types, limit: 1000 });
     return progressItems.data.reduce((acc, item) => {
       const interactionId = item.interactionId;
       if (!acc[interactionId] || new Date(item.creationDate) > new Date(acc[interactionId].creationDate)) {
@@ -507,7 +507,7 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getSurveySummary(interactionId) {
-    const progressItems = await getProgress({ interactionId, type: 'quizSubmit', limit: 1000 });
+    const progressItems = await getProgress({ interactionId, types: ['quizSubmit'], limit: 1000 });
     // Only use the user's latest submission
     const voters = progressItems.data.reduce((acc, item) => {
       const userId = item.userId;
@@ -769,7 +769,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getPromptResponse,
     addProgress,
     getProgress,
-    getInteractionProgress,
+    getProgressOfType,
     getSurveySummary,
     getExamState,
     repairCanvas,

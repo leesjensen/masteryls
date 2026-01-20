@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import VideoInstruction from './videoInstruction';
 import ExamInstruction from './examInstruction';
 import InteractionInstruction from './interaction/interactionInstruction';
@@ -9,15 +9,12 @@ export default function Instruction({ courseOps, learningSession, user, content 
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
-    async function fetchExamState() {
-      courseOps.getInteractionProgress().then((progress) => {
-        Object.entries(progress).forEach(([key, value]) => {
-          addInteractionProgress(key, value.details || {});
-        });
-        setLoadingProgress(false);
+    courseOps.getProgressOfType(['quizSubmit']).then((progress) => {
+      Object.entries(progress).forEach(([key, value]) => {
+        addInteractionProgress(key, value.details || {});
       });
-    }
-    fetchExamState();
+      setLoadingProgress(false);
+    });
   }, [learningSession]);
 
   useProgressTracking({
