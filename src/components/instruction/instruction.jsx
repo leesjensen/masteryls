@@ -21,8 +21,8 @@ export default function Instruction({ courseOps, learningSession, user, content 
   }, [learningSession]);
 
   useProgressTracking({
-    activityId: learningSession.topic?.id,
-    activityType: 'instructionView',
+    interactionId: learningSession.topic?.id,
+    interactionType: 'instructionView',
     onProgress: courseOps?.addProgress,
     enabled: !content && !!learningSession.topic?.path && !!courseOps?.addProgress,
     minDuration: 5,

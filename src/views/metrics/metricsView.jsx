@@ -277,11 +277,11 @@ export default function MetricsView({ courseOps }) {
     ],
   };
 
-  const activityTypesData = {
-    labels: Object.keys(metrics.activityTypes),
+  const interactionTypesData = {
+    labels: Object.keys(metrics.interactionTypes),
     datasets: [
       {
-        data: Object.values(metrics.activityTypes),
+        data: Object.values(metrics.interactionTypes),
         backgroundColor: [
           '#EF4444', // Red
           '#10B981', // Green
@@ -410,7 +410,7 @@ export default function MetricsView({ courseOps }) {
       totalActivities: progressData.length,
       firstActivity: new Date(),
       lastActivity: new Date(),
-      activityTypes: {},
+      interactionTypes: {},
       hourlyActivity: {},
       dailyActivity: {},
       weeklyActivity: {},
@@ -431,7 +431,7 @@ export default function MetricsView({ courseOps }) {
       if (date > metrics.lastActivity) metrics.lastActivity = date;
 
       // Activity types breakdown
-      metrics.activityTypes[activity.type] = (metrics.activityTypes[activity.type] || 0) + 1;
+      metrics.interactionTypes[activity.type] = (metrics.interactionTypes[activity.type] || 0) + 1;
 
       // Hourly activity
       const hour = day + ' ' + date.getHours().toString().padStart(2, '0') + ':00';
@@ -545,7 +545,7 @@ export default function MetricsView({ courseOps }) {
                   </div>
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Activity Types</p>
-                    <p className="text-2xl font-semibold text-gray-900">{Object.keys(metrics.activityTypes).length}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{Object.keys(metrics.interactionTypes).length}</p>
                   </div>
                 </div>
               </div>
@@ -574,7 +574,7 @@ export default function MetricsView({ courseOps }) {
                   <div className="bg-white rounded-lg shadow p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Types Distribution</h3>
                     <div className="h-80">
-                      <Doughnut data={activityTypesData} options={doughnutOptions} />
+                      <Doughnut data={interactionTypesData} options={doughnutOptions} />
                     </div>
                   </div>
 
@@ -596,7 +596,7 @@ export default function MetricsView({ courseOps }) {
                       </div>
                       <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                         <span className="text-sm font-medium text-green-900">Primary Activity Type</span>
-                        <span className="text-sm text-green-700">{Object.keys(metrics.activityTypes).reduce((a, b) => (metrics.activityTypes[a] > metrics.activityTypes[b] ? a : b)) || 'No data'}</span>
+                        <span className="text-sm text-green-700">{Object.keys(metrics.interactionTypes).reduce((a, b) => (metrics.interactionTypes[a] > metrics.interactionTypes[b] ? a : b)) || 'No data'}</span>
                       </div>
                       <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                         <span className="text-sm font-medium text-yellow-900">Weekly Average</span>

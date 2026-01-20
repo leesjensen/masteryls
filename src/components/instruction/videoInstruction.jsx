@@ -3,8 +3,8 @@ import useProgressTracking from '../../hooks/useProgressTracking';
 
 export default function VideoInstruction({ learningSession, courseOps }) {
   const { recordProgress } = useProgressTracking({
-    activityId: learningSession?.topic?.id,
-    activityType: 'video_view',
+    interactionId: learningSession?.topic?.id,
+    interactionType: 'video_view',
     onProgress: courseOps?.addProgress,
     enabled: !!learningSession?.topic?.path && !!courseOps?.addProgress,
     minDuration: 10,

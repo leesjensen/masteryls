@@ -504,19 +504,19 @@ class Service {
    * @param catalogId - The course catalog ID.
    * @param enrollmentId - The enrollment ID.
    * @param topicId - The topic ID.
-   * @param activityId - The activity ID.
+   * @param interactionId - The activity ID.
    * @param type - The type of progress (default: 'instructionView').
    * @param duration - Duration spent in seconds (default: 0).
    * @param details - Additional details object.
    * @param createdAt - Timestamp of the progress.
    */
-  async addProgress(userId: string, catalogId: string, enrollmentId: string, topicId: string, activityId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
+  async addProgress(userId: string, catalogId: string, enrollmentId: string, topicId: string, interactionId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
     const progressData: any = {
       userId,
       catalogId,
       enrollmentId,
       topicId,
-      activityId,
+      interactionId,
       type,
       duration,
       details,
@@ -537,7 +537,7 @@ class Service {
    * @param params - Object containing filter parameters (type, courseId, etc.) and pagination options.
    * @returns An object containing data, total count, and hasMore flag.
    */
-  async getProgress({ type, courseId, enrollmentId, userId, topicId, activityId, startDate, endDate, page = 1, limit = 100 }: { type?: string; courseId?: string; enrollmentId?: string; userId?: string; topicId?: string; activityId?: string; startDate?: string; endDate?: string; page?: number; limit?: number }): Promise<{ data: any[]; totalCount: number; hasMore: boolean }> {
+  async getProgress({ type, courseId, enrollmentId, userId, topicId, interactionId, startDate, endDate, page = 1, limit = 100 }: { type?: string; courseId?: string; enrollmentId?: string; userId?: string; topicId?: string; interactionId?: string; startDate?: string; endDate?: string; page?: number; limit?: number }): Promise<{ data: any[]; totalCount: number; hasMore: boolean }> {
     let query = this.supabase.from('progress').select('*', { count: 'exact' });
 
     if (courseId) {
@@ -552,8 +552,8 @@ class Service {
     if (topicId) {
       query = query.eq('topicId', topicId);
     }
-    if (activityId) {
-      query = query.eq('activityId', activityId);
+    if (interactionId) {
+      query = query.eq('interactionId', interactionId);
     }
     if (type) {
       query = query.eq('type', type);

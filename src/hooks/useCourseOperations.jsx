@@ -482,15 +482,15 @@ ${topicDescription || 'overview content placeholder'}`;
     return { details: { state: 'notStarted' } };
   }
 
-  async function addProgress(providedUser, activityId, type, duration = 0, details = {}, createdAt = undefined) {
+  async function addProgress(providedUser, interactionId, type, duration = 0, details = {}, createdAt = undefined) {
     const progressUser = providedUser || user;
     if (progressUser) {
-      return service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, activityId, type, duration, details, createdAt);
+      return service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details, createdAt);
     }
   }
 
-  async function getProgress({ courseId, enrollmentId, userId, topicId = null, activityId = null, type = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
-    return service.getProgress({ courseId, enrollmentId, userId, topicId, activityId, type, startDate, endDate, page, limit });
+  async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, type = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
+    return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, type, startDate, endDate, page, limit });
   }
 
   async function getInteractionProgress() {
@@ -498,16 +498,16 @@ ${topicDescription || 'overview content placeholder'}`;
 
     const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, type: 'quizSubmit' });
     return progressItems.data.reduce((acc, item) => {
-      const activityId = item.activityId;
-      if (!acc[activityId] || new Date(item.creationDate) > new Date(acc[activityId].creationDate)) {
-        acc[activityId] = item;
+      const interactionId = item.interactionId;
+      if (!acc[interactionId] || new Date(item.creationDate) > new Date(acc[interactionId].creationDate)) {
+        acc[interactionId] = item;
       }
       return acc;
     }, {});
   }
 
-  async function getSurveySummary(activityId) {
-    const progressItems = await getProgress({ activityId, type: 'quizSubmit', limit: 1000 });
+  async function getSurveySummary(interactionId) {
+    const progressItems = await getProgress({ interactionId, type: 'quizSubmit', limit: 1000 });
     // Only use the user's latest submission
     const voters = progressItems.data.reduce((acc, item) => {
       const userId = item.userId;
