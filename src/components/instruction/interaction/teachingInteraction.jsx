@@ -3,9 +3,9 @@ import { aiTeachingResponseGenerator } from '../../../ai/aiContentGenerator';
 import Markdown from '../../Markdown';
 import { updateInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
 
-export default function TeachingInteraction({ quizId, topicTitle, question }) {
-  const progress = useInteractionProgressStore(quizId) || {};
-  const initialQuestion = progress.messages || (question ? [{ type: 'model', content: question, timestamp: Date.now() }] : []);
+export default function TeachingInteraction({ id, topicTitle, body }) {
+  const progress = useInteractionProgressStore(id) || {};
+  const initialQuestion = progress.messages || (body ? [{ type: 'model', content: body, timestamp: Date.now() }] : []);
   const [messages, setMessages] = useState(initialQuestion);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,7 @@ export default function TeachingInteraction({ quizId, topicTitle, question }) {
   }, [isLoading]);
 
   const persistMessages = (messages) => {
-    updateInteractionProgress(quizId, {
+    updateInteractionProgress(id, {
       ...progress,
       type: 'TeachingInteraction',
       messages,

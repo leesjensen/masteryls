@@ -468,6 +468,7 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   async function getPromptResponse(data) {
+    data = 'Limit the response to 100 words or less\n\n' + data;
     return makeSimpleAiRequest(data, user);
   }
 

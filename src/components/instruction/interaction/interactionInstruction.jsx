@@ -54,52 +54,45 @@ export default function InteractionInstruction({ courseOps, learningSession, use
   function injectInteraction(content) {
     const jsonMatch = content.match(/^\{[\s\S]*?\}(?:\n|$)/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
-    let itemsText = content;
+    let interactionBody = content;
 
     if (jsonMatch) {
       try {
         meta = { ...meta, ...JSON.parse(jsonMatch[0]) };
         meta.type = meta.type.toLowerCase();
       } catch {}
-      itemsText = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
+      interactionBody = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
 
     quizStateReporter?.(meta.id);
 
-    let controlJsx = generateInteractionComponent(meta, itemsText);
+    let controlJsx = generateInteractionComponent(meta, interactionBody);
     const progress = getInteractionProgress(meta.id);
     const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
     return (
       <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
-        <fieldset>
-          {meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}
-          {meta.body && (
-            <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
-              {inlineLiteMarkdown(meta.body)}
-            </div>
-          )}
-        </fieldset>
+        <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         <div className="space-y-3">{controlJsx}</div>
         {instructionState !== 'exam' && meta.type !== 'survey' && <InteractionFeedback quizId={meta.id} />}
       </div>
     );
   }
 
-  function generateInteractionComponent(meta, itemsText) {
+  function generateInteractionComponent(meta, interactionBody) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceInteraction quizId={meta.id} quizType={meta.type} itemsText={itemsText} />;
+      return <MultipleChoiceInteraction quizId={meta.id} quizType={meta.type} itemsText={interactionBody} />;
     } else if (meta.type === 'survey') {
-      return <SurveyInteraction quizId={meta.id} itemsText={itemsText} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
+      return <SurveyInteraction quizId={meta.id} itemsText={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
-      return <EssayInteraction quizId={meta.id} />;
+      return <EssayInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'file-submission') {
       return <FileInteraction quizId={meta.id} />;
     } else if (meta.type === 'url-submission') {
       return <UrlInteraction quizId={meta.id} />;
     } else if (meta.type === 'teaching') {
-      return <TeachingInteraction quizId={meta.id} topicTitle={meta.title} question={meta.question} />;
+      return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {
-      return <PromptInteraction interactionId={meta.id} />;
+      return <PromptInteraction id={meta.id} body={interactionBody} />;
     }
 
     return null;
@@ -159,6 +152,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       }
     } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission' || type === 'teaching' || type === 'prompt') {
       if (event.target.tagName === 'BUTTON') {
+        event.target.disabled = true;
         submissionFeedback(interactionRoot);
 
         let percentCorrect = 0;
@@ -168,29 +162,35 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             let precedingContent = getPrecedingContent(interactionRoot);
             percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value });
           }
+          gradedFeedback(interactionRoot, percentCorrect);
         } else if (type === 'file-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="file"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files });
           }
+          gradedFeedback(interactionRoot, percentCorrect);
         } else if (type === 'url-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="url"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value });
           }
+          gradedFeedback(interactionRoot, percentCorrect);
         } else if (type === 'teaching') {
-          if (event.target.id !== 'submit-session') return;
-          const progress = getInteractionProgress(id);
-          const messages = progress?.messages || [];
-          percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
+          if (event.target.id === 'submit-session') {
+            const progress = getInteractionProgress(id);
+            const messages = progress?.messages || [];
+            percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
+            gradedFeedback(interactionRoot, percentCorrect);
+          }
         } else if (type === 'prompt') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value });
+            gradedFeedback(interactionRoot, percentCorrect);
           }
         }
 
-        gradedFeedback(interactionRoot, percentCorrect);
+        event.target.disabled = false;
       }
     }
   }
