@@ -41,3 +41,41 @@ export const useInteractionProgressStore = (interactionId) => {
 
   return details;
 };
+
+// Hook to get completion percentage for multiple interactions
+export const useTopicInteractionProgress = (interactionIds) => {
+  const [percentage, setPercentage] = useState(0);
+
+  useEffect(() => {
+    if (!interactionIds || interactionIds.length === 0) {
+      setPercentage(0);
+      return;
+    }
+
+    const calculatePercentage = () => {
+      const completedCount = interactionIds.filter((id) => {
+        const progress = progressStore.get(id);
+        return progress?.completed || progress?.correct;
+      }).length;
+      return Math.round((completedCount / interactionIds.length) * 100);
+    };
+
+    // Initial calculation
+    setPercentage(calculatePercentage());
+
+    // Listen for changes to any of these interactions
+    const listener = (updatedInteractionId) => {
+      if (interactionIds.includes(updatedInteractionId)) {
+        setPercentage(calculatePercentage());
+      }
+    };
+
+    listeners.add(listener);
+
+    return () => {
+      listeners.delete(listener);
+    };
+  }, [interactionIds?.join(',')]);
+
+  return percentage;
+};
