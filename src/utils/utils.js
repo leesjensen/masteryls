@@ -28,3 +28,74 @@ export function scrollToAnchor(anchor, containerRef) {
     targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' });
   }
 }
+
+/**
+ * Extracts the text content that precedes a target element, starting from the nearest heading.
+ *
+ * This function searches upward through the DOM tree to find the closest heading element (h1-h6)
+ * that precedes the target element. Once found, it collects the text content of all paragraph
+ * elements between that heading and the target element.
+ *
+ * @param {HTMLElement} targetElement - The DOM element to find preceding content for
+ * @returns {string} A string containing the concatenated text content of all paragraphs
+ *                   between the nearest preceding heading and the target element,
+ *                   joined by newline characters. Returns an empty string if no
+ *                   heading or paragraphs are found.
+ *
+ * @example
+ * const quizElement = document.querySelector('.quiz');
+ * const context = getPrecedingContent(quizElement);
+ * // Returns: "First paragraph text\nSecond paragraph text\nThird paragraph text"
+ */
+export function getPrecedingContent(targetElement) {
+  let precedingContent = '';
+  // Find the closest preceding heading element
+  let currentElement = targetElement;
+  let headingElement = null;
+
+  // Walk up the DOM tree to find a heading
+  while (currentElement && currentElement !== document.body) {
+    const precedingHeading = currentElement.closest(':is(h1, h2, h3, h4, h5, h6)');
+    if (precedingHeading) {
+      headingElement = precedingHeading;
+      break;
+    }
+    // If no heading found in current path, try previous siblings
+    let sibling = currentElement.previousElementSibling;
+    while (sibling) {
+      if (/^H[1-6]$/i.test(sibling.tagName)) {
+        headingElement = sibling;
+        break;
+      }
+      const nestedHeading = sibling.querySelector(':is(h1, h2, h3, h4, h5, h6)');
+      if (nestedHeading) {
+        headingElement = nestedHeading;
+        break;
+      }
+      sibling = sibling.previousElementSibling;
+    }
+    if (headingElement) break;
+    currentElement = currentElement.parentElement;
+  }
+
+  // If we found a heading, collect all paragraphs between it and the target element
+  if (headingElement) {
+    let walker = headingElement.nextElementSibling;
+    const paragraphs = [];
+
+    while (walker && walker !== targetElement) {
+      if (walker.tagName === 'P') {
+        paragraphs.push(walker.textContent.trim());
+      } else if (walker.contains(targetElement)) {
+        // If the walker contains our target element, look for paragraphs inside it before the target element
+        const innerParagraphs = Array.from(walker.querySelectorAll('p')).filter((p) => !targetElement.contains(p));
+        paragraphs.push(...innerParagraphs.map((p) => p.textContent.trim()));
+        break;
+      }
+      walker = walker.nextElementSibling;
+    }
+
+    precedingContent = paragraphs.join('\n');
+  }
+  return precedingContent;
+}

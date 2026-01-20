@@ -7,10 +7,9 @@ import SurveyInteraction from './surveyInteraction';
 import FileInteraction from './fileInteraction';
 import UrlInteraction from './urlInteraction';
 import TeachingInteraction from './teachingInteraction';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
 import InteractionFeedback from './interactionFeedback';
 import { updateInteractionProgress, getInteractionProgress } from './interactionProgressStore';
-import { formatFileSize } from '../../../utils/utils';
+import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 
 /**
  * InteractionInstruction component that renders interactive quiz content within markdown instruction.
@@ -28,6 +27,8 @@ import { formatFileSize } from '../../../utils/utils';
  * The quiz markdown format follows this syntax:
  * ```
  * {"id":"39283", "title":"Multiple choice", "type":"multiple-choice" }
+ * Question with **Markdown** formatting.
+ *
  * - [ ] This is **not** the right answer
  * - [x] This is _the_ right answer
  * - [ ] This one has a [link](https://cow.com)
@@ -193,59 +194,6 @@ export default function InteractionInstruction({ courseOps, learningSession, use
         event.target.disabled = false;
       }
     }
-  }
-
-  function getPrecedingContent(quizRoot) {
-    let precedingContent = '';
-    // Find the closest preceding heading element
-    let currentElement = quizRoot;
-    let headingElement = null;
-
-    // Walk up the DOM tree to find a heading
-    while (currentElement && currentElement !== document.body) {
-      const precedingHeading = currentElement.closest(':is(h1, h2, h3, h4, h5, h6)');
-      if (precedingHeading) {
-        headingElement = precedingHeading;
-        break;
-      }
-      // If no heading found in current path, try previous siblings
-      let sibling = currentElement.previousElementSibling;
-      while (sibling) {
-        if (/^H[1-6]$/i.test(sibling.tagName)) {
-          headingElement = sibling;
-          break;
-        }
-        const nestedHeading = sibling.querySelector(':is(h1, h2, h3, h4, h5, h6)');
-        if (nestedHeading) {
-          headingElement = nestedHeading;
-          break;
-        }
-        sibling = sibling.previousElementSibling;
-      }
-      if (headingElement) break;
-      currentElement = currentElement.parentElement;
-    }
-
-    // If we found a heading, collect all paragraphs between it and the quiz
-    if (headingElement) {
-      let walker = headingElement.nextElementSibling;
-      const paragraphs = [];
-
-      while (walker && walker !== quizRoot) {
-        if (walker.tagName === 'P') {
-          paragraphs.push(walker.textContent.trim());
-        } else if (walker.contains(quizRoot)) {
-          // If the walker contains our quiz, look for paragraphs inside it before the quiz
-          const innerParagraphs = Array.from(walker.querySelectorAll('p')).filter((p) => !quizRoot.contains(p));
-          paragraphs.push(...innerParagraphs.map((p) => p.textContent.trim()));
-          break;
-        }
-        walker = walker.nextElementSibling;
-      }
-
-      precedingContent = paragraphs.join('\n');
-    }
-    return precedingContent;
   }
 
   async function onSurveyInteraction({ id, type, selected }) {
