@@ -16,7 +16,7 @@ export default function inlineLiteMarkdown(md) {
       {
         regex: /```(?:[a-z]*\n)?([^`]+)```/,
         render: (m, code, key) => (
-          <pre key={key}>
+          <pre style={{ backgroundColor: '#eaeaea', padding: '8px', borderRadius: '4px' }} key={key}>
             <code>{code}</code>
           </pre>
         ),
@@ -25,7 +25,7 @@ export default function inlineLiteMarkdown(md) {
       {
         regex: /`([^`]+)`/,
         render: (m, code, key) => (
-          <code style={{ backgroundColor: '#f0f0f0', padding: '2px 4px', borderRadius: '4px' }} key={key}>
+          <code style={{ backgroundColor: '#eaeaea', padding: '2px 4px', borderRadius: '4px' }} key={key}>
             {code}
           </code>
         ),
