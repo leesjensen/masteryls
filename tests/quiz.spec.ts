@@ -23,7 +23,7 @@ Simple **multiple choice** question
   await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'This is not the right answer' })).toBeVisible();
   await expect(page.getByRole('radio', { name: 'This one has a link' })).toBeVisible();
-  await expect(page.getByRole('group')).toContainText('Simple multiple choice question');
+  await expect(page.getByText('Simple multiple choice')).toBeVisible();
   await expect(page.getByRole('img', { name: 'Stock Photo' })).toBeVisible();
 
   await page.getByRole('radio', { name: 'This is the right answer' }).check();
@@ -54,7 +54,7 @@ Simple **multiple select** question
   await expect(page.getByRole('checkbox', { name: 'Good 1' })).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Bad 1' })).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Bad 2' })).toBeVisible();
-  await expect(page.getByRole('group')).toContainText('Simple multiple select question');
+  await expect(page.getByText('Simple multiple select')).toBeVisible();
 
   await page.getByRole('checkbox', { name: 'Good 1' }).check();
   await expect(page.getByRole('checkbox', { name: 'Good 1' })).toBeChecked();
