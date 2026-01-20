@@ -489,7 +489,7 @@ async function makeAiRequest(instructions, contents, user) {
   const responseText = await service.makeGeminiApiRequest(body);
   let cleanedText = responseText.replace(/^```.+\s*([\s\S]*?)\s*```$/i, '$1').trim();
   if (user && user.name) {
-    cleanedText = cleanedText.replace(/\[Student Name\]/i, user.name);
+    cleanedText = cleanedText.replace(/\[Student('s)? Name\]/i, user.name);
   }
 
   return cleanedText;

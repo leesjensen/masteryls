@@ -1,8 +1,8 @@
 import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, navigateToCourse } from './testInit';
 
-test('quiz multiple choice', async ({ page }) => {
-  const quizMarkdown = `
+test('interaction multiple choice', async ({ page }) => {
+  const interactionMarkdown = `
 # Quiz
 \`\`\`masteryls
 {"id":"a1b2c3d4-e5f6-7890-1234-567890123456", "title":"Multiple choice", "type":"multiple-choice" }
@@ -15,7 +15,7 @@ Simple **multiple choice** question
 \`\`\`
 `;
 
-  await initBasicCourse({ page, topicMarkdown: quizMarkdown });
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
@@ -32,8 +32,8 @@ Simple **multiple choice** question
   await expect(page.locator('pre')).toContainText('Fantastic job');
 });
 
-test('quiz multiple select', async ({ page }) => {
-  const quizMarkdown = `
+test('interaction multiple select', async ({ page }) => {
+  const interactionMarkdown = `
 # Quiz
 \`\`\`masteryls
 {"id":"a1b2c3d4-e5f6-7890-1234-567890123499", "title":"Multiple select", "type":"multiple-select"}
@@ -46,7 +46,7 @@ Simple **multiple select** question
 \`\`\`
 `;
 
-  await initBasicCourse({ page, topicMarkdown: quizMarkdown });
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
@@ -58,31 +58,6 @@ Simple **multiple select** question
 
   await page.getByRole('checkbox', { name: 'Good 1' }).check();
   await expect(page.getByRole('checkbox', { name: 'Good 1' })).toBeChecked();
-});
-
-test('quiz essay', async ({ page }) => {
-  const quizMarkdown = `
-# Quiz
-\`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123452", "title":"Essay", "type":"essay" }
-Simple **essay** question
-\`\`\`
-`;
-
-  await initBasicCourse({ page, topicMarkdown: quizMarkdown });
-  await navigateToCourse(page);
-
-  await page.getByText('topic 1').click();
-
-  await expect(page.getByText('Essay', { exact: true })).toBeVisible();
-  await expect(page.getByText('Simple essay question')).toBeVisible();
-
-  await page.getByRole('textbox').click();
-  await page.getByRole('textbox').fill('example text');
-  await expect(page.getByRole('textbox')).toHaveValue('example text');
-
-  await page.getByRole('button', { name: 'Submit' }).click();
-  await expect(page.locator('pre')).toContainText('Fantastic job on this question!');
 });
 
 test('interaction prompt', async ({ page }) => {
@@ -109,8 +84,8 @@ Simple **prompt** question
   await expect(page.locator('pre')).toContainText('Fantastic job on this question!');
 });
 
-test('quiz submission file', async ({ page }) => {
-  const quizMarkdown = `
+test('interaction submission file', async ({ page }) => {
+  const interactionMarkdown = `
 # Quiz
 \`\`\`masteryls
 {"id":"a1b2c3d4-e5f6-7890-1234-567890123451", "title":"File submission", "type":"file-submission", "allowComment":true }
@@ -118,7 +93,7 @@ Simple **file submission** question
 \`\`\`
 `;
 
-  await initBasicCourse({ page, topicMarkdown: quizMarkdown });
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
@@ -144,8 +119,8 @@ Simple **file submission** question
   await expect(page.locator('pre')).toContainText('Submission received. Total files: 1. Total size: 17 Bytes.');
 });
 
-test('quiz submission url', async ({ page }) => {
-  const quizMarkdown = `
+test('interaction submission url', async ({ page }) => {
+  const interactionMarkdown = `
 # Quiz
 \`\`\`masteryls
 {"id":"a1b2c3d4-e5f6-7890-1234-567890123457", "title":"URL submission", "type":"url-submission", "allowComment":true }
@@ -153,7 +128,7 @@ Simple **url submission** question
 \`\`\`
 `;
 
-  await initBasicCourse({ page, topicMarkdown: quizMarkdown });
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
@@ -172,3 +147,68 @@ Simple **url submission** question
   //await page.getByText('Submission received.').waitFor({ timeout: 10000 });
   await expect(page.getByText('Submission received.')).toBeVisible();
 });
+
+test('interaction essay', async ({ page }) => {
+  await verifyAiEssayResponse(page, 'Good job joe', 'Good job joe');
+});
+
+test('interaction essay with student name', async ({ page }) => {
+  await verifyAiEssayResponse(page, 'Hi [Student Name]\nwell done', 'Hi Bud well done');
+});
+
+test('interaction essay with student name possessive', async ({ page }) => {
+  await verifyAiEssayResponse(page, "Hi [Student's Name]\nwell done", 'Hi Bud well done');
+});
+
+async function verifyAiEssayResponse(page, generatedResponse, expectedResponse) {
+  const interactionMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123452", "title":"Essay", "type":"essay" }
+Simple **essay** question
+\`\`\`
+`;
+
+  await setAiResponse(page, generatedResponse);
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  await page.getByRole('textbox').click();
+  await page.getByRole('textbox').fill('example text');
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(page.locator('pre')).toContainText(expectedResponse);
+}
+
+async function setAiResponse(page, response) {
+  await page.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'OPTIONS':
+        await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+        return;
+      case 'POST':
+        await route.fulfill({
+          json: {
+            candidates: [
+              {
+                content: {
+                  parts: [
+                    {
+                      text: response,
+                    },
+                  ],
+                  role: 'model',
+                },
+                finishReason: 'STOP',
+                index: 0,
+              },
+            ],
+          },
+        });
+        return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+}
