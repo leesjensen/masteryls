@@ -80,15 +80,15 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   function generateInteractionComponent(meta, interactionBody) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceInteraction quizId={meta.id} quizType={meta.type} itemsText={interactionBody} />;
+      return <MultipleChoiceInteraction quizId={meta.id} quizType={meta.type} body={interactionBody} />;
     } else if (meta.type === 'survey') {
-      return <SurveyInteraction quizId={meta.id} itemsText={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
+      return <SurveyInteraction quizId={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
       return <EssayInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'file-submission') {
-      return <FileInteraction quizId={meta.id} />;
+      return <FileInteraction quizId={meta.id} body={interactionBody} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlInteraction quizId={meta.id} />;
+      return <UrlInteraction quizId={meta.id} body={interactionBody} />;
     } else if (meta.type === 'teaching') {
       return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {

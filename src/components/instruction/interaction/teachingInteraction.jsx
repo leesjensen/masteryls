@@ -92,10 +92,11 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
 
   return (
     <div>
+      <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
+        In this interaction, you are teacher trying to help a learner answer a question.
+      </div>
       <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
         <div ref={listRef} className="max-h-80 overflow-y-auto px-4 py-3 space-y-3">
-          {messages.length === 0 && <div className="text-center text-gray-500 text-sm py-6">In this interaction, you are teacher trying to help a learner.</div>}
-
           {messages.map((message) => (
             <div key={message.timestamp} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] px-3 py-2 rounded-lg border text-sm break-words whitespace-pre-wrap ${message.type === 'user' ? 'bg-blue-50 text-blue-700 border-blue-600' : message.type === 'error' ? 'border-red-600 text-red-700 bg-red-50' : 'border-gray-300 bg-white text-gray-800'}`}>{message.type === 'model' ? parseResponseMessage(message.content) : <span>{message.content}</span>}</div>
