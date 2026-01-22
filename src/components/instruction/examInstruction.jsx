@@ -1,5 +1,5 @@
 import React from 'react';
-import InteractionInstruction from './interaction/InteractionInstruction';
+import InteractionInstruction from './interaction/interactionInstruction';
 import { getInteractionProgress } from './interaction/interactionProgressStore';
 
 export default function ExamInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
