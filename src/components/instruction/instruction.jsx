@@ -9,7 +9,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
-    courseOps.getProgressOfType(['quizSubmit']).then((progress) => {
+    courseOps.getTopicProgress(['quizSubmit']).then((progress) => {
       Object.entries(progress).forEach(([key, value]) => {
         addInteractionProgress(key, value.details || {});
       });

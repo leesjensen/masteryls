@@ -493,7 +493,7 @@ ${topicDescription || 'overview content placeholder'}`;
     return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
   }
 
-  async function getProgressOfType(types = ['quizSubmit']) {
+  async function getTopicProgress(types = ['quizSubmit']) {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
     const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, types, limit: 1000 });
@@ -769,7 +769,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getPromptResponse,
     addProgress,
     getProgress,
-    getProgressOfType,
+    getTopicProgress,
     getSurveySummary,
     getExamState,
     repairCanvas,
