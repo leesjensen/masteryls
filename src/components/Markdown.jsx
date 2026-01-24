@@ -12,7 +12,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { scrollToAnchor } from '../utils/utils';
 
-export default function Markdown({ learningSession, content, languagePlugins = [] }) {
+export default function Markdown({ learningSession, content, languagePlugins = [], onMakeSectionActive = null }) {
   const navigate = useNavigate();
   const containerRef = React.useRef(null);
   const customComponents = {
@@ -159,6 +159,37 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       );
     },
   };
+
+  if (onMakeSectionActive !== null) {
+    // Allow creating notes by clicking on heading, if onMakeSectionActive callback is provided
+    const headingComponents = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].reduce((acc, tag) => {
+      acc[tag] = ({ children, ...props }) => {
+        const HeadingTag = tag;
+        const headingText = typeof children === 'string' ? children : String(children);
+        const headingId = headingText.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+
+        return (
+          <HeadingTag
+            id={headingId}
+            className="flex items-center gap-2 group cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              onMakeSectionActive(headingId, headingText);
+            }}
+            title={headingText}
+            {...props}
+          >
+            {children}
+            <span className="md:opacity-0 group-hover:opacity-100 transition-opacity text-sm" aria-label={`Add notes for ${headingText}`}>
+              📝
+            </span>
+          </HeadingTag>
+        );
+      };
+      return acc;
+    }, {});
+    Object.assign(customComponents, headingComponents);
+  }
 
   const components = { ...customComponents, MermaidBlock };
 
