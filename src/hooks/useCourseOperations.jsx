@@ -482,10 +482,34 @@ ${topicDescription || 'overview content placeholder'}`;
     return { details: { state: 'notStarted' } };
   }
 
-  async function addProgress(providedUser, interactionId, type, duration = 0, details = {}, createdAt = undefined) {
+  async function addProgress(providedUser, interactionId, type, duration = 0, details = {}) {
     const progressUser = providedUser || user;
     if (progressUser) {
-      return service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details, createdAt);
+      _updateEnrollmentProgress(learningSession?.enrollment, learningSession?.topic, interactionId, type);
+      return service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
+    }
+  }
+
+  function _updateEnrollmentProgress(enrollment, topic, interactionId, type) {
+    if (enrollment && topic && (type === 'instructionView' || type === 'videoView' || type === 'quizSubmit')) {
+      var update = false;
+
+      if (!enrollment.progress) {
+        enrollment.progress = {};
+      }
+
+      if (!enrollment.progress[topic.id]) {
+        enrollment.progress[topic.id] = [];
+        update = true;
+      }
+
+      if (type === 'quizSubmit' && interactionId && !enrollment.progress[topic.id].includes(interactionId)) {
+        enrollment.progress[topic.id].push(interactionId);
+        update = true;
+      }
+      if (update) {
+        service.saveEnrollment(enrollment);
+      }
     }
   }
 

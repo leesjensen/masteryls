@@ -6,8 +6,7 @@ import { useEffect, useRef } from 'react';
  * @example
  * // Basic usage - automatically track viewing time
  * useProgressTracking({
- *   interactionId: 'uuid',
- *   interactionType: 'instructionView',
+ *   progressType: 'instructionView',
  *   onProgress: (id, type, duration) => courseOps.addProgress(id, type, duration),
  *   enabled: true,
  *   minDuration: 30
@@ -21,8 +20,7 @@ import { useEffect, useRef } from 'react';
  *   pauseTracking,
  *   resumeTracking
  * } = useProgressTracking({
- *   interactionId: 'uuid',
- *   interactionType: 'videoView',
+ *   progressType: 'videoView',
  *   onProgress: recordVideoProgress,
  *   minDuration: 10
  * });
@@ -38,15 +36,14 @@ import { useEffect, useRef } from 'react';
  * };
  *
  * @param {Object} options - Configuration options
- * @param {string} options.interactionId - Unique identifier for the interaction being tracked
- * @param {string} options.interactionType - Type of activity (e.g., 'instructionView', 'videoView', 'quizAttempt', 'exam')
+ * @param {string} options.progressType - Type of progress being tracked (e.g., 'instructionView', 'videoView', 'quizAttempt', 'exam')
  * @param {Function} options.onProgress - Function to call when recording progress (interactionId, type, duration) => void
  * @param {boolean} options.enabled - Whether tracking is enabled (default: true)
  * @param {number} options.minDuration - Minimum duration in seconds before recording (default: 1)
  * @param {Array} options.dependencies - Additional dependencies to restart tracking (default: [])
  * @returns {Object} - Object with current session info and manual control functions
  */
-export default function useProgressTracking({ interactionId, interactionType, onProgress, enabled = true, minDuration = 30 }) {
+export default function useProgressTracking({ progressType, onProgress, enabled = true, minDuration = 30 }) {
   const startTimeRef = useRef(null);
   const totalTimeRef = useRef(0);
   const isVisibleRef = useRef(true);
@@ -63,7 +60,7 @@ export default function useProgressTracking({ interactionId, interactionType, on
 
   // Function to manually record progress (useful for immediate recording)
   const recordProgress = async () => {
-    if (!enabled || !interactionId || !onProgress || !isTrackingRef.current) {
+    if (!enabled || !onProgress || !isTrackingRef.current) {
       return false;
     }
 
@@ -76,12 +73,12 @@ export default function useProgressTracking({ interactionId, interactionType, on
     const duration = getCurrentDuration();
     if (duration >= minDuration) {
       try {
-        await onProgress(null, interactionId, interactionType, duration);
+        await onProgress(null, null, progressType, duration);
         // Reset total time after successful recording
         totalTimeRef.current = 0;
         return true;
       } catch (error) {
-        console.warn(`Failed to record progress for ${interactionType}:`, error);
+        console.warn(`Failed to record progress for ${progressType}:`, error);
         return false;
       }
     }
@@ -114,7 +111,7 @@ export default function useProgressTracking({ interactionId, interactionType, on
   };
 
   useEffect(() => {
-    if (!enabled || !interactionId || !onProgress) {
+    if (!enabled || !onProgress) {
       return;
     }
 
@@ -155,15 +152,15 @@ export default function useProgressTracking({ interactionId, interactionType, on
       if (duration >= minDuration && isTrackingRef.current) {
         // Use setTimeout to avoid blocking the cleanup
         setTimeout(() => {
-          onProgress(null, interactionId, interactionType, duration).catch((error) => {
-            console.warn(`Failed to record progress for ${interactionType}:`, error);
+          onProgress(null, null, progressType, duration).catch((error) => {
+            console.warn(`Failed to record progress for ${progressType}:`, error);
           });
         }, 0);
       }
 
       isTrackingRef.current = false;
     };
-  }, [interactionId, interactionType, enabled, onProgress, minDuration]);
+  }, [progressType, enabled, onProgress, minDuration]);
 
   return {
     getCurrentDuration,

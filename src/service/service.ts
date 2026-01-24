@@ -510,7 +510,7 @@ class Service {
    * @param details - Additional details object.
    * @param createdAt - Timestamp of the progress.
    */
-  async addProgress(userId: string, catalogId: string, enrollmentId: string, topicId: string, interactionId: string, type: string = 'instructionView', duration: number = 0, details: object = {}, createdAt: string): Promise<void> {
+  async addProgress(userId: string, catalogId: string, enrollmentId: string, topicId: string, interactionId: string, type: string = 'instructionView', duration: number = 0, details: object = {}): Promise<void> {
     const progressData: any = {
       userId,
       catalogId,
@@ -521,12 +521,8 @@ class Service {
       duration,
       details,
     };
-    if (createdAt !== undefined) {
-      progressData.createdAt = createdAt;
-    }
 
     const { error } = await this.supabase.from('progress').insert([progressData]).select().single();
-
     if (error) {
       throw new Error(error.message);
     }
