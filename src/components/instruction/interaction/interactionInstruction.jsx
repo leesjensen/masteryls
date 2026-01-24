@@ -113,7 +113,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     if (type) {
       if (event.target.tagName === 'BUTTON') {
         event.target.disabled = true;
-        submissionFeedback(interactionRoot);
+        visualizeGrading(interactionRoot);
 
         if (type === 'multiple-choice' || type === 'multiple-select') {
           const inputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
@@ -137,10 +137,10 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
           if (await onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect })) {
-            gradedFeedback(interactionRoot, percentCorrect);
+            displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'survey') {
-          gradedFeedback(interactionRoot, -1);
+          displayGrade(interactionRoot, -1);
           const inputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
           const selected = [];
           inputs.forEach((inp) => {
@@ -155,32 +155,32 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const precedingContent = getPrecedingContent(interactionRoot);
             const percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value });
-            gradedFeedback(interactionRoot, percentCorrect);
+            displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'file-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="file"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files });
-            gradedFeedback(interactionRoot, percentCorrect);
+            displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'url-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="url"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value });
-            gradedFeedback(interactionRoot, percentCorrect);
+            displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'teaching') {
           if (event.target.id === 'submit-session') {
             const progress = getInteractionProgress(id);
             const messages = progress?.messages || [];
             const percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
-            gradedFeedback(interactionRoot, percentCorrect);
+            displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'prompt') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value });
-            gradedFeedback(interactionRoot, percentCorrect);
+            displayGrade(interactionRoot, percentCorrect);
           }
         }
 
@@ -274,19 +274,19 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return percentCorrect;
   }
 
-  function submissionFeedback(quizRoot) {
+  function visualizeGrading(quizRoot) {
     quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-blue-50', 'bg-white');
-    quizRoot.classList.add('ring-2', 'ring-gray-400', 'bg-gray-50');
+    quizRoot.classList.add('ring-2', 'ring-gray-400', 'bg-gray-50', 'opacity-25', 'animate-pulse');
   }
 
-  function gradedFeedback(quizRoot, percentCorrect) {
+  function displayGrade(quizRoot, percentCorrect) {
     let ringClass = 'ring-blue-400';
     if (instructionState !== 'exam' && percentCorrect >= 0) {
       if (percentCorrect === 100) ringClass = 'ring-green-500';
       else if (percentCorrect === 0) ringClass = 'ring-red-500';
       else ringClass = 'ring-yellow-400';
     }
-    quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-gray-50', 'bg-white');
+    quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-gray-50', 'bg-white', 'opacity-25', 'animate-pulse');
     quizRoot.classList.add('ring-2', ringClass, 'bg-gray-50');
   }
 
