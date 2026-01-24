@@ -28,6 +28,7 @@ Simple **multiple choice** question
 
   await page.getByRole('radio', { name: 'This is the right answer' }).check();
   await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeChecked();
+  await page.getByRole('button', { name: 'Submit' }).click();
 
   await expect(page.locator('pre')).toContainText('Fantastic job');
 });
@@ -58,6 +59,9 @@ Simple **multiple select** question
 
   await page.getByRole('checkbox', { name: 'Good 1' }).check();
   await expect(page.getByRole('checkbox', { name: 'Good 1' })).toBeChecked();
+  await page.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(page.locator('pre')).toContainText('Fantastic job');
 });
 
 test('interaction prompt', async ({ page }) => {
