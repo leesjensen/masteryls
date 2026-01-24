@@ -6,6 +6,14 @@ export default function SurveyInteraction({ quizId, body, multipleSelect, course
   const progress = useInteractionProgressStore(quizId) || {};
   const [surveyResults, setSurveyResults] = React.useState(null);
 
+  function showMyVotes() {
+    if (courseOps.user.isRoot()) {
+      setTimeout(() => {
+        generateResults();
+      }, 1000);
+    }
+  }
+
   function generateResults() {
     courseOps.getSurveySummary(quizId).then((summary) => {
       const counts = Object.values(summary.votes);
@@ -103,7 +111,7 @@ export default function SurveyInteraction({ quizId, body, multipleSelect, course
             </div>
           );
         })}
-        <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={useRadioButtons && currentSelections.size === 0}>
+        <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={useRadioButtons && currentSelections.size === 0} onClick={showMyVotes}>
           Submit
         </button>
         {surveyResults}
