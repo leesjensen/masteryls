@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Markdown from './Markdown';
 
-export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicContent, user, activeSection = null }) {
+export default function DiscussionPanel({ courseOps, learningSession, isOpen, onClose, topicTitle, topicContent, user, activeSection = null }) {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +26,29 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    // Reset messages when selected section changes
+    (async () => {
+      const notes = (await courseOps.getProgress({
+        topicId: learningSession.topic.id,
+        enrollmentId: learningSession.enrollment.id,
+        types: ['note'],
+        limit: 1000,
+      })).data;
+      // TODO: Handle if there are more than 1000 notes?
+      console.log("Fetched notes for notes:", notes);
+      const pIsRelevant = (p) => {
+        if (!p.details) return false;
+        if (activeSection === null) {
+          return p.details.activeSection === null;
+        }
+        return p.details.activeSection?.sectionId === activeSection.sectionId;
+      }
+      setMessages(notes.filter(pIsRelevant).map(p => p.details).sort((a, b) => a.timestamp - b.timestamp));
+      console.log("Loaded notes for discussion panel:", messages);
+    })();
+  }, [activeSection]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -40,27 +63,23 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     }
   }, [showModeDropdown]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!userInput.trim() || isLoading) return;
+  const handleUserNoteInput = (userMessage) => {
+    const notePayload = {
+      type: 'note',
+      activeSection,
+      content: userMessage,
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [
+      ...prev,
+      notePayload,
+    ]);
 
-    const userMessage = userInput.trim();
-    setUserInput('');
+    // Save to progress table in backend
+    courseOps.addProgress(null, null, 'note', 0, notePayload);
+  };
 
-    if (mode === 'notes') {
-      // Add note directly without AI response
-      setMessages((prev) => [
-        ...prev,
-        {
-          type: 'note',
-          content: userMessage,
-          timestamp: Date.now(),
-        },
-      ]);
-      return;
-    }
-
-    // AI mode: Add user message and get AI response
+  const handleAIQueryInput = async (userMessage) => {
     const newMessages = [...messages, { type: 'user', content: userMessage, timestamp: Date.now() }];
     setMessages(newMessages);
     setIsLoading(true);
@@ -68,6 +87,7 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
     let type = 'model';
     let content;
     try {
+      // TODO: Take into account what the activeSection is
       content = await aiDiscussionResponseGenerator(topicTitle, topicContent, newMessages);
     } catch (error) {
       type = 'error';
@@ -77,6 +97,7 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
         ...prev,
         {
           type,
+          activeSection,
           content,
           timestamp: Date.now(),
         },
@@ -84,6 +105,59 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
 
       setIsLoading(false);
     }
+  };
+
+  const handleSaveAsNote = (includePreviousMessage = true) => {
+    console.log("Saving AI response as note");
+    // Save both the most recent message (AI response) and optionally the previous user message (query) as a note
+    // If including the previous message, concatenate both into one note
+    setMessages((prev) => {
+      const lastMessage = prev[prev.length - 1];
+      let contentToSave;
+      if (includePreviousMessage && prev.length >= 2) {
+        const secondLastMessage = prev[prev.length - 2];
+        contentToSave = `**Your Question:**\n\n${secondLastMessage.content}\n\n---\n\n**AI Response:**\n\n${lastMessage.content}`;
+      } else {
+        contentToSave = lastMessage.content;
+      }
+      const notePayload = {
+        type: 'note',
+        activeSection,
+        content: contentToSave,
+        timestamp: Date.now(),
+      };
+      // Save to progress table in backend
+      courseOps.addProgress(null, null, 'note', 0, notePayload);
+
+      // Remove the messages used from the message history and add the concatenated note
+      let updatedMessages = prev;
+      if (includePreviousMessage && prev.length >= 2) {
+        updatedMessages = prev.slice(0, -2);
+      } else {
+        updatedMessages = prev.slice(0, -1);
+      }
+      return [
+        ...updatedMessages,
+        notePayload,
+      ];
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!userInput.trim() || isLoading) return;
+
+    const userMessage = userInput.trim();
+    setUserInput('');
+
+    if (mode === 'notes') {
+      // Add note directly without AI response
+      handleUserNoteInput(userMessage);
+      return;
+    }
+
+    // AI mode: Add user message and get AI response
+    handleAIQueryInput(userMessage);
   };
 
   const toggleMode = (newMode) => {
@@ -115,15 +189,13 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
       emptyStateIcon: '📓',
       emptyStateText: 'Take notes about this topic. Your notes will be saved here for future reference.',
     },
-  };
-
-  const config = modeConfig[mode];
+  }[mode];
 
   return (
     <div className="fixed inset-y-0 right-0 w-128 bg-white border-l border-gray-300 shadow-lg z-50 flex flex-col overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-800">{config.title}</h3>
+          <h3 className="font-semibold text-gray-800">{modeConfig.title}</h3>
           <p className="text-sm text-gray-600 truncate" title={fullTopicTitle}>
             {fullTopicTitle}
           </p>
@@ -140,38 +212,16 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center text-gray-500 py-8">
-            <p className="mb-2 text-2xl">{config.emptyStateIcon}</p>
+            <p className="mb-2 text-2xl">{modeConfig.emptyStateIcon}</p>
             <p className="text-sm px-4">
-              {config.emptyStateText}
+              {modeConfig.emptyStateText}
             </p>
           </div>
         )}
 
-        {messages.map((message) => (
-          <div key={message.timestamp} className={`flex ${message.type === 'user' || message.type === 'note' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-lg px-3 py-2 border-2 ${message.type === 'user'
-              ? 'border-blue-500 bg-blue-600 text-white'
-              : message.type === 'note'
-                ? 'border-amber-400 bg-amber-50 text-gray-800'
-                : message.type === 'error'
-                  ? 'border-red-700'
-                  : 'border-gray-400'
-              } overflow-auto break-words`}>
-              {message.type === 'user' || message.type === 'note' ? (
-                <div>
-                  {message.type === 'note' && (
-                    <div className="text-xs text-amber-600 font-medium mb-1">📝 Note</div>
-                  )}
-                  {message.content}
-                </div>
-              ) : (
-                <div className="markdown-body">
-                  <Markdown content={message.content} />
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+        {messages.map((message) =>
+          <MessageBox key={message.timestamp} message={message} handleSaveAsNote={handleSaveAsNote} />
+        )}
 
         {isLoading && (
           <div className="flex justify-start">
@@ -194,7 +244,7 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder={config.placeholder}
+            placeholder={modeConfig.placeholder}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isLoading}
           />
@@ -205,7 +255,7 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
                 disabled={!userInput.trim() || isLoading}
                 className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
               >
-                {config.buttonText}
+                {modeConfig.buttonText}
               </button>
               <button
                 type="button"
@@ -250,6 +300,64 @@ export default function DiscussionPanel({ isOpen, onClose, topicTitle, topicCont
           </div>
         </div>
       </form>
+    </div>
+  );
+}
+
+
+function MessageBox({ message, handleSaveAsNote }) {
+  const { type, content } = message;
+
+  let justify;
+  let styles;
+  switch (type) {
+    case 'user':
+      justify = 'justify-end';
+      styles = 'border-blue-500 bg-blue-600 text-white';
+      break;
+    case 'note':
+      justify = 'justify-end';
+      styles = 'border-amber-400 text-gray-800';
+      break;
+    case 'error':
+      justify = 'justify-start';
+      styles = 'border-red-700 bg-red-100 text-red-800';
+      break;
+    default:
+      justify = 'justify-start';
+      styles = 'border-gray-400';
+  }
+  const formatAsMarkdown = type !== 'user';
+
+  let saveAIResponse = null;
+  if (type === 'model') {
+    saveAIResponse = (
+      <button
+        className="mt-2 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+        onClick={handleSaveAsNote}
+      >
+        Save as Note
+      </button>
+    );
+  }
+
+  return (
+    <div className={`flex ${justify}`}>
+      <div className={`max-w-[80%] rounded-lg px-3 py-2 border-2 ${styles} overflow-auto break-words`}>
+        {formatAsMarkdown ? (
+          <div className="markdown-body">
+            {type === 'note' && (
+              <div className="text-xs text-amber-600 font-medium mb-1">📝 Note</div>
+            )}
+            <Markdown content={content} />
+          </div>
+        ) : (
+          <div>
+            {content}
+          </div>
+        )}
+        {saveAIResponse}
+      </div>
     </div>
   );
 }
