@@ -28,6 +28,9 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
   useEffect(() => {
     // Reset messages when selected section changes
+    // TODO: The saved messages should be fetched from the backend only when the parent text interaction is first loaded.
+    // There should be some sort of visual cue on the text interaction if there are existing notes.
+    // TODO: If the user closes the text interaction and re-opens it, or switches back and forth between sections, the AI discussion history should persist.
     (async () => {
       const notes = (await courseOps.getProgress({
         topicId: learningSession.topic.id,
@@ -36,7 +39,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         limit: 1000,
       })).data;
       // TODO: Handle if there are more than 1000 notes?
-      console.log("Fetched notes for notes:", notes);
       const pIsRelevant = (p) => {
         if (!p.details) return false;
         if (activeSection === null) {
@@ -45,7 +47,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         return p.details.activeSection?.sectionId === activeSection.sectionId;
       }
       setMessages(notes.filter(pIsRelevant).map(p => p.details).sort((a, b) => a.timestamp - b.timestamp));
-      console.log("Loaded notes for discussion panel:", messages);
     })();
   }, [activeSection]);
 
@@ -80,14 +81,13 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   };
 
   const handleAIQueryInput = async (userMessage) => {
-    const newMessages = [...messages, { type: 'user', content: userMessage, timestamp: Date.now() }];
+    const newMessages = [...messages, { type: 'user', activeSection, content: userMessage, timestamp: Date.now() }];
     setMessages(newMessages);
     setIsLoading(true);
 
     let type = 'model';
     let content;
     try {
-      // TODO: Take into account what the activeSection is
       content = await aiDiscussionResponseGenerator(topicTitle, topicContent, newMessages);
     } catch (error) {
       type = 'error';
@@ -108,39 +108,19 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   };
 
   const handleSaveAsNote = (includePreviousMessage = true) => {
-    console.log("Saving AI response as note");
     // Save both the most recent message (AI response) and optionally the previous user message (query) as a note
     // If including the previous message, concatenate both into one note
-    setMessages((prev) => {
-      const lastMessage = prev[prev.length - 1];
-      let contentToSave;
-      if (includePreviousMessage && prev.length >= 2) {
-        const secondLastMessage = prev[prev.length - 2];
-        contentToSave = `**Your Question:**\n\n${secondLastMessage.content}\n\n---\n\n**AI Response:**\n\n${lastMessage.content}`;
-      } else {
-        contentToSave = lastMessage.content;
-      }
-      const notePayload = {
-        type: 'note',
-        activeSection,
-        content: contentToSave,
-        timestamp: Date.now(),
-      };
-      // Save to progress table in backend
-      courseOps.addProgress(null, null, 'note', 0, notePayload);
+    const lastMessage = messages[messages.length - 1];
+    let contentToSave;
+    if (includePreviousMessage && messages.length >= 2) {
+      const secondLastMessage = messages[messages.length - 2];
+      contentToSave = `**Your Question:**\n\n${secondLastMessage.content}\n\n---\n\n**AI Response:**\n\n${lastMessage.content}`;
+    } else {
+      contentToSave = lastMessage.content;
+    }
 
-      // Remove the messages used from the message history and add the concatenated note
-      let updatedMessages = prev;
-      if (includePreviousMessage && prev.length >= 2) {
-        updatedMessages = prev.slice(0, -2);
-      } else {
-        updatedMessages = prev.slice(0, -1);
-      }
-      return [
-        ...updatedMessages,
-        notePayload,
-      ];
-    });
+    // Save it now exactly as if it was a user note
+    handleUserNoteInput(contentToSave);
   };
 
   const handleSubmit = async (e) => {
@@ -149,6 +129,11 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
     const userMessage = userInput.trim();
     setUserInput('');
+
+    // Reset size of textarea
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
 
     if (mode === 'notes') {
       // Add note directly without AI response
@@ -239,13 +224,24 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       </div>
       <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-gray-50">
         <div className="flex space-x-2">
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
             placeholder={modeConfig.placeholder}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            rows={1}
+            style={{ minHeight: '2.5rem', maxHeight: '7.5rem' }}
+            onInput={(e) => {
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            }}
             disabled={isLoading}
           />
           <div className="relative" ref={dropdownRef}>

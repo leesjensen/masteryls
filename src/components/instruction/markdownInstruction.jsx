@@ -59,7 +59,6 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   }
 
   const onMakeSectionActive = (user && instructionState === 'learning') ? (sectionId, sectionText) => {
-    console.log(`Note created for section ${sectionId}: ${sectionText}`);
     setDiscussionOpen(true);
     setActiveSection({ sectionId, sectionText });
   } : null;
