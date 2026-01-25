@@ -78,7 +78,6 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
         totalTimeRef.current = 0;
         return true;
       } catch (error) {
-        console.warn(`Failed to record progress for ${progressType}:`, error);
         return false;
       }
     }
@@ -152,9 +151,7 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
       if (duration >= minDuration && isTrackingRef.current) {
         // Use setTimeout to avoid blocking the cleanup
         setTimeout(() => {
-          onProgress(null, null, progressType, duration).catch((error) => {
-            console.warn(`Failed to record progress for ${progressType}:`, error);
-          });
+          onProgress(null, null, progressType, duration).catch((error) => {});
         }, 0);
       }
 

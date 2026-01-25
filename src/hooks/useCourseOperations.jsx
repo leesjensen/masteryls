@@ -508,10 +508,29 @@ ${topicDescription || 'overview content placeholder'}`;
         update = true;
       }
       if (update) {
+        enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
         service.saveEnrollment(enrollment);
         setLearningSession({ ...learningSession, enrollment: enrollment });
       }
     }
+  }
+
+  function _calculateEnrollmentProgress(enrollment, course) {
+    if (course.allTopics.length === 0) return 0;
+    let completedTopics = 0;
+    let totalTopics = course.allTopics.length;
+
+    course.allTopics.forEach((topic) => {
+      let topicPercent = enrollment.progress[topic.id] ? 1 : 0;
+      if (topic.interactions && topic.interactions.length > 0) {
+        const completedForTopic = enrollment.progress[topic.id] || [];
+        const interactionPercent = completedForTopic.length / topic.interactions.length;
+        topicPercent = interactionPercent;
+      }
+      completedTopics += topicPercent;
+    });
+
+    return Math.round((completedTopics / totalTopics) * 100);
   }
 
   async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, types = null, startDate = null, endDate = null, page = 1, limit = 100 }) {

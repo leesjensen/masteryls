@@ -49,20 +49,20 @@ import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
   /**
    * injectInteraction responds to a Markdown processor request to render an interaction.
-   * @param {string} content - The raw interaction markdown content
+   * @param {string} interactionContent - The raw interaction markdown content
    * @returns {JSX.Element} Interaction JSX element
    */
-  function injectInteraction(content) {
-    const jsonMatch = content.match(/^\{[\s\S]*?\}(?:\n|$)/);
+  function injectInteraction(interactionContent) {
+    const jsonMatch = interactionContent.match(/^\{[\s\S]*?\}(?:\n|$)/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
-    let interactionBody = content;
+    let interactionBody = interactionContent;
 
     if (jsonMatch) {
       try {
         meta = { ...meta, ...JSON.parse(jsonMatch[0]) };
         meta.type = meta.type.toLowerCase();
       } catch {}
-      interactionBody = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
+      interactionBody = interactionContent.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
 
     quizStateReporter?.(meta.id);
