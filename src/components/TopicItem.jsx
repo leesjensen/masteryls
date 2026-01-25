@@ -8,10 +8,11 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
 
   React.useEffect(() => {
     if (enrollment && topic && topic.interactions && topic.interactions.length > 0) {
+      console.log('Calculating progress meter for topic:', topic.id);
       const completedInteractions = enrollment.progress[topic.id] || [];
       setProgressMeter({ completed: completedInteractions.length, total: topic.interactions.length });
     }
-  }, [enrollment, topic]);
+  }, [enrollment?.progress[topic.id]]);
 
   return (
     <li className="mb-0.5 flex justify-between items-center group">
@@ -29,8 +30,8 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
         </a>
         {progressMeter && (
           <span className="ml-2 text-xs text-gray-400">
-            <div className="inline-block w-6 h-3 bg-amber-200 border-1 border-amber-400 rounded-md overflow-hidden align-middle">
-              <div className="h-full bg-amber-400 transition-all duration-3000" style={{ width: `${(progressMeter.completed / progressMeter.total) * 100}%` }} title={`${progressMeter.completed}/${progressMeter.total}`} />
+            <div className="inline-block w-6 h-3 opacity-75 bg-amber-100 border-1 border-amber-400 rounded-sm overflow-hidden align-middle" title={`${progressMeter.completed}/${progressMeter.total}`}>
+              <div className="h-full bg-amber-400 transition-all duration-1000" style={{ width: `${(progressMeter.completed / progressMeter.total) * 100}%` }} />
             </div>
           </span>
         )}

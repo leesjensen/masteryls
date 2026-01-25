@@ -504,11 +504,12 @@ ${topicDescription || 'overview content placeholder'}`;
       }
 
       if (type === 'quizSubmit' && interactionId && !enrollment.progress[topic.id].includes(interactionId)) {
-        enrollment.progress[topic.id].push(interactionId);
+        enrollment.progress[topic.id] = [...enrollment.progress[topic.id], interactionId];
         update = true;
       }
       if (update) {
         service.saveEnrollment(enrollment);
+        setLearningSession({ ...learningSession, enrollment: enrollment });
       }
     }
   }
