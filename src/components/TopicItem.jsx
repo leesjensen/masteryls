@@ -7,13 +7,15 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
   const [progressMeter, setProgressMeter] = React.useState(null);
 
   React.useEffect(() => {
-    if (topic.interactions && topic.interactions.length > 0) {
-      const completedInteractions = enrollment.progress[topic.id] || [];
-      setProgressMeter({ completed: completedInteractions.length, total: topic.interactions.length });
-    } else if (enrollment?.progress[topic.id]) {
-      setProgressMeter({ completed: 1, total: 1 });
+    if (enrollment && enrollment.progress) {
+      if (topic.interactions && topic.interactions.length > 0) {
+        const completedInteractions = enrollment.progress[topic.id] || [];
+        setProgressMeter({ completed: completedInteractions.length, total: topic.interactions.length });
+      } else if (enrollment.progress[topic.id]) {
+        setProgressMeter({ completed: 1, total: 1 });
+      }
     }
-  }, [enrollment.progress[topic.id]]);
+  }, [enrollment?.progress[topic.id]]);
 
   return (
     <li className="mb-0.5 flex justify-between items-center group">
