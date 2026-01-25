@@ -9,8 +9,8 @@ import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
-function Contents({ courseOps, currentTopic, course, editorVisible }) {
-  const { openModuleIndexes, toggleModule } = useModuleState(courseOps, course, currentTopic);
+function Contents({ courseOps, learningSession, editorVisible }) {
+  const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
   const navigate = useNavigate();
 
@@ -23,13 +23,13 @@ function Contents({ courseOps, currentTopic, course, editorVisible }) {
         navigateToTopic('prev');
       },
     },
-    { target: undefined }
+    { target: undefined },
   );
 
   function navigateToTopic(direction) {
     const newTopic = courseOps.getAdjacentTopic(direction);
     if (newTopic) {
-      navigate(`/course/${course.id}/topic/${newTopic.id}`);
+      navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
     }
   }
 
@@ -37,7 +37,7 @@ function Contents({ courseOps, currentTopic, course, editorVisible }) {
     const { active, over } = event;
     if (!active || !over || active.id === over.id) return;
 
-    const updatedCourse = Course.copy(course);
+    const updatedCourse = Course.copy(learningSession.course);
     let fromModuleIdx = -1,
       fromTopicIdx = -1;
     let toModuleIdx = -1,
@@ -62,14 +62,15 @@ function Contents({ courseOps, currentTopic, course, editorVisible }) {
     await courseOps.updateCourseStructure(updatedCourse, null, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
   };
 
-  if (!course) {
+  if (!learningSession?.course) {
     return <div className="p-4 text-gray-500"></div>;
   }
 
-  const allTopicIds = course && course.modules ? course.modules.flatMap((m) => m.topics.map((t) => t.id)) : [];
+  const modules = learningSession?.course?.modules;
+  const allTopicIds = modules ? modules.flatMap((m) => m.topics.map((t) => t.id)) : [];
 
-  function filterTopicsByState(course) {
-    return course.modules
+  function filterTopicsByState() {
+    return learningSession.course.modules
       .map((module) => ({
         ...module,
         topics: module.topics.filter((topic) => !topic.state || topic.state === 'published'),
@@ -78,7 +79,7 @@ function Contents({ courseOps, currentTopic, course, editorVisible }) {
   }
 
   async function generateAllTopics() {
-    const stubbedTopics = course.allTopics.filter((topic) => topic.state === 'stub' && topic.description);
+    const stubbedTopics = learningSession.course.allTopics.filter((topic) => topic.state === 'stub' && topic.description);
     if (stubbedTopics.length > 0) {
       let cancelled = false;
       showProgress({
@@ -102,7 +103,7 @@ function Contents({ courseOps, currentTopic, course, editorVisible }) {
               updateProgress({ ...progress, currentItem: 'Giving the gerbils a rest...' });
             }
           },
-          () => cancelled
+          () => cancelled,
         );
       } finally {
         hideProgress();
@@ -110,11 +111,11 @@ function Contents({ courseOps, currentTopic, course, editorVisible }) {
     }
   }
 
-  const moduleMap = editorVisible ? course.modules : filterTopicsByState(course);
+  const moduleMap = editorVisible ? learningSession.course.modules : filterTopicsByState();
   const moduleJsx = (
     <ul className="list-none p-0">
       {moduleMap.map((module, moduleIndex) => (
-        <ModuleSection key={moduleIndex} courseOps={courseOps} course={course} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={currentTopic} editorVisible={editorVisible} />
+        <ModuleSection key={moduleIndex} courseOps={courseOps} learningSession={learningSession} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={learningSession.topic} editorVisible={editorVisible} />
       ))}
     </ul>
   );

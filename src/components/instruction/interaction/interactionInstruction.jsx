@@ -49,20 +49,20 @@ import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
   /**
    * injectInteraction responds to a Markdown processor request to render an interaction.
-   * @param {string} content - The raw interaction markdown content
+   * @param {string} interactionContent - The raw interaction markdown content
    * @returns {JSX.Element} Interaction JSX element
    */
-  function injectInteraction(content) {
-    const jsonMatch = content.match(/^\{[\s\S]*?\}(?:\n|$)/);
+  function injectInteraction(interactionContent) {
+    const jsonMatch = interactionContent.match(/^\{[\s\S]*?\}(?:\n|$)/);
     let meta = { id: undefined, title: '', type: 'multiple-choice' };
-    let interactionBody = content;
+    let interactionBody = interactionContent;
 
     if (jsonMatch) {
       try {
         meta = { ...meta, ...JSON.parse(jsonMatch[0]) };
         meta.type = meta.type.toLowerCase();
       } catch {}
-      interactionBody = content.slice(jsonMatch.index + jsonMatch[0].length).trim();
+      interactionBody = interactionContent.slice(jsonMatch.index + jsonMatch[0].length).trim();
     }
 
     quizStateReporter?.(meta.id);
@@ -81,15 +81,15 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   function generateInteractionComponent(meta, interactionBody) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceInteraction quizId={meta.id} quizType={meta.type} body={interactionBody} />;
+      return <MultipleChoiceInteraction id={meta.id} quizType={meta.type} body={interactionBody} />;
     } else if (meta.type === 'survey') {
-      return <SurveyInteraction quizId={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
+      return <SurveyInteraction id={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
       return <EssayInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'file-submission') {
-      return <FileInteraction quizId={meta.id} body={interactionBody} />;
+      return <FileInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlInteraction quizId={meta.id} body={interactionBody} />;
+      return <UrlInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'teaching') {
       return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {
@@ -110,84 +110,75 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const title = interactionRoot.getAttribute('data-plugin-masteryls-title') || undefined;
     const bodyElem = interactionRoot.querySelector('[data-plugin-masteryls-body]');
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
-    if (type === 'survey') {
-      if (event.target.tagName === 'INPUT') {
-        gradedFeedback(interactionRoot, -1);
-        const inputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
-        const selected = [];
-        inputs.forEach((inp) => {
-          const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
-          if (inp.checked) selected.push(idx);
-        });
-        selected.sort((a, b) => a - b);
-
-        await onSurveyInteraction({ id, type, selected });
-      }
-    } else if (type === 'multiple-choice' || type === 'multiple-select') {
-      if (event.target.tagName === 'INPUT') {
-        submissionFeedback(interactionRoot);
-
-        const inputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
-        const selected = [];
-        const correct = [];
-        const choices = [];
-        inputs.forEach((inp) => {
-          const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
-          choices.push(inp.nextSibling.textContent.trim());
-          if (inp.checked) selected.push(idx);
-          if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
-        });
-        selected.sort((a, b) => a - b);
-        correct.sort((a, b) => a - b);
-
-        // Calculate percent correct
-        const total = correct.length;
-        const correctSelections = selected.filter((idx) => correct.includes(idx)).length;
-        const incorrectSelections = selected.filter((idx) => !correct.includes(idx)).length;
-        const matched = Math.max(0, correctSelections - incorrectSelections);
-        const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
-
-        if (await onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect })) {
-          gradedFeedback(interactionRoot, percentCorrect);
-        }
-      }
-    } else if (type === 'essay' || type === 'file-submission' || type === 'url-submission' || type === 'teaching' || type === 'prompt') {
-      if (event.target.tagName === 'BUTTON') {
+    if (type) {
+      if (event.target.tagName === 'BUTTON' && event.target.id === `submit-${id}`) {
         event.target.disabled = true;
-        submissionFeedback(interactionRoot);
+        visualizeGrading(interactionRoot);
 
-        let percentCorrect = 0;
-        if (type === 'essay') {
+        if (type === 'multiple-choice' || type === 'multiple-select') {
+          const inputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
+          const selected = [];
+          const correct = [];
+          const choices = [];
+          inputs.forEach((inp) => {
+            const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
+            choices.push(inp.nextSibling.textContent.trim());
+            if (inp.checked) selected.push(idx);
+            if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
+          });
+          selected.sort((a, b) => a - b);
+          correct.sort((a, b) => a - b);
+
+          // Calculate percent correct
+          const total = correct.length;
+          const correctSelections = selected.filter((idx) => correct.includes(idx)).length;
+          const incorrectSelections = selected.filter((idx) => !correct.includes(idx)).length;
+          const matched = Math.max(0, correctSelections - incorrectSelections);
+          const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
+
+          if (await onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect })) {
+            displayGrade(interactionRoot, percentCorrect);
+          }
+        } else if (type === 'survey') {
+          displayGrade(interactionRoot, -1);
+          const inputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-index]'));
+          const selected = [];
+          inputs.forEach((inp) => {
+            const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
+            if (inp.checked) selected.push(idx);
+          });
+          selected.sort((a, b) => a - b);
+
+          await onSurveyInteraction({ id, type, selected });
+        } else if (type === 'essay') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            let precedingContent = getPrecedingContent(interactionRoot);
-            percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value });
+            const precedingContent = getPrecedingContent(interactionRoot);
+            const percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value });
+            displayGrade(interactionRoot, percentCorrect);
           }
-          gradedFeedback(interactionRoot, percentCorrect);
         } else if (type === 'file-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="file"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files });
+            const percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files });
+            displayGrade(interactionRoot, percentCorrect);
           }
-          gradedFeedback(interactionRoot, percentCorrect);
         } else if (type === 'url-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="url"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value });
+            const percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value });
+            displayGrade(interactionRoot, percentCorrect);
           }
-          gradedFeedback(interactionRoot, percentCorrect);
         } else if (type === 'teaching') {
-          if (event.target.id === 'submit-session') {
-            const progress = getInteractionProgress(id);
-            const messages = progress?.messages || [];
-            percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
-            gradedFeedback(interactionRoot, percentCorrect);
-          }
+          const progress = getInteractionProgress(id);
+          const messages = progress?.messages || [];
+          const percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
+          displayGrade(interactionRoot, percentCorrect);
         } else if (type === 'prompt') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value });
-            gradedFeedback(interactionRoot, percentCorrect);
+            const percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value });
+            displayGrade(interactionRoot, percentCorrect);
           }
         }
 
@@ -281,19 +272,19 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return percentCorrect;
   }
 
-  function submissionFeedback(quizRoot) {
+  function visualizeGrading(quizRoot) {
     quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-blue-50', 'bg-white');
-    quizRoot.classList.add('ring-2', 'ring-gray-400', 'bg-gray-50');
+    quizRoot.classList.add('ring-2', 'ring-gray-400', 'bg-gray-50', 'opacity-25', 'animate-pulse');
   }
 
-  function gradedFeedback(quizRoot, percentCorrect) {
+  function displayGrade(quizRoot, percentCorrect) {
     let ringClass = 'ring-blue-400';
     if (instructionState !== 'exam' && percentCorrect >= 0) {
       if (percentCorrect === 100) ringClass = 'ring-green-500';
       else if (percentCorrect === 0) ringClass = 'ring-red-500';
       else ringClass = 'ring-yellow-400';
     }
-    quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-gray-50', 'bg-white');
+    quizRoot.classList.remove('ring-blue-400', 'ring-green-500', 'ring-yellow-400', 'ring-red-500', 'ring-gray-400', 'bg-gray-50', 'bg-white', 'opacity-25', 'animate-pulse');
     quizRoot.classList.add('ring-2', ringClass, 'bg-gray-50');
   }
 
