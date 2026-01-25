@@ -81,15 +81,15 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   function generateInteractionComponent(meta, interactionBody) {
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
-      return <MultipleChoiceInteraction quizId={meta.id} quizType={meta.type} body={interactionBody} />;
+      return <MultipleChoiceInteraction id={meta.id} quizType={meta.type} body={interactionBody} />;
     } else if (meta.type === 'survey') {
-      return <SurveyInteraction quizId={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
+      return <SurveyInteraction id={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
       return <EssayInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'file-submission') {
-      return <FileInteraction quizId={meta.id} body={interactionBody} />;
+      return <FileInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlInteraction quizId={meta.id} body={interactionBody} />;
+      return <UrlInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'teaching') {
       return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {
@@ -111,7 +111,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const bodyElem = interactionRoot.querySelector('[data-plugin-masteryls-body]');
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type) {
-      if (event.target.tagName === 'BUTTON') {
+      if (event.target.tagName === 'BUTTON' && event.target.id === `submit-${id}`) {
         event.target.disabled = true;
         visualizeGrading(interactionRoot);
 
@@ -170,12 +170,10 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'teaching') {
-          if (event.target.id === 'submit-session') {
-            const progress = getInteractionProgress(id);
-            const messages = progress?.messages || [];
-            const percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
-            displayGrade(interactionRoot, percentCorrect);
-          }
+          const progress = getInteractionProgress(id);
+          const messages = progress?.messages || [];
+          const percentCorrect = await onTeachingInteraction({ id, title, type, body, messages });
+          displayGrade(interactionRoot, percentCorrect);
         } else if (type === 'prompt') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {

@@ -2,8 +2,8 @@ import React from 'react';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 
-export default function SurveyInteraction({ quizId, body, multipleSelect, courseOps }) {
-  const progress = useInteractionProgressStore(quizId) || {};
+export default function SurveyInteraction({ id, body, multipleSelect, courseOps }) {
+  const progress = useInteractionProgressStore(id) || {};
   const [surveyResults, setSurveyResults] = React.useState(null);
 
   function showMyVotes() {
@@ -15,7 +15,7 @@ export default function SurveyInteraction({ quizId, body, multipleSelect, course
   }
 
   function generateResults() {
-    courseOps.getSurveySummary(quizId).then((summary) => {
+    courseOps.getSurveySummary(id).then((summary) => {
       const counts = Object.values(summary.votes);
       const totalVotes = counts.reduce((sum, val) => sum + val, 0);
 
@@ -105,13 +105,13 @@ export default function SurveyInteraction({ quizId, body, multipleSelect, course
           return (
             <div key={i} className="flex items-start gap-2">
               <label className="cursor-pointer">
-                <input className="mt-1" type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${quizId}`} data-plugin-masteryls-index={i} defaultChecked={!!selected} onChange={(e) => handleSelectionChange(i, e.target.checked)} {...(choice.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} />
+                <input className="mt-1" type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${id}`} data-plugin-masteryls-index={i} defaultChecked={!!selected} onChange={(e) => handleSelectionChange(i, e.target.checked)} {...(choice.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} />
                 <span className="p-2">{inlineLiteMarkdown(choice.text)}</span>
               </label>
             </div>
           );
         })}
-        <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={useRadioButtons && currentSelections.size === 0} onClick={showMyVotes}>
+        <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={useRadioButtons && currentSelections.size === 0} onClick={showMyVotes}>
           Submit
         </button>
         {surveyResults}

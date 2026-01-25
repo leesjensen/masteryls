@@ -26,14 +26,14 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
         </span>
         <a onClick={() => navigate(`/course/${course.id}/topic/${topic.id}`)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
           {topic.title}
-          {progressMeter && (
-            <span className="ml-2 text-xs text-gray-400">
-              <div className="inline-block w-6 h-1.5 bg-gray-200 rounded-full overflow-hidden align-middle">
-                <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${(progressMeter.completed / progressMeter.total) * 100}%` }} />
-              </div>
-            </span>
-          )}
         </a>
+        {progressMeter && (
+          <span className="ml-2 text-xs text-gray-400">
+            <div className="inline-block w-6 h-3 bg-amber-200 border-1 border-amber-400 rounded-md overflow-hidden align-middle">
+              <div className="h-full bg-amber-400 transition-all duration-3000" style={{ width: `${(progressMeter.completed / progressMeter.total) * 100}%` }} title={`${progressMeter.completed}/${progressMeter.total}`} />
+            </div>
+          </span>
+        )}
       </div>
     </li>
   );

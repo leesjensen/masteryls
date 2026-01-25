@@ -120,7 +120,7 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
         </form>
       </div>
       <div className="flex gap-2 mt-4">
-        <button id="submit-session" score="30" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600" disabled={responseCount < 1}>
+        <button id={`submit-${id}`} score="30" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600" disabled={responseCount < 1}>
           Submit session
         </button>
         <button onClick={handleClear} type="button" className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 disabled:bg-gray-600 disabled:text-gray-50" disabled={responseCount < 1}>

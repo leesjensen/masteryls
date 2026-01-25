@@ -101,7 +101,7 @@ export default function FileInteraction({ id, body }) {
           </div>
         )}
       </div>
-      <button type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
         Submit files
       </button>
     </div>
