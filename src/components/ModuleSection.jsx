@@ -6,7 +6,7 @@ import NewTopicButton from './NewTopicButton';
 import useClickOutside from '../hooks/useClickOutside';
 import ConfirmDialog from '../hooks/confirmDialog.jsx';
 
-function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible }) {
+function ModuleSection({ courseOps, learningSession, course, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible }) {
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState(module.title || '');
@@ -39,7 +39,7 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
 
       // If the removed module was the current module, navigate to the default topic
       if (currentTopic?.path && module.topics.some((t) => t.path === currentTopic.path)) {
-        navigate(`/course/${course.id}/topic/${course.defaultTopic().id}`);
+        navigate(`/course/${learningSession.course.id}/topic/${learningSession.course.defaultTopic().id}`);
       }
     } catch (err) {
       console.error('remove module failed', err);
@@ -48,9 +48,9 @@ function ModuleSection({ courseOps, course, module, moduleIndex, isOpen, onToggl
 
   function getTopicItem(topic, topicIndex) {
     if (editorVisible) {
-      return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} course={course} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} />;
+      return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} course={learningSession.course} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} />;
     }
-    return <TopicItem key={topic.id} course={course} topic={topic} currentTopic={currentTopic} />;
+    return <TopicItem key={topic.id} course={learningSession.course} topic={topic} currentTopic={currentTopic} enrollment={learningSession.enrollment} />;
   }
 
   return (

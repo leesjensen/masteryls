@@ -2,8 +2,16 @@ import React from 'react';
 import { TopicIcon } from './TopicIcon';
 import { useNavigate } from 'react-router-dom';
 
-function TopicItem({ course, topic, currentTopic }) {
+function TopicItem({ course, topic, currentTopic, enrollment }) {
   const navigate = useNavigate();
+  const [progressMeter, setProgressMeter] = React.useState(null);
+
+  React.useEffect(() => {
+    if (enrollment && topic && topic.interactions && topic.interactions.length > 0) {
+      const completedInteractions = enrollment.progress[topic.id] || [];
+      setProgressMeter({ completed: completedInteractions.length, total: topic.interactions.length });
+    }
+  }, [enrollment, topic]);
 
   return (
     <li className="mb-0.5 flex justify-between items-center group">
@@ -18,7 +26,13 @@ function TopicItem({ course, topic, currentTopic }) {
         </span>
         <a onClick={() => navigate(`/course/${course.id}/topic/${topic.id}`)} className={`no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500 font-semibold' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
           {topic.title}
-          {!!topic.interactions?.length && ` ✨`}
+          {progressMeter && (
+            <span className="ml-2 text-xs text-gray-400">
+              <div className="inline-block w-6 h-1.5 bg-gray-200 rounded-full overflow-hidden align-middle">
+                <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: `${(progressMeter.completed / progressMeter.total) * 100}%` }} />
+              </div>
+            </span>
+          )}
         </a>
       </div>
     </li>

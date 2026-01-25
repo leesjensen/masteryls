@@ -53,6 +53,37 @@ test('video', async ({ page }) => {
 });
 
 test('exam', async ({ page }) => {
+  let progress: any = [];
+
+  await page.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'POST':
+        const body: any = (await route.request().postDataJSON())[0];
+        if (body.type.startsWith('exam-')) {
+          progress.push(body);
+        }
+        console.log('Mocking progress POST', progress, body);
+        await route.fulfill({
+          status: 200,
+          json: progress,
+        });
+        return;
+      case 'GET':
+        let json: any = progress;
+        const viewType = route
+          .request()
+          .url()
+          .match(/type=eq\.(\w+)/)?.[1];
+        json = viewType ? progress.filter((p) => p.type === viewType) : progress;
+        await route.fulfill({
+          status: 200,
+          json,
+        });
+        return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
   const quizMarkdown = `
 # Quiz
 \`\`\`masteryls
@@ -74,9 +105,12 @@ Simple **multiple choice** question
 
   await page.getByRole('radio', { name: 'This is the right answer' }).check();
   await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeChecked();
+
+  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+
   await expect(page.locator('pre')).not.toContainText('Great job!');
 
-  await page.getByRole('button', { name: 'Submit exam' }).click();
+  await page.getByRole('button', { name: 'Submit exam', exact: true }).click();
 
   await expect(page.getByRole('main')).toContainText('Submitted');
   await expect(page.getByRole('main')).toContainText('1/1 questions submitted');
