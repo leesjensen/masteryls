@@ -21,7 +21,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
     progressType: 'instructionView',
     onProgress: courseOps?.addProgress,
     enabled: !content && !!learningSession.topic?.path && !!courseOps?.addProgress,
-    minDuration: 60,
+    minDuration: 10,
     dependencies: [learningSession.topic?.path],
   });
 
