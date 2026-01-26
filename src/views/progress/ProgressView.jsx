@@ -8,7 +8,7 @@ export default function ProgressView({ courseOps, service, user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState({
-    type: '',
+    type: '[]',
     courseId: '',
     startDate: '',
     endDate: '',
@@ -54,7 +54,7 @@ export default function ProgressView({ courseOps, service, user }) {
 
       // Get paginated progress records for the current user
       const progressSearchResult = await courseOps.getProgress({
-        userId: user.id,
+        types: JSON.parse(filter.type),
         page: page,
         limit: itemsPerPage,
         ...filter,
@@ -288,8 +288,10 @@ export default function ProgressView({ courseOps, service, user }) {
       instructionView: 'bg-blue-100 text-blue-800',
       videoView: 'bg-purple-100 text-purple-800',
       quizSubmit: 'bg-green-100 text-green-800',
-      exam: 'bg-amber-100 text-amber-800',
-      userLogout: 'bg-gray-100 text-gray-800',
+      exam: 'bg-amber-300 text-amber-800',
+      userLogout: 'bg-gray-400 text-gray-50',
+      userLogin: 'bg-gray-100 text-gray-800',
+      note: 'bg-yellow-100 text-yellow-800',
       default: 'bg-gray-100 text-gray-800',
     };
     return colors[type] || colors.default;
@@ -323,12 +325,13 @@ export default function ProgressView({ courseOps, service, user }) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
                   <select value={filter.type} onChange={(e) => handleFilterChange('type', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Types</option>
-                    <option value="instructionView">Instruction View</option>
-                    <option value="videoView">Video View</option>
-                    <option value="quizSubmit">Quiz Submit</option>
-                    <option value="exam">Exam</option>
-                    <option value="userLogout">User Logout</option>
+                    <option value="[]">All Types</option>
+                    <option value='["instructionView"]'>Instruction View</option>
+                    <option value='["videoView"]'>Video View</option>
+                    <option value='["quizSubmit"]'>Quiz Submit</option>
+                    <option value='["exam"]'>Exam</option>
+                    <option value='["note"]'>Note</option>
+                    <option value='["userLogin", "userLogout"]'>Authorization</option>
                   </select>
                 </div>
 
