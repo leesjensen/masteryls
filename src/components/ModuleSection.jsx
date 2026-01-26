@@ -6,7 +6,7 @@ import NewTopicButton from './NewTopicButton';
 import useClickOutside from '../hooks/useClickOutside';
 import ConfirmDialog from '../hooks/confirmDialog.jsx';
 
-function ModuleSection({ courseOps, learningSession, course, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible }) {
+function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible }) {
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState(module.title || '');
