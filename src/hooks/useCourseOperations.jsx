@@ -763,7 +763,7 @@ ${topicDescription || 'overview content placeholder'}`;
 
   function _generateTopicPath(course, topicTitle, topicType) {
     if (topicType === 'video') {
-      return `https://youtu.be/PKiRH2ZKZeM?cb=${Date.now()}`;
+      return `https://youtu.be/HXNx_Gp0jyM}`;
     }
 
     const slugTitle = topicTitle
