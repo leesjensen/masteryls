@@ -2,7 +2,7 @@ import React from 'react';
 import Instruction from '../instruction/instruction.jsx';
 import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
-import VideoEditor from './VideoEditor';
+import VideoInstruction from '../instruction/videoInstruction.jsx';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
 
@@ -24,11 +24,15 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   React.useEffect(() => {
     if (contentAvailable) {
-      courseOps.getTopic(learningSession.topic).then((markdown) => {
-        setContent(markdown);
-        setDiffContent(null);
-        setDirty(false);
-      });
+      if (learningSession.topic?.type === 'video') {
+        setContent(learningSession.topic.path || '');
+      } else {
+        courseOps.getTopic(learningSession.topic).then((markdown) => {
+          setContent(markdown);
+        });
+      }
+      setDiffContent(null);
+      setDirty(false);
 
       return async () => {
         if (dirtyRef.current) {
@@ -47,9 +51,14 @@ export default function Editor({ courseOps, user, learningSession }) {
   }
 
   async function discard() {
-    const markdown = await courseOps.getTopic(learningSession.topic);
+    let content = '';
+    if (learningSession.topic?.type === 'video') {
+      content = learningSession.topic.path || '';
+    } else {
+      content = await courseOps.getTopic(learningSession.topic);
+    }
     setDirty(false);
-    setContent(markdown);
+    setContent(content);
   }
 
   async function commit() {
@@ -89,10 +98,62 @@ export default function Editor({ courseOps, user, learningSession }) {
   const editorComponent = (type) => {
     switch (type) {
       case 'video':
-        return <VideoEditor learningSession={learningSession} />;
+        return (
+          <div className="flex-1 flex flex-col overflow-hidden relative">
+            <div className="basis-[32px] pt-2 flex items-center justify-between">
+              <h1 className="text-lg font-bold pl-2 text-gray-800 mr-2">
+                Editor
+                <sup className="inline-block w-[1ch] text-center">{dirty ? '*' : ''}</sup>
+              </h1>
+
+              <div className="flex flex-1 pb-1">
+                <div className="flex-1 mx-2">
+                  <input id="url" type="text" value={content} onChange={(e) => handleEditorChange(e.target.value)} className="border rounded px-2 py-1 text-sm w-full" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
+                    Discard
+                  </button>
+                  <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
+                    Commit
+                  </button>
+                </div>
+              </div>
+            </div>
+            <VideoInstruction learningSession={{ ...learningSession, topic: { ...learningSession.topic, path: content } }} />
+          </div>
+        );
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
+            <div className="basis-[32px] pt-2 flex items-center justify-between">
+              <h1 className={`text-lg font-bold pl-2 text-gray-800 mr-2`}>
+                Editor <sup className="inline-block w-[1ch] text-center">{dirty ? '*' : ''}</sup>
+              </h1>
+
+              <div className="flex">
+                <div className="flex-1"></div>
+                <div className="flex items-center gap-2">
+                  <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={toggleShowCommits}>
+                    {showCommits ? 'Hide' : 'Show'} Commits
+                  </button>
+                  <button className="mx-1 px-3 py-1 w-18 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => setEditorState((v) => (v == 'preview' ? 'editing' : 'preview'))}>
+                    {editorState === 'preview' ? 'Edit' : 'Preview'}
+                  </button>
+                  <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
+                    Discard
+                  </button>
+                  <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
+                    Commit
+                  </button>
+                </div>
+              </div>
+            </div>
+            {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} courseOps={courseOps} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
+            <div className="flex-8/10 flex overflow-hidden">{getEditor()}</div>
+            <div className="flex-2/10 flex overflow-hidden">
+              <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
+            </div>
             {committing && (
               <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50 rounded">
                 <div className="flex items-center gap-3 text-gray-700">
@@ -101,29 +162,6 @@ export default function Editor({ courseOps, user, learningSession }) {
                 </div>
               </div>
             )}
-            <div className="basis-[32px] pt-2 flex items-center justify-between">
-              <h1 className={`text-lg font-bold pl-2 text-gray-800`}>Editor{dirty ? '*' : ''}</h1>
-
-              <div className="flex items-center">
-                <button className="mx-1 px-3 py-1 w-18 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => setEditorState((v) => (v == 'preview' ? 'editing' : 'preview'))}>
-                  {editorState === 'preview' ? 'Edit' : 'Preview'}
-                </button>
-                <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
-                  Discard
-                </button>
-                <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs flex items-center gap-2" onClick={commit} disabled={!dirty || committing}>
-                  Commit
-                </button>
-                <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={toggleShowCommits}>
-                  {showCommits ? 'Hide' : 'Show'} Commits
-                </button>
-              </div>
-            </div>
-            {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} courseOps={courseOps} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
-            <div className="flex-8/10 flex overflow-hidden">{getEditor()}</div>
-            <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
-            </div>
           </div>
         );
     }

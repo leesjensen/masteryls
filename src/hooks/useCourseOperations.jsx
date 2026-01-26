@@ -303,15 +303,20 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   async function _updateTopic(token, course, topic, content, commitMessage = `update(${topic.title})`) {
     const contentPath = topic.path.match(/\/main\/(.+)$/);
-    const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
 
     let updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
-    updatedTopic.interactions = _extractInteractionIds(content);
 
-    const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
-    updatedTopic.commit = commit;
-    course.markdownCache.set(topic.path, content);
+    if (updatedTopic.type === 'video') {
+      updatedTopic.path = content;
+    } else {
+      updatedTopic.interactions = _extractInteractionIds(content);
+
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
+      const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
+      updatedTopic.commit = commit;
+      course.markdownCache.set(topic.path, content);
+    }
 
     updatedCourse = await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
     setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });

@@ -4,8 +4,8 @@ import { getInteractionProgress } from './interaction/interactionProgressStore';
 
 export default function ExamInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const [loading, setLoading] = React.useState(true);
-  const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } });
-  const quizIds = React.useRef([]);
+  const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } }); // possible states: notStarted, inProgress, completed
+  const quizIds = React.useRef(new Set());
 
   React.useEffect(() => {
     async function fetchExamState() {
@@ -30,14 +30,14 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
   };
 
   const quizStateReporter = (quizId) => {
-    quizIds.current.push(quizId);
+    quizIds.current.add(quizId);
   };
 
   const calculateExamStats = () => {
     let totalAnsweredQuestions = 0;
     let totalGradedQuestions = 0;
     let totalPercentCorrect = 0;
-    let totalQuestions = quizIds.current.length;
+    let totalQuestions = quizIds.current.size;
 
     quizIds.current.forEach((quizId) => {
       const quiz = getInteractionProgress(quizId);
@@ -74,18 +74,6 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'preview'} />
       </div>
     );
-  } else if (examState.details.state === 'notStarted') {
-    return (
-      <div className="p-6">
-        <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
-          <div className="text-2xl font-bold text-blue-500">{learningSession?.topic.title}</div>
-          <p className="my-4">{learningSession?.topic.description}</p>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => updateState('inProgress')}>
-            Start exam
-          </button>
-        </div>
-      </div>
-    );
   } else if (examState.details.state === 'completed') {
     return (
       <div className="p-6">
@@ -115,7 +103,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         </div>
       </div>
     );
-  } else {
+  } else if (examState.details.state === 'inProgress') {
     return (
       <div className="p-6">
         <div className="bg-amber-50 border-1 border-amber-200 p-4 flex flex-col items-start">
@@ -127,6 +115,19 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         </div>
 
         <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'exam'} quizStateReporter={quizStateReporter} />
+      </div>
+    );
+  } else {
+    // notStarted
+    return (
+      <div className="p-6">
+        <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
+          <div className="text-2xl font-bold text-blue-500">{learningSession?.topic.title}</div>
+          <p className="my-4">{learningSession?.topic.description}</p>
+          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => updateState('inProgress')}>
+            Start exam
+          </button>
+        </div>
       </div>
     );
   }
