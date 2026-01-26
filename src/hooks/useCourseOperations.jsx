@@ -248,7 +248,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           id: generateId(),
           title: topicTitle,
           type: topicType,
-          path: _generateTopicPath(course, topicTitle, topicType),
+          path: _generateTopicPath(course, topicTitle, topicDescription, topicType),
           description: topicDescription,
         };
 
@@ -761,9 +761,9 @@ ${topicDescription || 'overview content placeholder'}`;
     }
   }
 
-  function _generateTopicPath(course, topicTitle, topicType) {
+  function _generateTopicPath(course, topicTitle, topicDescription, topicType) {
     if (topicType === 'video') {
-      return `https://youtu.be/HXNx_Gp0jyM}`;
+      return topicDescription || `https://youtu.be/HXNx_Gp0jyM`;
     }
 
     const slugTitle = topicTitle
