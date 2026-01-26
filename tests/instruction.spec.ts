@@ -59,16 +59,14 @@ test('exam', async ({ page }) => {
     switch (route.request().method()) {
       case 'POST':
         const body: any = (await route.request().postDataJSON())[0];
-        if (body.type.startsWith('exam-')) {
-          progress.push(body);
-        }
-        console.log('Mocking progress POST', progress, body);
+        progress.push(body);
         await route.fulfill({
           status: 200,
           json: progress,
         });
         return;
       case 'GET':
+        console.log('GET progress route', route.request().url());
         let json: any = progress;
         const viewType = route
           .request()
