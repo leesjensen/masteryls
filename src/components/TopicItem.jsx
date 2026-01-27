@@ -1,4 +1,6 @@
 import React from 'react';
+import { BadgeCheck } from 'lucide-react';
+
 import { TopicIcon } from './TopicIcon';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,7 +37,7 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
           <span className="ml-1 text-xs text-gray-400 flex items-center">
             {progressMeter.completed === progressMeter.total ? (
               <span className="animate-fade-in text-blue-400" title="Studied">
-                ✓
+                <BadgeCheck size={14} />
               </span>
             ) : (
               <div className="inline-block w-6 h-1.5 opacity-75 bg-blue-100 border-1 border-blue-400 rounded-sm overflow-hidden align-middle" title={`${progressMeter.completed}/${progressMeter.total}`}>
