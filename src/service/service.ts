@@ -426,7 +426,7 @@ class Service {
   async enrollment(learnerId: string, catalogId: string): Promise<Enrollment | null> {
     const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', learnerId).eq('catalogId', catalogId);
 
-    if (error) {
+    if (error || data.length === 0) {
       return null;
     }
 
