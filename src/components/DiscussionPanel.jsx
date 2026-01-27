@@ -250,9 +250,11 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
                 📝 Notes
               </button>
             </div>
-            <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={clearConversation} title="Clear discussion">
-              🔄
-            </button>
+            {mode === 'ai' && (
+              <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={clearConversation} title="Clear discussion">
+                🔄
+              </button>
+            )}
             <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={onClose} title="Close discussion">
               ❌
             </button>
@@ -371,28 +373,34 @@ function MessageBox({ message, handleSaveAsNote }) {
 
   let justify;
   let styles;
+  let formatAsMarkdown;
   switch (type) {
     case 'user':
       justify = 'justify-end';
       styles = 'border-2 border-blue-500 bg-blue-600 text-white';
+      formatAsMarkdown = false;
       break;
     case 'note':
       justify = 'justify-end';
       styles = 'border-2 border-amber-400 text-gray-800';
+      formatAsMarkdown = true;
       break;
     case 'error':
       justify = 'justify-start';
       styles = 'border-2 border-red-700 bg-red-100 text-red-800';
+      formatAsMarkdown = false;
       break;
     case 'info':
       justify = 'justify-center items-center';
       styles = 'text-gray-700 italic';
+      formatAsMarkdown = false;
       break;
     default:
       justify = 'justify-start';
       styles = 'border-2 border-gray-400';
+      formatAsMarkdown = true;
+      break;
   }
-  const formatAsMarkdown = type !== 'user';
 
   let saveAIResponse = null;
   if (type === 'model') {
@@ -409,18 +417,16 @@ function MessageBox({ message, handleSaveAsNote }) {
   return (
     <div className={`flex ${justify}`}>
       <div className={`max-w-[80%] rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
-        {formatAsMarkdown ? (
-          <div className="markdown-body">
-            {type === 'note' && (
-              <div className="text-xs text-amber-600 font-medium mb-1">📝 Note</div>
-            )}
+        <div className={formatAsMarkdown ? 'markdown-body' : ''}>
+          {type === 'note' && (
+            <div className="text-xs text-amber-600 font-medium mb-1">📝 Note</div>
+          )}
+          {formatAsMarkdown ? (
             <Markdown content={content} />
-          </div>
-        ) : (
-          <div>
-            {content}
-          </div>
-        )}
+          ) : (
+            <div>{content}</div>
+          )}
+        </div>
         {saveAIResponse}
       </div>
     </div>
