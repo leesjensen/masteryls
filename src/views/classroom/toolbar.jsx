@@ -42,36 +42,22 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
         </button>
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
-        {user && user.isEditor(learningSession.course.id) && (
-          <button title="Edit/View topic" className="hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => toggleEditor()}>
-            {editing ? <File size={20} /> : <FilePenLine size={20} />}
-          </button>
-        )}
-        {user && user.isEditor(learningSession.course.id) && learningSession.topic?.externalRefs?.canvasPageId && learningSession.course?.externalRefs?.canvasCourseId && (
-          <button title="Export topic" className="hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => updateCanvasPage()}>
-            <FileDown size={20} />
-          </button>
-        )}
-        {learningSession.course.links?.chat && (
-          <button title="Course chat server" className="hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => window.open(learningSession.course.links.chat, '_blank')}>
-            <MessageCircleQuestionMark size={20} />
-          </button>
-        )}
-        {learningSession.course.externalRefs?.canvasCourseId && learningSession.topic.externalRefs?.canvasPageId && (
-          <button title="Canvas course site" className="hover:text-amber-600 transition-all duration-200 ease-in-out flex items-center justify-center filter grayscale hover:grayscale-0" onClick={() => window.open(`https://byu.instructure.com/courses/${learningSession.course.externalRefs.canvasCourseId}/pages/${learningSession.topic.externalRefs.canvasPageId}`, '_blank')}>
-            <Canvas size={20} />
-          </button>
-        )}
-        <button title="GitHub repository" className="hover:text-amber-600 transition-all duration-200 ease-in-out flex items-center justify-center filter grayscale hover:grayscale-0" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')}>
-          <GitHub size={20} color="#faa400" />
-        </button>
-        <button title="Previous topic" className="hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => navigateToTopic('prev')}>
-          <SquareChevronLeft size={20} />
-        </button>
-        <button title="Next topic" className="hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => navigateToTopic('next')}>
-          <SquareChevronRight size={20} />
-        </button>
+        {user && user.isEditor(learningSession.course.id) && <ToolBarButton title="Edit/View topic" onClick={() => toggleEditor()} icon={editing ? File : FilePenLine} />}
+        {user && user.isEditor(learningSession.course.id) && learningSession.topic?.externalRefs?.canvasPageId && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Export topic" onClick={() => updateCanvasPage()} icon={FileDown} />}
+        {learningSession.course.links?.chat && <ToolBarButton title="Course chat server" onClick={() => window.open(learningSession.course.links.chat, '_blank')} icon={MessageCircleQuestionMark} />}
+        {learningSession.course.externalRefs?.canvasCourseId && learningSession.topic.externalRefs?.canvasPageId && <ToolBarButton title="Canvas course site" onClick={() => window.open(`https://byu.instructure.com/courses/${learningSession.course.externalRefs.canvasCourseId}/pages/${learningSession.topic.externalRefs.canvasPageId}`, '_blank')} icon={Canvas} />}
+        <ToolBarButton title="GitHub repository" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')} icon={GitHub} />
+        <ToolBarButton title="Previous topic" onClick={() => navigateToTopic('prev')} icon={SquareChevronLeft} />
+        <ToolBarButton title="Next topic" onClick={() => navigateToTopic('next')} icon={SquareChevronRight} />
       </div>
     </div>
+  );
+}
+
+export function ToolBarButton({ icon: Icon, onClick, title = undefined, size = 18 }) {
+  return (
+    <button title={title} onClick={onClick} className=" hover:text-amber-600 transition-all duration-200 ease-in-out  filter grayscale hover:grayscale-0">
+      <Icon size={size} />
+    </button>
   );
 }
