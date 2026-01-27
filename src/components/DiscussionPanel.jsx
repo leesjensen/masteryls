@@ -6,7 +6,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState('ai'); // 'ai' or 'notes'
+  const [mode, setMode] = useState('ai');  // 'ai' or 'notes'
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -41,6 +41,12 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       // TODO: Handle if there are more than 100 notes
       const pIsRelevant = (p) => {
         if (!p.details) return false;
+        if (
+          (mode === 'notes' && p.details.type !== 'note')
+          || (mode === 'ai' && p.details.type === 'note')
+        ) {
+          return false;
+        }
         if (activeSection === null) {
           return p.details.activeSection === null;
         }
@@ -54,7 +60,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         })
         .sort((a, b) => a.timestamp - b.timestamp));
     })();
-  }, [activeSection, learningSession.topic.id, learningSession.enrollment.id, courseOps]);
+  }, [activeSection, learningSession.topic.id, learningSession.enrollment.id, courseOps, mode]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -70,17 +76,19 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     }
   }, [showModeDropdown]);
 
-  const handleUserNoteInput = (userMessage) => {
-    const notePayload = {
-      type: 'note',
-      activeSection,
-      content: userMessage,
-      timestamp: Date.now(),
-    };
-    setMessages((prev) => [
-      ...prev,
-      notePayload,
-    ]);
+  const handleUserNoteInput = (userMessage, addToVisibleMessages = true) => {
+    if (addToVisibleMessages) {
+      const notePayload = {
+        type: 'note',
+        activeSection,
+        content: userMessage,
+        timestamp: Date.now(),
+      };
+      setMessages((prev) => [
+        ...prev,
+        notePayload,
+      ]);
+    }
 
     // Save to progress table in backend
     const dataToSave = {
@@ -131,8 +139,19 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       contentToSave = messageToSave.content;
     }
 
-    // Save it now exactly as if it was a user note
-    handleUserNoteInput(contentToSave);
+    // Save it now exactly as if it was a user note, but don't add to visible messages
+    handleUserNoteInput(contentToSave, false);
+
+    // Create a visual confirmation in the messages panel
+    setMessages((prev) => [
+      ...prev,
+      {
+        type: 'info',
+        activeSection,
+        content: 'This AI response has been saved as a note.',
+        timestamp: Date.now(),
+      },
+    ]);
   };
 
   const handleSubmit = async (e) => {
@@ -189,21 +208,42 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   }[mode];
 
   return (
-    <div className="fixed inset-y-0 right-0 w-128 bg-white border-l border-gray-300 shadow-lg z-50 flex flex-col overflow-hidden">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-800">{modeConfig.title}</h3>
-          <p className="text-sm text-gray-600 truncate" title={fullTopicTitle}>
-            {fullTopicTitle}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={clearConversation} title="Clear discussion">
-            🔄
-          </button>
-          <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={onClose} title="Close discussion">
-            ❌
-          </button>
+    <div className="fixed inset-y-0 right-0 w-full sm:w-lg bg-white border-l border-gray-300 shadow-lg z-50 flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-800 truncate" title={fullTopicTitle}>
+              Notebook - {fullTopicTitle}
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1">
+              <button
+                onClick={() => toggleMode('ai')}
+                className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'ai'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                🤖 AI
+              </button>
+              <button
+                onClick={() => toggleMode('notes')}
+                className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'notes'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+              >
+                📝 Notes
+              </button>
+            </div>
+            <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={clearConversation} title="Clear discussion">
+              🔄
+            </button>
+            <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={onClose} title="Close discussion">
+              ❌
+            </button>
+          </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -321,19 +361,23 @@ function MessageBox({ message, handleSaveAsNote }) {
   switch (type) {
     case 'user':
       justify = 'justify-end';
-      styles = 'border-blue-500 bg-blue-600 text-white';
+      styles = 'border-2 border-blue-500 bg-blue-600 text-white';
       break;
     case 'note':
       justify = 'justify-end';
-      styles = 'border-amber-400 text-gray-800';
+      styles = 'border-2 border-amber-400 text-gray-800';
       break;
     case 'error':
       justify = 'justify-start';
-      styles = 'border-red-700 bg-red-100 text-red-800';
+      styles = 'border-2 border-red-700 bg-red-100 text-red-800';
+      break;
+    case 'info':
+      justify = 'justify-center items-center';
+      styles = 'text-gray-700 italic';
       break;
     default:
       justify = 'justify-start';
-      styles = 'border-gray-400';
+      styles = 'border-2 border-gray-400';
   }
   const formatAsMarkdown = type !== 'user';
 
@@ -351,7 +395,7 @@ function MessageBox({ message, handleSaveAsNote }) {
 
   return (
     <div className={`flex ${justify}`}>
-      <div className={`max-w-[80%] rounded-lg px-3 py-2 border-2 ${styles} overflow-auto break-words`}>
+      <div className={`max-w-[80%] rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
         {formatAsMarkdown ? (
           <div className="markdown-body">
             {type === 'note' && (
