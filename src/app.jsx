@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import useCourseOperations from './hooks/useCourseOperations';
 
 import Start from './start.jsx';
-import AppBar from './appBar.jsx';
+import { AppBar } from './appBar.jsx';
 import DashboardView from './views/dashboard/dashboardView.jsx';
 import ClassroomView from './views/classroom/classroomView.jsx';
 import MetricsView from './views/metrics/metricsView.jsx';

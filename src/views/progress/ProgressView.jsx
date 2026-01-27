@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
 
@@ -28,11 +30,7 @@ export default function ProgressView({ courseOps, service, user }) {
     currentPage: 1,
   });
 
-  const appBarTools = (
-    <button title="Close progress dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-      ❌
-    </button>
-  );
+  const appBarTools = <AppBarButton icon={X} onClick={() => navigate('/dashboard')} title="Close" />;
 
   useEffect(() => {
     updateAppBar({ title: 'Progress', tools: appBarTools });

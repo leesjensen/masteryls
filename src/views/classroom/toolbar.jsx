@@ -48,8 +48,8 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
         {user && user.isEditor(learningSession.course.id) && (
-          <button title="Edit topic" className="hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => toggleEditor()}>
-            {editing ? <FilePenLine size={20} /> : <File size={20} />}
+          <button title="Edit/View topic" className="hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => toggleEditor()}>
+            {editing ? <File size={20} /> : <FilePenLine size={20} />}
           </button>
         )}
         {user && user.isEditor(learningSession.course.id) && learningSession.topic?.externalRefs?.canvasPageId && learningSession.course?.externalRefs?.canvasCourseId && (
