@@ -12,11 +12,6 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     return url.replace(learningSession.course.links.gitHub.rawUrl, learningSession.course.links.gitHub.url);
   }
 
-  function displaySchedule() {
-    courseOps.setSidebarVisible('start');
-    navigate(`/course/${learningSession.course.id}/topic/${learningSession.course.schedule}`);
-  }
-
   function getNextWindowState() {
     if (window.innerWidth < 400) {
       return settings.sidebarVisible === 'end' ? 'start' : 'end';
