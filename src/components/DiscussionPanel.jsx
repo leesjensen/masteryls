@@ -36,9 +36,9 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         topicId: learningSession.topic.id,
         enrollmentId: learningSession.enrollment.id,
         types: ['note'],
-        limit: 1000,
+        limit: 100,
       })).data;
-      // TODO: Handle if there are more than 1000 notes?
+      // TODO: Handle if there are more than 100 notes
       const pIsRelevant = (p) => {
         if (!p.details) return false;
         if (activeSection === null) {
@@ -46,9 +46,15 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         }
         return p.details.activeSection?.sectionId === activeSection.sectionId;
       }
-      setMessages(notes.filter(pIsRelevant).map(p => p.details).sort((a, b) => a.timestamp - b.timestamp));
+      setMessages(notes.filter(pIsRelevant)
+        .map(p => {
+          const details = p.details;
+          details.timestamp = new Date(p.createdAt);
+          return details;
+        })
+        .sort((a, b) => a.timestamp - b.timestamp));
     })();
-  }, [activeSection]);
+  }, [activeSection, learningSession.topic.id, learningSession.enrollment.id, courseOps]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -77,7 +83,12 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     ]);
 
     // Save to progress table in backend
-    courseOps.addProgress(null, null, 'note', 0, notePayload);
+    const dataToSave = {
+      type: 'note',
+      activeSection,
+      content: userMessage
+    };
+    courseOps.addProgress(null, null, 'note', 0, dataToSave);
   };
 
   const handleAIQueryInput = async (userMessage) => {
