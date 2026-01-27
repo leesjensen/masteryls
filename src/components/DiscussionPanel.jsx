@@ -3,7 +3,9 @@ import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Markdown from './Markdown';
 
 export default function DiscussionPanel({ courseOps, learningSession, isOpen, onClose, topicTitle, topicContent, user, activeSection = null }) {
-  const [messages, setMessages] = useState([]);
+  const [allMessages, setAllMessages] = useState([]);
+  const [savedMessagesLoaded, setSavedMessagesLoaded] = useState(false);
+  const [visibleMessages, setVisibleMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState('ai');  // 'ai' or 'notes'
@@ -11,14 +13,14 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
     scrollToBottom();
     inputRef.current?.focus();
-  }, [messages]);
+  }, [visibleMessages]);
 
   useEffect(() => {
     if (isOpen) {
@@ -27,10 +29,8 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   }, [isOpen]);
 
   useEffect(() => {
-    // Reset messages when selected section changes
-    // TODO: The saved messages should be fetched from the backend only when the parent text interaction is first loaded.
-    // There should be some sort of visual cue on the text interaction if there are existing notes.
-    // TODO: If the user closes the text interaction and re-opens it, or switches back and forth between sections, the AI discussion history should persist.
+    // Load saved notes from DB
+    // TODO: There should be some sort of visual cue on the text interaction if there are existing notes.
     (async () => {
       const notes = (await courseOps.getProgress({
         topicId: learningSession.topic.id,
@@ -39,30 +39,42 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         limit: 100,
       })).data;
       // TODO: Handle if there are more than 100 notes
-      const pIsRelevant = (p) => {
-        if (!p.details) return false;
-        if (
-          (mode === 'notes' && p.details.type !== 'note')
-          || (mode === 'ai' && p.details.type === 'note')
-        ) {
-          return false;
-        }
-        if (activeSection === null) {
-          return p.details.activeSection === null;
-        }
-        return p.details.activeSection?.sectionId === activeSection.sectionId;
-      }
-      setMessages(notes.filter(pIsRelevant)
+      // Probably how this should work is that the most recent few notes should be loaded first,
+      // and older notes are fetched if the user scrolls up to the top of the messages panel.
+      const loadedMessages = notes
+        .filter(p => p.details)
         .map(p => {
-          const details = p.details;
+          const details = { ...p.details };
           details.timestamp = new Date(p.createdAt);
           return details;
         })
-        .sort((a, b) => a.timestamp - b.timestamp));
+        .sort((a, b) => a.timestamp - b.timestamp);
+      setAllMessages(loadedMessages);
+      setSavedMessagesLoaded(true);
     })();
-  }, [activeSection, learningSession.topic.id, learningSession.enrollment.id, courseOps, mode]);
+  }, [learningSession.topic.id, learningSession.enrollment.id, courseOps]);
 
-  // Close dropdown when clicking outside
+  useEffect(() => {
+    // Reset visible messages when switching between modes
+    const isRelevant = (m) => {
+      if (
+        (mode === 'notes' && m.type !== 'note')
+        || (mode === 'ai' && m.type === 'note')
+      ) {
+        return false;
+      }
+      return true;
+    }
+    const relevantMessages = allMessages.filter(isRelevant);
+    setVisibleMessages(relevantMessages);
+    // Sometimes we don't automatically scroll all the way down when loading saved notes
+    // and there are lots of saved notes.
+    if (relevantMessages.length > 0) {
+      setTimeout(() => scrollToBottom('auto'), 200);
+    }
+  }, [savedMessagesLoaded, mode, allMessages]);
+
+  // Close mode select dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -77,17 +89,17 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   }, [showModeDropdown]);
 
   const handleUserNoteInput = (userMessage, addToVisibleMessages = true) => {
+    const notePayload = {
+      type: 'note',
+      activeSection,
+      content: userMessage,
+      timestamp: Date.now(),
+    };
     if (addToVisibleMessages) {
-      const notePayload = {
-        type: 'note',
-        activeSection,
-        content: userMessage,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [
-        ...prev,
-        notePayload,
-      ]);
+      addMessage(notePayload);
+    } else {
+      // Just add to allMessages without showing in visibleMessages
+      setAllMessages((prev) => [...prev, notePayload]);
     }
 
     // Save to progress table in backend
@@ -100,8 +112,9 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   };
 
   const handleAIQueryInput = async (userMessage) => {
-    const newMessages = [...messages, { type: 'user', activeSection, content: userMessage, timestamp: Date.now() }];
-    setMessages(newMessages);
+    const newMessage = { type: 'user', activeSection, content: userMessage, timestamp: Date.now() };
+    const newMessages = [...visibleMessages, newMessage];
+    addMessage(newMessage);
     setIsLoading(true);
 
     let type = 'model';
@@ -112,15 +125,12 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       type = 'error';
       content = `Sorry, I encountered an error: ${error.message}`;
     } finally {
-      setMessages((prev) => [
-        ...prev,
-        {
-          type,
-          activeSection,
-          content,
-          timestamp: Date.now(),
-        },
-      ]);
+      addMessage({
+        type,
+        activeSection,
+        content,
+        timestamp: Date.now(),
+      });
 
       setIsLoading(false);
     }
@@ -129,11 +139,11 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const handleSaveAsNote = (messageIndex, includePreviousMessage = true) => {
     // Save both the most recent message (AI response) and optionally the previous user message (query) as a note
     // If including the previous message, concatenate both into one note
-    if (messageIndex <= 0 || messageIndex >= messages.length) return;
-    const messageToSave = messages[messageIndex];
+    if (messageIndex <= 0 || messageIndex >= visibleMessages.length) return;
+    const messageToSave = visibleMessages[messageIndex];
     let contentToSave;
-    if (includePreviousMessage && messages.length >= 2) {
-      const previousMessage = messages[messageIndex - 1];
+    if (includePreviousMessage && visibleMessages.length >= 2) {
+      const previousMessage = visibleMessages[messageIndex - 1];
       contentToSave = `**Your Question:**\n\n${previousMessage.content}\n\n---\n\n**AI Response:**\n\n${messageToSave.content}`;
     } else {
       contentToSave = messageToSave.content;
@@ -143,15 +153,12 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     handleUserNoteInput(contentToSave, false);
 
     // Create a visual confirmation in the messages panel
-    setMessages((prev) => [
-      ...prev,
-      {
-        type: 'info',
-        activeSection,
-        content: 'This AI response has been saved as a note.',
-        timestamp: Date.now(),
-      },
-    ]);
+    addMessage({
+      type: 'info',
+      activeSection,
+      content: 'This AI response has been saved as a note.',
+      timestamp: Date.now(),
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -182,8 +189,14 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     inputRef.current?.focus();
   };
 
+  const addMessage = (message) => {
+    setAllMessages((prev) => [...prev, message]);
+    setVisibleMessages((prev) => [...prev, message]);
+  }
+
   const clearConversation = () => {
-    setMessages([]);
+    setVisibleMessages([]);
+    setAllMessages([]);
   };
 
   if (!isOpen) return null;
@@ -247,7 +260,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && (
+        {visibleMessages.length === 0 && (
           <div className="text-center text-gray-500 py-8">
             <p className="mb-2 text-2xl">{modeConfig.emptyStateIcon}</p>
             <p className="text-sm px-4">
@@ -256,7 +269,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           </div>
         )}
 
-        {messages.map((message, i) =>
+        {visibleMessages.map((message, i) =>
           <MessageBox key={message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} />
         )}
 
