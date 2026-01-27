@@ -107,16 +107,17 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     }
   };
 
-  const handleSaveAsNote = (includePreviousMessage = true) => {
+  const handleSaveAsNote = (messageIndex, includePreviousMessage = true) => {
     // Save both the most recent message (AI response) and optionally the previous user message (query) as a note
     // If including the previous message, concatenate both into one note
-    const lastMessage = messages[messages.length - 1];
+    if (messageIndex <= 0 || messageIndex >= messages.length) return;
+    const messageToSave = messages[messageIndex];
     let contentToSave;
     if (includePreviousMessage && messages.length >= 2) {
-      const secondLastMessage = messages[messages.length - 2];
-      contentToSave = `**Your Question:**\n\n${secondLastMessage.content}\n\n---\n\n**AI Response:**\n\n${lastMessage.content}`;
+      const previousMessage = messages[messageIndex - 1];
+      contentToSave = `**Your Question:**\n\n${previousMessage.content}\n\n---\n\n**AI Response:**\n\n${messageToSave.content}`;
     } else {
-      contentToSave = lastMessage.content;
+      contentToSave = messageToSave.content;
     }
 
     // Save it now exactly as if it was a user note
@@ -204,8 +205,8 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           </div>
         )}
 
-        {messages.map((message) =>
-          <MessageBox key={message.timestamp} message={message} handleSaveAsNote={handleSaveAsNote} />
+        {messages.map((message, i) =>
+          <MessageBox key={message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} />
         )}
 
         {isLoading && (
