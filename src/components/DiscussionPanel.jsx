@@ -226,7 +226,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-800 truncate" title={fullTopicTitle}>
-              Notebook - {fullTopicTitle}
+              {fullTopicTitle}
             </h3>
           </div>
           <div className="flex items-center gap-2">
