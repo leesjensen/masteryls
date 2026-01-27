@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Download, PackagePlus, Columns3Cog, ChartArea, X } from 'lucide-react';
+import { Download, PackagePlus, Columns3Cog, ChartArea, LogOut } from 'lucide-react';
 import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
+import { AppBarButton } from '../../appBar.jsx';
 
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
@@ -17,23 +18,13 @@ export default function DashboardView({ courseOps, service, user }) {
     <div className="flex items-center gap-1">
       {user.isRoot() && (
         <>
-          <button title="New course" onClick={() => navigate('/courseCreation')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
-            <PackagePlus size={18} />
-          </button>
-          <button title="Export course" onClick={() => navigate('/courseExport')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
-            <Download size={18} />
-          </button>
+          <AppBarButton icon={PackagePlus} onClick={() => navigate('/courseCreation')} title="New course" />
+          <AppBarButton icon={Download} onClick={() => navigate('/courseExport')} title="Export course" />
         </>
       )}
-      <button title="Progress" onClick={() => navigate('/progress')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
-        <Columns3Cog size={18} />
-      </button>
-      <button title="Metrics" onClick={() => navigate('/metrics')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
-        <ChartArea size={18} />
-      </button>
-      <button title="Logout" onClick={courseOps.logout} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
-        <X size={18} />
-      </button>
+      <AppBarButton icon={Columns3Cog} onClick={() => navigate('/progress')} title="Progress" />
+      <AppBarButton icon={ChartArea} onClick={() => navigate('/metrics')} title="Metrics" />
+      <AppBarButton icon={LogOut} onClick={courseOps.logout} title="Logout" />
     </div>
   );
 

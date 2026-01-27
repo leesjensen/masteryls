@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
+import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement, Filler } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
@@ -83,11 +85,7 @@ export default function MetricsView({ courseOps }) {
     }
   };
 
-  const appBarTools = (
-    <button title="Close metrics dashboard" onClick={() => navigate('/dashboard')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-      ❌
-    </button>
-  );
+  const appBarTools = <AppBarButton icon={X} onClick={() => navigate('/dashboard')} title="Close" />;
 
   useEffect(() => {
     updateAppBar({ title: 'Metrics', tools: appBarTools });

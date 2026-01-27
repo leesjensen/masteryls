@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
+import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import CourseExportForm from './courseExportForm.jsx';
@@ -10,11 +12,7 @@ export default function CourseExportView({ courseOps }) {
     navigate('/dashboard');
   };
 
-  const appBarTools = (
-    <button title="Close course export" onClick={close} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-      ❌
-    </button>
-  );
+  const appBarTools = <AppBarButton icon={X} onClick={close} title="Close" />;
 
   useEffect(() => {
     updateAppBar({ title: 'Export course', tools: appBarTools });

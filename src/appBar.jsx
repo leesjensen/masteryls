@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 
-export default function AppBar() {
+export function AppBar() {
   const { title, tools } = useAppBarState();
   return (
     <header className="flex flex-row items-center justify-between pr-2 border-b-1 bg-gray-600 border-gray-500 h-[42px]">
@@ -13,5 +13,13 @@ export default function AppBar() {
       </h1>
       <div className="whitespace-nowrap ml-2">{tools}</div>
     </header>
+  );
+}
+
+export function AppBarButton({ icon: Icon, onClick, title = undefined, size = 18 }) {
+  return (
+    <button title={title} onClick={onClick} className="bg-white border border-gray-50  hover:text-amber-600 transition-all duration-200 ease-in-out">
+      <Icon size={size} />
+    </button>
   );
 }

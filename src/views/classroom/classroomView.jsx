@@ -1,9 +1,11 @@
 import React, { use, useState } from 'react';
+import { X } from 'lucide-react';
 import Toolbar from './toolbar.jsx';
 import Sidebar from './sidebar.jsx';
 import Instruction from '../../components/instruction/instruction.jsx';
 import Editor from '../../components/editor/editor.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
+import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings }) {
@@ -14,11 +16,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   React.useEffect(() => {
     if (learningSession.course) {
       const url = user ? `/dashboard` : `/`;
-      const appBarTools = (
-        <button title="Close metrics dashboard" onClick={() => navigate(url)} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-          ❌
-        </button>
-      );
+      const appBarTools = <AppBarButton icon={X} onClick={() => navigate(url)} title="Close" />;
 
       updateAppBar({ title: learningSession.course?.title, tools: appBarTools });
     }
