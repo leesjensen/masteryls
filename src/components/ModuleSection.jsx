@@ -1,4 +1,5 @@
 import React from 'react';
+import { SquarePen, Delete } from 'lucide-react';
 import { EditableTopicItem } from './EditableTopicItem';
 import { useNavigate } from 'react-router-dom';
 import TopicItem from './TopicItem';
@@ -64,10 +65,10 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
           {editorVisible && (
             <div className="flex items-center">
               <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1  text-[6pt]" title="Edit this module">
-                ✏️
+                <SquarePen size={12} />
               </button>
               <button onClick={() => dialogRef.current.showModal()} className="font-semibold text-gray-400 hover:text-red-600 pr-1" title="Remove this module">
-                x
+                <Delete size={12} />
               </button>
             </div>
           )}

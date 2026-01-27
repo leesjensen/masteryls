@@ -1,4 +1,5 @@
 import React from 'react';
+import { SquarePen, Delete, GripHorizontal } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TopicItem from './TopicItem';
@@ -71,13 +72,13 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
         </div>
         <div className="flex flex-row justify-between items-center">
           <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500 pr-1" title="Drag to reorder">
-            ≡
+            <GripHorizontal size={12} />
           </span>
           <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1 text-[6pt]" title="Edit this topic">
-            ✏️
+            <SquarePen size={12} />
           </button>
           <button onClick={removeTopic} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
-            x
+            <Delete size={12} />
           </button>
         </div>
       </div>
