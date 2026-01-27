@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Download, PackagePlus, Columns3Cog, ChartArea, X } from 'lucide-react';
 import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -13,25 +14,25 @@ export default function DashboardView({ courseOps, service, user }) {
   const navigate = useNavigate();
 
   const appBarTools = (
-    <div>
+    <div className="flex items-center gap-1">
       {user.isRoot() && (
         <>
-          <button title="New course" onClick={() => navigate('/courseCreation')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-            +
+          <button title="New course" onClick={() => navigate('/courseCreation')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
+            <PackagePlus size={18} />
           </button>
-          <button title="Export course" onClick={() => navigate('/courseExport')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-            ⬇️
+          <button title="Export course" onClick={() => navigate('/courseExport')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
+            <Download size={18} />
           </button>
         </>
       )}
-      <button title="Progress" onClick={() => navigate('/progress')} className="w-6 m-0.5 p-0.5 text-xs font-bold rounded-xs bg-white border border-gray-300 filter grayscale hover:text-blue-400 hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-        🏅
+      <button title="Progress" onClick={() => navigate('/progress')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
+        <Columns3Cog size={18} />
       </button>
-      <button title="Metrics" onClick={() => navigate('/metrics')} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-        📊
+      <button title="Metrics" onClick={() => navigate('/metrics')} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
+        <ChartArea size={18} />
       </button>
-      <button title="Logout" onClick={courseOps.logout} className="w-6 m-0.5 p-0.5 text-xs font-medium rounded-xs bg-white border border-gray-300 filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out">
-        ⏻
+      <button title="Logout" onClick={courseOps.logout} className="bg-white border border-gray-300  hover:text-amber-600 transition-all duration-200 ease-in-out">
+        <X size={18} />
       </button>
     </div>
   );
