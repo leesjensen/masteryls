@@ -490,34 +490,48 @@ ${topicDescription || 'overview content placeholder'}`;
   async function addProgress(providedUser, interactionId, type, duration = 0, details = {}) {
     const progressUser = providedUser || user;
     if (progressUser) {
-      _updateEnrollmentProgress(learningSession?.enrollment, learningSession?.topic, interactionId, type);
+      _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type);
       return service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
     }
   }
 
-  function _updateEnrollmentProgress(enrollment, topic, interactionId, type) {
-    if (enrollment && topic && (type === 'instructionView' || type === 'videoView' || type === 'quizSubmit')) {
-      var update = false;
+  function _updateEnrollmentCachedInfo(enrollment, topic, interactionId, type) {
+    if (!enrollment || !topic) return;
 
-      if (!enrollment.progress) {
-        enrollment.progress = {};
-      }
+    var update = false;
+    if (type === 'instructionView' || type === 'videoView' || type === 'quizSubmit') {
+      update = _createProgressEntry(enrollment, topic.id);
 
-      if (!enrollment.progress[topic.id]) {
-        enrollment.progress[topic.id] = [];
-        update = true;
-      }
-
-      if (type === 'quizSubmit' && interactionId && !enrollment.progress[topic.id].includes(interactionId)) {
-        enrollment.progress[topic.id] = [...enrollment.progress[topic.id], interactionId];
+      if (type === 'quizSubmit' && interactionId && (!enrollment.progress[topic.id].interactions || !enrollment.progress[topic.id].interactions.includes(interactionId))) {
+        enrollment.progress[topic.id].interactions = [...(enrollment.progress[topic.id].interactions || []), interactionId];
         update = true;
       }
       if (update) {
         enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
-        service.saveEnrollment(enrollment);
-        setLearningSession({ ...learningSession, enrollment: enrollment });
+      }
+    } else if (type === 'note') {
+      update = _createProgressEntry(enrollment, topic.id);
+      if (!enrollment.progress[topic.id].notes) {
+        enrollment.progress[topic.id].notes = true;
+        update = true;
       }
     }
+
+    if (update) {
+      service.saveEnrollment(enrollment);
+      setLearningSession({ ...learningSession, enrollment: enrollment });
+    }
+  }
+
+  function _createProgressEntry(enrollment, topicId) {
+    if (!enrollment.progress) {
+      enrollment.progress = {};
+    }
+    if (!enrollment.progress[topicId]) {
+      enrollment.progress[topicId] = { interactions: [] };
+      return true;
+    }
+    return false;
   }
 
   function _calculateEnrollmentProgress(enrollment, course) {
@@ -528,7 +542,7 @@ ${topicDescription || 'overview content placeholder'}`;
     course.allTopics.forEach((topic) => {
       let topicPercent = enrollment.progress[topic.id] ? 1 : 0;
       if (topic.interactions && topic.interactions.length > 0) {
-        const completedForTopic = enrollment.progress[topic.id] || [];
+        const completedForTopic = enrollment.progress[topic.id]?.interactions || [];
         const interactionPercent = completedForTopic.length / topic.interactions.length;
         topicPercent = interactionPercent;
       }
