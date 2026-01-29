@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Pencil, X, EyeOff } from 'lucide-react';
 
 export default function CourseCard({ user, catalogEntry, enrollment, select, remove }) {
   const colorGenerator = (title) => {
@@ -34,15 +35,15 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
       <div className="col-start-1 row-start-1 justify-self-end self-start flex flex-row gap-1 z-10 translate-x-3 -translate-y-3">
         {catalogEntry.settings?.state === 'unpublished' && (
           <div className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow cursor-default">
-            <span title="unpublished" className="text-gray-600 text-xl">
-              ⊘
+            <span title="Unpublished">
+              <EyeOff size={16} />
             </span>
           </div>
         )}
         {user.isEditor(catalogEntry.id) && (
           <div className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow cursor-default">
-            <span title="editor rights" className="text-yellow-400">
-              ✏️
+            <span title="Editor rights">
+              <Pencil size={16} />
             </span>
           </div>
         )}
@@ -58,7 +59,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
             className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow hover:text-gray-50 hover:bg-red-500 focus:outline-none"
             title="Remove enrollment"
           >
-            ✕
+            <X size={16} />
           </button>
         )}
       </div>
