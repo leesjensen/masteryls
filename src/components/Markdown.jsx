@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import CopyToClipboard from './CopyToClipboard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
@@ -52,25 +53,28 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       if (isBlock) {
         const codeText = String(children).replace(/\n$/, '');
         return (
-          <SyntaxHighlighter
-            language={language}
-            style={ghcolors}
-            PreTag="div"
-            wrapLongLines
-            customStyle={{
-              margin: 0, // optional: removes default margin that can mess with layout
-            }}
-            codeTagProps={{
-              style: {
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word', // wrap long words/tokens
-                overflowWrap: 'anywhere', // extra help for super-long tokens
-              },
-            }}
-            {...props}
-          >
-            {codeText}
-          </SyntaxHighlighter>
+          <div style={{ position: 'relative' }}>
+            <CopyToClipboard text={codeText} />
+            <SyntaxHighlighter
+              language={language}
+              style={ghcolors}
+              PreTag="div"
+              wrapLongLines
+              customStyle={{
+                margin: 0, // optional: removes default margin that can mess with layout
+              }}
+              codeTagProps={{
+                style: {
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word', // wrap long words/tokens
+                  overflowWrap: 'anywhere', // extra help for super-long tokens
+                },
+              }}
+              {...props}
+            >
+              {codeText}
+            </SyntaxHighlighter>
+          </div>
         );
       }
 
