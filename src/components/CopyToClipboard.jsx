@@ -13,7 +13,7 @@ export default function CopyToClipboard({ text }) {
   return (
     <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
       {!copied && (
-        <button onClick={copy} className="p-2 text-xs cursor-pointer hover:bg-gray-200 rounded-sm">
+        <button onClick={copy} title="Copy to clipboard" className="p-2 text-xs cursor-pointer hover:bg-gray-200 rounded-sm">
           <Copy size={14} />
         </button>
       )}
