@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FolderTree, Settings as SettingsIcon, Search } from 'lucide-react';
 import Contents from '../../contents.jsx';
 import Settings from '../../settings.jsx';
+import SearchCourse from '../../components/SearchCourse.jsx';
 import Tabs from '../../components/Tabs.jsx';
 
 function Sidebar({ courseOps, user, learningSession, editorVisible }) {
@@ -18,7 +19,7 @@ function Sidebar({ courseOps, user, learningSession, editorVisible }) {
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents courseOps={courseOps} learningSession={learningSession} editorVisible={editorVisible} />}
         {display === 'settings' && <Settings courseOps={courseOps} user={user} course={learningSession.course} />}
-        {display === 'search' && <div className="p-4">Search functionality coming soon...</div>}
+        {display === 'search' && <SearchCourse courseOps={courseOps} learningSession={learningSession} />}
       </aside>
     </div>
   );

@@ -93,10 +93,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   function transformSearchResults(results) {
-    return results.map((item) => ({
+    const transformedResults = results.map((item) => ({
       name: item.name,
       path: item.path,
-      title: learningSession.course.topicFromPath(item.path)?.title || 'Unknown Title',
+      topic: learningSession.course.topicFromPath(item.path, false),
       matches:
         item.text_matches?.flatMap(
           (tm) =>
@@ -110,6 +110,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
             }) || [],
         ) || [],
     }));
+
+    return transformedResults.filter((res) => res.topic);
   }
 
   function setCurrentCourse(updatedCourse) {
