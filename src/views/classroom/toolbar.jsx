@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareChevronLeft, Search } from 'lucide-react';
+import { Menu, FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareChevronLeft } from 'lucide-react';
 import { GitHub, Canvas } from '../../utils/Icons.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
@@ -31,12 +31,6 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     showAlert({ message: `${learningSession.topic.title} exported successfully`, type: 'info' });
   }
 
-  async function search() {
-    courseOps.searchCourse('item').then((results) => {
-      console.log('Search results:', results);
-    });
-  }
-
   const nextSidebarState = getNextWindowState();
 
   return (
@@ -53,7 +47,6 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
         {learningSession.course.links?.chat && <ToolBarButton title="Course chat server" onClick={() => window.open(learningSession.course.links.chat, '_blank')} icon={MessageCircleQuestionMark} />}
         {learningSession.course.externalRefs?.canvasCourseId && learningSession.topic.externalRefs?.canvasPageId && <ToolBarButton title="Canvas course site" onClick={() => window.open(`https://byu.instructure.com/courses/${learningSession.course.externalRefs.canvasCourseId}/pages/${learningSession.topic.externalRefs.canvasPageId}`, '_blank')} icon={Canvas} />}
         <ToolBarButton title="GitHub repository" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')} icon={GitHub} />
-        <ToolBarButton title="Search" onClick={search} icon={Search} />
         <ToolBarButton title="Previous topic" onClick={() => navigateToTopic('prev')} icon={SquareChevronLeft} />
         <ToolBarButton title="Next topic" onClick={() => navigateToTopic('next')} icon={SquareChevronRight} />
       </div>
