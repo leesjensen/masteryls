@@ -747,6 +747,18 @@ class Service {
     }
   }
 
+  async searchGitHubContent(gitHubToken: string, query: string, gitHubAccount: string, gitHubRepo: string): Promise<any[]> {
+    const searchUrl = `https://api.github.com/search/code?q=${encodeURIComponent(query)}+repo:${gitHubAccount}/${gitHubRepo}+extension:md&per_page=100`;
+    const res = await this.makeGitHubApiRequest(gitHubToken, searchUrl, 'GET', undefined, 'application/vnd.github.text-match+json');
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`Failed to search content: ${res.status} ${errText}`);
+    }
+    const data = await res.json();
+
+    return data.items || [];
+  }
+
   /**
    * Helper method to make requests to the GitHub API.
    * @param token - GitHub token.
@@ -755,9 +767,9 @@ class Service {
    * @param body - Request body.
    * @returns The fetch response.
    */
-  async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {
+  async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object, accept?: string) {
     const headers: Record<string, string> = {
-      Accept: 'application/vnd.github.v3+json',
+      Accept: accept || 'application/vnd.github.v3+json',
       ...(body ? { 'Content-Type': 'application/json' } : {}),
     };
     if (token) {

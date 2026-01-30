@@ -83,6 +83,35 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return courseCache.current.get(courseId);
   }
 
+  async function searchCourse(query) {
+    if (!learningSession?.course || !user) return;
+
+    const token = user.getSetting('gitHubToken', learningSession.course.id);
+    const result = await service.searchGitHubContent(token, query, learningSession.course.gitHub.account, learningSession.course.gitHub.repository);
+
+    return transformSearchResults(result);
+  }
+
+  function transformSearchResults(results) {
+    return results.map((item) => ({
+      name: item.name,
+      path: item.path,
+      title: learningSession.course.topicFromPath(item.path)?.title || 'Unknown Title',
+      matches:
+        item.text_matches?.flatMap(
+          (tm) =>
+            tm.matches?.map((m) => {
+              const start = Math.max(0, m.indices[0] - 20); // 20 chars before
+              const end = Math.min(tm.fragment.length, m.indices[1] + 20); // 20 chars after
+              const contextBefore = start > 0 ? '...' : '';
+              const contextAfter = end < tm.fragment.length ? '...' : '';
+              const context = tm.fragment.substring(start, end);
+              return `${contextBefore}${context}${contextAfter}`;
+            }) || [],
+        ) || [],
+    }));
+  }
+
   function setCurrentCourse(updatedCourse) {
     if (updatedCourse) {
       courseCache.current.delete(updatedCourse.id);
@@ -421,6 +450,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
     return [];
   }
+
   function _getTopicPath() {
     let topicPath = '';
     const match = learningSession.topic.path.match(/\/main\/(.+\/)[^\/]+\.md$/);
@@ -795,6 +825,7 @@ ${topicDescription || 'overview content placeholder'}`;
     setSidebarVisible,
     courseCatalog,
     getCourse,
+    searchCourse,
     setCurrentCourse,
     getTemplateRepositories,
     createCourse,
