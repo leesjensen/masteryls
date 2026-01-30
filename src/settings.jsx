@@ -398,6 +398,7 @@ export default function Settings({ courseOps, user, course }) {
         onClose={() => setEditorsDialogOpen(false)}
         allowEmpty={false}
         isOriginalUser={isOriginalEditor}
+        initialKnownUsers={knownUsers}
         onUsersLoaded={(users, usersMap) => {
           setKnownUsers((prev) => new Map([...prev, ...usersMap]));
         }}

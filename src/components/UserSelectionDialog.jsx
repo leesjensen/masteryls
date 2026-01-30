@@ -52,8 +52,9 @@ import React, { useState, useRef, useEffect } from 'react';
  * @param {boolean} props.allowEmpty - Whether to allow empty selection (default: false)
  * @param {Function} props.isOriginalUser - Function to check if user was originally in the list
  * @param {Function} props.onUsersLoaded - Callback when users are loaded (receives users array and Map)
+ * @param {Map} props.initialKnownUsers - Optional initial user data Map to avoid redundant fetching
  */
-export default function UserSelectionDialog({ title = 'Manage users', description = 'Add or remove users. Changes are saved when you click Save changes.', currentUsersLabel = 'Current users', searchUsersLabel = 'Find users', selectedUserIds = [], onSelectionChange, fetchCurrentUsers, searchUsers, isOpen, onOpen, onClose, allowEmpty = false, onUsersLoaded, isOriginalUser = () => false }) {
+export default function UserSelectionDialog({ title = 'Manage users', description = 'Add or remove users. Changes are saved when you click Save changes.', currentUsersLabel = 'Current users', searchUsersLabel = 'Find users', selectedUserIds = [], onSelectionChange, fetchCurrentUsers, searchUsers, isOpen, onOpen, onClose, allowEmpty = false, onUsersLoaded, isOriginalUser = () => false, initialKnownUsers = null }) {
   const dialogRef = useRef(null);
   const hasLoadedRef = useRef(false);
   const [loading, setLoading] = useState(false);
@@ -61,9 +62,16 @@ export default function UserSelectionDialog({ title = 'Manage users', descriptio
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [knownUsers, setKnownUsers] = useState(new Map());
+  const [knownUsers, setKnownUsers] = useState(initialKnownUsers || new Map());
 
-  // Fetch current users when dialog opens (only once per dialog session)
+  // Sync knownUsers when initialKnownUsers changes
+  useEffect(() => {
+    if (initialKnownUsers && initialKnownUsers.size > 0) {
+      setKnownUsers(initialKnownUsers);
+    }
+  }, [initialKnownUsers]);
+
+  // Fetch current users when dialog opens (only if not provided via initialKnownUsers)
   useEffect(() => {
     if (!isOpen) {
       // Reset when dialog closes so next open will fetch fresh data
@@ -71,8 +79,11 @@ export default function UserSelectionDialog({ title = 'Manage users', descriptio
       return;
     }
 
-    // Skip if already loaded for this session
-    if (hasLoadedRef.current) return;
+    // Skip if we have initial data or already loaded
+    if (initialKnownUsers || hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      return;
+    }
 
     const loadUsers = async () => {
       setLoading(true);
@@ -94,7 +105,7 @@ export default function UserSelectionDialog({ title = 'Manage users', descriptio
     };
 
     loadUsers();
-  }, [isOpen]); // Only depend on isOpen
+  }, [isOpen, initialKnownUsers]); // Depend on isOpen and initialKnownUsers
 
   // Search users with debounce
   useEffect(() => {
