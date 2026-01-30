@@ -6,7 +6,8 @@ test('load from course.json', async ({ page }) => {
   await navigateToCourse(page);
 
   await expect(page.getByRole('banner')).toContainText('Rocket Science');
-  await expect(page.getByRole('button', { name: '☰' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Topics' }).click();
   await expect(page.getByRole('button', { name: '▼ Module 1' })).toBeVisible();
   await expect(page.getByText('markdown!')).toBeVisible();
 });
@@ -16,7 +17,7 @@ test('instruction types all', async ({ page }) => {
   await navigateToCourse(page);
 
   await expect(page.getByRole('banner')).toContainText('Rocket Science');
-  await expect(page.getByRole('button', { name: '☰' })).toBeVisible();
+  await page.getByRole('button', { name: 'Topics' }).click();
   await expect(page.getByRole('button', { name: '▼ Module 1' })).toBeVisible();
 
   await expect(page.getByText('markdown!')).toBeVisible();
