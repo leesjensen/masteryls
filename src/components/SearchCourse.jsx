@@ -4,6 +4,7 @@ import { Loader } from 'lucide-react';
 
 export default function SearchCourse({ courseOps, learningSession }) {
   const [query, setQuery] = useState('');
+  const [executedQuery, setExecutedQuery] = useState('');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,9 +22,9 @@ export default function SearchCourse({ courseOps, learningSession }) {
     try {
       const searchResults = await courseOps.searchCourse(query);
       setResults(searchResults || []);
+      setExecutedQuery(query);
     } catch (err) {
       setError('Failed to search. Please try again.');
-      console.error('Search error:', err);
     } finally {
       setLoading(false);
     }
@@ -33,6 +34,20 @@ export default function SearchCourse({ courseOps, learningSession }) {
     console.log(result);
 
     navigate(`/course/${learningSession.course.id}/topic/${result.topic.id}`);
+  }
+
+  function highlightMatch(text) {
+    if (!executedQuery.trim()) return text;
+
+    const terms = executedQuery.trim().split(/\s+/);
+    let highlighted = text;
+
+    terms.forEach((term) => {
+      const regex = new RegExp(`(${term})`, 'gi');
+      highlighted = highlighted.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+    });
+
+    return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
   }
 
   function renderResults() {
@@ -55,7 +70,7 @@ export default function SearchCourse({ courseOps, learningSession }) {
                     <div className="space-y-1 mt-1">
                       {result.matches.map((match, midx) => (
                         <div key={midx} className="text-xs text-gray-700 px-1.5" onClick={() => viewResult(result)}>
-                          {match}
+                          {highlightMatch(match)}
                         </div>
                       ))}
                     </div>
