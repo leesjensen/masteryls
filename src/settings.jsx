@@ -1,22 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ConfirmDialog from './hooks/confirmDialog.jsx';
+import UserSelectionDialog from './components/UserSelectionDialog.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
 export default function Settings({ courseOps, user, course }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const deleteDialogRef = useRef(null);
-  const editorsDialogRef = useRef(null);
   const navigate = useNavigate();
   const { showAlert } = useAlert();
   const [enrollmentCount, setEnrollmentCount] = useState(0);
   const [selectedEditors, setSelectedEditors] = useState([]);
   const [editorUsers, setEditorUsers] = useState([]);
-  const [editorsLoading, setEditorsLoading] = useState(false);
-  const [editorSearchQuery, setEditorSearchQuery] = useState('');
-  const [editorSearchResults, setEditorSearchResults] = useState([]);
-  const [editorSearchLoading, setEditorSearchLoading] = useState(false);
-  const [editorSearchError, setEditorSearchError] = useState('');
   const [knownUsers, setKnownUsers] = useState(new Map());
   const [editorsDialogOpen, setEditorsDialogOpen] = useState(false);
   const ogSelectedEditorsRef = useRef([]);
@@ -35,7 +30,6 @@ export default function Settings({ courseOps, user, course }) {
   const topicCount = course.allTopics.length || 0;
 
   const fetchEditors = async () => {
-    setEditorsLoading(true);
     try {
       const fetchedEditors = await courseOps.service.getEditorsForCourse(course.id);
       setEditorUsers(fetchedEditors);
@@ -47,6 +41,7 @@ export default function Settings({ courseOps, user, course }) {
       const editorIds = fetchedEditors.map((editor) => editor.id);
       ogSelectedEditorsRef.current = editorIds;
       setSelectedEditors(editorIds);
+      return fetchedEditors;
     } catch (error) {
       showAlert({
         type: 'error',
@@ -56,8 +51,7 @@ export default function Settings({ courseOps, user, course }) {
           </div>
         ),
       });
-    } finally {
-      setEditorsLoading(false);
+      return [];
     }
   };
 
@@ -70,40 +64,6 @@ export default function Settings({ courseOps, user, course }) {
   useEffect(() => {
     fetchEditors();
   }, [course.id, courseOps.service, showAlert]);
-
-  useEffect(() => {
-    if (!editorsDialogOpen) {
-      return;
-    }
-
-    const trimmedQuery = editorSearchQuery.trim();
-    if (trimmedQuery.length < 2) {
-      setEditorSearchResults([]);
-      setEditorSearchError('');
-      setEditorSearchLoading(false);
-      return;
-    }
-
-    const handle = setTimeout(async () => {
-      setEditorSearchLoading(true);
-      setEditorSearchError('');
-      try {
-        const results = await courseOps.service.searchUsers(trimmedQuery, 25);
-        setEditorSearchResults(results);
-        setKnownUsers((prev) => {
-          const next = new Map(prev);
-          results.forEach((result) => next.set(result.id, result));
-          return next;
-        });
-      } catch (error) {
-        setEditorSearchError(error.message || 'Failed to search users');
-      } finally {
-        setEditorSearchLoading(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(handle);
-  }, [editorSearchQuery, editorsDialogOpen, courseOps.service]);
 
   useEffect(() => {
     const [editorsChanged, ,] = compareEditors(selectedEditors);
@@ -249,125 +209,11 @@ export default function Settings({ courseOps, user, course }) {
   }
 
   const editorVisible = user.isEditor(course.id);
-  const selectedEditorUsers = selectedEditors.map((id) => knownUsers.get(id)).filter(Boolean);
   const editorsCount = selectedEditors.length;
-  const openEditorsDialog = () => {
-    setEditorsDialogOpen(true);
-    editorsDialogRef.current?.showModal();
-  };
-  const closeEditorsDialog = () => {
-    setEditorsDialogOpen(false);
-    setEditorSearchQuery('');
-    setEditorSearchResults([]);
-    setEditorSearchError('');
-    editorsDialogRef.current?.close();
-  };
-  const toggleEditorSelection = (userId) => {
-    setSelectedEditors((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
-  };
   const isOriginalEditor = (userId) => ogSelectedEditorsRef.current.includes(userId);
 
   return (
     <div className="h-full overflow-auto p-4">
-      <ConfirmDialog
-        dialogRef={deleteDialogRef}
-        title="⚠️ Delete course"
-        confirmed={deleteCourse}
-        message={
-          <div>
-            <p>This will completely delete:</p>
-            <ol className="mt-2 pl-2 list-decimal list-inside">
-              <li>
-                The course - <b>{course.name}</b>
-              </li>
-              <li>
-                The repository -
-                <b>
-                  {' ' + course.gitHub.account}/{course.gitHub.repository}
-                </b>
-              </li>
-              <li>All progress records</li>
-              <li>All enrollments</li>
-            </ol>
-            <p className="pt-2">
-              Are you sure you want to <b>irretrievably</b> destroy all of this?
-            </p>
-          </div>
-        }
-      />
-      <dialog ref={editorsDialogRef} className="w-full p-6 rounded-lg shadow-xl max-w-3xl mt-20 mx-auto" onCancel={closeEditorsDialog}>
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">Manage editors</h3>
-            <p className="text-xs text-gray-500">Add or remove editors. Changes are saved when you click Save changes.</p>
-          </div>
-          <button type="button" onClick={closeEditorsDialog} className="text-sm text-gray-500 hover:text-gray-700">
-            Close
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-gray-700">Current editors</h4>
-              <span className="text-xs text-gray-500">{editorsCount} total</span>
-            </div>
-            <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto bg-white">
-              {editorsLoading ? (
-                <div className="p-4 text-sm text-gray-500">Loading editors…</div>
-              ) : selectedEditorUsers.length > 0 ? (
-                <ul className="divide-y divide-gray-100">
-                  {selectedEditorUsers.map((editor) => (
-                    <li key={editor.id} className="flex items-center justify-between px-3 py-2">
-                      <div>
-                        <div className="text-sm text-gray-800">{editor.name}</div>
-                        <div className="text-xs text-gray-500">{editor.email}</div>
-                        {!isOriginalEditor(editor.id) && <span className="text-[10px] uppercase text-blue-600">New</span>}
-                      </div>
-                      <button type="button" onClick={() => toggleEditorSelection(editor.id)} disabled={editorsCount <= 1} className="text-xs text-red-600 hover:text-red-700 disabled:text-gray-300">
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="p-4 text-sm text-gray-500">No editors selected.</div>
-              )}
-            </div>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Find users</h4>
-            <input type="text" value={editorSearchQuery} onChange={(e) => setEditorSearchQuery(e.target.value)} placeholder="Search by name or email" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <div className="mt-2 border border-gray-200 rounded-lg max-h-64 overflow-y-auto bg-white">
-              {editorSearchLoading ? (
-                <div className="p-4 text-sm text-gray-500">Searching…</div>
-              ) : editorSearchError ? (
-                <div className="p-4 text-sm text-red-600">{editorSearchError}</div>
-              ) : editorSearchQuery.trim().length < 2 ? (
-                <div className="p-4 text-sm text-gray-500">Type at least 2 characters to search.</div>
-              ) : editorSearchResults.length > 0 ? (
-                <ul className="divide-y divide-gray-100">
-                  {editorSearchResults.map((result) => {
-                    const isSelected = selectedEditors.includes(result.id);
-                    return (
-                      <li key={result.id} className="flex items-center justify-between px-3 py-2">
-                        <div>
-                          <div className="text-sm text-gray-800">{result.name}</div>
-                          <div className="text-xs text-gray-500">{result.email}</div>
-                        </div>
-                        <button type="button" onClick={() => toggleEditorSelection(result.id)} className={`text-xs ${isSelected ? 'text-gray-500' : 'text-blue-600 hover:text-blue-700'}`}>
-                          {isSelected ? 'Added' : 'Add'}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="p-4 text-sm text-gray-500">No users match your search.</div>
-              )}
-            </div>
-          </div>
-        </div>
-      </dialog>
       <div className="max-w-3xl mx-auto">
         <div className="bg-gray-50 rounded-lg p-4 mb-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Overview</h2>
@@ -491,7 +337,7 @@ export default function Settings({ courseOps, user, course }) {
                       {editorsCount} editor{editorsCount === 1 ? '' : 's'} assigned
                     </div>
                   </div>
-                  <button type="button" onClick={openEditorsDialog} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                  <button type="button" onClick={() => setEditorsDialogOpen(true)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
                     Manage editors
                   </button>
                 </div>
@@ -512,6 +358,50 @@ export default function Settings({ courseOps, user, course }) {
           </>
         )}
       </div>
+      <ConfirmDialog
+        dialogRef={deleteDialogRef}
+        title="⚠️ Delete course"
+        confirmed={deleteCourse}
+        message={
+          <div>
+            <p>This will completely delete:</p>
+            <ol className="mt-2 pl-2 list-decimal list-inside">
+              <li>
+                The course - <b>{course.name}</b>
+              </li>
+              <li>
+                The repository -
+                <b>
+                  {' ' + course.gitHub.account}/{course.gitHub.repository}
+                </b>
+              </li>
+              <li>All progress records</li>
+              <li>All enrollments</li>
+            </ol>
+            <p className="pt-2">
+              Are you sure you want to <b>irretrievably</b> destroy all of this?
+            </p>
+          </div>
+        }
+      />
+      <UserSelectionDialog
+        title="Manage editors"
+        description="Add or remove editors. Changes are saved when you click Save changes."
+        currentUsersLabel="Current editors"
+        searchUsersLabel="Find users"
+        selectedUserIds={selectedEditors}
+        onSelectionChange={setSelectedEditors}
+        fetchCurrentUsers={fetchEditors}
+        searchUsers={(query) => courseOps.service.searchUsers(query, 25)}
+        isOpen={editorsDialogOpen}
+        onOpen={() => setEditorsDialogOpen(true)}
+        onClose={() => setEditorsDialogOpen(false)}
+        allowEmpty={false}
+        isOriginalUser={isOriginalEditor}
+        onUsersLoaded={(users, usersMap) => {
+          setKnownUsers((prev) => new Map([...prev, ...usersMap]));
+        }}
+      />
     </div>
   );
 }
