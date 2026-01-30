@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FolderTree, Settings as SettingsIcon } from 'lucide-react';
 import Contents from '../../contents.jsx';
 import Settings from '../../settings.jsx';
 import Tabs from '../../components/Tabs.jsx';
@@ -7,8 +8,8 @@ function Sidebar({ courseOps, user, learningSession, editorVisible }) {
   const [display, setDisplay] = useState('topics'); // 'topics' or 'settings'
 
   const tabs = [
-    { id: 'topics', label: 'Topics' },
-    { id: 'settings', label: 'Settings' },
+    { id: 'topics', label: 'Topics', icon: FolderTree },
+    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
   return (
     <div className="flex flex-col border p-0 rounded-xs m-2 border-gray-200 bg-gray-50 overflow-hidden w-full">
