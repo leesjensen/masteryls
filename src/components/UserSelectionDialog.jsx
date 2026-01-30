@@ -44,68 +44,20 @@ import React, { useState, useRef, useEffect } from 'react';
  * @param {string} props.searchUsersLabel - Label for search users section
  * @param {Array} props.selectedUserIds - Array of currently selected user IDs
  * @param {Function} props.onSelectionChange - Callback when selection changes
- * @param {Function} props.fetchCurrentUsers - Async function to fetch current users for the role
  * @param {Function} props.searchUsers - Async function to search users
  * @param {boolean} props.isOpen - Whether dialog is open
  * @param {Function} props.onOpen - Callback when dialog opens
  * @param {Function} props.onClose - Callback when dialog closes
  * @param {boolean} props.allowEmpty - Whether to allow empty selection (default: false)
  * @param {Function} props.isOriginalUser - Function to check if user was originally in the list
- * @param {Function} props.onUsersLoaded - Callback when users are loaded (receives users array and Map)
- * @param {Map} props.initialKnownUsers - Optional initial user data Map to avoid redundant fetching
+ * @param {Map} props.userCache - User data Map to avoid redundant fetching
  */
-export default function UserSelectionDialog({ title = 'Manage users', description = 'Add or remove users. Changes are saved when you click Save changes.', currentUsersLabel = 'Current users', searchUsersLabel = 'Find users', selectedUserIds = [], onSelectionChange, fetchCurrentUsers, searchUsers, isOpen, onOpen, onClose, allowEmpty = false, onUsersLoaded, isOriginalUser = () => false, initialKnownUsers = null }) {
+export default function UserSelectionDialog({ title = 'Manage users', description = 'Add or remove users. Changes are saved when you click Save changes.', currentUsersLabel = 'Current users', searchUsersLabel = 'Find users', selectedUserIds = [], onSelectionChange, searchUsers, isOpen, onOpen, onClose, allowEmpty = false, isOriginalUser = () => false, userCache }) {
   const dialogRef = useRef(null);
-  const hasLoadedRef = useRef(false);
-  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [knownUsers, setKnownUsers] = useState(initialKnownUsers || new Map());
-
-  // Sync knownUsers when initialKnownUsers changes
-  useEffect(() => {
-    if (initialKnownUsers && initialKnownUsers.size > 0) {
-      setKnownUsers(initialKnownUsers);
-    }
-  }, [initialKnownUsers]);
-
-  // Fetch current users when dialog opens (only if not provided via initialKnownUsers)
-  useEffect(() => {
-    if (!isOpen) {
-      // Reset when dialog closes so next open will fetch fresh data
-      hasLoadedRef.current = false;
-      return;
-    }
-
-    // Skip if we have initial data or already loaded
-    if (initialKnownUsers || hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      return;
-    }
-
-    const loadUsers = async () => {
-      setLoading(true);
-      try {
-        const users = await fetchCurrentUsers();
-        const usersMap = new Map();
-        users.forEach((user) => usersMap.set(user.id, user));
-        setKnownUsers(usersMap);
-        // Notify parent component of loaded users
-        if (onUsersLoaded) {
-          onUsersLoaded(users, usersMap);
-        }
-        hasLoadedRef.current = true;
-      } catch (error) {
-        console.error('Failed to load users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUsers();
-  }, [isOpen, initialKnownUsers]); // Depend on isOpen and initialKnownUsers
 
   // Search users with debounce
   useEffect(() => {
@@ -125,11 +77,7 @@ export default function UserSelectionDialog({ title = 'Manage users', descriptio
       try {
         const results = await searchUsers(trimmedQuery);
         setSearchResults(results);
-        setKnownUsers((prev) => {
-          const next = new Map(prev);
-          results.forEach((result) => next.set(result.id, result));
-          return next;
-        });
+        results.forEach((result) => userCache.set(result.id, result));
       } catch (error) {
         setSearchError(error.message || 'Failed to search users');
       } finally {
@@ -158,7 +106,7 @@ export default function UserSelectionDialog({ title = 'Manage users', descriptio
     onSelectionChange?.(newSelection);
   };
 
-  const selectedUsers = selectedUserIds.map((id) => knownUsers.get(id)).filter(Boolean);
+  const selectedUsers = selectedUserIds.map((id) => userCache.get(id)).filter(Boolean);
   const selectedCount = selectedUserIds.length;
 
   // Open/close dialog based on isOpen prop
@@ -189,9 +137,7 @@ export default function UserSelectionDialog({ title = 'Manage users', descriptio
               <span className="text-xs text-gray-500">{selectedCount} total</span>
             </div>
             <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto bg-white">
-              {loading ? (
-                <div className="p-4 text-sm text-gray-500">Loading users…</div>
-              ) : selectedUsers.length > 0 ? (
+              {selectedUsers.length > 0 ? (
                 <ul className="divide-y divide-gray-100">
                   {selectedUsers.map((user) => (
                     <li key={user.id} className="flex items-center justify-between px-3 py-2">

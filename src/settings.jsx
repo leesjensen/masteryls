@@ -12,9 +12,9 @@ export default function Settings({ courseOps, user, course }) {
   const [enrollmentCount, setEnrollmentCount] = useState(0);
   const [selectedEditors, setSelectedEditors] = useState([]);
   const [editorUsers, setEditorUsers] = useState([]);
-  const [knownUsers, setKnownUsers] = useState(new Map());
   const [editorsDialogOpen, setEditorsDialogOpen] = useState(false);
   const ogSelectedEditorsRef = useRef([]);
+  const userCache = useRef(new Map());
   const [formData, setFormData] = useState({
     name: course.name || '',
     title: course.title || '',
@@ -33,11 +33,7 @@ export default function Settings({ courseOps, user, course }) {
     try {
       const fetchedEditors = await courseOps.service.getEditorsForCourse(course.id);
       setEditorUsers(fetchedEditors);
-      setKnownUsers((prev) => {
-        const next = new Map(prev);
-        fetchedEditors.forEach((editor) => next.set(editor.id, editor));
-        return next;
-      });
+      fetchedEditors.forEach((editor) => userCache.current.set(editor.id, editor));
       const editorIds = fetchedEditors.map((editor) => editor.id);
       ogSelectedEditorsRef.current = editorIds;
       setSelectedEditors(editorIds);
@@ -149,7 +145,7 @@ export default function Settings({ courseOps, user, course }) {
       }
       const gitHubToken = editorUser.getRole('editor', course.id).settings.gitHubToken;
       for (const userId of toAdd) {
-        const user = knownUsers.get(userId);
+        const user = userCache.current.get(userId);
         if (!user) {
           showAlert({
             type: 'error',
@@ -164,7 +160,7 @@ export default function Settings({ courseOps, user, course }) {
         await courseOps.service.addUserRole(user, 'editor', course.id, { gitHubToken });
       }
       for (const userId of toRemove) {
-        const user = knownUsers.get(userId);
+        const user = userCache.current.get(userId);
         if (!user) {
           showAlert({
             type: 'error',
@@ -384,25 +380,7 @@ export default function Settings({ courseOps, user, course }) {
           </div>
         }
       />
-      <UserSelectionDialog
-        title="Manage editors"
-        description="Add or remove editors. Changes are saved when you click Save changes."
-        currentUsersLabel="Current editors"
-        searchUsersLabel="Find users"
-        selectedUserIds={selectedEditors}
-        onSelectionChange={setSelectedEditors}
-        fetchCurrentUsers={fetchEditors}
-        searchUsers={(query) => courseOps.service.searchUsers(query, 25)}
-        isOpen={editorsDialogOpen}
-        onOpen={() => setEditorsDialogOpen(true)}
-        onClose={() => setEditorsDialogOpen(false)}
-        allowEmpty={false}
-        isOriginalUser={isOriginalEditor}
-        initialKnownUsers={knownUsers}
-        onUsersLoaded={(users, usersMap) => {
-          setKnownUsers((prev) => new Map([...prev, ...usersMap]));
-        }}
-      />
+      <UserSelectionDialog title="Manage editors" description="Add or remove editors. Changes are saved when you click Save changes." currentUsersLabel="Current editors" searchUsersLabel="Find users" selectedUserIds={selectedEditors} onSelectionChange={setSelectedEditors} searchUsers={(query) => courseOps.service.searchUsers(query, 25)} isOpen={editorsDialogOpen} onOpen={() => setEditorsDialogOpen(true)} onClose={() => setEditorsDialogOpen(false)} allowEmpty={false} isOriginalUser={isOriginalEditor} userCache={userCache.current} />
     </div>
   );
 }
