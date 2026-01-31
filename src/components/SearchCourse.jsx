@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader } from 'lucide-react';
+import { Loader, Search, X } from 'lucide-react';
 import { useSearchResults } from '../hooks/useSearchResults';
 
 export default function SearchCourse({ courseOps, learningSession }) {
@@ -69,8 +69,8 @@ export default function SearchCourse({ courseOps, learningSession }) {
                   <div className="font-semibold text-xs text-gray-900">{result.topic.title}</div>
                   {result.matches && result.matches.length > 0 && (
                     <div className="space-y-1 mt-1">
-                      {result.matches.map((match, midx) => (
-                        <div key={midx} className="text-xs text-gray-700 px-1.5" onClick={() => viewResult(result)}>
+                      {result.matches.map((match, mid) => (
+                        <div key={mid} className="text-xs text-gray-700 px-1.5" onClick={() => viewResult(result)}>
                           {highlightMatch(match)}
                         </div>
                       ))}
@@ -90,8 +90,11 @@ export default function SearchCourse({ courseOps, learningSession }) {
       <form onSubmit={handleSearch} className="mb-3">
         <div className="flex gap-1">
           <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..." className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <button type="submit" disabled={loading || !query.trim()} className="w-40 px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-1">
-            {loading ? <Loader size={14} className="animate-spin" /> : 'Search'}
+          <button type="submit" disabled={loading || !query.trim()} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-1">
+            {loading ? <Loader size={14} className="animate-spin" /> : <Search size={14} />}
+          </button>
+          <button type="button" onClick={handleClear} disabled={loading || (!query.trim() && !searchResults)} className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 disabled:text-gray-400 disabled:bg-gray-100 transition-colors">
+            <X size={14} />
           </button>
         </div>
       </form>
