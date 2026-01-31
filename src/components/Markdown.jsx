@@ -14,8 +14,9 @@ import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { scrollToAnchor } from '../utils/utils';
+import { PenTool } from 'lucide-react';
 
-export default function Markdown({ learningSession, content, languagePlugins = [] }) {
+export default function Markdown({ learningSession, content, languagePlugins = [], onMakeHeadingActive = null }) {
   const { searchResults } = useSearchResults();
   const navigate = useNavigate();
   const containerRef = React.useRef(null);
@@ -189,6 +190,38 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       );
     },
   };
+
+  if (onMakeHeadingActive !== null) {
+    // Allow creating notes by clicking on heading, if onMakeHeadingActive callback is provided
+    const headingComponents = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].reduce((acc, tag) => {
+      acc[tag] = ({ children, ...props }) => {
+        const HeadingTag = tag;
+        const headingText = typeof children === 'string' ? children : String(children);
+        const headingId = headingText
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]/g, '');
+
+        return (
+          <HeadingTag
+            id={headingId}
+            className="flex items-center gap-2 group cursor-pointer"
+            onClick={(e) => {
+              e.preventDefault();
+              onMakeHeadingActive(headingId, headingText);
+            }}
+            title={headingText}
+            {...props}
+          >
+            {children}
+            <PenTool className="md:opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4" aria-label={`Add notes for ${headingText}`} />
+          </HeadingTag>
+        );
+      };
+      return acc;
+    }, {});
+    Object.assign(customComponents, headingComponents);
+  }
 
   const components = { ...customComponents, MermaidBlock };
 

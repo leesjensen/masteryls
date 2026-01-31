@@ -345,16 +345,38 @@ If the student's question is not directly related to the topic content, gently r
  * @returns {Promise<string>} A promise that resolves to the generated discussion response.
  */
 export async function aiDiscussionResponseGenerator(topicTitle, topicContent, messages) {
-  const instructions = {
-    parts: [
-      {
-        text: `
+  // If the user's message was about a specific section of the topic, include that information
+  const activeHeadingName = messages.length > 0 ? messages[messages.length - 1].activeHeading?.headingText : null;
+  const headingInfo = activeHeadingName ? (
+    `
+
+The student is currently studying the section titled "${activeHeadingName}."
+    `
+  ) : '';
+
+  // If the user has any saved notes for the topic + section, include that information
+  const noteMessages = messages.filter((msg) => msg.type === 'note');
+  const noteText = noteMessages.map((msg, i) => `[Note ${i + 1} / ${noteMessages.length}]: ${msg.content}`);
+  const notesInfo = noteText.length > 0 ? (
+    `
+
+The student has saved the following notes related to the topic, which may contain parts of previous discussions with you:
+
+${noteText.join('\n\n')}
+
+[END OF NOTES]
+    `
+  ) : '';
+
+  const fullInstructionText = `
 You are a knowledgeable teaching assistant helping a student understand course material. 
 You have access to the following topic content that the student is currently studying:
 
 TOPIC: ${topicTitle}
 
 CONTENT: ${topicContent}
+
+[END OF CONTENT]${headingInfo}${notesInfo}
 
 Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
@@ -368,7 +390,12 @@ Please provide a helpful, educational response that:
 - Is conversational and supportive in tone
 - Stays focused on the educational content and avoids unrelated topics
 
-If the student's question is not directly related to the topic content, gently redirect them back to the material while still being helpful.`,
+If the student's question is not directly related to the topic content, gently redirect them back to the material while still being helpful.`;
+
+  const instructions = {
+    parts: [
+      {
+        text: fullInstructionText,
       },
     ],
   };
@@ -399,8 +426,8 @@ Generate constructive feedback for a student's answer to a quiz question.
 Focus on clear explanations, encouragement, and guidance for improvement.
 
 ${Object.entries(data)
-  .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}
+      .map(([key, value]) => `- ${key}: ${value}`)
+      .join('\n')}
 
 Requirements:
 - Address the student directly
@@ -423,8 +450,8 @@ Generate constructive feedback for a student's essay response.
 Focus on clear explanations, encouragement, and guidance for improvement.
 
 ${Object.entries(data)
-  .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}
+      .map(([key, value]) => `- ${key}: ${value}`)
+      .join('\n')}
 
 Requirements:
 - Start the response with json that indicates the percentage correct in the format: {"percentCorrect": XX}
@@ -444,7 +471,9 @@ Requirements:
     try {
       feedbackData = JSON.parse(jsonMatch[1]);
       feedback = feedback.slice(jsonMatch.index + jsonMatch[0].length).trim();
-    } catch {}
+    } catch (error) {
+      console.error('Failed to parse AI feedback JSON:', error);
+    }
   }
   return { feedback, percentCorrect: feedbackData.percentCorrect };
 }

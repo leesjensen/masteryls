@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MessageCircle } from 'lucide-react';
 import DiscussionPanel from '../../components/DiscussionPanel';
 import Markdown from '../../components/Markdown';
 import { scrollToAnchor } from '../../utils/utils';
@@ -8,6 +9,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [discussionOpen, setDiscussionOpen] = useState(false);
+  const [activeHeading, setActiveHeading] = useState(null);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -57,19 +59,39 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     return md;
   }
 
+  const onMakeHeadingActive =
+    user && instructionState === 'learning'
+      ? (headingId, headingText) => {
+          setDiscussionOpen(true);
+          setActiveHeading({ headingId, headingText });
+        }
+      : null;
+
   return (
     <div ref={containerRef} className="border-1 border-amber-200 rounded-sm m-2 flex w-full overflow-auto  ">
       <div className="relative">
         {user && instructionState === 'learning' && (
-          <button onClick={() => setDiscussionOpen(!discussionOpen)} className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6`} title="Discuss this topic">
-            💬 Discuss
+          <button onClick={() => setDiscussionOpen(!discussionOpen)} className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6 flex items-center gap-2`} title="Discuss this topic">
+            <MessageCircle size={18} /> Notebook
           </button>
         )}
 
-        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} /> : <div className="flex items-center justify-center" />}</div>
+        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} onMakeHeadingActive={onMakeHeadingActive} /> : isLoading ? <p>Loading content...</p> : <p>No content available.</p>}</div>
       </div>
 
-      <DiscussionPanel isOpen={discussionOpen} onClose={() => setDiscussionOpen(false)} topicTitle={learningSession.topic?.title || 'Current Topic'} topicContent={markdown} user={user} />
+      <DiscussionPanel
+        courseOps={courseOps}
+        learningSession={learningSession}
+        isOpen={discussionOpen}
+        onClose={() => {
+          setDiscussionOpen(false);
+          setActiveHeading(null);
+        }}
+        topicTitle={learningSession.topic?.title || 'Current Topic'}
+        topicContent={markdown}
+        user={user}
+        activeHeading={activeHeading}
+      />
     </div>
   );
 }
