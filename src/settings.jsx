@@ -200,26 +200,15 @@ export default function Settings({ courseOps, user, course }) {
     });
   };
 
-  const reindexSearch = async () => {
-    try {
-      await courseOps.reindexCourse(course.id);
-      showAlert({
-        message: (
-          <div className="text-xs">
-            <div>Search reindexing started</div>
-          </div>
-        ),
-      });
-    } catch (error) {
-      showAlert({
-        type: 'error',
-        message: (
-          <div className="text-xs">
-            <div>{error.message || 'Failed to start search reindexing'}</div>
-          </div>
-        ),
-      });
-    }
+  const reindexSearch = () => {
+    courseOps.reindexCourse(course.id);
+    showAlert({
+      message: (
+        <div className="text-xs">
+          <div>Indexing {course.title}</div>
+        </div>
+      ),
+    });
   };
 
   if (!user) {

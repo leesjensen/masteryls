@@ -10,7 +10,7 @@ function Sidebar({ courseOps, user, learningSession, editorVisible }) {
 
   const tabs = [
     { id: 'topics', label: 'Topics', icon: FolderTree, visible: true },
-    { id: 'search', label: 'Search', icon: Search, visible: user && (user.isEditor(learningSession.course.id) || user.isRoot()) },
+    { id: 'search', label: 'Search', icon: Search, visible: true },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, visible: user && (user.isEditor(learningSession.course.id) || user.isRoot()) },
   ];
   return (
