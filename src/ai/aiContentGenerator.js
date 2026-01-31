@@ -471,7 +471,9 @@ Requirements:
     try {
       feedbackData = JSON.parse(jsonMatch[1]);
       feedback = feedback.slice(jsonMatch.index + jsonMatch[0].length).trim();
-    } catch { }
+    } catch (error) {
+      console.error('Failed to parse AI feedback JSON:', error);
+    }
   }
   return { feedback, percentCorrect: feedbackData.percentCorrect };
 }
