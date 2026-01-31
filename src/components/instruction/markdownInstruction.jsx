@@ -9,7 +9,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [discussionOpen, setDiscussionOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState(null);
+  const [activeHeading, setActiveHeading] = useState(null);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -59,11 +59,11 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     return md;
   }
 
-  const onMakeSectionActive =
+  const onMakeHeadingActive =
     user && instructionState === 'learning'
-      ? (sectionId, sectionText) => {
+      ? (headingId, headingText) => {
           setDiscussionOpen(true);
-          setActiveSection({ sectionId, sectionText });
+          setActiveHeading({ headingId, headingText });
         }
       : null;
 
@@ -76,7 +76,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
           </button>
         )}
 
-        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} onMakeSectionActive={onMakeSectionActive} /> : isLoading ? <p>Loading content...</p> : <p>No content available.</p>}</div>
+        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} onMakeHeadingActive={onMakeHeadingActive} /> : isLoading ? <p>Loading content...</p> : <p>No content available.</p>}</div>
       </div>
 
       <DiscussionPanel
@@ -85,12 +85,12 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         isOpen={discussionOpen}
         onClose={() => {
           setDiscussionOpen(false);
-          setActiveSection(null);
+          setActiveHeading(null);
         }}
         topicTitle={learningSession.topic?.title || 'Current Topic'}
         topicContent={markdown}
         user={user}
-        activeSection={activeSection}
+        activeHeading={activeHeading}
       />
     </div>
   );

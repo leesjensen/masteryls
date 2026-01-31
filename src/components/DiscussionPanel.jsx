@@ -3,7 +3,7 @@ import { Bot, FileText, RotateCcw, X, MessageCircle, Notebook } from 'lucide-rea
 import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Markdown from './Markdown';
 
-export default function DiscussionPanel({ courseOps, learningSession, isOpen, onClose, topicTitle, topicContent, user, activeSection = null }) {
+export default function DiscussionPanel({ courseOps, learningSession, isOpen, onClose, topicTitle, topicContent, user, activeHeading = null }) {
   const [allMessages, setAllMessages] = useState([]);
   const [savedMessagesLoaded, setSavedMessagesLoaded] = useState(false);
   const [visibleMessages, setVisibleMessages] = useState([]);
@@ -17,6 +17,8 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const scrollToBottom = (behavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
+
+  console.log("Active Heading in DiscussionPanel:", activeHeading);
 
   useEffect(() => {
     scrollToBottom();
@@ -89,13 +91,15 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   }, [showModeDropdown]);
 
   const handleUserNoteInput = (userMessage, addToVisibleMessages = true) => {
+    console.log('Adding user note:', userMessage, 'to visible messages:', addToVisibleMessages);
     const notePayload = {
       type: 'note',
-      activeSection,
+      activeHeading,
       content: userMessage,
       timestamp: Date.now(),
     };
     if (addToVisibleMessages) {
+      // TODO: Why isn't this working?
       addMessage(notePayload);
     } else {
       // Just add to allMessages without showing in visibleMessages
@@ -105,14 +109,14 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     // Save to progress table in backend
     const dataToSave = {
       type: 'note',
-      activeSection,
+      activeHeading,
       content: userMessage,
     };
     courseOps.addProgress(null, null, 'note', 0, dataToSave);
   };
 
   const handleAIQueryInput = async (userMessage) => {
-    const newMessage = { type: 'user', activeSection, content: userMessage, timestamp: Date.now() };
+    const newMessage = { type: 'user', activeHeading, content: userMessage, timestamp: Date.now() };
     const newMessages = [...visibleMessages, newMessage];
     addMessage(newMessage);
     setIsLoading(true);
@@ -127,7 +131,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     } finally {
       addMessage({
         type,
-        activeSection,
+        activeHeading,
         content,
         timestamp: Date.now(),
       });
@@ -155,7 +159,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     // Create a visual confirmation in the messages panel
     addMessage({
       type: 'info',
-      activeSection,
+      activeHeading,
       content: 'This AI response has been saved as a note.',
       timestamp: Date.now(),
     });
@@ -201,7 +205,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
   if (!isOpen) return null;
 
-  const fullTopicTitle = activeSection ? `${topicTitle} - ${activeSection.sectionText}` : topicTitle;
+  const fullTopicTitle = activeHeading ? `${topicTitle} - ${activeHeading.headingText}` : topicTitle;
 
   const modeConfig = {
     ai: {

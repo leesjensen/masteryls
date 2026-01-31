@@ -346,11 +346,11 @@ If the student's question is not directly related to the topic content, gently r
  */
 export async function aiDiscussionResponseGenerator(topicTitle, topicContent, messages) {
   // If the user's message was about a specific section of the topic, include that information
-  const activeSectionName = messages.length > 0 ? messages[messages.length - 1].activeSection?.sectionText : null;
-  const sectionInfo = activeSectionName ? (
+  const activeHeadingName = messages.length > 0 ? messages[messages.length - 1].activeHeading?.headingText : null;
+  const headingInfo = activeHeadingName ? (
     `
 
-The student is currently studying the section titled "${activeSectionName}."
+The student is currently studying the section titled "${activeHeadingName}."
     `
   ) : '';
 
@@ -376,7 +376,7 @@ TOPIC: ${topicTitle}
 
 CONTENT: ${topicContent}
 
-[END OF CONTENT]${sectionInfo}${notesInfo}
+[END OF CONTENT]${headingInfo}${notesInfo}
 
 Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
