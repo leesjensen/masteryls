@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Bot, FileText, RotateCcw, X, MessageCircle, Notebook } from 'lucide-react';
 import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Markdown from './Markdown';
 
@@ -204,17 +205,19 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
   const modeConfig = {
     ai: {
-      title: '🤖 AI Discussion',
+      title: 'AI Discussion',
+      titleIcon: Bot,
       placeholder: 'Ask a question about this topic...',
       buttonText: 'Ask AI',
-      emptyStateIcon: '💬',
+      emptyStateIcon: MessageCircle,
       emptyStateText: "Ask questions about this topic! I'll help explain concepts and provide additional insights.",
     },
     notes: {
-      title: '📝 Topic Notes',
+      title: 'Topic Notes',
+      titleIcon: FileText,
       placeholder: 'Write a note about this topic...',
       buttonText: 'Add Note',
-      emptyStateIcon: '📓',
+      emptyStateIcon: Notebook,
       emptyStateText: 'Take notes about this topic. Your notes will be saved here for future reference.',
     },
   }[mode];
@@ -230,20 +233,18 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           </div>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              <button onClick={() => toggleMode('ai')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'ai' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
-                🤖 AI
+              <button onClick={() => toggleMode('ai')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'ai' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                <Bot size={16} /> AI
               </button>
-              <button onClick={() => toggleMode('notes')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'notes' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
-                📝 Notes
+              <button onClick={() => toggleMode('notes')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'notes' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                <FileText size={16} /> Notes
               </button>
             </div>
-            {mode === 'ai' && (
-              <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={clearConversation} title="Clear discussion">
-                🔄
-              </button>
-            )}
-            <button className="w-3 m-0.5 p-0.5 text-xs font-medium rounded-sm bg-transparent border border-transparent filter grayscale hover:grayscale-0 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={onClose} title="Close discussion">
-              ❌
+            <button disabled={mode !== 'ai'} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out disabled:opacity-50 disabled:pointer-events-none" onClick={clearConversation} title="Clear discussion">
+              <RotateCcw size={16} />
+            </button>
+            <button className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={onClose} title="Close discussion">
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -251,7 +252,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {visibleMessages.length === 0 && (
           <div className="text-center text-gray-500 py-8">
-            <p className="mb-2 text-2xl">{modeConfig.emptyStateIcon}</p>
+            <div className="mb-2 flex justify-center">{React.createElement(modeConfig.emptyStateIcon, { size: 48, strokeWidth: 1.5 })}</div>
             <p className="text-sm px-4">{modeConfig.emptyStateText}</p>
           </div>
         )}
@@ -311,7 +312,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
             {showModeDropdown && (
               <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10">
                 <button type="button" onClick={() => toggleMode('ai')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'ai' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'} rounded-t-md`}>
-                  <span>🤖</span>
+                  <Bot size={20} />
                   <div>
                     <div className="font-medium">AI Discussion</div>
                     <div className="text-xs text-gray-500">Ask questions & get answers</div>
@@ -319,7 +320,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
                   {mode === 'ai' && <span className="ml-auto">✓</span>}
                 </button>
                 <button type="button" onClick={() => toggleMode('notes')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'notes' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700'} rounded-b-md`}>
-                  <span>📝</span>
+                  <FileText size={20} />
                   <div>
                     <div className="font-medium">Take Notes</div>
                     <div className="text-xs text-gray-500">Save your thoughts</div>
@@ -382,7 +383,11 @@ function MessageBox({ message, handleSaveAsNote }) {
     <div className={`flex ${justify}`}>
       <div className={`max-w-[80%] rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
         <div className={formatAsMarkdown ? 'markdown-body' : ''}>
-          {type === 'note' && <div className="text-xs text-amber-600 font-medium mb-1">📝 Note</div>}
+          {type === 'note' && (
+            <div className="text-xs text-amber-600 font-medium mb-1 flex items-center gap-1">
+              <FileText size={12} /> Note
+            </div>
+          )}
           {formatAsMarkdown ? <Markdown content={content} /> : <div>{content}</div>}
         </div>
         {saveAIResponse}

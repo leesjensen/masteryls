@@ -12,6 +12,7 @@ import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { scrollToAnchor } from '../utils/utils';
+import { PenTool } from 'lucide-react';
 
 export default function Markdown({ learningSession, content, languagePlugins = [], onMakeSectionActive = null }) {
   const navigate = useNavigate();
@@ -170,7 +171,10 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       acc[tag] = ({ children, ...props }) => {
         const HeadingTag = tag;
         const headingText = typeof children === 'string' ? children : String(children);
-        const headingId = headingText.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+        const headingId = headingText
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^\w-]/g, '');
 
         return (
           <HeadingTag
@@ -184,9 +188,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
             {...props}
           >
             {children}
-            <span className="md:opacity-0 group-hover:opacity-100 transition-opacity text-sm" aria-label={`Add notes for ${headingText}`}>
-              📝
-            </span>
+            <PenTool className="md:opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4" aria-label={`Add notes for ${headingText}`} />
           </HeadingTag>
         );
       };
