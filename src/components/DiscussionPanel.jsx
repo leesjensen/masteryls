@@ -235,17 +235,17 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           </div>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              <button onClick={() => toggleMode('ai')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'ai' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+              <button onClick={() => toggleMode('ai')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'ai' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`} title="Ask questions about this topic">
                 <Bot size={16} /> AI
               </button>
-              <button onClick={() => toggleMode('notes')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'notes' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+              <button onClick={() => toggleMode('notes')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'notes' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`} title="Take notes on this topic">
                 <FileText size={16} /> Notes
               </button>
             </div>
-            <button disabled={mode !== 'ai'} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out disabled:opacity-50 disabled:pointer-events-none" onClick={clearConversation} title="Clear discussion">
+            <button disabled={mode !== 'ai'} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer disabled:opacity-50 disabled:cursor-none disabled:pointer-events-none" onClick={clearConversation} title="Clear discussion">
               <RotateCcw size={16} />
             </button>
-            <button className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out" onClick={onClose} title="Close discussion">
+            <button className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer" onClick={onClose} title="Close discussion">
               <X size={16} />
             </button>
           </div>
@@ -301,10 +301,10 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           />
           <div className="relative" ref={dropdownRef}>
             <div className="flex">
-              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}>
+              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
                 {modeConfig.buttonText}
               </button>
-              <button type="button" onClick={() => setShowModeDropdown(!showModeDropdown)} className={`px-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-r-md border-l border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors`} title="Change mode">
+              <button type="button" onClick={() => setShowModeDropdown(!showModeDropdown)} className={`px-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-r-md border-l border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer`} title="Change mode">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -313,7 +313,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
             {showModeDropdown && (
               <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                <button type="button" onClick={() => toggleMode('ai')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'ai' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'} rounded-t-md`}>
+                <button type="button" onClick={() => toggleMode('ai')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'ai' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'} rounded-t-md cursor-pointer`}>
                   <Bot size={20} />
                   <div>
                     <div className="font-medium">AI Discussion</div>
@@ -321,7 +321,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
                   </div>
                   {mode === 'ai' && <span className="ml-auto">✓</span>}
                 </button>
-                <button type="button" onClick={() => toggleMode('notes')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'notes' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700'} rounded-b-md`}>
+                <button type="button" onClick={() => toggleMode('notes')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'notes' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700'} rounded-b-md cursor-pointer`}>
                   <FileText size={20} />
                   <div>
                     <div className="font-medium">Take Notes</div>
