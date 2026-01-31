@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createBrowserRouter, Outlet, useOutletContext, useNavigate, useLocation } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
+import { useSearchResults } from './hooks/useSearchResults';
 import useCourseOperations from './hooks/useCourseOperations';
 
 import Start from './start.jsx';
@@ -128,6 +129,7 @@ function ClassroomPage() {
   const { courseOps, service, user, learningSession, setLearningSession, settings } = useOutletContext();
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
+  const { setSearchResults } = useSearchResults();
 
   const { courseId, topicId } = useParams();
   React.useEffect(() => {
@@ -139,6 +141,7 @@ function ClassroomPage() {
             course = await courseOps.getCourse(courseId);
             if (course) {
               service.setCourseUiSettings(courseId);
+              setSearchResults(null);
             }
           }
 

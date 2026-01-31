@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSearchResults } from '../hooks/useSearchResults';
 import CopyToClipboard from './CopyToClipboard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,6 +16,7 @@ import { scrollToAnchor } from '../utils/utils';
 import { PenTool } from 'lucide-react';
 
 export default function Markdown({ learningSession, content, languagePlugins = [], onMakeSectionActive = null }) {
+  const { searchResults } = useSearchResults();
   const navigate = useNavigate();
   const containerRef = React.useRef(null);
   const customComponents = {
@@ -199,10 +201,29 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
   const components = { ...customComponents, MermaidBlock };
 
+  const highlightContent = () => {
+    if (!searchResults?.query?.trim()) {
+      return content;
+    }
+
+    const terms = searchResults.query.trim().split(/\s+/);
+    let highlighted = content;
+
+    terms.forEach((term) => {
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Negative lookbehind and lookahead to avoid replacing inside link/image references
+      // Avoid: [text](url), ![alt](url), [text][ref], ![alt][ref]
+      const regex = new RegExp(`(?<!\\[|\\(|])(?<!/)(?<![\\w./-])` + `(${escapedTerm})` + `(?![\\w./-]|\\)|\\])(?!\\])`, 'gi');
+      highlighted = highlighted.replace(regex, '<mark className="bg-yellow-300">$1</mark>');
+    });
+
+    return highlighted;
+  };
+
   return (
     <div ref={containerRef}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
-        {content}
+        {highlightContent()}
       </ReactMarkdown>
     </div>
   );

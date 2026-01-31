@@ -6,8 +6,8 @@ function Tabs({ tabs, activeTab, onChange }) {
       {tabs.map(
         (tab) =>
           tab.visible && (
-            <button key={tab.id} onClick={() => onChange(tab.id)} className={`flex-1 py-3 px-4 font-medium transition-all flex items-center justify-center gap-2 ${activeTab === tab.id ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent'}`}>
-              <div className={`flex items-center gap-2 ${activeTab === tab.id ? 'font-semibold' : 'font-medium'}`}>
+            <button key={tab.id} onClick={() => onChange(tab.id)} className={`flex-1 py-3 px-2 font-medium transition-all flex items-center justify-center gap-2 ${activeTab === tab.id ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600 hover:text-gray-900 border-b-2 border-transparent'}`}>
+              <div className={`flex items-center gap-1 font-medium`}>
                 {tab.icon && <tab.icon size={18} />}
                 {tab.label}
               </div>
