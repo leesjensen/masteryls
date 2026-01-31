@@ -175,6 +175,14 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     }
     const terms = searchResults.query.split(/\s+/);
 
+    // Remove existing highlights
+    const existingHighlights = containerRef.current.querySelectorAll('mark[data-search-highlight]');
+    existingHighlights.forEach((mark) => {
+      const parent = mark.parentNode;
+      parent.replaceChild(document.createTextNode(mark.textContent), mark);
+      parent.normalize(); // Merge adjacent text nodes
+    });
+
     // Recursively find and highlight text nodes
     const highlightTextNode = (textNode) => {
       let text = textNode.textContent;
