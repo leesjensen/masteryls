@@ -98,8 +98,9 @@ function StartPage() {
 }
 
 function DashboardPage() {
-  const { courseOps, service, user } = useOutletContext();
+  const { courseOps, service, user, setLearningSession } = useOutletContext();
   service.removeCourseUiSettings();
+  setLearningSession(null);
   return <DashboardView courseOps={courseOps} service={service} user={user} />;
 }
 

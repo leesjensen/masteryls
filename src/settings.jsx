@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ConfirmDialog from './hooks/confirmDialog.jsx';
+import UserSelectionDialog from './components/UserSelectionDialog.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
-import UserSelect from './components/userSelect.jsx';
 import { useNavigate } from 'react-router-dom';
 
 export default function Settings({ courseOps, user, course }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
-  const dialogRef = useRef(null);
+  const deleteDialogRef = useRef(null);
   const navigate = useNavigate();
   const { showAlert } = useAlert();
-  const [users, setUsers] = useState([]);
   const [enrollmentCount, setEnrollmentCount] = useState(0);
   const [selectedEditors, setSelectedEditors] = useState([]);
+  const [editorUsers, setEditorUsers] = useState([]);
+  const [editorsDialogOpen, setEditorsDialogOpen] = useState(false);
   const ogSelectedEditorsRef = useRef([]);
+  const userCache = useRef(new Map());
   const [formData, setFormData] = useState({
     name: course.name || '',
     title: course.title || '',
@@ -27,16 +29,37 @@ export default function Settings({ courseOps, user, course }) {
   const moduleCount = course.modules.length || 0;
   const topicCount = course.allTopics.length || 0;
 
+  const fetchEditors = async () => {
+    try {
+      const fetchedEditors = await courseOps.service.getEditorsForCourse(course.id);
+      setEditorUsers(fetchedEditors);
+      fetchedEditors.forEach((editor) => userCache.current.set(editor.id, editor));
+      const editorIds = fetchedEditors.map((editor) => editor.id);
+      ogSelectedEditorsRef.current = editorIds;
+      setSelectedEditors(editorIds);
+      return fetchedEditors;
+    } catch (error) {
+      showAlert({
+        type: 'error',
+        message: (
+          <div className="text-xs">
+            <div>{error.message || 'Failed to load editors'}</div>
+          </div>
+        ),
+      });
+      return [];
+    }
+  };
+
   useEffect(() => {
     courseOps.service.allEnrollments(course.id).then((enrollments) => {
       setEnrollmentCount(enrollments.length);
     });
-    courseOps.service.getAllUsers().then((fetchedUsers) => {
-      setUsers(fetchedUsers);
-      ogSelectedEditorsRef.current = fetchedUsers.filter((u) => u.roles.some((r) => r.right === 'editor' && r.object === course.id)).map((u) => u.id);
-      setSelectedEditors(ogSelectedEditorsRef.current);
-    });
-  }, []);
+  }, [course.id, courseOps.service]);
+
+  useEffect(() => {
+    fetchEditors();
+  }, [course.id, courseOps.service, showAlert]);
 
   useEffect(() => {
     const [editorsChanged, ,] = compareEditors(selectedEditors);
@@ -108,19 +131,50 @@ export default function Settings({ courseOps, user, course }) {
     }
 
     if (editorsChanged) {
-      const editorUser = users.find((u) => u.roles.find((r) => r.right === 'editor' && r.object === course.id));
-      if (editorUser) {
-        const gitHubToken = editorUser.getRole('editor', course.id).settings.gitHubToken;
-        for (const userId of toAdd) {
-          const user = users.find((u) => u.id === userId);
-          await courseOps.service.addUserRole(user, 'editor', course.id, { gitHubToken });
-        }
-        for (const userId of toRemove) {
-          const user = users.find((u) => u.id === userId);
-          await courseOps.service.removeUserRole(user, 'editor', course.id);
-        }
-        ogSelectedEditorsRef.current = [...selectedEditors];
+      const editorUser = editorUsers.find((u) => u.roles?.find((r) => r.right === 'editor' && r.object === course.id));
+      if (!editorUser) {
+        showAlert({
+          type: 'error',
+          message: (
+            <div className="text-xs">
+              <div>Unable to determine editor settings. Please refresh and try again.</div>
+            </div>
+          ),
+        });
+        return;
       }
+      const gitHubToken = editorUser.getRole('editor', course.id).settings.gitHubToken;
+      for (const userId of toAdd) {
+        const user = userCache.current.get(userId);
+        if (!user) {
+          showAlert({
+            type: 'error',
+            message: (
+              <div className="text-xs">
+                <div>Unable to add an editor because user data is missing.</div>
+              </div>
+            ),
+          });
+          continue;
+        }
+        await courseOps.service.addUserRole(user, 'editor', course.id, { gitHubToken });
+      }
+      for (const userId of toRemove) {
+        const user = userCache.current.get(userId);
+        if (!user) {
+          showAlert({
+            type: 'error',
+            message: (
+              <div className="text-xs">
+                <div>Unable to remove an editor because user data is missing.</div>
+              </div>
+            ),
+          });
+          continue;
+        }
+        await courseOps.service.removeUserRole(user, 'editor', course.id);
+      }
+      await fetchEditors();
     }
 
     setSettingsDirty(false);
@@ -151,35 +205,11 @@ export default function Settings({ courseOps, user, course }) {
   }
 
   const editorVisible = user.isEditor(course.id);
+  const editorsCount = selectedEditors.length;
+  const isOriginalEditor = (userId) => ogSelectedEditorsRef.current.includes(userId);
 
   return (
     <div className="h-full overflow-auto p-4">
-      <ConfirmDialog
-        dialogRef={dialogRef}
-        title="⚠️ Delete course"
-        confirmed={deleteCourse}
-        message={
-          <div>
-            <p>This will completely delete:</p>
-            <ol className="mt-2 pl-2 list-decimal list-inside">
-              <li>
-                The course - <b>{course.name}</b>
-              </li>
-              <li>
-                The repository -
-                <b>
-                  {' ' + course.gitHub.account}/{course.gitHub.repository}
-                </b>
-              </li>
-              <li>All progress records</li>
-              <li>All enrollments</li>
-            </ol>
-            <p className="pt-2">
-              Are you sure you want to <b>irretrievably</b> destroy all of this?
-            </p>
-          </div>
-        }
-      />
       <div className="max-w-3xl mx-auto">
         <div className="bg-gray-50 rounded-lg p-4 mb-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Overview</h2>
@@ -297,7 +327,16 @@ export default function Settings({ courseOps, user, course }) {
             <div className="bg-gray-50 rounded-lg p-4 mb-1">
               <div>
                 <h2 className="text-lg font-semibold mb-3 text-gray-800">Editors</h2>
-                <UserSelect users={users} selected={selectedEditors} setSelected={setSelectedEditors} />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-700">
+                      {editorsCount} editor{editorsCount === 1 ? '' : 's'} assigned
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setEditorsDialogOpen(true)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                    Manage editors
+                  </button>
+                </div>
               </div>
             </div>
             <div>
@@ -306,7 +345,7 @@ export default function Settings({ courseOps, user, course }) {
                   Save changes
                 </button>
                 {user?.isEditor(course.id) && user?.isRoot() && (
-                  <button disabled={course.settings?.deleteProtected} onClick={() => dialogRef.current.showModal()} className="m-2 px-4 py-2 disabled:bg-gray-300 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
+                  <button disabled={course.settings?.deleteProtected} onClick={() => deleteDialogRef.current.showModal()} className="m-2 px-4 py-2 disabled:bg-gray-300 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
                     Delete course
                   </button>
                 )}
@@ -315,6 +354,33 @@ export default function Settings({ courseOps, user, course }) {
           </>
         )}
       </div>
+      <ConfirmDialog
+        dialogRef={deleteDialogRef}
+        title="⚠️ Delete course"
+        confirmed={deleteCourse}
+        message={
+          <div>
+            <p>This will completely delete:</p>
+            <ol className="mt-2 pl-2 list-decimal list-inside">
+              <li>
+                The course - <b>{course.name}</b>
+              </li>
+              <li>
+                The repository -
+                <b>
+                  {' ' + course.gitHub.account}/{course.gitHub.repository}
+                </b>
+              </li>
+              <li>All progress records</li>
+              <li>All enrollments</li>
+            </ol>
+            <p className="pt-2">
+              Are you sure you want to <b>irretrievably</b> destroy all of this?
+            </p>
+          </div>
+        }
+      />
+      <UserSelectionDialog title="Manage editors" description="Add or remove editors. Changes are saved when you click Save changes." currentUsersLabel="Current editors" searchUsersLabel="Find users" selectedUserIds={selectedEditors} onSelectionChange={setSelectedEditors} searchUsers={(query) => courseOps.service.searchUsers(query, 25)} isOpen={editorsDialogOpen} onOpen={() => setEditorsDialogOpen(true)} onClose={() => setEditorsDialogOpen(false)} allowEmpty={false} isOriginalUser={isOriginalEditor} userCache={userCache.current} />
     </div>
   );
 }

@@ -15,7 +15,7 @@ export default function DashboardView({ courseOps, service, user }) {
   const navigate = useNavigate();
 
   const appBarTools = (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
       {user.isRoot() && (
         <>
           <AppBarButton icon={PackagePlus} onClick={() => navigate('/courseCreation')} title="New course" />

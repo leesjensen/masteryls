@@ -78,7 +78,7 @@ export default class Course {
   }
 
   topicFromPath(path, defaultToFirst = true) {
-    const topic = this.allTopics.find((t) => t.path === path);
+    const topic = this.allTopics.find((t) => t.path.endsWith(path));
     if (topic) {
       return topic;
     } else if (!topic && defaultToFirst) {

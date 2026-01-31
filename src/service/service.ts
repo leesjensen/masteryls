@@ -214,6 +214,65 @@ class Service {
   }
 
   /**
+   * Retrieves users who have editor access for a specific course.
+   * @param courseId - The course ID to load editor users for.
+   * @returns An array of User objects with editor roles loaded.
+   */
+  async getEditorsForCourse(courseId: string): Promise<User[]> {
+    const { data: roleData, error: roleError } = await this.supabase.from('role').select('user, right, object, settings').eq('right', 'editor').eq('object', courseId);
+    if (roleError) {
+      throw new Error(roleError.message);
+    }
+
+    if (!roleData || roleData.length === 0) {
+      return [];
+    }
+
+    const userIds = roleData.map((role) => role.user);
+    const { data: userData, error: userError } = await this.supabase.from('user').select('id, name, email, settings').in('id', userIds);
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    const rolesByUser = new Map<string, Role[]>();
+    for (const role of roleData) {
+      if (!rolesByUser.has(role.user)) {
+        rolesByUser.set(role.user, []);
+      }
+      rolesByUser.get(role.user)?.push(role);
+    }
+
+    const users: User[] = [];
+    for (const item of userData || []) {
+      const roles = rolesByUser.get(item.id) || [];
+      users.push(new User({ ...item, roles }));
+    }
+
+    return users;
+  }
+
+  /**
+   * Searches users by name or email.
+   * @param query - The text to search for.
+   * @param limit - Maximum number of results to return.
+   * @returns An array of matching User objects.
+   */
+  async searchUsers(query: string, limit = 20): Promise<User[]> {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return [];
+    }
+
+    const like = `%${trimmed}%`;
+    const { data, error } = await this.supabase.from('user').select('id, name, email, settings').or(`name.ilike.${like},email.ilike.${like}`).limit(limit);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return (data || []).map((item) => new User({ ...item, roles: [] }));
+  }
+
+  /**
    * Adds a role to a user.
    * @param user - The user to assign the role to.
    * @param right - The right/permission to grant.
@@ -688,6 +747,18 @@ class Service {
     }
   }
 
+  async searchGitHubContent(gitHubToken: string, query: string, gitHubAccount: string, gitHubRepo: string): Promise<any[]> {
+    const searchUrl = `https://api.github.com/search/code?q=${encodeURIComponent(query)}+repo:${gitHubAccount}/${gitHubRepo}+extension:md&per_page=100`;
+    const res = await this.makeGitHubApiRequest(gitHubToken, searchUrl, 'GET', undefined, 'application/vnd.github.text-match+json');
+    if (!res.ok) {
+      const errText = await res.text().catch(() => res.statusText);
+      throw new Error(`Failed to search content: ${res.status} ${errText}`);
+    }
+    const data = await res.json();
+
+    return data.items || [];
+  }
+
   /**
    * Helper method to make requests to the GitHub API.
    * @param token - GitHub token.
@@ -696,9 +767,9 @@ class Service {
    * @param body - Request body.
    * @returns The fetch response.
    */
-  async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object) {
+  async makeGitHubApiRequest(token: string, url: string, method: string = 'GET', body?: object, accept?: string) {
     const headers: Record<string, string> = {
-      Accept: 'application/vnd.github.v3+json',
+      Accept: accept || 'application/vnd.github.v3+json',
       ...(body ? { 'Content-Type': 'application/json' } : {}),
     };
     if (token) {

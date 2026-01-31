@@ -1,7 +1,10 @@
 import React from 'react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
+
+const defaultImagePlaceholderUrl = 'https://images.unsplash.com/photo-1767597186218-813e8e6c44d6?q=80&w=400';
 
 const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit }, ref) {
   const [editorLoaded, setEditorLoaded] = React.useState(false);
@@ -199,31 +202,31 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       {/* Markdown Toolbar */}
       {editorLoaded && (
         <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm">
-          <ToolbarButton onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" text="B" />
-          <ToolbarButton onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" text="I" />
-          <ToolbarButton onClick={() => wrapSelection('`', '`')} title="Inline Code" text="</>" />
+          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
+          <EditorButton icon={Bold} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
+          <EditorButton icon={Italic} onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" />
+          <EditorButton icon={Code} onClick={() => wrapSelection('`', '`')} title="Inline Code" />
+          <EditorButton icon={Heading2} onClick={() => prefixInsertText('## ')} title="Heading 2" />
+          <EditorButton icon={Heading3} onClick={() => prefixInsertText('### ')} title="Heading 3" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <ToolbarButton onClick={() => prefixInsertText('## ')} title="Heading 2" text="H2" />
-          <ToolbarButton onClick={() => prefixInsertText('### ')} title="Heading 3" text="H3" />
+          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Content</span>
+          <EditorButton icon={Table} onClick={() => insertText(defaultTableTemplate)} title="Table" />
+          <EditorButton icon={List} onClick={() => prefixInsertText('- ')} title="Bullet List" />
+          <EditorButton icon={ListOrdered} onClick={() => prefixInsertText('1. ')} title="Numbered List" />
+          <EditorButton icon={Link} onClick={() => insertLink()} title="Link" />
+          <EditorButton icon={Image} onClick={() => insertText(`![alt text](${defaultImagePlaceholderUrl})`)} title="Image" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <ToolbarButton onClick={() => insertText(defaultTableTemplate)} title="Table" text="⊞" />
-          <ToolbarButton onClick={() => prefixInsertText('- ')} title="Bullet List" text="•" />
-          <ToolbarButton onClick={() => prefixInsertText('1. ')} title="Numbered List" text="1." />
-          <ToolbarButton onClick={() => insertLink()} title="Link" text="🔗" />
-          <ToolbarButton onClick={() => insertText('![alt text](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=100&q=80)')} title="Image" text="🖼️" />
+          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Quiz</span>
+          <EditorButton icon={CircleDot} onClick={() => insertQuiz(defaultMultipleChoiceInteractionTemplate)} title="Multiple Choice Quiz" />
+          <EditorButton icon={SquareX} onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" />
+          <EditorButton icon={BookOpenCheck} onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" />
+          <EditorButton icon={FileUp} onClick={() => insertQuiz(defaultFileInteractionTemplate)} title="File Submission Quiz" />
+          <EditorButton icon={CloudUpload} onClick={() => insertQuiz(defaultUrlInteractionTemplate)} title="URL Submission Quiz" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <ToolbarButton onClick={() => insertQuiz(defaultMultipleChoiceInteractionTemplate)} title="Multiple Choice Quiz" text="◉" />
-          <ToolbarButton onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" text="☑" />
-          <ToolbarButton onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" text="📝" />
-          <ToolbarButton onClick={() => insertQuiz(defaultFileInteractionTemplate)} title="File Submission Quiz" text="⬆️" />
-          <ToolbarButton onClick={() => insertQuiz(defaultUrlInteractionTemplate)} title="URL Submission Quiz" text="🌐" />
-          <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <ToolbarButton onClick={() => insertAiQuiz()} title="Insert AI generated quiz" text="🚀" />
-          <ToolbarButton onClick={() => insertAiSection()} title="Insert AI generated section" text="✨" />
-          <ToolbarButton onClick={() => insertPromptContent()} title="Insert AI prompt response" text="💡" />
-          <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <ToolbarButton onClick={() => editorRef.current.getAction('actions.find').run()} title="Find (Ctrl+F)" text="🔍" />
-          <ToolbarButton onClick={() => editorRef.current.getAction('editor.action.startFindReplaceAction').run()} title="Find & Replace (Ctrl+Shift+F)" text="🔄" />
+          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">AI</span>
+          <EditorButton icon={ListChecks} onClick={() => insertAiQuiz()} title="AI generated quiz" />
+          <EditorButton icon={TextSelect} onClick={() => insertAiSection()} title="AI generated section" />
+          <EditorButton icon={Bot} onClick={() => insertPromptContent()} title="AI prompt response" />
         </div>
       )}
       <div className="flex-1 overflow-hidden">
@@ -237,10 +240,10 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
 
 export default MarkdownEditor;
 
-function ToolbarButton({ onClick, title, text }) {
+export function EditorButton({ icon: Icon, onClick, title = undefined, size = 16 }) {
   return (
-    <button className="px-2 py-1 rounded text-xs grayscale hover:bg-gray-200 hover:grayscale-0 hover:text-amber-600" onClick={onClick} title={title}>
-      {text}
+    <button title={title} onClick={onClick} className="bg-transparent border border-gray-50  hover:text-amber-600 transition-all duration-200 ease-in-out">
+      <Icon size={size} />
     </button>
   );
 }
