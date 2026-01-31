@@ -10,8 +10,8 @@ function Sidebar({ courseOps, user, learningSession, editorVisible }) {
 
   const tabs = [
     { id: 'topics', label: 'Topics', icon: FolderTree, visible: true },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon, visible: user && (user.isEditor(learningSession.course.id) || user.isRoot()) },
     { id: 'search', label: 'Search', icon: Search, visible: user && (user.isEditor(learningSession.course.id) || user.isRoot()) },
+    { id: 'settings', label: 'Settings', icon: SettingsIcon, visible: user && (user.isEditor(learningSession.course.id) || user.isRoot()) },
   ];
   return (
     <div className="flex flex-col border p-0 rounded-xs m-2 border-gray-200 bg-gray-50 overflow-hidden w-full">

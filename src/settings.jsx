@@ -200,6 +200,28 @@ export default function Settings({ courseOps, user, course }) {
     });
   };
 
+  const reindexSearch = async () => {
+    try {
+      await courseOps.reindexCourse(course.id);
+      showAlert({
+        message: (
+          <div className="text-xs">
+            <div>Search reindexing started</div>
+          </div>
+        ),
+      });
+    } catch (error) {
+      showAlert({
+        type: 'error',
+        message: (
+          <div className="text-xs">
+            <div>{error.message || 'Failed to start search reindexing'}</div>
+          </div>
+        ),
+      });
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -324,6 +346,16 @@ export default function Settings({ courseOps, user, course }) {
         </div>
         {editorVisible && (
           <>
+            <div className="bg-gray-50 rounded-lg p-4 mb-1">
+              <div>
+                <h2 className="text-lg font-semibold mb-3 text-gray-800">Search</h2>
+                <div className="flex items-center justify-between">
+                  <button type="button" onClick={() => reindexSearch()} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                    Reindex
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="bg-gray-50 rounded-lg p-4 mb-1">
               <div>
                 <h2 className="text-lg font-semibold mb-3 text-gray-800">Editors</h2>

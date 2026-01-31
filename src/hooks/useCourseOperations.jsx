@@ -86,9 +86,90 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function searchCourse(query) {
     if (!learningSession?.course || !user) return { query, matches: [] };
 
-    const result = await service.searchCatalogEntry(learningSession.course.id, query);
+    const result = await service.searchCourse(learningSession.course.id, query);
 
     return { query, matches: transformSearchResults(result) };
+  }
+
+  async function reindexCourse(courseId) {
+    const course = await getCourse(courseId);
+    if (!course) throw new Error('Course not found for indexing.');
+
+    const topics = [];
+    for (const topic of course.allTopics) {
+      let content = await getTopic(topic);
+      content = cleanMarkdownForIndexing(content);
+      if (content && content.length > 0) {
+        topics.push({ id: topic.id, content });
+      }
+    }
+
+    if (topics.length > 0) {
+      await service.indexCourse(courseId, topics);
+    }
+  }
+
+  function cleanMarkdownForIndexing(md) {
+    let text = md;
+
+    // Remove code blocks (```...``` and single backticks)
+    text = text.replace(/```[\s\S]*?```/g, '');
+    text = text.replace(/`[^`]+`/g, '');
+
+    // Remove HTML tags
+    text = text.replace(/<[^>]+>/g, '');
+
+    // Remove images ![alt](url)
+    text = text.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '$1');
+
+    // Remove links [text](url) but keep the text
+    text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+
+    // Remove footnote references [^1]
+    text = text.replace(/\[\^\d+\]/g, '');
+
+    // Remove headers (#, ##, etc.)
+    text = text.replace(/^#{1,6}\s+/gm, '');
+
+    // Remove horizontal rules
+    text = text.replace(/^[-*_]{3,}$/gm, '');
+
+    // Remove bold and italic (**text**, *text*, __text__, _text_)
+    text = text.replace(/[*_]{1,2}([^*_]+)[*_]{1,2}/g, '$1');
+
+    // Remove strikethrough (~~text~~)
+    text = text.replace(/~~([^~]+)~~/g, '$1');
+
+    // Remove task list markers (- [ ] or - [x])
+    text = text.replace(/^-\s+\[[ x]\]\s+/gm, '');
+
+    // Remove list markers (-, *, +, 1., 2., etc.)
+    text = text.replace(/^[\s]*[-*+]\s+/gm, '');
+    text = text.replace(/^[\s]*\d+\.\s+/gm, '');
+
+    // Remove blockquote markers (>)
+    text = text.replace(/^>\s*/gm, '');
+
+    // Remove table formatting (|)
+    text = text.replace(/\|/g, ' ');
+
+    // Remove mentions (@username)
+    text = text.replace(/@[\w-]+/g, '');
+
+    // Remove issue/PR references (#123, user/repo#123)
+    text = text.replace(/[\w-]+\/[\w-]+#\d+/g, '');
+    text = text.replace(/#\d+/g, '');
+
+    // Remove emoji shortcodes (:smile:, :rocket:, etc.)
+    text = text.replace(/:[a-z_+-]+:/g, '');
+
+    // Remove color codes (#0969DA)
+    text = text.replace(/#[0-9A-Fa-f]{6}/g, '');
+
+    // Normalize whitespace (multiple spaces, tabs, newlines)
+    text = text.replace(/\s+/g, ' ').trim();
+
+    return text.trim();
   }
 
   function transformSearchResults(results) {
@@ -814,6 +895,7 @@ ${topicDescription || 'overview content placeholder'}`;
     courseCatalog,
     getCourse,
     searchCourse,
+    reindexCourse,
     setCurrentCourse,
     getTemplateRepositories,
     createCourse,

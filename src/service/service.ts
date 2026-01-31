@@ -156,13 +156,29 @@ class Service {
     }
   }
 
-  async searchCatalogEntry(courseId: string, query: string): Promise<any[]> {
+  async searchCourse(courseId: string, query: string): Promise<any[]> {
     const { data, error } = await this.supabase.rpc('search_topics', { search_query: query, target_catalog_id: courseId });
     if (error) {
       throw new Error(error.message);
     }
 
     return data || [];
+  }
+
+  async indexCourse(courseId: string, topics: { id: string; content: string }[]): Promise<void> {
+    const insertData = topics.map((t) => ({
+      id: t.id,
+      content: t.content,
+      catalogId: courseId,
+    }));
+    const { error } = await this.supabase.from('topic').upsert(insertData, {
+      onConflict: 'id',
+      ignoreDuplicates: false,
+    });
+
+    if (error) {
+      throw new Error(`Error indexing course ${courseId}: ${error.message}`);
+    }
   }
 
   /**
