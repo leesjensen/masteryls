@@ -94,7 +94,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   function transformSearchResults(results) {
     const transformedResults = results.map((item) => ({
       topic: learningSession.course.topicFromId(item.id),
-      matches: [item.headline],
+      headlines: item.headline.split(' ... '),
     }));
 
     return transformedResults.filter((res) => res.topic);

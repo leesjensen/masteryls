@@ -37,17 +37,28 @@ export default function SearchCourse({ courseOps, learningSession }) {
   }
 
   function highlightMatch(text) {
-    if (!searchResults?.query?.trim()) return text;
+    const parts = [];
+    let lastIndex = 0;
+    const regex = /<mark>(.*?)<\/mark>/g;
+    let match;
 
-    const terms = searchResults.query.trim().split(/\s+/);
-    let highlighted = text;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      parts.push(
+        <mark key={match.index} className="bg-yellow-200">
+          {match[1]}
+        </mark>,
+      );
+      lastIndex = regex.lastIndex;
+    }
 
-    terms.forEach((term) => {
-      const regex = new RegExp(`(${term})`, 'gi');
-      highlighted = highlighted.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-    });
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
 
-    return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
+    return <span>{parts}</span>;
   }
 
   function renderResults() {
@@ -66,11 +77,11 @@ export default function SearchCourse({ courseOps, learningSession }) {
               {searchResults.matches.map((result, idx) => (
                 <div key={idx} className="border border-gray-200 rounded-md p-2 bg-white">
                   <div className="font-semibold text-xs text-gray-900">{result.topic.title}</div>
-                  {result.matches && result.matches.length > 0 && (
+                  {result.headlines && result.headlines.length > 0 && (
                     <div className="space-y-1 mt-1">
-                      {result.matches.map((match, mid) => (
-                        <div key={mid} className="text-xs text-gray-700 px-1.5" onClick={() => viewResult(result)}>
-                          {highlightMatch(match)}
+                      {result.headlines.map((headline, mid) => (
+                        <div key={mid} className="border-l-2 cursor-pointer border-blue-300 p-2 text-xs text-gray-700 px-1.5" onClick={() => viewResult(result)}>
+                          {highlightMatch(headline)}
                         </div>
                       ))}
                     </div>

@@ -198,7 +198,7 @@ begin
   select
     t.id,
     t."catalogId",
-    ts_headline('english', t.content, websearch_to_tsquery('english', search_query), 'StartSel="<mark>", StopSel="</mark>", MaxWords=7, MinWords=5') as headline,
+    ts_headline('english', t.content, websearch_to_tsquery('english', search_query), 'StartSel="<mark>", StopSel="</mark>", MaxWords=10, MinWords=5, MaxFragments=3, FragmentDelimiter=" ... "') as headline,
     ts_rank(t.ftscontent, websearch_to_tsquery('english', search_query)) as rank
   from topic t
   where t.ftscontent @@ websearch_to_tsquery('english', search_query) and (target_catalog_id is null or t."catalogId" = target_catalog_id)
