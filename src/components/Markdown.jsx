@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearchResults } from '../hooks/useSearchResults';
 import CopyToClipboard from './CopyToClipboard';
+import HighlightedText, { createHighlightedComponent } from './HighlightedText';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
@@ -18,6 +19,15 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   const { searchResults } = useSearchResults();
   const navigate = useNavigate();
   const containerRef = React.useRef(null);
+
+  // Get search terms for highlighting
+  const searchTerms = React.useMemo(() => {
+    if (!searchResults || searchResults.matches.length === 0) {
+      return [];
+    }
+    return searchResults.query.trim().split(/\s+/);
+  }, [searchResults]);
+
   const customComponents = {
     pre({ node, children, ...props }) {
       return (
@@ -82,10 +92,24 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
       return (
         <code style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }} {...props}>
-          {children}
+          {typeof children === 'string' ? <HighlightedText searchTerms={searchTerms}>{children}</HighlightedText> : children}
         </code>
       );
     },
+
+    // Wrap text nodes to enable highlighting
+    strong: createHighlightedComponent('strong', searchTerms),
+    p: createHighlightedComponent('p', searchTerms),
+    h1: createHighlightedComponent('h1', searchTerms),
+    h2: createHighlightedComponent('h2', searchTerms),
+    h3: createHighlightedComponent('h3', searchTerms),
+    h4: createHighlightedComponent('h4', searchTerms),
+    h5: createHighlightedComponent('h5', searchTerms),
+    h6: createHighlightedComponent('h6', searchTerms),
+    li: createHighlightedComponent('li', searchTerms),
+    td: createHighlightedComponent('td', searchTerms),
+    th: createHighlightedComponent('th', searchTerms),
+    blockquote: createHighlightedComponent('blockquote', searchTerms),
 
     // Custom link handler for internal navigation
     // Absolute URL: open in new tab.
@@ -167,96 +191,6 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   };
 
   const components = { ...customComponents, MermaidBlock };
-
-  // This is crashing when navigating. I think the manipulation of the DOM is messing with React's virtual DOM.
-  // DOM-based highlighting after render
-  // React.useEffect(() => {
-  //   if (!containerRef.current || !searchResults || searchResults.matches.length === 0) {
-  //     return;
-  //   }
-  //   const terms = searchResults.query.split(/\s+/);
-
-  //   // Remove existing highlights
-  //   const existingHighlights = containerRef.current.querySelectorAll('mark[data-search-highlight]');
-  //   existingHighlights.forEach((mark) => {
-  //     const parent = mark.parentNode;
-  //     parent.replaceChild(document.createTextNode(mark.textContent), mark);
-  //     parent.normalize(); // Merge adjacent text nodes
-  //   });
-
-  //   // Recursively find and highlight text nodes
-  //   const highlightTextNode = (textNode) => {
-  //     let text = textNode.textContent;
-  //     let lastIndex = 0;
-  //     let modified = false;
-
-  //     // Find all matches for all terms
-  //     const matches = [];
-  //     terms.forEach((term) => {
-  //       const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  //       const regex = new RegExp(`\\b${escapedTerm}\\b`, 'gi');
-  //       let match;
-  //       while ((match = regex.exec(text)) !== null) {
-  //         matches.push({
-  //           start: match.index,
-  //           end: match.index + match[0].length,
-  //           text: match[0],
-  //         });
-  //       }
-  //     });
-
-  //     // Sort matches by start position and remove overlaps
-  //     matches.sort((a, b) => a.start - b.start);
-  //     const nonOverlapping = [];
-  //     matches.forEach((match) => {
-  //       if (nonOverlapping.length === 0 || match.start >= nonOverlapping[nonOverlapping.length - 1].end) {
-  //         nonOverlapping.push(match);
-  //       }
-  //     });
-
-  //     // Create document fragment with highlighted text
-  //     if (nonOverlapping.length > 0) {
-  //       modified = true;
-  //       const fragment = document.createDocumentFragment();
-
-  //       nonOverlapping.forEach((match, index) => {
-  //         // Add text before match
-  //         if (match.start > lastIndex) {
-  //           fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.start)));
-  //         }
-
-  //         // Add highlighted match
-  //         const mark = document.createElement('mark');
-  //         mark.setAttribute('data-search-highlight', 'true');
-  //         mark.className = 'bg-yellow-300';
-  //         mark.textContent = match.text;
-  //         fragment.appendChild(mark);
-
-  //         lastIndex = match.end;
-  //       });
-
-  //       // Add remaining text
-  //       if (lastIndex < text.length) {
-  //         fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
-  //       }
-
-  //       // Replace the text node with the fragment
-  //       textNode.parentNode.replaceChild(fragment, textNode);
-  //     }
-  //   };
-
-  //   // Walk the DOM tree
-  //   const walk = (node) => {
-  //     if (node.nodeType === Node.TEXT_NODE) {
-  //       highlightTextNode(node);
-  //     } else if (node.nodeType === Node.ELEMENT_NODE) {
-  //       // Process child nodes (need to convert to array since we might modify the tree)
-  //       Array.from(node.childNodes).forEach(walk);
-  //     }
-  //   };
-
-  //   walk(containerRef.current);
-  // }, [searchResults, content]);
 
   return (
     <div ref={containerRef}>
