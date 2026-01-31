@@ -168,11 +168,29 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
   const components = { ...customComponents, MermaidBlock };
 
+  const highlightContent = () => {
+    if (!searchResults?.query?.trim()) {
+      return content;
+    }
+
+    const terms = searchResults.query.trim().split(/\s+/);
+    let highlighted = content;
+
+    terms.forEach((term) => {
+      const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Negative lookbehind and lookahead to avoid replacing inside link/image references
+      // Avoid: [text](url), ![alt](url), [text][ref], ![alt][ref]
+      const regex = new RegExp(`(?<!\\[|\\(|])(?<!/)(?<![\\w./-])` + `(${escapedTerm})` + `(?![\\w./-]|\\)|\\])(?!\\])`, 'gi');
+      highlighted = highlighted.replace(regex, '<mark key={idx} className="bg-yellow-200">$1</mark>');
+    });
+
+    return highlighted;
+  };
+
   return (
     <div ref={containerRef}>
-      {searchResults && <div>{JSON.stringify(searchResults.query)}</div>}
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
-        {content}
+        {highlightContent()}
       </ReactMarkdown>
     </div>
   );

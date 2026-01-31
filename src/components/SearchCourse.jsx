@@ -20,20 +20,19 @@ export default function SearchCourse({ courseOps, learningSession }) {
     e.preventDefault();
 
     setLoading(true);
+    setSearchResults(null);
     setError(null);
     try {
       const searchResults = await courseOps.searchCourse(query);
       setSearchResults(searchResults);
     } catch (err) {
-      setError('Failed to search. Please try again.');
+      setError('Failed to search. Try again later.');
     } finally {
       setLoading(false);
     }
   }
 
   function viewResult(result) {
-    console.log(result);
-
     navigate(`/course/${learningSession.course.id}/topic/${result.topic.id}`);
   }
 
