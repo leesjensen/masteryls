@@ -88,7 +88,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   }, [showModeDropdown]);
 
   const handleUserNoteInput = (userMessage, addToVisibleMessages = true) => {
-    console.log('Adding user note:', userMessage, 'to visible messages:', addToVisibleMessages);
     const notePayload = {
       type: 'note',
       activeHeading,
@@ -197,8 +196,8 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
   const clearConversation = () => {
     // Only clear non-note messages
-    setAllMessages(prev => prev.filter((m) => m.type === 'note'));
-    setVisibleMessages(prev => prev.filter((m) => m.type === 'note'));
+    setAllMessages((prev) => prev.filter((m) => m.type === 'note'));
+    setVisibleMessages((prev) => prev.filter((m) => m.type === 'note'));
   };
 
   if (!isOpen) return null;
