@@ -84,31 +84,17 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function searchCourse(query) {
-    if (!learningSession?.course || !user) return;
+    if (!learningSession?.course || !user) return { query, matches: [] };
 
-    const token = user.getSetting('gitHubToken', learningSession.course.id);
-    const result = await service.searchGitHubContent(token, query, learningSession.course.gitHub.account, learningSession.course.gitHub.repository);
+    const result = await service.searchCatalogEntry(learningSession.course.id, query);
 
     return { query, matches: transformSearchResults(result) };
   }
 
   function transformSearchResults(results) {
     const transformedResults = results.map((item) => ({
-      name: item.name,
-      path: item.path,
-      topic: learningSession.course.topicFromPath(item.path, false),
-      matches:
-        item.text_matches?.flatMap(
-          (tm) =>
-            tm.matches?.map((m) => {
-              const start = Math.max(0, m.indices[0] - 20); // 20 chars before
-              const end = Math.min(tm.fragment.length, m.indices[1] + 20); // 20 chars after
-              const contextBefore = start > 0 ? '...' : '';
-              const contextAfter = end < tm.fragment.length ? '...' : '';
-              const context = tm.fragment.substring(start, end);
-              return `${contextBefore}${context}${contextAfter}`;
-            }) || [],
-        ) || [],
+      topic: learningSession.course.topicFromId(item.id),
+      matches: [item.headline],
     }));
 
     return transformedResults.filter((res) => res.topic);

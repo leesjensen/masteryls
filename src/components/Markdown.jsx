@@ -181,7 +181,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       // Negative lookbehind and lookahead to avoid replacing inside link/image references
       // Avoid: [text](url), ![alt](url), [text][ref], ![alt][ref]
       const regex = new RegExp(`(?<!\\[|\\(|])(?<!/)(?<![\\w./-])` + `(${escapedTerm})` + `(?![\\w./-]|\\)|\\])(?!\\])`, 'gi');
-      highlighted = highlighted.replace(regex, '<mark key={idx} className="bg-yellow-200">$1</mark>');
+      highlighted = highlighted.replace(regex, '<mark className="bg-yellow-300">$1</mark>');
     });
 
     return highlighted;

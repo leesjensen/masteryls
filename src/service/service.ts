@@ -156,6 +156,15 @@ class Service {
     }
   }
 
+  async searchCatalogEntry(courseId: string, query: string): Promise<any[]> {
+    const { data, error } = await this.supabase.rpc('search_topics', { search_query: query, target_catalog_id: courseId });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  }
+
   /**
    * Deletes a course from the catalog and its associated GitHub repository.
    * @param user - The user requesting the deletion.
@@ -228,7 +237,7 @@ class Service {
       return [];
     }
 
-    const userIds = roleData.map((role) => role.user);
+    const userIds = roleData.map((role: any) => role.user);
     const { data: userData, error: userError } = await this.supabase.from('user').select('id, name, email, settings').in('id', userIds);
     if (userError) {
       throw new Error(userError.message);
@@ -269,7 +278,7 @@ class Service {
       throw new Error(error.message);
     }
 
-    return (data || []).map((item) => new User({ ...item, roles: [] }));
+    return (data || []).map((item: any) => new User({ ...item, roles: [] }));
   }
 
   /**
@@ -745,18 +754,6 @@ class Service {
         }
       }
     }
-  }
-
-  async searchGitHubContent(gitHubToken: string, query: string, gitHubAccount: string, gitHubRepo: string): Promise<any[]> {
-    const searchUrl = `https://api.github.com/search/code?q=${encodeURIComponent(query)}+repo:${gitHubAccount}/${gitHubRepo}+extension:md&per_page=100`;
-    const res = await this.makeGitHubApiRequest(gitHubToken, searchUrl, 'GET', undefined, 'application/vnd.github.text-match+json');
-    if (!res.ok) {
-      const errText = await res.text().catch(() => res.statusText);
-      throw new Error(`Failed to search content: ${res.status} ${errText}`);
-    }
-    const data = await res.json();
-
-    return data.items || [];
   }
 
   /**
