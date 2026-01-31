@@ -18,8 +18,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  console.log("Active Heading in DiscussionPanel:", activeHeading);
-
   useEffect(() => {
     scrollToBottom();
     inputRef.current?.focus();
@@ -33,7 +31,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
   useEffect(() => {
     // Load saved notes from DB
-    // TODO: There should be some sort of visual cue on the text interaction if there are existing notes.
     (async () => {
       const notes = (
         await courseOps.getProgress({
@@ -74,7 +71,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     if (relevantMessages.length > 0) {
       setTimeout(() => scrollToBottom('auto'), 200);
     }
-  }, [savedMessagesLoaded, mode, allMessages]);
+  }, [savedMessagesLoaded, mode]);
 
   // Close mode select dropdown when clicking outside
   useEffect(() => {
@@ -199,8 +196,9 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   };
 
   const clearConversation = () => {
-    setVisibleMessages([]);
-    setAllMessages([]);
+    // Only clear non-note messages
+    setAllMessages(prev => prev.filter((m) => m.type === 'note'));
+    setVisibleMessages(prev => prev.filter((m) => m.type === 'note'));
   };
 
   if (!isOpen) return null;
