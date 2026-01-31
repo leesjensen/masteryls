@@ -290,6 +290,7 @@ export default function ProgressView({ courseOps, service, user }) {
       userLogout: 'bg-gray-400 text-gray-50',
       userLogin: 'bg-gray-100 text-gray-800',
       note: 'bg-yellow-100 text-yellow-800',
+      accountCreation: 'bg-teal-100 text-teal-800',
       default: 'bg-gray-100 text-gray-800',
     };
     return colors[type] || colors.default;
@@ -330,6 +331,7 @@ export default function ProgressView({ courseOps, service, user }) {
                     <option value='["exam"]'>Exam</option>
                     <option value='["note"]'>Note</option>
                     <option value='["userLogin", "userLogout"]'>Authorization</option>
+                    <option value='["accountCreation"]'>Account Creation</option>
                   </select>
                 </div>
 
