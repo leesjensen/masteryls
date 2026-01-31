@@ -397,6 +397,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
     const token = user.getSetting('gitHubToken', learningSession.course.id);
     await _updateTopic(token, learningSession.course, topic, content, commitMessage);
+    service.indexCourse(learningSession.course.id, [{ id: topic.id, content }]);
   }
 
   async function _updateTopic(token, course, topic, content, commitMessage = `update(${topic.title})`) {
