@@ -168,25 +168,86 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
   const components = { ...customComponents, MermaidBlock };
 
-  // Disabled for now. This doesn't work if things are in code blocks and the regex is missing somethings.
-  // const highlightContent = () => {
-  //   if (!searchResults || searchResults.matches.length === 0) {
-  //     return content;
-  //   }
+  // DOM-based highlighting after render
+  React.useEffect(() => {
+    if (!containerRef.current || !searchResults || searchResults.matches.length === 0) {
+      return;
+    }
+    const terms = searchResults.query.split(/\s+/);
 
-  //   const terms = searchResults.query.trim().split(/\s+/);
-  //   let highlighted = content;
+    // Recursively find and highlight text nodes
+    const highlightTextNode = (textNode) => {
+      let text = textNode.textContent;
+      let lastIndex = 0;
+      let modified = false;
 
-  //   terms.forEach((term) => {
-  //     const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  //     // Negative lookbehind and lookahead to avoid replacing inside link/image references
-  //     // Avoid: [text](url), ![alt](url), [text][ref], ![alt][ref]
-  //     const regex = new RegExp(`(?<!\\[|\\(|])(?<!/)(?<![\\w./-])` + `(${escapedTerm})` + `(?![\\w./-]|\\)|\\])(?!\\])`, 'gi');
-  //     highlighted = highlighted.replace(regex, '<mark className="bg-yellow-300">$1</mark>');
-  //   });
+      // Find all matches for all terms
+      const matches = [];
+      terms.forEach((term) => {
+        const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedTerm}\\b`, 'gi');
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          matches.push({
+            start: match.index,
+            end: match.index + match[0].length,
+            text: match[0],
+          });
+        }
+      });
 
-  //   return highlighted;
-  // };
+      // Sort matches by start position and remove overlaps
+      matches.sort((a, b) => a.start - b.start);
+      const nonOverlapping = [];
+      matches.forEach((match) => {
+        if (nonOverlapping.length === 0 || match.start >= nonOverlapping[nonOverlapping.length - 1].end) {
+          nonOverlapping.push(match);
+        }
+      });
+
+      // Create document fragment with highlighted text
+      if (nonOverlapping.length > 0) {
+        modified = true;
+        const fragment = document.createDocumentFragment();
+
+        nonOverlapping.forEach((match, index) => {
+          // Add text before match
+          if (match.start > lastIndex) {
+            fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.start)));
+          }
+
+          // Add highlighted match
+          const mark = document.createElement('mark');
+          mark.setAttribute('data-search-highlight', 'true');
+          mark.className = 'bg-yellow-300';
+          mark.textContent = match.text;
+          fragment.appendChild(mark);
+
+          lastIndex = match.end;
+        });
+
+        // Add remaining text
+        if (lastIndex < text.length) {
+          fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+        }
+
+        // Replace the text node with the fragment
+        textNode.parentNode.replaceChild(fragment, textNode);
+      }
+    };
+
+    // Walk the DOM tree
+    const walk = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        highlightTextNode(node);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // Process child nodes (need to convert to array since we might modify the tree)
+        Array.from(node.childNodes).forEach(walk);
+      }
+    };
+
+    walk(containerRef.current);
+  }, [searchResults, content]);
 
   return (
     <div ref={containerRef}>
