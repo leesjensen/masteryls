@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSearchResults } from '../hooks/useSearchResults';
 import CopyToClipboard from './CopyToClipboard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,6 +15,7 @@ import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { scrollToAnchor } from '../utils/utils';
 
 export default function Markdown({ learningSession, content, languagePlugins = [] }) {
+  const { searchResults } = useSearchResults();
   const navigate = useNavigate();
   const containerRef = React.useRef(null);
   const customComponents = {
@@ -168,6 +170,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
   return (
     <div ref={containerRef}>
+      {searchResults && <div>{JSON.stringify(searchResults.query)}</div>}
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
         {content}
       </ReactMarkdown>

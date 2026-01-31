@@ -89,7 +89,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const token = user.getSetting('gitHubToken', learningSession.course.id);
     const result = await service.searchGitHubContent(token, query, learningSession.course.gitHub.account, learningSession.course.gitHub.repository);
 
-    return transformSearchResults(result);
+    return { query, matches: transformSearchResults(result) };
   }
 
   function transformSearchResults(results) {
