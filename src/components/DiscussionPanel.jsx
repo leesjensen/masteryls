@@ -8,7 +8,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const [visibleMessages, setVisibleMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState('ai');  // 'ai' or 'notes'
+  const [mode, setMode] = useState('ai'); // 'ai' or 'notes'
   const [showModeDropdown, setShowModeDropdown] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -32,18 +32,20 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     // Load saved notes from DB
     // TODO: There should be some sort of visual cue on the text interaction if there are existing notes.
     (async () => {
-      const notes = (await courseOps.getProgress({
-        topicId: learningSession.topic.id,
-        enrollmentId: learningSession.enrollment.id,
-        types: ['note'],
-        limit: 100,
-      })).data;
+      const notes = (
+        await courseOps.getProgress({
+          topicId: learningSession.topic.id,
+          enrollmentId: learningSession.enrollment.id,
+          types: ['note'],
+          limit: 100,
+        })
+      ).data;
       // TODO: Handle if there are more than 100 notes
       // Probably how this should work is that the most recent few notes should be loaded first,
       // and older notes are fetched if the user scrolls up to the top of the messages panel.
       const loadedMessages = notes
-        .filter(p => p.details)
-        .map(p => {
+        .filter((p) => p.details)
+        .map((p) => {
           const details = { ...p.details };
           details.timestamp = new Date(p.createdAt);
           return details;
@@ -57,14 +59,11 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   useEffect(() => {
     // Reset visible messages when switching between modes
     const isRelevant = (m) => {
-      if (
-        (mode === 'notes' && m.type !== 'note')
-        || (mode === 'ai' && m.type === 'note')
-      ) {
+      if ((mode === 'notes' && m.type !== 'note') || (mode === 'ai' && m.type === 'note')) {
         return false;
       }
       return true;
-    }
+    };
     const relevantMessages = allMessages.filter(isRelevant);
     setVisibleMessages(relevantMessages);
     // Sometimes we don't automatically scroll all the way down when loading saved notes
@@ -106,7 +105,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     const dataToSave = {
       type: 'note',
       activeSection,
-      content: userMessage
+      content: userMessage,
     };
     courseOps.addProgress(null, null, 'note', 0, dataToSave);
   };
@@ -192,7 +191,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const addMessage = (message) => {
     setAllMessages((prev) => [...prev, message]);
     setVisibleMessages((prev) => [...prev, message]);
-  }
+  };
 
   const clearConversation = () => {
     setVisibleMessages([]);
@@ -209,7 +208,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       placeholder: 'Ask a question about this topic...',
       buttonText: 'Ask AI',
       emptyStateIcon: '💬',
-      emptyStateText: 'Ask questions about this topic! I\'ll help explain concepts and provide additional insights.',
+      emptyStateText: "Ask questions about this topic! I'll help explain concepts and provide additional insights.",
     },
     notes: {
       title: '📝 Topic Notes',
@@ -231,22 +230,10 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           </div>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              <button
-                onClick={() => toggleMode('ai')}
-                className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'ai'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-              >
+              <button onClick={() => toggleMode('ai')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'ai' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
                 🤖 AI
               </button>
-              <button
-                onClick={() => toggleMode('notes')}
-                className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'notes'
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-              >
+              <button onClick={() => toggleMode('notes')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all ${mode === 'notes' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
                 📝 Notes
               </button>
             </div>
@@ -265,15 +252,13 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
         {visibleMessages.length === 0 && (
           <div className="text-center text-gray-500 py-8">
             <p className="mb-2 text-2xl">{modeConfig.emptyStateIcon}</p>
-            <p className="text-sm px-4">
-              {modeConfig.emptyStateText}
-            </p>
+            <p className="text-sm px-4">{modeConfig.emptyStateText}</p>
           </div>
         )}
 
-        {visibleMessages.map((message, i) =>
+        {visibleMessages.map((message, i) => (
           <MessageBox key={message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} />
-        )}
+        ))}
 
         {isLoading && (
           <div className="flex justify-start">
@@ -313,19 +298,10 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           />
           <div className="relative" ref={dropdownRef}>
             <div className="flex">
-              <button
-                type="submit"
-                disabled={!userInput.trim() || isLoading}
-                className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
-              >
+              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}>
                 {modeConfig.buttonText}
               </button>
-              <button
-                type="button"
-                onClick={() => setShowModeDropdown(!showModeDropdown)}
-                className={`px-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-r-md border-l border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors`}
-                title="Change mode"
-              >
+              <button type="button" onClick={() => setShowModeDropdown(!showModeDropdown)} className={`px-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-r-md border-l border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors`} title="Change mode">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -334,11 +310,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
             {showModeDropdown && (
               <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                <button
-                  type="button"
-                  onClick={() => toggleMode('ai')}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'ai' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'} rounded-t-md`}
-                >
+                <button type="button" onClick={() => toggleMode('ai')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'ai' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'} rounded-t-md`}>
                   <span>🤖</span>
                   <div>
                     <div className="font-medium">AI Discussion</div>
@@ -346,11 +318,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
                   </div>
                   {mode === 'ai' && <span className="ml-auto">✓</span>}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => toggleMode('notes')}
-                  className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'notes' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700'} rounded-b-md`}
-                >
+                <button type="button" onClick={() => toggleMode('notes')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'notes' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700'} rounded-b-md`}>
                   <span>📝</span>
                   <div>
                     <div className="font-medium">Take Notes</div>
@@ -366,7 +334,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     </div>
   );
 }
-
 
 function MessageBox({ message, handleSaveAsNote }) {
   const { type, content } = message;
@@ -405,10 +372,7 @@ function MessageBox({ message, handleSaveAsNote }) {
   let saveAIResponse = null;
   if (type === 'model') {
     saveAIResponse = (
-      <button
-        className="mt-2 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
-        onClick={handleSaveAsNote}
-      >
+      <button className="mt-2 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors" onClick={handleSaveAsNote}>
         Save as Note
       </button>
     );
@@ -418,14 +382,8 @@ function MessageBox({ message, handleSaveAsNote }) {
     <div className={`flex ${justify}`}>
       <div className={`max-w-[80%] rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
         <div className={formatAsMarkdown ? 'markdown-body' : ''}>
-          {type === 'note' && (
-            <div className="text-xs text-amber-600 font-medium mb-1">📝 Note</div>
-          )}
-          {formatAsMarkdown ? (
-            <Markdown content={content} />
-          ) : (
-            <div>{content}</div>
-          )}
+          {type === 'note' && <div className="text-xs text-amber-600 font-medium mb-1">📝 Note</div>}
+          {formatAsMarkdown ? <Markdown content={content} /> : <div>{content}</div>}
         </div>
         {saveAIResponse}
       </div>
