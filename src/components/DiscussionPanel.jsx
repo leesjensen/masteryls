@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, StickyNote, RotateCcw, X, MessageCircle, Notebook } from 'lucide-react';
+import { StickyNote, RotateCcw, X, MessageCircle, Notebook } from 'lucide-react';
 import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
+import Tabs from '../components/Tabs';
 import Markdown from './Markdown';
 
 export default function DiscussionPanel({ courseOps, learningSession, isOpen, onClose, topicTitle, topicContent, user, activeHeading = null }) {
@@ -190,22 +191,23 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
   const modeConfig = {
     ai: {
-      title: 'AI Discussion',
-      titleIcon: Bot,
       placeholder: 'Ask a question about this topic...',
-      buttonText: 'Ask AI',
+      buttonText: 'Discuss',
       emptyStateIcon: MessageCircle,
       emptyStateText: "Ask questions about this topic! I'll help explain concepts and provide additional insights.",
     },
     notes: {
-      title: 'Topic Notes',
-      titleIcon: StickyNote,
       placeholder: 'Write a note about this topic...',
       buttonText: 'Add Note',
       emptyStateIcon: Notebook,
       emptyStateText: 'Take notes about this topic. Your notes will be saved here for future reference.',
     },
   }[mode];
+
+  const tabs = [
+    { id: 'ai', label: 'Discuss', icon: MessageCircle, visible: true },
+    { id: 'notes', label: 'Notes', icon: StickyNote, visible: true },
+  ];
 
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-lg bg-white border-l border-gray-300 shadow-lg z-50 flex flex-col overflow-hidden">
@@ -217,14 +219,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              <button onClick={() => toggleMode('ai')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'ai' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`} title="Ask questions about this topic">
-                <Bot size={16} /> AI
-              </button>
-              <button onClick={() => toggleMode('notes')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'notes' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`} title="Take notes on this topic">
-                <StickyNote size={16} /> Notes
-              </button>
-            </div>
             <button disabled={mode !== 'ai'} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer disabled:opacity-50 disabled:cursor-none disabled:pointer-events-none" onClick={clearConversation} title="Clear discussion">
               <RotateCcw size={16} />
             </button>
@@ -233,6 +227,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
             </button>
           </div>
         </div>
+        <Tabs tabs={tabs} activeTab={mode} onChange={toggleMode} />
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {visibleMessages.length === 0 && (
@@ -333,7 +328,7 @@ function MessageBox({ message, handleSaveAsNote }) {
   let saveAIResponse = null;
   if (type === 'model') {
     saveAIResponse = (
-      <button className="mt-2 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors" onClick={handleSaveAsNote}>
+      <button className="mt-2 px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors" onClick={handleSaveAsNote}>
         Save as Note
       </button>
     );
