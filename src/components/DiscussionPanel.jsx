@@ -10,7 +10,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState('ai'); // 'ai' or 'notes'
-  const [showModeDropdown, setShowModeDropdown] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -72,20 +71,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       setTimeout(() => scrollToBottom('auto'), 200);
     }
   }, [savedMessagesLoaded, mode]);
-
-  // Close mode select dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowModeDropdown(false);
-      }
-    };
-
-    if (showModeDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showModeDropdown]);
 
   const handleUserNoteInput = (userMessage, addToVisibleMessages = true) => {
     const notePayload = {
@@ -185,7 +170,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
 
   const toggleMode = (newMode) => {
     setMode(newMode);
-    setShowModeDropdown(false);
     inputRef.current?.focus();
   };
 
@@ -301,36 +285,10 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           />
           <div className="relative" ref={dropdownRef}>
             <div className="flex">
-              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
+              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
                 {modeConfig.buttonText}
               </button>
-              <button type="button" onClick={() => setShowModeDropdown(!showModeDropdown)} className={`px-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-r-md border-l border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer`} title="Change mode">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
             </div>
-
-            {showModeDropdown && (
-              <div className="absolute bottom-full right-0 mb-2 w-48 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                <button type="button" onClick={() => toggleMode('ai')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'ai' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'} rounded-t-md cursor-pointer`}>
-                  <Bot size={20} />
-                  <div>
-                    <div className="font-medium">AI Discussion</div>
-                    <div className="text-xs text-gray-500">Ask questions & get answers</div>
-                  </div>
-                  {mode === 'ai' && <span className="ml-auto">✓</span>}
-                </button>
-                <button type="button" onClick={() => toggleMode('notes')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'notes' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700'} rounded-b-md cursor-pointer`}>
-                  <StickyNote size={20} />
-                  <div>
-                    <div className="font-medium">Take Notes</div>
-                    <div className="text-xs text-gray-500">Save your thoughts</div>
-                  </div>
-                  {mode === 'notes' && <span className="ml-auto">✓</span>}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </form>
