@@ -14,7 +14,7 @@ import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { scrollToAnchor } from '../utils/utils';
-import { PenTool } from 'lucide-react';
+import { StickyNote } from 'lucide-react';
 
 export default function Markdown({ learningSession, content, languagePlugins = [], onMakeHeadingActive = null }) {
   const { searchResults } = useSearchResults();
@@ -203,18 +203,17 @@ export default function Markdown({ learningSession, content, languagePlugins = [
           .replace(/[^\w-]/g, '');
 
         return (
-          <HeadingTag
-            id={headingId}
-            className="flex items-center gap-2 group cursor-pointer"
-            onClick={(e) => {
-              e.preventDefault();
-              onMakeHeadingActive(headingId, headingText);
-            }}
-            title={headingText}
-            {...props}
-          >
+          <HeadingTag id={headingId} className="flex items-center gap-2" {...props}>
             {children}
-            <PenTool className="md:opacity-0 group-hover:opacity-100 transition-opacity w-4 h-4" aria-label={`Add notes for ${headingText}`} />
+            <StickyNote
+              size={24}
+              aria-label={`Add notes for ${headingText}`}
+              className="cursor-pointer hover:text-yellow-300 hover:bg-yellow-100 rounded-md text-gray-400"
+              onClick={(e) => {
+                e.preventDefault();
+                onMakeHeadingActive(headingId, headingText);
+              }}
+            />
           </HeadingTag>
         );
       };

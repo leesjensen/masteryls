@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, FileText, RotateCcw, X, MessageCircle, Notebook } from 'lucide-react';
+import { Bot, StickyNote, RotateCcw, X, MessageCircle, Notebook } from 'lucide-react';
 import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Markdown from './Markdown';
 
@@ -215,7 +215,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     },
     notes: {
       title: 'Topic Notes',
-      titleIcon: FileText,
+      titleIcon: StickyNote,
       placeholder: 'Write a note about this topic...',
       buttonText: 'Add Note',
       emptyStateIcon: Notebook,
@@ -238,7 +238,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
                 <Bot size={16} /> AI
               </button>
               <button onClick={() => toggleMode('notes')} className={`px-3 py-1.5 rounded-md font-medium text-sm transition-all flex items-center gap-1.5 ${mode === 'notes' ? 'bg-amber-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 cursor-pointer'}`} title="Take notes on this topic">
-                <FileText size={16} /> Notes
+                <StickyNote size={16} /> Notes
               </button>
             </div>
             <button disabled={mode !== 'ai'} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer disabled:opacity-50 disabled:cursor-none disabled:pointer-events-none" onClick={clearConversation} title="Clear discussion">
@@ -279,6 +279,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
       <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-gray-50">
         <div className="flex space-x-2">
           <textarea
+            id="discussion-input"
             ref={inputRef}
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
@@ -321,7 +322,7 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
                   {mode === 'ai' && <span className="ml-auto">✓</span>}
                 </button>
                 <button type="button" onClick={() => toggleMode('notes')} className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 ${mode === 'notes' ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-700'} rounded-b-md cursor-pointer`}>
-                  <FileText size={20} />
+                  <StickyNote size={20} />
                   <div>
                     <div className="font-medium">Take Notes</div>
                     <div className="text-xs text-gray-500">Save your thoughts</div>
@@ -380,15 +381,18 @@ function MessageBox({ message, handleSaveAsNote }) {
     );
   }
 
+  const heading = message.activeHeading ? <div className="text-xs text-amber-400 italic font-medium">- {message.activeHeading.headingText}</div> : null;
+
   return (
     <div className={`flex ${justify}`}>
       <div className={`max-w-[80%] rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
         <div className={formatAsMarkdown ? 'markdown-body' : ''}>
           {type === 'note' && (
             <div className="text-xs text-amber-600 font-medium mb-1 flex items-center gap-1">
-              <FileText size={12} /> Note
+              <StickyNote size={12} /> Note {heading}
             </div>
           )}
+
           {formatAsMarkdown ? <Markdown content={content} /> : <div>{content}</div>}
         </div>
         {saveAIResponse}
