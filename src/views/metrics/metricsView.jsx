@@ -236,12 +236,15 @@ export default function MetricsView({ courseOps }) {
           </p>
         </div>
       </div>
+
       {/* Date Range and Course Filter Inputs */}
       <div className="flex flex-col space-y-2 bg-white p-4 border border-gray-200">
         <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
           <div className="flex items-center space-x-1">
-            <label className="text-sm text-gray-600 w-16 md:w-auto">Course:</label>
-            <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm min-w-32" title="Filter by course (optional)">
+            <label htmlFor="courseSelect" className="text-sm text-gray-600 w-16 md:w-auto">
+              Course:
+            </label>
+            <select id="courseSelect" value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)} className="px-2 py-1 border border-gray-300 rounded text-sm min-w-32" title="Filter by course (optional)">
               <option value="">All Courses</option>
               {courseCatalog.map((course) => (
                 <option key={course.id} value={course.id}>
@@ -251,10 +254,13 @@ export default function MetricsView({ courseOps }) {
             </select>
           </div>
           {isEditor && (
-            <div className="flex items-center space-x-1 relative" ref={userDropdownRef}>
-              <label className="text-sm text-gray-600 w-16 md:w-auto">User:</label>
-              <div className="relative">
+            <div className="flex flex-1 items-center space-x-1 relative" ref={userDropdownRef}>
+              <label htmlFor="userSearch" className="text-sm text-gray-600 w-16 md:w-auto">
+                User:
+              </label>
+              <div className="flex-1">
                 <input
+                  id="userSearch"
                   type="text"
                   value={userSearchQuery}
                   onChange={(e) => {
@@ -268,7 +274,7 @@ export default function MetricsView({ courseOps }) {
                       setShowUserDropdown(true);
                     }
                   }}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm min-w-48"
+                  className="px-2 py-1 border border-gray-300 rounded text-sm w-full max-w-64"
                   placeholder="Search by name or email"
                   title="Search for a user to filter metrics"
                 />
@@ -290,15 +296,22 @@ export default function MetricsView({ courseOps }) {
               </div>
             </div>
           )}
+        </div>
+        <div className="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2 md:items-center">
           <div className="flex items-center space-x-1">
-            <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
-            <input type="date" value={startDate.toISOString().split('T')[0]} onChange={(e) => setStartDate(new Date(e.target.value))} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
+            <label htmlFor="startDate" className="text-sm text-gray-600 w-10 md:w-auto">
+              From:
+            </label>
+            <input id="startDate" type="date" value={startDate.toISOString().split('T')[0]} onChange={(e) => setStartDate(new Date(e.target.value))} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
           </div>
           <div className="flex items-center space-x-1">
-            <label className="text-sm text-gray-600 w-10 md:w-auto">To:</label>
-            <input type="date" value={endDate.toISOString().split('T')[0]} onChange={(e) => setEndDate(new Date(e.target.value))} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
+            <label htmlFor="endDate" className="text-sm text-gray-600 w-10 md:w-auto">
+              To:
+            </label>
+            <input id="endDate" type="date" value={endDate.toISOString().split('T')[0]} onChange={(e) => setEndDate(new Date(e.target.value))} className="px-2 py-1 border border-gray-300 rounded text-sm" title="End date (optional)" />
           </div>
         </div>
+
         {/* Quick date presets and course clear */}
         <div className="hidden sm:block">
           <div className="flex flex-wrap gap-1 text-xs">
