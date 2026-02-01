@@ -567,6 +567,7 @@ export default function MetricsView({ courseOps }) {
       for (const data of progressData) {
         if (data.catalogId && data.topicId) {
           const course = await courseOps.getCourse(data.catalogId);
+          if (!course) continue; // User might not have access to the course so don't show progress
           const topic = course.allTopics.find((t) => t.id.replace(/-/g, '') === data.topicId.replace(/-/g, ''));
 
           enhancedData.push({
