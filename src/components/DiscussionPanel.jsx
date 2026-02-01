@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StickyNote, RotateCcw, X, MessageCircle, Notebook } from 'lucide-react';
+import { StickyNote, MessageCircleOff, X, MessageCircle, Notebook } from 'lucide-react';
 import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Tabs from '../components/Tabs';
 import Markdown from './Markdown';
@@ -13,7 +13,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   const [mode, setMode] = useState('ai'); // 'ai' or 'notes'
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const dropdownRef = useRef(null);
   const scrollToBottom = (behavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   };
@@ -218,14 +217,9 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
               {fullTopicTitle}
             </h3>
           </div>
-          <div className="flex items-center gap-2">
-            <button disabled={mode !== 'ai'} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer disabled:opacity-50 disabled:cursor-none disabled:pointer-events-none" onClick={clearConversation} title="Clear discussion">
-              <RotateCcw size={16} />
-            </button>
-            <button className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer" onClick={onClose} title="Close discussion">
-              <X size={16} />
-            </button>
-          </div>
+          <button className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer" onClick={onClose} title="Close discussion">
+            <X size={16} />
+          </button>
         </div>
         <Tabs tabs={tabs} activeTab={mode} onChange={toggleMode} />
       </div>
@@ -278,11 +272,16 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
             }}
             disabled={isLoading}
           />
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative">
             <div className="flex">
               <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
                 {modeConfig.buttonText}
               </button>
+              {mode === 'ai' && (
+                <button disabled={!visibleMessages || visibleMessages.length === 0} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={clearConversation} title="Clear discussion">
+                  <MessageCircleOff size={24} />
+                </button>
+              )}
             </div>
           </div>
         </div>
