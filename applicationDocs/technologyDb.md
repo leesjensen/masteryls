@@ -35,6 +35,14 @@ with check (
 );
 ```
 
+```postgres
+CREATE POLICY "Editor reads all users"
+ON public."user"
+FOR SELECT
+TO authenticated
+USING (public.auth_is_editor(auth.uid()));
+```
+
 ## Role
 
 Allow user to read their own roles
@@ -145,6 +153,14 @@ CREATE POLICY "Allow users to read their own progress"
 ON "public"."progress"
 FOR SELECT TO authenticated
 USING ((SELECT auth.uid()) = "userId");
+```
+
+```postgres
+CREATE POLICY "Editor reads all users progress"
+ON public."progress"
+FOR SELECT
+TO authenticated
+USING (public.auth_is_editor(auth.uid()));
 ```
 
 ## Topic
@@ -266,6 +282,27 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.auth_is_root(uuid) TO anon, authenticated;
+```
+
+Create a function that validates a user has the editor role
+
+```postgres
+CREATE OR REPLACE FUNCTION public.auth_is_editor(uid uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.role
+    WHERE "user" = uid
+      AND "right" = 'editor'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.auth_is_editor(uuid) TO anon, authenticated;
 ```
 
 Create a policy on each table that allows root to manage everything

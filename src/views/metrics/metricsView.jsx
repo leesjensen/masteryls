@@ -23,9 +23,17 @@ export default function MetricsView({ courseOps }) {
   const [startDate, setStartDate] = useState(last24Hours());
   const [endDate, setEndDate] = useState(new Date());
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [userId, setUserId] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSearchResults, setUserSearchResults] = useState([]);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = React.useRef(null);
 
   // Get course catalog for course filter
   const courseCatalog = courseOps.courseCatalog();
+
+  // Check if user is an editor for the selected course
+  const isEditor = !!courseOps?.user?.isEditor();
 
   // Helper function to validate custom date range
   const validateDateRange = () => {
@@ -93,14 +101,64 @@ export default function MetricsView({ courseOps }) {
 
   useEffect(() => {
     loadMetrics();
-  }, [startDate, endDate, selectedCourseId]);
+  }, [startDate, endDate, selectedCourseId, userId]);
+
+  // Debounced user search
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (userSearchQuery.trim().length >= 2) {
+        searchUsers(userSearchQuery);
+      } else {
+        setUserSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [userSearchQuery]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const searchUsers = async (query) => {
+    try {
+      const results = await courseOps.service.searchUsers(query, 10);
+      setUserSearchResults(results);
+      setShowUserDropdown(true);
+    } catch (err) {
+      console.error('Error searching users:', err);
+      setUserSearchResults([]);
+    }
+  };
+
+  const selectUser = (user) => {
+    setUserId(user.id);
+    setUserSearchQuery(user.name || user.email);
+    setShowUserDropdown(false);
+    setUserSearchResults([]);
+  };
+
+  const clearUserSelection = () => {
+    setUserId('');
+    setUserSearchQuery('');
+    setUserSearchResults([]);
+    setShowUserDropdown(false);
+  };
 
   const loadMetrics = async () => {
     try {
       setLoading(true);
       // Pass the selected course ID, or null for all courses
       const courseId = selectedCourseId || null;
-      const metricsData = await getMetrics(courseId, null, null, startDate, endDate);
+      const metricsData = await getMetrics(courseId, null, userId, startDate, endDate);
       setMetrics(metricsData);
       setError(null);
     } catch (err) {
@@ -163,6 +221,11 @@ export default function MetricsView({ courseOps }) {
     return course ? course.name : 'Unknown Course';
   };
 
+  const getUsers = (filter) => {
+    const usersSet = new Set();
+    return Array.from(usersSet);
+  };
+
   const header = (
     <nav className="mb-4 flex flex-col border-0 border-gray-300 bg-white">
       <div className="flex flex-row justify-between">
@@ -182,11 +245,51 @@ export default function MetricsView({ courseOps }) {
               <option value="">All Courses</option>
               {courseCatalog.map((course) => (
                 <option key={course.id} value={course.id}>
-                  {course.name}
+                  {course.title}
                 </option>
               ))}
             </select>
           </div>
+          {isEditor && (
+            <div className="flex items-center space-x-1 relative" ref={userDropdownRef}>
+              <label className="text-sm text-gray-600 w-16 md:w-auto">User:</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={userSearchQuery}
+                  onChange={(e) => {
+                    setUserSearchQuery(e.target.value);
+                    if (!e.target.value) {
+                      clearUserSelection();
+                    }
+                  }}
+                  onFocus={() => {
+                    if (userSearchResults.length > 0) {
+                      setShowUserDropdown(true);
+                    }
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm min-w-48"
+                  placeholder="Search by name or email"
+                  title="Search for a user to filter metrics"
+                />
+                {userId && (
+                  <button onClick={clearUserSelection} className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" title="Clear user filter">
+                    <X size={16} />
+                  </button>
+                )}
+                {showUserDropdown && userSearchResults.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto">
+                    {userSearchResults.map((user) => (
+                      <button key={user.id} onClick={() => selectUser(user)} className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0">
+                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        <div className="text-xs text-gray-500">{user.email}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex items-center space-x-1">
             <label className="text-sm text-gray-600 w-10 md:w-auto">From:</label>
             <input type="date" value={startDate.toISOString().split('T')[0]} onChange={(e) => setStartDate(new Date(e.target.value))} className="px-2 py-1 border border-gray-300 rounded text-sm" title="Start date (optional)" />
