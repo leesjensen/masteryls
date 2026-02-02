@@ -1,10 +1,11 @@
 import React from 'react';
+import CopyToClipboard from './CopyToClipboard';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-// Helper component to highlight search terms in text
-export default function HighlightedText({ children, searchTerms }) {
-  if (!searchTerms || searchTerms.length === 0 || typeof children !== 'string') {
-    return children;
-  }
+// Highlight the search terms in the children
+export function HighlightedText({ children, searchTerms }) {
+  if (!searchTerms || searchTerms.length === 0 || typeof children !== 'string') return children;
 
   const text = children;
   const matches = [];
@@ -23,10 +24,7 @@ export default function HighlightedText({ children, searchTerms }) {
     }
   });
 
-  // No matches found
-  if (matches.length === 0) {
-    return children;
-  }
+  if (matches.length === 0) return children;
 
   // Sort matches by start position and remove overlaps
   matches.sort((a, b) => a.start - b.start);
@@ -65,7 +63,7 @@ export default function HighlightedText({ children, searchTerms }) {
   return <>{parts}</>;
 }
 
-// Helper to create components that highlight text children
+// Wrap the given component with a HighlightedText component if it contains text children
 export function createHighlightedComponent(Tag, searchTerms) {
   return ({ children, node, ...props }) => {
     if (!searchTerms || searchTerms.length === 0) {
@@ -81,4 +79,89 @@ export function createHighlightedComponent(Tag, searchTerms) {
 
     return <Tag {...props}>{React.Children.map(children, processChild)}</Tag>;
   };
+}
+
+// Highlight code blocks with SyntaxHighlighter and highlight search terms within the code
+export function renderHighlightedCodeBlock(codeText, language, searchTerms, props) {
+  const getStyleFromClassName = (className, stylesheet) => {
+    if (!className) {
+      return undefined;
+    }
+    const classNames = Array.isArray(className) ? className : String(className).split(' ');
+    return classNames.reduce((acc, cls) => ({ ...acc, ...stylesheet?.[cls] }), {});
+  };
+
+  const renderChildren = (children, stylesheet) =>
+    children.map((child, index) => {
+      if (typeof child?.value === 'string') {
+        return createHighlightedComponent('span', searchTerms)({ key: index, children: child.value });
+      }
+
+      if (child?.children) {
+        const className = child.properties?.className || child.properties?.className?.join(' ');
+        const style = {
+          ...getStyleFromClassName(className, stylesheet),
+          ...child.properties?.style,
+        };
+        return (
+          <span key={index} className={className} style={style}>
+            {renderChildren(child.children, stylesheet)}
+          </span>
+        );
+      }
+
+      return null;
+    });
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <CopyToClipboard text={codeText} />
+      <SyntaxHighlighter
+        language={language}
+        style={ghcolors}
+        PreTag="div"
+        wrapLongLines
+        renderer={({ rows, stylesheet }) => (
+          <>
+            {rows.map((row, rowIndex) => {
+              const rowClassName = row.properties?.className || row.properties?.className?.join(' ');
+              const rowStyle = {
+                ...getStyleFromClassName(rowClassName, stylesheet),
+                ...row.properties?.style,
+              };
+              return (
+                <div key={rowIndex} className={rowClassName} style={rowStyle}>
+                  {row.children.map((token, tokenIndex) => {
+                    const className = token.properties?.className || token.properties?.className?.join(' ');
+                    const style = {
+                      ...getStyleFromClassName(className, stylesheet),
+                      ...token.properties?.style,
+                    };
+                    return (
+                      <span key={tokenIndex} className={className} style={style}>
+                        {renderChildren(token.children || [], stylesheet)}
+                      </span>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </>
+        )}
+        customStyle={{
+          margin: 0, // optional: removes default margin that can mess with layout
+        }}
+        codeTagProps={{
+          style: {
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word', // wrap long words/tokens
+            overflowWrap: 'anywhere', // extra help for super-long tokens
+          },
+        }}
+        {...props}
+      >
+        {codeText}
+      </SyntaxHighlighter>
+    </div>
+  );
 }
