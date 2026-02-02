@@ -41,8 +41,8 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
+      // masteryls interactions
       if (isBlock && language === 'masteryls') {
-        // masteryls quiz blocks
         const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
         if (plugin?.processor) {
           const quizBlock = String(children).replace(/\n$/, '');
@@ -61,9 +61,8 @@ export default function Markdown({ learningSession, content, languagePlugins = [
           );
         }
       }
-
-      // Use SyntaxHighlighter for fenced code blocks with a language
-      if (isBlock) {
+      // Use SyntaxHighlighter for fenced code blocks with or without a language
+      else if (isBlock) {
         const codeText = String(children).replace(/\n$/, '');
         return (
           <div style={{ position: 'relative' }}>
@@ -91,11 +90,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
         );
       }
 
-      return (
-        <code style={{ wordBreak: 'break-word', whiteSpace: 'pre-line' }} {...props}>
-          {typeof children === 'string' ? <HighlightedText searchTerms={searchTerms}>{children}</HighlightedText> : children}
-        </code>
-      );
+      return createHighlightedComponent('code', searchTerms)({ children, node, ...props });
     },
 
     // Wrap text nodes to enable highlighting
