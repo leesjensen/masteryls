@@ -43,64 +43,12 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
       // masteryls interaction
       if (isBlock && language === 'masteryls') {
-        const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
-        if (plugin?.processor) {
-          const quizBlock = String(children).replace(/\n$/, '');
-          const pluginJsx = plugin.processor(quizBlock);
-          return (
-            <div
-              onClick={(e) => {
-                const masteryElement = e.target.closest('[data-plugin-masteryls]');
-                if (masteryElement && plugin.handler) {
-                  plugin.handler(e, masteryElement);
-                }
-              }}
-            >
-              {pluginJsx}
-            </div>
-          );
-        }
+        return renderInteraction(children, languagePlugins);
       }
       // Use SyntaxHighlighter for fenced code blocks with or without a language
       else if (isBlock) {
         const codeText = String(children).replace(/\n$/, '');
-        return (
-          <div style={{ position: 'relative' }}>
-            <CopyToClipboard text={codeText} />
-            <SyntaxHighlighter
-              language={language}
-              style={ghcolors}
-              PreTag="div"
-              wrapLongLines
-              renderer={({ rows }) => (
-                <>
-                  {rows.map((row, i) => (
-                    <div key={i}>
-                      {row.children.map((token, j) => (
-                        <span key={j} style={token.properties?.style}>
-                          <HighlightedText searchTerms={searchTerms}>{token.children?.[0]?.value || ''}</HighlightedText>
-                        </span>
-                      ))}
-                    </div>
-                  ))}
-                </>
-              )}
-              customStyle={{
-                margin: 0, // optional: removes default margin that can mess with layout
-              }}
-              codeTagProps={{
-                style: {
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word', // wrap long words/tokens
-                  overflowWrap: 'anywhere', // extra help for super-long tokens
-                },
-              }}
-              {...props}
-            >
-              {codeText}
-            </SyntaxHighlighter>
-          </div>
-        );
+        return highlightCodeBlock(codeText, language, props);
       }
 
       return createHighlightedComponent('code', searchTerms)({ children, node, ...props });
@@ -229,6 +177,67 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     }, {});
     Object.assign(customComponents, headingComponents);
   }
+
+  const highlightCodeBlock = (codeText, language, props) => (
+    <div style={{ position: 'relative' }}>
+      <CopyToClipboard text={codeText} />
+      <SyntaxHighlighter
+        language={language}
+        style={ghcolors}
+        PreTag="div"
+        wrapLongLines
+        renderer={({ rows }) => (
+          <>
+            {rows.map((row, i) => (
+              <div key={i}>
+                {row.children.map((token, j) => (
+                  <span key={j} style={token.properties?.style}>
+                    <HighlightedText searchTerms={searchTerms}>{token.children?.[0]?.value || ''}</HighlightedText>
+                  </span>
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+        customStyle={{
+          margin: 0, // optional: removes default margin that can mess with layout
+        }}
+        codeTagProps={{
+          style: {
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word', // wrap long words/tokens
+            overflowWrap: 'anywhere', // extra help for super-long tokens
+          },
+        }}
+        {...props}
+      >
+        {codeText}
+      </SyntaxHighlighter>
+    </div>
+  );
+
+  const renderInteraction = (children, languagePlugins) => {
+    const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
+    if (!plugin?.processor) {
+      return null;
+    }
+
+    const quizBlock = String(children).replace(/\n$/, '');
+    const pluginJsx = plugin.processor(quizBlock);
+
+    return (
+      <div
+        onClick={(e) => {
+          const masteryElement = e.target.closest('[data-plugin-masteryls]');
+          if (masteryElement && plugin.handler) {
+            plugin.handler(e, masteryElement);
+          }
+        }}
+      >
+        {pluginJsx}
+      </div>
+    );
+  };
 
   const components = { ...customComponents, MermaidBlock };
 
