@@ -184,7 +184,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
             <StickyNote
               size={24}
               aria-label={`Add notes for ${headingText}`}
-              className="cursor-pointer hover:text-yellow-300 hover:bg-yellow-100 rounded-md text-gray-400"
+              className="cursor-pointer text-gray-400 hover:text-yellow-300"
               onClick={(e) => {
                 e.preventDefault();
                 onMakeHeadingActive(headingId, headingText);
