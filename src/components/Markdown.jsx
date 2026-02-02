@@ -41,7 +41,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
-      // masteryls interactions
+      // masteryls interaction
       if (isBlock && language === 'masteryls') {
         const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
         if (plugin?.processor) {
@@ -72,6 +72,19 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               style={ghcolors}
               PreTag="div"
               wrapLongLines
+              renderer={({ rows }) => (
+                <>
+                  {rows.map((row, i) => (
+                    <div key={i}>
+                      {row.children.map((token, j) => (
+                        <span key={j} style={token.properties?.style}>
+                          <HighlightedText searchTerms={searchTerms}>{token.children?.[0]?.value || ''}</HighlightedText>
+                        </span>
+                      ))}
+                    </div>
+                  ))}
+                </>
+              )}
               customStyle={{
                 margin: 0, // optional: removes default margin that can mess with layout
               }}
