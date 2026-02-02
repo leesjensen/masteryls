@@ -91,28 +91,6 @@ export function renderHighlightedCodeBlock(codeText, language, searchTerms, prop
     return classNames.reduce((acc, cls) => ({ ...acc, ...stylesheet?.[cls] }), {});
   };
 
-  const renderChildren = (children, stylesheet) =>
-    children.map((child, index) => {
-      if (typeof child?.value === 'string') {
-        return createHighlightedComponent('span', searchTerms)({ key: index, children: child.value });
-      }
-
-      if (child?.children) {
-        const className = child.properties?.className || child.properties?.className?.join(' ');
-        const style = {
-          ...getStyleFromClassName(className, stylesheet),
-          ...child.properties?.style,
-        };
-        return (
-          <span key={index} className={className} style={style}>
-            {renderChildren(child.children, stylesheet)}
-          </span>
-        );
-      }
-
-      return null;
-    });
-
   return (
     <div style={{ position: 'relative' }}>
       <CopyToClipboard text={codeText} />
@@ -121,33 +99,6 @@ export function renderHighlightedCodeBlock(codeText, language, searchTerms, prop
         style={ghcolors}
         PreTag="div"
         wrapLongLines
-        renderer={({ rows, stylesheet }) => (
-          <>
-            {rows.map((row, rowIndex) => {
-              const rowClassName = row.properties?.className || row.properties?.className?.join(' ');
-              const rowStyle = {
-                ...getStyleFromClassName(rowClassName, stylesheet),
-                ...row.properties?.style,
-              };
-              return (
-                <div key={rowIndex} className={rowClassName} style={rowStyle}>
-                  {row.children.map((token, tokenIndex) => {
-                    const className = token.properties?.className || token.properties?.className?.join(' ');
-                    const style = {
-                      ...getStyleFromClassName(className, stylesheet),
-                      ...token.properties?.style,
-                    };
-                    return (
-                      <span key={tokenIndex} className={className} style={style}>
-                        {renderChildren(token.children || [], stylesheet)}
-                      </span>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </>
-        )}
         customStyle={{
           margin: 0, // optional: removes default margin that can mess with layout
         }}
