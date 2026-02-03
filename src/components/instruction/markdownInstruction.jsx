@@ -79,19 +79,21 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} onMakeHeadingActive={onMakeHeadingActive} /> : isLoading ? <p>Loading content...</p> : <p>No content available.</p>}</div>
       </div>
 
-      <DiscussionPanel
-        courseOps={courseOps}
-        learningSession={learningSession}
-        isOpen={discussionOpen}
-        onClose={() => {
-          setDiscussionOpen(false);
-          setActiveHeading(null);
-        }}
-        topicTitle={learningSession.topic?.title || 'Current Topic'}
-        topicContent={markdown}
-        user={user}
-        activeHeading={activeHeading}
-      />
+      {user && (
+        <DiscussionPanel
+          courseOps={courseOps}
+          learningSession={learningSession}
+          isOpen={discussionOpen}
+          onClose={() => {
+            setDiscussionOpen(false);
+            setActiveHeading(null);
+          }}
+          topicTitle={learningSession.topic?.title || 'Current Topic'}
+          topicContent={markdown}
+          user={user}
+          activeHeading={activeHeading}
+        />
+      )}
     </div>
   );
 }
