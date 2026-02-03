@@ -84,7 +84,7 @@ function App({ initialUser }) {
   return (
     <div className="app flex flex-col h-screen">
       <div className="flex-[0_0_42px]">
-        <AppBar />
+        <AppBar user={user} />
       </div>
       <div className="flex-1 flex flex-col overflow-auto">
         <Outlet context={contextValue} />
