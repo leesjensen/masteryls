@@ -18,7 +18,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
       const url = user ? `/dashboard` : `/`;
       const appBarTools = <AppBarButton icon={X} onClick={() => navigate(url)} title="Close" />;
 
-      updateAppBar({ title: learningSession.course?.title, tools: appBarTools });
+      updateAppBar({ title: learningSession.course?.title, subTitle: learningSession?.topic?.title, tools: appBarTools });
     }
   }, [learningSession]);
 

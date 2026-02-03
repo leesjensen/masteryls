@@ -10,10 +10,10 @@ const subscribe = (listener) => {
 
 const getSnapshot = () => state;
 
-export const updateAppBar = ({ title, tools }) => {
+export const updateAppBar = ({ title, subTitle, tools }) => {
   if (title !== undefined) {
     document.title = title;
-    state = { ...state, title };
+    state = { ...state, title, subTitle };
   }
   if (tools !== undefined) {
     state = { ...state, tools };
@@ -23,5 +23,5 @@ export const updateAppBar = ({ title, tools }) => {
 
 export const useAppBarState = () => {
   const state = useSyncExternalStore(subscribe, getSnapshot);
-  return { title: state.title, tools: state.tools };
+  return { title: state.title, subTitle: state.subTitle, tools: state.tools };
 };
