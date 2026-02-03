@@ -595,6 +595,25 @@ ${topicDescription || 'overview content placeholder'}`;
     }
   }
 
+  /*
+   * Example enrollment.progress structure:
+   * {
+   * "mastery": 99,
+   * "0a739177-92fd-4264-9629-19602dc70e96": {
+   *   "notes": ["headingId1", "headingId2"],
+   *   "interactions": ["interactionId1", "interactionId2"]
+   * },
+   *
+   * Note progress details:
+   * {
+   *   "type": "note",
+   *   "content": "Here is my note",
+   *   "activeHeading": {                     // may be null if not on a heading
+   *     "headingId": "short-heading",
+   *     "headingText": "Short heading"
+   *   }
+   * }
+   */
   function _updateEnrollmentCachedInfo(enrollment, topic, interactionId, type) {
     if (!enrollment || !topic) return;
 
