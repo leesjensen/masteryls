@@ -28,6 +28,8 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
   }, [isOpen]);
 
   useEffect(() => {
+    if (!learningSession?.enrollment?.id) return;
+
     // Load saved notes from DB
     (async () => {
       const notes = (
@@ -46,11 +48,9 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
           return details;
         })
         .sort((a, b) => a.timestamp - b.timestamp);
-      console.log(`Loading ${loadedMessages.length} for ${learningSession.topic.title}`);
       setNoteMessages(loadedMessages);
-      console.log(`Loading saved notes for discussion panel...${learningSession.topic.title}`);
     })();
-  }, [learningSession.topic.id, learningSession.enrollment.id]);
+  }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
   const handleUserNoteInput = (userMessage) => {
     const notePayload = {
