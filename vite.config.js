@@ -3,12 +3,6 @@ import tailwindcss from '@tailwindcss/vite';
 import istanbul from 'vite-plugin-istanbul';
 
 export default defineConfig({
-  server: {
-    watch: {
-      usePolling: true,
-      ignored: ['**/node_modules/**', '**/coverage/**', '**/playwright-report/**', '**/test-results/**'],
-    },
-  },
   build: {
     sourcemap: true,
   },
