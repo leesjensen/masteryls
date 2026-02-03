@@ -22,16 +22,15 @@ const users = [
 const catalog = [
   {
     id: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
-    name: 'cs329',
+    name: 'rocksci',
     title: 'Rocket Science',
     description: 'This course provides you with the experience and skills necessary to deploy, manage, and ensure the quality of a modern software application. This includes automated testing at all levels, continuous integration and deployment pipelines, application monitoring, failure detection, alerting, and elastic application scaling.',
-    links: {
-      chat: 'https://discord.com/channels/748656649287368704',
-      canvas: 'https://byu.instructure.com/courses/31151',
+    settings: {
+      state: 'published',
     },
     gitHub: {
-      account: 'devops329',
-      repository: 'devops',
+      account: 'ghAccount',
+      repository: 'ghRepo',
     },
   },
   {
@@ -39,10 +38,6 @@ const catalog = [
     name: 'cs240',
     title: 'Software construction',
     description: 'Advanced Software Construction provides you with the experience and skills necessary to use a modern programming language in an advanced development environment to design, test, and build a large multi-user application. Your application will have a client frontend program that communicates, over the network, with a centralized backend server.',
-    links: {
-      chat: 'https://discord.com/channels/748656649287368704',
-      canvas: 'https://byu.instructure.com/courses/31151',
-    },
     gitHub: {
       account: 'softwareconstruction240',
       repository: 'softwareconstruction',
@@ -53,10 +48,6 @@ const catalog = [
     name: 'cs260',
     title: 'Web Programming',
     description: 'Web programming gives you practical experience with important aspects of computer science. This includes distributed systems, security, concurrency, networking, caching, data structures, databases, asynchronous execution, protocols, and efficiency.',
-    links: {
-      chat: 'https://discord.com/channels/748656649287368704',
-      canvas: 'https://byu.instructure.com/courses/31151',
-    },
     gitHub: {
       account: 'webprogramming260',
       repository: '.github',
@@ -97,15 +88,15 @@ const topicFiles = [
     path: 'README.md',
     sha: 'cd54f565190cb64e5b8fb63d05df57b975997385',
     size: 2691,
-    url: 'https://api.github.com/repos/devops329/devops/contents/README.md?ref=main',
-    html_url: 'https://github.com/devops329/devops/blob/main/README.md',
-    git_url: 'https://api.github.com/repos/devops329/devops/git/blobs/cd54f565190cb64e5b8fb63d05df57b975997385',
-    download_url: 'https://raw.githubusercontent.com/devops329/devops/main/README.md',
+    url: 'https://api.github.com/repos/ghAccount/ghRepo/contents/README.md?ref=main',
+    html_url: 'https://github.com/ghAccount/ghRepo/blob/main/README.md',
+    git_url: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/cd54f565190cb64e5b8fb63d05df57b975997385',
+    download_url: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/README.md',
     type: 'file',
     _links: {
-      self: 'https://api.github.com/repos/devops329/devops/contents/README.md?ref=main',
-      git: 'https://api.github.com/repos/devops329/devops/git/blobs/cd54f565190cb64e5b8fb63d05df57b975997385',
-      html: 'https://github.com/devops329/devops/blob/main/README.md',
+      self: 'https://api.github.com/repos/ghAccount/ghRepo/contents/README.md?ref=main',
+      git: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/cd54f565190cb64e5b8fb63d05df57b975997385',
+      html: 'https://github.com/ghAccount/ghRepo/blob/main/README.md',
     },
   },
   {
@@ -113,15 +104,15 @@ const topicFiles = [
     path: 'byuLogo.png',
     sha: 'e9d693e97087e22e0c4d4dde4123287d457e25e8',
     size: 16355,
-    url: 'https://api.github.com/repos/devops329/devops/contents/byuLogo.png?ref=main',
-    html_url: 'https://github.com/devops329/devops/blob/main/byuLogo.png',
-    git_url: 'https://api.github.com/repos/devops329/devops/git/blobs/e9d693e97087e22e0c4d4dde4123287d457e25e8',
-    download_url: 'https://raw.githubusercontent.com/devops329/devops/main/byuLogo.png',
+    url: 'https://api.github.com/repos/ghAccount/ghRepo/contents/byuLogo.png?ref=main',
+    html_url: 'https://github.com/ghAccount/ghRepo/blob/main/byuLogo.png',
+    git_url: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/e9d693e97087e22e0c4d4dde4123287d457e25e8',
+    download_url: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/byuLogo.png',
     type: 'file',
     _links: {
-      self: 'https://api.github.com/repos/devops329/devops/contents/byuLogo.png?ref=main',
-      git: 'https://api.github.com/repos/devops329/devops/git/blobs/e9d693e97087e22e0c4d4dde4123287d457e25e8',
-      html: 'https://github.com/devops329/devops/blob/main/byuLogo.png',
+      self: 'https://api.github.com/repos/ghAccount/ghRepo/contents/byuLogo.png?ref=main',
+      git: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/e9d693e97087e22e0c4d4dde4123287d457e25e8',
+      html: 'https://github.com/ghAccount/ghRepo/blob/main/byuLogo.png',
     },
   },
 ];

@@ -1,6 +1,19 @@
 import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, navigateToCourse } from './testInit';
 
+test('unregistered user', async ({ page }) => {
+  await initBasicCourse({ page });
+  await page.goto('http://localhost:5173/');
+
+  await page
+    .locator('div')
+    .filter({ hasText: /^Rocket Science$/ })
+    .first()
+    .click();
+
+  await expect(page.getByText('markdown!')).toBeVisible();
+});
+
 test('load from course.json', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourse(page);
@@ -40,7 +53,7 @@ test('instruction types all', async ({ page }) => {
 
   await expect(page.getByRole('img', { name: 'Stock Photo' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'relative image' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute('src', 'https://raw.githubusercontent.com/devops329/devops/main/path/relative.svg');
+  await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute('src', 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/path/relative.svg');
 });
 
 test('video', async ({ page }) => {
