@@ -1,8 +1,35 @@
 import React from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export function AppBar() {
   const { title, subTitle, tools } = useAppBarState();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  function renderTitle(title, subTitle) {
+    let titleComponent = <span>{title}</span>;
+    if (location.pathname.startsWith('/course/')) {
+      const courseId = location.pathname.split('/')[2];
+      titleComponent = (
+        <span onClick={() => navigate(`/course/${courseId}`)} className="cursor-pointer hover:underline text-blue-600 hover:text-blue-800">
+          {title}
+        </span>
+      );
+    }
+
+    return (
+      <>
+        {titleComponent}
+        {subTitle && (
+          <>
+            <span className="mx-1 text-gray-400">/</span>
+            <span className="text-gray-700">{subTitle}</span>
+          </>
+        )}
+      </>
+    );
+  }
 
   return (
     <header className="flex flex-row items-center justify-between pr-2 border-b-1 bg-gray-50 border-gray-500 h-[42px]">
@@ -14,20 +41,6 @@ export function AppBar() {
       </h1>
       <div className="whitespace-nowrap ml-2">{tools}</div>
     </header>
-  );
-}
-
-function renderTitle(title, subTitle) {
-  return (
-    <>
-      {title}
-      {subTitle && (
-        <span>
-          <span className="text-sm text-gray-200 mx-1">❯</span>
-          {subTitle}
-        </span>
-      )}
-    </>
   );
 }
 
