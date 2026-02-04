@@ -71,13 +71,13 @@
 
 /* Add table wrapping so tables in rendered markdown can wrap */
 .markdown-body table {
+  display: block;
   width: 100%;
-  table-layout: fixed;
+  overflow: auto;
 }
 .markdown-body th,
 .markdown-body td {
-  white-space: normal !important;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   word-break: normal;
-  hyphens: auto;
+  hyphens: none;
 }
