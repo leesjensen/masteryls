@@ -4,9 +4,8 @@ import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Tabs from '../components/Tabs';
 import Markdown from './Markdown';
 
-export default function DiscussionPanel({ courseOps, learningSession, isOpen, onClose, topicTitle, topicContent, user, activeHeading = null }) {
+export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle, topicContent, noteMessages, setNoteMessages, activeHeading = null }) {
   const [aiMessages, setAIMessages] = useState([]);
-  const [noteMessages, setNoteMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState('ai'); // 'ai' or 'notes'
@@ -27,30 +26,6 @@ export default function DiscussionPanel({ courseOps, learningSession, isOpen, on
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!learningSession?.enrollment?.id) return;
-
-    // Load saved notes from DB
-    (async () => {
-      const notes = (
-        await courseOps.getProgress({
-          topicId: learningSession.topic.id,
-          enrollmentId: learningSession.enrollment.id,
-          types: ['note'],
-          limit: 100,
-        })
-      ).data;
-      const loadedMessages = notes
-        .filter((p) => p.details)
-        .map((p) => {
-          const details = { ...p.details };
-          details.timestamp = new Date(p.createdAt);
-          return details;
-        })
-        .sort((a, b) => a.timestamp - b.timestamp);
-      setNoteMessages(loadedMessages);
-    })();
-  }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
   const handleUserNoteInput = (userMessage) => {
     const notePayload = {

@@ -13,7 +13,7 @@ import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
 import { StickyNote } from 'lucide-react';
 
-export default function Markdown({ learningSession, content, languagePlugins = [], onMakeHeadingActive = null }) {
+export default function Markdown({ learningSession, content, languagePlugins = [], noteMessages = [], onMakeHeadingActive = null }) {
   const { searchResults } = useSearchResults();
   const navigate = useNavigate();
   const containerRef = React.useRef(null);
@@ -178,18 +178,21 @@ export default function Markdown({ learningSession, content, languagePlugins = [
           .replace(/\s+/g, '-')
           .replace(/[^\w-]/g, '');
 
+        const existingNote = noteMessages.find((note) => note.activeHeading?.headingId === headingId);
+
         return (
           <HeadingTag id={headingId} className="flex items-center gap-2" {...props}>
             {children}
-            <StickyNote
-              size={12}
-              aria-label={`Add notes for ${headingText}`}
-              className="cursor-pointer text-gray-400 hover:text-yellow-300"
-              onClick={(e) => {
-                e.preventDefault();
-                onMakeHeadingActive(headingId, headingText);
-              }}
-            />
+            <span title={`${existingNote ? 'View' : 'Add'} notes for this section`}>
+              <StickyNote
+                size={12}
+                className={`cursor-pointer transition-colors ${existingNote ? 'text-yellow-500 fill-yellow-100' : 'text-gray-400 hover:text-yellow-300'}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onMakeHeadingActive(headingId, headingText);
+                }}
+              />
+            </span>
           </HeadingTag>
         );
       };

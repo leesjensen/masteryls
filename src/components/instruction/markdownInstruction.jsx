@@ -8,6 +8,7 @@ import '../markdown.css';
 export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [noteMessages, setNoteMessages] = useState([]);
   const [discussionOpen, setDiscussionOpen] = useState(false);
   const [activeHeading, setActiveHeading] = useState(null);
   const containerRef = React.useRef(null);
@@ -27,6 +28,31 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
       }
     }
   }, [learningSession, content]);
+
+  useEffect(() => {
+    if (!learningSession?.enrollment?.id) return;
+
+    // Load saved notes from DB
+    (async () => {
+      const notes = (
+        await courseOps.getProgress({
+          topicId: learningSession.topic.id,
+          enrollmentId: learningSession.enrollment.id,
+          types: ['note'],
+          limit: 100,
+        })
+      ).data;
+      const loadedMessages = notes
+        .filter((p) => p.details)
+        .map((p) => {
+          const details = { ...p.details };
+          details.timestamp = new Date(p.createdAt);
+          return details;
+        })
+        .sort((a, b) => a.timestamp - b.timestamp);
+      setNoteMessages(loadedMessages);
+    })();
+  }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
   useEffect(() => {
     if (markdown) {
@@ -76,7 +102,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
           </button>
         )}
 
-        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} onMakeHeadingActive={onMakeHeadingActive} /> : isLoading ? <p>Loading content...</p> : <p>No content available.</p>}</div>
+        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} noteMessages={noteMessages} onMakeHeadingActive={onMakeHeadingActive} /> : isLoading ? <p>Loading content...</p> : <p>No content available.</p>}</div>
       </div>
 
       {user && (
@@ -91,6 +117,8 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
           topicTitle={learningSession.topic?.title || 'Current Topic'}
           topicContent={markdown}
           user={user}
+          noteMessages={noteMessages}
+          setNoteMessages={setNoteMessages}
           activeHeading={activeHeading}
         />
       )}
