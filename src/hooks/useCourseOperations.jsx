@@ -600,7 +600,7 @@ ${topicDescription || 'overview content placeholder'}`;
    * {
    * "mastery": 99,
    * "0a739177-92fd-4264-9629-19602dc70e96": {
-   *   "notes": ["headingId1", "headingId2"],
+   *   "notes": true|false,
    *   "interactions": ["interactionId1", "interactionId2"]
    * },
    *
@@ -608,9 +608,7 @@ ${topicDescription || 'overview content placeholder'}`;
    * {
    *   "type": "note",
    *   "content": "Here is my note",
-   *   "activeHeading": {                     // may be null if not on a heading
-   *     "headingId": "short-heading",
-   *     "headingText": "Short heading"
+   *   "section": "heading text"
    *   }
    * }
    */

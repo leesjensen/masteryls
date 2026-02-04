@@ -10,7 +10,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [isLoading, setIsLoading] = useState(false);
   const [noteMessages, setNoteMessages] = useState([]);
   const [discussionOpen, setDiscussionOpen] = useState(false);
-  const [activeHeading, setActiveHeading] = useState(null);
+  const [activeSection, setActiveSection] = useState(null);
   const containerRef = React.useRef(null);
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     user && instructionState === 'learning'
       ? (headingId, headingText) => {
           setDiscussionOpen(true);
-          setActiveHeading({ headingId, headingText });
+          setActiveSection(headingText);
         }
       : null;
 
@@ -112,14 +112,14 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
           isOpen={discussionOpen}
           onClose={() => {
             setDiscussionOpen(false);
-            setActiveHeading(null);
+            setActiveSection(null);
           }}
           topicTitle={learningSession.topic?.title || 'Current Topic'}
           topicContent={markdown}
           user={user}
           noteMessages={noteMessages}
           setNoteMessages={setNoteMessages}
-          activeHeading={activeHeading}
+          section={activeSection}
         />
       )}
     </div>

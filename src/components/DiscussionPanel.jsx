@@ -4,7 +4,7 @@ import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Tabs from '../components/Tabs';
 import Markdown from './Markdown';
 
-export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle, topicContent, noteMessages, setNoteMessages, activeHeading = null }) {
+export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle, topicContent, noteMessages, setNoteMessages, section = null }) {
   const [aiMessages, setAIMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -26,11 +26,10 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
     }
   }, [isOpen]);
 
-
   const handleUserNoteInput = (userMessage) => {
     const notePayload = {
       type: 'note',
-      activeHeading,
+      section,
       content: userMessage,
       timestamp: Date.now(),
     };
@@ -39,14 +38,14 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
     // Add a progress record for this note
     const dataToSave = {
       type: 'note',
-      activeHeading,
+      section,
       content: userMessage,
     };
     courseOps.addProgress(null, null, 'note', 0, dataToSave);
   };
 
   const handleAIQueryInput = async (userMessage) => {
-    const newMessage = { type: 'user', activeHeading, content: userMessage, timestamp: Date.now() };
+    const newMessage = { type: 'user', section, content: userMessage, timestamp: Date.now() };
     setAIMessages((prev) => [...prev, newMessage]);
     setIsLoading(true);
 
@@ -60,7 +59,7 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
     } finally {
       const aiMessage = {
         type,
-        activeHeading,
+        section,
         content,
         timestamp: Date.now(),
       };
@@ -81,7 +80,7 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
 
     const confirmationMessage = {
       type: 'info',
-      activeHeading,
+      section,
       content: 'This AI response has been saved as a note.',
       timestamp: Date.now(),
     };
@@ -118,7 +117,7 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
 
   if (!isOpen) return null;
 
-  const fullTopicTitle = activeHeading ? `${topicTitle} - ${activeHeading.headingText}` : topicTitle;
+  const fullTopicTitle = section ? `${topicTitle} - ${section}` : topicTitle;
 
   const modeConfig = {
     ai: {
@@ -267,7 +266,7 @@ function MessageBox({ message, handleSaveAsNote }) {
     );
   }
 
-  const heading = message.activeHeading ? <div className="text-xs text-amber-400 italic font-medium">- {message.activeHeading.headingText}</div> : null;
+  const heading = message.section ? <div className="text-xs text-amber-400 italic font-medium">- {message.section}</div> : null;
 
   return (
     <div className={`flex ${justify}`}>

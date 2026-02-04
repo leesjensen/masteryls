@@ -178,7 +178,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
           .replace(/\s+/g, '-')
           .replace(/[^\w-]/g, '');
 
-        const existingNote = noteMessages.find((note) => note.activeHeading?.headingId === headingId);
+        const existingNote = noteMessages.find((note) => note.section === headingText);
 
         return (
           <HeadingTag id={headingId} className="flex items-center gap-2" {...props}>

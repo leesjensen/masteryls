@@ -346,19 +346,20 @@ If the student's question is not directly related to the topic content, gently r
  */
 export async function aiDiscussionResponseGenerator(topicTitle, topicContent, messages) {
   // If the user's message was about a specific section of the topic, include that information
-  const activeHeadingName = messages.length > 0 ? messages[messages.length - 1].activeHeading?.headingText : null;
-  const headingInfo = activeHeadingName ? (
-    `
+  const section = messages.length > 0 ? messages[messages.length - 1].section : null;
+  const headingInfo = section
+    ? `
 
-The student is currently studying the section titled "${activeHeadingName}."
+The student is currently studying the section titled "${section}."
     `
-  ) : '';
+    : '';
 
   // If the user has any saved notes for the topic + section, include that information
   const noteMessages = messages.filter((msg) => msg.type === 'note');
   const noteText = noteMessages.map((msg, i) => `[Note ${i + 1} / ${noteMessages.length}]: ${msg.content}`);
-  const notesInfo = noteText.length > 0 ? (
-    `
+  const notesInfo =
+    noteText.length > 0
+      ? `
 
 The student has saved the following notes related to the topic, which may contain parts of previous discussions with you:
 
@@ -366,7 +367,7 @@ ${noteText.join('\n\n')}
 
 [END OF NOTES]
     `
-  ) : '';
+      : '';
 
   const fullInstructionText = `
 You are a knowledgeable teaching assistant helping a student understand course material. 
@@ -426,8 +427,8 @@ Generate constructive feedback for a student's answer to a quiz question.
 Focus on clear explanations, encouragement, and guidance for improvement.
 
 ${Object.entries(data)
-      .map(([key, value]) => `- ${key}: ${value}`)
-      .join('\n')}
+  .map(([key, value]) => `- ${key}: ${value}`)
+  .join('\n')}
 
 Requirements:
 - Address the student directly
@@ -450,8 +451,8 @@ Generate constructive feedback for a student's essay response.
 Focus on clear explanations, encouragement, and guidance for improvement.
 
 ${Object.entries(data)
-      .map(([key, value]) => `- ${key}: ${value}`)
-      .join('\n')}
+  .map(([key, value]) => `- ${key}: ${value}`)
+  .join('\n')}
 
 Requirements:
 - Start the response with json that indicates the percentage correct in the format: {"percentCorrect": XX}
