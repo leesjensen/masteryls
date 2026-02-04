@@ -1,5 +1,7 @@
 <img src="public/masteryls-logo.png" alt="Mastery LS" width="200">
 
+[![CI Pipeline](https://github.com/leesjensen/masteryls/actions/workflows/ci.yml/badge.svg)](https://github.com/leesjensen/masteryls/actions/workflows/ci.yml)
+
 **Mastery LS** takes online learning to the next level by boosting maintainable content creation and focusing on learner mastery.
 
 - Markdown for content creation sanity
