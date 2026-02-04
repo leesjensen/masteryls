@@ -169,7 +169,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
   if (onMakeHeadingActive !== null) {
     // Modify heading components to include StickyNote icon and heading ID
-    const headingComponents = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].reduce((acc, tag) => {
+    const headingComponents = ['h2', 'h3', 'h4'].reduce((acc, tag) => {
       acc[tag] = ({ children, ...props }) => {
         const HeadingTag = tag;
         const headingText = typeof children === 'string' ? children : String(children);
@@ -182,7 +182,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
           <HeadingTag id={headingId} className="flex items-center gap-2" {...props}>
             {children}
             <StickyNote
-              size={24}
+              size={12}
               aria-label={`Add notes for ${headingText}`}
               className="cursor-pointer text-gray-400 hover:text-yellow-300"
               onClick={(e) => {
