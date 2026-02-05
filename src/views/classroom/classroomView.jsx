@@ -4,13 +4,13 @@ import Toolbar from './toolbar.jsx';
 import Sidebar from './sidebar.jsx';
 import Instruction from '../../components/instruction/instruction.jsx';
 import Editor from '../../components/editor/editor.jsx';
+import Splitter from '../../components/Splitter.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
-  const isResizing = React.useRef(false);
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -22,47 +22,18 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
     }
   }, [learningSession]);
 
-  function splitterMouseDown() {
-    isResizing.current = true;
-    document.body.style.userSelect = 'none';
-  }
+  function handleSplitterResize(newWidth) {
+    const minSidebarWidth = 150;
+    const maxSidebarWidth = Math.max(minSidebarWidth, window.innerWidth - minSidebarWidth);
 
-  React.useEffect(() => {
-    if (learningSession) {
-      function handleMove(clientX) {
-        const minSidebarWidth = 150;
-        const maxSidebarWidth = Math.max(minSidebarWidth, window.innerWidth - minSidebarWidth);
-
-        if (isResizing.current) {
-          let newWidth = clientX;
-          if (newWidth <= minSidebarWidth) {
-            courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'start' });
-          } else if (newWidth >= maxSidebarWidth) {
-            courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'end' });
-          } else {
-            courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'split', sidebarWidth: newWidth });
-          }
-        }
-      }
-
-      function handleMouseMove(e) {
-        handleMove(e.clientX);
-      }
-
-      function handleEnd() {
-        isResizing.current = false;
-        document.body.style.userSelect = '';
-      }
-
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleEnd);
-
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleEnd);
-      };
+    if (newWidth <= minSidebarWidth) {
+      courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'start' });
+    } else if (newWidth >= maxSidebarWidth) {
+      courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'end' });
+    } else {
+      courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'split', sidebarWidth: newWidth });
     }
-  }, [learningSession, settings.sidebarVisible]);
+  }
 
   function toggleEditor() {
     setEditorVisible((prev) => !prev);
@@ -91,7 +62,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
             <Sidebar courseOps={courseOps} user={user} learningSession={learningSession} editorVisible={editorVisible} />
           </div>
         )}
-        {settings.sidebarVisible === 'split' && <div className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none" onMouseDown={splitterMouseDown} />}
+        {settings.sidebarVisible === 'split' && <Splitter onResize={handleSplitterResize} minPosition={150} maxPosition={window.innerWidth - 150} />}
         {settings.sidebarVisible !== 'end' && (
           <div id="content" className={`flex flex-1 h-full overflow-auto`}>
             {content}
