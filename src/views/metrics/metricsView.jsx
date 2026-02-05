@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, TrendingUp, Wallpaper, ChartColumn } from 'lucide-react';
-import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ArcElement, Filler } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
@@ -93,10 +92,8 @@ export default function MetricsView({ courseOps }) {
     }
   };
 
-  const appBarTools = <AppBarButton icon={X} onClick={() => navigate('/dashboard')} title="Close" />;
-
   useEffect(() => {
-    updateAppBar({ title: 'Metrics', tools: appBarTools });
+    updateAppBar({ title: 'Metrics' });
   }, []);
 
   useEffect(() => {

@@ -16,21 +16,16 @@ export default function DashboardView({ courseOps, service, user }) {
 
   const appBarTools = (
     <div className="flex items-center gap-2">
-      {user.isRoot() && (
-        <>
-          <AppBarButton icon={PackagePlus} onClick={() => navigate('/courseCreation')} title="New course" />
-          <AppBarButton icon={Download} onClick={() => navigate('/courseExport')} title="Export course" />
-        </>
-      )}
-      <AppBarButton icon={Columns3Cog} onClick={() => navigate('/progress')} title="Progress" />
-      <AppBarButton icon={ChartArea} onClick={() => navigate('/metrics')} title="Metrics" />
-      <AppBarButton icon={LogOut} onClick={courseOps.logout} title="Logout" />
+      <AppBarButton icon={PackagePlus} onClick={() => navigate('/courseCreation')} title="New course" />
+      <AppBarButton icon={Download} onClick={() => navigate('/courseExport')} title="Export course" />
     </div>
   );
 
   React.useEffect(() => {
     if (user) {
-      updateAppBar({ title: `${user.name}'s Dashboard`, tools: appBarTools });
+      if (user.isRoot) {
+        updateAppBar({ title: `${user.name}'s Dashboard`, tools: appBarTools });
+      }
       service.enrollments(user.id).then((learnerEnrollments) => {
         const filteredEnrollments = new Map(
           Array.from(learnerEnrollments.entries()).filter(([catalogId, entry]) => {

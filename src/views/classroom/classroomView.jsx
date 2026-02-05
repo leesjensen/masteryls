@@ -1,24 +1,18 @@
 import React, { use, useState } from 'react';
-import { X } from 'lucide-react';
 import Toolbar from './toolbar.jsx';
 import Sidebar from './sidebar.jsx';
 import Instruction from '../../components/instruction/instruction.jsx';
 import Editor from '../../components/editor/editor.jsx';
 import Splitter from '../../components/Splitter.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
-import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
-  const navigate = useNavigate();
 
   React.useEffect(() => {
     if (learningSession.course) {
-      const url = user ? `/dashboard` : `/`;
-      const appBarTools = <AppBarButton icon={X} onClick={() => navigate(url)} title="Close" />;
-
-      updateAppBar({ title: learningSession.course?.title, subTitle: learningSession?.topic?.title, tools: appBarTools });
+      updateAppBar({ title: learningSession.course?.title, subTitle: learningSession?.topic?.title });
     }
   }, [learningSession]);
 

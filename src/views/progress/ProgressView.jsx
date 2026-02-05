@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
 
@@ -30,10 +28,8 @@ export default function ProgressView({ courseOps, service, user }) {
     currentPage: 1,
   });
 
-  const appBarTools = <AppBarButton icon={X} onClick={() => navigate('/dashboard')} title="Close" />;
-
   useEffect(() => {
-    updateAppBar({ title: 'Progress', tools: appBarTools });
+    updateAppBar({ title: 'Progress' });
   }, []);
 
   useEffect(() => {
@@ -304,7 +300,7 @@ export default function ProgressView({ courseOps, service, user }) {
     return (
       <div className="flex-1 m-6 flex flex-col bg-white">
         <main className="flex-1 overflow-auto p-2 border border-gray-200">
-          <div className="text-center text-gray-500 mt-8">Please log in to view your progress.</div>
+          <div className="text-center text-gray-500 mt-8">Please log in to view your activity.</div>
         </main>
       </div>
     );
@@ -315,7 +311,7 @@ export default function ProgressView({ courseOps, service, user }) {
       <div className="flex-1 m-6 flex flex-col bg-white">
         <main className="flex-1 overflow-auto p-4 border border-gray-200">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Your Learning Progress</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Your Learning Activity</h1>
 
             {/* Filters */}
             <div className="bg-gray-50 p-4 rounded-lg mb-6">

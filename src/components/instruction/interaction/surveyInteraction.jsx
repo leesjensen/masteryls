@@ -7,7 +7,7 @@ export default function SurveyInteraction({ id, body, multipleSelect, courseOps 
   const [surveyResults, setSurveyResults] = React.useState(null);
 
   function showMyVotes() {
-    if (courseOps.user.isRoot()) {
+    if (courseOps.user?.isRoot()) {
       setTimeout(() => {
         generateResults();
       }, 1000);
@@ -53,7 +53,7 @@ export default function SurveyInteraction({ id, body, multipleSelect, courseOps 
   }
 
   React.useEffect(() => {
-    if (courseOps.user.isRoot()) {
+    if (courseOps.user?.isRoot()) {
       generateResults();
     }
   }, []);

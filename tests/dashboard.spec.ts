@@ -74,6 +74,7 @@ test('dashboard logout', async ({ page }) => {
   await initBasicCourse({ page });
   await register(page);
 
+  await page.getByRole('button').nth(2).click();
   await page.getByRole('button', { name: 'Logout' }).click();
   await expect(page.getByRole('heading', { name: 'MasteryLS', exact: true })).toBeVisible();
 });

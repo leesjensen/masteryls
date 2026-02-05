@@ -582,6 +582,7 @@ async function navigateToMetrics(page: any) {
 
   await _register(page);
 
+  await page.getByRole('button').nth(2).click();
   await page.getByRole('button', { name: 'Metrics' }).click();
 }
 
@@ -590,7 +591,8 @@ async function navigateToProgress(page: any) {
 
   await _register(page);
 
-  await page.getByRole('button', { name: 'Progress', exact: true }).click();
+  await page.getByRole('button').nth(2).click();
+  await page.getByRole('button', { name: 'Activity' }).click();
 }
 
 async function navigateToCourse(page: any) {
