@@ -51,6 +51,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         })
         .sort((a, b) => a.timestamp - b.timestamp);
       setNoteMessages(loadedMessages);
+      setActiveSection(null);
     })();
   }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
