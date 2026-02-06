@@ -121,13 +121,13 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
 
   const modeConfig = {
     ai: {
-      placeholder: 'Ask a question about this topic...',
+      placeholder: 'Question...',
       buttonText: 'Discuss',
       emptyStateIcon: MessageCircle,
       emptyStateText: "Ask questions about this topic! I'll help explain concepts and provide additional insights.",
     },
     notes: {
-      placeholder: 'Write a note about this topic...',
+      placeholder: 'Note...',
       buttonText: 'Add Note',
       emptyStateIcon: Notebook,
       emptyStateText: 'Take notes about this topic. Your notes will be saved here for future reference.',
@@ -142,7 +142,7 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
   const modeMessages = mode === 'ai' ? aiMessages : noteMessages;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-lg bg-white border-l border-gray-300 shadow-lg z-50 flex flex-col overflow-hidden">
+    <div className="h-full bg-white border-l border-gray-300 shadow-lg flex flex-col overflow-hidden">
       <div className="p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">

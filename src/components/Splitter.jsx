@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Splitter({ onResize, minPosition = 0, maxPosition = Infinity }) {
+export default function Splitter({ onMove, onResized, minPosition = 0, maxPosition = Infinity }) {
   const isResizing = React.useRef(false);
 
   function handleMouseDown() {
@@ -10,16 +10,19 @@ export default function Splitter({ onResize, minPosition = 0, maxPosition = Infi
 
   React.useEffect(() => {
     function handleMouseMove(e) {
-      if (isResizing.current && onResize) {
-        const position = e.clientX;
-        const clampedPosition = Math.max(minPosition, Math.min(maxPosition, position));
-        onResize(clampedPosition);
+      if (isResizing.current && onMove) {
+        onMove(e.clientX);
       }
     }
 
-    function handleMouseUp() {
-      isResizing.current = false;
-      document.body.style.userSelect = '';
+    function handleMouseUp(e) {
+      if (isResizing.current && onResized) {
+        isResizing.current = false;
+        document.body.style.userSelect = '';
+        if (onResized) {
+          onResized(e.clientX);
+        }
+      }
     }
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -29,7 +32,7 @@ export default function Splitter({ onResize, minPosition = 0, maxPosition = Infi
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [onResize, minPosition, maxPosition]);
+  }, [minPosition, maxPosition]);
 
   return <div className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none" onMouseDown={handleMouseDown} />;
 }

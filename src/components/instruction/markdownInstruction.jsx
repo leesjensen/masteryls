@@ -3,12 +3,14 @@ import { MessageCircle } from 'lucide-react';
 import DiscussionPanel from '../../components/DiscussionPanel';
 import Markdown from '../../components/Markdown';
 import { scrollToAnchor } from '../../utils/utils';
+import Splitter from '../../components/Splitter.jsx';
 import '../markdown.css';
 
 export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [noteMessages, setNoteMessages] = useState([]);
+  const [discussWidth, setDiscussWidth] = useState(375);
   const [discussionOpen, setDiscussionOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const containerRef = React.useRef(null);
@@ -86,42 +88,56 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     return md;
   }
 
+  function discussResized(xPosition) {
+    setDiscussWidth(window.innerWidth - xPosition - 8);
+  }
+
+  function discussMoved(xPosition) {
+    setDiscussWidth(window.innerWidth - xPosition - 8);
+  }
+
   const onMakeHeadingActive =
     user && instructionState === 'learning'
-      ? (headingId, headingText) => {
+      ? (headingText) => {
           setDiscussionOpen(true);
           setActiveSection(headingText);
         }
       : null;
 
   return (
-    <div ref={containerRef} className="border-1 border-amber-200 rounded-sm m-2 flex w-full overflow-auto  ">
-      <div className="relative">
-        {user && instructionState === 'learning' && (
-          <button onClick={() => setDiscussionOpen(!discussionOpen)} className={`fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-8 flex items-center gap-2`} title="Discuss this topic">
-            <MessageCircle size={18} /> Discuss
-          </button>
-        )}
+    <div ref={containerRef} className="flex w-full overflow-auto  ">
+      {!discussionOpen && user && instructionState === 'learning' && (
+        <button onClick={() => setDiscussionOpen(!discussionOpen)} className="fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-4 flex items-center gap-2" title="Discuss this topic">
+          <MessageCircle size={18} /> Discuss
+        </button>
+      )}
 
-        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'} ${discussionOpen ? 'pr-[25rem]' : ''}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} noteMessages={noteMessages} onMakeHeadingActive={onMakeHeadingActive} /> : isLoading ? <p>Loading content...</p> : <p>No content available.</p>}</div>
+      <div className="flex-1 overflow-scroll">
+        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} noteMessages={noteMessages} onMakeHeadingActive={onMakeHeadingActive} /> : null}</div>
       </div>
 
-      {user && (
-        <DiscussionPanel
-          courseOps={courseOps}
-          learningSession={learningSession}
-          isOpen={discussionOpen}
-          onClose={() => {
-            setDiscussionOpen(false);
-            setActiveSection(null);
-          }}
-          topicTitle={learningSession.topic?.title || 'Current Topic'}
-          topicContent={markdown}
-          user={user}
-          noteMessages={noteMessages}
-          setNoteMessages={setNoteMessages}
-          section={activeSection}
-        />
+      {user && discussionOpen && (
+        <>
+          <Splitter onMove={discussMoved} onResized={discussResized} minPosition={150} maxPosition={window.innerWidth - 150} />
+          <div style={{ width: discussWidth }}>
+            <DiscussionPanel
+              style={{ width: discussWidth }}
+              courseOps={courseOps}
+              learningSession={learningSession}
+              isOpen={discussionOpen}
+              onClose={() => {
+                setDiscussionOpen(false);
+                setActiveSection(null);
+              }}
+              topicTitle={learningSession.topic?.title || 'Current Topic'}
+              topicContent={markdown}
+              user={user}
+              noteMessages={noteMessages}
+              setNoteMessages={setNoteMessages}
+              section={activeSection}
+            />
+          </div>
+        </>
       )}
     </div>
   );

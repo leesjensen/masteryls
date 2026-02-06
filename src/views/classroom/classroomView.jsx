@@ -5,10 +5,10 @@ import Instruction from '../../components/instruction/instruction.jsx';
 import Editor from '../../components/editor/editor.jsx';
 import Splitter from '../../components/Splitter.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
-import { useNavigate } from 'react-router-dom';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(settings.sidebarWidth || 300);
 
   React.useEffect(() => {
     if (learningSession.course) {
@@ -16,17 +16,13 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
     }
   }, [learningSession]);
 
-  function handleSplitterResize(newWidth) {
-    const minSidebarWidth = 150;
-    const maxSidebarWidth = Math.max(minSidebarWidth, window.innerWidth - minSidebarWidth);
+  function sidebarResized(xPosition) {
+    courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'split', sidebarWidth: xPosition });
+    setSidebarWidth(xPosition);
+  }
 
-    if (newWidth <= minSidebarWidth) {
-      courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'start' });
-    } else if (newWidth >= maxSidebarWidth) {
-      courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'end' });
-    } else {
-      courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'split', sidebarWidth: newWidth });
-    }
+  function sidebarMoved(xPosition) {
+    setSidebarWidth(xPosition);
   }
 
   function toggleEditor() {
@@ -52,11 +48,11 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
 
       <main className="flex flex-1 overflow-hidden">
         {settings.sidebarVisible !== 'start' && (
-          <div className={`flex overflow-auto`} style={settings.sidebarVisible === 'end' ? { width: '100%' } : { width: settings.sidebarWidth }}>
+          <div className={`flex overflow-auto`} style={settings.sidebarVisible === 'end' ? { width: '100%' } : { width: sidebarWidth }}>
             <Sidebar courseOps={courseOps} user={user} learningSession={learningSession} editorVisible={editorVisible} />
           </div>
         )}
-        {settings.sidebarVisible === 'split' && <Splitter onResize={handleSplitterResize} minPosition={150} maxPosition={window.innerWidth - 150} />}
+        {settings.sidebarVisible === 'split' && <Splitter onMove={sidebarMoved} onResized={sidebarResized} minPosition={150} maxPosition={window.innerWidth - 150} />}
         {settings.sidebarVisible !== 'end' && (
           <div id="content" className={`flex flex-1 h-full overflow-auto`}>
             {content}
