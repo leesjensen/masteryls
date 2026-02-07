@@ -189,7 +189,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
                 className={`cursor-pointer transition-colors ${existingNote ? 'text-yellow-500 fill-yellow-100' : 'text-gray-400 hover:text-yellow-300'}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  onMakeHeadingActive(headingId, headingText);
+                  onMakeHeadingActive(headingText);
                 }}
               />
             </span>
