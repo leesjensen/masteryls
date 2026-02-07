@@ -4,6 +4,7 @@ import DiscussionPanel from '../../components/DiscussionPanel';
 import Markdown from '../../components/Markdown';
 import { scrollToAnchor } from '../../utils/utils';
 import Splitter from '../../components/Splitter.jsx';
+import useMarkdownLocation from '../../hooks/useMarkdownLocation';
 import '../markdown.css';
 
 export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
@@ -14,8 +15,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [discussionOpen, setDiscussionOpen] = useState(false);
   const [activeSection, setActiveSection] = useState(null);
   const containerRef = React.useRef(null);
-
-  console.log('render');
+  const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
 
   useEffect(() => {
     if (content) {
@@ -59,18 +59,22 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     })();
   }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
+  // If there's an anchor, scroll to it and save that position
   useEffect(() => {
-    console.log('markdown updated, scrolling to top', containerRef.current);
     if (markdown) {
-      // Reset scroll to top of the scrollable container
       if (learningSession.topic.anchor) {
         scrollToAnchor(learningSession.topic.anchor, containerRef);
-      } else if (containerRef.current) {
-        console.log('scrolling to top of container');
-        containerRef.current.scrollTo({ top: 0, behavior: 'auto' });
+      } else {
+        // Restore saved scroll position for this topic (if any)
+        const wasRestored = restoreScrollPosition(learningSession.topic.id);
+        
+        // If no saved position, scroll to top
+        if (!wasRestored && containerRef.current) {
+          containerRef.current.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        }
       }
     }
-  }, [markdown]);
+  }, [markdown, learningSession.topic.id, learningSession.topic.anchor, restoreScrollPosition]);
 
   function load(content, path) {
     const md = processRelativeImagePaths(content, path);
