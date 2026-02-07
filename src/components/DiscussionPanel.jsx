@@ -68,21 +68,14 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
   };
 
   const handleSaveAsNote = (messageIndex) => {
-    let contentToSave = aiMessages[messageIndex];
+    let messageToSave = aiMessages[messageIndex];
+    messageToSave.state = 'saved';
     if (aiMessages.length >= 2) {
       const previousMessage = aiMessages[messageIndex - 1];
-      contentToSave = `**Your Question:**\n\n${previousMessage.content}\n\n---\n\n**AI Response:**\n\n${contentToSave.content}`;
+      messageToSave = `**Your Question:**\n\n${previousMessage.content}\n\n---\n\n**AI Response:**\n\n${messageToSave.content}`;
     }
 
-    handleUserNoteInput(contentToSave);
-
-    const confirmationMessage = {
-      type: 'info',
-      section: discussionContext.section,
-      content: 'This AI response has been saved as a note.',
-      timestamp: Date.now(),
-    };
-    setAIMessages((prev) => [...prev, confirmationMessage]);
+    handleUserNoteInput(messageToSave);
   };
 
   const handleSubmit = async (e) => {
@@ -253,9 +246,10 @@ function MessageBox({ message, handleSaveAsNote }) {
 
   let saveAIResponse = null;
   if (type === 'model') {
+    const messageSaved = message.state === 'saved';
     saveAIResponse = (
-      <button className="mt-2 px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors" onClick={handleSaveAsNote}>
-        Save as Note
+      <button disabled={messageSaved} className="mt-2 px-2 py-1 disabled:bg-gray-300 bg-amber-500 hover:bg-amber-600 text-white text-xs rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors" onClick={handleSaveAsNote}>
+        {messageSaved ? 'Saved' : 'Save as Note'}
       </button>
     );
   }
