@@ -4,8 +4,7 @@ import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Tabs from '../components/Tabs';
 import Markdown from './Markdown';
 
-export default function DiscussionPanel({ courseOps, onClose, noteMessages, setNoteMessages, discussionContext, setDiscussionContext }) {
-  const [aiMessages, setAIMessages] = useState([]);
+export default function DiscussionPanel({ courseOps, onClose, noteMessages, setNoteMessages, aiMessages, setAIMessages, discussionContext, setDiscussionContext }) {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesContainerRef = useRef(null);

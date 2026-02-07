@@ -11,6 +11,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [noteMessages, setNoteMessages] = useState([]);
+  const [aiMessages, setAIMessages] = useState([]);
   const [discussWidth, setDiscussWidth] = useState(375);
   const [discussionOpen, setDiscussionOpen] = useState(false);
   const [discussionContext, setDiscussionContext] = useState({ topicTitle: learningSession.topic?.title || '', topicContent: content, section: null, mode: 'ai' });
@@ -142,6 +143,8 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
               user={user}
               noteMessages={noteMessages}
               setNoteMessages={setNoteMessages}
+              aiMessages={aiMessages}
+              setAIMessages={setAIMessages}
               discussionContext={discussionContext}
               setDiscussionContext={setDiscussionContext}
             />
