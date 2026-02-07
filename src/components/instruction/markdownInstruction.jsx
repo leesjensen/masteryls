@@ -114,7 +114,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   return (
     <div className="flex w-full overflow-auto  ">
       {!discussionOpen && user && instructionState === 'learning' && (
-        <button onClick={() => setDiscussionOpen(!discussionOpen)} className="fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-4 flex items-center gap-2" title="Discuss this topic">
+        <button onClick={() => setDiscussionOpen(!discussionOpen)} className="fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6 flex items-center gap-2" title="Discuss this topic">
           <MessageCircle size={18} /> Discuss
         </button>
       )}
