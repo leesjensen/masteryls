@@ -15,33 +15,50 @@ export default function useMarkdownLocation(topicId, containerRef) {
     const container = containerRef.current;
     if (!container || !topicId) return;
 
+    let scrollTimeout;
+
     const handleScroll = () => {
       if (isRestoringRef.current) return;
 
-      console.log('scrolling, saving position for topic', topicId, {
-        x: container.scrollLeft,
-        y: container.scrollTop,
-      });
-      scrollPositions.current[topicId] = {
-        x: container.scrollLeft,
-        y: container.scrollTop,
-      };
+      // Clear existing timeout
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+
+      // Set new timeout to save position after user stops scrolling
+      scrollTimeout = setTimeout(() => {
+        console.log('scrolling, saving position for topic', topicId, {
+          x: container.scrollLeft,
+          y: container.scrollTop,
+        });
+        scrollPositions.current[topicId] = {
+          x: container.scrollLeft,
+          y: container.scrollTop,
+        };
+      }, 1000);
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
     };
   }, [containerRef, topicId]);
 
   // Function to restore scroll position when window is ready
   const restoreScrollPosition = (currentTopicId) => {
+    console.log('restoreScrollPosition called for topic', currentTopicId);
+
     if (!containerRef.current || !currentTopicId) return false;
 
     const savedPosition = scrollPositions.current[currentTopicId];
 
     if (savedPosition) {
+      console.log('restoring scroll position for topic', currentTopicId, savedPosition);
+
       isRestoringRef.current = true;
 
       requestAnimationFrame(() => {
