@@ -56,7 +56,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         })
         .sort((a, b) => a.timestamp - b.timestamp);
       setNoteMessages(loadedMessages);
-      setDiscussionContext((prev) => ({ ...prev, section: null }));
+      setDiscussionContext((prev) => ({ ...prev, topicTitle: learningSession.topic.title, topicContent: content, section: null }));
     })();
   }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
