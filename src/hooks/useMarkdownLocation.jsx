@@ -1,30 +1,15 @@
 import { useEffect, useRef } from 'react';
 
+// Global storage for scroll positions across all topics (persists across component unmounts)
+const globalScrollPositions = {};
+
 /**
  * Hook to track and restore scroll position for markdown content during the current session
  * @param {string} topicId - Unique identifier for the topic/content
  * @param {React.RefObject} containerRef - Reference to the scrollable container
  */
 export default function useMarkdownLocation(topicId, containerRef) {
-  // Store scroll positions for all topics in a single ref (persists across renders)
-  const scrollPositions = useRef({});
   const isRestoringRef = useRef(false);
-  const resizeObserverRef = useRef(null);
-  const pendingScrollRef = useRef(null);
-  const restoringTopicIdRef = useRef(null);
-
-  // Clean up any pending restoration when topic changes
-  useEffect(() => {
-    // Cancel any pending restoration from previous topic
-    if (resizeObserverRef.current) {
-      console.log('Topic changed, canceling previous restoration');
-      resizeObserverRef.current.disconnect();
-      resizeObserverRef.current = null;
-      pendingScrollRef.current = null;
-      restoringTopicIdRef.current = null;
-      isRestoringRef.current = false;
-    }
-  }, [topicId]);
 
   // Track scroll position as user scrolls
   useEffect(() => {
@@ -36,15 +21,13 @@ export default function useMarkdownLocation(topicId, containerRef) {
     const handleScroll = () => {
       if (isRestoringRef.current) return;
 
-      // Clear existing timeout
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
 
       // Set new timeout to save position after user stops scrolling
       scrollTimeout = setTimeout(() => {
-        console.log('scrolling, saving position for topic', topicId, container.scrollTop);
-        scrollPositions.current[topicId] = container.scrollTop;
+        globalScrollPositions[topicId] = container.scrollTop;
       }, 1000);
     };
 
@@ -58,113 +41,49 @@ export default function useMarkdownLocation(topicId, containerRef) {
     };
   }, [containerRef, topicId]);
 
-  // Function to restore scroll position when window is ready
+  // Function to restore scroll position when content is stable
   const restoreScrollPosition = (currentTopicId) => {
-    console.log('restoreScrollPosition called for topic', currentTopicId);
-
     if (!containerRef.current || !currentTopicId) return false;
 
-    const savedPosition = scrollPositions.current[currentTopicId];
+    const savedPosition = globalScrollPositions[currentTopicId];
 
-    if (savedPosition) {
-      console.log('restoring scroll position for topic', currentTopicId, savedPosition);
-
+    if (savedPosition !== undefined) {
       isRestoringRef.current = true;
-      pendingScrollRef.current = savedPosition;
-      restoringTopicIdRef.current = currentTopicId;
+      let attempts = 0;
+      const maxAttempts = 20;
 
-      // Apply scroll immediately
-      const applyScroll = () => {
-        // Only apply if we're still on the same topic
-        if (restoringTopicIdRef.current !== currentTopicId || !containerRef.current || pendingScrollRef.current === null) {
+      const tryScroll = () => {
+        if (!containerRef.current) {
+          isRestoringRef.current = false;
           return;
         }
 
-        console.log('applying scroll', savedPosition);
-        containerRef.current.scrollTo({
-          top: pendingScrollRef.current,
+        const container = containerRef.current;
+        container.scrollTo({
+          top: savedPosition,
           behavior: 'auto',
         });
+
+        attempts++;
+        const actualPosition = container.scrollTop;
+        const isClose = Math.abs(actualPosition - savedPosition) < 5;
+
+        // If we're close enough or hit max attempts, stop
+        if (isClose || attempts >= maxAttempts) {
+          isRestoringRef.current = false;
+        } else {
+          // Content might not be fully loaded, try again
+          setTimeout(tryScroll, 100);
+        }
       };
 
-      requestAnimationFrame(applyScroll);
+      requestAnimationFrame(tryScroll);
 
-      // Set up ResizeObserver to re-apply scroll as content loads
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
-
-      let resizeCount = 0;
-      const maxResizes = 30; // Allow more resizes for slow-loading images
-      let stabilizeTimeout;
-
-      resizeObserverRef.current = new ResizeObserver(() => {
-        // Only continue if we're still on the same topic
-        if (restoringTopicIdRef.current !== currentTopicId) {
-          console.log('Topic changed during restoration, aborting');
-          if (resizeObserverRef.current) {
-            resizeObserverRef.current.disconnect();
-            resizeObserverRef.current = null;
-          }
-          pendingScrollRef.current = null;
-          isRestoringRef.current = false;
-          return;
-        }
-
-        resizeCount++;
-        console.log(`Content resized (${resizeCount}), re-applying scroll position`);
-
-        // Re-apply the scroll position
-        applyScroll();
-
-        // Clear previous timeout
-        if (stabilizeTimeout) {
-          clearTimeout(stabilizeTimeout);
-        }
-
-        // Stop observing after content stabilizes (no resize for 300ms) or max resizes reached
-        stabilizeTimeout = setTimeout(() => {
-          console.log('stabilized', containerRef.current.scrollTop);
-          // Final check: only cleanup if still on same topic
-          if (restoringTopicIdRef.current === currentTopicId && resizeObserverRef.current) {
-            console.log('Content stabilized, stopping resize observation');
-            resizeObserverRef.current.disconnect();
-            resizeObserverRef.current = null;
-            pendingScrollRef.current = null;
-            restoringTopicIdRef.current = null;
-            isRestoringRef.current = false;
-          }
-        }, 300);
-
-        if (resizeCount >= maxResizes) {
-          console.log('Max resizes reached, stopping observation');
-          if (resizeObserverRef.current) {
-            resizeObserverRef.current.disconnect();
-            resizeObserverRef.current = null;
-          }
-          pendingScrollRef.current = null;
-          restoringTopicIdRef.current = null;
-          isRestoringRef.current = false;
-        }
-      });
-
-      // Observe the container for size changes
-      resizeObserverRef.current.observe(containerRef.current);
-
-      return true; // Position was restored
+      return true;
     }
 
-    return false; // No saved position
+    return false;
   };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
-    };
-  }, []);
 
   return restoreScrollPosition;
 }
