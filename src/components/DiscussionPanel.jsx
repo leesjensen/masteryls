@@ -8,16 +8,19 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
   const [aiMessages, setAIMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
-  const scrollToBottom = (behavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  };
 
+  // scroll to the end of the messages and put the focus on the input
   useEffect(() => {
-    scrollToBottom();
+    if (messagesContainerRef.current) {
+      setTimeout(() => {
+        console.log('Scrolling to bottom', messagesContainerRef.current.scrollHeight);
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }, 100);
+    }
     inputRef.current?.focus();
-  }, [aiMessages, noteMessages]);
+  }, [discussionContext.mode]);
 
   const handleUserNoteInput = (userMessage) => {
     const notePayload = {
@@ -147,7 +150,7 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
         </div>
         <Tabs tabs={tabs} activeTab={discussionContext.mode} onChange={toggleMode} />
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {modeMessages.length === 0 && (
           <div className="text-center text-gray-500 py-8">
             <div className="mb-2 flex justify-center">{React.createElement(modeConfig.emptyStateIcon, { size: 48, strokeWidth: 1.5 })}</div>
@@ -170,8 +173,6 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
             </div>
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-gray-50">
         <div className="flex space-x-2">
