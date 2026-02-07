@@ -13,7 +13,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [noteMessages, setNoteMessages] = useState([]);
   const [discussWidth, setDiscussWidth] = useState(375);
   const [discussionOpen, setDiscussionOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState(null);
+  const [discussionContext, setDiscussionContext] = useState({ topicTitle: learningSession.topic?.title || '', topicContent: content, section: null, mode: 'ai' });
   const containerRef = React.useRef(null);
   const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
 
@@ -55,7 +55,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         })
         .sort((a, b) => a.timestamp - b.timestamp);
       setNoteMessages(loadedMessages);
-      setActiveSection(null);
+      setDiscussionContext((prev) => ({ ...prev, section: null }));
     })();
   }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
@@ -103,18 +103,22 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     setDiscussWidth(window.innerWidth - xPosition - 8);
   }
 
-  const onMakeHeadingActive =
-    user && instructionState === 'learning'
-      ? (headingText) => {
-          setDiscussionOpen(true);
-          setActiveSection(headingText);
-        }
-      : null;
+  function onMakeHeadingActive(headingText) {
+    if (user && instructionState === 'learning') {
+      setDiscussionOpen(true);
+      setDiscussionContext((prev) => ({ ...prev, section: headingText, mode: 'notes' }));
+    }
+    return null;
+  }
+
+  function onOpenDiscussion() {
+    setDiscussionOpen(true);
+  }
 
   return (
     <div className="flex w-full overflow-auto  ">
       {!discussionOpen && user && instructionState === 'learning' && (
-        <button onClick={() => setDiscussionOpen(!discussionOpen)} className="fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6 flex items-center gap-2" title="Discuss this topic">
+        <button onClick={onOpenDiscussion} className="fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6 flex items-center gap-2" title="Discuss this topic">
           <MessageCircle size={18} /> Discuss
         </button>
       )}
@@ -134,14 +138,12 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
               isOpen={discussionOpen}
               onClose={() => {
                 setDiscussionOpen(false);
-                setActiveSection(null);
               }}
-              topicTitle={learningSession.topic?.title || 'Current Topic'}
-              topicContent={markdown}
               user={user}
               noteMessages={noteMessages}
               setNoteMessages={setNoteMessages}
-              section={activeSection}
+              discussionContext={discussionContext}
+              setDiscussionContext={setDiscussionContext}
             />
           </div>
         </>

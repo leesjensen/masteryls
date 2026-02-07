@@ -4,11 +4,10 @@ import { aiDiscussionResponseGenerator } from '../ai/aiContentGenerator';
 import Tabs from '../components/Tabs';
 import Markdown from './Markdown';
 
-export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle, topicContent, noteMessages, setNoteMessages, section = null }) {
+export default function DiscussionPanel({ courseOps, onClose, noteMessages, setNoteMessages, discussionContext, setDiscussionContext }) {
   const [aiMessages, setAIMessages] = useState([]);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [mode, setMode] = useState('ai'); // 'ai' or 'notes'
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const scrollToBottom = (behavior = 'smooth') => {
@@ -20,16 +19,10 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
     inputRef.current?.focus();
   }, [aiMessages, noteMessages]);
 
-  useEffect(() => {
-    if (isOpen) {
-      inputRef.current?.focus();
-    }
-  }, [isOpen]);
-
   const handleUserNoteInput = (userMessage) => {
     const notePayload = {
       type: 'note',
-      section,
+      section: discussionContext.section,
       content: userMessage,
       timestamp: Date.now(),
     };
@@ -38,28 +31,28 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
     // Add a progress record for this note
     const dataToSave = {
       type: 'note',
-      section,
+      section: discussionContext.section,
       content: userMessage,
     };
     courseOps.addProgress(null, null, 'note', 0, dataToSave);
   };
 
   const handleAIQueryInput = async (userMessage) => {
-    const newMessage = { type: 'user', section, content: userMessage, timestamp: Date.now() };
+    const newMessage = { type: 'user', section: discussionContext.section, content: userMessage, timestamp: Date.now() };
     setAIMessages((prev) => [...prev, newMessage]);
     setIsLoading(true);
 
     let type = 'model';
     let content;
     try {
-      content = await aiDiscussionResponseGenerator(topicTitle, topicContent, [...aiMessages, newMessage]);
+      content = await aiDiscussionResponseGenerator(discussionContext.topicTitle, discussionContext.topicContent, [...aiMessages, newMessage]);
     } catch (error) {
       type = 'error';
       content = `Sorry, I encountered an error: ${error.message}`;
     } finally {
       const aiMessage = {
         type,
-        section,
+        section: discussionContext.section,
         content,
         timestamp: Date.now(),
       };
@@ -80,7 +73,7 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
 
     const confirmationMessage = {
       type: 'info',
-      section,
+      section: discussionContext.section,
       content: 'This AI response has been saved as a note.',
       timestamp: Date.now(),
     };
@@ -99,15 +92,15 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
       inputRef.current.style.height = 'auto';
     }
 
-    if (mode === 'notes') {
+    if (discussionContext.mode === 'notes') {
       handleUserNoteInput(userMessage);
-    } else if (mode === 'ai') {
+    } else if (discussionContext.mode === 'ai') {
       handleAIQueryInput(userMessage);
     }
   };
 
   const toggleMode = (newMode) => {
-    setMode(newMode);
+    setDiscussionContext((prev) => ({ ...prev, mode: newMode }));
     inputRef.current?.focus();
   };
 
@@ -115,9 +108,7 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
     setAIMessages([]);
   };
 
-  if (!isOpen) return null;
-
-  const fullTopicTitle = section ? `${topicTitle} - ${section}` : topicTitle;
+  const fullTopicTitle = discussionContext.section ? `${discussionContext.topicTitle} - ${discussionContext.section}` : discussionContext.topicTitle;
 
   const modeConfig = {
     ai: {
@@ -132,14 +123,14 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
       emptyStateIcon: Notebook,
       emptyStateText: 'Take notes about this topic. Your notes will be saved here for future reference.',
     },
-  }[mode];
+  }[discussionContext.mode];
 
   const tabs = [
     { id: 'ai', label: 'Discuss', icon: MessageCircle, visible: true },
     { id: 'notes', label: 'Notes', icon: StickyNote, visible: true },
   ];
 
-  const modeMessages = mode === 'ai' ? aiMessages : noteMessages;
+  const modeMessages = discussionContext.mode === 'ai' ? aiMessages : noteMessages;
 
   return (
     <div className="h-full bg-white border-l border-gray-300 shadow-lg flex flex-col overflow-hidden">
@@ -154,7 +145,7 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
             <X size={16} />
           </button>
         </div>
-        <Tabs tabs={tabs} activeTab={mode} onChange={toggleMode} />
+        <Tabs tabs={tabs} activeTab={discussionContext.mode} onChange={toggleMode} />
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {modeMessages.length === 0 && (
@@ -207,10 +198,10 @@ export default function DiscussionPanel({ courseOps, isOpen, onClose, topicTitle
           />
           <div className="relative">
             <div className="flex">
-              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
+              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${discussionContext.mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
                 {modeConfig.buttonText}
               </button>
-              {mode === 'ai' && (
+              {discussionContext.mode === 'ai' && (
                 <button disabled={!aiMessages || aiMessages.length === 0} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={clearConversation} title="Clear discussion">
                   <MessageCircleOff size={24} />
                 </button>
