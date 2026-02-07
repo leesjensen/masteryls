@@ -62,14 +62,14 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   // If there's an anchor, scroll to it and save that position
   useEffect(() => {
     if (markdown) {
-      console.log('Markdown content loaded, checking for anchor or saved position');
+      console.info('%cMarkdown content loaded ' + learningSession.topic.id, 'color: blue');
       if (learningSession.topic) {
         if (learningSession.topic.anchor) {
           scrollToAnchor(learningSession.topic.anchor, containerRef);
         } else {
           // Restore saved scroll position for this topic (if any)
           const wasRestored = restoreScrollPosition(learningSession.topic.id);
-          console.log('Scroll position restore attempted:', wasRestored);
+          console.log('%cScroll position restore attempted:', 'color: green', wasRestored);
           // If no saved position, scroll to top
           if (!wasRestored && containerRef.current) {
             containerRef.current.scrollTo({ top: 0, left: 0, behavior: 'auto' });
