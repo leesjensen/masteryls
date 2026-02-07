@@ -15,8 +15,10 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
   useEffect(() => {
     if (messagesContainerRef.current) {
       setTimeout(() => {
-        console.log('Scrolling to bottom', messagesContainerRef.current.scrollHeight);
-        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        messagesContainerRef.current.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
       }, 100);
     }
     inputRef.current?.focus();
