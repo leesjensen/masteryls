@@ -15,6 +15,8 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [activeSection, setActiveSection] = useState(null);
   const containerRef = React.useRef(null);
 
+  console.log('render');
+
   useEffect(() => {
     if (content) {
       load(content, learningSession.topic.path);
@@ -58,11 +60,13 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
   useEffect(() => {
+    console.log('markdown updated, scrolling to top', containerRef.current);
     if (markdown) {
       // Reset scroll to top of the scrollable container
       if (learningSession.topic.anchor) {
         scrollToAnchor(learningSession.topic.anchor, containerRef);
       } else if (containerRef.current) {
+        console.log('scrolling to top of container');
         containerRef.current.scrollTo({ top: 0, behavior: 'auto' });
       }
     }
@@ -105,14 +109,14 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
       : null;
 
   return (
-    <div ref={containerRef} className="flex w-full overflow-auto  ">
+    <div className="flex w-full overflow-auto  ">
       {!discussionOpen && user && instructionState === 'learning' && (
         <button onClick={() => setDiscussionOpen(!discussionOpen)} className="fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-4 flex items-center gap-2" title="Discuss this topic">
           <MessageCircle size={18} /> Discuss
         </button>
       )}
 
-      <div className="flex-1 overflow-scroll">
+      <div ref={containerRef} className="flex-1 overflow-scroll">
         <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} noteMessages={noteMessages} onMakeHeadingActive={onMakeHeadingActive} /> : null}</div>
       </div>
 
