@@ -37,7 +37,17 @@ export function AppBar({ user, courseOps }) {
     if (user) {
       if (location.pathname.startsWith('/course/')) path = '/dashboard';
     }
-    return <img src="/favicon.png" alt="MasteryLS logo" className=" w-[20px] h-[20px] cursor-pointer" onClick={() => navigate(path)} />;
+    return (
+      <img
+        src="/favicon.png"
+        alt="MasteryLS logo"
+        className=" w-[20px] h-[20px] cursor-pointer"
+        onClick={() => {
+          courseOps.setCurrentCourse(null);
+          navigate(path);
+        }}
+      />
+    );
   }
 
   return (
