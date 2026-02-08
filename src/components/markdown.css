@@ -16,6 +16,10 @@
   font-family: 'Fira Code', 'Courier New', Courier, monospace;
 }
 
+.markdown-body div[data-plugin-masteryls-root] {
+  font-family: 'Quicksand', sans-serif;
+}
+
 /* GitHub-style alert styling */
 .markdown-alert {
   padding: 0.5rem 1rem;
