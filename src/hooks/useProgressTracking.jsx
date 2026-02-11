@@ -20,7 +20,7 @@ import { useEffect, useRef } from 'react';
  *   pauseTracking,
  *   resumeTracking
  * } = useProgressTracking({
- *   progressType: 'videoView',
+ *   progressType: 'embeddedView',
  *   onProgress: recordVideoProgress,
  *   minDuration: 10
  * });
@@ -36,7 +36,7 @@ import { useEffect, useRef } from 'react';
  * };
  *
  * @param {Object} options - Configuration options
- * @param {string} options.progressType - Type of progress being tracked (e.g., 'instructionView', 'videoView', 'quizAttempt', 'exam')
+ * @param {string} options.progressType - Type of progress being tracked (e.g., 'instructionView', 'embeddedView', 'quizAttempt', 'exam')
  * @param {Function} options.onProgress - Function to call when recording progress (interactionId, type, duration) => void
  * @param {boolean} options.enabled - Whether tracking is enabled (default: true)
  * @param {number} options.minDuration - Minimum duration in seconds before recording (default: 1)

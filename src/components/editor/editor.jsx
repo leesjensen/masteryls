@@ -2,7 +2,7 @@ import React from 'react';
 import Instruction from '../instruction/instruction.jsx';
 import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
-import VideoInstruction from '../instruction/videoInstruction.jsx';
+import EmbeddedInstruction from '../instruction/embeddedInstruction.jsx';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
 
@@ -24,7 +24,7 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   React.useEffect(() => {
     if (contentAvailable) {
-      if (learningSession.topic?.type === 'video') {
+      if (learningSession.topic?.type === 'embedded' || learningSession.topic?.type === 'video') {
         setContent(learningSession.topic.path || '');
       } else {
         courseOps.getTopic(learningSession.topic).then((markdown) => {
@@ -52,7 +52,7 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   async function discard() {
     let content = '';
-    if (learningSession.topic?.type === 'video') {
+    if (learningSession.topic?.type === 'embedded' || learningSession.topic?.type === 'video') {
       content = learningSession.topic.path || '';
     } else {
       content = await courseOps.getTopic(learningSession.topic);
@@ -86,7 +86,7 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   function getEditor() {
     let editor = null;
-    if (learningSession.topic?.type !== 'video') {
+    if (learningSession.topic?.type !== 'embedded' && learningSession.topic?.type !== 'video') {
       editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} />;
       if (editorState === 'preview') {
         editor = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={editorState} />;
@@ -97,6 +97,7 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   const editorComponent = (type) => {
     switch (type) {
+      case 'embedded':
       case 'video':
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
@@ -120,7 +121,7 @@ export default function Editor({ courseOps, user, learningSession }) {
                 </div>
               </div>
             </div>
-            <VideoInstruction learningSession={{ ...learningSession, topic: { ...learningSession.topic, path: content } }} />
+            <EmbeddedInstruction learningSession={{ ...learningSession, topic: { ...learningSession.topic, path: content } }} />
           </div>
         );
       default:

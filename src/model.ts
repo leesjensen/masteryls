@@ -59,7 +59,7 @@ export type Topic = {
   id: string;
   title: string;
   path: string;
-  type: 'instruction' | 'exam' | 'project' | 'video';
+  type: 'instruction' | 'exam' | 'project' | 'embedded';
 };
 
 export type Progress = {

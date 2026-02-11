@@ -1,8 +1,10 @@
 import React from 'react';
-import { Video, BookCheck, ClipboardCheck, File } from 'lucide-react';
+import { Video, Images, BookCheck, ClipboardCheck, File } from 'lucide-react';
 
 export function TopicIcon({ type }) {
   switch (type) {
+    case 'embedded':
+      return <Images size={16} className="text-gray-600" />;
     case 'video':
       return <Video size={16} className="text-gray-600" />;
     case 'exam':

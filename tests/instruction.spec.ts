@@ -56,14 +56,14 @@ test('instruction types all', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute('src', 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/path/relative.svg');
 });
 
-test('video', async ({ page }) => {
+test('embedded', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourse(page);
 
   await page.getByRole('button', { name: '▶ Module 2' }).click();
   await page.getByText('topic 3').click();
 
-  await expect(page.locator('iframe[title="YouTube video player"]')).toBeVisible();
+  await expect(page.locator('iframe[title="Embedded content"]')).toBeVisible();
 });
 
 test('exam', async ({ page }) => {

@@ -22,11 +22,11 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
         <input type="text" placeholder="Topic title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" autoFocus disabled={isLoading} />
         <select value={newType} onChange={(e) => setNewType(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isLoading}>
           <option value="instruction">Instruction</option>
-          <option value="video">Video</option>
+          <option value="embedded">Embedded</option>
           <option value="exam">Exam</option>
           <option value="project">Project</option>
         </select>
-        <textarea placeholder={newType === 'video' ? 'YouTube URL' : 'Description'} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" rows={3} disabled={isLoading} />
+        <textarea placeholder={newType === 'embedded' ? 'Embedded URL' : 'Description'} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" rows={3} disabled={isLoading} />
         <div className="flex gap-2">
           <button onClick={() => onSubmit(newTitle, newDescription, newType)} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1" disabled={!newTitle.trim() || isLoading}>
             {isLoading && <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>}

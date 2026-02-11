@@ -370,7 +370,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function getTopic(topic, commit = null) {
-    if (!topic || topic?.type === 'video') return '';
+    if (!topic || topic?.type === 'video' || topic?.type === 'embedded') return '';
 
     if (!commit && topic.commit) {
       commit = topic.commit;
@@ -406,7 +406,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     let updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
 
-    if (updatedTopic.type === 'video') {
+    if (updatedTopic.type === 'video' || updatedTopic.type === 'embedded') {
       updatedTopic.path = content;
     } else {
       updatedTopic.interactions = _extractInteractionIds(content);
@@ -540,6 +540,7 @@ ${topicDescription || 'overview content placeholder'}`;
 
     switch (topic.type) {
       case 'video':
+      case 'embedded':
         return null;
       case 'exam':
         if (topicDescription && topicDescription.trim().length > 0) {
@@ -616,7 +617,7 @@ ${topicDescription || 'overview content placeholder'}`;
     if (!enrollment || !topic) return;
 
     var update = false;
-    if (type === 'instructionView' || type === 'videoView' || type === 'quizSubmit') {
+    if (type === 'instructionView' || type === 'embeddedView' || type === 'quizSubmit') {
       update = _createProgressEntry(enrollment, topic.id);
 
       if (type === 'quizSubmit' && interactionId && (!enrollment.progress[topic.id].interactions || !enrollment.progress[topic.id].interactions.includes(interactionId))) {
@@ -822,12 +823,8 @@ ${topicDescription || 'overview content placeholder'}`;
 
   async function updateCanvasPage(course, topic, canvasCourseId) {
     let html = '';
-    if (topic.type === 'video') {
-      const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-      const match = topic.path.match(regExp);
-      if (match) {
-        html = `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="https://www.youtube.com/embed/${match[1]}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
-      }
+    if (topic.type === 'video' || topic.type === 'embedded') {
+      html = `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="${topic.path}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
     } else {
       let md = await getTopic(topic);
       // Canvas inserts its own title header, so remove any top-level headers from the markdown
@@ -893,8 +890,8 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   function _generateTopicPath(course, topicTitle, topicDescription, topicType) {
-    if (topicType === 'video') {
-      return topicDescription || `https://youtu.be/HXNx_Gp0jyM`;
+    if (topicType === 'embedded') {
+      return topicDescription || `https://www.youtube.com/embed/HXNx_Gp0jyM`;
     }
 
     const slugTitle = topicTitle

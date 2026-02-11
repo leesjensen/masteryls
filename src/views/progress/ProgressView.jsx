@@ -280,7 +280,7 @@ export default function ProgressView({ courseOps, service, user }) {
   const getinteractionTypeColor = (type) => {
     const colors = {
       instructionView: 'bg-blue-100 text-blue-800',
-      videoView: 'bg-purple-100 text-purple-800',
+      embeddedView: 'bg-purple-100 text-purple-800',
       quizSubmit: 'bg-green-100 text-green-800',
       exam: 'bg-amber-300 text-amber-800',
       userLogout: 'bg-gray-400 text-gray-50',
@@ -322,7 +322,7 @@ export default function ProgressView({ courseOps, service, user }) {
                   <select value={filter.type} onChange={(e) => handleFilterChange('type', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="[]">All Types</option>
                     <option value='["instructionView"]'>Instruction View</option>
-                    <option value='["videoView"]'>Video View</option>
+                    <option value='["embeddedView"]'>Embedded View</option>
                     <option value='["quizSubmit"]'>Quiz Submit</option>
                     <option value='["exam"]'>Exam</option>
                     <option value='["note"]'>Note</option>

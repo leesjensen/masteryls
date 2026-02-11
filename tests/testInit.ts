@@ -76,7 +76,7 @@ const courseJson = {
       title: 'Module 2',
       topics: [
         { id: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b', title: 'topic 2', path: 'something/more/topic2.md' },
-        { id: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c', title: 'topic 3', type: 'video', path: 'https://youtu.be/4-LwodVujTg' },
+        { id: '6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c', title: 'topic 3', type: 'embedded', path: 'https://www.youtube.com/embed/HXNx_Gp0jyM' },
       ],
     },
   ],

@@ -1,5 +1,5 @@
 import React from 'react';
-import VideoInstruction from './videoInstruction';
+import EmbeddedInstruction from './embeddedInstruction';
 import ExamInstruction from './examInstruction';
 import InteractionInstruction from './interaction/interactionInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
@@ -36,8 +36,9 @@ export default function Instruction({ courseOps, learningSession, user, content 
 
   let instructionComponent;
   switch (learningSession.topic.type) {
+    case 'embedded':
     case 'video':
-      instructionComponent = <VideoInstruction learningSession={learningSession} courseOps={courseOps} />;
+      instructionComponent = <EmbeddedInstruction learningSession={learningSession} />;
       break;
     case 'exam':
       instructionComponent = <ExamInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
