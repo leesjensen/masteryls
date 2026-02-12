@@ -364,7 +364,6 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
   await context.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
-        console.log('Enrollment POST called');
         await route.fulfill({
           status: 201,
           json: {
