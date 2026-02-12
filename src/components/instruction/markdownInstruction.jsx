@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MessageCircle } from 'lucide-react';
-import DiscussionPanel from '../../components/DiscussionPanel';
+import DiscussionPanel from '../discussion/DiscussionPanel.jsx';
 import Markdown from '../../components/Markdown';
 import { scrollToAnchor } from '../../utils/utils';
 import Splitter from '../../components/Splitter.jsx';
