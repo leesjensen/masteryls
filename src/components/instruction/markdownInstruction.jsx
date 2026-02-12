@@ -116,6 +116,12 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     setDiscussionOpen(true);
   }
 
+  let markdownComponent = null;
+  if (markdown) {
+    const headingAction = user && instructionState === 'learning' ? onMakeHeadingActive : null;
+    markdownComponent = <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} noteMessages={noteMessages} onMakeHeadingActive={headingAction} />;
+  }
+
   return (
     <div className="flex w-full overflow-auto  ">
       {!discussionOpen && user && instructionState === 'learning' && (
@@ -125,7 +131,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
       )}
 
       <div ref={containerRef} className="flex-1 overflow-scroll">
-        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdown ? <Markdown learningSession={learningSession} content={markdown} languagePlugins={languagePlugins} noteMessages={noteMessages} onMakeHeadingActive={onMakeHeadingActive} /> : null}</div>
+        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
       </div>
 
       {user && discussionOpen && (
