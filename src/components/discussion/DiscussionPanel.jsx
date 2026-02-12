@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StickyNote, MessageCircleOff, X, MessageCircle, Notebook } from 'lucide-react';
+import { StickyNote, MessageCircleOff, X, MessageCircle, Notebook, XCircle } from 'lucide-react';
 import { aiDiscussionResponseGenerator } from '../../ai/aiContentGenerator';
 import Tabs from '../Tabs';
 import MessageBox from './MessageBox';
@@ -105,8 +105,6 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
     setAIMessages([]);
   };
 
-  const fullTopicTitle = discussionContext.section ? `${discussionContext.topicTitle} - ${discussionContext.section}` : discussionContext.topicTitle;
-
   const modeConfig = {
     ai: {
       placeholder: 'Question...',
@@ -128,14 +126,16 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
   ];
 
   const modeMessages = discussionContext.mode === 'ai' ? aiMessages : noteMessages;
+  const filteredMessages = discussionContext.section ? modeMessages.filter((message) => message.section === discussionContext.section) : modeMessages;
+  const filteredDescription = `${discussionContext.mode === 'ai' ? 'Relevant to' : 'Filtered by'}: ${discussionContext.section}`;
 
   return (
     <div className="h-full bg-white border-l border-gray-300 shadow-lg flex flex-col overflow-hidden">
       <div className="p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-800 truncate" title={fullTopicTitle}>
-              {fullTopicTitle}
+            <h3 className="font-semibold text-gray-800 truncate" title={discussionContext.topicTitle}>
+              {discussionContext.topicTitle}
             </h3>
           </div>
           <button className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm transition-all duration-200 ease-in-out cursor-pointer" onClick={onClose} title="Close discussion">
@@ -143,17 +143,25 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
           </button>
         </div>
         <Tabs tabs={tabs} activeTab={discussionContext.mode} onChange={toggleMode} />
+        {discussionContext.section && (
+          <div className="mt-2 flex items-center gap-2 text-xs bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            <span className="text-amber-700 flex-1 truncate">{filteredDescription}</span>
+            <button className="text-amber-600 hover:text-amber-800 transition-colors" onClick={() => setDiscussionContext((prev) => ({ ...prev, section: null }))} title="Clear filter">
+              <XCircle size={14} />
+            </button>
+          </div>
+        )}
       </div>
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
-        {modeMessages.length === 0 && (
+        {filteredMessages.length === 0 && (
           <div className="text-center text-gray-500 py-8">
             <div className="mb-2 flex justify-center">{React.createElement(modeConfig.emptyStateIcon, { size: 48, strokeWidth: 1.5 })}</div>
             <p className="text-sm px-4">{modeConfig.emptyStateText}</p>
           </div>
         )}
 
-        {modeMessages.map((message, i) => (
-          <MessageBox key={message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} />
+        {filteredMessages.map((message, i) => (
+          <MessageBox key={message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} setDiscussionContext={setDiscussionContext} />
         ))}
 
         {isLoading && (

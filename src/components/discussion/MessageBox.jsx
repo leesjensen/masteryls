@@ -2,7 +2,7 @@ import React from 'react';
 import { StickyNote } from 'lucide-react';
 import Markdown from '../Markdown';
 
-export default function MessageBox({ message, handleSaveAsNote }) {
+export default function MessageBox({ message, handleSaveAsNote, setDiscussionContext }) {
   const { type, content } = message;
 
   let justify;
@@ -41,7 +41,11 @@ export default function MessageBox({ message, handleSaveAsNote }) {
     );
   }
 
-  const heading = message.section ? <div className="text-xs text-amber-400 italic font-medium">- {message.section}</div> : null;
+  const heading = message.section ? (
+    <div className="text-xs text-amber-400 italic font-medium cursor-pointer hover:text-amber-500 transition-colors" onClick={() => setDiscussionContext?.((prev) => ({ ...prev, section: message.section }))} title="Click to set as active heading">
+      - {message.section}
+    </div>
+  ) : null;
 
   return (
     <div className={`flex ${justify}`}>
