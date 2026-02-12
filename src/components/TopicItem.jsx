@@ -30,7 +30,17 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
         <span className="mr-2">
           <TopicIcon type={topic.type} />
         </span>
-        <a onClick={() => navigate(`/course/${course.id}/topic/${topic.id}`)} className={`mr-1 no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
+        <a
+          href={`/course/${course.id}/topic/${topic.id}`}
+          onClick={(e) => {
+            if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+              e.preventDefault();
+              navigate(`/course/${course.id}/topic/${topic.id}`);
+            }
+          }}
+          className={`mr-1 no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
+          title={topic.title}
+        >
           {topic.title}
         </a>
         {enrollment?.progress[topic.id]?.notes && (
