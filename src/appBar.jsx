@@ -107,7 +107,7 @@ function UserMenu({ user, courseOps }) {
     return (
       <div className="relative" ref={menuRef}>
         <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-1 bg-amber-100 rounded-full border border-gray-50 hover:text-amber-600 transition-all duration-200 ease-in-out">
-          <User size={18} />
+          <User size={18} title="User Menu" />
         </button>
 
         {isMenuOpen && (

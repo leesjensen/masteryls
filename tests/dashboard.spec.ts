@@ -70,14 +70,12 @@ test('dashboard join/leave course', async ({ page }) => {
   await expect(page.locator('#root')).not.toContainText('0% complete');
 });
 
-// test('dashboard logout', async ({ page }) => {
-//   await initBasicCourse({ page });
-//   await register(page);
+test('dashboard logout', async ({ page }) => {
+  await initBasicCourse({ page });
+  await register(page);
 
-//   await page.getByRole('banner').getByRole('button').click();
-//   await page.getByRole('button', { name: 'Logout' }).click();
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'Logout' }).click();
 
-//   // await page.getByRole('button').nth(2).click();
-//   // await page.getByRole('button', { name: 'Logout' }).click();
-//   await expect(page.getByRole('heading', { name: 'MasteryLS', exact: true })).toBeVisible();
-// });
+  await expect(page.getByRole('heading', { name: 'MasteryLS', exact: true })).toBeVisible();
+});
