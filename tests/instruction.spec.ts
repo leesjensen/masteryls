@@ -80,7 +80,6 @@ test('exam', async ({ page }) => {
         });
         return;
       case 'GET':
-        console.log('GET progress route', route.request().url());
         let json: any = progress;
         const viewType = route
           .request()

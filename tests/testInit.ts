@@ -243,6 +243,18 @@ const progress = [
     catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
     topicId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
   },
+  {
+    id: '8373eef7-eb64-4eed-bf4d-cc600df9148c',
+    createdAt: '2025-12-05T10:13:00',
+    userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
+    enrollmentId: 'bea019b9-46b4-4593-9dcd-0db2e87cbb90',
+    interactionId: null,
+    duration: 0,
+    type: 'note',
+    details: { type: 'note', content: 'there should be a note that appears on the TOC', section: 'Outcomes' },
+    catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
+    topicId: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+  },
 ];
 
 const supabaseAuthTokenResponse = {
@@ -476,11 +488,23 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         return;
       case 'GET':
         let json: any = progress;
-        const viewType = route
-          .request()
-          .url()
-          .match(/type=eq\.(\w+)/)?.[1];
-        json = viewType ? progress.filter((p) => p.type === viewType) : progress;
+        const requestUrl = new URL(route.request().url());
+        const typeFilter = requestUrl.searchParams.get('type');
+
+        const eqMatch = typeFilter?.match(/^eq\.(.+)$/);
+        const inMatch = typeFilter?.match(/^in\.\((.+)\)$/);
+
+        if (eqMatch) {
+          const viewType = eqMatch[1];
+          json = progress.filter((p) => p.type === viewType);
+        } else if (inMatch) {
+          const viewTypes = inMatch[1]
+            .split(',')
+            .map((t) => t.trim().replace(/^"|"$/g, ''))
+            .filter(Boolean);
+          json = progress.filter((p) => viewTypes.includes(p.type));
+        }
+
         await route.fulfill({
           status: 200,
           json,
