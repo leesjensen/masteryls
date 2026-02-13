@@ -111,12 +111,16 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
       buttonText: 'Discuss',
       emptyStateIcon: MessageCircle,
       emptyStateText: "Ask questions about this topic! I'll help explain concepts and provide additional insights.",
+      filterDescriptionPrefix: 'Relevant to',
+      filterColor: 'bg-blue-50 border-blue-200 text-blue-700',
     },
     notes: {
       placeholder: 'Note...',
       buttonText: 'Add Note',
       emptyStateIcon: Notebook,
       emptyStateText: 'Take notes about this topic. Your notes will be saved here for future reference.',
+      filterDescriptionPrefix: 'Filtered by',
+      filterColor: 'bg-amber-50 border-amber-200 text-amber-700',
     },
   }[discussionContext.mode];
 
@@ -144,9 +148,9 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
         </div>
         <Tabs tabs={tabs} activeTab={discussionContext.mode} onChange={toggleMode} />
         {discussionContext.section && (
-          <div className="mt-2 flex items-center gap-2 text-xs bg-amber-50 border border-amber-200 rounded px-2 py-1">
-            <span className="text-amber-700 flex-1 truncate">{filteredDescription}</span>
-            <button className="text-amber-600 hover:text-amber-800 transition-colors" onClick={() => setDiscussionContext((prev) => ({ ...prev, section: null }))} title="Clear filter">
+          <div className={`mt-2 flex items-center gap-2 text-xs border rounded px-2 py-1 ${modeConfig.filterColor}`}>
+            <span className={`text-sm flex-1 truncate`}>{`${modeConfig.filterDescriptionPrefix}: ${discussionContext.section}`}</span>
+            <button onClick={() => setDiscussionContext((prev) => ({ ...prev, section: null }))} title="Clear filter">
               <XCircle size={14} />
             </button>
           </div>
