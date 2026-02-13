@@ -131,7 +131,6 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
 
   const modeMessages = discussionContext.mode === 'ai' ? aiMessages : noteMessages;
   const filteredMessages = discussionContext.section ? modeMessages.filter((message) => message.section === discussionContext.section) : modeMessages;
-  const filteredDescription = `${discussionContext.mode === 'ai' ? 'Relevant to' : 'Filtered by'}: ${discussionContext.section}`;
 
   return (
     <div className="h-full bg-white border-l border-gray-300 shadow-lg flex flex-col overflow-hidden">
