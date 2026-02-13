@@ -1,168 +1,336 @@
 import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, navigateToDashboard, navigateToCourse } from './testInit';
 
-// test('create course', async ({ page }) => {
-//   // GitHub - get a user (used to validate token)
-//   await page.route('https://api.github.com/user', async (route) => {
-//     expect(route.request().method()).toBe('GET');
-//     await route.fulfill({ json: { msg: 'success' } });
-//   });
+async function blockExternalProviders(page: any) {
+  const context = page.context();
 
-//   // Google Gemini API - generate course structure
-//   await page.route('https://generativelanguage.googleapis.com/**/*:generateContent', async (route) => {
-//     expect(route.request().method()).toBe('POST');
+  await context.route(/https:\/\/api\.github\.com\/.*/, async (route) => {
+    throw new Error(`Unmocked GitHub endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
 
-//     const query = route.request().postDataJSON().contents[0].parts[0].text;
+  await context.route(/https:\/\/raw\.githubusercontent\.com\/.*/, async (route) => {
+    throw new Error(`Unmocked raw GitHub endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
 
-//     let response = 'this is a fake Gemini response';
-//     if (query.includes('Generate a JSON object that contains an appropriate number of modules and topics for a course')) {
-//       response = `{
-//         "title": "Example Course Title",
-//         "description": "Example course description that is relevant to the topics included.",
-//         "modules": [
-//             {
-//             "title": "Example module title",
-//             "description": "Description for example module.",
-//             "topics": [
-//                 { "title": "Overview", "description": "Course introduction and objectives.", "path": "README.md", "type": "instruction", "state": "published" },
-//                 { "title": "Topic 1", "description": "Description for topic 1.", "path": "instruction/topic-1/topic-1.md", "type": "instruction", "state": "stub" },
-//                 { "title": "Topic 2", "description": "Description for topic 2.", "path": "instruction/topic-2/topic-2.md", "type": "instruction", "state": "stub" },
-//                 { "title": "Topic 3", "description": "Description for topic 3.", "path": "instruction/topic-3/topic-3.md", "type": "instruction", "state": "stub" }
-//             ]
-//             }
-//         ]
-//       }`;
-//     } else if (query.includes('Create markdown content that provides an overview for a course')) {
-//       response = `# Welcome to the Example Course Overview`;
-//     }
+  await context.route(/.*supabase\.co\/.*/, async (route) => {
+    throw new Error(`Unmocked Supabase endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
 
-//     await route.fulfill({
-//       status: 200,
-//       json: {
-//         candidates: [
-//           {
-//             content: {
-//               parts: [
-//                 {
-//                   text: response,
-//                 },
-//               ],
-//               role: 'model',
-//             },
-//             finishReason: 'STOP',
-//           },
-//         ],
-//         modelVersion: 'gemini-2.0-flash',
-//         responseId: '5kUzaZSOGtmnmtkPkLLpkA4',
-//       },
-//     });
-//   });
+  await context.route(/https:\/\/generativelanguage\.googleapis\.com\/.*/, async (route) => {
+    throw new Error(`Unmocked Gemini endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+}
 
-//   // GitHub - generate repository from template
-//   await page.route('https://api.github.com/repos/csinstructiontemplate/emptycourse/generate', async (route) => {
-//     expect(route.request().method()).toBe('POST');
-//     await route.fulfill({ status: 201, json: { msg: 'success' } });
-//   });
+async function mockCourseCreationExternalRequests(
+  page: any,
+  {
+    tokenValid = true,
+    hasCourseJson = true,
+    templateReposByAccount = {
+      csinstructiontemplate: ['examplecourse'],
+      byucs: ['project-template', 'capstone-template'],
+    },
+    modulesMarkdown = '## Module 1\n- [Topic 1](topic1.md)\n',
+  }: {
+    tokenValid?: boolean;
+    hasCourseJson?: boolean;
+    templateReposByAccount?: Record<string, string[]>;
+    modulesMarkdown?: string;
+  } = {},
+) {
+  const context = page.context();
 
-//   await initBasicCourse({ page });
-//   await navigateToDashboard(page);
+  await context.route('https://api.github.com/**', async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    const path = url.pathname;
 
-//   await page.getByRole('button', { name: '+' }).click();
+    const templateAccountMatch = path.match(/^\/users\/([^/]+)\/repos$/);
+    if (templateAccountMatch && method === 'GET') {
+      const account = templateAccountMatch[1];
+      const repos = (templateReposByAccount[account] || []).map((name) => ({ name, is_template: true }));
+      await route.fulfill({ status: 200, json: repos });
+      return;
+    }
 
-//   await page.getByRole('textbox', { name: 'Name' }).fill('tacotruck');
-//   await page.getByRole('textbox', { name: 'Title' }).fill('Taco Truck');
-//   await page.getByRole('textbox', { name: 'Description' }).fill('All about the taco truck');
-//   await page.getByRole('textbox', { name: 'Course GitHub Account' }).fill('xyzGitHub');
-//   await page.getByRole('textbox', { name: 'Course GitHub Repo' }).fill('xyzRepo');
-//   await page.getByRole('textbox', { name: 'GitHub Token' }).fill('xyzGithubToken');
-//   await page.getByRole('button', { name: 'Create Course' }).click();
+    if (path === '/user' && method === 'GET') {
+      await route.fulfill({ status: tokenValid ? 200 : 401, json: tokenValid ? { login: 'mock-user' } : { message: 'Bad credentials' } });
+      return;
+    }
 
-//   await expect(page.locator('#root')).toContainText('Taco Truck');
-// });
+    if (/^\/repos\/[^/]+\/[^/]+\/generate$/.test(path) && method === 'POST') {
+      await route.fulfill({ status: 201, json: { id: 123, name: 'generated-course-repo' } });
+      return;
+    }
 
-// test('create from modules.md', async ({ page }) => {
-//   // This needs to be converted from how it was done on load to where it is now on create
-//   const modulesMarkdown = `
-// # Modules
+    if (/\/contents\/course\.json$/.test(path) && method === 'GET') {
+      await route.fulfill({ status: 200, json: { sha: 'previoussha123' } });
+      return;
+    }
 
-// ## 안녕하세요
+    if (/\/contents\/(course\.json|README\.md)$/.test(path) && method === 'PUT') {
+      await route.fulfill({ status: 201, json: { commit: { sha: 'fakecommitsha123' } } });
+      return;
+    }
 
-// - [Topic 1](something/more/topic1.md)
+    throw new Error(`Unmocked GitHub endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
 
-// ## 반갑습니다!
+  await context.route('https://raw.githubusercontent.com/**', async (route) => {
+    const url = new URL(route.request().url());
+    const path = url.pathname;
 
-// - [Topic 2](something/more/topic2.md)
-// - [Topic 3](https://youtu.be/4-LwodVujTg)
-//   `;
+    if (path.endsWith('/course.json')) {
+      if (!hasCourseJson) {
+        await route.fulfill({ status: 404, body: 'Not found' });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        json: {
+          title: 'Loaded Course Definition',
+          modules: [{ title: 'Module 1', topics: [{ title: 'Topic 1', path: 'instruction/topic1.md' }] }],
+        },
+      });
+      return;
+    }
 
-//   await page.route('*/**/users/xyzGitHub/repos?*', async (route) => {
-//     expect(route.request().method()).toBe('GET');
-//     await route.fulfill({
-//       json: [
-//         {
-//           id: 564407140,
-//           name: 'rocketscience',
-//           full_name: 'rocketscience/rocketscience',
-//           description: 'Web Programming 260 Instruction',
-//           is_template: true,
-//         },
-//       ],
-//     });
-//   });
+    if (path.endsWith('/instruction/modules.md')) {
+      await route.fulfill({ status: 200, body: modulesMarkdown, contentType: 'text/plain; charset=utf-8' });
+      return;
+    }
 
-//   // GitHub - get a user (used to validate token)
-//   await page.route('https://api.github.com/user', async (route) => {
-//     expect(route.request().method()).toBe('GET');
-//     await route.fulfill({ json: { msg: 'success' } });
-//   });
+    if (path.endsWith('.md')) {
+      await route.fulfill({ status: 200, body: '# Mock Topic', contentType: 'text/plain; charset=utf-8' });
+      return;
+    }
 
-//   // GitHub - generate repository from template
-//   await page.route('https://api.github.com/repos/xyzGitHub/rocketscience/generate', async (route) => {
-//     expect(route.request().method()).toBe('POST');
-//     await route.fulfill({ status: 201, json: { msg: 'success' } });
-//   });
+    throw new Error(`Unmocked raw GitHub endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+}
 
-//   // Supabase - Create catalog entry
-//   await page.route('**/rest/v1/catalog?*', async (route) => {
-//     if (route.request().method() === 'POST') {
-//       await route.fulfill({
-//         json: {
-//           id: '14602d77-0ff3-4267-b25e-4a7c3c47848b',
-//           name: 'rocketscience',
-//         },
-//       });
-//       return;
-//     }
-//     await route.continue();
-//   });
+async function mockAiCourseGenerationRequests(page: any) {
+  const context = page.context();
 
-//   await page.route('*/**/modules.md', async (route) => {
-//     expect(route.request().method()).toBe('GET');
-//     await route.fulfill({ body: modulesMarkdown });
-//   });
+  await context.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        json: {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify(
+                      {
+                        title: 'Generated Course',
+                        description: 'Generated description',
+                        modules: [
+                          {
+                            title: 'Module 1',
+                            description: 'Module overview',
+                            topics: [
+                              {
+                                title: 'Overview',
+                                description: 'Course intro',
+                                path: 'README.md',
+                                type: 'instruction',
+                                state: 'published',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      null,
+                      2,
+                    ),
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      });
+      return;
+    }
 
-//   await initBasicCourse({ page });
-//   await navigateToDashboard(page);
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
 
-//   await page.getByRole('button', { name: '+' }).click();
+    throw new Error(`Unmocked Gemini endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+}
 
-//   await page.getByRole('textbox', { name: 'Name' }).fill('tacotruck');
-//   await page.getByRole('textbox', { name: 'Title' }).fill('Taco Truck');
-//   await page.getByRole('textbox', { name: 'Description' }).fill('All about the taco truck');
-//   await page.getByRole('textbox', { name: 'Source GitHub Account' }).fill('xyzGitHub');
-//   await page.getByRole('textbox', { name: 'Course GitHub Account' }).fill('xyzGitHub');
-//   await page.getByRole('textbox', { name: 'Course GitHub Repo' }).fill('xyzRepo');
-//   await page.getByRole('textbox', { name: 'GitHub Token' }).fill('xyzGithubToken');
-//   await page.getByLabel('Source GitHub Template').selectOption('rocketscience');
+async function openCourseCreationForm(page: any) {
+  await page.getByRole('button', { name: 'New course' }).click();
+  await expect(page.getByRole('heading', { name: 'Create a Course' })).toBeVisible();
+}
 
-//   // This needs to handle the request to copy the template repo and then create the course from the markdown (or Json)
-//   await page.getByRole('button', { name: 'Create Course' }).click();
+async function fillRequiredCourseFields(page: any) {
+  await page.getByLabel('Name').fill('cs999');
+  await page.getByLabel('Title').fill('Advanced Testing');
+  await page.locator('#course-description').fill('A course to validate robust testing and tooling workflows.');
+  await page.getByLabel('Course GitHub Account').fill('mock-owner');
+  await page.getByLabel('Course GitHub Repo').fill('mock-repo');
+  await page.getByLabel('GitHub Token').fill('mock-token');
+}
 
-//   // // await page.route('*/**/course.json', async (route) => {
-//   // //   await route.fulfill({ status: 404, body: 'Not Found' });
-//   // // });
+test('Course Creation displays course creation form', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page);
 
-//   // await expect(page.getByRole('banner')).toContainText('💡 Rocket Science');
-//   // await expect(page.getByText('안녕하세요')).toBeVisible();
-//   // await expect(page.getByText('markdown!')).toBeVisible();
-// });
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+
+  await expect(page.getByRole('button', { name: 'Create Course' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+});
+
+test('Course Creation prevents creation when required fields are empty', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+
+  await expect(page.getByRole('button', { name: 'Create Course' })).toBeDisabled();
+  await page.getByLabel('Title').fill('Only title');
+  await expect(page.getByRole('button', { name: 'Create Course' })).toBeDisabled();
+});
+
+test('Course Creation shows error for invalid GitHub token', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page, { tokenValid: false });
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+  await fillRequiredCourseFields(page);
+
+  await page.getByRole('button', { name: 'Create Course' }).click();
+
+  await expect(page.getByText('The provided GitHub token does not have the necessary permissions to create a course.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Create a Course' })).toBeVisible();
+});
+
+test('Course Creation toggles template fields when AI checkbox is toggled', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+
+  const sourceAccountInput = page.getByLabel('Source GitHub Account');
+  await expect(sourceAccountInput).toBeVisible();
+
+  await page.getByLabel('Generate course from description').check();
+  await expect(sourceAccountInput).not.toBeVisible();
+
+  await page.getByLabel('Generate course from description').uncheck();
+  await expect(sourceAccountInput).toBeVisible();
+});
+
+test('Course Creation creates course with AI generation', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page);
+  await mockAiCourseGenerationRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+
+  await fillRequiredCourseFields(page);
+  await page.getByLabel('Generate course from description').check();
+
+  await page.getByRole('button', { name: 'Create Course' }).click();
+
+  await page.waitForURL('**/dashboard', { timeout: 20000 });
+  await expect(page.getByRole('heading', { name: 'Your courses' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText('Error creating course')).not.toBeVisible();
+});
+
+test('Course Creation updates template options when source account changes', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page, {
+    templateReposByAccount: {
+      csinstructiontemplate: ['examplecourse'],
+      byucs: ['alpha-template', 'beta-template'],
+    },
+  });
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+
+  await expect(page.locator('select#source-gitHub-template option[value="examplecourse"]')).toHaveCount(1);
+  await page.getByLabel('Source GitHub Account').fill('byucs');
+
+  await expect(page.locator('select#source-gitHub-template option[value="alpha-template"]')).toHaveCount(1);
+  await expect(page.locator('select#source-gitHub-template option[value="beta-template"]')).toHaveCount(1);
+});
+
+test('Course Creation creates course from template', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+  await fillRequiredCourseFields(page);
+
+  await page.getByLabel('Source GitHub Template').selectOption('examplecourse');
+  await page.getByRole('button', { name: 'Create Course' }).click();
+
+  await page.waitForURL('**/dashboard', { timeout: 20000 });
+  await expect(page.getByRole('heading', { name: 'Your courses' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText('Error creating course')).not.toBeVisible();
+});
+
+test('Course Creation falls back to modules.md when course.json is missing', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page, {
+    hasCourseJson: false,
+    modulesMarkdown: '## Week 1\n- [Introduction](intro.md)\n- [Project setup](setup.md)\n',
+  });
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+  await fillRequiredCourseFields(page);
+
+  await page.getByRole('button', { name: 'Create Course' }).click();
+
+  await page.waitForURL('**/dashboard', { timeout: 20000 });
+  await expect(page.getByRole('heading', { name: 'Your courses' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText('Error creating course')).not.toBeVisible();
+});
+
+test('Course Creation closes when Cancel button is clicked', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('heading', { name: 'Your courses' })).toBeVisible();
+});
+
+test('Course Creation closes when X button is clicked', async ({ page }) => {
+  await blockExternalProviders(page);
+  await initBasicCourse({ page });
+  await mockCourseCreationExternalRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseCreationForm(page);
+
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByRole('heading', { name: 'Your courses' })).toBeVisible();
+});
