@@ -19,7 +19,7 @@ test('editor markdown', async ({ page }) => {
 test('editor commit', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
-  await page.locator('span').nth(5).click();
+  await page.locator('.absolute.left-0\\.5').click();
   await expect(page.getByRole('code')).toContainText('# Home');
 
   await page.getByText('# Home').click();
@@ -42,7 +42,7 @@ test('settings', async ({ page }) => {
 test('settings editing', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
-  await page.locator('span').nth(5).click();
+  await page.locator('.absolute.left-0\\.5').click();
   await page.getByText('Settings').click();
 
   await expect(page.getByRole('textbox', { name: 'Course Title' })).toBeVisible();

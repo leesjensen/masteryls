@@ -65,7 +65,7 @@ export function ToolBarButton({ icon: Icon, onClick, title = undefined, size = 2
 export function EditorToggleSlider({ editing, onToggle }) {
   return (
     <label className="relative inline-flex items-center w-14 h-6 cursor-pointer rounded-full bg-gray-300 hover:bg-gray-400 transition-colors" title={editing ? 'Switch to View mode' : 'Switch to Edit mode'}>
-      <input type="checkbox" checked={editing} onChange={onToggle} className="opacity-0 w-0 h-0 peer" />
+      <input id="editor-toggle" type="checkbox" checked={editing} onChange={onToggle} className="opacity-0 w-0 h-0 peer" />
       <span className="absolute inset-0 border border-gray-100 bg-gray-400 rounded-full transition-all duration-300 ease-in-out peer-checked:bg-blue-400 peer-hover:bg-gray-600 peer-checked:peer-hover:bg-blue-600"></span>
       <span className="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full transition-all duration-300 ease-in-out peer-checked:translate-x-8 shadow-sm"></span>
       <span className={`absolute top-0 h-full flex items-center text-[12px] font-semibold text-white pointer-events-none z-10 ${editing ? 'left-1.5' : 'right-1.5'}`}>{editing ? 'Edit' : 'View'}</span>

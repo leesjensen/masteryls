@@ -1,15 +1,6 @@
 import { generateId } from '../utils/utils';
 import { aiCourseGenerator, aiCourseOverviewGenerator } from '../ai/aiContentGenerator';
 
-function assignCourseIds(courseDefinition) {
-  for (const module of courseDefinition.modules) {
-    for (const topic of module.topics) {
-      topic.id = generateId();
-    }
-  }
-  return courseDefinition;
-}
-
 export async function createCourseInternal(service, user, generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
   if (generateWithAi) {
     setUpdateMessage('Using AI to create course');
@@ -29,7 +20,7 @@ export async function createCourseInternal(service, user, generateWithAi, source
     await service.createCourseRepoFromDefaultTemplate(catalogEntry, gitHubToken);
 
     setUpdateMessage('Waiting for course repository to be ready');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await waitForCourseRepositoryReady(service, catalogEntry, gitHubToken);
 
     setUpdateMessage('Configuring course definition');
     catalogEntry = await service.createCatalogEntry(user, catalogEntry, gitHubToken);
@@ -44,7 +35,7 @@ export async function createCourseInternal(service, user, generateWithAi, source
     await service.createCourseRepoFromTemplate(sourceAccount, sourceRepo, catalogEntry, gitHubToken);
 
     setUpdateMessage('Waiting for course repository to be ready');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await waitForCourseRepositoryReady(service, catalogEntry, gitHubToken);
 
     setUpdateMessage('Configuring course definition');
     catalogEntry = await service.createCatalogEntry(user, catalogEntry, gitHubToken);
@@ -149,4 +140,52 @@ function parseModulesMarkdown(modulesMarkdown) {
   });
 
   return modules;
+}
+
+async function waitForCourseRepositoryReady(service, catalogEntry, gitHubToken, timeoutMs = 60000, intervalMs = 1000) {
+  const startedAt = Date.now();
+  const repositoryUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}`;
+  let previousTreeSha = null;
+  let stablePollCount = 0;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const repositoryResponse = await service.makeGitHubApiRequest(gitHubToken, repositoryUrl);
+    if (repositoryResponse.ok) {
+      const repository = await repositoryResponse.json();
+      if (repository.default_branch) {
+        const treeUrl = `${repositoryUrl}/git/trees/${encodeURIComponent(repository.default_branch)}?recursive=1`;
+        const treeResponse = await service.makeGitHubApiRequest(gitHubToken, treeUrl);
+        if (treeResponse.ok) {
+          const tree = await treeResponse.json();
+          const treeEntries = Array.isArray(tree.tree) ? tree.tree : [];
+
+          if (tree.sha && treeEntries.length > 0) {
+            if (tree.sha === previousTreeSha) {
+              stablePollCount += 1;
+            } else {
+              previousTreeSha = tree.sha;
+              stablePollCount = 0;
+            }
+
+            if (stablePollCount >= 1) {
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  throw new Error('Timed out waiting for course repository template to finish provisioning');
+}
+
+function assignCourseIds(courseDefinition) {
+  for (const module of courseDefinition.modules) {
+    for (const topic of module.topics) {
+      topic.id = generateId();
+    }
+  }
+  return courseDefinition;
 }

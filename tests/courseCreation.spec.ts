@@ -63,6 +63,41 @@ async function mockCourseCreationExternalRequests(
       return;
     }
 
+    if (/^\/repos\/[^/]+\/[^/]+$/.test(path) && method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        json: {
+          name: 'generated-course-repo',
+          default_branch: 'main',
+        },
+      });
+      return;
+    }
+
+    if (/^\/repos\/[^/]+\/[^/]+\/git\/trees\/[^/]+$/.test(path) && method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        json: {
+          sha: 'treesha123',
+          tree: [
+            { path: 'README.md', type: 'blob' },
+            { path: 'instruction/modules.md', type: 'blob' },
+            { path: 'instruction/topic1.md', type: 'blob' },
+          ],
+          truncated: false,
+        },
+      });
+      return;
+    }
+
+    if (/^\/repos\/[^/]+\/[^/]+\/contents$/.test(path) && method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        json: [{ name: 'README.md', path: 'README.md', type: 'file' }],
+      });
+      return;
+    }
+
     if (/\/contents\/course\.json$/.test(path) && method === 'GET') {
       await route.fulfill({ status: 200, json: { sha: 'previoussha123' } });
       return;
