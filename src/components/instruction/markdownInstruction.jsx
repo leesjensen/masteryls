@@ -84,12 +84,13 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
 
   function processRelativeImagePaths(md, baseUrl) {
     const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
+    const isAbsoluteUrl = (value) => /^https?:\/\//i.test(value);
     md = md.replace(/!\[(.+)\]\(([^\)\s]+)\)/g, (match, p1, p2) => {
-      const prefixedPath = p2.startsWith('/') || p2.startsWith('http') ? p2 : `${basePath}/${p2}`;
+      const prefixedPath = p2.startsWith('/') || isAbsoluteUrl(p2) ? p2 : `${basePath}/${p2}`;
       return `![${p1}](${prefixedPath})`;
     });
     md = md.replace(/ src="([^"]+)"/g, (match, p1) => {
-      const fullPath = p1.startsWith('/') || p1.startsWith('http') ? p1 : `${basePath}/${p1}`;
+      const fullPath = p1.startsWith('/') || isAbsoluteUrl(p1) ? p1 : `${basePath}/${p1}`;
       return ` src="${fullPath}"`;
     });
 
