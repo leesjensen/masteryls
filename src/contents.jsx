@@ -16,11 +16,14 @@ function Contents({ courseOps, learningSession, editorVisible }) {
 
   useHotkeys(
     {
-      'ALT+ArrowRight': (e) => {
+      'alt+ArrowRight': (e) => {
         navigateToTopic('next');
       },
-      'ALT+ArrowLeft': (e) => {
+      'alt+ArrowLeft': (e) => {
         navigateToTopic('prev');
+      },
+      'meta+b': (e) => {
+        courseOps.setSidebarVisible('start' === courseOps.sidebarVisible ? 'end' : 'start');
       },
     },
     { target: undefined },
