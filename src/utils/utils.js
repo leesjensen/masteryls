@@ -29,6 +29,30 @@ export function scrollToAnchor(anchor, containerRef) {
   }
 }
 
+export function scrollToBottom(container) {
+  if (!container) return false;
+  let attempts = 0;
+  const maxAttempts = 20;
+
+  const tryScroll = () => {
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth',
+    });
+
+    attempts++;
+    const actualPosition = container.scrollTop + container.clientHeight;
+    const isClose = Math.abs(actualPosition - container.scrollHeight) < 5;
+
+    // If we're close enough or hit max attempts, stop
+    if (!isClose && attempts < maxAttempts) {
+      setTimeout(tryScroll, 100);
+    }
+  };
+
+  requestAnimationFrame(tryScroll);
+}
+
 /**
  * Extracts the text content that precedes a target element, starting from the nearest heading.
  *

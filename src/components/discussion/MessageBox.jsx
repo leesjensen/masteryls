@@ -1,13 +1,11 @@
 import React from 'react';
-import { StickyNote } from 'lucide-react';
+import { StickyNote, MessageCircle } from 'lucide-react';
 import Markdown from '../Markdown';
 
 export default function MessageBox({ message, handleSaveAsNote, setDiscussionContext }) {
   const { type, content } = message;
 
-  let justify;
-  let styles;
-  let formatAsMarkdown;
+  let msgTitle, color, Icon, justify, styles, formatAsMarkdown;
   switch (type) {
     case 'user':
       justify = 'justify-end';
@@ -15,6 +13,9 @@ export default function MessageBox({ message, handleSaveAsNote, setDiscussionCon
       formatAsMarkdown = false;
       break;
     case 'note':
+      msgTitle = 'Note';
+      color = 'amber';
+      Icon = StickyNote;
       justify = 'justify-end';
       styles = 'max-w-[100%] border-2 border-amber-400 text-gray-800';
       formatAsMarkdown = true;
@@ -25,6 +26,9 @@ export default function MessageBox({ message, handleSaveAsNote, setDiscussionCon
       formatAsMarkdown = false;
       break;
     default:
+      msgTitle = 'Response';
+      color = 'blue';
+      Icon = MessageCircle;
       justify = 'justify-start';
       styles = 'max-w-[80%] border-2 border-gray-400';
       formatAsMarkdown = true;
@@ -42,7 +46,7 @@ export default function MessageBox({ message, handleSaveAsNote, setDiscussionCon
   }
 
   const heading = message.section ? (
-    <div className="text-xs text-amber-400 italic font-medium cursor-pointer hover:text-amber-500 transition-colors" onClick={() => setDiscussionContext?.((prev) => ({ ...prev, section: message.section }))} title="Click to set as active heading">
+    <div className={`text-xs text-${color}-400 italic font-medium cursor-pointer hover:text-${color}-500 transition-colors`} onClick={() => setDiscussionContext?.((prev) => ({ ...prev, section: message.section }))} title="Click to set as active heading">
       - {message.section}
     </div>
   ) : null;
@@ -51,9 +55,9 @@ export default function MessageBox({ message, handleSaveAsNote, setDiscussionCon
     <div className={`flex ${justify}`}>
       <div className={`rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
         <div className={formatAsMarkdown ? 'markdown-body' : ''}>
-          {type === 'note' && (
-            <div className="text-xs text-amber-600 font-medium mb-1 flex items-center gap-1">
-              <StickyNote size={12} /> Note {heading}
+          {msgTitle && (
+            <div className={`text-xs text-${color}-600 font-medium mb-1 flex items-center gap-1`}>
+              <Icon size={12} /> {msgTitle} {heading}
             </div>
           )}
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StickyNote, MessageCircleOff, X, MessageCircle, Notebook, XCircle } from 'lucide-react';
 import { aiDiscussionResponseGenerator } from '../../ai/aiContentGenerator';
+import { scrollToBottom } from '../../utils/utils';
 import Tabs from '../Tabs';
 import MessageBox from './MessageBox';
 
@@ -12,16 +13,16 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
 
   // scroll to the end of the messages and put the focus on the input
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      setTimeout(() => {
-        messagesContainerRef.current.scrollTo({
-          top: messagesContainerRef.current.scrollHeight,
-          behavior: 'smooth',
-        });
-      }, 100);
-    }
-    inputRef.current?.focus();
+    scrollMessages();
   }, [discussionContext.mode]);
+
+  function scrollMessages() {
+    scrollToBottom(messagesContainerRef.current);
+    inputRef.current?.focus();
+  }
+
+  const modeMessages = discussionContext.mode === 'ai' ? aiMessages : noteMessages;
+  const filteredMessages = discussionContext.section ? modeMessages.filter((message) => message.section === discussionContext.section) : modeMessages;
 
   const handleUserNoteInput = (userMessage) => {
     const notePayload = {
@@ -45,6 +46,7 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
     const newMessage = { type: 'user', section: discussionContext.section, content: userMessage, timestamp: Date.now() };
     setAIMessages((prev) => [...prev, newMessage]);
     setIsLoading(true);
+    scrollMessages();
 
     let type = 'model';
     let content;
@@ -63,14 +65,15 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
       setAIMessages((prev) => [...prev, aiMessage]);
 
       setIsLoading(false);
+      scrollMessages();
     }
   };
 
   const handleSaveAsNote = (messageIndex) => {
-    let messageToSave = aiMessages[messageIndex];
+    let messageToSave = filteredMessages[messageIndex];
     messageToSave.state = 'saved';
-    if (aiMessages.length >= 2) {
-      const previousMessage = aiMessages[messageIndex - 1];
+    if (filteredMessages.length >= 2) {
+      const previousMessage = filteredMessages[messageIndex - 1];
       messageToSave = `**Your Question:**\n\n${previousMessage.content}\n\n---\n\n**AI Response:**\n\n${messageToSave.content}`;
     }
 
@@ -128,9 +131,6 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
     { id: 'ai', label: 'Discuss', icon: MessageCircle, visible: true },
     { id: 'notes', label: 'Notes', icon: StickyNote, visible: true },
   ];
-
-  const modeMessages = discussionContext.mode === 'ai' ? aiMessages : noteMessages;
-  const filteredMessages = discussionContext.section ? modeMessages.filter((message) => message.section === discussionContext.section) : modeMessages;
 
   return (
     <div className="h-full bg-white border-l border-gray-300 shadow-lg flex flex-col overflow-hidden">
@@ -200,7 +200,6 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
               e.target.style.height = 'auto';
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
-            disabled={isLoading}
           />
           <div className="relative">
             <div className="flex">
@@ -208,7 +207,7 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
                 {modeConfig.buttonText}
               </button>
               {discussionContext.mode === 'ai' && (
-                <button disabled={!aiMessages || aiMessages.length === 0} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={clearConversation} title="Clear discussion">
+                <button type="button" disabled={!aiMessages || aiMessages.length === 0} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={clearConversation} title="Clear discussion">
                   <MessageCircleOff size={24} />
                 </button>
               )}
