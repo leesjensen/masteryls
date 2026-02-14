@@ -12,13 +12,6 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     return url.replace(learningSession.course.links.gitHub.rawUrl, learningSession.course.links.gitHub.url);
   }
 
-  function getNextWindowState() {
-    if (window.innerWidth < 400) {
-      return settings.sidebarVisible === 'end' ? 'start' : 'end';
-    }
-    return settings.sidebarVisible === 'start' ? 'split' : settings.sidebarVisible === 'end' ? 'split' : 'start';
-  }
-
   function navigateToTopic(direction) {
     const newTopic = courseOps.getAdjacentTopic(direction);
     if (newTopic) {
@@ -31,12 +24,10 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     showAlert({ message: `${learningSession.topic.title} exported successfully`, type: 'info' });
   }
 
-  const nextSidebarState = getNextWindowState();
-
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
       <div className="flex flex-row justify-start">
-        <button className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium  hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.setSidebarVisible(nextSidebarState)}>
+        <button className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium  hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.toggleSidebar()}>
           <Menu size={16} />
           {settings.sidebarVisible !== 'start' ? '◀' : '▶'}
         </button>

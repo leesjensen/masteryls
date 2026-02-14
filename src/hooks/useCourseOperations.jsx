@@ -45,8 +45,17 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return {};
   }
 
-  function setSidebarVisible(visible) {
+  function toggleSidebar() {
     if (learningSession?.course) {
+      const settings = getEnrollmentUiSettings(learningSession.course.id);
+
+      let visible = 'end';
+      if (window.innerWidth < 400) {
+        visible = settings.sidebarVisible === 'end' ? 'start' : 'end';
+      } else {
+        visible = settings.sidebarVisible === 'start' ? 'split' : settings.sidebarVisible === 'end' ? 'split' : 'start';
+      }
+
       saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: visible });
       setSettings((prev) => ({ ...prev, sidebarVisible: visible }));
     }
@@ -920,7 +929,7 @@ ${topicDescription || 'overview content placeholder'}`;
     user,
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
-    setSidebarVisible,
+    toggleSidebar,
     courseCatalog,
     getCourse,
     searchCourse,

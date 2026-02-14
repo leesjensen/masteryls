@@ -1,5 +1,4 @@
 import React from 'react';
-import useHotkeys from './hooks/useHotKeys';
 import useModuleState from './hooks/useModuleState';
 import ModuleSection from './components/ModuleSection';
 import NewModuleButton from './components/NewModuleButton';
@@ -7,34 +6,10 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
-import { useNavigate } from 'react-router-dom';
 
 function Contents({ courseOps, learningSession, editorVisible }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
-  const navigate = useNavigate();
-
-  useHotkeys(
-    {
-      'alt+ArrowRight': (e) => {
-        navigateToTopic('next');
-      },
-      'alt+ArrowLeft': (e) => {
-        navigateToTopic('prev');
-      },
-      'meta+b': (e) => {
-        courseOps.setSidebarVisible('start' === courseOps.sidebarVisible ? 'end' : 'start');
-      },
-    },
-    { target: undefined },
-  );
-
-  function navigateToTopic(direction) {
-    const newTopic = courseOps.getAdjacentTopic(direction);
-    if (newTopic) {
-      navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
-    }
-  }
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;

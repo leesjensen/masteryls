@@ -5,16 +5,41 @@ import Instruction from '../../components/instruction/instruction.jsx';
 import Editor from '../../components/editor/editor.jsx';
 import Splitter from '../../components/Splitter.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
+import { useNavigate } from 'react-router-dom';
+import useHotkeys from '../../hooks/useHotKeys';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(settings.sidebarWidth || 300);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     if (learningSession.course) {
       updateAppBar({ title: learningSession.course?.title, subTitle: learningSession?.topic?.title });
     }
   }, [learningSession]);
+
+  useHotkeys(
+    {
+      'meta+ArrowRight': (e) => {
+        navigateToTopic('next');
+      },
+      'meta+ArrowLeft': (e) => {
+        navigateToTopic('prev');
+      },
+      'meta+b': (e) => {
+        courseOps.toggleSidebar();
+      },
+    },
+    { target: undefined },
+  );
+
+  function navigateToTopic(direction) {
+    const newTopic = courseOps.getAdjacentTopic(direction);
+    if (newTopic) {
+      navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
+    }
+  }
 
   function sidebarResized(xPosition) {
     courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'split', sidebarWidth: xPosition });
