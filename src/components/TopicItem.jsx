@@ -1,7 +1,7 @@
 import React from 'react';
 import { BadgeCheck, StickyNote } from 'lucide-react';
 
-import { TopicIcon } from './TopicIcon';
+import { TopicIcon } from '../utils/Icons';
 import { useNavigate } from 'react-router-dom';
 
 function TopicItem({ course, topic, currentTopic, enrollment }) {
