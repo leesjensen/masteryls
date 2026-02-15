@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import DiscussionPanel from '../discussion/DiscussionPanel.jsx';
 import Markdown from '../../components/Markdown';
 import { scrollToAnchor } from '../../utils/utils';
 import Splitter from '../../components/Splitter.jsx';
 import useMarkdownLocation from '../../hooks/useMarkdownLocation';
+
 import '../markdown.css';
 
 export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
@@ -16,6 +18,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [discussionOpen, setDiscussionOpen] = useState(false);
   const [discussionContext, setDiscussionContext] = useState({ topicTitle: learningSession.topic?.title || '', topicContent: content, section: null, mode: 'ai' });
   const containerRef = React.useRef(null);
+  const location = useLocation();
   const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
 
   useEffect(() => {
@@ -64,8 +67,9 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   useEffect(() => {
     if (markdown) {
       if (learningSession.topic) {
-        if (learningSession.topic.anchor) {
-          scrollToAnchor(learningSession.topic.anchor, containerRef);
+        const anchor = location.hash ? decodeURIComponent(location.hash.substring(1)) : null;
+        if (anchor) {
+          scrollToAnchor(anchor, containerRef);
         } else {
           const wasRestored = restoreScrollPosition(learningSession.topic.id);
           if (!wasRestored && containerRef.current) {
