@@ -33,8 +33,6 @@ export default function useHotkeys(handlers, { target, enabled = true, preventDe
       if (e.metaKey) keyString += 'meta+';
       keyString += key;
 
-      console.log('Key pressed:', key, 'with modifiers:', { ctrl: e.ctrlKey, alt: e.altKey, shift: e.shiftKey, meta: e.metaKey }, 'constructed key string:', keyString);
-
       // Try the full key combination first, then fall back to just the key
       const fn = handlersRef.current?.[keyString] || handlersRef.current?.[key];
       if (fn) {

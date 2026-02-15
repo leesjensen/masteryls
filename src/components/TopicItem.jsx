@@ -19,6 +19,13 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
     }
   }, [enrollment?.progress[topic.id]?.interactions]);
 
+  function navigateToTopic(e, anchor) {
+    if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
+      e.preventDefault();
+      navigate(`/course/${course.id}/topic/${topic.id}${anchor ? `#${anchor}` : ''}`);
+    }
+  }
+
   return (
     <li className="mb-0.5 flex justify-between items-center group">
       <div className="flex flex-row">
@@ -30,23 +37,13 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
         <span className="mr-2">
           <TopicIcon type={topic.type} />
         </span>
-        <a
-          href={`/course/${course.id}/topic/${topic.id}`}
-          onClick={(e) => {
-            if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
-              e.preventDefault();
-              navigate(`/course/${course.id}/topic/${topic.id}`);
-            }
-          }}
-          className={`mr-1 no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
-          title={topic.title}
-        >
+        <a href={`/course/${course.id}/topic/${topic.id}`} onClick={navigateToTopic} className={`mr-1 no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
           {topic.title}
         </a>
         {enrollment?.progress[topic.id]?.notes && (
-          <span className="text-blue-300 mr-1">
+          <a className="text-blue-300 mr-1" onClick={(e) => navigateToTopic(e, '@note')}>
             <StickyNote size={16} />
-          </span>
+          </a>
         )}
         {progressMeter && (
           <span className="text-xs text-gray-400 flex items-center mr-1">
