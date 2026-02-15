@@ -627,7 +627,7 @@ ${topicDescription || 'overview content placeholder'}`;
 
     var update = false;
     if (type === 'instructionView' || type === 'embeddedView' || type === 'quizSubmit') {
-      update = _createProgressEntry(enrollment, topic.id);
+      update = _getEnrollmentProgress(enrollment, topic.id);
 
       if (type === 'quizSubmit' && interactionId && (!enrollment.progress[topic.id].interactions || !enrollment.progress[topic.id].interactions.includes(interactionId))) {
         enrollment.progress[topic.id].interactions = [...(enrollment.progress[topic.id].interactions || []), interactionId];
@@ -637,7 +637,7 @@ ${topicDescription || 'overview content placeholder'}`;
         enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
       }
     } else if (type === 'note') {
-      update = _createProgressEntry(enrollment, topic.id);
+      update = _getEnrollmentProgress(enrollment, topic.id);
       if (!enrollment.progress[topic.id].notes) {
         enrollment.progress[topic.id].notes = true;
         update = true;
@@ -650,7 +650,7 @@ ${topicDescription || 'overview content placeholder'}`;
     }
   }
 
-  function _createProgressEntry(enrollment, topicId) {
+  function _getEnrollmentProgress(enrollment, topicId) {
     if (!enrollment.progress) {
       enrollment.progress = {};
     }

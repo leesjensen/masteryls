@@ -69,7 +69,12 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
       if (learningSession.topic) {
         const anchor = location.hash ? decodeURIComponent(location.hash.substring(1)) : null;
         if (anchor) {
-          scrollToAnchor(anchor, containerRef);
+          if (anchor === '@note') {
+            setDiscussionContext((prev) => ({ ...prev, section: null, mode: 'notes' }));
+            setDiscussionOpen(true);
+          } else {
+            scrollToAnchor(anchor, containerRef);
+          }
         } else {
           const wasRestored = restoreScrollPosition(learningSession.topic.id);
           if (!wasRestored && containerRef.current) {
