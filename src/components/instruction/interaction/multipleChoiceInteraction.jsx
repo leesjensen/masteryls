@@ -147,7 +147,7 @@ export default function MultipleChoiceInteraction({ id, quizType, body, title, c
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
         {inlineLiteMarkdown(prompt)}
       </div>
-      <div>
+      <div className={isSubmitting ? 'opacity-50 pointer-events-none' : ''}>
         {choices.map((choice, i) => {
           const selected = selectedIndices && selectedIndices.includes(i);
           return (
@@ -168,6 +168,12 @@ export default function MultipleChoiceInteraction({ id, quizType, body, title, c
           </button>
         )}
       </div>
+      {isSubmitting && (
+        <div className="mt-4 p-3 border rounded bg-gray-50 text-gray-700 flex items-center gap-2">
+          <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+          <span>Getting AI feedback...</span>
+        </div>
+      )}
       {instructionState !== 'exam' && <InteractionFeedback quizId={id} courseOps={courseOps} instructionState={instructionState} />}
     </>
   );
