@@ -2,10 +2,13 @@ import React, { useState, useRef, useCallback } from 'react';
 import { FileUp } from 'lucide-react';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import { formatFileSize } from '../../../utils/utils';
+import { updateInteractionProgress } from './interactionProgressStore';
+import InteractionFeedback from './interactionFeedback';
 
-export default function FileInteraction({ id, body }) {
+export default function FileInteraction({ id, body, title, courseOps, instructionState, onGraded }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = useCallback((files) => {
@@ -64,6 +67,32 @@ export default function FileInteraction({ id, body }) {
     }
   }, []);
 
+  const handleSubmit = async () => {
+    if (selectedFiles.length === 0) return;
+
+    setIsSubmitting(true);
+    onGraded?.('pending');
+
+    try {
+      const progressFiles = selectedFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        date: file.lastModifiedDate,
+      }));
+
+      const totalSize = progressFiles.reduce((total, file) => total + file.size, 0);
+      const feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(totalSize)}. Thank you!`;
+      const details = { type: 'file-submission', files: progressFiles, feedback };
+
+      updateInteractionProgress(id, details);
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+      onGraded?.(100);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div>
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
@@ -100,9 +129,10 @@ export default function FileInteraction({ id, body }) {
           </div>
         )}
       </div>
-      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+      <button onClick={handleSubmit} type="button" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={selectedFiles.length === 0 || isSubmitting}>
         Submit files
       </button>
+      {instructionState !== 'exam' && <InteractionFeedback quizId={id} courseOps={courseOps} instructionState={instructionState} />}
     </div>
   );
 }

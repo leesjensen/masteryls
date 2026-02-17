@@ -2,13 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { aiTeachingResponseGenerator } from '../../../ai/aiContentGenerator';
 import Markdown from '../../Markdown';
 import { updateInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
+import InteractionFeedback from './interactionFeedback';
 
-export default function TeachingInteraction({ id, topicTitle, body }) {
+export default function TeachingInteraction({ id, topicTitle, body, courseOps, instructionState, onGraded }) {
   const progress = useInteractionProgressStore(id) || {};
   const initialQuestion = progress.messages || (body ? [{ type: 'model', content: body, timestamp: Date.now() }] : []);
   const [messages, setMessages] = useState(initialQuestion);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [responseCount, setResponseCount] = useState(0);
   const listRef = useRef(null);
   const inputRef = useRef(null);
@@ -78,6 +80,26 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
     }
   };
 
+  const handleSubmit = async () => {
+    if (messages.length === 0) return;
+
+    setIsSubmitting(true);
+    onGraded?.('pending');
+
+    try {
+      const percentMatch = messages[messages.length - 1].content?.match(/Understanding Score:\s*(\d+)%/);
+      const percentCorrect = percentMatch ? parseInt(percentMatch[1], 10) : 0;
+      const feedback = 'Session submitted';
+
+      const details = { type: 'teaching', messages, percentCorrect, feedback };
+      updateInteractionProgress(id, details);
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+      onGraded?.(percentCorrect);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const parseResponseMessage = (content) => {
     const scoreMatch = content.match(/^(.*?)Understanding Score:\s*(\d+)%/s);
     const text = scoreMatch ? scoreMatch[1].trim() : content;
@@ -120,13 +142,14 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
         </form>
       </div>
       <div className="flex gap-2 mt-4">
-        <button id={`submit-${id}`} score="30" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600" disabled={responseCount < 1}>
+        <button onClick={handleSubmit} type="button" score="30" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600" disabled={responseCount < 1 || isSubmitting}>
           Submit session
         </button>
         <button onClick={handleClear} type="button" className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 disabled:bg-gray-600 disabled:text-gray-50" disabled={responseCount < 1}>
           Clear
         </button>
       </div>
+      {instructionState !== 'exam' && <InteractionFeedback quizId={id} courseOps={courseOps} instructionState={instructionState} />}
     </div>
   );
 }
