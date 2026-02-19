@@ -188,8 +188,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
             id={headingId}
             className={`flex items-center gap-2 cursor-pointer ${className || ''}`.trim()}
             {...props}
-            onClick={(e) => {
-              e.preventDefault();
+            onClick={() => {
               navigate(`/course/${learningSession.course.id}/topic/${learningSession.topic.id}#${headingId}`);
             }}
           >
@@ -198,8 +197,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               <StickyNote
                 size={12}
                 className={`cursor-pointer transition-colors ${existingNote ? 'text-yellow-500 fill-yellow-100' : 'text-gray-400 hover:text-yellow-300'}`}
-                onClick={(e) => {
-                  e.preventDefault();
+                onClick={() => {
                   onMakeHeadingActive(headingText);
                 }}
               />
