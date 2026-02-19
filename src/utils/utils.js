@@ -25,7 +25,7 @@ export function scrollToAnchor(anchor, containerRef) {
   }
 
   if (targetElement) {
-    targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'smooth' });
+    targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
   }
 }
 

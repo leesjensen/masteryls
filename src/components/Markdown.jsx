@@ -170,7 +170,10 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   if (onMakeHeadingActive !== null) {
     // Modify heading components to include StickyNote icon and heading ID
     const headingComponents = ['h2', 'h3', 'h4'].reduce((acc, tag) => {
-      acc[tag] = ({ children, ...props }) => {
+      acc[tag] = (allProps) => {
+        const { children, className, ...props } = allProps;
+        delete props.node;
+
         const HeadingTag = tag;
         const headingText = typeof children === 'string' ? children : String(children);
         const headingId = headingText
@@ -181,7 +184,15 @@ export default function Markdown({ learningSession, content, languagePlugins = [
         const existingNote = noteMessages.find((note) => note.section === headingText);
 
         return (
-          <HeadingTag id={headingId} className="flex items-center gap-2" {...props}>
+          <HeadingTag
+            id={headingId}
+            className={`flex items-center gap-2 cursor-pointer ${className || ''}`.trim()}
+            {...props}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(`/course/${learningSession.course.id}/topic/${learningSession.topic.id}#${headingId}`);
+            }}
+          >
             {children}
             <span title={`${existingNote ? 'View' : 'Add'} notes for this section`}>
               <StickyNote

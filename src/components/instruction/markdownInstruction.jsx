@@ -83,7 +83,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         }
       }
     }
-  }, [markdown]);
+  }, [markdown, location.hash]);
 
   function load(content, path) {
     const md = processRelativeImagePaths(content, path);
