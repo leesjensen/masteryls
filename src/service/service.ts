@@ -326,11 +326,9 @@ class Service {
    * @param objectId - The object ID the right applies to (nullable).
    */
   async removeUserRole(user: User, right: string, objectId: string | null): Promise<void> {
-    const { error } = await this.supabase.from('role').delete().eq('user', user.id).eq('right', right).eq('object', objectId);
-
-    let query = this.supabase.from('role').delete().eq('user', user.id);
+    let query = this.supabase.from('role').delete().eq('user', user.id).eq('right', right);
     query = objectId === null ? query.is('object', null) : query.eq('object', objectId);
-    query = query.eq('right', right);
+    const { error } = await query;
 
     if (error) {
       throw new Error(error.message);
