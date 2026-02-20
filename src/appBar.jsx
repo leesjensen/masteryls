@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, SquareStar, Columns3Cog, ChartArea, LogOut } from 'lucide-react';
+import { SquareStar, Columns3Cog, ChartArea, LogOut } from 'lucide-react';
 
 export function AppBar({ user, courseOps }) {
   const { title, subTitle, tools } = useAppBarState();
@@ -85,6 +85,23 @@ function UserMenu({ user, courseOps }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
+  function getUserInitials(value) {
+    const normalized = (value || '').trim();
+    if (!normalized) return '?';
+
+    const parts = normalized.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+
+    const single = parts[0];
+    if (single.includes('@')) {
+      return single[0].toUpperCase();
+    }
+
+    return single.slice(0, 2).toUpperCase();
+  }
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -104,15 +121,17 @@ function UserMenu({ user, courseOps }) {
   };
 
   if (user) {
+    const initials = getUserInitials(user.name || user.email);
+
     return (
       <div className="relative" ref={menuRef}>
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-1 bg-amber-100 rounded-full border border-gray-50 hover:text-amber-600 transition-all duration-200 ease-in-out">
-          <User size={18} title="User Menu" />
+        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-7 h-7 bg-white rounded-full border-1 border-gray-600 hover:border-amber-600 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200 ease-in-out flex items-center justify-center" title="User Menu" aria-label="User Menu">
+          <span className="text-xs font-medium leading-none select-none">{initials}</span>
         </button>
 
         {isMenuOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-            <div className="flex items-center gap-2 w-full text-left px-4 py-2 text-md font-semibold text-amber-600">{user.name}</div>
+            <div className="flex items-center gap-2 w-full text-left px-4 py-2 text-md font-medium text-amber-600">{user.name}</div>
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem icon={SquareStar} onClick={() => handleMenuItemClick(() => navigate('/dashboard'))} title="Dashboard" />
             <AppBarMenuItem icon={Columns3Cog} onClick={() => handleMenuItemClick(() => navigate('/metrics'))} title="Metrics" />

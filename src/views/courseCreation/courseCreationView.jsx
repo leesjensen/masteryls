@@ -1,6 +1,4 @@
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
-import { AppBarButton } from '../../appBar.jsx';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import CourseCreationForm from './courseCreationForm.jsx';
@@ -28,10 +26,8 @@ export default function CourseCreationView({ courseOps }) {
     navigate('/dashboard');
   };
 
-  const appBarTools = <AppBarButton icon={X} onClick={close} title="Close" />;
-
   useEffect(() => {
-    updateAppBar({ title: 'Create course', tools: appBarTools });
+    updateAppBar({ title: 'Create course', tools: null });
   }, []);
 
   return (
