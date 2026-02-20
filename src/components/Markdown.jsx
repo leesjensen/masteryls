@@ -7,11 +7,13 @@ import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
 import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
 import { StickyNote } from 'lucide-react';
+import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
 
 export default function Markdown({ learningSession, content, languagePlugins = [], noteMessages = [], onMakeHeadingActive = null }) {
   const { searchResults } = useSearchResults();
@@ -87,6 +89,21 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     td: createHighlightedComponent('td', searchTerms),
     th: createHighlightedComponent('th', searchTerms),
     blockquote: createHighlightedComponent('blockquote', searchTerms),
+    span({ node, style, children, ...props }) {
+      const safeStyle = sanitizeInlineStyle(style);
+      return (
+        <span style={safeStyle} {...props}>
+          {children}
+        </span>
+      );
+    },
+    iframe({ node, src, loading, referrerPolicy, referrerpolicy, sandbox, ...props }) {
+      if (!src || !src.startsWith('https://')) {
+        return null;
+      }
+
+      return <iframe src={src} loading={loading || 'lazy'} referrerPolicy={referrerPolicy || referrerpolicy || 'strict-origin-when-cross-origin'} sandbox={sandbox || 'allow-scripts allow-same-origin allow-presentation'} {...props} />;
+    },
 
     // Custom link handler for internal navigation
     // Absolute URL: open in new tab.
@@ -99,7 +116,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     //     ./main.java - resource in current topic
     //     ../simon/simon.md
     //     ../../readme.md
-    a({ href, children, ...props }) {
+    a({ node, href, children, ...props }) {
       return (
         <a
           href={href}
@@ -136,7 +153,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     },
 
     // Handle other plugin elements
-    div({ className, children, ...props }) {
+    div({ node, className, children, ...props }) {
       // Check if this div has plugin attributes
       const pluginMatch = className?.match(/data-plugin-(\w+)/);
       if (pluginMatch) {
@@ -170,10 +187,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   if (onMakeHeadingActive !== null) {
     // Modify heading components to include StickyNote icon and heading ID
     const headingComponents = ['h2', 'h3', 'h4'].reduce((acc, tag) => {
-      acc[tag] = (allProps) => {
-        const { children, className, ...props } = allProps;
-        delete props.node;
-
+      acc[tag] = ({ node, children, className, ...props }) => {
         const HeadingTag = tag;
         const headingText = typeof children === 'string' ? children : String(children);
         const headingId = headingText
@@ -214,7 +228,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
   return (
     <div ref={containerRef}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSanitizeSchema], [rehypeMermaid, { mermaidConfig: { theme: 'default', securityLevel: 'strict' } }]]} components={components}>
         {content}
       </ReactMarkdown>
     </div>

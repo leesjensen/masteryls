@@ -4,11 +4,13 @@ import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
 import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
 
 /**
  * Static version of Markdown component for server-side rendering (no router hooks)
@@ -96,6 +98,29 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       }
       return children;
     },
+    span({ node, style, children, ...props }) {
+      const safeStyle = sanitizeInlineStyle(style);
+      return (
+        <span style={safeStyle} {...props}>
+          {children}
+        </span>
+      );
+    },
+    iframe({ node, src, loading, referrerPolicy, referrerpolicy, sandbox, ...props }) {
+      if (!src || !src.startsWith('https://')) {
+        return null;
+      }
+
+      return (
+        <iframe
+          src={src}
+          loading={loading || 'lazy'}
+          referrerPolicy={referrerPolicy || referrerpolicy || 'strict-origin-when-cross-origin'}
+          sandbox={sandbox || 'allow-scripts allow-same-origin allow-presentation'}
+          {...props}
+        />
+      );
+    },
 
     source({ node, src, ...props }) {
       if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/')) {
@@ -146,7 +171,11 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
   const components = { ...customComponents, MermaidBlock };
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeMermaid, { mermaidConfig: { theme: 'default' } }]]} components={components}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]}
+      rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSanitizeSchema], [rehypeMermaid, { mermaidConfig: { theme: 'default', securityLevel: 'strict' } }]]}
+      components={components}
+    >
       {content}
     </ReactMarkdown>
   );
