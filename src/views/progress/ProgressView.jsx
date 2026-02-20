@@ -163,7 +163,7 @@ export default function ProgressView({ courseOps, service, user }) {
             currentGroup &&
             currentGroup.groupKey === groupKey &&
             // Only group if events are within a reasonable time window (e.g., 1 hour)
-            new Date(record.createdAt) - new Date(currentGroup.lastEvent.createdAt) < 3600000;
+            new Date(record.createdAt).getTime() - new Date(currentGroup.lastEvent.createdAt).getTime() < 3600000;
 
           if (shouldGroup) {
             currentGroup.events.push(record);
