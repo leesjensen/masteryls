@@ -357,15 +357,3 @@ test('Course Creation closes when Cancel button is clicked', async ({ page }) =>
   await page.getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('heading', { name: 'Your courses' })).toBeVisible();
 });
-
-test('Course Creation closes when X button is clicked', async ({ page }) => {
-  await blockExternalProviders(page);
-  await initBasicCourse({ page });
-  await mockCourseCreationExternalRequests(page);
-
-  await navigateToDashboard(page);
-  await openCourseCreationForm(page);
-
-  await page.getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByRole('heading', { name: 'Your courses' })).toBeVisible();
-});

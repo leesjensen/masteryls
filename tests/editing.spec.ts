@@ -9,7 +9,7 @@ async function initAndOpenBasicCourse({ page }) {
 test('editor markdown', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
-  await page.locator('span').nth(5).click();
+  await page.locator('.absolute.left-0\\.5').click();
   await expect(page.getByRole('code')).toContainText('# Home');
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).not.toBeChecked();
   await page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).click();
