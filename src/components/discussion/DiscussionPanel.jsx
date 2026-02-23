@@ -2,14 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StickyNote, MessageCircleOff, X, MessageCircle, Notebook, XCircle } from 'lucide-react';
 import { aiDiscussionResponseGenerator } from '../../ai/aiContentGenerator';
 import { scrollToBottom } from '../../utils/utils';
+import usePersistentAIMessages from '../../hooks/usePersistentAIMessages';
 import Tabs from '../Tabs';
 import MessageBox from './MessageBox';
 
-export default function DiscussionPanel({ courseOps, onClose, noteMessages, setNoteMessages, aiMessages, setAIMessages, discussionContext, setDiscussionContext }) {
+export default function DiscussionPanel({ courseOps, learningSession, onClose, noteMessages, setNoteMessages, aiMessages, setAIMessages, discussionContext, setDiscussionContext }) {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const { clearStoredAIMessages } = usePersistentAIMessages(learningSession?.topic?.id, aiMessages, setAIMessages);
 
   // scroll to the end of the messages and put the focus on the input
   useEffect(() => {
@@ -106,6 +108,7 @@ export default function DiscussionPanel({ courseOps, onClose, noteMessages, setN
 
   const clearConversation = () => {
     setAIMessages([]);
+    clearStoredAIMessages();
   };
 
   const modeConfig = {
