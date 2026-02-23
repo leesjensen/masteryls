@@ -9,8 +9,8 @@ export default function MessageBox({ message, handleSaveAsNote, setDiscussionCon
   switch (type) {
     case 'user':
       justify = 'justify-end';
-      styles = 'max-w-[80%] border-2 border-blue-500 bg-blue-600 text-white';
-      formatAsMarkdown = false;
+      styles = 'max-w-[80%] border-2 border-blue-500 text-gray-800';
+      formatAsMarkdown = true;
       break;
     case 'note':
       msgTitle = 'Note';
