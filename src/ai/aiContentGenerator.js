@@ -383,7 +383,6 @@ Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
 - Prefer short responses of less than 200 words with one or two concise paragraphs
 - Prefer to use bullet points, lists, mermaid diagrams, and code examples instead of text
-- Include a mermaid diagram if it helps explain the concept
 - Directly addresses the student's question or comment
 - References specific parts of the topic content when relevant
 - Provides additional context, examples, or explanations that enhance understanding
