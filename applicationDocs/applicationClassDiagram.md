@@ -1,5 +1,6 @@
 # MasteryLS Application Class Diagram
 
+## 1) Learning And Discussion Flow
 ```mermaid
 classDiagram
 direction LR
@@ -25,6 +26,9 @@ class CourseExportView
 class CourseExportForm
 class Instruction
 class InteractionInstruction
+class useCourseOperations
+class useProgressTracking
+class useMarkdownLocation
 
 class MarkdownInstruction {
   -noteMessages
@@ -41,18 +45,75 @@ class DiscussionPanel {
 
 class MessageBox
 class Markdown
-class MarkdownStatic
+class usePersistentAIMessages {
+  +clearStoredAIMessages()
+}
+class aiContentGenerator
+
+Index --> App : boots
+App --> AppBar : renders
+App --> DashboardView : routes
+App --> ClassroomView : routes
+App --> MetricsView : routes
+App --> ProgressView : routes
+App --> CourseCreationView : routes
+App --> CourseExportView : routes
+
+ClassroomView --> Instruction : uses
+Instruction --> InteractionInstruction : for topic type
+InteractionInstruction --> MarkdownInstruction : renders content
+MarkdownInstruction --> DiscussionPanel : composes
+DiscussionPanel --> MessageBox : renders
+MessageBox --> Markdown : renders
+MarkdownInstruction --> useMarkdownLocation : uses
+DiscussionPanel --> usePersistentAIMessages : uses
+
+App --> useCourseOperations : creates
+Instruction --> useProgressTracking : uses
+CourseExportView --> CourseExportForm : composes
+DiscussionPanel --> aiContentGenerator : AI responses
+```
+
+## 2) Authoring And Editor Flow
+```mermaid
+classDiagram
+direction LR
+
+class ClassroomView
 class Editor
 class MarkdownEditor
 class MonacoMarkdownEditor
 class EditorFiles
 class EditorCommits
+class Instruction
 class EmbeddedInstruction
+class useLatest
+class useCourseOperations
+
+ClassroomView --> Editor : uses (edit mode)
+Editor --> MarkdownEditor : main markdown edit
+Editor --> EditorFiles : file attachment links
+Editor --> EditorCommits : commit history panel
+Editor --> Instruction : preview mode
+Editor --> EmbeddedInstruction : embedded/video topics
+MarkdownEditor --> MonacoMarkdownEditor : editor engine
+Editor --> useLatest : dirty/content refs
+Editor --> useCourseOperations : getTopic/updateTopic
+MarkdownEditor --> useCourseOperations : commit callback
+EditorFiles --> useCourseOperations : upload/delete files
+EditorCommits --> useCourseOperations : load topic commits
+```
+
+## 3) Data, Domain, And External Integration Flow
+```mermaid
+classDiagram
+direction LR
+
+class App {
+  +createAppRouter(user)
+}
 
 class useCourseOperations {
-  +toggleDiscussion()
-  +setDiscussionToggleHandler(handler)
-  +toggleSidebar()
   +getCourse(courseId)
   +getTopic(topic)
   +updateTopic(...)
@@ -61,19 +122,10 @@ class useCourseOperations {
   +exportToCanvas(...)
 }
 
-class useMarkdownLocation
-class usePersistentAIMessages {
-  +clearStoredAIMessages()
-}
-class useProgressTracking
-class useLatest
-
 class Service {
   -supabase
   -catalog
   +currentUser()
-  +login()
-  +logout()
   +courseCatalog()
   +getProgress(...)
   +addProgress(...)
@@ -89,7 +141,6 @@ class Course {
   +topicFromPath(path)
   +defaultTopic()
   +adjacentTopic(path, direction)
-  +load(catalogEntry)$
 }
 
 class User {
@@ -97,16 +148,12 @@ class User {
   +name
   +email
   +roles
-  +isEditor(object)
-  +isRoot()
-  +getSetting(key, courseId)
 }
 
 class CatalogEntry {
   +id
   +name
   +title
-  +description
   +gitHub
   +settings
 }
@@ -116,7 +163,6 @@ class Enrollment {
   +learnerId
   +catalogId
   +progress
-  +settings
 }
 
 class LearningSession {
@@ -125,48 +171,20 @@ class LearningSession {
   +enrollment
 }
 
+class MarkdownStatic
+class ReactDOMServer
 class Supabase
 class GitHubAPI
 class CanvasEdgeFunction
 class GeminiEdgeFunction
-class aiContentGenerator
-class ReactDOMServer
-
-Index --> App : boots
-App --> AppBar : renders
-App --> DashboardView : routes
-App --> ClassroomView : routes
-App --> MetricsView : routes
-App --> ProgressView : routes
-App --> CourseCreationView : routes
-App --> CourseExportView : routes
-
-ClassroomView --> Instruction : uses
-ClassroomView --> Editor : uses (edit mode)
-Instruction --> InteractionInstruction : for topic type
-InteractionInstruction --> MarkdownInstruction : renders content
-Editor --> MarkdownEditor : composes
-Editor --> EditorFiles : composes
-Editor --> EditorCommits : optional panel
-Editor --> Instruction : preview mode
-Editor --> EmbeddedInstruction : embedded/video editing
-MarkdownEditor --> MonacoMarkdownEditor : editor engine
-MarkdownInstruction --> DiscussionPanel : composes
-DiscussionPanel --> MessageBox : renders
-MessageBox --> Markdown : renders
-MarkdownInstruction --> useMarkdownLocation : uses
-DiscussionPanel --> usePersistentAIMessages : uses
 
 App --> useCourseOperations : creates
-Instruction --> useProgressTracking : uses
-Editor --> useLatest : uses
-CourseExportView --> CourseExportForm : composes
-
 useCourseOperations --> Service : delegates
 useCourseOperations --> Course : manipulates
 useCourseOperations --> LearningSession : reads/writes
 useCourseOperations --> MarkdownStatic : static HTML export
 useCourseOperations --> ReactDOMServer : renderToStaticMarkup
+
 Service --> User : loads
 Service --> CatalogEntry : loads/saves
 Service --> Enrollment : loads/saves
@@ -180,5 +198,4 @@ Service --> Supabase : auth/db
 Service --> GitHubAPI : content/versioning
 Service --> CanvasEdgeFunction : LMS integration
 Service --> GeminiEdgeFunction : AI generation
-DiscussionPanel --> aiContentGenerator : AI responses
 ```
