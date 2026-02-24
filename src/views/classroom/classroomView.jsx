@@ -30,8 +30,14 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
       'meta+b': (e) => {
         courseOps.toggleSidebar();
       },
+      'meta+i': () => {
+        courseOps.toggleDiscussion();
+      },
+      'ctrl+i': () => {
+        courseOps.toggleDiscussion();
+      },
     },
-    { target: undefined },
+    { target: undefined, allowInInputs: ['meta+i', 'ctrl+i'] },
   );
 
   function navigateToTopic(direction) {

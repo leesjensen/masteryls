@@ -126,6 +126,14 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     setDiscussionOpen(true);
   }
 
+  useEffect(() => {
+    if (user && instructionState === 'learning') {
+      courseOps.setDiscussionToggleHandler(() => setDiscussionOpen((prev) => !prev));
+    } else {
+      courseOps.setDiscussionToggleHandler(null);
+    }
+  }, [courseOps, user, instructionState]);
+
   let markdownComponent = null;
   if (markdown) {
     const headingAction = user && instructionState === 'learning' ? onMakeHeadingActive : null;

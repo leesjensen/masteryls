@@ -21,6 +21,7 @@ import { createCourseInternal } from './courseCreation.js';
  */
 function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings) {
   const courseCache = React.useRef(new Map());
+  const discussionToggleHandler = React.useRef(null);
 
   async function login(user) {
     setUser(user);
@@ -59,6 +60,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: visible });
       setSettings((prev) => ({ ...prev, sidebarVisible: visible }));
     }
+  }
+
+  function setDiscussionToggleHandler(handler) {
+    discussionToggleHandler.current = handler || null;
+  }
+
+  function toggleDiscussion() {
+    discussionToggleHandler.current?.();
   }
 
   function courseCatalog() {
@@ -930,6 +939,8 @@ ${topicDescription || 'overview content placeholder'}`;
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
     toggleSidebar,
+    setDiscussionToggleHandler,
+    toggleDiscussion,
     courseCatalog,
     getCourse,
     searchCourse,
