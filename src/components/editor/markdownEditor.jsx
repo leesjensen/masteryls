@@ -7,10 +7,17 @@ import InputDialog from '../../hooks/inputDialog';
 const defaultImagePlaceholderUrl = 'https://images.unsplash.com/photo-1767597186218-813e8e6c44d6?q=80&w=400';
 
 const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady }, ref) {
-  const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on' });
+  const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const savedOptions = localStorage.getItem('markdownEditorOptions');
+    if (savedOptions) {
+      setEditorOptions(JSON.parse(savedOptions));
+    }
+  }, []);
 
   // Expose insertText and insertFiles functions to parent via ref
   React.useImperativeHandle(
@@ -208,15 +215,31 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
 
   const toggleWordWrap = () => {
     const nextWordWrap = editorOptions.wordWrap === 'off' ? 'on' : 'off';
-    setEditorOptions({ ...editorOptions, wordWrap: nextWordWrap });
+    saveEditorOptions({ ...editorOptions, wordWrap: nextWordWrap });
   };
+
+  const toggleLineNumbers = () => {
+    const nextLineNumbers = editorOptions.lineNumbers === 'off' ? 'on' : 'off';
+    saveEditorOptions({ ...editorOptions, lineNumbers: nextLineNumbers });
+  };
+
+  const saveEditorOptions = (options) => {
+    localStorage.setItem('markdownEditorOptions', JSON.stringify(options));
+    setEditorOptions(options);
+  };
+
+  const getToggleColor = (state) => (state === 'on' ? 'text-amber-600' : 'text-gray-500');
+  const getToggleText = (state) => (state === 'on' ? 'On' : 'Off');
 
   return (
     <div className="flex-1 min-w-0 flex flex-col relative border border-gray-300">
       {/* Markdown Toolbar */}
       {editorLoaded && (
         <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b-2 border-gray-300 text-sm overflow-hidden whitespace-nowrap">
-          <EditorButton icon={WrapText} onClick={toggleWordWrap} title={`Word Wrap: ${editorOptions.wordWrap === 'on' ? 'On' : 'Off'} (Toggle)`} />
+          <div className="flex items-center gap-1 border border-gray-200 rounded bg-white p-1">
+            <EditorButton icon={WrapText} className={getToggleColor(editorOptions.wordWrap)} onClick={toggleWordWrap} title={`Word Wrap: ${getToggleText(editorOptions.wordWrap)}`} />
+            <EditorButton icon={ListOrdered} className={getToggleColor(editorOptions.lineNumbers)} onClick={toggleLineNumbers} title={`Line Numbers: ${getToggleText(editorOptions.lineNumbers)}`} />
+          </div>
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
           <EditorButton icon={Bold} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
           <EditorButton icon={Italic} onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" />
@@ -227,7 +250,6 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Content</span>
           <EditorButton icon={Table} onClick={() => insertText(defaultTableTemplate)} title="Table" />
           <EditorButton icon={List} onClick={() => prefixInsertText('- ')} title="Bullet List" />
-          <EditorButton icon={ListOrdered} onClick={() => prefixInsertText('1. ')} title="Numbered List" />
           <EditorButton icon={Link} onClick={() => insertLink()} title="Link" />
           <EditorButton icon={Image} onClick={() => insertText(`![alt text](${defaultImagePlaceholderUrl})`)} title="Image" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
@@ -255,9 +277,11 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
 
 export default MarkdownEditor;
 
-export function EditorButton({ icon: Icon, onClick, title = undefined, size = 16 }) {
+export function EditorButton({ icon: Icon, onClick, title = undefined, size = 16, className = '' }) {
+  const buttonClassName = ['bg-transparent border border-gray-50 hover:text-amber-600 transition-all duration-200 ease-in-out', className].filter(Boolean).join(' ');
+
   return (
-    <button title={title} onClick={onClick} className="bg-transparent border border-gray-50  hover:text-amber-600 transition-all duration-200 ease-in-out">
+    <button title={title} onClick={onClick} className={buttonClassName}>
       <Icon size={size} />
     </button>
   );
