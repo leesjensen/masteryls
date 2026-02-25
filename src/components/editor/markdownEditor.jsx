@@ -206,10 +206,10 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   };
 
   return (
-    <div className="m-2 flex-1 min-w-0 flex flex-col relative border border-gray-300">
+    <div className="flex-1 min-w-0 flex flex-col relative border border-gray-300">
       {/* Markdown Toolbar */}
       {editorLoaded && (
-        <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm overflow-hidden whitespace-nowrap">
+        <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b-2 border-gray-300 text-sm overflow-hidden whitespace-nowrap">
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
           <EditorButton icon={Bold} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
           <EditorButton icon={Italic} onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" />

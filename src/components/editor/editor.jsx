@@ -297,7 +297,7 @@ export default function Editor({ courseOps, user, learningSession }) {
               </div>
             </div>
             {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} courseOps={courseOps} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
-            <div className="flex-8/10 flex overflow-hidden min-w-0" ref={splitContainerRef}>
+            <div className="flex-8/10 flex overflow-hidden min-w-0  border-1 border-gray-300 rounded mx-2" ref={splitContainerRef}>
               <div className="flex h-full overflow-hidden min-w-0 shrink-0" style={{ width: `${editorPanePercent}%` }}>
                 {getEditor()}
               </div>
