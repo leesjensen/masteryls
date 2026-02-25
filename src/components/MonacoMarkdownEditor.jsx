@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import Editor, { DiffEditor } from '@monaco-editor/react';
 import { useMonacoSpellChecker } from './MonacoSpellChecker';
 
-const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnly = false, height = '100%', width = '100%', theme = 'vs-dark' }) => {
+const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnly = false, height = '100%', width = '100%', theme = 'vs-dark', options = {} }) => {
   const editorRef = useRef(null);
   const { spellCheckerRef } = useMonacoSpellChecker();
 
@@ -64,7 +64,6 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
     readOnly,
     fontSize: 14,
     fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
-    wordWrap: 'on',
     wrappingIndent: 'indent',
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
@@ -77,20 +76,21 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
     multiCursorModifier: 'ctrlCmd',
     occurrencesHighlight: false,
     selectionHighlight: true,
-    renderLineHighlight: 'gutter',
+    renderLineHighlight: 'all',
     guides: {
       indentation: false,
     },
-    quickSuggestions: false,
+    quickSuggestions: true,
     lineNumbersMinChars: 1,
     lineDecorationsWidth: 0,
+    stickyScroll: { enabled: false },
   };
 
   if (diffContent) {
-    return <DiffEditor height={height} width={width} language="markdown" original={diffContent} modified={content} keepCurrentOriginalModel={true} keepCurrentModifiedModel={true} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, originalEditable: false, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
+    return <DiffEditor height={height} width={width} language="markdown" original={diffContent} modified={content} keepCurrentOriginalModel={true} keepCurrentModifiedModel={true} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, ...options, originalEditable: false, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
   }
 
-  return <Editor height={height} width={width} language="markdown" value={content} onChange={onChange} onMount={handleEditorDidMount} theme={theme} options={editorOptions} />;
+  return <Editor height={height} width={width} language="markdown" value={content} onChange={onChange} onMount={handleEditorDidMount} theme={theme} options={{ ...editorOptions, ...options }} />;
 };
 
 export default MonacoMarkdownEditor;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
@@ -7,6 +7,7 @@ import InputDialog from '../../hooks/inputDialog';
 const defaultImagePlaceholderUrl = 'https://images.unsplash.com/photo-1767597186218-813e8e6c44d6?q=80&w=400';
 
 const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady }, ref) {
+  const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
@@ -205,11 +206,17 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     }
   };
 
+  const toggleWordWrap = () => {
+    const nextWordWrap = editorOptions.wordWrap === 'off' ? 'on' : 'off';
+    setEditorOptions({ ...editorOptions, wordWrap: nextWordWrap });
+  };
+
   return (
     <div className="flex-1 min-w-0 flex flex-col relative border border-gray-300">
       {/* Markdown Toolbar */}
       {editorLoaded && (
         <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b-2 border-gray-300 text-sm overflow-hidden whitespace-nowrap">
+          <EditorButton icon={WrapText} onClick={toggleWordWrap} title={`Word Wrap: ${editorOptions.wordWrap === 'on' ? 'On' : 'Off'} (Toggle)`} />
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
           <EditorButton icon={Bold} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
           <EditorButton icon={Italic} onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" />
@@ -238,7 +245,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
         </div>
       )}
       <div className="flex-1 overflow-hidden">
-        <MonacoMarkdownEditor content={content} diffContent={diffContent} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" />
+        <MonacoMarkdownEditor content={content} diffContent={diffContent} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" options={editorOptions} />
       </div>
 
       <InputDialog dialogRef={subjectDialogRef} />
@@ -307,34 +314,3 @@ const defaultUrlInteractionTemplate = `
 Simple **submission** by url
 \`\`\`
 `;
-
-// // Handle paste - look for files in clipboard and upload them
-// async function handlePaste(e) {
-//   e = e.clipboardEvent;
-//   if (!e.clipboardData || !e.clipboardData.files || e.clipboardData.files.length === 0) return;
-//   const file = e.clipboardData.files[0];
-//   if (!/^image\//.test(file.type)) return;
-
-//   e.preventDefault();
-//   try {
-//     const items = e.clipboardData?.files;
-//     if (items && items.length > 0) {
-//       e.preventDefault();
-//       // Process each file sequentially
-//       for (let i = 0; i < items.length; i++) {
-//         const file = items[i];
-//         // upload
-//         //          const uploadedUrl = await uploadFileToGitHub(file);
-//         const uploadedUrl = 'https://example.com/uploads/' + file.name; // Mocked URL for example
-
-//         // Insert markdown reference at cursor position
-//         const markdownLink = `![${file.name}](${uploadedUrl})`;
-
-//         insertText(markdownLink);
-//       }
-//     }
-//   } catch (err) {
-//     console.error(err);
-//     window.alert('Failed to upload pasted file: ' + err.message);
-//   }
-// }
