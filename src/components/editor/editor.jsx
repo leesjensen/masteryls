@@ -25,10 +25,32 @@ export default function Editor({ courseOps, user, learningSession }) {
   const previewPaneRef = React.useRef(null);
   const editorInstanceRef = React.useRef(null);
   const editorScrollListenerRef = React.useRef(null);
+  const previewScrollElementRef = React.useRef(null);
+  const previewScrollListenerRef = React.useRef(null);
   const syncingFromEditorRef = React.useRef(false);
   const syncingFromPreviewRef = React.useRef(false);
+  const syncDebugEnabledRef = React.useRef(false);
 
   const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
+
+  React.useEffect(() => {
+    syncDebugEnabledRef.current =
+      (typeof window !== 'undefined' && window.__MASTERYLS_EDITOR_SYNC_DEBUG__ === true) ||
+      (typeof localStorage !== 'undefined' && localStorage.getItem('masteryls:editorSyncDebug') === '1');
+
+    if (syncDebugEnabledRef.current) {
+      console.info('[EditorSync] Debug mode enabled');
+    }
+  }, []);
+
+  function debugLog(message, details = undefined) {
+    if (!syncDebugEnabledRef.current) return;
+    if (details !== undefined) {
+      console.info(`[EditorSync] ${message}`, details);
+    } else {
+      console.info(`[EditorSync] ${message}`);
+    }
+  }
 
   React.useEffect(() => {
     if (contentAvailable) {
@@ -120,14 +142,34 @@ export default function Editor({ courseOps, user, learningSession }) {
     return null;
   }
 
-  function syncPreviewFromEditor(editor) {
+  function getPreviewScrollElement() {
     const previewContainer = previewPaneRef.current;
-    const previewScrollable = getScrollableElement(previewContainer);
+    if (!previewContainer) {
+      debugLog('Preview pane ref is null');
+      return null;
+    }
+    const explicitTarget = previewContainer.querySelector('[data-editor-preview-scroll-container="true"]');
+    const target = explicitTarget || getScrollableElement(previewContainer) || previewContainer;
+    if (!target) {
+      debugLog('Preview scroll element not found');
+    }
+    return target;
+  }
+
+  function syncPreviewFromEditor(editor) {
+    const previewScrollable = previewScrollElementRef.current || getPreviewScrollElement();
     if (!previewScrollable) return;
+    previewScrollElementRef.current = previewScrollable;
 
     const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
     const previewMax = Math.max(0, previewScrollable.scrollHeight - previewScrollable.clientHeight);
     const ratio = editorMax > 0 ? editor.getScrollTop() / editorMax : 0;
+    debugLog('Editor -> Preview', {
+      editorTop: editor.getScrollTop(),
+      editorMax,
+      previewMax,
+      ratio,
+    });
 
     syncingFromEditorRef.current = true;
     previewScrollable.scrollTop = ratio * previewMax;
@@ -136,35 +178,15 @@ export default function Editor({ courseOps, user, learningSession }) {
     });
   }
 
-  const onPreviewScrollCapture = React.useCallback((e) => {
-    if (syncingFromEditorRef.current) return;
-
-    const target = e.target;
-    if (!target || typeof target.scrollTop !== 'number' || typeof target.scrollHeight !== 'number' || typeof target.clientHeight !== 'number') {
+  React.useEffect(() => {
+    const editor = editorInstanceRef.current;
+    if (!editor) {
+      debugLog('Monaco editor instance missing; cannot bind editor scroll');
       return;
     }
 
-    const previewMax = Math.max(0, target.scrollHeight - target.clientHeight);
-    if (previewMax <= 0) return;
-
-    const editor = editorInstanceRef.current;
-    if (!editor) return;
-
-    const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
-    const ratio = target.scrollTop / previewMax;
-
-    syncingFromPreviewRef.current = true;
-    editor.setScrollTop(ratio * editorMax);
-    requestAnimationFrame(() => {
-      syncingFromPreviewRef.current = false;
-    });
-  }, []);
-
-  React.useEffect(() => {
-    const editor = editorInstanceRef.current;
-    if (!editor) return;
-
     editorScrollListenerRef.current?.dispose?.();
+    debugLog('Binding Monaco scroll listener');
     editorScrollListenerRef.current = editor.onDidScrollChange(() => {
       if (syncingFromPreviewRef.current) return;
       syncPreviewFromEditor(editor);
@@ -176,13 +198,83 @@ export default function Editor({ courseOps, user, learningSession }) {
     };
   }, [learningSession.topic?.id, editorPanePercent, editorSyncVersion]);
 
-  function handleEditorReady(editor) {
+  React.useEffect(() => {
+    const previewRoot = previewPaneRef.current;
+    if (!previewRoot) {
+      debugLog('Cannot bind preview scroll listener (missing root)');
+      return;
+    }
+
+    previewScrollElementRef.current = getPreviewScrollElement();
+    previewScrollListenerRef.current?.();
+    debugLog('Binding preview scroll listener (capture on root)', {
+      rootClientHeight: previewRoot.clientHeight,
+      rootScrollHeight: previewRoot.scrollHeight,
+    });
+
+    const onPreviewScroll = (event) => {
+      if (syncingFromEditorRef.current) return;
+
+      const editor = editorInstanceRef.current;
+      if (!editor) return;
+
+      const target = event?.target;
+      if (!target || typeof target.scrollTop !== 'number' || typeof target.scrollHeight !== 'number' || typeof target.clientHeight !== 'number') {
+        return;
+      }
+
+      previewScrollElementRef.current = target;
+
+      const previewMax = Math.max(0, target.scrollHeight - target.clientHeight);
+      if (previewMax <= 0) return;
+
+      const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
+      const ratio = target.scrollTop / previewMax;
+      debugLog('Preview -> Editor', {
+        previewTop: target.scrollTop,
+        previewMax,
+        editorMax,
+        ratio,
+      });
+
+      syncingFromPreviewRef.current = true;
+      editor.setScrollTop(ratio * editorMax);
+      requestAnimationFrame(() => {
+        syncingFromPreviewRef.current = false;
+      });
+    };
+
+    previewRoot.addEventListener('scroll', onPreviewScroll, { passive: true, capture: true });
+    previewScrollListenerRef.current = () => {
+      previewRoot.removeEventListener('scroll', onPreviewScroll, true);
+      previewScrollListenerRef.current = null;
+    };
+
+    return () => {
+      previewScrollListenerRef.current?.();
+    };
+  }, [learningSession.topic?.id, content, editorPanePercent, editorSyncVersion]);
+
+  React.useEffect(() => {
+    const editor = editorInstanceRef.current;
+    if (!editor) return;
+    const rafId = requestAnimationFrame(() => syncPreviewFromEditor(editor));
+    return () => cancelAnimationFrame(rafId);
+  }, [content, learningSession.topic?.id, editorPanePercent]);
+
+  const handleEditorReady = React.useCallback((editor) => {
     editorInstanceRef.current = editor;
     if (editor) {
+      debugLog('Editor ready', {
+        hasGetScrollTop: typeof editor.getScrollTop === 'function',
+        hasSetScrollTop: typeof editor.setScrollTop === 'function',
+      });
       setEditorSyncVersion((v) => v + 1);
       syncPreviewFromEditor(editor);
+    } else {
+      debugLog('Editor disposed');
     }
-  }
+  }, []);
 
   if (!contentAvailable) {
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
@@ -254,7 +346,7 @@ export default function Editor({ courseOps, user, learningSession }) {
                 {getEditor()}
               </div>
               <Splitter onMove={onEditorPaneMoved} onResized={onEditorPaneResized} minPosition={0} maxPosition={window.innerWidth} />
-              <div ref={previewPaneRef} className="h-full flex-1 min-w-0 overflow-auto border-l border-gray-200 bg-white" onScrollCapture={onPreviewScrollCapture}>
+              <div ref={previewPaneRef} className="h-full flex-1 min-w-0 overflow-auto border-l border-gray-200 bg-white">
                 <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState="preview" />
               </div>
             </div>

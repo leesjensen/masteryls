@@ -55,7 +55,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
 
   React.useEffect(() => {
     return () => onEditorReady?.(null);
-  }, [onEditorReady]);
+  }, []);
 
   // Helper functions for editor actions
   const insertText = (text) => {

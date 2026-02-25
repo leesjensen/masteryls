@@ -148,7 +148,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         </button>
       )}
 
-      <div ref={containerRef} className="flex-1 overflow-scroll">
+      <div ref={containerRef} data-editor-preview-scroll-container="true" className="flex-1 overflow-scroll">
         <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
       </div>
 
