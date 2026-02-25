@@ -131,15 +131,20 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   function getScrollableElement(container) {
     if (!container) return null;
-    if (container.scrollHeight > container.clientHeight + 1) return container;
 
-    const candidates = container.querySelectorAll('*');
-    for (const node of candidates) {
-      if (node.scrollHeight > node.clientHeight + 1) {
-        return node;
+    let best = null;
+    let bestRange = 0;
+
+    const allCandidates = [container, ...Array.from(container.querySelectorAll('*'))];
+    for (const node of allCandidates) {
+      const range = (node.scrollHeight || 0) - (node.clientHeight || 0);
+      if (range > bestRange) {
+        best = node;
+        bestRange = range;
       }
     }
-    return null;
+
+    return best || container;
   }
 
   function getPreviewScrollElement() {
@@ -157,12 +162,20 @@ export default function Editor({ courseOps, user, learningSession }) {
   }
 
   function syncPreviewFromEditor(editor) {
-    const previewScrollable = previewScrollElementRef.current || getPreviewScrollElement();
+    let previewScrollable = previewScrollElementRef.current || getPreviewScrollElement();
     if (!previewScrollable) return;
     previewScrollElementRef.current = previewScrollable;
 
     const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
-    const previewMax = Math.max(0, previewScrollable.scrollHeight - previewScrollable.clientHeight);
+    let previewMax = Math.max(0, previewScrollable.scrollHeight - previewScrollable.clientHeight);
+    if (previewMax <= 0) {
+      // Topic/content switches can temporarily leave us pointed at a non-scrollable node.
+      previewScrollable = getPreviewScrollElement();
+      if (!previewScrollable) return;
+      previewScrollElementRef.current = previewScrollable;
+      previewMax = Math.max(0, previewScrollable.scrollHeight - previewScrollable.clientHeight);
+      if (previewMax <= 0) return;
+    }
     const ratio = editorMax > 0 ? editor.getScrollTop() / editorMax : 0;
     debugLog('Editor -> Preview', {
       editorTop: editor.getScrollTop(),
@@ -223,10 +236,9 @@ export default function Editor({ courseOps, user, learningSession }) {
         return;
       }
 
-      previewScrollElementRef.current = target;
-
       const previewMax = Math.max(0, target.scrollHeight - target.clientHeight);
       if (previewMax <= 0) return;
+      previewScrollElementRef.current = target;
 
       const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
       const ratio = target.scrollTop / previewMax;
