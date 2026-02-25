@@ -5,12 +5,14 @@ import EditorFiles from './editorFiles';
 import EmbeddedInstruction from '../instruction/embeddedInstruction.jsx';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
+import Splitter from '../Splitter.jsx';
 
 export default function Editor({ courseOps, user, learningSession }) {
   const [content, setContent] = React.useState('');
-  const [editorState, setEditorState] = React.useState('learning'); // 'editing' | 'preview'
   const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
+  const [editorPanePercent, setEditorPanePercent] = React.useState(55);
+  const [editorSyncVersion, setEditorSyncVersion] = React.useState(0);
 
   const [committing, setCommitting] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
@@ -19,6 +21,12 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   // Ref to access MarkdownEditor's insert functionality
   const markdownEditorRef = React.useRef(null);
+  const splitContainerRef = React.useRef(null);
+  const previewPaneRef = React.useRef(null);
+  const editorInstanceRef = React.useRef(null);
+  const editorScrollListenerRef = React.useRef(null);
+  const syncingFromEditorRef = React.useRef(false);
+  const syncingFromPreviewRef = React.useRef(false);
 
   const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
 
@@ -80,6 +88,102 @@ export default function Editor({ courseOps, user, learningSession }) {
     setDiffContent(null);
   }
 
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function updateSplitFromClientX(clientX) {
+    const rect = splitContainerRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return;
+    const nextPercent = ((clientX - rect.left) / rect.width) * 100;
+    setEditorPanePercent(clamp(nextPercent, 0, 99));
+  }
+
+  function onEditorPaneMoved(clientX) {
+    updateSplitFromClientX(clientX);
+  }
+
+  function onEditorPaneResized(clientX) {
+    updateSplitFromClientX(clientX);
+  }
+
+  function getScrollableElement(container) {
+    if (!container) return null;
+    if (container.scrollHeight > container.clientHeight + 1) return container;
+
+    const candidates = container.querySelectorAll('*');
+    for (const node of candidates) {
+      if (node.scrollHeight > node.clientHeight + 1) {
+        return node;
+      }
+    }
+    return null;
+  }
+
+  function syncPreviewFromEditor(editor) {
+    const previewContainer = previewPaneRef.current;
+    const previewScrollable = getScrollableElement(previewContainer);
+    if (!previewScrollable) return;
+
+    const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
+    const previewMax = Math.max(0, previewScrollable.scrollHeight - previewScrollable.clientHeight);
+    const ratio = editorMax > 0 ? editor.getScrollTop() / editorMax : 0;
+
+    syncingFromEditorRef.current = true;
+    previewScrollable.scrollTop = ratio * previewMax;
+    requestAnimationFrame(() => {
+      syncingFromEditorRef.current = false;
+    });
+  }
+
+  const onPreviewScrollCapture = React.useCallback((e) => {
+    if (syncingFromEditorRef.current) return;
+
+    const target = e.target;
+    if (!target || typeof target.scrollTop !== 'number' || typeof target.scrollHeight !== 'number' || typeof target.clientHeight !== 'number') {
+      return;
+    }
+
+    const previewMax = Math.max(0, target.scrollHeight - target.clientHeight);
+    if (previewMax <= 0) return;
+
+    const editor = editorInstanceRef.current;
+    if (!editor) return;
+
+    const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
+    const ratio = target.scrollTop / previewMax;
+
+    syncingFromPreviewRef.current = true;
+    editor.setScrollTop(ratio * editorMax);
+    requestAnimationFrame(() => {
+      syncingFromPreviewRef.current = false;
+    });
+  }, []);
+
+  React.useEffect(() => {
+    const editor = editorInstanceRef.current;
+    if (!editor) return;
+
+    editorScrollListenerRef.current?.dispose?.();
+    editorScrollListenerRef.current = editor.onDidScrollChange(() => {
+      if (syncingFromPreviewRef.current) return;
+      syncPreviewFromEditor(editor);
+    });
+
+    return () => {
+      editorScrollListenerRef.current?.dispose?.();
+      editorScrollListenerRef.current = null;
+    };
+  }, [learningSession.topic?.id, editorPanePercent, editorSyncVersion]);
+
+  function handleEditorReady(editor) {
+    editorInstanceRef.current = editor;
+    if (editor) {
+      setEditorSyncVersion((v) => v + 1);
+      syncPreviewFromEditor(editor);
+    }
+  }
+
   if (!contentAvailable) {
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
   }
@@ -87,10 +191,7 @@ export default function Editor({ courseOps, user, learningSession }) {
   function getEditor() {
     let editor = null;
     if (learningSession.topic?.type !== 'embedded' && learningSession.topic?.type !== 'video') {
-      editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} />;
-      if (editorState === 'preview') {
-        editor = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={editorState} />;
-      }
+      editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} onEditorReady={handleEditorReady} />;
     }
     return editor;
   }
@@ -138,9 +239,6 @@ export default function Editor({ courseOps, user, learningSession }) {
                   <button className="mx-1 px-3 py-1 w-28 whitespace-nowrap bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 text-xs gap-2" onClick={toggleShowCommits}>
                     {showCommits ? 'Hide' : 'Show'} Commits
                   </button>
-                  <button className="mx-1 px-3 py-1 w-18 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={() => setEditorState((v) => (v == 'preview' ? 'editing' : 'preview'))}>
-                    {editorState === 'preview' ? 'Edit' : 'Preview'}
-                  </button>
                   <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
                     Discard
                   </button>
@@ -151,7 +249,15 @@ export default function Editor({ courseOps, user, learningSession }) {
               </div>
             </div>
             {showCommits && <EditorCommits currentTopic={learningSession.topic} course={learningSession.course} user={user} courseOps={courseOps} setContent={setContent} setDiffContent={setDiffContent} setDirty={setDirty} />}
-            <div className="flex-8/10 flex overflow-hidden">{getEditor()}</div>
+            <div className="flex-8/10 flex overflow-hidden min-w-0" ref={splitContainerRef}>
+              <div className="flex h-full overflow-hidden min-w-0 shrink-0" style={{ width: `${editorPanePercent}%` }}>
+                {getEditor()}
+              </div>
+              <Splitter onMove={onEditorPaneMoved} onResized={onEditorPaneResized} minPosition={0} maxPosition={window.innerWidth} />
+              <div ref={previewPaneRef} className="h-full flex-1 min-w-0 overflow-auto border-l border-gray-200 bg-white" onScrollCapture={onPreviewScrollCapture}>
+                <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState="preview" />
+              </div>
+            </div>
             <div className="flex-2/10 flex overflow-hidden">
               <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
             </div>

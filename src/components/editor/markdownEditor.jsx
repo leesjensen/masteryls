@@ -6,7 +6,7 @@ import InputDialog from '../../hooks/inputDialog';
 
 const defaultImagePlaceholderUrl = 'https://images.unsplash.com/photo-1767597186218-813e8e6c44d6?q=80&w=400';
 
-const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit }, ref) {
+const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady }, ref) {
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
@@ -22,32 +22,40 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   );
 
   function handleEditorDidMount(editor, monaco) {
-    editor.setPosition({ lineNumber: 1, column: 1 });
-    editor.focus();
-    editorRef.current = editor;
+    const textEditor = editor?.getModifiedEditor ? editor.getModifiedEditor() : editor;
+    if (!textEditor) return;
+
+    textEditor.setPosition({ lineNumber: 1, column: 1 });
+    textEditor.focus();
+    editorRef.current = textEditor;
+    onEditorReady?.(textEditor);
 
     setEditorLoaded(true);
 
     // Save
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
+    textEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
       await commit();
     });
 
     // Find and Replace
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
-      editor.getAction('actions.find').run();
+    textEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
+      textEditor.getAction('actions.find').run();
     });
 
     // Find and Replace
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
-      editor.getAction('editor.action.startFindReplaceAction').run();
+    textEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
+      textEditor.getAction('editor.action.startFindReplaceAction').run();
     });
 
     // Multi-cursor select next occurrence
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD, () => {
-      editor.getAction('editor.action.addSelectionToNextFindMatch').run();
+    textEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD, () => {
+      textEditor.getAction('editor.action.addSelectionToNextFindMatch').run();
     });
   }
+
+  React.useEffect(() => {
+    return () => onEditorReady?.(null);
+  }, [onEditorReady]);
 
   // Helper functions for editor actions
   const insertText = (text) => {
@@ -198,10 +206,10 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   };
 
   return (
-    <div className="m-2 flex-9/12 flex flex-col relative border border-gray-300 ">
+    <div className="m-2 flex-1 min-w-0 flex flex-col relative border border-gray-300">
       {/* Markdown Toolbar */}
       {editorLoaded && (
-        <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm">
+        <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b text-sm overflow-hidden whitespace-nowrap">
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
           <EditorButton icon={Bold} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
           <EditorButton icon={Italic} onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" />
