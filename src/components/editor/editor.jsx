@@ -29,28 +29,8 @@ export default function Editor({ courseOps, user, learningSession }) {
   const previewScrollListenerRef = React.useRef(null);
   const syncingFromEditorRef = React.useRef(false);
   const syncingFromPreviewRef = React.useRef(false);
-  const syncDebugEnabledRef = React.useRef(false);
 
   const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
-
-  React.useEffect(() => {
-    syncDebugEnabledRef.current =
-      (typeof window !== 'undefined' && window.__MASTERYLS_EDITOR_SYNC_DEBUG__ === true) ||
-      (typeof localStorage !== 'undefined' && localStorage.getItem('masteryls:editorSyncDebug') === '1');
-
-    if (syncDebugEnabledRef.current) {
-      console.info('[EditorSync] Debug mode enabled');
-    }
-  }, []);
-
-  function debugLog(message, details = undefined) {
-    if (!syncDebugEnabledRef.current) return;
-    if (details !== undefined) {
-      console.info(`[EditorSync] ${message}`, details);
-    } else {
-      console.info(`[EditorSync] ${message}`);
-    }
-  }
 
   React.useEffect(() => {
     if (contentAvailable) {
@@ -149,15 +129,9 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   function getPreviewScrollElement() {
     const previewContainer = previewPaneRef.current;
-    if (!previewContainer) {
-      debugLog('Preview pane ref is null');
-      return null;
-    }
+    if (!previewContainer) return null;
     const explicitTarget = previewContainer.querySelector('[data-editor-preview-scroll-container="true"]');
     const target = explicitTarget || getScrollableElement(previewContainer) || previewContainer;
-    if (!target) {
-      debugLog('Preview scroll element not found');
-    }
     return target;
   }
 
@@ -177,13 +151,6 @@ export default function Editor({ courseOps, user, learningSession }) {
       if (previewMax <= 0) return;
     }
     const ratio = editorMax > 0 ? editor.getScrollTop() / editorMax : 0;
-    debugLog('Editor -> Preview', {
-      editorTop: editor.getScrollTop(),
-      editorMax,
-      previewMax,
-      ratio,
-    });
-
     syncingFromEditorRef.current = true;
     previewScrollable.scrollTop = ratio * previewMax;
     requestAnimationFrame(() => {
@@ -193,13 +160,9 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   React.useEffect(() => {
     const editor = editorInstanceRef.current;
-    if (!editor) {
-      debugLog('Monaco editor instance missing; cannot bind editor scroll');
-      return;
-    }
+    if (!editor) return;
 
     editorScrollListenerRef.current?.dispose?.();
-    debugLog('Binding Monaco scroll listener');
     editorScrollListenerRef.current = editor.onDidScrollChange(() => {
       if (syncingFromPreviewRef.current) return;
       syncPreviewFromEditor(editor);
@@ -213,17 +176,10 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   React.useEffect(() => {
     const previewRoot = previewPaneRef.current;
-    if (!previewRoot) {
-      debugLog('Cannot bind preview scroll listener (missing root)');
-      return;
-    }
+    if (!previewRoot) return;
 
     previewScrollElementRef.current = getPreviewScrollElement();
     previewScrollListenerRef.current?.();
-    debugLog('Binding preview scroll listener (capture on root)', {
-      rootClientHeight: previewRoot.clientHeight,
-      rootScrollHeight: previewRoot.scrollHeight,
-    });
 
     const onPreviewScroll = (event) => {
       if (syncingFromEditorRef.current) return;
@@ -242,12 +198,6 @@ export default function Editor({ courseOps, user, learningSession }) {
 
       const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
       const ratio = target.scrollTop / previewMax;
-      debugLog('Preview -> Editor', {
-        previewTop: target.scrollTop,
-        previewMax,
-        editorMax,
-        ratio,
-      });
 
       syncingFromPreviewRef.current = true;
       editor.setScrollTop(ratio * editorMax);
@@ -277,14 +227,8 @@ export default function Editor({ courseOps, user, learningSession }) {
   const handleEditorReady = React.useCallback((editor) => {
     editorInstanceRef.current = editor;
     if (editor) {
-      debugLog('Editor ready', {
-        hasGetScrollTop: typeof editor.getScrollTop === 'function',
-        hasSetScrollTop: typeof editor.setScrollTop === 'function',
-      });
       setEditorSyncVersion((v) => v + 1);
       syncPreviewFromEditor(editor);
-    } else {
-      debugLog('Editor disposed');
     }
   }, []);
 
