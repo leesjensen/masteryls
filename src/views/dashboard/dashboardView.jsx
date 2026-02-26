@@ -1,10 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Download, PackagePlus, Columns3Cog, ChartArea, LogOut } from 'lucide-react';
 import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
-import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
-import { AppBarButton } from '../../appBar.jsx';
 
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
@@ -12,19 +9,11 @@ export default function DashboardView({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const dialogRef = useRef(null);
-  const navigate = useNavigate();
-
-  const appBarTools = (
-    <div className="flex items-center gap-2">
-      <AppBarButton icon={PackagePlus} onClick={() => navigate('/courseCreation')} title="New course" />
-      <AppBarButton icon={Download} onClick={() => navigate('/courseExport')} title="Export course" />
-    </div>
-  );
 
   React.useEffect(() => {
     if (user) {
       if (user.isRoot) {
-        updateAppBar({ title: `${user.name}'s Dashboard`, tools: appBarTools });
+        updateAppBar({ title: `${user.name}'s Dashboard`, tools: null });
       }
       service.enrollments(user.id).then((learnerEnrollments) => {
         const filteredEnrollments = new Map(
