@@ -41,10 +41,9 @@ test('dashboard join/leave course', async ({ page }) => {
 
   await register(page);
 
-  await expect(page.getByRole('heading', { name: 'Join a course' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Find a new course' })).toBeVisible();
 
-  await expect(page.locator('#root')).toContainText('You are not enrolled in any courses. Select one below to get started.');
-  await expect(page.locator('#root')).not.toContainText('0% complete');
+  await expect(page.locator('#root')).toContainText('You are not enrolled in any courses');
 
   enrollments = [
     {
@@ -60,14 +59,13 @@ test('dashboard join/leave course', async ({ page }) => {
 
   await page.getByRole('button', { name: 'R Rocket Science' }).click();
   await expect(page.getByRole('button', { name: 'R Rocket Science' })).toBeVisible();
-  await expect(page.locator('#root')).toContainText('0% complete');
+  await expect(page.getByRole('link')).toContainText('Progress0%');
 
   enrollments = [];
 
   await page.getByRole('button', { name: 'Delete' }).click();
-
   await page.getByRole('button', { name: 'OK' }).click();
-  await expect(page.locator('#root')).not.toContainText('0% complete');
+  await expect(page.locator('#root')).toContainText('You are not enrolled in any courses');
 });
 
 test('dashboard logout', async ({ page }) => {
