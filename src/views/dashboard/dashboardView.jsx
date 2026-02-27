@@ -88,22 +88,17 @@ export default function DashboardView({ courseOps, service, user }) {
     <>
       <div className="flex-1 overflow-auto bg-white p-6 sm:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 p-6 shadow-sm">
-            <h1 className="text-amber-500">
-              <GraduationCap className="inline mr-2" />
-              {`You are working on ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''}`}
-            </h1>
-            <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
-              <DashboardStat label="Catalog" value={catalog.length} />
-              <DashboardStat label="Enrolled" value={enrolledCourses.length} />
-              <DashboardStat label="Completed" value={completedCount} />
-            </div>
-          </section>
-
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-900">Your courses</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{enrolledCourses.length}</span>
+            <div className="text-xl mb-6">
+              <h1 className="text-amber-500">
+                <GraduationCap className="inline mr-2" />
+                {`You are working on ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''}`}
+              </h1>
+              <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
+                <DashboardStat label="Catalog" value={catalog.length} />
+                <DashboardStat label="Enrolled" value={enrolledCourses.length} />
+                <DashboardStat label="Completed" value={completedCount} />
+              </div>
             </div>
             {enrolledCourses.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -112,27 +107,23 @@ export default function DashboardView({ courseOps, service, user }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{query ? 'No enrolled courses match your search.' : 'You are not enrolled in any courses yet. Join one below to get started.'}</div>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">You are not enrolled in any courses yet. Join one below to get started.</div>
             )}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 p-6 shadow-sm">
-            <h1 className="text-amber-600">
-              <BookSearch className="inline mr-2" />
-              Find a new course
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h1 className="text-xl text-amber-500 flex items-center justify-between">
+              <span>
+                <BookSearch className="inline mr-2" />
+                Find a new course
+              </span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{visibleAvailable.length} available</span>{' '}
             </h1>
-            <div className="mt-5">
+            <div className="my-5">
               <label htmlFor="course-search" className="sr-only">
                 Search courses
               </label>
               <input id="course-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200" placeholder="Search by title or description" />
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-900">Join a course</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{visibleAvailable.length}</span>
             </div>
             {visibleAvailable.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -141,7 +132,7 @@ export default function DashboardView({ courseOps, service, user }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{query ? 'No available courses match your search.' : 'You are enrolled in every published course.'}</div>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{query && query.length ? 'No available courses match your search.' : 'You are enrolled in every published course.'}</div>
             )}
           </section>
         </div>
