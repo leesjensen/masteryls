@@ -30,7 +30,11 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
 
   return (
     <div className="grid grid-cols-1 grid-rows-1 relative">
-      <ElementType key={catalogEntry.id} {...elementProps} className="col-start-1 row-start-1 flex flex-col items-center p-6 rounded-xl bg-gray-50 shadow-md min-h-[280px] transition-transform duration-200 focus:outline-none hover:scale-102 hover:shadow-lg cursor-pointer">
+      <ElementType
+        key={catalogEntry.id}
+        {...elementProps}
+        className="col-start-1 row-start-1 flex min-h-[280px] cursor-pointer flex-col items-center rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+      >
         <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrollment ? colorGenerator(catalogEntry.title) : 'bg-gray-300'}`}>
           <span className="text-white text-6xl font-bold">{catalogEntry.title[0]}</span>
         </div>

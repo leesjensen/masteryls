@@ -73,7 +73,7 @@ export default function DashboardView({ courseOps, service, user }) {
   return (
     <>
       <div className="flex-1 overflow-auto p-8 bg-white">
-        <h2 className="border-t-2 border-gray-400 font-semibold mb- pt-1 text-xl text-gray-500">Your courses</h2>
+        <h2 className="border-t-2 border-gray-400 font-semibold mb-6 pt-1 text-xl text-gray-500">Your courses</h2>
         {enrollments.size > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {Array.from(enrollments.values()).map((enrollment) => {
