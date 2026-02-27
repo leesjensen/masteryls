@@ -671,11 +671,11 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   function _calculateEnrollmentProgress(enrollment, course) {
-    if (course.allTopics.length === 0) return 0;
+    let publishedTopics = course.allTopics.filter((topic) => topic.state === 'published');
+    if (publishedTopics.length === 0) return 0;
     let completedTopics = 0;
-    let totalTopics = course.allTopics.length;
 
-    course.allTopics.forEach((topic) => {
+    publishedTopics.forEach((topic) => {
       let topicPercent = enrollment.progress[topic.id] ? 1 : 0;
       if (topic.interactions && topic.interactions.length > 0) {
         const completedForTopic = enrollment.progress[topic.id]?.interactions || [];
@@ -685,7 +685,7 @@ ${topicDescription || 'overview content placeholder'}`;
       completedTopics += topicPercent;
     });
 
-    return Math.round((completedTopics / totalTopics) * 100);
+    return Math.round((completedTopics / publishedTopics.length) * 100);
   }
 
   async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, types = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
