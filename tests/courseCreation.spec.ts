@@ -200,6 +200,7 @@ async function mockAiCourseGenerationRequests(page: any) {
 }
 
 async function openCourseCreationForm(page: any) {
+  await page.getByRole('button', { name: 'User Menu' }).click();
   await page.getByRole('button', { name: 'New course' }).click();
   await expect(page.getByRole('heading', { name: 'Create a Course' })).toBeVisible();
 }
