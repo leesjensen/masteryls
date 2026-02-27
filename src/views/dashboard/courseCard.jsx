@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Pencil, X, EyeOff } from 'lucide-react';
+import React from 'react';
+import { EyeOff, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function CourseCard({ user, catalogEntry, enrollment, select, remove }) {
   const navigate = useNavigate();
 
   const colorGenerator = (title) => {
-    const colors = ['bg-cyan-700', 'bg-red-700', 'bg-yellow-600', 'bg-purple-700', 'bg-amber-500', 'bg-red-700', 'bg-indigo-700', 'bg-teal-700', 'bg-green-700'];
+    const colors = ['bg-cyan-700', 'bg-rose-700', 'bg-amber-600', 'bg-indigo-700', 'bg-emerald-700', 'bg-sky-700', 'bg-teal-700'];
     let hash = 0;
     for (let i = 0; i < title.length; i++) {
       hash = title.charCodeAt(i) + ((hash << 5) - hash);
@@ -29,40 +29,46 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
   const elementProps = href ? { href, onClick: handleClick } : { type: 'button', onClick: handleClick };
 
   return (
-    <div className="grid grid-cols-1 grid-rows-1 relative">
+    <div className="relative grid grid-cols-1 grid-rows-1">
       <ElementType
         key={catalogEntry.id}
         {...elementProps}
-        className="col-start-1 row-start-1 flex min-h-[280px] cursor-pointer flex-col items-center rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        className="group col-start-1 row-start-1 flex min-h-[300px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-cyan-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
       >
-        <div className={`h-32 w-32 rounded-lg mb-4 flex items-center justify-center ${enrollment ? colorGenerator(catalogEntry.title) : 'bg-gray-300'}`}>
-          <span className="text-white text-6xl font-bold">{catalogEntry.title[0]}</span>
+        <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl ${enrollment ? colorGenerator(catalogEntry.title) : 'bg-slate-300'}`}>
+          <span className="text-2xl font-bold text-white">{catalogEntry.title[0]}</span>
         </div>
 
-        <div className="text-lg font-semibold mb-2 text-center">{catalogEntry.title}</div>
-        <div className="text-gray-500 text-sm mb-3 text-center overflow-hidden text-ellipsis whitespace-normal line-clamp-3">{catalogEntry.description}</div>
+        <h3 className="mb-2 line-clamp-2 text-lg font-semibold text-slate-900">{catalogEntry.title}</h3>
+        <p className="mb-4 line-clamp-3 text-sm text-slate-600">{catalogEntry.description}</p>
 
-        {enrollment && (
-          <div className="w-full mt-auto">
-            <div className="text-xs text-gray-700 mb-1">Progress</div>
-            <div className="bg-blue-100 rounded h-2 w-full mb-1 overflow-hidden">
-              <div className="bg-blue-500 h-full" style={{ width: `${enrollment.progress.mastery}%` }} />
+        {enrollment ? (
+          <div className="mt-auto w-full">
+            <div className="mb-1 flex items-center justify-between text-xs">
+              <span className="font-medium text-slate-700">Progress</span>
+              <span className="text-slate-500">{enrollment.progress.mastery}%</span>
             </div>
-            <div className="text-xs text-gray-400">{enrollment.progress.mastery}% complete</div>
+            <div className="h-2 w-full overflow-hidden rounded bg-slate-100">
+              <div className="h-full rounded bg-cyan-500 transition-all duration-300" style={{ width: `${enrollment.progress.mastery}%` }} />
+            </div>
+          </div>
+        ) : (
+          <div className="mt-auto inline-flex w-fit items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
+            Join course
           </div>
         )}
       </ElementType>
 
-      <div className="col-start-1 row-start-1 justify-self-end self-start flex flex-row gap-1 z-10 translate-x-3 -translate-y-3">
+      <div className="pointer-events-none col-start-1 row-start-1 flex translate-x-3 -translate-y-3 justify-self-end gap-1 self-start">
         {catalogEntry.settings?.state === 'unpublished' && (
-          <div className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow cursor-default">
+          <div className="pointer-events-auto inline-flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
             <span title="Unpublished">
               <EyeOff size={16} />
             </span>
           </div>
         )}
         {user.isEditor(catalogEntry.id) && (
-          <div className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow cursor-default">
+          <div className="pointer-events-auto inline-flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
             <span title="Editor rights">
               <Pencil size={16} />
             </span>
@@ -77,7 +83,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
               remove(enrollment);
             }}
             aria-label="Delete"
-            className="inline-flex items-center justify-center w-7 h-7 rounded-full border-gray-200 border-1 bg-white text-gray-600 text-xs shadow hover:text-gray-50 hover:bg-red-500 focus:outline-none"
+            className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-500 hover:text-white focus:outline-none"
             title="Remove enrollment"
           >
             <X size={16} />
