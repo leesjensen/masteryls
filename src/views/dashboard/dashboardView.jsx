@@ -95,7 +95,6 @@ export default function DashboardView({ courseOps, service, user }) {
                 {`You are working on ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''}`}
               </h1>
               <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
-                <DashboardStat label="Catalog" value={catalog.length} />
                 <DashboardStat label="Enrolled" value={enrolledCourses.length} />
                 <DashboardStat label="Completed" value={completedCount} />
               </div>
@@ -117,8 +116,11 @@ export default function DashboardView({ courseOps, service, user }) {
                 <BookSearch className="inline mr-2" />
                 Find a new course
               </span>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{visibleAvailable.length} available</span>{' '}
             </h1>
+            <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
+              <DashboardStat label="Unenrolled" value={visibleAvailable.length} />
+              <DashboardStat label="Catalog" value={catalog.length} />
+            </div>
             <div className="my-5">
               <label htmlFor="course-search" className="sr-only">
                 Search courses
@@ -153,11 +155,11 @@ export default function DashboardView({ courseOps, service, user }) {
 
 function DashboardStat({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
-      <p className="truncate text-[11px] uppercase tracking-wide text-slate-500" title={label}>
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
+      <p className="truncate text-xs uppercase tracking-wide text-slate-600" title={label}>
         {label}
       </p>
-      <p className="shrink-0 text-base font-semibold leading-none text-slate-900">{value}</p>
+      <p className="shrink-0 text-xs font-semibold leading-none text-slate-800 rounded-2xl bg-slate-200 py-0.5 px-3">{value}</p>
     </div>
   );
 }
