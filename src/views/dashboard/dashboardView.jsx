@@ -65,6 +65,8 @@ export default function DashboardView({ courseOps, service, user }) {
     setPendingEnrollmentRemoval(null);
   };
 
+  if (!enrollments) return <div></div>;
+
   const catalog = courseOps.courseCatalog();
   const enrolledCourses = enrollments ? Array.from(enrollments.values()) : [];
   const availableCourses = enrollments ? catalog.filter((course) => course.id && !enrollments.has(course.id)) : [];
@@ -84,13 +86,13 @@ export default function DashboardView({ courseOps, service, user }) {
 
   return (
     <>
-      <div className="flex-1 overflow-auto bg-slate-50 p-6 sm:p-8">
+      <div className="flex-1 overflow-auto bg-white p-6 sm:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100 p-6 shadow-sm">
-            <p className="mt-2 text-md font-semibold text-slate-600">
+          <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 p-6 shadow-sm">
+            <h1 className="text-amber-500">
               <GraduationCap className="inline mr-2" />
               {`You are working on ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''}`}
-            </p>
+            </h1>
             <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
               <DashboardStat label="Catalog" value={catalog.length} />
               <DashboardStat label="Enrolled" value={enrolledCourses.length} />
@@ -114,11 +116,11 @@ export default function DashboardView({ courseOps, service, user }) {
             )}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100 p-6 shadow-sm">
-            <p className="mt-2 text-md font-semibold text-slate-600">
+          <section className="rounded-2xl border border-slate-200 bg-gradient-to-r from-white via-white to-slate-50 p-6 shadow-sm">
+            <h1 className="text-amber-600">
               <BookSearch className="inline mr-2" />
               Find a new course
-            </p>
+            </h1>
             <div className="mt-5">
               <label htmlFor="course-search" className="sr-only">
                 Search courses
@@ -160,7 +162,7 @@ export default function DashboardView({ courseOps, service, user }) {
 
 function DashboardStat({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-white px-2.5 py-2">
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2">
       <p className="truncate text-[11px] uppercase tracking-wide text-slate-500" title={label}>
         {label}
       </p>

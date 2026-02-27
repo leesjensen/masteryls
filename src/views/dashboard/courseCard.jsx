@@ -49,7 +49,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
             </div>
           </div>
         ) : (
-          <div className="mt-auto inline-flex w-fit items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">Join course</div>
+          <div className="mt-auto inline-flex w-fit items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-800">Join course</div>
         )}
       </ElementType>
 
