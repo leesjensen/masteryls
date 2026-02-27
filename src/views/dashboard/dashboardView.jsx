@@ -3,6 +3,17 @@ import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 
+function DashboardStat({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-cyan-100 bg-white px-2.5 py-2">
+      <p className="truncate text-[11px] uppercase tracking-wide text-slate-500" title={label}>
+        {label}
+      </p>
+      <p className="shrink-0 text-base font-semibold leading-none text-slate-900">{value}</p>
+    </div>
+  );
+}
+
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
 
@@ -101,37 +112,21 @@ export default function DashboardView({ courseOps, service, user }) {
 
   return (
     <>
-      <div className="flex-1 overflow-auto bg-slate-50 p-6 md:p-8">
+      <div className="flex-1 overflow-auto bg-slate-50 p-6 sm:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
           <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-cyan-50 via-white to-blue-50 p-6 shadow-sm">
-            <h1 className="text-2xl font-semibold text-slate-900">Welcome back, {user.name}</h1>
             <p className="mt-2 text-sm text-slate-600">Pick up where you left off or join a new course.</p>
             <div className="mt-5">
               <label htmlFor="course-search" className="sr-only">
                 Search courses
               </label>
-              <input
-                id="course-search"
-                type="search"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200"
-                placeholder="Search by title or description"
-              />
+              <input id="course-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200" placeholder="Search by title or description" />
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-cyan-100 bg-white px-3 py-2.5">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">Enrolled</p>
-                <p className="mt-0.5 text-xl font-semibold leading-tight text-slate-900">{enrolledCourses.length}</p>
-              </div>
-              <div className="rounded-lg border border-cyan-100 bg-white px-3 py-2.5">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">In progress</p>
-                <p className="mt-0.5 text-xl font-semibold leading-tight text-slate-900">{inProgressCount}</p>
-              </div>
-              <div className="rounded-lg border border-cyan-100 bg-white px-3 py-2.5">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">Completed</p>
-                <p className="mt-0.5 text-xl font-semibold leading-tight text-slate-900">{completedCount}</p>
-              </div>
+            <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
+              <DashboardStat label="Catalog" value={catalog.length} />
+              <DashboardStat label="Enrolled" value={enrolledCourses.length} />
+              <DashboardStat label="In progress" value={inProgressCount} />
+              <DashboardStat label="Completed" value={completedCount} />
             </div>
           </section>
 
@@ -147,9 +142,7 @@ export default function DashboardView({ courseOps, service, user }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
-                {query ? 'No enrolled courses match your search.' : 'You are not enrolled in any courses yet. Join one below to get started.'}
-              </div>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{query ? 'No enrolled courses match your search.' : 'You are not enrolled in any courses yet. Join one below to get started.'}</div>
             )}
           </section>
 
@@ -165,9 +158,7 @@ export default function DashboardView({ courseOps, service, user }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">
-                {query ? 'No available courses match your search.' : 'You are enrolled in every published course.'}
-              </div>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{query ? 'No available courses match your search.' : 'You are enrolled in every published course.'}</div>
             )}
           </section>
         </div>
