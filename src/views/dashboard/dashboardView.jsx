@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
+import { GraduationCap, BookSearch } from 'lucide-react';
 
 const ENROLLMENT_CARD_COLORS = ['bg-cyan-700', 'bg-rose-700', 'bg-amber-600', 'bg-indigo-700', 'bg-emerald-700', 'bg-sky-700', 'bg-teal-700', 'bg-violet-700', 'bg-fuchsia-700', 'bg-orange-700', 'bg-lime-700', 'bg-pink-700'];
 
@@ -68,65 +69,31 @@ export default function DashboardView({ courseOps, service, user }) {
   const enrolledCourses = enrollments ? Array.from(enrollments.values()) : [];
   const availableCourses = enrollments ? catalog.filter((course) => course.id && !enrollments.has(course.id)) : [];
 
-  const query = searchTerm.trim().toLowerCase();
-  const visibleEnrolled = enrolledCourses.filter((enrollment) => {
-    if (!query) return true;
-    return [enrollment.catalogEntry.title, enrollment.catalogEntry.description].some((value) => value?.toLowerCase().includes(query));
-  });
-
+  const query = searchTerm
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 0);
   const visibleAvailable = availableCourses.filter((course) => {
-    if (!query) return true;
-    return [course.title, course.description].some((value) => value?.toLowerCase().includes(query));
+    if (!query || query.length === 0) return true;
+    const courseText = `${course.title} ${course.description}`.toLowerCase();
+    return query.some((term) => courseText.includes(term));
   });
 
   const completedCount = enrolledCourses.filter((enrollment) => enrollment.progress.mastery >= 100).length;
-  const inProgressCount = enrolledCourses.filter((enrollment) => enrollment.progress.mastery > 0 && enrollment.progress.mastery < 100).length;
-
-  if (!enrollments) {
-    return (
-      <div className="flex-1 overflow-auto bg-slate-50 p-6 md:p-8">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-cyan-50 via-white to-blue-50 p-6 shadow-sm">
-            <div className="h-7 w-56 animate-pulse rounded bg-slate-200" />
-            <div className="mt-3 h-4 w-72 animate-pulse rounded bg-slate-200" />
-            <div className="mt-6 grid grid-cols-3 gap-2">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-white" />
-              ))}
-            </div>
-          </section>
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-5 flex flex-col gap-3 md:flex-row">
-              <div className="h-10 flex-1 animate-pulse rounded-lg bg-slate-100" />
-              <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100 md:w-80" />
-            </div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {[...Array(6)].map((_, index) => (
-                <div key={index} className="h-[280px] animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
-              ))}
-            </div>
-          </section>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
       <div className="flex-1 overflow-auto bg-slate-50 p-6 sm:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-cyan-50 via-white to-blue-50 p-6 shadow-sm">
-            <p className="mt-2 text-sm text-slate-600">Pick up where you left off or join a new course.</p>
-            <div className="mt-5">
-              <label htmlFor="course-search" className="sr-only">
-                Search courses
-              </label>
-              <input id="course-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200" placeholder="Search by title or description" />
-            </div>
+          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100 p-6 shadow-sm">
+            <p className="mt-2 text-md font-semibold text-slate-600">
+              <GraduationCap className="inline mr-2" />
+              {`You are working on ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''}`}
+            </p>
             <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
               <DashboardStat label="Catalog" value={catalog.length} />
               <DashboardStat label="Enrolled" value={enrolledCourses.length} />
-              <DashboardStat label="In progress" value={inProgressCount} />
               <DashboardStat label="Completed" value={completedCount} />
             </div>
           </section>
@@ -134,17 +101,30 @@ export default function DashboardView({ courseOps, service, user }) {
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-slate-900">Your courses</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{visibleEnrolled.length}</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{enrolledCourses.length}</span>
             </div>
-            {visibleEnrolled.length > 0 ? (
+            {enrolledCourses.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {visibleEnrolled.map((enrollment) => (
+                {enrolledCourses.map((enrollment) => (
                   <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} remove={() => requestedEnrollmentRemoval(enrollment)} />
                 ))}
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{query ? 'No enrolled courses match your search.' : 'You are not enrolled in any courses yet. Join one below to get started.'}</div>
             )}
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100 p-6 shadow-sm">
+            <p className="mt-2 text-md font-semibold text-slate-600">
+              <BookSearch className="inline mr-2" />
+              Find a new course
+            </p>
+            <div className="mt-5">
+              <label htmlFor="course-search" className="sr-only">
+                Search courses
+              </label>
+              <input id="course-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200" placeholder="Search by title or description" />
+            </div>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -180,7 +160,7 @@ export default function DashboardView({ courseOps, service, user }) {
 
 function DashboardStat({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-cyan-100 bg-white px-2.5 py-2">
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-white px-2.5 py-2">
       <p className="truncate text-[11px] uppercase tracking-wide text-slate-500" title={label}>
         {label}
       </p>

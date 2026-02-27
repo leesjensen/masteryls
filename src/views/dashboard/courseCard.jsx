@@ -30,11 +30,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
 
   return (
     <div className="relative grid grid-cols-1 grid-rows-1">
-      <ElementType
-        key={catalogEntry.id}
-        {...elementProps}
-        className="group col-start-1 row-start-1 flex min-h-[300px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-cyan-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
-      >
+      <ElementType key={catalogEntry.id} {...elementProps} className={`group col-start-1 row-start-1 flex min-h-[200px] cursor-pointer flex-col rounded-2xl border ${enrollment ? 'border-amber-200' : 'border-slate-200'} bg-white p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2`}>
         <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl ${enrollment ? enrollment.settings?.cardColor || colorGenerator(catalogEntry.title) : 'bg-slate-300'}`}>
           <span className="text-2xl font-bold text-white">{catalogEntry.title[0]}</span>
         </div>
@@ -49,26 +45,24 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
               <span className="text-slate-500">{enrollment.progress.mastery}%</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded bg-slate-100">
-              <div className="h-full rounded bg-cyan-500 transition-all duration-300" style={{ width: `${enrollment.progress.mastery}%` }} />
+              <div className="h-full rounded bg-amber-500 transition-all duration-300" style={{ width: `${enrollment.progress.mastery}%` }} />
             </div>
           </div>
         ) : (
-          <div className="mt-auto inline-flex w-fit items-center rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-medium text-cyan-800">
-            Join course
-          </div>
+          <div className="mt-auto inline-flex w-fit items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">Join course</div>
         )}
       </ElementType>
 
       <div className="pointer-events-none col-start-1 row-start-1 flex translate-x-3 -translate-y-3 justify-self-end gap-1 self-start">
         {catalogEntry.settings?.state === 'unpublished' && (
-          <div className="pointer-events-auto inline-flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
+          <div className="pointer-events-auto inline-flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-amber-200 bg-white text-slate-600 shadow-sm">
             <span title="Unpublished">
               <EyeOff size={16} />
             </span>
           </div>
         )}
         {user.isEditor(catalogEntry.id) && (
-          <div className="pointer-events-auto inline-flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
+          <div className="pointer-events-auto inline-flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-amber-200 bg-white text-slate-600 shadow-sm">
             <span title="Editor rights">
               <Pencil size={16} />
             </span>
@@ -83,7 +77,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
               remove(enrollment);
             }}
             aria-label="Delete"
-            className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-500 hover:text-white focus:outline-none"
+            className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-amber-200 bg-white text-slate-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-500 hover:text-white focus:outline-none"
             title="Remove enrollment"
           >
             <X size={16} />
