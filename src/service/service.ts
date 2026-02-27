@@ -536,14 +536,14 @@ class Service {
    * @param catalogEntry - The course catalog entry.
    * @returns The created Enrollment object.
    */
-  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry): Promise<Enrollment> {
+  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry, settings: Record<string, any> = {}): Promise<Enrollment> {
     const { data, error } = await this.supabase
       .from('enrollment')
       .insert([
         {
           catalogId: catalogEntry.id,
           learnerId,
-          settings: {},
+          settings,
           progress: { mastery: 0 },
         },
       ])

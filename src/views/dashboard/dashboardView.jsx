@@ -3,15 +3,15 @@ import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 
-function DashboardStat({ label, value }) {
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-cyan-100 bg-white px-2.5 py-2">
-      <p className="truncate text-[11px] uppercase tracking-wide text-slate-500" title={label}>
-        {label}
-      </p>
-      <p className="shrink-0 text-base font-semibold leading-none text-slate-900">{value}</p>
-    </div>
+const ENROLLMENT_CARD_COLORS = ['bg-cyan-700', 'bg-rose-700', 'bg-amber-600', 'bg-indigo-700', 'bg-emerald-700', 'bg-sky-700', 'bg-teal-700', 'bg-violet-700', 'bg-fuchsia-700', 'bg-orange-700', 'bg-lime-700', 'bg-pink-700'];
+
+function pickEnrollmentCardColor(currentEnrollments) {
+  const usedColors = new Set(
+    Array.from(currentEnrollments.values())
+      .map((enrollment) => enrollment.settings?.cardColor)
+      .filter(Boolean),
   );
+  return ENROLLMENT_CARD_COLORS.find((color) => !usedColors.has(color)) || ENROLLMENT_CARD_COLORS[currentEnrollments.size % ENROLLMENT_CARD_COLORS.length];
 }
 
 export default function DashboardView({ courseOps, service, user }) {
@@ -40,7 +40,8 @@ export default function DashboardView({ courseOps, service, user }) {
 
   const addEnrollment = async (catalogEntry) => {
     if (!enrollments.has(catalogEntry.id)) {
-      const newEnrollment = await service.createEnrollment(user.id, catalogEntry);
+      const cardColor = pickEnrollmentCardColor(enrollments);
+      const newEnrollment = await service.createEnrollment(user.id, catalogEntry, { cardColor });
       if (!newEnrollment) throw new Error('Failed to create enrollment');
 
       setEnrollments((prev) => new Map(prev).set(catalogEntry.id, newEnrollment));
@@ -174,5 +175,16 @@ export default function DashboardView({ courseOps, service, user }) {
         }
       />
     </>
+  );
+}
+
+function DashboardStat({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-cyan-100 bg-white px-2.5 py-2">
+      <p className="truncate text-[11px] uppercase tracking-wide text-slate-500" title={label}>
+        {label}
+      </p>
+      <p className="shrink-0 text-base font-semibold leading-none text-slate-900">{value}</p>
+    </div>
   );
 }

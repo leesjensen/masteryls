@@ -70,7 +70,7 @@ export type Enrollment = {
   id: string;
   learnerId: string;
   catalogId: string;
-  settings: {};
+  settings: any;
   progress: Progress;
   catalogEntry?: CatalogEntry;
 };

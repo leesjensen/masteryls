@@ -35,7 +35,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
         {...elementProps}
         className="group col-start-1 row-start-1 flex min-h-[300px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-cyan-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
       >
-        <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl ${enrollment ? colorGenerator(catalogEntry.title) : 'bg-slate-300'}`}>
+        <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl ${enrollment ? enrollment.settings?.cardColor || colorGenerator(catalogEntry.title) : 'bg-slate-300'}`}>
           <span className="text-2xl font-bold text-white">{catalogEntry.title[0]}</span>
         </div>
 
