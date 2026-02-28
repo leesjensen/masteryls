@@ -5,17 +5,18 @@ import EditorFiles from './editorFiles';
 import EmbeddedInstruction from '../instruction/embeddedInstruction.jsx';
 import EditorCommits from '../../components/EditorCommits';
 import useEditorPreviewSync from '../../hooks/useEditorPreviewSync';
+import useSplitPaneState from '../../hooks/useSplitPaneState';
 import useTopicContentLifecycle from '../../hooks/useTopicContentLifecycle';
 import Splitter from '../Splitter.jsx';
 
 export default function Editor({ courseOps, user, learningSession }) {
   const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
-  const [editorPanePercent, setEditorPanePercent] = React.useState(55);
 
   // Ref to access MarkdownEditor's insert functionality
   const markdownEditorRef = React.useRef(null);
-  const splitContainerRef = React.useRef(null);
+
+  const { panePercent: editorPanePercent, splitContainerRef, onPaneMoved: onEditorPaneMoved, onPaneResized: onEditorPaneResized } = useSplitPaneState(55);
 
   const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
 
@@ -35,25 +36,6 @@ export default function Editor({ courseOps, user, learningSession }) {
   function toggleShowCommits() {
     setShowCommits((v) => !v);
     setDiffContent(null);
-  }
-
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
-
-  function updateSplitFromClientX(clientX) {
-    const rect = splitContainerRef.current?.getBoundingClientRect();
-    if (!rect || rect.width <= 0) return;
-    const nextPercent = ((clientX - rect.left) / rect.width) * 100;
-    setEditorPanePercent(clamp(nextPercent, 0, 99));
-  }
-
-  function onEditorPaneMoved(clientX) {
-    updateSplitFromClientX(clientX);
-  }
-
-  function onEditorPaneResized(clientX) {
-    updateSplitFromClientX(clientX);
   }
 
   if (!contentAvailable) {
