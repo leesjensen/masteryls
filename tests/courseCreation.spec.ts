@@ -287,7 +287,7 @@ test('Course Creation creates course with AI generation', async ({ page }) => {
   await page.getByRole('button', { name: 'Create Course' }).click();
 
   await page.waitForURL('**/dashboard', { timeout: 20000 });
-  await expect(page.getByRole('heading', { name: 'You are working on 1 course' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('heading', { name: 'You are enrolled in 1 course' })).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Error creating course')).not.toBeVisible();
 });
 
@@ -324,7 +324,7 @@ test('Course Creation creates course from template', async ({ page }) => {
   await page.getByRole('button', { name: 'Create Course' }).click();
 
   await page.waitForURL('**/dashboard', { timeout: 20000 });
-  await expect(page.getByRole('heading', { name: 'You are working on 1 course' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('heading', { name: 'You are enrolled in 1 course' })).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Error creating course')).not.toBeVisible();
 });
 
@@ -343,7 +343,7 @@ test('Course Creation falls back to modules.md when course.json is missing', asy
   await page.getByRole('button', { name: 'Create Course' }).click();
 
   await page.waitForURL('**/dashboard', { timeout: 20000 });
-  await expect(page.getByRole('heading', { name: 'You are working on 1 course' })).toBeVisible({ timeout: 20000 });
+  await expect(page.getByRole('heading', { name: 'You are enrolled in 1 course' })).toBeVisible({ timeout: 20000 });
   await expect(page.getByText('Error creating course')).not.toBeVisible();
 });
 
@@ -356,5 +356,5 @@ test('Course Creation closes when Cancel button is clicked', async ({ page }) =>
   await openCourseCreationForm(page);
 
   await page.getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByRole('heading', { name: 'You are working on 1 course' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'You are enrolled in 1 course' })).toBeVisible();
 });

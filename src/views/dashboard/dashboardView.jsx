@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
-import { GraduationCap, BookSearch } from 'lucide-react';
+import { GraduationCap, BookSearch, Eye, EyeOff } from 'lucide-react';
 
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
@@ -10,6 +10,7 @@ export default function DashboardView({ courseOps, service, user }) {
   const [enrollments, setEnrollments] = useState();
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showCompleted, setShowCompleted] = useState(false);
   const dialogRef = useRef(null);
 
   React.useEffect(() => {
@@ -54,24 +55,53 @@ export default function DashboardView({ courseOps, service, user }) {
     setPendingEnrollmentRemoval(null);
   };
 
+  const getEnrollmentsByType = () => {
+    let activeEnrollmentCount = 0;
+    let completedEnrollmentCount = 0;
+    const visibleEnrollments = Array.from(enrollments.values()).filter((enrollment) => {
+      if (enrollment.progress.mastery >= 100) {
+        completedEnrollmentCount++;
+      } else {
+        activeEnrollmentCount++;
+      }
+
+      if (enrollment.progress.mastery >= 100) {
+        return showCompleted;
+      }
+      return !showCompleted;
+    });
+
+    return [activeEnrollmentCount, completedEnrollmentCount, visibleEnrollments];
+  };
+
+  const getVisibleUnenrolledCourses = (catalog) => {
+    const unenrolledCourses = catalog.filter((course) => course.id && !enrollments.has(course.id));
+
+    const query = searchTerm
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 0);
+
+    return unenrolledCourses.filter((course) => {
+      if (!query || query.length === 0) return true;
+
+      const courseText = `${course.title} ${course.description}`.toLowerCase();
+      return query.some((term) => courseText.includes(term));
+    });
+  };
+
+  const toggleCompleted = () => {
+    setShowCompleted((prev) => !prev);
+  };
+
+  // If we haven't loaded enrollments yet, show nothing
   if (!enrollments) return <div></div>;
 
+  // Figure out which courses to show based on enrollment and search term
   const catalog = courseOps.courseCatalog();
-  const enrolledCourses = enrollments ? Array.from(enrollments.values()) : [];
-  const availableCourses = enrollments ? catalog.filter((course) => course.id && !enrollments.has(course.id)) : [];
-
-  const query = searchTerm
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((t) => t.length > 0);
-  const visibleAvailable = availableCourses.filter((course) => {
-    if (!query || query.length === 0) return true;
-    const courseText = `${course.title} ${course.description}`.toLowerCase();
-    return query.some((term) => courseText.includes(term));
-  });
-
-  const completedCount = enrolledCourses.filter((enrollment) => enrollment.progress.mastery >= 100).length;
+  const [activeEnrollmentCount, completedEnrollmentCount, visibleEnrollments] = getEnrollmentsByType();
+  const visibleAvailable = getVisibleUnenrolledCourses(catalog);
 
   return (
     <>
@@ -79,18 +109,18 @@ export default function DashboardView({ courseOps, service, user }) {
         <div className="mx-auto max-w-7xl space-y-6">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-xl mb-6">
-              <h1 className="text-amber-500">
+              <h1 className="text-slate-800">
                 <GraduationCap className="inline mr-2" />
-                {`You are working on ${enrolledCourses.length} course${enrolledCourses.length > 1 ? 's' : ''}`}
+                {`You are enrolled in ${enrollments.size} course${enrollments.size > 1 ? 's' : ''}`}
               </h1>
               <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
-                <DashboardStat label="Enrolled" value={enrolledCourses.length} />
-                <DashboardStat label="Completed" value={completedCount} />
+                <DashboardStat label="Active" value={activeEnrollmentCount} />
+                {completedEnrollmentCount > 0 && <DashboardStat label="Completed" value={completedEnrollmentCount} active={showCompleted} action={toggleCompleted} />}
               </div>
             </div>
-            {enrolledCourses.length > 0 ? (
+            {visibleEnrollments.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {enrolledCourses.map((enrollment) => (
+                {visibleEnrollments.map((enrollment) => (
                   <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} remove={() => requestedEnrollmentRemoval(enrollment)} />
                 ))}
               </div>
@@ -100,7 +130,7 @@ export default function DashboardView({ courseOps, service, user }) {
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h1 className="text-xl text-amber-500 flex items-center justify-between">
+            <h1 className="text-xl text-slate-800 flex items-center justify-between">
               <span>
                 <BookSearch className="inline mr-2" />
                 Find a new course
@@ -142,10 +172,11 @@ export default function DashboardView({ courseOps, service, user }) {
   );
 }
 
-function DashboardStat({ label, value }) {
+function DashboardStat({ label, value, active = false, action = null }) {
   return (
-    <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
-      <p className="truncate text-xs uppercase tracking-wide text-slate-600" title={label}>
+    <div className="flex select-none items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2" onClick={action}>
+      <p className="flex items-center justify-between gap-1 truncate text-xs uppercase tracking-wide text-slate-600" title={label}>
+        {action ? active ? <Eye className="h-4 w-4 pr-1" /> : <EyeOff className="h-4 w-4 pr-1" /> : null}
         {label}
       </p>
       <p className="shrink-0 text-xs font-semibold leading-none text-slate-800 rounded-2xl bg-slate-200 py-0.5 px-3">{value}</p>
