@@ -9,7 +9,7 @@ export default function DashboardView({ courseOps, service, user }) {
 
   const [enrollments, setEnrollments] = useState();
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [userSearch, setUserSearch] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const dialogRef = useRef(null);
 
@@ -77,17 +77,17 @@ export default function DashboardView({ courseOps, service, user }) {
   const getVisibleUnenrolledCourses = (catalog) => {
     const unenrolledCourses = catalog.filter((course) => course.id && !enrollments.has(course.id));
 
-    const query = searchTerm
+    const searchTerms = userSearch
       .trim()
       .toLowerCase()
       .split(/\s+/)
       .filter((t) => t.length > 0);
 
     return unenrolledCourses.filter((course) => {
-      if (!query || query.length === 0) return true;
+      if (!searchTerms || searchTerms.length === 0) return true;
 
       const courseText = `${course.title} ${course.description}`.toLowerCase();
-      return query.some((term) => courseText.includes(term));
+      return searchTerms.some((term) => courseText.includes(term));
     });
   };
 
@@ -144,7 +144,7 @@ export default function DashboardView({ courseOps, service, user }) {
               <label htmlFor="course-search" className="sr-only">
                 Search courses
               </label>
-              <input id="course-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200" placeholder="Search by title or description" />
+              <input id="course-search" type="search" value={userSearch} onChange={(event) => setUserSearch(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200" placeholder="Search by title or description" />
             </div>
             {visibleAvailable.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -153,7 +153,7 @@ export default function DashboardView({ courseOps, service, user }) {
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{query && query.length ? 'No available courses match your search.' : 'You are enrolled in every published course.'}</div>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{userSearch?.length ? 'No available courses match your search.' : 'You are enrolled in every published course.'}</div>
             )}
           </section>
         </div>
