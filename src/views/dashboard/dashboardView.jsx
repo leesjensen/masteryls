@@ -4,17 +4,6 @@ import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { GraduationCap, BookSearch } from 'lucide-react';
 
-const ENROLLMENT_CARD_COLORS = ['bg-cyan-700', 'bg-rose-700', 'bg-amber-600', 'bg-indigo-700', 'bg-emerald-700', 'bg-sky-700', 'bg-teal-700', 'bg-violet-700', 'bg-fuchsia-700', 'bg-orange-700', 'bg-lime-700', 'bg-pink-700'];
-
-function pickEnrollmentCardColor(currentEnrollments) {
-  const usedColors = new Set(
-    Array.from(currentEnrollments.values())
-      .map((enrollment) => enrollment.settings?.cardColor)
-      .filter(Boolean),
-  );
-  return ENROLLMENT_CARD_COLORS.find((color) => !usedColors.has(color)) || ENROLLMENT_CARD_COLORS[currentEnrollments.size % ENROLLMENT_CARD_COLORS.length];
-}
-
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
 
@@ -162,4 +151,15 @@ function DashboardStat({ label, value }) {
       <p className="shrink-0 text-xs font-semibold leading-none text-slate-800 rounded-2xl bg-slate-200 py-0.5 px-3">{value}</p>
     </div>
   );
+}
+
+const ENROLLMENT_CARD_COLORS = ['bg-cyan-700', 'bg-rose-700', 'bg-amber-600', 'bg-indigo-700', 'bg-emerald-700', 'bg-sky-700', 'bg-teal-700', 'bg-violet-700', 'bg-fuchsia-700', 'bg-orange-700', 'bg-lime-700', 'bg-pink-700'];
+
+function pickEnrollmentCardColor(currentEnrollments) {
+  const usedColors = new Set(
+    Array.from(currentEnrollments.values())
+      .map((enrollment) => enrollment.settings?.cardColor)
+      .filter(Boolean),
+  );
+  return ENROLLMENT_CARD_COLORS.find((color) => !usedColors.has(color)) || ENROLLMENT_CARD_COLORS[currentEnrollments.size % ENROLLMENT_CARD_COLORS.length];
 }
