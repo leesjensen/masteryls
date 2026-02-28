@@ -5,6 +5,7 @@ import EditorFiles from './editorFiles';
 import EmbeddedInstruction from '../instruction/embeddedInstruction.jsx';
 import EditorCommits from '../../components/EditorCommits';
 import useLatest from '../../hooks/useLatest';
+import useEditorPreviewSync from '../../hooks/useEditorPreviewSync';
 import Splitter from '../Splitter.jsx';
 
 export default function Editor({ courseOps, user, learningSession }) {
@@ -12,7 +13,6 @@ export default function Editor({ courseOps, user, learningSession }) {
   const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
   const [editorPanePercent, setEditorPanePercent] = React.useState(55);
-  const [editorSyncVersion, setEditorSyncVersion] = React.useState(0);
 
   const [committing, setCommitting] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
@@ -22,22 +22,12 @@ export default function Editor({ courseOps, user, learningSession }) {
   // Ref to access MarkdownEditor's insert functionality
   const markdownEditorRef = React.useRef(null);
   const splitContainerRef = React.useRef(null);
-  const previewPaneRef = React.useRef(null);
-  const editorInstanceRef = React.useRef(null);
-  const editorScrollListenerRef = React.useRef(null);
-  const previewScrollElementRef = React.useRef(null);
-  const previewScrollListenerRef = React.useRef(null);
-  const syncingFromEditorRef = React.useRef(false);
-  const syncingFromPreviewRef = React.useRef(false);
-  const previewUserIntentAtRef = React.useRef(0);
 
-  function markPreviewUserIntent() {
-    previewUserIntentAtRef.current = Date.now();
-  }
-
-  function hasRecentPreviewUserIntent() {
-    return Date.now() - previewUserIntentAtRef.current < 300;
-  }
+  const { previewPaneRef, handleEditorReady } = useEditorPreviewSync({
+    topicId: learningSession.topic?.id,
+    content,
+    editorPanePercent,
+  });
 
   const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
 
@@ -117,158 +107,6 @@ export default function Editor({ courseOps, user, learningSession }) {
   function onEditorPaneResized(clientX) {
     updateSplitFromClientX(clientX);
   }
-
-  function getScrollableElement(container) {
-    if (!container) return null;
-
-    let best = null;
-    let bestRange = 0;
-
-    const allCandidates = [container, ...Array.from(container.querySelectorAll('*'))];
-    for (const node of allCandidates) {
-      const range = (node.scrollHeight || 0) - (node.clientHeight || 0);
-      if (range > bestRange) {
-        best = node;
-        bestRange = range;
-      }
-    }
-
-    return best || container;
-  }
-
-  function getScrollRange(node) {
-    if (!node) return 0;
-    return Math.max(0, (node.scrollHeight || 0) - (node.clientHeight || 0));
-  }
-
-  function getPreviewScrollElement() {
-    const previewContainer = previewPaneRef.current;
-    if (!previewContainer) return null;
-    const explicitTarget = previewContainer.querySelector('[data-editor-preview-scroll-container="true"]');
-    const discoveredTarget = getScrollableElement(previewContainer);
-    const explicitRange = getScrollRange(explicitTarget);
-    const discoveredRange = getScrollRange(discoveredTarget);
-
-    let target = explicitTarget || discoveredTarget || previewContainer;
-    if (discoveredRange > explicitRange) {
-      target = discoveredTarget;
-    }
-
-    return target;
-  }
-
-  function syncPreviewFromEditor(editor) {
-    let previewScrollable = previewScrollElementRef.current || getPreviewScrollElement();
-    if (!previewScrollable) return;
-    previewScrollElementRef.current = previewScrollable;
-
-    const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
-    let previewMax = Math.max(0, previewScrollable.scrollHeight - previewScrollable.clientHeight);
-    if (previewMax <= 0) {
-      // Topic/content switches can temporarily leave us pointed at a non-scrollable node.
-      previewScrollable = getPreviewScrollElement();
-      if (!previewScrollable) return;
-      previewScrollElementRef.current = previewScrollable;
-      previewMax = Math.max(0, previewScrollable.scrollHeight - previewScrollable.clientHeight);
-      if (previewMax <= 0) return;
-    }
-    const ratio = editorMax > 0 ? editor.getScrollTop() / editorMax : 0;
-    syncingFromEditorRef.current = true;
-    previewScrollable.scrollTop = ratio * previewMax;
-    requestAnimationFrame(() => {
-      syncingFromEditorRef.current = false;
-    });
-  }
-
-  React.useEffect(() => {
-    const editor = editorInstanceRef.current;
-    if (!editor) return;
-
-    editorScrollListenerRef.current?.dispose?.();
-    editorScrollListenerRef.current = editor.onDidScrollChange(() => {
-      if (syncingFromPreviewRef.current) return;
-      syncPreviewFromEditor(editor);
-    });
-
-    return () => {
-      editorScrollListenerRef.current?.dispose?.();
-      editorScrollListenerRef.current = null;
-    };
-  }, [learningSession.topic?.id, editorPanePercent, editorSyncVersion]);
-
-  React.useEffect(() => {
-    const previewRoot = previewPaneRef.current;
-    if (!previewRoot) return;
-
-    previewScrollElementRef.current = getPreviewScrollElement();
-    previewScrollListenerRef.current?.();
-
-    const onPreviewScroll = (event) => {
-      if (syncingFromEditorRef.current) return;
-
-      if (!hasRecentPreviewUserIntent()) {
-        return;
-      }
-
-      const editor = editorInstanceRef.current;
-      if (!editor) return;
-
-      const target = event?.target;
-      if (!target || typeof target.scrollTop !== 'number' || typeof target.scrollHeight !== 'number' || typeof target.clientHeight !== 'number') {
-        return;
-      }
-
-      const previewMax = Math.max(0, target.scrollHeight - target.clientHeight);
-      if (previewMax <= 0) return;
-      previewScrollElementRef.current = target;
-
-      const editorMax = Math.max(0, editor.getScrollHeight() - editor.getLayoutInfo().height);
-      const ratio = target.scrollTop / previewMax;
-
-      syncingFromPreviewRef.current = true;
-      editor.setScrollTop(ratio * editorMax);
-      requestAnimationFrame(() => {
-        syncingFromPreviewRef.current = false;
-      });
-    };
-
-    const onPreviewUserIntent = () => {
-      markPreviewUserIntent();
-    };
-
-    previewRoot.addEventListener('scroll', onPreviewScroll, { passive: true, capture: true });
-    previewRoot.addEventListener('wheel', onPreviewUserIntent, { passive: true, capture: true });
-    previewRoot.addEventListener('touchstart', onPreviewUserIntent, { passive: true, capture: true });
-    previewRoot.addEventListener('touchmove', onPreviewUserIntent, { passive: true, capture: true });
-    previewRoot.addEventListener('pointerdown', onPreviewUserIntent, { passive: true, capture: true });
-    previewScrollListenerRef.current = () => {
-      previewRoot.removeEventListener('scroll', onPreviewScroll, true);
-      previewRoot.removeEventListener('wheel', onPreviewUserIntent, true);
-      previewRoot.removeEventListener('touchstart', onPreviewUserIntent, true);
-      previewRoot.removeEventListener('touchmove', onPreviewUserIntent, true);
-      previewRoot.removeEventListener('pointerdown', onPreviewUserIntent, true);
-      previewScrollListenerRef.current = null;
-    };
-
-    return () => {
-      previewScrollListenerRef.current?.();
-    };
-  }, [learningSession.topic?.id, content, editorPanePercent, editorSyncVersion]);
-
-  React.useEffect(() => {
-    const editor = editorInstanceRef.current;
-    if (!editor) return;
-    const rafId = requestAnimationFrame(() => syncPreviewFromEditor(editor));
-    return () => cancelAnimationFrame(rafId);
-  }, [content, learningSession.topic?.id, editorPanePercent]);
-
-  const handleEditorReady = React.useCallback((editor) => {
-    editorInstanceRef.current = editor;
-    if (editor) {
-      setEditorSyncVersion((v) => v + 1);
-      syncPreviewFromEditor(editor);
-    }
-  }, []);
 
   if (!contentAvailable) {
     return <div className="flex p-4 w-full select-none disabled bg-gray-200 text-gray-700">This topic content must be generated before it can be viewed.</div>;
