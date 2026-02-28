@@ -29,6 +29,15 @@ export default function Editor({ courseOps, user, learningSession }) {
   const previewScrollListenerRef = React.useRef(null);
   const syncingFromEditorRef = React.useRef(false);
   const syncingFromPreviewRef = React.useRef(false);
+  const previewUserIntentAtRef = React.useRef(0);
+
+  function markPreviewUserIntent() {
+    previewUserIntentAtRef.current = Date.now();
+  }
+
+  function hasRecentPreviewUserIntent() {
+    return Date.now() - previewUserIntentAtRef.current < 300;
+  }
 
   const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
 
@@ -127,11 +136,24 @@ export default function Editor({ courseOps, user, learningSession }) {
     return best || container;
   }
 
+  function getScrollRange(node) {
+    if (!node) return 0;
+    return Math.max(0, (node.scrollHeight || 0) - (node.clientHeight || 0));
+  }
+
   function getPreviewScrollElement() {
     const previewContainer = previewPaneRef.current;
     if (!previewContainer) return null;
     const explicitTarget = previewContainer.querySelector('[data-editor-preview-scroll-container="true"]');
-    const target = explicitTarget || getScrollableElement(previewContainer) || previewContainer;
+    const discoveredTarget = getScrollableElement(previewContainer);
+    const explicitRange = getScrollRange(explicitTarget);
+    const discoveredRange = getScrollRange(discoveredTarget);
+
+    let target = explicitTarget || discoveredTarget || previewContainer;
+    if (discoveredRange > explicitRange) {
+      target = discoveredTarget;
+    }
+
     return target;
   }
 
@@ -184,6 +206,10 @@ export default function Editor({ courseOps, user, learningSession }) {
     const onPreviewScroll = (event) => {
       if (syncingFromEditorRef.current) return;
 
+      if (!hasRecentPreviewUserIntent()) {
+        return;
+      }
+
       const editor = editorInstanceRef.current;
       if (!editor) return;
 
@@ -206,9 +232,21 @@ export default function Editor({ courseOps, user, learningSession }) {
       });
     };
 
+    const onPreviewUserIntent = () => {
+      markPreviewUserIntent();
+    };
+
     previewRoot.addEventListener('scroll', onPreviewScroll, { passive: true, capture: true });
+    previewRoot.addEventListener('wheel', onPreviewUserIntent, { passive: true, capture: true });
+    previewRoot.addEventListener('touchstart', onPreviewUserIntent, { passive: true, capture: true });
+    previewRoot.addEventListener('touchmove', onPreviewUserIntent, { passive: true, capture: true });
+    previewRoot.addEventListener('pointerdown', onPreviewUserIntent, { passive: true, capture: true });
     previewScrollListenerRef.current = () => {
       previewRoot.removeEventListener('scroll', onPreviewScroll, true);
+      previewRoot.removeEventListener('wheel', onPreviewUserIntent, true);
+      previewRoot.removeEventListener('touchstart', onPreviewUserIntent, true);
+      previewRoot.removeEventListener('touchmove', onPreviewUserIntent, true);
+      previewRoot.removeEventListener('pointerdown', onPreviewUserIntent, true);
       previewScrollListenerRef.current = null;
     };
 
