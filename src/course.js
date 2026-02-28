@@ -130,6 +130,9 @@ async function loadFromDefinition(catalogEntry) {
       if (!topic.path.startsWith('http')) {
         topic.path = `${gitHubLinks.rawUrl}/${topic.path}`;
       }
+      if (!topic.state) {
+        topic.state = 'published';
+      }
     }
   }
 
