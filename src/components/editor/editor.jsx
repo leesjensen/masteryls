@@ -4,85 +4,33 @@ import MarkdownEditor from './markdownEditor';
 import EditorFiles from './editorFiles';
 import EmbeddedInstruction from '../instruction/embeddedInstruction.jsx';
 import EditorCommits from '../../components/EditorCommits';
-import useLatest from '../../hooks/useLatest';
 import useEditorPreviewSync from '../../hooks/useEditorPreviewSync';
+import useTopicContentLifecycle from '../../hooks/useTopicContentLifecycle';
 import Splitter from '../Splitter.jsx';
 
 export default function Editor({ courseOps, user, learningSession }) {
-  const [content, setContent] = React.useState('');
   const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
   const [editorPanePercent, setEditorPanePercent] = React.useState(55);
 
-  const [committing, setCommitting] = React.useState(false);
-  const [dirty, setDirty] = React.useState(false);
-  const dirtyRef = useLatest(dirty);
-  const contentRef = useLatest(content);
-
   // Ref to access MarkdownEditor's insert functionality
   const markdownEditorRef = React.useRef(null);
   const splitContainerRef = React.useRef(null);
+
+  const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
+
+  const { content, setContent, committing, dirty, setDirty, handleEditorChange, discard, commit } = useTopicContentLifecycle({
+    courseOps,
+    learningSession,
+    contentAvailable,
+    onTopicLoaded: () => setDiffContent(null),
+  });
 
   const { previewPaneRef, handleEditorReady } = useEditorPreviewSync({
     topicId: learningSession.topic?.id,
     content,
     editorPanePercent,
   });
-
-  const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
-
-  React.useEffect(() => {
-    if (contentAvailable) {
-      if (learningSession.topic?.type === 'embedded' || learningSession.topic?.type === 'video') {
-        setContent(learningSession.topic.path || '');
-      } else {
-        courseOps.getTopic(learningSession.topic).then((markdown) => {
-          setContent(markdown);
-        });
-      }
-      setDiffContent(null);
-      setDirty(false);
-
-      return async () => {
-        if (dirtyRef.current) {
-          if (window.confirm('You have unsaved changes. Do you want to commit them before leaving?')) {
-            await commit();
-          }
-        }
-      };
-    }
-  }, [learningSession]);
-
-  function handleEditorChange(value) {
-    if (committing) return;
-    setContent(value || '');
-    setDirty(true);
-  }
-
-  async function discard() {
-    let content = '';
-    if (learningSession.topic?.type === 'embedded' || learningSession.topic?.type === 'video') {
-      content = learningSession.topic.path || '';
-    } else {
-      content = await courseOps.getTopic(learningSession.topic);
-    }
-    setDirty(false);
-    setContent(content);
-  }
-
-  async function commit() {
-    if (committing || !dirtyRef.current) return;
-
-    setCommitting(true);
-    try {
-      await courseOps.updateTopic(learningSession.topic, contentRef.current);
-      setDirty(false);
-    } catch (error) {
-      alert('Failed to commit changes. Please try again.');
-    } finally {
-      setCommitting(false);
-    }
-  }
 
   function toggleShowCommits() {
     setShowCommits((v) => !v);
