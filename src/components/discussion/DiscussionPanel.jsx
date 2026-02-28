@@ -137,8 +137,8 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
 
   return (
     <div className="h-full bg-white border-l border-gray-300 shadow-lg flex flex-col overflow-hidden">
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between gap-4">
+      <div className="border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between gap-4 pl-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-800 truncate" title={discussionContext.topicTitle}>
               {discussionContext.topicTitle}
@@ -150,7 +150,7 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
         </div>
         <Tabs tabs={tabs} activeTab={discussionContext.mode} onChange={toggleMode} />
         {discussionContext.section && (
-          <div className={`mt-2 flex items-center gap-2 text-xs border rounded px-2 py-1 ${modeConfig.filterColor}`}>
+          <div className={`m-2 flex items-center gap-2 text-xs border rounded px-2 py-1 ${modeConfig.filterColor}`}>
             <span className={`text-sm flex-1 truncate`}>{`${modeConfig.filterDescriptionPrefix}: ${discussionContext.section}`}</span>
             <button onClick={() => setDiscussionContext((prev) => ({ ...prev, section: null }))} title="Clear filter">
               <XCircle size={14} />

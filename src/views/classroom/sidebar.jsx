@@ -14,8 +14,10 @@ function Sidebar({ courseOps, user, learningSession, editorVisible }) {
     { id: 'settings', label: 'Settings', icon: SettingsIcon, visible: user && (user.isEditor(learningSession.course.id) || user.isRoot()) },
   ];
   return (
-    <div className="flex flex-col border p-0 rounded-xs m-2 border-gray-200 bg-gray-50 overflow-hidden w-full">
-      <Tabs tabs={tabs} activeTab={display} onChange={setDisplay} />
+    <div className="flex flex-col bg-white overflow-hidden w-full">
+      <div className=" bg-gray-50 ">
+        <Tabs tabs={tabs} activeTab={display} onChange={setDisplay} />
+      </div>
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents courseOps={courseOps} learningSession={learningSession} editorVisible={editorVisible} />}
         {display === 'settings' && <Settings courseOps={courseOps} user={user} course={learningSession.course} />}
