@@ -1,29 +1,40 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 import service from './service/service';
 import { useAlert } from './contexts/AlertContext.jsx';
+import InputDialog from './hooks/inputDialog.jsx';
 
 function Login({ courseOps }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const { showAlert } = useAlert();
+  const otpDialogRef = useRef(null);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       let user = null;
       if (showSignup) {
-        user = await service.register(name, email, password);
-        courseOps.addProgress(user, null, 'accountCreation', 0, { method: 'inApp' });
+        await service.requestOtp(email, name, true);
       } else {
-        user = await service.login(email, password);
-        courseOps.addProgress(user, null, 'userLogin', 0, { method: 'inApp' });
+        await service.requestOtp(email, null, false);
       }
 
+      const token = await otpDialogRef.current.show({
+        title: 'Enter your code',
+        description: `We sent a one-time code to ${email}. Enter it below to access your account.`,
+        placeholder: '6-digit code',
+        confirmButtonText: 'Verify',
+        cancelButtonText: 'Cancel',
+      });
+      if (!token) {
+        return;
+      }
+      user = await service.verifyOtp(email, token);
+
       if (user) {
+        courseOps.addProgress(user, null, showSignup ? 'accountCreation' : 'userLogin', 0, { method: 'inApp' });
+
         courseOps.login(user);
       }
     } catch (error) {
@@ -33,6 +44,7 @@ function Login({ courseOps }) {
 
   return (
     <div className="flex flex-col items-center justify-center relative bg-white bg-opacity-90 shadow-lg rounded-lg overflow-hidden max-w-md w-full min-h-[354px] px-8 py-2">
+      <InputDialog dialogRef={otpDialogRef} />
       <form className="space-y-4  max-w-md w-full" onSubmit={handleLogin}>
         {showSignup && (
           <div>
@@ -48,22 +60,9 @@ function Login({ courseOps }) {
           </label>
           <input id="email" type="email" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="you@example.com" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
-
-        <div>
-          <label className="block text-gray-700 mb-1" htmlFor="password">
-            Password
-          </label>
-
-          <div className="relative">
-            <input id="password" type={showPassword ? 'text' : 'password'} className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400 pr-10" autoComplete={showSignup ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
-            <button type="button" tabIndex={-1} className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-gray-700" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
         <div className="flex space-x-2">
-          <button type="submit" className="flex-1 disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || !password || (showSignup && !name)}>
-            {showSignup ? 'Create Account' : 'Log In'}
+          <button type="submit" className="flex-1 disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || (showSignup && !name)}>
+            Send Code
           </button>
         </div>
       </form>

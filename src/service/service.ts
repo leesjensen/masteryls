@@ -214,7 +214,7 @@ class Service {
       try {
         return await this._loadUser({ id: session.data.session.user.id });
       } catch {
-        this.supabase.auth.signOut();
+        await this.supabase.auth.signOut();
       }
     }
     return null;
@@ -358,44 +358,30 @@ class Service {
   }
 
   /**
-   * Registers a new user.
-   * @param name - The user's name.
-   * @param email - The user's email.
-   * @param password - The user's password.
-   * @returns The newly created User object or null if registration failed.
+   * Sends a one-time passcode (OTP) to the user's email.
+
    */
-  async register(name: string, email: string, password: string): Promise<User | null> {
-    const { data, error } = await this.supabase.auth.signUp({ email, password });
-    if (error || !data.user) {
-      throw new Error(error?.message || 'Unable to register');
+  async requestOtp(email: string, name: string | null, shouldCreateUser: boolean): Promise<void> {
+    const options: any = { shouldCreateUser };
+    if (name) {
+      options.data = { name };
     }
-
-    const userData = {
-      id: data.user.id,
-      email,
-      name,
-      settings: { language: 'en' },
-    };
-    const { error: upsertError } = await this.supabase.from('user').upsert(userData);
-    if (upsertError) {
-      throw new Error(upsertError.message);
+    const { error } = await this.supabase.auth.signInWithOtp({ email, options });
+    if (error) {
+      throw new Error(error.message);
     }
-
-    return this._loadUser({ id: data.user.id });
   }
 
   /**
-   * Logs in a user.
-   * @param email - The user's email.
-   * @param password - The user's password.
-   * @returns The logged-in User object or null if login failed.
+   * Verifies a one-time passcode (OTP) for the user's email.
    */
-  async login(email: string, password: string): Promise<User | null> {
-    const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+  async verifyOtp(email: string, token: string): Promise<User | null> {
+    const { data, error } = await this.supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error || !data.user) {
-      throw new Error(error?.message || 'Unable to login');
+      throw new Error(error?.message || 'Unable to verify code');
     }
-    return this.currentUser();
+    await this._ensureUserRecord(data.user, { email, name: data.user.user_metadata?.name });
+    return this._loadUser({ id: data.user.id });
   }
 
   /**
@@ -866,6 +852,26 @@ class Service {
     }
 
     return data;
+  }
+
+  private async _ensureUserRecord(authUser: any, fallback: { name?: string; email?: string }) {
+    const name = authUser.user_metadata?.name || fallback.name || (fallback.email ? fallback.email.split('@')[0] : 'New User');
+    const email = authUser.email || fallback.email || '';
+    if (!email) {
+      throw new Error('Unable to determine user email');
+    }
+
+    const userData = {
+      id: authUser.id,
+      email,
+      name,
+      settings: { language: 'en' },
+    };
+
+    const { error: upsertError } = await this.supabase.from('user').upsert(userData);
+    if (upsertError) {
+      throw new Error(upsertError.message);
+    }
   }
 }
 
