@@ -43,7 +43,7 @@ function Login({ courseOps }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center relative bg-white bg-opacity-90 shadow-lg rounded-lg overflow-hidden max-w-md w-full min-h-[354px] px-8 py-2">
+    <div className="flex flex-col items-center justify-center relative bg-white bg-opacity-90 shadow-lg rounded-lg overflow-hidden max-w-md w-full min-h-[300px] px-8 py-2">
       <InputDialog dialogRef={otpDialogRef} />
       <form className="space-y-4  max-w-md w-full" onSubmit={handleLogin}>
         {showSignup && (
