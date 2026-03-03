@@ -1,25 +1,5 @@
 import { test, expect } from 'playwright-test-coverage';
-import { initBasicCourse, navigateToDashboard, navigateToCourse } from './testInit';
-
-async function blockExternalProviders(page: any) {
-  const context = page.context();
-
-  await context.route(/https:\/\/api\.github\.com\/.*/, async (route) => {
-    throw new Error(`Unmocked GitHub endpoint requested: ${route.request().url()} ${route.request().method()}`);
-  });
-
-  await context.route(/https:\/\/raw\.githubusercontent\.com\/.*/, async (route) => {
-    throw new Error(`Unmocked raw GitHub endpoint requested: ${route.request().url()} ${route.request().method()}`);
-  });
-
-  await context.route(/.*supabase\.co\/.*/, async (route) => {
-    throw new Error(`Unmocked Supabase endpoint requested: ${route.request().url()} ${route.request().method()}`);
-  });
-
-  await context.route(/https:\/\/generativelanguage\.googleapis\.com\/.*/, async (route) => {
-    throw new Error(`Unmocked Gemini endpoint requested: ${route.request().url()} ${route.request().method()}`);
-  });
-}
+import { initBasicCourse, navigateToDashboard } from './testInit';
 
 async function mockCourseCreationExternalRequests(
   page: any,
@@ -215,7 +195,6 @@ async function fillRequiredCourseFields(page: any) {
 }
 
 test('Course Creation displays course creation form', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page);
 
@@ -227,7 +206,6 @@ test('Course Creation displays course creation form', async ({ page }) => {
 });
 
 test('Course Creation prevents creation when required fields are empty', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page);
 
@@ -240,7 +218,6 @@ test('Course Creation prevents creation when required fields are empty', async (
 });
 
 test('Course Creation shows error for invalid GitHub token', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page, { tokenValid: false });
 
@@ -255,7 +232,6 @@ test('Course Creation shows error for invalid GitHub token', async ({ page }) =>
 });
 
 test('Course Creation toggles template fields when AI checkbox is toggled', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page);
 
@@ -273,7 +249,6 @@ test('Course Creation toggles template fields when AI checkbox is toggled', asyn
 });
 
 test('Course Creation creates course with AI generation', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page);
   await mockAiCourseGenerationRequests(page);
@@ -292,7 +267,6 @@ test('Course Creation creates course with AI generation', async ({ page }) => {
 });
 
 test('Course Creation updates template options when source account changes', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page, {
     templateReposByAccount: {
@@ -312,7 +286,6 @@ test('Course Creation updates template options when source account changes', asy
 });
 
 test('Course Creation creates course from template', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page);
 
@@ -329,7 +302,6 @@ test('Course Creation creates course from template', async ({ page }) => {
 });
 
 test('Course Creation falls back to modules.md when course.json is missing', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page, {
     hasCourseJson: false,
@@ -348,7 +320,6 @@ test('Course Creation falls back to modules.md when course.json is missing', asy
 });
 
 test('Course Creation closes when Cancel button is clicked', async ({ page }) => {
-  await blockExternalProviders(page);
   await initBasicCourse({ page });
   await mockCourseCreationExternalRequests(page);
 

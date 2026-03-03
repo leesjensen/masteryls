@@ -1,5 +1,5 @@
 import { test, expect } from 'playwright-test-coverage';
-import { initBasicCourse, navigateToCourse } from './testInit';
+import { initBasicCourse, navigateToCourse, navigateToCourseNoLogin } from './testInit';
 
 test('unregistered user', async ({ page }) => {
   await initBasicCourse({ page });
@@ -16,7 +16,7 @@ test('unregistered user', async ({ page }) => {
 
 test('load from course.json', async ({ page }) => {
   await initBasicCourse({ page });
-  await navigateToCourse(page);
+  await navigateToCourseNoLogin(page);
 
   await expect(page.getByRole('banner')).toContainText('Rocket Science');
 
@@ -27,7 +27,7 @@ test('load from course.json', async ({ page }) => {
 
 test('instruction types all', async ({ page }) => {
   await initBasicCourse({ page });
-  await navigateToCourse(page);
+  await navigateToCourseNoLogin(page);
 
   await expect(page.getByRole('banner')).toContainText('Rocket Science');
   await page.getByRole('button', { name: 'Topics' }).click();
@@ -58,7 +58,7 @@ test('instruction types all', async ({ page }) => {
 
 test('embedded', async ({ page }) => {
   await initBasicCourse({ page });
-  await navigateToCourse(page);
+  await navigateToCourseNoLogin(page);
 
   await page.getByRole('button', { name: '▶ Module 2' }).click();
   await page.getByText('topic 3').click();

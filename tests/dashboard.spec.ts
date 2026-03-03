@@ -2,21 +2,24 @@ import { test, expect } from 'playwright-test-coverage';
 import { initBasicCourse, register } from './testInit';
 import { Enrollment } from '../src/model';
 
-test('dashboard register error', async ({ page }) => {
-  await page.route('*/**/auth/v1/signup', async (route) => {
-    expect(route.request().method()).toBe('POST');
-    await route.fulfill({
-      status: 400,
-      contentType: 'application/json',
-      body: JSON.stringify({ code: 'user_already_exists', message: 'User already registered' }),
-    });
+test('dashboard one time password error', async ({ page }) => {
+  await page.route('**/auth/v1/verify', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 'otp_expired', message: 'Token has expired or is invalid' }),
+      });
+      return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
   await initBasicCourse({ page });
 
   await register(page);
 
-  await expect(page.locator('#root')).toContainText('Login failed. Please try again. User already registered');
+  await expect(page.locator('#root')).toContainText('Login failed. Please try again. Token has expired or is invalid');
 });
 
 test('dashboard join/leave course', async ({ page }) => {

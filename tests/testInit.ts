@@ -304,8 +304,30 @@ const supabaseAuthTokenResponse = {
   },
 };
 
+async function blockExternalProviders(page: any) {
+  const context = page.context();
+
+  await context.route(/https:\/\/api\.github\.com\/.*/, async (route) => {
+    throw new Error(`Unmocked GitHub endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
+  });
+
+  await context.route(/https:\/\/raw\.githubusercontent\.com\/.*/, async (route) => {
+    throw new Error(`Unmocked raw GitHub endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
+  });
+
+  await context.route(/.*supabase\.co\/.*/, async (route) => {
+    throw new Error(`Unmocked Supabase endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
+  });
+
+  await context.route(/https:\/\/generativelanguage\.googleapis\.com\/.*/, async (route) => {
+    throw new Error(`Unmocked Gemini endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
+  });
+}
+
 async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: { page: any; topicMarkdown?: string }) {
   const context = page.context();
+
+  await blockExternalProviders(page);
 
   // Supabase - Catalog table access
   await context.route(/.*supabase.co\/rest\/v1\/catalog(\?.+)?/, async (route) => {
@@ -477,6 +499,26 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
+  // Supabase - One time password
+  await context.route('**/auth/v1/otp', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ json: {} });
+      return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
+  // Supabase - Verify one time password
+  await context.route('**/auth/v1/verify', async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        json: supabaseAuthTokenResponse,
+      });
+      return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
   // Supabase - Progress
   await context.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
     switch (route.request().method()) {
@@ -627,6 +669,13 @@ async function navigateToCourse(page: any) {
   await page.getByRole('link', { name: 'R Rocket Science This course' }).click();
 }
 
+async function navigateToCourseNoLogin(page: any) {
+  await page.goto('http://localhost:5173/');
+
+  // Open the course
+  await page.getByText('Rocket Science').click();
+}
+
 async function register(page: any) {
   await page.goto('http://localhost:5173/');
   await _register(page);
@@ -636,8 +685,11 @@ async function _register(page: any) {
   await page.getByRole('button', { name: "Don't have an account? Create" }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
   await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
-  await page.getByRole('textbox', { name: 'Password' }).fill('toomanysecrets');
-  await page.getByRole('button', { name: 'Create Account' }).click();
+  await page.getByRole('button', { name: 'Send Code' }).click();
+
+  await page.getByRole('textbox', { name: '6-digit code' }).fill('123456');
+  await page.getByRole('button', { name: 'Verify' }).click();
+  await page.getByRole('link', { name: 'R Rocket Science This course' }).isVisible();
 }
 
-export { initBasicCourse, navigateToDashboard, navigateToCourse, navigateToMetrics, navigateToProgress, register };
+export { initBasicCourse, navigateToDashboard, navigateToCourse, navigateToCourseNoLogin, navigateToMetrics, navigateToProgress, register };
