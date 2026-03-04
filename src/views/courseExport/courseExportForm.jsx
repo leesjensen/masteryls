@@ -25,7 +25,6 @@ export default function CourseExportForm({ courseOps, onClose }) {
       setUpdateMessage('Exporting course...');
       await courseOps.exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage);
       showAlert({ message: `${course.title} exported successfully`, type: 'info' });
-      onClose();
     } catch (error) {
       showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
     }
@@ -38,11 +37,15 @@ export default function CourseExportForm({ courseOps, onClose }) {
       setUpdateMessage('Repairing references...');
       await courseOps.repairCanvas(course, canvasCourseId, setUpdateMessage);
       showAlert({ message: `${course.title} repaired successfully`, type: 'info' });
-      //      onClose();
     } catch (error) {
       showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
     }
     setIsLoading(false);
+  }
+
+  function viewCanvas() {
+    const url = `https://byu.instructure.com/courses/${canvasCourseId}`;
+    window.open(url, '_blank');
   }
 
   return (
@@ -78,7 +81,7 @@ export default function CourseExportForm({ courseOps, onClose }) {
         </p>
       </div>
 
-      <form className="p-6 space-y-4">
+      <form className="p-6 space-y-4" onSubmit={(e) => e.preventDefault()}>
         <div>
           <label htmlFor="course-title" className="block text-lg font-medium text-gray-700 mb-1">
             Course
@@ -111,11 +114,14 @@ export default function CourseExportForm({ courseOps, onClose }) {
             Cancel
           </button>
 
-          <button disabled={!course || course.externalRefs?.canvasCourseId || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginExport}>
-            Export course
+          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginExport}>
+            {course?.externalRefs?.canvasCourseId ? 'Re-export course' : 'Export course'}
           </button>
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={repairRefs}>
             Repair
+          </button>
+          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={viewCanvas}>
+            View Canvas
           </button>
         </div>
       </form>
