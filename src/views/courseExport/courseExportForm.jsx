@@ -48,6 +48,11 @@ export default function CourseExportForm({ courseOps, onClose }) {
     window.open(url, '_blank');
   }
 
+  function viewCourse() {
+    const url = `/course/${course.id}`;
+    window.open(url, '_blank');
+  }
+
   return (
     <>
       {/* Loading Overlay */}
@@ -122,6 +127,9 @@ export default function CourseExportForm({ courseOps, onClose }) {
           </button>
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={viewCanvas}>
             View Canvas
+          </button>
+          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={viewCourse}>
+            View Course
           </button>
         </div>
       </form>

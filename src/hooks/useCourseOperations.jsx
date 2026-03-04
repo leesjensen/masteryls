@@ -209,10 +209,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function updateCourseStructure(course, updatedTopic, commitMessage = 'update course structure') {
+  async function updateCourseStructure(course, updatedTopic, commitMessage = 'update course structure', updateCourseCommit = true) {
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
-      const updatedCourse = await _updateCourseStructure(token, course, commitMessage);
+      const updatedCourse = await _updateCourseStructure(token, course, commitMessage, updateCourseCommit);
       const topic = updatedTopic || learningSession?.topic;
       if (topic) {
         setLearningSession({ ...learningSession, course: updatedCourse, topic });
@@ -220,7 +220,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function _updateCourseStructure(token, course, commitMessage = 'update course structure') {
+  async function _updateCourseStructure(token, course, commitMessage = 'update course structure', updateCourseCommit = true) {
     const courseData = {
       title: course.title,
       links: course.links ? Object.fromEntries(Object.entries(course.links).filter(([key]) => key !== 'gitHub')) : undefined,
@@ -246,7 +246,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const gitHubUrl = `${course.links.gitHub.apiUrl}/course.json`;
 
     const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
-    await service.saveCatalogEntry({ id: course.id, gitHub: { ...course.gitHub, commit } });
+    await service.saveCatalogEntry({ id: course.id, gitHub: { ...course.gitHub, commit: updateCourseCommit ? commit : undefined } });
     courseCache.current.set(course.id, course);
 
     return course;
@@ -297,6 +297,18 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     updatedCourse.modules.splice(moduleIndex, 1);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
     await updateCourseStructure(updatedCourse, null, `remove(module) ${mod.title}`);
+  }
+
+  async function unpinAllContent(course) {
+    const updatedCourse = Course.copy(learningSession.course);
+    updatedCourse.modules.forEach((mod) => {
+      mod.topics.forEach((topic) => {
+        if (topic.commit) {
+          delete topic.commit;
+        }
+      });
+    });
+    await updateCourseStructure(updatedCourse, null, `unpin(all) ${course.title} commits`, false);
   }
 
   async function generateTopic(topicId, prompt) {
@@ -952,6 +964,7 @@ ${topicDescription || 'overview content placeholder'}`;
     addModule,
     renameModule,
     removeModule,
+    unpinAllContent,
     addTopic,
     generateTopic,
     generateTopics,

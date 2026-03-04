@@ -211,6 +211,17 @@ export default function Settings({ courseOps, user, course }) {
     });
   };
 
+  const unpinContent = () => {
+    courseOps.unpinAllContent(course);
+    showAlert({
+      message: (
+        <div className="text-xs">
+          <div>Unpinning all content in {course.title}</div>
+        </div>
+      ),
+    });
+  };
+
   if (!user) {
     return null;
   }
@@ -337,10 +348,13 @@ export default function Settings({ courseOps, user, course }) {
           <>
             <div className="bg-gray-50 rounded-lg p-4 mb-1">
               <div>
-                <h2 className="text-lg font-semibold mb-3 text-gray-800">Search</h2>
-                <div className="flex items-center justify-between">
-                  <button type="button" onClick={() => reindexSearch()} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
-                    Reindex
+                <h2 className="text-lg font-semibold mb-3 text-gray-800">Repair</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <button type="button" onClick={reindexSearch} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                    Reindex search
+                  </button>
+                  <button type="button" onClick={unpinContent} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                    Unpin content
                   </button>
                 </div>
               </div>
