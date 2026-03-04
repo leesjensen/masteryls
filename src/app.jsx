@@ -94,7 +94,10 @@ function App({ initialUser }) {
 }
 
 function StartPage() {
-  const { courseOps } = useOutletContext();
+  const { courseOps, user } = useOutletContext();
+
+  if (user) return <div></div>;
+
   return <Start courseOps={courseOps} />;
 }
 
