@@ -53,7 +53,7 @@ create table public.role (
   "createdAt" timestamp with time zone default now(),
   "user" uuid references auth.users(id) on delete cascade,
   "right" varchar,
-  object uuid references public.catalog(id) on delete cascade
+  object uuid references public.catalog(id) on delete cascade,
   settings jsonb default '{}'::jsonb
 );
 
