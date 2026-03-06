@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 
 const DEFAULT_API = 'https://api.supabase.com';
 const DEFAULT_REGION = 'us-east-1';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_SCHEMA_PATH = join(SCRIPT_DIR, 'schema.sql');
 const DEFAULT_POLICIES_PATH = join(SCRIPT_DIR, 'policies.sql');
+const SUPABASE_FUNCTIONS_PATH = join(SCRIPT_DIR, 'supabase', 'functions');
 
 // Parses CLI flags in the form: --key value
 function parseArgs(argv) {
@@ -57,6 +59,7 @@ Optional:
   --region "${DEFAULT_REGION}"
   --schema "${DEFAULT_SCHEMA_PATH}"
   --policies "${DEFAULT_POLICIES_PATH}"
+  --secrets "KEY1=value1,KEY2=value2"
 `;
 }
 
@@ -179,16 +182,124 @@ async function executeSql({ baseUrl, accessToken, projectRef, sql }) {
 }
 
 // Loads SQL from a path provided on CLI.
-async function loadSqlFromFile(sqlPath) {
-  const absolutePath = resolve(process.cwd(), sqlPath);
+async function loadTextFromFile(filePath) {
+  const absolutePath = resolve(process.cwd(), filePath);
   return readFile(absolutePath, 'utf8');
 }
 
 // Chooses CLI-provided SQL files or built-in defaults.
 async function resolveSqlInputs({ schemaPath, policiesPath }) {
-  const schemaSql = await loadSqlFromFile(schemaPath);
-  const policiesSql = await loadSqlFromFile(policiesPath);
+  const schemaSql = await loadTextFromFile(schemaPath);
+  const policiesSql = await loadTextFromFile(policiesPath);
   return { schemaSql, policiesSql };
+}
+
+async function listEdgeFunctionNames() {
+  let entries = [];
+  try {
+    entries = await readdir(SUPABASE_FUNCTIONS_PATH, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+
+  const functionNames = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const edgePath = join(SUPABASE_FUNCTIONS_PATH, entry.name, 'index.ts');
+    try {
+      await loadTextFromFile(edgePath);
+      functionNames.push(entry.name);
+    } catch (error) {
+      if (error?.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  return functionNames;
+}
+
+function parseSecretPairs(secretPairsInput) {
+  if (!secretPairsInput) {
+    return {};
+  }
+
+  const entries = secretPairsInput
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((pair) => {
+      const separatorIndex = pair.indexOf('=');
+      if (separatorIndex <= 0) {
+        throw new Error(`Invalid secret pair "${pair}". Expected format KEY=value.`);
+      }
+      const key = pair.slice(0, separatorIndex).trim();
+      const value = pair.slice(separatorIndex + 1);
+      if (!key) {
+        throw new Error(`Invalid secret pair "${pair}". Secret key cannot be empty.`);
+      }
+      return [key, value];
+    });
+
+  return Object.fromEntries(entries);
+}
+
+function runSupabaseCli({ args, accessToken }) {
+  const result = spawnSync('supabase', args, {
+    cwd: SCRIPT_DIR,
+    env: { ...process.env, SUPABASE_ACCESS_TOKEN: accessToken },
+    encoding: 'utf8',
+  });
+
+  if (result.error) {
+    if (result.error.code === 'ENOENT') {
+      throw new Error('Supabase CLI not found. Install it to deploy edge functions (https://supabase.com/docs/guides/cli).');
+    }
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    throw new Error(`Supabase CLI command failed: supabase ${args.join(' ')}\n${result.stderr || result.stdout || ''}`);
+  }
+
+  if (result.stdout) {
+    console.log(result.stdout.trim());
+  }
+}
+
+async function deployEdgeFunction({ projectRef, accessToken, edgeName }) {
+  const edgePath = join(SUPABASE_FUNCTIONS_PATH, edgeName, 'index.ts');
+
+  await loadTextFromFile(edgePath);
+  console.log(`Using edge function source at ${edgePath}`);
+
+  runSupabaseCli({
+    accessToken,
+    args: ['functions', 'deploy', edgeName, '--project-ref', projectRef],
+  });
+}
+
+function registerProjectSecrets({ projectRef, accessToken, secrets }) {
+  const secretEntries = Object.entries(secrets).filter(([, value]) => value !== undefined && value !== null && value !== '');
+  if (secretEntries.length === 0) {
+    console.log('No secrets to register.');
+    return;
+  }
+
+  const cliSecretsArgs = secretEntries.map(([key, value]) => `${key}=${value}`);
+  runSupabaseCli({
+    accessToken,
+    args: ['secrets', 'set', ...cliSecretsArgs, '--project-ref', projectRef],
+  });
+
+  console.log(`Registered ${secretEntries.length} project secret(s).`);
 }
 
 // Main command flow:
@@ -213,6 +324,7 @@ async function main() {
   const region = args.region || DEFAULT_REGION;
   const schemaPath = args.schema || DEFAULT_SCHEMA_PATH;
   const policiesPath = args.policies || DEFAULT_POLICIES_PATH;
+  const genericSecrets = parseSecretPairs(args.secrets);
   const managementApiUrl = normalizeBaseUrl(args.api || DEFAULT_API);
 
   const waitTimeoutMs = 15 * 60 * 1000;
@@ -270,6 +382,26 @@ async function main() {
     accessToken,
     projectRef,
     sql: policiesSql,
+  });
+
+  const edgeFunctionNames = await listEdgeFunctionNames();
+  if (edgeFunctionNames.length === 0) {
+    console.log(`No edge functions found in ${SUPABASE_FUNCTIONS_PATH}.`);
+  } else {
+    console.log(`Deploying ${edgeFunctionNames.length} edge function(s): ${edgeFunctionNames.join(', ')}`);
+    for (const edgeName of edgeFunctionNames) {
+      await deployEdgeFunction({
+        projectRef,
+        accessToken,
+        edgeName,
+      });
+    }
+  }
+
+  registerProjectSecrets({
+    projectRef,
+    accessToken,
+    secrets: genericSecrets,
   });
 
   console.log(`Initialization complete for project ${projectName} (${projectRef}).`);
