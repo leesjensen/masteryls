@@ -46,11 +46,11 @@ function normalizeBaseUrl(url) {
 // CLI help text with required and optional flags.
 function usage() {
   return `Usage:
-  node applicationDocs/initproject.js \\
-    --token "$SUPABASE_TOKEN" \\
-    --org "org_abc123" \\
-    --project "mastery-ls-byu" \\
-    --password "supersecret" \\
+  node applicationDocs/initproject.js 
+    --token "$SUPABASE_TOKEN" 
+    --org "orgslug" 
+    --project "mastery-ls-byu" 
+    --password "supersecret" 
     --api "https://api.supabase.com"
 
 Optional:

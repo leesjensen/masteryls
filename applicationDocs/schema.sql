@@ -1,6 +1,10 @@
 -- Needed for gen_random_uuid()
 create extension if not exists pgcrypto;
 
+
+----------------------- Tables
+
+
 -- Course catalog metadata
 create table if not exists public.catalog (
   id uuid primary key default gen_random_uuid(),
@@ -61,12 +65,16 @@ create table if not exists public.progress (
   "userId" uuid references public."user"(id) on delete cascade,
   "enrollmentId" uuid references public.enrollment(id) on delete cascade,
   "catalogId" uuid references public.catalog(id) on delete cascade,
-  "topicId" uuid references public.topic(id) on delete cascade,
+  "topicId" uuid,
   "interactionId" uuid,
   duration integer,
   type varchar,
   details jsonb default '{}'::jsonb
 );
+
+
+----------------------- Functions
+
 
 -- Trigger function to keep topic updated timestamp current
 create or replace function public."updateModifiedColumn"()
@@ -78,13 +86,6 @@ begin
   return new;
 end;
 $$;
-
--- Trigger to apply updateModifiedColumn on topic updates
-drop trigger if exists "updateTopicModtime" on public.topic;
-create trigger "updateTopicModtime"
-before update on public.topic
-for each row
-execute procedure public."updateModifiedColumn"();
 
 -- RPC for free-text topic search with highlighted snippets
 create or replace function public.search_topics(search_query text, target_catalog_id uuid default null)
@@ -147,9 +148,30 @@ as $$
   );
 $$;
 
+
+
+----------------------- Triggers
+
+
+
+-- Trigger to apply updateModifiedColumn on topic updates
+drop trigger if exists "updateTopicModtime" on public.topic;
+create trigger "updateTopicModtime"
+before update on public.topic
+for each row
+execute procedure public."updateModifiedColumn"();
+
+
+----------------------- Grants
+
+
 -- Allow clients to execute role-check helper functions from policies
 grant execute on function public.auth_is_root(uuid) to anon, authenticated;
 grant execute on function public.auth_is_editor(uuid) to anon, authenticated;
+
+
+----------------------- Row Level Security
+
 
 -- Enable Row Level Security on all application tables
 alter table public.catalog enable row level security;
