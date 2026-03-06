@@ -2,6 +2,7 @@ node_modules
 config.js
 dist
 .DS_Store
+.vscode
 
 # Playwright
 /test-results/
