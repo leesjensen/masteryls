@@ -8,8 +8,7 @@ import { spawnSync } from 'node:child_process';
 const DEFAULT_API = 'https://api.supabase.com';
 const DEFAULT_REGION = 'us-east-1';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_SCHEMA_PATH = join(SCRIPT_DIR, 'schema.sql');
-const DEFAULT_POLICIES_PATH = join(SCRIPT_DIR, 'policies.sql');
+const SUPABASE_PATH = join(SCRIPT_DIR, '..', 'node_modules', '.bin', 'supabase');
 const SUPABASE_FUNCTIONS_PATH = join(SCRIPT_DIR, 'supabase', 'functions');
 
 // Parses CLI flags in the form: --key value
@@ -57,9 +56,17 @@ function usage() {
 
 Optional:
   --region "${DEFAULT_REGION}"
-  --schema "${DEFAULT_SCHEMA_PATH}"
-  --policies "${DEFAULT_POLICIES_PATH}"
-  --secrets "KEY1=value1,KEY2=value2"
+  --secrets "CANVAS_API_KEY=value1,GEMINI_API_KEY=value2"
+
+Expected resource file structure:
+  supabase/
+    schema.sql
+    policies.sql
+    functions/
+      canvas/
+        index.ts
+      gemini/
+        index.ts
 `;
 }
 
@@ -144,11 +151,6 @@ async function getProject({ baseUrl, accessToken, projectRef }) {
   });
 }
 
-// Handles slight differences in API response naming for project reference.
-function extractProjectRef(project) {
-  return project?.ref || project?.id || project?.project_ref || null;
-}
-
 // Accepts healthy/active project statuses before applying SQL.
 function isProjectReady(project) {
   const status = String(project?.status ?? '').toUpperCase();
@@ -217,24 +219,18 @@ async function listEdgeFunctionNames() {
 }
 
 function parseSecretPairs(secretPairsInput) {
-  if (!secretPairsInput) {
-    return {};
-  }
+  if (!secretPairsInput) return null;
 
   const entries = secretPairsInput
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
     .map((pair) => {
-      const separatorIndex = pair.indexOf('=');
-      if (separatorIndex <= 0) {
+      const match = pair.match(/^([^=\s]+)=(.*)$/);
+      if (!match) {
         throw new Error(`Invalid secret pair "${pair}". Expected format KEY=value.`);
       }
-      const key = pair.slice(0, separatorIndex).trim();
-      const value = pair.slice(separatorIndex + 1);
-      if (!key) {
-        throw new Error(`Invalid secret pair "${pair}". Secret key cannot be empty.`);
-      }
+      const [, key, value] = match;
       return [key, value];
     });
 
@@ -242,7 +238,7 @@ function parseSecretPairs(secretPairsInput) {
 }
 
 function runSupabaseCli({ args, accessToken }) {
-  const result = spawnSync('supabase', args, {
+  const result = spawnSync(SUPABASE_PATH, args, {
     cwd: SCRIPT_DIR,
     env: { ...process.env, SUPABASE_ACCESS_TOKEN: accessToken },
     encoding: 'utf8',
@@ -275,18 +271,15 @@ async function deployEdgeFunction({ projectRef, accessToken, edgeName }) {
 
 function registerProjectSecrets({ projectRef, accessToken, secrets }) {
   const secretEntries = Object.entries(secrets).filter(([, value]) => value !== undefined && value !== null && value !== '');
-  if (secretEntries.length === 0) {
-    console.log('No secrets to register.');
-    return;
+  if (secretEntries.length > 0) {
+    const cliSecretsArgs = secretEntries.map(([key, value]) => `${key}=${value}`);
+    runSupabaseCli({
+      accessToken,
+      args: ['secrets', 'set', ...cliSecretsArgs, '--project-ref', projectRef],
+    });
+
+    console.log(`Registered ${secretEntries.length} project secret(s).`);
   }
-
-  const cliSecretsArgs = secretEntries.map(([key, value]) => `${key}=${value}`);
-  runSupabaseCli({
-    accessToken,
-    args: ['secrets', 'set', ...cliSecretsArgs, '--project-ref', projectRef],
-  });
-
-  console.log(`Registered ${secretEntries.length} project secret(s).`);
 }
 
 // Main command flow:
@@ -309,10 +302,10 @@ async function main() {
   const projectName = args.project;
   const dbPassword = args.password;
   const region = args.region || DEFAULT_REGION;
-  const schemaPath = args.schema || DEFAULT_SCHEMA_PATH;
-  const policiesPath = args.policies || DEFAULT_POLICIES_PATH;
+  const schemaPath = join(SCRIPT_DIR, 'supabase', 'schema.sql');
+  const policiesPath = join(SCRIPT_DIR, 'supabase', 'policies.sql');
   const secrets = parseSecretPairs(args.secrets);
-  const managementApiUrl = normalizeBaseUrl(args.api || DEFAULT_API);
+  const baseUrl = normalizeBaseUrl(args.api || DEFAULT_API);
 
   const waitTimeoutMs = 15 * 60 * 1000;
   const waitIntervalMs = 10 * 1000;
@@ -321,7 +314,7 @@ async function main() {
 
   console.log(`Looking up project "${projectName}" in organization "${organizationId}"...`);
   let project = await findProjectByName({
-    baseUrl: managementApiUrl,
+    baseUrl,
     accessToken,
     organizationId,
     projectName,
@@ -330,7 +323,7 @@ async function main() {
   if (!project) {
     console.log(`Project "${projectName}" not found. Creating it in ${region}...`);
     project = await createProject({
-      baseUrl: managementApiUrl,
+      baseUrl,
       accessToken,
       organizationId,
       projectName,
@@ -339,37 +332,35 @@ async function main() {
     });
   } else {
     console.log(`Found existing project "${projectName}".`);
+    //    process.exit(1);
   }
 
-  const projectRef = extractProjectRef(project);
-  if (!projectRef) {
-    throw new Error('Could not determine project reference from API response.');
-  }
+  const projectRef = project.ref;
 
-  console.log(`Waiting for project ${projectRef} to become ready...`);
-  await waitForProjectReady({
-    baseUrl: managementApiUrl,
-    accessToken,
-    projectRef,
-    timeoutMs: waitTimeoutMs,
-    intervalMs: waitIntervalMs,
-  });
+  // console.log(`Waiting for project ${projectRef} to become ready...`);
+  // await waitForProjectReady({
+  //   baseUrl,
+  //   accessToken,
+  //   projectRef,
+  //   timeoutMs: waitTimeoutMs,
+  //   intervalMs: waitIntervalMs,
+  // });
 
-  console.log('Applying schema SQL...');
-  await executeSql({
-    baseUrl: managementApiUrl,
-    accessToken,
-    projectRef,
-    sql: schemaSql,
-  });
+  // console.log('Applying schema SQL...');
+  // await executeSql({
+  //   baseUrl,
+  //   accessToken,
+  //   projectRef,
+  //   sql: schemaSql,
+  // });
 
-  console.log('Applying policies SQL...');
-  await executeSql({
-    baseUrl: managementApiUrl,
-    accessToken,
-    projectRef,
-    sql: policiesSql,
-  });
+  // console.log('Applying policies SQL...');
+  // await executeSql({
+  //   baseUrl,
+  //   accessToken,
+  //   projectRef,
+  //   sql: policiesSql,
+  // });
 
   const edgeFunctionNames = await listEdgeFunctionNames();
   if (edgeFunctionNames.length > 0) {
@@ -383,11 +374,13 @@ async function main() {
     }
   }
 
-  registerProjectSecrets({
-    projectRef,
-    accessToken,
-    secrets,
-  });
+  if (secrets) {
+    registerProjectSecrets({
+      projectRef,
+      accessToken,
+      secrets,
+    });
+  }
 
   console.log(`Initialization complete for project ${projectName} (${projectRef}).`);
 }

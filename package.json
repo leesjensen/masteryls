@@ -26,6 +26,7 @@
     "@types/node": "^24.3.0",
     "nyc": "^17.1.0",
     "playwright-test-coverage": "^1.2.12",
+    "supabase": "^2.77.0",
     "vite": "^7.1.1",
     "vite-plugin-istanbul": "^7.1.0"
   },
