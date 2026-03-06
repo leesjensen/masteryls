@@ -210,17 +210,7 @@ async function listEdgeFunctionNames() {
     if (!entry.isDirectory()) {
       continue;
     }
-
-    const edgePath = join(SUPABASE_FUNCTIONS_PATH, entry.name, 'index.ts');
-    try {
-      await loadTextFromFile(edgePath);
-      functionNames.push(entry.name);
-    } catch (error) {
-      if (error?.code === 'ENOENT') {
-        continue;
-      }
-      throw error;
-    }
+    functionNames.push(entry.name);
   }
 
   return functionNames;
@@ -275,10 +265,7 @@ function runSupabaseCli({ args, accessToken }) {
 }
 
 async function deployEdgeFunction({ projectRef, accessToken, edgeName }) {
-  const edgePath = join(SUPABASE_FUNCTIONS_PATH, edgeName, 'index.ts');
-
-  await loadTextFromFile(edgePath);
-  console.log(`Using edge function source at ${edgePath}`);
+  console.log(`Deploying edge function source at ${join(SUPABASE_FUNCTIONS_PATH, edgeName)}`);
 
   runSupabaseCli({
     accessToken,
@@ -324,7 +311,7 @@ async function main() {
   const region = args.region || DEFAULT_REGION;
   const schemaPath = args.schema || DEFAULT_SCHEMA_PATH;
   const policiesPath = args.policies || DEFAULT_POLICIES_PATH;
-  const genericSecrets = parseSecretPairs(args.secrets);
+  const secrets = parseSecretPairs(args.secrets);
   const managementApiUrl = normalizeBaseUrl(args.api || DEFAULT_API);
 
   const waitTimeoutMs = 15 * 60 * 1000;
@@ -385,9 +372,7 @@ async function main() {
   });
 
   const edgeFunctionNames = await listEdgeFunctionNames();
-  if (edgeFunctionNames.length === 0) {
-    console.log(`No edge functions found in ${SUPABASE_FUNCTIONS_PATH}.`);
-  } else {
+  if (edgeFunctionNames.length > 0) {
     console.log(`Deploying ${edgeFunctionNames.length} edge function(s): ${edgeFunctionNames.join(', ')}`);
     for (const edgeName of edgeFunctionNames) {
       await deployEdgeFunction({
@@ -401,7 +386,7 @@ async function main() {
   registerProjectSecrets({
     projectRef,
     accessToken,
-    secrets: genericSecrets,
+    secrets,
   });
 
   console.log(`Initialization complete for project ${projectName} (${projectRef}).`);
