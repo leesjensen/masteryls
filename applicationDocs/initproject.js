@@ -10,6 +10,7 @@ const DEFAULT_REGION = 'us-east-1';
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SUPABASE_PATH = join(SCRIPT_DIR, '..', 'node_modules', '.bin', 'supabase');
 const SUPABASE_FUNCTIONS_PATH = join(SCRIPT_DIR, 'supabase', 'functions');
+const CONFIRMATION_EMAIL_TEMPLATE_PATH = join(SCRIPT_DIR, 'supabase', 'confirmationEmail.html');
 
 // Parses CLI flags in the form: --key value
 function parseArgs(argv) {
@@ -62,6 +63,7 @@ Expected resource file structure:
   supabase/
     schema.sql
     policies.sql
+    confirmationEmail.html
     functions/
       canvas/
         index.ts
@@ -194,6 +196,36 @@ async function resolveSqlInputs({ schemaPath, policiesPath }) {
   const schemaSql = await loadTextFromFile(schemaPath);
   const policiesSql = await loadTextFromFile(policiesPath);
   return { schemaSql, policiesSql };
+}
+
+async function loadConfirmationEmailTemplate(templatePath) {
+  try {
+    const template = await loadTextFromFile(templatePath);
+    return template.trim();
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function updateConfirmationEmailTemplate({ baseUrl, accessToken, projectRef }) {
+  const htmlTemplate = await loadConfirmationEmailTemplate(CONFIRMATION_EMAIL_TEMPLATE_PATH);
+  if (htmlTemplate) {
+    console.log(`Updating auth confirmation email template from ${CONFIRMATION_EMAIL_TEMPLATE_PATH}...`);
+
+    return apiRequest({
+      baseUrl,
+      path: `/v1/projects/${encodeURIComponent(projectRef)}/config/auth`,
+      accessToken,
+      method: 'PATCH',
+      body: {
+        mailer_subjects_magic_link: 'Sign-in code for MasteryLS',
+        mailer_templates_magic_link_content: htmlTemplate,
+      },
+    });
+  }
 }
 
 async function listEdgeFunctionNames() {
@@ -362,25 +394,31 @@ async function main() {
   //   sql: policiesSql,
   // });
 
-  const edgeFunctionNames = await listEdgeFunctionNames();
-  if (edgeFunctionNames.length > 0) {
-    console.log(`Deploying ${edgeFunctionNames.length} edge function(s): ${edgeFunctionNames.join(', ')}`);
-    for (const edgeName of edgeFunctionNames) {
-      await deployEdgeFunction({
-        projectRef,
-        accessToken,
-        edgeName,
-      });
-    }
-  }
+  // const edgeFunctionNames = await listEdgeFunctionNames();
+  // if (edgeFunctionNames.length > 0) {
+  //   console.log(`Deploying ${edgeFunctionNames.length} edge function(s): ${edgeFunctionNames.join(', ')}`);
+  //   for (const edgeName of edgeFunctionNames) {
+  //     await deployEdgeFunction({
+  //       projectRef,
+  //       accessToken,
+  //       edgeName,
+  //     });
+  //   }
+  // }
 
-  if (secrets) {
-    registerProjectSecrets({
-      projectRef,
-      accessToken,
-      secrets,
-    });
-  }
+  // if (secrets) {
+  //   registerProjectSecrets({
+  //     projectRef,
+  //     accessToken,
+  //     secrets,
+  //   });
+  // }
+
+  await updateConfirmationEmailTemplate({
+    baseUrl,
+    accessToken,
+    projectRef,
+  });
 
   console.log(`Initialization complete for project ${projectName} (${projectRef}).`);
 }
