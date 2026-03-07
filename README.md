@@ -10,40 +10,80 @@
 - Video and interactivity powered
 - Project based mastery
 
+[🎥 Introduction Demo](https://youtu.be/HXNx_Gp0jyM)
+
 ## Features
 
-1. **Content** that leverages the online experience. This will include instruction video with interactive paths, textual instruction, and self paced learning.
-   1. Markdown as the primary content format
-   1. GitHub for version control and collaboration
-   1. AI content generation for rapid content development
-   1. Interactive video with branching paths
-   1. Textual instruction with interactive elements
-   1. Inline quizzes with support for multiple choice, multiple answer, and free text responses
-   1. Self-paced learning modules
-   1. Progress tracking and analytics
-   1. Mobile-friendly design for learning on the go
-   1. Offline access to learning materials
-   1. AI-driven feedback for personalized learning
-   1. Data privacy and security measures
-   1. Scalability to accommodate large user bases
-   1. Support for various content formats (videos, PDFs, images, etc.)
-1. **Human Interaction** between learning peers and mentors from around the globe in curated cohorts. Peers advance to serve as mentors for other learners.
-   1. Peer review and feedback
-   1. Mentor review and feedback
-   1. Collaboration tools for peer projects
-1. **Mastery Projects** that demonstrate authentic learning in creative ways that provide a portfolio of the learner
-   1. Tools for mastery projects
-1. **System Integration** that provides mastery reports, enrollments, analytics, and automated notification
-   1. Download reports
-   1. Automated notifications
-   1. Metrics dashboard
-   1. API access for reporting integrations
-   1. API access for enrollments
-   1. API access for analytics
-   1. API access for notifications
-   1. TouchSpeed: Keyboard assisted grading automation
-   1. TouchSpeed: Keyboard assisted feedback generation
-   1. Synchronize content to Canvas
+### GitHub content management
+
+MasteryLS uses your GitHub repository to store and manage the course content. This means you are using the world's most popular and powerful content management system. You also have complete control of your content and can easily deploy it to multiple delivery channels or remove all access to your content.
+
+![github.jpg](docs/features/github.jpg)
+
+All course changes are versioned, comparable, and reversible. This makes it easy to see what your content looked like a year ago, fix a mistake, see who made a change, or revert to a previous version. Because each file is version controlled you can have multiple instructional designers working at the same time.
+
+![Commits](docs/features/commits.jpg)
+
+Course and topics may be published, under development, or unpublished. Make any user an editor, or remove an editor at any time. You can even _delete protect_ so that you don't accidentally lose your content.
+
+### Compatible
+
+Your content is available from your GitHub repository and changes made in MasteryLS are immediately synced. You can even export and sync your MasteryLS course to an Instructure Canvas course.
+
+<img src="docs/features/export.jpg" width="500" >
+
+Once you have connected your course to Canvas you can update all topics, or push a single topic, at any time. Any feature that is not compatible with Canvas, such as AI mentoring and feedback, is automatically removed from the Canvas version of the course.
+
+![canvas.jpg](docs/features/canvas.jpg)
+
+### Advanced editor
+
+In order to keep up with the educational needs of your learners you must be able to generate and maintain content easily. MasteryLS make that easy by simplifying the content representation with **Markdown** instead of incompatible, complex, and insecure HTML. Use drag and drop to add files and manipulate the course structure. Hotkeys allow you to execute most common editing tasks.
+
+- Multiple select, search and replace, spell checking, syntax highlighting, and color coding.
+- Simplified [markdown](/course/51a72d23-50ab-4147-a1db-27a062aed771/topic/33344322454747d6a7d8da1c57825e1f) content editing for clarity and consistency.
+- All major [media](/course/51a72d23-50ab-4147-a1db-27a062aed771/topic/b6c7df2a-699f-43a8-8508-08630dcc5cc6) types supported.
+- Maximize learner attention with video, audio, images, and rich textual content.
+
+<img src="docs/features/editor.jpg" width="600" >
+
+### Topic types
+
+You can support a diverse audience of learners with different instructional topic types.
+
+- **Text**: Free flowing instructional text with embedded media types and quiz questions.
+- **Quiz**: A collection of quiz questions that expedite learning outcomes. AI provides automatic feedback and exploration.
+- **Exam**: A collection of quiz questions that measures mastery and only provides feedback upon completion. Mentors review and provide feedback to the learner's mastery demonstration.
+- **Video**: Full screen video playback as an individual topic.
+- **Project**: Mastery demonstration with a project artifact that is mentor graded and reviewed. After submission, a project then becomes part of the learner's mastery portfolio.
+
+### AI integration
+
+MasteryLS was designed from the beginning with AI as an integral part of the experience. This accelerates learning and reduces mentor overhead.
+
+- **Content generation**: Editors use AI to generate a courses, topics, sections, quizzes, and exams. Editors can then easily enhance and modify the generated content in order to produce a production ready result.
+- **Learning feedback**: Learners receive immediate feedback to quizzes, exams, and project submissions. Mentors can augment and overwrite AI responses.
+- **Topic discussion**: Learner can deepen their understanding and ask clarifying questions with the context aware AI discussion mentor.
+
+![discuss.jpg](docs/features/discuss.jpg)
+
+### Personalized Dashboard
+
+The individualized dashboard shows available courses, enrollments, and progress. The learner, mentor, and administrator can also easily access metrics and logs to view individual performance.
+
+![dashboard.jpg](docs/features/dashboard.jpg)
+
+### Metrics
+
+A learner, mentor, or administrator can access the [visualizations](/metrics) for time spent on each course and activity. This helps determine productivity and focus.
+
+![metrics.jpg](docs/features/metrics.jpg)
+
+### Progress
+
+A [detailed log](/progress) for everything a learner does is tracked of all course interactions and accomplishments. A learner can use this to demonstrate progress. A mentor or administrator and compare progress across courses, activities, peers, and cohorts.
+
+![progress.jpg](docs/features/progress.jpg)
 
 # Deploying MasteryLS
 
