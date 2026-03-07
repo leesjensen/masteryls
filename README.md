@@ -10,7 +10,7 @@
 - Video and interactivity powered
 - Project based mastery
 
-## Feature details
+## Features
 
 1. **Content** that leverages the online experience. This will include instruction video with interactive paths, textual instruction, and self paced learning.
    1. Markdown as the primary content format
@@ -91,7 +91,7 @@ MasteryLS is a web-based Learning System (LS) designed for content mastery and m
 
 The application is a Single Page Application (SPA) built with React and Vite. It interacts with several external services to provide a seamless learning experience:
 
-![Architecture Diagram](/docs/architectureMd.png)
+![Architecture Diagram](/docs/architecture.png)
 
 - **Frontend**: React application served via Vite.
 - **Backend**: Supabase (BaaS) for authentication, database, and real-time features.
