@@ -2,7 +2,12 @@
 
 ## Schema
 
-![Database schema](databaseSchema.png)
+The official documentation for the database configuration is found in the referenced SQL statements.
+
+- [Table Creation SQL](supabase/schema.sql)
+- [Policy Creation SQL](supabase/policies.sql)
+
+<img width="900" src="databaseSchema.png" />
 
 ## User
 
