@@ -53,6 +53,8 @@ function usage() {
     --org "orgslug" 
     --project "mastery-ls-byu" 
     --password "supersecret" 
+    --root-email "root@example.com"
+    --root-name "Root User"
     --api "https://api.supabase.com"
 
 Optional:
@@ -282,10 +284,6 @@ function runSupabaseCli({ args, accessToken }) {
   if (result.status !== 0) {
     throw new Error(`Supabase CLI command failed: supabase ${args.join(' ')}\n${result.stderr || result.stdout || ''}`);
   }
-
-  if (result.stdout) {
-    console.log(result.stdout.trim());
-  }
 }
 
 async function deployEdgeFunction({ project, accessToken, edgeName }) {
@@ -316,6 +314,96 @@ async function getProjectApiKeys({ baseUrl, accessToken, project }) {
     path: `/v1/projects/${encodeURIComponent(project.ref)}/api-keys?reveal=true`,
     accessToken,
   });
+}
+
+async function findServiceRoleKey({ baseUrl, accessToken, project }) {
+  const apiKeys = await getProjectApiKeys({ baseUrl, accessToken, project });
+  const keys = Array.isArray(apiKeys) ? apiKeys : [];
+  const byName = keys.find((item) => String(item?.name || '').toLowerCase() === 'service_role');
+  if (byName?.api_key) {
+    return byName.api_key;
+  }
+
+  const byType = keys.find((item) => String(item?.type || '').toLowerCase() === 'secret');
+  if (byType?.api_key) {
+    return byType.api_key;
+  }
+
+  return null;
+}
+
+function escapeSqlLiteral(value) {
+  return String(value).replace(/'/g, "''");
+}
+
+async function executeSqlQuery({ baseUrl, accessToken, project, query }) {
+  return apiRequest({
+    baseUrl,
+    path: `/v1/projects/${encodeURIComponent(project.ref)}/database/query`,
+    accessToken,
+    method: 'POST',
+    body: { query },
+  });
+}
+
+function getFirstRow(result) {
+  if (!Array.isArray(result) || result.length === 0) {
+    return null;
+  }
+  return result[0];
+}
+
+async function findAuthUserIdByEmail({ baseUrl, accessToken, project, email }) {
+  const query = `select id from auth.users where email = '${escapeSqlLiteral(email)}' limit 1;`;
+  const rows = await executeSqlQuery({ baseUrl, accessToken, project, query });
+  return getFirstRow(rows)?.id || null;
+}
+
+async function createOrGetAuthUser({ projectUrl, serviceRoleKey, baseUrl, accessToken, project, email, name }) {
+  const response = await fetch(`${projectUrl}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${serviceRoleKey}`,
+      apikey: serviceRoleKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      email_confirm: true,
+      user_metadata: { name },
+    }),
+  });
+
+  if (response.ok) {
+    const payload = await response.json();
+    return payload?.id || payload?.user?.id || null;
+  }
+
+  const payload = await safeJson(response);
+  const message = String(payload?.msg || payload?.message || payload?.error || '').toLowerCase();
+  if (response.status === 422 || message.includes('already')) {
+    const existingId = await findAuthUserIdByEmail({ baseUrl, accessToken, project, email });
+    if (existingId) {
+      return existingId;
+    }
+  }
+
+  throw new Error(`Failed to create root auth user (${response.status}): ${JSON.stringify(payload)}`);
+}
+
+async function ensureRootRole({ baseUrl, accessToken, project, userId }) {
+  const query = `
+insert into public.role ("user", "right", object)
+select '${escapeSqlLiteral(userId)}'::uuid, 'root', null
+where not exists (
+  select 1
+  from public.role
+  where "user" = '${escapeSqlLiteral(userId)}'::uuid
+    and "right" = 'root'
+    and object is null
+);
+`;
+  await executeSqlQuery({ baseUrl, accessToken, project, query });
 }
 
 async function getProjectClientConfig({ baseUrl, accessToken, project }) {
@@ -361,12 +449,14 @@ async function main() {
     process.exit(0);
   }
 
-  requireArgs(args, ['token', 'org', 'project', 'password']);
+  requireArgs(args, ['token', 'org', 'project', 'password', 'root-email', 'root-name']);
 
   const accessToken = args.token;
   const organizationId = args.org;
   const projectName = args.project;
   const dbPassword = args.password;
+  const rootEmail = args['root-email'];
+  const rootName = args['root-name'];
   const region = args.region || DEFAULT_REGION;
   const secrets = parseSecretPairs(args.secrets);
   const baseUrl = normalizeBaseUrl(args.api || DEFAULT_API);
@@ -375,23 +465,11 @@ async function main() {
   const waitIntervalMs = 10 * 1000;
 
   console.log(`Looking up project "${projectName}" in organization "${organizationId}"...`);
-  let project = await findProjectByName({
-    baseUrl,
-    accessToken,
-    organizationId,
-    projectName,
-  });
+  let project = await findProjectByName({ baseUrl, accessToken, organizationId, projectName });
 
   if (!project) {
     console.log(`Project "${projectName}" not found. Creating it in ${region}...`);
-    project = await createProject({
-      baseUrl,
-      accessToken,
-      organizationId,
-      projectName,
-      region,
-      dbPassword,
-    });
+    project = await createProject({ baseUrl, accessToken, organizationId, projectName, region, dbPassword });
 
     console.log(`Waiting for project ${project.ref} to become ready...`);
     await waitForProjectReady({ baseUrl, accessToken, project, timeoutMs: waitTimeoutMs, intervalMs: waitIntervalMs });
@@ -401,7 +479,6 @@ async function main() {
 
     const edgeFunctionNames = await listEdgeFunctionNames();
     if (edgeFunctionNames.length > 0) {
-      console.log(`Deploying ${edgeFunctionNames.length} edge function(s): ${edgeFunctionNames.join(', ')}`);
       for (const edgeName of edgeFunctionNames) {
         await deployEdgeFunction({ project, accessToken, edgeName });
       }
@@ -415,6 +492,12 @@ async function main() {
   } else {
     console.log(`Found existing project "${projectName}".`);
   }
+
+  const serviceRoleKey = await findServiceRoleKey({ baseUrl, accessToken, project });
+  const projectUrl = `https://${project.ref}.supabase.co`;
+  const rootUserId = await createOrGetAuthUser({ projectUrl, serviceRoleKey, baseUrl, accessToken, project, email: rootEmail, name: rootName });
+  await ensureRootRole({ baseUrl, accessToken, project, userId: rootUserId });
+  console.log(`Created root role for ${rootEmail}.`);
 
   const clientConfig = await getProjectClientConfig({ baseUrl, accessToken, project });
   await writeRootConfigFile(clientConfig);
