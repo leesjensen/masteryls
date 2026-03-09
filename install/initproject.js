@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -145,10 +145,10 @@ async function createProject({ baseUrl, accessToken, organizationId, projectName
 }
 
 // Fetches latest project status/details by project reference.
-async function getProject({ baseUrl, accessToken, projectRef }) {
+async function getProject({ baseUrl, accessToken, project }) {
   return apiRequest({
     baseUrl,
-    path: `/v1/projects/${encodeURIComponent(projectRef)}`,
+    path: `/v1/projects/${encodeURIComponent(project.ref)}`,
     accessToken,
   });
 }
@@ -160,25 +160,25 @@ function isProjectReady(project) {
 }
 
 // Polls project status until ready or timeout.
-async function waitForProjectReady({ baseUrl, accessToken, projectRef, timeoutMs, intervalMs }) {
+async function waitForProjectReady({ baseUrl, accessToken, project, timeoutMs, intervalMs }) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    const project = await getProject({ baseUrl, accessToken, projectRef });
+    const project = await getProject({ baseUrl, accessToken, project });
     if (isProjectReady(project)) {
       return project;
     }
     const status = project?.status ?? 'UNKNOWN';
-    process.stdout.write(`Project ${projectRef} status: ${status}. Waiting ${intervalMs}ms...\n`);
+    process.stdout.write(`Project ${project.ref} status: ${status}. Waiting ${intervalMs}ms...\n`);
     await new Promise((resolveWait) => setTimeout(resolveWait, intervalMs));
   }
-  throw new Error(`Timed out waiting for project ${projectRef} to become ready.`);
+  throw new Error(`Timed out waiting for project ${project.ref} to become ready.`);
 }
 
 // Executes SQL through Supabase Management API.
-async function executeSql({ baseUrl, accessToken, projectRef, sql }) {
+async function executeSql({ baseUrl, accessToken, project, sql }) {
   return apiRequest({
     baseUrl,
-    path: `/v1/projects/${encodeURIComponent(projectRef)}/database/query`,
+    path: `/v1/projects/${encodeURIComponent(project.ref)}/database/query`,
     accessToken,
     method: 'POST',
     body: { query: sql },
@@ -210,14 +210,14 @@ async function loadConfirmationEmailTemplate(templatePath) {
   }
 }
 
-async function updateConfirmationEmailTemplate({ baseUrl, accessToken, projectRef }) {
+async function updateConfirmationEmailTemplate({ baseUrl, accessToken, project }) {
   const htmlTemplate = await loadConfirmationEmailTemplate(CONFIRMATION_EMAIL_TEMPLATE_PATH);
   if (htmlTemplate) {
     console.log(`Updating auth confirmation email template from ${CONFIRMATION_EMAIL_TEMPLATE_PATH}...`);
 
     return apiRequest({
       baseUrl,
-      path: `/v1/projects/${encodeURIComponent(projectRef)}/config/auth`,
+      path: `/v1/projects/${encodeURIComponent(project.ref)}/config/auth`,
       accessToken,
       method: 'PATCH',
       body: {
@@ -292,26 +292,63 @@ function runSupabaseCli({ args, accessToken }) {
   }
 }
 
-async function deployEdgeFunction({ projectRef, accessToken, edgeName }) {
+async function deployEdgeFunction({ project, accessToken, edgeName }) {
   console.log(`Deploying edge function source at ${join(SUPABASE_FUNCTIONS_PATH, edgeName)}`);
 
   runSupabaseCli({
     accessToken,
-    args: ['functions', 'deploy', edgeName, '--project-ref', projectRef],
+    args: ['functions', 'deploy', edgeName, '--project-ref', project.ref],
   });
 }
 
-function registerProjectSecrets({ projectRef, accessToken, secrets }) {
+function registerProjectSecrets({ project, accessToken, secrets }) {
   const secretEntries = Object.entries(secrets).filter(([, value]) => value !== undefined && value !== null && value !== '');
   if (secretEntries.length > 0) {
     const cliSecretsArgs = secretEntries.map(([key, value]) => `${key}=${value}`);
     runSupabaseCli({
       accessToken,
-      args: ['secrets', 'set', ...cliSecretsArgs, '--project-ref', projectRef],
+      args: ['secrets', 'set', ...cliSecretsArgs, '--project-ref', project.ref],
     });
 
     console.log(`Registered ${secretEntries.length} project secret(s).`);
   }
+}
+
+async function getProjectApiKeys({ baseUrl, accessToken, project }) {
+  return apiRequest({
+    baseUrl,
+    path: `/v1/projects/${encodeURIComponent(project.ref)}/api-keys?reveal=true`,
+    accessToken,
+  });
+}
+
+async function getProjectClientConfig({ baseUrl, accessToken, project }) {
+  const [project, apiKeys] = await Promise.all([getProject({ baseUrl, accessToken, project }), getProjectApiKeys({ baseUrl, accessToken, project })]);
+
+  const publishableKeyEntry = (Array.isArray(apiKeys) ? apiKeys : []).find((key) => key?.type === 'publishable' || String(key?.api_key || '').startsWith('sb_publishable_'));
+
+  const url = project?.url || project?.api_url || `https://${project.ref}.supabase.co`;
+  const key = publishableKeyEntry?.api_key || null;
+
+  if (!key) {
+    throw new Error('Could not retrieve publishable API key from Supabase Management API.');
+  }
+
+  return { url, key };
+}
+
+async function writeRootConfigFile({ url, key }) {
+  const configPath = join(SCRIPT_DIR, '..', 'config.js');
+  const configFileContents = `export default {
+  supabase: {
+    url: '${url}',
+    key: '${key}',
+  },
+};
+`;
+
+  await writeFile(configPath, configFileContents, 'utf8');
+  console.log(`Wrote Supabase config to ${configPath}`);
 }
 
 // Main command flow:
@@ -362,65 +399,36 @@ async function main() {
       region,
       dbPassword,
     });
+
+    console.log(`Waiting for project ${project.ref} to become ready...`);
+    await waitForProjectReady({ baseUrl, accessToken, project, timeoutMs: waitTimeoutMs, intervalMs: waitIntervalMs });
+
+    console.log('Applying schema SQL...');
+    await executeSql({ baseUrl, accessToken, project, sql: schemaSql });
+
+    console.log('Applying policies SQL...');
+    await executeSql({ baseUrl, accessToken, project, sql: policiesSql });
+
+    const edgeFunctionNames = await listEdgeFunctionNames();
+    if (edgeFunctionNames.length > 0) {
+      console.log(`Deploying ${edgeFunctionNames.length} edge function(s): ${edgeFunctionNames.join(', ')}`);
+      for (const edgeName of edgeFunctionNames) {
+        await deployEdgeFunction({ project, accessToken, edgeName });
+      }
+    }
+
+    if (secrets) {
+      registerProjectSecrets({ project, accessToken, secrets });
+    }
+
+    await updateConfirmationEmailTemplate({ baseUrl, accessToken, project });
   } else {
     console.log(`Found existing project "${projectName}".`);
-    //    process.exit(1);
   }
 
-  const projectRef = project.ref;
-
-  // console.log(`Waiting for project ${projectRef} to become ready...`);
-  // await waitForProjectReady({
-  //   baseUrl,
-  //   accessToken,
-  //   projectRef,
-  //   timeoutMs: waitTimeoutMs,
-  //   intervalMs: waitIntervalMs,
-  // });
-
-  // console.log('Applying schema SQL...');
-  // await executeSql({
-  //   baseUrl,
-  //   accessToken,
-  //   projectRef,
-  //   sql: schemaSql,
-  // });
-
-  // console.log('Applying policies SQL...');
-  // await executeSql({
-  //   baseUrl,
-  //   accessToken,
-  //   projectRef,
-  //   sql: policiesSql,
-  // });
-
-  // const edgeFunctionNames = await listEdgeFunctionNames();
-  // if (edgeFunctionNames.length > 0) {
-  //   console.log(`Deploying ${edgeFunctionNames.length} edge function(s): ${edgeFunctionNames.join(', ')}`);
-  //   for (const edgeName of edgeFunctionNames) {
-  //     await deployEdgeFunction({
-  //       projectRef,
-  //       accessToken,
-  //       edgeName,
-  //     });
-  //   }
-  // }
-
-  // if (secrets) {
-  //   registerProjectSecrets({
-  //     projectRef,
-  //     accessToken,
-  //     secrets,
-  //   });
-  // }
-
-  await updateConfirmationEmailTemplate({
-    baseUrl,
-    accessToken,
-    projectRef,
-  });
-
-  console.log(`Initialization complete for project ${projectName} (${projectRef}).`);
+  const clientConfig = await getProjectClientConfig({ baseUrl, accessToken, project });
+  await writeRootConfigFile({ url: clientConfig.url, key: clientConfig.key });
+  console.log(`Initialization complete for project ${projectName} (${project.ref}).`);
 }
 
 // Global CLI error handler with usage help.
