@@ -38,7 +38,7 @@ function Login({ courseOps }) {
         courseOps.login(user);
       }
     } catch (error) {
-      showAlert({ message: `Login failed. Please try again.`, type: 'error' });
+      showAlert({ message: `Login failed. Please try again. ${error.message}`, type: 'error' });
     }
   };
 

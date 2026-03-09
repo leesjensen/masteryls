@@ -161,13 +161,27 @@ With your installation of MasteryLS fully deployed you can now log into your ins
 
 ![alt text](docs/login.png)
 
+This will display the root user's dashboard. Click on the user menu and select **New Course**.
+
+![Create Course](docs/createCourseNav.png)
+
+Enter the information about the course. Don't generate the course from your description on your first course. You can experiment with that later.
+
+You need to provide your GitHub account name, repo, and personal access token (PAT) for the location where you want to create the course repository. Make sure that the PAT you provide has **Administration** and **Contents** read/write rights.
+
+![Provide course properties](courseParams.png)
+
+Congratulations! You have successfully installed MasteryLS and created your first course.
+
+![View your course](docs/firstCourse.png)
+
 ## Architecture
 
 MasteryLS is a web-based Learning System (LS) designed for content mastery and maintainable course creation, leveraging GitHub for content storage, Supabase for backend services, and Gemini AI for content generation and learner feedback.
 
 ### High-Level Architecture
 
-The application is a Single Page Application (SPA) built with React and Vite. It interacts with several external services to provide a seamless learning experience:
+The application is a Single Page Application (SPA) built with React and Supabase. It interacts with several external services to provide a seamless learning experience.
 
 ![Architecture Diagram](/docs/architecture.png)
 
@@ -180,13 +194,13 @@ The application is a Single Page Application (SPA) built with React and Vite. It
 
 #### Frontend
 
-- **Framework**: React 18+ (with React Router v6 for routing).
-- **Build Tool**: Vite.
-- **Styling**: TailwindCSS.
-- **Editor**: Monaco Editor (for code editing).
-- **Markdown**: `react-markdown`, `remark-gfm`, `rehype-raw` for rich content rendering.
+- **Framework**: React 18+ (with React Router v6 for routing)
+- **Build Tool**: Vite
+- **Styling**: TailwindCSS
+- **Internal Editor**: Monaco
+- **Markdown**: `react-markdown`, `remark-gfm`, `rehype-raw` for rich content rendering
 
-#### Backend / Services
+#### Backend
 
 - **Supabase**:
   - **Auth**: User management and authentication.
@@ -224,8 +238,8 @@ The application revolves around a few key entities (defined in `src/model.ts`):
 
 ### Key User Flows
 
-1.  **Authentication**: Users sign in via Supabase Auth.
-    - Roles for learnes, editors, and root administrators.
+1.  **Authentication**: Users sign in via Supabase Auth one-time passwords.
+    - Roles for learners, editors, and root administrators.
 1.  **Learning**:
     - User selects a course (Enrollment).
     - Content is fetched from the associated GitHub repository.
