@@ -20,8 +20,10 @@ MasteryLS is a React single-page application that integrates with external syste
 ## Primary Actors And Permissions
 - Guest (not logged in): can browse published course catalog and open course content.
 - Learner (logged in): can enroll, learn, complete interactions, take notes, view own activity/progress.
+- Observer (course-scoped role): read-only proxy access for specific learner user(s) assigned through observer delegation.
+- Mentor (course-scoped role): can review learner work and provide mentor feedback/assessment, and can assume observer mode for any user.
 - Editor (course-scoped role): can edit course structure/content, manage GitHub-backed course assets, export to Canvas.
-- Root (global role): administrative visibility and elevated management actions.
+- Root (global role): administrative visibility and elevated management actions, including observer-mode assumption for any user.
 
 ## Runtime Architecture
 - App bootstrap:
@@ -40,7 +42,7 @@ MasteryLS is a React single-page application that integrates with external syste
   - `useCourseOperations` acts as the application service facade used by most views.
 
 ## Core Domain Model
-- User: identity, profile, roles, role settings (e.g., course GitHub token for editors).
+- User: identity and profile metadata.
 - CatalogEntry (course metadata): course id/title/description, GitHub repo location, publication settings.
 - Course (runtime, loaded from GitHub): modules, topics, links, external refs, cache.
 - Topic: typed learning unit (`instruction`, `exam`, `project`, `embedded`/`video`).

@@ -54,6 +54,7 @@ Fields:
 - `scopeType` (`global`, `course`)
 - `scopeId` (null for global scope)
 - `role` (`root`, `editor`, `mentor`, `learner`, `observer`)
+- `constraints` (nullable role-specific constraint object)
 - `grantedByUserId`
 - `createdAt`
 - `revokedAt` (nullable)
@@ -62,6 +63,45 @@ Rules:
 - Active assignment is `revokedAt == null`.
 - One active assignment per `(userId, scopeType, scopeId, role)`.
 - No secrets or credentials stored in role settings.
+- For `observer` role, `constraints` may further limit allowed observed users.
+
+### ObserverDelegation
+Defines which learner identities an observer can proxy in read-only mode.
+
+Fields:
+- `id`
+- `courseId`
+- `observerUserId`
+- `observedUserId`
+- `grantedByUserId`
+- `createdAt`
+- `revokedAt` (nullable)
+
+Rules:
+- Active delegation is `revokedAt == null`.
+- One active delegation per `(courseId, observerUserId, observedUserId)`.
+- Delegation is only required for `observer` role users.
+- `mentor`, `editor`, and `root` can assume observer mode for any user without explicit delegation rows.
+
+### ObserverSession
+Ephemeral read-only proxy session context for acting as another user in a course.
+
+Fields:
+- `id`
+- `courseId`
+- `actorUserId`
+- `observedUserId`
+- `assumedByRole` (`observer`, `mentor`, `editor`, `root`)
+- `startedAt`
+- `endedAt` (nullable)
+- `reason` (nullable)
+
+Rules:
+- Observer mode is strictly read-only.
+- Effective subject for read queries is `observedUserId`; actor identity remains `actorUserId` for audit.
+- Session creation authorization:
+  - `observer`: allowed only with active `ObserverDelegation`.
+  - `mentor`, `editor`, `root`: allowed for any user.
 
 ### CredentialReference
 Represents external credentials under server custody.
@@ -338,13 +378,25 @@ Rules:
   - Manage own enrollments.
   - Create attempts, notes, and runtime activity in enrolled courses.
   - Read only published content.
+- Observer (course scope):
+  - Can enter read-only proxy mode for delegated learner user(s).
+  - Reads learner-facing scoped data as the observed user context.
+  - No authoring, grading, enrollment mutation, submission, or role-management writes.
+- Mentor (course scope):
+  - Read scoped course metadata/content including learner submissions for mentoring workflows.
+  - Read scoped analytics/progress for supported mentoring operations.
+  - Add mentor feedback/assessment where policy allows.
+  - Can assume read-only observer mode for any user.
+  - No course structure authoring or role-management writes by default.
 - Editor (course scope):
   - Manage course definition and content metadata for scoped course.
   - Manage Canvas exports for scoped course.
   - Manage non-secret course settings.
+  - Can assume read-only observer mode for any user.
 - Root:
   - Global administrative operations.
   - Role and lifecycle overrides, with audit.
+  - Can assume read-only observer mode for any user.
 
 ## Security And Consistency Requirements
 - Secrets:
@@ -373,6 +425,10 @@ Rules:
 - `auth.account_created`
 - `auth.login`
 - `auth.logout`
+- `observer.delegation_granted`
+- `observer.delegation_revoked`
+- `observer.mode_started`
+- `observer.mode_stopped`
 - `enrollment.created`
 - `enrollment.deleted`
 - `learning.topic_viewed`
