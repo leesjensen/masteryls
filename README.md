@@ -159,9 +159,7 @@ You can deploy your own installation of MasterLS with two simple steps.
 
 With your installation of MasteryLS fully deployed you can now log into your installation of MasteryLS using the **root email** you provided to the MasterLS CLI for installation. This user has full root access to your installation.
 
-![alt text](docs/login.png)
-
-This will display the root user's dashboard. Click on the user menu and select **New Course**.
+After logging in, you will see the root user's dashboard. Click on the user menu and select **New Course**.
 
 ![Create Course](docs/createCourseNav.png)
 
