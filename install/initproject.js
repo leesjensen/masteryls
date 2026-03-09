@@ -175,7 +175,9 @@ async function waitForProjectReady({ baseUrl, accessToken, project, timeoutMs, i
 }
 
 // Executes SQL through Supabase Management API.
-async function executeSql({ baseUrl, accessToken, project, sql }) {
+async function executeSql({ baseUrl, accessToken, project, sqlPath }) {
+  const sql = await loadTextFromFile(sqlPath);
+
   return apiRequest({
     baseUrl,
     path: `/v1/projects/${encodeURIComponent(project.ref)}/database/query`,
@@ -189,13 +191,6 @@ async function executeSql({ baseUrl, accessToken, project, sql }) {
 async function loadTextFromFile(filePath) {
   const absolutePath = resolve(process.cwd(), filePath);
   return readFile(absolutePath, 'utf8');
-}
-
-// Chooses CLI-provided SQL files or built-in defaults.
-async function resolveSqlInputs({ schemaPath, policiesPath }) {
-  const schemaSql = await loadTextFromFile(schemaPath);
-  const policiesSql = await loadTextFromFile(policiesPath);
-  return { schemaSql, policiesSql };
 }
 
 async function loadConfirmationEmailTemplate(templatePath) {
@@ -371,15 +366,11 @@ async function main() {
   const projectName = args.project;
   const dbPassword = args.password;
   const region = args.region || DEFAULT_REGION;
-  const schemaPath = join(SCRIPT_DIR, 'supabase', 'schema.sql');
-  const policiesPath = join(SCRIPT_DIR, 'supabase', 'policies.sql');
   const secrets = parseSecretPairs(args.secrets);
   const baseUrl = normalizeBaseUrl(args.api || DEFAULT_API);
 
   const waitTimeoutMs = 15 * 60 * 1000;
   const waitIntervalMs = 10 * 1000;
-
-  const { schemaSql, policiesSql } = await resolveSqlInputs({ schemaPath, policiesPath });
 
   console.log(`Looking up project "${projectName}" in organization "${organizationId}"...`);
   let project = await findProjectByName({
@@ -404,10 +395,7 @@ async function main() {
     await waitForProjectReady({ baseUrl, accessToken, project, timeoutMs: waitTimeoutMs, intervalMs: waitIntervalMs });
 
     console.log('Applying schema SQL...');
-    await executeSql({ baseUrl, accessToken, project, sql: schemaSql });
-
-    console.log('Applying policies SQL...');
-    await executeSql({ baseUrl, accessToken, project, sql: policiesSql });
+    await executeSql({ baseUrl, accessToken, project, sqlPath: join(SCRIPT_DIR, 'supabase', 'schema.sql') });
 
     const edgeFunctionNames = await listEdgeFunctionNames();
     if (edgeFunctionNames.length > 0) {
