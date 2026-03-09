@@ -210,7 +210,7 @@ async function loadConfirmationEmailTemplate(templatePath) {
 async function updateConfirmationEmailTemplate({ baseUrl, accessToken, project }) {
   const htmlTemplate = await loadConfirmationEmailTemplate(CONFIRMATION_EMAIL_TEMPLATE_PATH);
   if (htmlTemplate) {
-    console.log(`Updating auth confirmation email template from ${CONFIRMATION_EMAIL_TEMPLATE_PATH}...`);
+    console.log(`🟢 Updating auth confirmation email template from ${CONFIRMATION_EMAIL_TEMPLATE_PATH}...`);
 
     return apiRequest({
       baseUrl,
@@ -287,7 +287,7 @@ function runSupabaseCli({ args, accessToken }) {
 }
 
 async function deployEdgeFunction({ project, accessToken, edgeName }) {
-  console.log(`Deploying edge function source at ${join(SUPABASE_FUNCTIONS_PATH, edgeName)}`);
+  console.log(`🟢 Deploying edge function source at ${join(SUPABASE_FUNCTIONS_PATH, edgeName)}`);
 
   runSupabaseCli({
     accessToken,
@@ -304,7 +304,7 @@ function registerProjectSecrets({ project, accessToken, secrets }) {
       args: ['secrets', 'set', ...cliSecretsArgs, '--project-ref', project.ref],
     });
 
-    console.log(`Registered ${secretEntries.length} project secret(s).`);
+    console.log(`🟢 Registered ${secretEntries.length} project secret(s).`);
   }
 }
 
@@ -433,7 +433,7 @@ async function writeRootConfigFile(config) {
 `;
 
   await writeFile(configPath, configFileContents, 'utf8');
-  console.log(`Wrote Supabase config to ${configPath}`);
+  console.log(`🟢 Wrote Supabase config to ${configPath}`);
 }
 
 // Main command flow:
@@ -464,17 +464,17 @@ async function main() {
   const waitTimeoutMs = 15 * 60 * 1000;
   const waitIntervalMs = 10 * 1000;
 
-  console.log(`Looking up project "${projectName}" in organization "${organizationId}"...`);
+  console.log(`🟢 Looking up project "${projectName}" in organization "${organizationId}"...`);
   let project = await findProjectByName({ baseUrl, accessToken, organizationId, projectName });
 
   if (!project) {
-    console.log(`Project "${projectName}" not found. Creating it in ${region}...`);
+    console.log(`🟢 Project "${projectName}" not found. Creating it in ${region}...`);
     project = await createProject({ baseUrl, accessToken, organizationId, projectName, region, dbPassword });
 
-    console.log(`Waiting for project ${project.ref} to become ready...`);
+    console.log(`🟢 Waiting for project ${project.ref} to become ready...`);
     await waitForProjectReady({ baseUrl, accessToken, project, timeoutMs: waitTimeoutMs, intervalMs: waitIntervalMs });
 
-    console.log('Applying schema SQL...');
+    console.log('🟢 Applying schema SQL...');
     await executeSql({ baseUrl, accessToken, project, sqlPath: join(SCRIPT_DIR, 'supabase', 'schema.sql') });
 
     const edgeFunctionNames = await listEdgeFunctionNames();
@@ -489,19 +489,19 @@ async function main() {
     }
 
     await updateConfirmationEmailTemplate({ baseUrl, accessToken, project });
-  } else {
-    console.log(`Found existing project "${projectName}".`);
-  }
 
-  const serviceRoleKey = await findServiceRoleKey({ baseUrl, accessToken, project });
-  const projectUrl = `https://${project.ref}.supabase.co`;
-  const rootUserId = await createOrGetAuthUser({ projectUrl, serviceRoleKey, baseUrl, accessToken, project, email: rootEmail, name: rootName });
-  await ensureRootRole({ baseUrl, accessToken, project, userId: rootUserId });
-  console.log(`Created root role for ${rootEmail}.`);
+    const serviceRoleKey = await findServiceRoleKey({ baseUrl, accessToken, project });
+    const projectUrl = `https://${project.ref}.supabase.co`;
+    const rootUserId = await createOrGetAuthUser({ projectUrl, serviceRoleKey, baseUrl, accessToken, project, email: rootEmail, name: rootName });
+    await ensureRootRole({ baseUrl, accessToken, project, userId: rootUserId });
+    console.log(`🟢 Created root role for ${rootEmail}.`);
+  } else {
+    console.log(`🟢 Found existing project "${projectName}".`);
+  }
 
   const clientConfig = await getProjectClientConfig({ baseUrl, accessToken, project });
   await writeRootConfigFile(clientConfig);
-  console.log(`Initialization complete for project ${projectName} (${project.ref}).`);
+  console.log(`\n⭐ Initialization complete for project ${projectName} (${project.ref}).`);
 }
 
 // Global CLI error handler with usage help.
