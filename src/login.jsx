@@ -23,7 +23,7 @@ function Login({ courseOps }) {
       const token = await otpDialogRef.current.show({
         title: 'Enter your code',
         description: `We sent a one-time code to ${email}. Enter it below to access your account.`,
-        placeholder: '6-digit code',
+        placeholder: 'One-time code',
         confirmButtonText: 'Verify',
         cancelButtonText: 'Cancel',
       });
@@ -38,7 +38,7 @@ function Login({ courseOps }) {
         courseOps.login(user);
       }
     } catch (error) {
-      showAlert({ message: `Login failed. Please try again. ${error.message}`, type: 'error' });
+      showAlert({ message: `Login failed. Please try again.`, type: 'error' });
     }
   };
 

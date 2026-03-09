@@ -163,11 +163,11 @@ function isProjectReady(project) {
 async function waitForProjectReady({ baseUrl, accessToken, project, timeoutMs, intervalMs }) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    const project = await getProject({ baseUrl, accessToken, project });
-    if (isProjectReady(project)) {
-      return project;
+    const projectInfo = await getProject({ baseUrl, accessToken, project });
+    if (isProjectReady(projectInfo)) {
+      return projectInfo;
     }
-    const status = project?.status ?? 'UNKNOWN';
+    const status = projectInfo?.status ?? 'UNKNOWN';
     process.stdout.write(`Project ${project.ref} status: ${status}. Waiting ${intervalMs}ms...\n`);
     await new Promise((resolveWait) => setTimeout(resolveWait, intervalMs));
   }
@@ -318,26 +318,27 @@ async function getProjectApiKeys({ baseUrl, accessToken, project }) {
 }
 
 async function getProjectClientConfig({ baseUrl, accessToken, project }) {
-  const [project, apiKeys] = await Promise.all([getProject({ baseUrl, accessToken, project }), getProjectApiKeys({ baseUrl, accessToken, project })]);
+  const [projectInfo, apiKeys] = await Promise.all([getProject({ baseUrl, accessToken, project }), getProjectApiKeys({ baseUrl, accessToken, project })]);
 
   const publishableKeyEntry = (Array.isArray(apiKeys) ? apiKeys : []).find((key) => key?.type === 'publishable' || String(key?.api_key || '').startsWith('sb_publishable_'));
 
-  const url = project?.url || project?.api_url || `https://${project.ref}.supabase.co`;
+  const url = projectInfo?.url || projectInfo?.api_url || `https://${project.ref}.supabase.co`;
   const key = publishableKeyEntry?.api_key || null;
 
   if (!key) {
     throw new Error('Could not retrieve publishable API key from Supabase Management API.');
   }
 
-  return { url, key };
+  return { project, url, key };
 }
 
-async function writeRootConfigFile({ url, key }) {
+async function writeRootConfigFile(config) {
   const configPath = join(SCRIPT_DIR, '..', 'config.js');
   const configFileContents = `export default {
   supabase: {
-    url: '${url}',
-    key: '${key}',
+    project: '${config.project.name}',
+    url: '${config.url}',
+    key: '${config.key}',
   },
 };
 `;
@@ -415,7 +416,7 @@ async function main() {
   }
 
   const clientConfig = await getProjectClientConfig({ baseUrl, accessToken, project });
-  await writeRootConfigFile({ url: clientConfig.url, key: clientConfig.key });
+  await writeRootConfigFile(clientConfig);
   console.log(`Initialization complete for project ${projectName} (${project.ref}).`);
 }
 

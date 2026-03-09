@@ -687,7 +687,7 @@ async function _register(page: any) {
   await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
   await page.getByRole('button', { name: 'Send Code' }).click();
 
-  await page.getByRole('textbox', { name: '6-digit code' }).fill('123456');
+  await page.getByRole('textbox', { name: 'One-time code' }).fill('123456');
   await page.getByRole('button', { name: 'Verify' }).click();
   await page.getByRole('link', { name: 'R Rocket Science This course' }).isVisible();
 }

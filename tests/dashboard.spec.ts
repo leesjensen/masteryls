@@ -19,7 +19,7 @@ test('dashboard one time password error', async ({ page }) => {
 
   await register(page);
 
-  await expect(page.locator('#root')).toContainText('Login failed. Please try again. Token has expired or is invalid');
+  await expect(page.locator('#root')).toContainText('Login failed. Please try again.');
 });
 
 test('dashboard join/leave course', async ({ page }) => {
