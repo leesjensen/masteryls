@@ -216,6 +216,7 @@ async function updateConfirmationEmailTemplate({ baseUrl, accessToken, project }
       accessToken,
       method: 'PATCH',
       body: {
+        mailer_autoconfirm: true,
         mailer_subjects_magic_link: 'Sign-in code for MasteryLS',
         mailer_templates_magic_link_content: htmlTemplate,
       },
