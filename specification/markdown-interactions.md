@@ -80,82 +80,211 @@ Compatibility aliases (input only):
 - `file-submission` -> `file_submission`
 - `url-submission` -> `url_submission`
 
-## Type-Specific Body/Payload Contracts
+## Type-Specific Contracts And Examples
 
-### multiple_choice / multiple_select
-Body:
+### multiple_choice
+Body contract:
 - prompt markdown
-- checkbox-style answer list in markdown
+- checkbox-style answer list
+
+````markdown
+```masteryls
+{"id":"11111111-1111-1111-1111-111111111111","type":"multiple_choice","title":"HTTP Method"}
+Which HTTP method is typically used to fetch data?
+
+- [x] GET
+- [ ] POST
+- [ ] DELETE
+- [ ] PATCH
+```
+````
 
 Submission payload:
-- `selectedIndices: number[]`
+```json
+{ "selectedIndices": [0] }
+```
 
-Result:
-- `percentCorrect` (policy-defined scoring)
+Result contract:
+- `percentCorrect`
+- `feedback` (AI/system/mentor)
+
+### multiple_select
+Body contract:
+- prompt markdown
+- checkbox-style answer list
+
+````markdown
+```masteryls
+{"id":"22222222-2222-2222-2222-222222222222","type":"multiple_select","title":"Select Stateless Traits"}
+Which are properties of a stateless service?
+
+- [x] No per-client server session required
+- [x] Horizontal scaling is simpler
+- [ ] Client must always use sticky sessions
+- [ ] State is only stored in process memory
+```
+````
+
+Submission payload:
+```json
+{ "selectedIndices": [0, 1] }
+```
+
+Result contract:
+- `percentCorrect`
 - `feedback` (AI/system/mentor)
 
 ### survey
-Body:
+Body contract:
 - prompt markdown
 - single-select or multi-select options
 
-Submission payload:
-- `selectedIndices: number[]`
+````markdown
+```masteryls
+{"id":"33333333-3333-3333-3333-333333333333","type":"survey","title":"Preferred Learning Format","multipleSelect":false}
+What format helps you most?
 
-Result:
+- [ ] Video
+- [ ] Text
+- [ ] Interactive labs
+- [ ] Group discussion
+```
+````
+
+Submission payload:
+```json
+{ "selectedIndices": [2] }
+```
+
+Result contract:
 - no correctness score required
-- optional aggregate visibility by role/policy
+- optional aggregate visibility by policy
 
 ### essay
-Body:
+Body contract:
 - prompt markdown
 
-Submission payload:
-- `text: string`
+````markdown
+```masteryls
+{"id":"44444444-4444-4444-4444-444444444444","type":"essay","title":"Explain CAP Tradeoffs"}
+In 150-250 words, explain a practical CAP theorem tradeoff.
+```
+````
 
-Result:
+Submission payload:
+```json
+{ "text": "In practice, teams usually choose availability..." }
+```
+
+Result contract:
 - `percentCorrect` optional
 - `feedback` optional
 
 ### file_submission
-Body:
-- instructions markdown
+Body contract:
+- instruction markdown
+
+````markdown
+```masteryls
+{"id":"55555555-5555-5555-5555-555555555555","type":"file_submission","title":"Upload Design Artifact"}
+Upload your architecture diagram and short design notes.
+```
+````
 
 Submission payload:
-- file references/metadata (not raw blob in event payload)
+```json
+{
+  "files": [
+    { "name": "architecture.png", "size": 83921, "mimeType": "image/png", "storageRef": "uploads/abc123" }
+  ]
+}
+```
 
-Result:
-- receipt + optional grading outcome
+Result contract:
+- submission receipt
+- optional grading outcome
 
 ### url_submission
-Body:
-- instructions markdown
+Body contract:
+- instruction markdown
+
+````markdown
+```masteryls
+{"id":"66666666-6666-6666-6666-666666666666","type":"url_submission","title":"Submit Demo URL"}
+Provide the HTTPS URL to your deployed project.
+```
+````
 
 Submission payload:
-- `url: string` (validated `https` preferred)
+```json
+{ "url": "https://example.app/demo" }
+```
 
-Result:
-- receipt + optional grading outcome
+Result contract:
+- submission receipt
+- optional grading outcome
 
 ### teaching
-Body:
-- initial scenario/instruction markdown
+Body contract:
+- scenario/instruction markdown
+
+````markdown
+```masteryls
+{"id":"77777777-7777-7777-7777-777777777777","type":"teaching","title":"Coach The Learner"}
+Ask the learner guiding questions until they can explain the concept clearly.
+```
+````
 
 Submission payload:
-- conversation transcript/message list
+```json
+{
+  "messages": [
+    { "role": "model", "content": "What does eventual consistency mean?" },
+    { "role": "user", "content": "It means replicas can diverge briefly." }
+  ]
+}
+```
 
-Result:
-- optional rubric/score and mentor/AI feedback
+Result contract:
+- optional rubric/score
+- mentor/AI feedback
 
 ### prompt
-Body:
+Body contract:
 - prompt-writing instruction markdown
 
-Submission payload:
-- `promptText: string`
+````markdown
+```masteryls
+{"id":"88888888-8888-8888-8888-888888888888","type":"prompt","title":"Write A Better Prompt"}
+Write a concise prompt that asks an AI to generate a unit test plan.
+```
+````
 
-Result:
-- generated response + optional feedback
+Submission payload:
+```json
+{ "promptText": "Generate a Jest unit test plan for..." }
+```
+
+Result contract:
+- generated response
+- optional feedback
+
+### Legacy Alias Example
+Input accepted for compatibility:
+````markdown
+```masteryls
+{"id":"99999999-9999-9999-9999-999999999999","type":"multiple-choice","title":"Legacy Type Name"}
+Legacy aliases are accepted at parse time, then normalized.
+
+- [x] True
+- [ ] False
+```
+````
+
+Normalized runtime type:
+```json
+{ "type": "multiple_choice" }
+```
 
 ## Runtime Role Behavior
 - Guest:
@@ -233,4 +362,3 @@ Required records:
 - Prevents interaction submissions in observer mode and editor preview.
 - Standardizes immutable attempts + canonical event emission.
 - Tightens markdown/HTML sanitization expectations.
-
