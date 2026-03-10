@@ -63,6 +63,7 @@ Rules:
 - Active assignment is `revokedAt == null`.
 - One active assignment per `(userId, scopeType, scopeId, role)`.
 - No secrets or credentials stored in role settings.
+- `observer` role assignments are user-level and must use `scopeType = global`.
 - For `observer` role, `constraints` may further limit allowed observed users.
 
 ### ObserverDelegation
@@ -70,7 +71,6 @@ Defines which learner identities an observer can proxy in read-only mode.
 
 Fields:
 - `id`
-- `courseId`
 - `observerUserId`
 - `observedUserId`
 - `grantedByUserId`
@@ -79,18 +79,18 @@ Fields:
 
 Rules:
 - Active delegation is `revokedAt == null`.
-- One active delegation per `(courseId, observerUserId, observedUserId)`.
+- One active delegation per `(observerUserId, observedUserId)`.
 - Delegation is only required for `observer` role users.
 - `mentor`, `editor`, and `root` can assume observer mode for any user without explicit delegation rows.
 
 ### ObserverSession
-Ephemeral read-only proxy session context for acting as another user in a course.
+Ephemeral read-only proxy session context for acting as another user.
 
 Fields:
 - `id`
-- `courseId`
 - `actorUserId`
 - `observedUserId`
+- `contextCourseId` (nullable active course context)
 - `assumedByRole` (`observer`, `mentor`, `editor`, `root`)
 - `startedAt`
 - `endedAt` (nullable)
@@ -178,7 +178,6 @@ Topic:
 - `repoPath` (GitHub repo-relative path or canonical embedded URL for embedded/video)
 - `position`
 - `interactionIds` (ordered list)
-- `pinnedContentSha` (nullable)
 - `externalRefs` (optional)
 
 Rules:
@@ -378,9 +377,9 @@ Rules:
   - Manage own enrollments.
   - Create attempts, notes, and runtime activity in enrolled courses.
   - Read only published content.
-- Observer (course scope):
+- Observer (user scope):
   - Can enter read-only proxy mode for delegated learner user(s).
-  - Reads learner-facing scoped data as the observed user context.
+  - Reads learner-facing data as the observed user context.
   - No authoring, grading, enrollment mutation, submission, or role-management writes.
 - Mentor (course scope):
   - Read scoped course metadata/content including learner submissions for mentoring workflows.

@@ -51,6 +51,9 @@ Authorization uses `RoleAssignment` (see `domain-model.md`) with:
 - `role`: `root`, `editor`, `mentor`, `learner`, `observer`
 - active when `revokedAt == null`
 
+Special rule:
+- `observer` role is user-level and must be assigned in global scope.
+
 ## Effective Permissions
 Permission evaluation is deny-by-default:
 1. Resolve active role assignments for current user.
@@ -66,9 +69,9 @@ Notes:
 Observer mode allows an actor to view the system as a specific learner in strict read-only mode.
 
 Rules:
-1. Actor initiates observer mode with `courseId` and `observedUserId`.
+1. Actor initiates observer mode with `observedUserId` (and optional current `courseId` context).
 2. Authorization for observer-mode start:
-   - `observer`: requires active `ObserverDelegation(courseId, actorUserId, observedUserId)`.
+   - `observer`: requires active `ObserverDelegation(actorUserId, observedUserId)`.
    - `mentor`, `editor`, `root`: allowed for any `observedUserId`.
 3. While active:
    - reads are evaluated against observed user context (`subjectUserId = observedUserId`).
@@ -85,9 +88,9 @@ Rules:
   - read enrolled published topics
   - create own attempts, exam actions, and notes
   - read own progress/activity
-- `observer` (course scope)
+- `observer` (user scope)
   - can enter read-only proxy mode for delegated user(s)
-  - read scoped course content/progress as observed user context
+  - read user-visible content/progress as observed user context
   - no content authoring, grading, enrollment mutation, submission, or role-management writes
 - `mentor` (course scope)
   - read scoped course metadata/content and learner submissions for mentoring workflows
@@ -99,7 +102,7 @@ Rules:
   - manage course metadata, modules, topics, interactions for scoped course
   - manage publish state transitions for scoped course
   - run indexing/export/repair operations for scoped course
-  - manage course-scoped editor/mentor/observer assignments (if policy allows)
+  - manage course-scoped editor/mentor assignments (if policy allows)
   - can assume read-only observer mode for any user
 - `root` (global)
   - full administrative access across scopes
@@ -110,13 +113,14 @@ Rules:
 
 ### Course Catalog
 - Published + public: readable by anyone.
-- Draft/archived/private: readable only by scoped observer/mentor/editor/root.
+- Draft/archived/private: readable only by scoped mentor/editor/root, or via observer-mode subject context.
 - Create/update/delete: editor (scope) or root.
 
 ### Course Content Structure
 - Read:
   - learners/guests only published topics they are allowed to see.
-  - scoped observer/mentor/editor/root can read draft + archived per policy.
+  - scoped mentor/editor/root can read draft + archived per policy.
+  - observer-mode reads follow observed user visibility context.
 - Write:
   - editor/root only.
 - Publish transitions:
@@ -126,7 +130,7 @@ Rules:
 - Create/delete: self or admin per policy.
 - Read:
   - learner reads own.
-  - scoped observer/mentor/editor/root reads by course scope per privacy policy.
+  - scoped mentor/editor/root reads by course scope per privacy policy.
   - in observer mode, reads are constrained to observed user enrollment context.
 
 ### InteractionAttempt / ExamSession / Note
@@ -134,7 +138,7 @@ Rules:
   - learner for own enrollment only.
 - Read:
   - learner reads own records.
-  - scoped observer/mentor/editor/root reads scoped records per privacy policy.
+  - scoped mentor/editor/root reads scoped records per privacy policy.
   - in observer mode, reads are constrained to observed user records only.
 - Update:
   - attempts are immutable.
@@ -144,7 +148,8 @@ Rules:
 ### ActivityEvent / Reporting
 - Append-only writes from server workflows.
 - Learner reads own events.
-- Scoped observer/mentor/editor/root can read scoped events.
+- Scoped mentor/editor/root can read scoped events.
+- Observer-mode reads are constrained to observed user context.
 
 ### RoleAssignment
 - Grant/revoke:
@@ -155,7 +160,7 @@ Rules:
 ### ObserverDelegation
 - Grant/revoke:
   - root globally.
-  - scoped admin policy can allow editor (and optionally mentor) delegation management.
+  - user-admin policy can optionally allow delegated administration.
 - Constraint:
   - delegation applies only to `observer` role users.
   - delegation grants read-only proxy access only.
@@ -171,7 +176,8 @@ Rules:
 - RLS enabled on all app tables containing non-public data.
 - Policies enforced on:
   - ownership (`userId = auth.uid()`)
-  - scope membership (course-scoped role checks)
+  - scope membership (course-scoped role checks for mentor/editor/root)
+  - observer subject-context checks for read-only proxy sessions
   - role-based admin actions (root-only where required)
 - Service role bypass is allowed only in trusted backend execution contexts.
 

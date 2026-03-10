@@ -69,16 +69,17 @@ It is aligned to:
 - Course structure is canonicalized in `course.json`.
 - Topic metadata persisted in course definition:
   - `id`, `title`, `type`, `status`, `repoPath`, `interactionIds`, etc.
-- Runtime raw URLs are derived from canonical repo paths + branch/commit.
+- Runtime raw URLs are derived from canonical repo paths on the default branch head.
 
 ## Latest-From-GitHub Read Policy
-- Default read behavior is latest-on-default-branch, not commit-pinned.
-- Reads for course definition and topic markdown must use cache-safe freshness strategy, for example:
-  - conditional requests with ETag/If-None-Match, or
-  - explicit cache-busting when freshness cannot be guaranteed, or
-  - GitHub API content reads with commit SHA validation.
+- Default read behavior is always latest-on-default-branch.
+- Reads for course definition and topic markdown must use cache-safe freshness strategy without depending on throttled GitHub API read endpoints.
+- Allowed strategies include:
+  - conditional requests against raw content URLs
+  - explicit cache-busting query parameters for critical freshness reads
+  - short-lived client cache with mandatory revalidation before serving
 - Client/runtime may cache content for performance, but must revalidate before serving potentially stale critical authoring/runtime reads.
-- Pinning to a specific commit is optional and explicit; it is not the default learner/editor behavior.
+- Commit pinning is not part of the target runtime model.
 
 ## GitHub Integration Boundary
 - All authenticated GitHub mutations execute server-side via trusted integration boundary.
@@ -113,8 +114,7 @@ Operation:
 2. Validate markdown payload and interaction metadata extraction.
 3. Resolve commit message via Commit Message Policy.
 4. Commit topic file update to GitHub.
-5. Update course definition references if needed (e.g., pinned content SHA).
-6. Emit content update activity event.
+5. Emit content update activity event.
 
 Required outputs:
 - new commit SHA
