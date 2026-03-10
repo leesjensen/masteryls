@@ -172,6 +172,11 @@ Rules:
 - Update topic `interactionIds` in course definition.
 - Re-index topic text for search projection.
 - Do not index hidden answer-key markers for learner-facing search.
+- Index sync contract:
+  - successful topic create and successful topic content commit must trigger incremental `SearchDocument` update for the affected topic.
+  - indexing runs post-commit/persist only (never from unsaved drafts).
+  - incremental indexing failure is non-blocking for authoring save, but must surface warning, emit audit/ops event, and leave course reindex as recovery.
+- See also: `search-progress-metrics.md` (Indexing And Freshness).
 
 ## Course Structure Operations
 
