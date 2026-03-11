@@ -65,6 +65,20 @@ Notes:
 - UI checks are advisory only.
 - Every write/read of protected data must pass server policy checks.
 
+```mermaid
+flowchart TD
+  A[Request action/resource] --> B[Resolve actor identity]
+  B --> C{Observer mode active?}
+  C -- Yes --> D[Resolve subjectUserId from ObserverSession]
+  C -- No --> E[subjectUserId = actorUserId]
+  D --> F[Load active RoleAssignments]
+  E --> F
+  F --> G[Evaluate policy by scope and action]
+  G --> H{Allowed?}
+  H -- Yes --> I[Execute operation]
+  H -- No --> J[Deny with 403]
+```
+
 ## Observer Mode (Read-Only Proxy)
 Observer mode allows an actor to view the system as a specific learner in strict read-only mode.
 
@@ -189,7 +203,7 @@ The following must emit `ActivityEvent` records:
 - observer mode start/stop
 - permission-denied attempts on privileged operations
 - publish/unpublish/archive transitions
-- enrollment create/delete
+- enrollment create/withdraw/delete
 - credential validation failures and revocations
 
 Audit event requirements:

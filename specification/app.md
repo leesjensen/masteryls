@@ -17,6 +17,15 @@ MasteryLS is a React single-page application that integrates with external syste
 - Gemini (through Supabase edge function): AI generation and feedback.
 - Canvas (through Supabase edge function): course/module/page export and reference repair.
 
+```mermaid
+flowchart LR
+  UI[React SPA] --> SB[(Supabase Auth + DB + RLS)]
+  UI --> FX[Server Integration Boundary]
+  FX --> GH[GitHub]
+  FX --> GM[Gemini]
+  FX --> CV[Canvas]
+```
+
 ## Primary Actors And Permissions
 - Guest (not logged in): can browse published course catalog and open course content.
 - Learner (logged in): can enroll, learn, complete interactions, take notes, view own activity/progress.
@@ -47,7 +56,9 @@ MasteryLS is a React single-page application that integrates with external syste
 - Course (runtime, loaded from GitHub): modules, topics, links, external refs, cache.
 - Topic: typed learning unit (`instruction`, `exam`, `project`, `embedded`/`video`).
 - Enrollment: learner-course association with progress state.
-- Progress event: immutable activity records (views, submissions, notes, auth events, exam events).
+- InteractionAttempt / ExamSession / Note: explicit learner action records.
+- ActivityEvent: immutable audit/analytics event stream.
+- ActivityEnvelope: normalized reporting/read contract for metrics/progress/exports.
 
 ## Functional Scope
 1. Authentication And Identity
@@ -61,7 +72,7 @@ MasteryLS is a React single-page application that integrates with external syste
 - Learner cards expose course mastery percentage and quick navigation.
 
 3. Classroom Delivery
-- Left sidebar tabs: Topics, Search, Settings.
+- Course pane tabs: Topics, Search, Settings.
 - Topic navigation supports previous/next traversal and keyboard shortcuts.
 - Topic types:
   - Instruction/Project: markdown + embedded interactive blocks.
@@ -71,13 +82,13 @@ MasteryLS is a React single-page application that integrates with external syste
 4. Interactive Learning Blocks
 - Custom fenced block format: ```` ```masteryls {json-metadata} ... ``` ````.
 - Supported interaction types:
-  - multiple-choice, multiple-select, survey, essay, file-submission, url-submission, teaching, prompt.
-- Submissions create progress events; AI feedback used for graded interactions where applicable.
+  - `multiple_choice`, `multiple_select`, `survey`, `essay`, `file_submission`, `url_submission`, `teaching`, `prompt`.
+- Submissions create immutable attempts and activity events; AI feedback is used for graded interactions where applicable.
 
 5. Notes And AI Discussion
 - Topic discussion panel supports two modes:
-  - AI discussion (persistent per-topic local history).
-  - Learner notes (saved as progress records).
+  - AI discussion (per-user, per-course, per-topic local history).
+  - Learner notes (saved as canonical note records).
 - Section-scoped discussion/notes can be triggered from markdown headings.
 
 6. Authoring And Content Management (Editor)
@@ -121,12 +132,12 @@ A course repository is expected to provide:
 `course.json` defines modules/topics and operational metadata (topic type, state, interactions, external refs).
 
 ## Persistence And State Boundaries
-- Supabase DB persists users, roles, catalog entries, enrollments, progress, and indexed topic text.
+- Supabase DB persists users, roles, catalog entries, enrollments, attempts/sessions/notes/events, and indexed topic text.
 - GitHub persists authored instructional content and assets.
 - Local storage persists UI preferences and topic-level AI discussion cache.
 - In-memory global stores support app bar state, search state, and interaction-progress state.
 
-## Initial Spec Map (Detailed Files To Author Next)
+## Detailed Spec Map
 - [System Architecture](./architecture-system.md)
 - [Routing And App State](./routing-state.md)
 - [Domain Model](./domain-model.md)

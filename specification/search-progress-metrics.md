@@ -40,6 +40,21 @@ Rules:
 - in observer mode, `subjectUserId = observedUserId`
 - actor identity is always preserved for audit
 
+```mermaid
+sequenceDiagram
+  participant UI as Client UI
+  participant API as Query API
+  participant AUTH as Authz Context
+  participant DATA as Reporting Read Models
+
+  UI->>API: progress/metrics/search query
+  API->>AUTH: resolve actor + observer session
+  AUTH-->>API: actorUserId + subjectUserId + allowed scopes
+  API->>DATA: execute scoped query(subjectUserId, filters)
+  DATA-->>API: filtered results
+  API-->>UI: response + pagination/series metadata
+```
+
 ### Role Permissions
 - Guest:
   - may search published public course content
@@ -201,7 +216,7 @@ Rules:
 ### Cross-User Metrics
 - Learner/Observer: only current subject.
 - Mentor/Editor/Root: may filter by specific user only when authorized.
-- Any “all users” aggregate requires explicit privileged capability and audit tagging.
+- Any "all users" aggregate requires explicit privileged capability and audit tagging.
 
 ## Event Taxonomy Alignment
 Timeline and metrics must use canonical event taxonomy from `domain-model.md`.
@@ -246,7 +261,7 @@ UI behavior:
 
 ## Security Requirements
 - enforce server-side subject scoping and role checks for every query
-- prevent editor-wide implicit data leakage in “my activity” views
+- prevent editor-wide implicit data leakage in "my activity" views
 - sanitize highlighted snippets and any rendered search fragment HTML
 - never expose secrets/credentials in analytics payloads or logs
 

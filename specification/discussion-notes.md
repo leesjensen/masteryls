@@ -50,7 +50,7 @@ It is aligned to:
   - `Discuss` (AI chat)
   - `Notes` (note authoring/list).
 - Section filter can be set from heading actions.
-- “Clear discussion” removes local discussion history only.
+- "Clear discussion" removes local discussion history only.
 - AI failures must show non-blocking error messages and allow retry.
 - Local/session discussion history must be isolated by `userId` so multiple users sharing one device never see each other's stored messages.
 
@@ -97,7 +97,7 @@ Baseline instruction profile (from current implementation intent):
 ### Request Safety
 - Do not include secrets or credential values in any prompt.
 - Minimize personally identifiable data.
-- Enforce per-user context isolation so another user’s local history/notes are never included.
+- Enforce per-user context isolation so another user's local history/notes are never included.
 
 ## Notes Behavior
 - Create note:

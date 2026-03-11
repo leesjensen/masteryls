@@ -61,7 +61,7 @@ It is aligned to:
   - view content at that commit (read-only)
   - side-by-side diff against current working content or previous commit
 - Diff mode is non-mutating until user explicitly applies/reverts.
-- “Restore from commit” (if provided) must create a new head commit; it must never rewrite Git history.
+- "Restore from commit" (if provided) must create a new head commit; it must never rewrite Git history.
 - Diff/restore operations must honor optimistic concurrency checks before final write.
 
 ## Canonical Content Model
@@ -102,7 +102,7 @@ It is aligned to:
   - prefill with deterministic template suggestion when available (for example, `update(topic): clarify async state handling`)
 - Quality rules for any commit message:
   - summarize user-visible/content-meaningful change
-  - avoid generic messages like “update” alone
+  - avoid generic messages like "update" alone
   - no secrets, tokens, or sensitive learner data
 - Final control:
   - editor can always edit/override AI suggestion before commit

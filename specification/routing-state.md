@@ -65,6 +65,19 @@ Future-compatible routes:
   - `not_found` -> `404` error route.
   - `allowed` -> proceed with loader.
 
+```mermaid
+flowchart TD
+  A[Route request] --> B{Authenticated?}
+  B -- No --> C[Redirect to / with return path]
+  B -- Yes --> D[Resolve actor + subject context]
+  D --> E[Evaluate permission + scope]
+  E --> F{Resource exists?}
+  F -- No --> G[Render 404]
+  F -- Yes --> H{Allowed?}
+  H -- No --> I[Render 403]
+  H -- Yes --> J[Run loader and render route]
+```
+
 ## Observer Mode Routing
 Observer mode does not change route shape; it changes read context.
 
@@ -76,7 +89,7 @@ Rules:
 - In observer mode:
   - all classroom/dashboard/progress reads use `observedUserId` subject context.
   - all writes are blocked.
-  - UI displays a persistent “Viewing as <user> (read-only)” banner.
+  - UI displays a persistent "Viewing as <user> (read-only)" banner.
 
 ## Canonical App State Model
 
@@ -183,7 +196,7 @@ Error pages must preserve safe recovery actions:
 ## Legacy Issues Addressed
 - Removes implicit global mutable stores as authoritative state.
 - Removes route behavior that depends on unvalidated client role checks.
-- Removes ambiguous “current course” behavior by defining deterministic entry resolution.
+- Removes ambiguous "current course" behavior by defining deterministic entry resolution.
 - Prevents observer/proxy behavior from being URL-only or client-trusted.
 
 ## Implementation Guidance
@@ -191,4 +204,3 @@ Error pages must preserve safe recovery actions:
 - Centralize permission checks via `can(action, resource, context)`.
 - Keep route metadata declarative (required auth, required capability, read model dependencies).
 - Use typed state containers for canonical session/learning context and avoid ad-hoc globals.
-

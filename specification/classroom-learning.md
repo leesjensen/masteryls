@@ -144,7 +144,7 @@ Validation rules:
 - In observer mode:
   - all write controls are disabled/hidden (submit, commit, note edit, enrollment mutation).
   - interaction inputs are non-submitting preview/read state.
-  - toolbar shows persistent “Viewing as <user> (read-only)” with exit control.
+  - toolbar shows persistent "Viewing as <user> (read-only)" with exit control.
   - all reads use observed subject context for enrollment/progress/topic availability.
 - Every observer-mode classroom access is auditable with actor + observed IDs.
 
@@ -161,7 +161,7 @@ Validation rules:
 
 ## Navigation Semantics
 - `prev`/`next` navigation uses visible topic ordering for current subject context.
-- Hidden/unpublished topics are skipped unless role allows visibility.
+- Hidden/non-visible topics (for example `draft` or `archived`) are skipped unless role allows visibility.
 - Hash navigation anchors within topic content are preserved.
 
 ## Error And Empty States

@@ -14,7 +14,7 @@ It is aligned to:
 - `search-progress-metrics.md`
 
 ## Design Goals
-- Give each user a clear “what should I do next?” starting point.
+- Give each user a clear "what should I do next?" starting point.
 - Keep enrollment actions simple, safe, and auditable.
 - Ensure dashboard data is permission-correct and server-authoritative.
 - Support observer-mode read-only behavior without hidden write paths.
@@ -141,13 +141,13 @@ sequenceDiagram
 ## Routing Integration
 - `/dashboard` is the authenticated landing route.
 - If a resumable last-course context exists, app may route directly into classroom per `routing-state.md`.
-- Entering dashboard should clear stale “current course” navigation hints without deleting unrelated preferences.
+- Entering dashboard should clear stale "current course" navigation hints without deleting unrelated preferences.
 
 ## UX And State Requirements
 - Empty enrolled state:
   - actionable message and visible discovery list.
 - Empty discovery state:
-  - explicit “no eligible courses” or “no search matches” messaging.
+  - explicit "no eligible courses" or "no search matches" messaging.
 - Completed toggle:
   - default shows active enrollments.
   - completed list is explicit and stable across refresh.

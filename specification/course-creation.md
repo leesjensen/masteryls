@@ -103,7 +103,7 @@ On successful create:
 2. Persist initial `CourseDefinition`.
 3. Grant course-scoped `editor` role to creator (unless already covered by policy).
 4. Create creator `Enrollment` (policy-configurable; default true).
-5. Refresh caller’s effective permissions/session state.
+5. Refresh caller's effective permissions/session state.
 
 ## Progress UX For Long Operations
 - Creation UI must display step-by-step progress states:

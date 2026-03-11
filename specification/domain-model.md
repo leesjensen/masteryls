@@ -429,6 +429,7 @@ Rules:
 - `observer.mode_started`
 - `observer.mode_stopped`
 - `enrollment.created`
+- `enrollment.withdrawn`
 - `enrollment.deleted`
 - `learning.topic_viewed`
 - `learning.embedded_viewed`
