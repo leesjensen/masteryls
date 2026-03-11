@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "test": "playwright test",
-    "test:coverage": "COVERAGE=true nyc --reporter=json-summary --reporter=text playwright test"
+    "test:coverage": "COVERAGE=true nyc --reporter=json-summary --reporter=text playwright test",
+    "test:ui-conformance": "UI_CONFORMANCE=1 playwright test tests/ui-conformance.spec.ts",
+    "test:ui-conformance:update": "UI_CONFORMANCE=1 UI_CONFORMANCE_ASSERT=1 playwright test tests/ui-conformance.spec.ts --update-snapshots"
   },
   "repository": {
     "type": "git",
