@@ -24,6 +24,7 @@ It is aligned to:
 
 ## Integration Topology
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 flowchart LR
   subgraph App
     SVC[Application Services]

@@ -41,6 +41,7 @@ Rules:
 - actor identity is always preserved for audit
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 sequenceDiagram
   participant UI as Client UI
   participant API as Query API

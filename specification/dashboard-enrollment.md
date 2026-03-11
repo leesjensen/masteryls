@@ -84,6 +84,7 @@ Output:
 
 ## Enrollment Lifecycle
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 stateDiagram-v2
   [*] --> active: enroll
   active --> completed: mastery/completion policy met
@@ -96,6 +97,7 @@ stateDiagram-v2
 
 ### Dashboard Load
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 sequenceDiagram
   participant UI as Dashboard UI
   participant APP as App Service

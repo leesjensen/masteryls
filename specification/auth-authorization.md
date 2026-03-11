@@ -66,6 +66,7 @@ Notes:
 - Every write/read of protected data must pass server policy checks.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 flowchart TD
   A[Request action/resource] --> B[Resolve actor identity]
   B --> C{Observer mode active?}

@@ -77,6 +77,7 @@ function example() {
 ## Mermaid Diagram
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 graph TD;
   A[Start] --> B{Is it working?};
   B -- Yes --> C[Great!];

@@ -66,6 +66,7 @@ Future-compatible routes:
   - `allowed` -> proceed with loader.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 flowchart TD
   A[Route request] --> B{Authenticated?}
   B -- No --> C[Redirect to / with return path]

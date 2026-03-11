@@ -18,6 +18,7 @@ MasteryLS is a React single-page application that integrates with external syste
 - Canvas (through Supabase edge function): course/module/page export and reference repair.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 flowchart LR
   UI[React SPA] --> SB[(Supabase Auth + DB + RLS)]
   UI --> FX[Server Integration Boundary]

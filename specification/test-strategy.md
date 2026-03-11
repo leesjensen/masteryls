@@ -24,6 +24,7 @@ MasteryLS quality is validated on four axes:
 
 ## Test Pyramid (Target)
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 flowchart TB
   U[Unit Tests<br/>Domain + Application Services]
   C[Component Tests<br/>UI components + hooks]
