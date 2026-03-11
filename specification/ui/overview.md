@@ -8,6 +8,7 @@ This document provides a top-level map of the application UI:
 - view-model rendering architecture
 
 It is aligned to:
+- `ui-goals.md`
 - `ui-principles.md`
 - `ui-tokens.md`
 - `ui-components.md`
