@@ -9,6 +9,7 @@ This document provides a top-level map of the application UI:
 
 It is aligned to:
 - `ui-goals.md`
+- `ui-conformance-baseline.md`
 - `ui-principles.md`
 - `ui-tokens.md`
 - `ui-components.md`

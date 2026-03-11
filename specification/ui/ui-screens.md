@@ -121,6 +121,7 @@ flowchart LR
 - Storybook (or equivalent) stories for each screen state variant.
 - Playwright visual snapshots for key route states.
 - CI gate on significant visual diffs and accessibility regressions.
+- Baseline scenario set is defined in `ui-conformance-baseline.md` and `baselines/ui-conformance-baseline.json`.
 
 ## Governance
 - UI contract versioning is semver (`ui-contract`) and is pinned in `ui-contract-changelog.md`.

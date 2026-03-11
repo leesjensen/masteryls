@@ -162,6 +162,7 @@ A course repository is expected to provide:
 - [Test Strategy And Coverage](./test-strategy.md)
 - [UI Overview](./ui/overview.md)
 - [UI Contract Changelog](./ui/ui-contract-changelog.md)
+- [UI Conformance Baseline](./ui/ui-conformance-baseline.md)
 - [UI Principles](./ui/ui-principles.md)
 - [UI Tokens](./ui/ui-tokens.md)
 - [UI Components](./ui/ui-components.md)

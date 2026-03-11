@@ -16,6 +16,7 @@ It is aligned to:
 
 Canonical baseline manifest:
 - `baselines/ui-conformance-baseline.json`
+- `baselines/ui-conformance-baseline.schema.json` (validation schema)
 
 ## Baseline Policy
 - Baselines are versioned and tied to `ui-contract` versions.
@@ -24,6 +25,15 @@ Canonical baseline manifest:
   - baseline update
   - changelog entry
 - No "silent" baseline refreshes.
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
+flowchart LR
+  S[Specs + Manifests] --> C[Capture Screenshots]
+  C --> D[Visual Diff Review]
+  D -->|intentional change| U[Update Baseline + Changelog]
+  D -->|regression| F[Fix UI and Re-capture]
+```
 
 ## Capture Standard
 - Deterministic inputs:

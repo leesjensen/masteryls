@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MasteryLS UI Conformance Baseline",
+  "type": "object",
+  "required": ["uiContract", "baselineVersion", "captureStandard", "scenarios"],
+  "properties": {
+    "uiContract": { "type": "string" },
+    "baselineVersion": { "type": "string" },
+    "captureStandard": {
+      "type": "object",
+      "required": ["locale", "timezone", "reducedMotion", "colorScheme", "viewports"],
+      "properties": {
+        "locale": { "type": "string" },
+        "timezone": { "type": "string" },
+        "reducedMotion": { "type": "boolean" },
+        "colorScheme": { "type": "string", "enum": ["light", "dark"] },
+        "viewports": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["width", "height"],
+            "properties": {
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "route", "screenId", "state", "viewport", "setupProfile", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "route": { "type": "string" },
+          "screenId": { "type": "string" },
+          "state": { "type": "string" },
+          "viewport": { "type": "string" },
+          "setupProfile": { "type": "string" },
+          "status": { "type": "string", "enum": ["required", "recommended"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
