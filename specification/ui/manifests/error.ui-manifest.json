@@ -1,0 +1,12 @@
+{
+  "screenId": "ErrorScreen",
+  "route": "/error/:code?",
+  "viewModel": "ErrorScreenViewModel",
+  "slots": {
+    "title": { "allowed": ["Panel"] },
+    "message": { "allowed": ["Panel", "InlineError"] },
+    "recoveryActions": { "allowed": ["Button"] }
+  },
+  "states": ["401", "403", "404", "409", "422", "500"],
+  "allowedComponents": ["Panel", "InlineError", "Button"]
+}

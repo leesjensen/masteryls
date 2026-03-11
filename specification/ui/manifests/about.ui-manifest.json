@@ -1,0 +1,15 @@
+{
+  "screenId": "AboutScreen",
+  "route": "/about",
+  "viewModel": "AboutScreenViewModel",
+  "slots": {
+    "hero": { "allowed": ["Panel"] },
+    "overview": { "allowed": ["Panel"] },
+    "capabilities": { "allowed": ["Card"] },
+    "integrations": { "allowed": ["Card", "Badge"] },
+    "versionInfo": { "allowed": ["Panel", "Badge"] },
+    "supportLinks": { "allowed": ["Button", "Panel"] }
+  },
+  "states": ["loading", "ready", "error"],
+  "allowedComponents": ["Panel", "Card", "Badge", "Button", "InlineError"]
+}

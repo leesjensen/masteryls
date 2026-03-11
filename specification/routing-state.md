@@ -17,6 +17,8 @@ It is aligned to:
 ## Route Map (Target)
 - `/`
   - Public start/marketing/catalog landing.
+- `/about`
+  - Public product/about information.
 - `/dashboard`
   - Authenticated home for enrollments and course discovery.
 - `/course/:courseId`
@@ -40,7 +42,7 @@ Future-compatible routes:
 ## Access Control By Route
 
 ### Public Routes
-- `/`
+- `/`, `/about`
   - Available to all users.
 - `/course/:courseId[/topic/:topicId]`
   - Guest: published/public content only.

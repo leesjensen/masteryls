@@ -1,0 +1,13 @@
+{
+  "screenId": "ProgressScreen",
+  "route": "/progress",
+  "viewModel": "ProgressScreenViewModel",
+  "slots": {
+    "headerFilters": { "allowed": ["TopToolbar", "FormField", "InputField", "SelectField", "Button"] },
+    "timelineTable": { "allowed": ["Panel", "Badge", "Button", "EmptyState"] },
+    "pagination": { "allowed": ["Pagination"] },
+    "dialogs": { "allowed": ["ConfirmDialog", "AlertBanner"] }
+  },
+  "states": ["loading", "ready", "empty", "error", "readonlyObserver"],
+  "allowedComponents": ["TopToolbar", "FormField", "InputField", "SelectField", "Button", "Panel", "Badge", "Pagination", "EmptyState", "ConfirmDialog", "AlertBanner", "InlineError"]
+}

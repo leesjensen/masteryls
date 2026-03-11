@@ -1,0 +1,12 @@
+{
+  "screenId": "CourseCreationScreen",
+  "route": "/courseCreation",
+  "viewModel": "CourseCreationViewModel",
+  "slots": {
+    "form": { "allowed": ["Panel", "FormField", "InputField", "SelectField", "TextAreaField", "CheckboxField", "Button"] },
+    "progressOverlay": { "allowed": ["ProgressOverlay"] },
+    "resultFeedback": { "allowed": ["AlertBanner", "InlineError"] }
+  },
+  "states": ["loading", "ready", "validating", "submitting", "success", "error", "readonlyObserver"],
+  "allowedComponents": ["Panel", "FormField", "InputField", "SelectField", "TextAreaField", "CheckboxField", "Button", "ProgressOverlay", "AlertBanner", "InlineError"]
+}

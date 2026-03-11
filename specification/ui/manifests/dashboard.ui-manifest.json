@@ -1,0 +1,13 @@
+{
+  "screenId": "DashboardScreen",
+  "route": "/dashboard",
+  "viewModel": "DashboardViewModel",
+  "slots": {
+    "header": { "allowed": ["TopToolbar", "Badge"] },
+    "enrolledSection": { "allowed": ["CourseCard", "EmptyState", "Pagination"] },
+    "discoverSection": { "allowed": ["CourseCard", "InputField", "EmptyState", "Pagination"] },
+    "dialogs": { "allowed": ["ConfirmDialog", "AlertBanner"] }
+  },
+  "states": ["loading", "ready", "emptyEnrolled", "emptyDiscover", "error", "readonlyObserver"],
+  "allowedComponents": ["TopToolbar", "Badge", "CourseCard", "InputField", "EmptyState", "Pagination", "ConfirmDialog", "AlertBanner"]
+}

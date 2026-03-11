@@ -81,6 +81,7 @@ flowchart TB
 ## Logical Layering
 - Presentation Layer:
   - route views, panes, editor, interactions, metrics/progress dashboards.
+  - governed by UI contract artifacts in `specification/ui/*` and screen manifests in `specification/ui/manifests/*`.
 - Application Layer:
   - orchestration/service facades (`useCourseOperations`) coordinating workflows.
 - Domain Layer:
@@ -92,6 +93,11 @@ Rules:
 - UI layer does not implement authoritative permission logic.
 - Application layer resolves actor/subject context and calls server-authorized operations.
 - Infrastructure layer is replaceable without changing domain contracts.
+
+UI rendering boundary:
+- application services return view models.
+- UI components render from view models + screen manifests (slot/state/component allowlists).
+- orchestration hooks coordinate data/actions; they are not the source of visual contract truth.
 
 ## Application Service Decomposition (Phased Migration Plan)
 Current state:

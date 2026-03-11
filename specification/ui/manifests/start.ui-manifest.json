@@ -1,0 +1,14 @@
+{
+  "screenId": "StartScreen",
+  "route": "/",
+  "viewModel": "StartScreenViewModel",
+  "slots": {
+    "hero": { "allowed": ["Panel"] },
+    "auth": { "allowed": ["FormField", "InputField", "Button", "InlineError"] },
+    "catalogPreview": { "allowed": ["Card", "EmptyState"] },
+    "marketingSections": { "allowed": ["Panel", "Card"] },
+    "footer": { "allowed": ["Panel"] }
+  },
+  "states": ["loadingCatalog", "ready", "authError"],
+  "allowedComponents": ["Panel", "Card", "FormField", "InputField", "Button", "InlineError", "EmptyState"]
+}

@@ -41,6 +41,7 @@ flowchart LR
   - Creates router and global providers (alerts, progress overlay).
 - Router-level pages:
   - `/` start page and public catalog entry points.
+  - `/about` public product/about page.
   - `/dashboard` enrollment and course selection hub.
   - `/course/:courseId[/topic/:topicId]` classroom.
   - `/metrics`, `/progress`, `/courseCreation`, `/courseExport`.
@@ -124,6 +125,11 @@ flowchart LR
 - Activity log view with filters, grouping, pagination, and topic/course resolution.
 - Metrics dashboard with date/course/user filters and charts (activity volume, type, topic trends, durations).
 
+11. About View
+- Public, read-only product/about page.
+- Shows product purpose, core capabilities, integration model, and version/build metadata.
+- Provides links to support/contact and optional documentation resources.
+
 ## Content Source Contract
 A course repository is expected to provide:
 - `course.json` at repo root (preferred).
@@ -154,6 +160,12 @@ A course repository is expected to provide:
 - [Search, Progress, And Metrics](./search-progress-metrics.md)
 - [Integrations: Supabase, GitHub, Gemini, Canvas](./integrations.md)
 - [Test Strategy And Coverage](./test-strategy.md)
+- [UI Overview](./ui/overview.md)
+- [UI Contract Changelog](./ui/ui-contract-changelog.md)
+- [UI Principles](./ui/ui-principles.md)
+- [UI Tokens](./ui/ui-tokens.md)
+- [UI Components](./ui/ui-components.md)
+- [UI Screens](./ui/ui-screens.md)
 
 ## Out Of Scope For This Document
 This file is intentionally high-level. It does not yet define:

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MasteryLS UI Screen Manifest",
+  "type": "object",
+  "required": ["screenId", "route", "viewModel", "slots", "states", "allowedComponents"],
+  "properties": {
+    "screenId": { "type": "string" },
+    "route": { "type": "string" },
+    "viewModel": { "type": "string" },
+    "slots": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["allowed"],
+        "properties": {
+          "allowed": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "states": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "allowedComponents": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

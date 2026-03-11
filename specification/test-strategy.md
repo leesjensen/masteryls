@@ -75,6 +75,7 @@ Focus:
 
 Critical E2E journeys:
 - OTP login/signup + logout
+- public route rendering (`/` and `/about`)
 - dashboard enroll/withdraw + course entry
 - classroom topic navigation and interactions
 - discussion/notes flows
