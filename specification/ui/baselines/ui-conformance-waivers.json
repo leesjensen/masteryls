@@ -1,0 +1,175 @@
+{
+  "uiContract": "1.0.0",
+  "waivers": [
+    {
+      "screenId": "AboutScreen",
+      "state": "loading",
+      "reason": "About route is in the UI contract but not yet implemented in runtime."
+    },
+    {
+      "screenId": "AboutScreen",
+      "state": "error",
+      "reason": "About route is in the UI contract but not yet implemented in runtime."
+    },
+    {
+      "screenId": "ClassroomScreen",
+      "state": "loading",
+      "reason": "Initial baseline targets stable ready-state captures before transient loading-state visuals."
+    },
+    {
+      "screenId": "ClassroomScreen",
+      "state": "noVisibleTopics",
+      "reason": "No-visible-topics deterministic fixture is not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "ClassroomScreen",
+      "state": "error",
+      "reason": "Classroom error-state capture fixtures are not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "CourseCreationScreen",
+      "state": "loading",
+      "reason": "Initial baseline targets stable ready-state captures before transient loading-state visuals."
+    },
+    {
+      "screenId": "CourseCreationScreen",
+      "state": "validating",
+      "reason": "Validation-in-progress UI state does not yet have deterministic conformance fixtures."
+    },
+    {
+      "screenId": "CourseCreationScreen",
+      "state": "submitting",
+      "reason": "Submitting-state UI capture is deferred until deterministic workflow fixtures are added."
+    },
+    {
+      "screenId": "CourseCreationScreen",
+      "state": "success",
+      "reason": "Success-state UI capture is deferred until deterministic workflow fixtures are added."
+    },
+    {
+      "screenId": "CourseCreationScreen",
+      "state": "error",
+      "reason": "Error-state UI capture fixtures are not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "CourseCreationScreen",
+      "state": "readonlyObserver",
+      "reason": "Observer-mode runtime controls for deterministic capture are not yet implemented."
+    },
+    {
+      "screenId": "CourseExportScreen",
+      "state": "loading",
+      "reason": "Initial baseline targets stable ready-state captures before transient loading-state visuals."
+    },
+    {
+      "screenId": "CourseExportScreen",
+      "state": "running",
+      "reason": "Export-running UI state does not yet have deterministic conformance fixtures."
+    },
+    {
+      "screenId": "CourseExportScreen",
+      "state": "partialFailure",
+      "reason": "Partial-failure UI state does not yet have deterministic conformance fixtures."
+    },
+    {
+      "screenId": "CourseExportScreen",
+      "state": "success",
+      "reason": "Success-state UI capture is deferred until deterministic workflow fixtures are added."
+    },
+    {
+      "screenId": "CourseExportScreen",
+      "state": "error",
+      "reason": "Error-state UI capture fixtures are not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "CourseExportScreen",
+      "state": "readonlyObserver",
+      "reason": "Observer-mode runtime controls for deterministic capture are not yet implemented."
+    },
+    {
+      "screenId": "DashboardScreen",
+      "state": "loading",
+      "reason": "Initial baseline targets stable ready-state captures before transient loading-state visuals."
+    },
+    {
+      "screenId": "DashboardScreen",
+      "state": "emptyDiscover",
+      "reason": "Empty-discover deterministic fixture is not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "DashboardScreen",
+      "state": "error",
+      "reason": "Dashboard error-state capture fixtures are not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "ErrorScreen",
+      "state": "401",
+      "reason": "Typed /error/:code runtime route is not fully implemented for all contract codes."
+    },
+    {
+      "screenId": "ErrorScreen",
+      "state": "409",
+      "reason": "Typed /error/:code runtime route is not fully implemented for all contract codes."
+    },
+    {
+      "screenId": "ErrorScreen",
+      "state": "422",
+      "reason": "Typed /error/:code runtime route is not fully implemented for all contract codes."
+    },
+    {
+      "screenId": "ErrorScreen",
+      "state": "500",
+      "reason": "Typed /error/:code runtime route is not fully implemented for all contract codes."
+    },
+    {
+      "screenId": "MetricsScreen",
+      "state": "loading",
+      "reason": "Initial baseline targets stable ready-state captures before transient loading-state visuals."
+    },
+    {
+      "screenId": "MetricsScreen",
+      "state": "empty",
+      "reason": "Metrics empty-state deterministic fixture is not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "MetricsScreen",
+      "state": "error",
+      "reason": "Metrics error-state capture fixtures are not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "MetricsScreen",
+      "state": "readonlyObserver",
+      "reason": "Observer-mode runtime controls for deterministic capture are not yet implemented."
+    },
+    {
+      "screenId": "ProgressScreen",
+      "state": "loading",
+      "reason": "Initial baseline targets stable ready-state captures before transient loading-state visuals."
+    },
+    {
+      "screenId": "ProgressScreen",
+      "state": "empty",
+      "reason": "Progress empty-state deterministic fixture is not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "ProgressScreen",
+      "state": "error",
+      "reason": "Progress error-state capture fixtures are not yet modeled in conformance setup profiles."
+    },
+    {
+      "screenId": "ProgressScreen",
+      "state": "readonlyObserver",
+      "reason": "Observer-mode runtime controls for deterministic capture are not yet implemented."
+    },
+    {
+      "screenId": "StartScreen",
+      "state": "loadingCatalog",
+      "reason": "Initial baseline targets stable ready-state captures before transient loading-state visuals."
+    },
+    {
+      "screenId": "StartScreen",
+      "state": "authError",
+      "reason": "Start-screen auth-error deterministic fixture is not yet modeled in conformance setup profiles."
+    }
+  ]
+}

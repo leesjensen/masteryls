@@ -17,11 +17,12 @@ Owner: Spec workflow (interactive)
 Date: 2026-03-11
 
 - Command:
+  - `npm run validate:ui-conformance-coverage`
   - `UI_CONFORMANCE=1 npx playwright test tests/ui-conformance.spec.ts`
 - Result:
-  - `11 passed`
-  - `5 skipped`
-  - `0 failed`
+  - UI coverage validator: `pass`
+  - coverage totals: `manifestStates=48 coveredStates=14 waivedStates=34 scenarios=16`
+  - conformance capture: `11 passed`, `5 skipped`, `0 failed`
 - Skipped scenario reasons (intentional `fixme`):
   - `/about` route specified in UI contract but not implemented in runtime test path.
   - typed `/error/:code` route specified in UI contract but not implemented in runtime test path.
@@ -43,9 +44,9 @@ Date: 2026-03-11
 - Done:
   - Screen manifests created for all primary routes.
   - Baseline scenario manifest created.
-- Remaining:
-  - Add automated coverage validator:
+  - Added automated coverage validator:
     - every required manifest state must be represented in baseline scenarios or explicitly waived.
+- Remaining:
   - Add screen contract assertions in Playwright (slots/components/state markers), not screenshot-only.
 
 ### 3) Clean, extensible, maintainable architecture
@@ -61,18 +62,22 @@ Date: 2026-03-11
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Add a manifest-to-baseline coverage validator and fail CI on uncovered required states.
-2. Add contract assertions to `tests/ui-conformance.spec.ts` (required slots/components/state markers).
-3. Implement/test-enable currently skipped routes and observer runtime controls.
-4. Enable snapshot assert mode and approve initial baseline set.
-5. Add accessibility checks (`axe` + keyboard path checks) for baseline scenarios.
+1. Add contract assertions to `tests/ui-conformance.spec.ts` (required slots/components/state markers).
+2. Implement/test-enable currently skipped routes and observer runtime controls.
+3. Enable snapshot assert mode and approve initial baseline set.
+4. Add accessibility checks (`axe` + keyboard path checks) for baseline scenarios.
+5. Add governance rule for waiver lifecycle (review cadence / expiration policy).
 
 Completed:
+- 2026-03-11: Added manifest-to-baseline coverage validator and wired CI to fail on uncovered, unwaived states.
+- 2026-03-11: Added explicit UI conformance state waiver manifest for uncovered contract states.
 - 2026-03-11: Added UI conformance baseline spec and baseline manifest.
 - 2026-03-11: Added manifest-driven Playwright capture runner.
 - 2026-03-11: Stabilized capture run by stubbing GitHub read endpoints used by UI flows.
 
 ## Runbook Commands
+- Validate manifest-state coverage (CI gate):
+  - `npm run validate:ui-conformance-coverage`
 - Capture-only run:
   - `UI_CONFORMANCE=1 npx playwright test tests/ui-conformance.spec.ts`
 - Update snapshots (when intentional):

@@ -17,6 +17,8 @@ It is aligned to:
 Canonical baseline manifest:
 - `baselines/ui-conformance-baseline.json`
 - `baselines/ui-conformance-baseline.schema.json` (validation schema)
+- `baselines/ui-conformance-waivers.json` (explicit uncovered state waivers)
+- `baselines/ui-conformance-waivers.schema.json` (waiver schema)
 
 ## Baseline Policy
 - Baselines are versioned and tied to `ui-contract` versions.
@@ -25,6 +27,7 @@ Canonical baseline manifest:
   - baseline update
   - changelog entry
 - No "silent" baseline refreshes.
+- Any manifest state that is not covered by a baseline scenario must be explicitly listed in the waiver manifest with a reason.
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
@@ -47,6 +50,14 @@ flowchart LR
 - Output:
   - PNG screenshots
   - predictable file naming by scenario ID + viewport
+
+## Coverage Validation
+- Validator command:
+  - `npm run validate:ui-conformance-coverage`
+- Validation rule:
+  - every `screenId/state` declared in `specification/ui/manifests/*.ui-manifest.json` must be either:
+    - covered by at least one baseline scenario, or
+    - explicitly listed in `baselines/ui-conformance-waivers.json` with reason.
 
 ## Viewport Matrix
 - `desktop`: `1366x768`
@@ -95,6 +106,7 @@ Not every scenario must run on every viewport. Required viewport coverage is def
 - CI fails when visual diffs exceed configured threshold for approved scenarios.
 - CI also runs accessibility checks on baseline scenarios.
 - Failures must link scenario IDs to speed triage.
+- CI fails when required manifest screen/states are neither represented in baseline scenarios nor explicitly waived.
 
 ## Architecture And Derivation Rules
 - Screens are validated against `ui-manifest.json` slot/state/component constraints.
