@@ -160,6 +160,7 @@ A course repository is expected to provide:
 - [Search, Progress, And Metrics](./search-progress-metrics.md)
 - [Integrations: Supabase, GitHub, Gemini, Canvas](./integrations.md)
 - [Test Strategy And Coverage](./test-strategy.md)
+- [Implementation Status](./implementation-status.md)
 - [UI Overview](./ui/overview.md)
 - [UI Contract Changelog](./ui/ui-contract-changelog.md)
 - [UI Conformance Baseline](./ui/ui-conformance-baseline.md)
