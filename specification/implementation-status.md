@@ -19,6 +19,8 @@ Owner: Spec workflow (interactive)
 - UI manifests now include `viewModelSchema` pointers to per-screen schema files.
 - Component contract schema layer now exists under `specification/ui/schemas/components/*`.
 - Generation blueprint now exists in `specification/generation-blueprint.md` with deterministic generation order and acceptance gates.
+- UI conformance gap matrix now exists in `specification/ui/ui-conformance-gap-matrix.md` with explicit closure criteria.
+- UI conformance governance now exists in `specification/ui/ui-conformance-governance.md` with waiver lifecycle and snapshot approval policy.
 - Step 1 architecture-gap specs now exist:
   - `specification/api-contracts.md`
   - `specification/database-schema-migrations.md`
@@ -84,10 +86,11 @@ Date: 2026-03-12
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Add a spec-only gap matrix for currently skipped UI conformance scenarios (`about`, typed error routes, observer runtime).
-2. Define governance rule for waiver lifecycle and snapshot approval policy in `specification/ui/`.
+1. Add executable generation-run checklist artifact (commands + expected stage outputs) when generator tooling is introduced.
 
 Completed:
+- 2026-03-12: Added `specification/ui/ui-conformance-governance.md` defining waiver lifecycle and baseline/snapshot approval policy.
+- 2026-03-12: Added `specification/ui/ui-conformance-gap-matrix.md` covering skipped conformance gaps (`about`, typed error routes, observer deterministic runtime controls) with closure criteria.
 - 2026-03-12: Added `specification/generation-blueprint.md` with deterministic generation pipeline, IR contract, and acceptance gates for regeneration from `specification/` only.
 - 2026-03-12: Added `specification/component-contract-schemas.md` and component contract schema registry under `specification/ui/schemas/components/*`.
 - 2026-03-12: Added `specification/view-model-schemas.md` and per-screen JSON schemas in `specification/ui/schemas/*`, then linked them from UI screen contracts.
@@ -107,6 +110,8 @@ Completed:
 ## Canonical Artifacts
 - `specification/ui/baselines/ui-conformance-baseline.json`
 - `specification/ui/baselines/ui-conformance-waivers.json`
+- `specification/ui/ui-conformance-gap-matrix.md`
+- `specification/ui/ui-conformance-governance.md`
 - `specification/ui/manifests/*.ui-manifest.json`
 - `specification/ui/schemas/*.json`
 - `specification/ui/schemas/components/*.json`

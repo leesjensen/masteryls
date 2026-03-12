@@ -175,6 +175,8 @@ A course repository is expected to provide:
 - [UI Overview](./ui/overview.md)
 - [UI Contract Changelog](./ui/ui-contract-changelog.md)
 - [UI Conformance Baseline](./ui/ui-conformance-baseline.md)
+- [UI Conformance Gap Matrix](./ui/ui-conformance-gap-matrix.md)
+- [UI Conformance Governance](./ui/ui-conformance-governance.md)
 - [UI Principles](./ui/ui-principles.md)
 - [UI Tokens](./ui/ui-tokens.md)
 - [UI Components](./ui/ui-components.md)

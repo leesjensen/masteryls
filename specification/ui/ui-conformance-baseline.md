@@ -9,6 +9,7 @@ This document defines the visual conformance baseline used to verify that the UI
 It is aligned to:
 - `ui-goals.md`
 - `ui-contract-changelog.md`
+- `ui-conformance-governance.md`
 - `ui-principles.md`
 - `ui-tokens.md`
 - `ui-components.md`
@@ -19,6 +20,8 @@ Canonical baseline manifest:
 - `baselines/ui-conformance-baseline.schema.json` (validation schema)
 - `baselines/ui-conformance-waivers.json` (explicit uncovered state waivers)
 - `baselines/ui-conformance-waivers.schema.json` (waiver schema)
+- `ui-conformance-gap-matrix.md` (tracked open conformance gaps and closure criteria)
+- `ui-conformance-governance.md` (waiver lifecycle and snapshot approval rules)
 
 ## Baseline Policy
 - Baselines are versioned and tied to `ui-contract` versions.
