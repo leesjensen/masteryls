@@ -1,5 +1,5 @@
 {
-  "uiContract": "1.0.0",
+  "uiContract": "1.1.0",
   "baselineVersion": "2026-03-11.1",
   "captureStandard": {
     "locale": "en-US",
@@ -7,9 +7,18 @@
     "reducedMotion": true,
     "colorScheme": "light",
     "viewports": {
-      "desktop": { "width": 1366, "height": 768 },
-      "tablet": { "width": 1024, "height": 768 },
-      "mobile": { "width": 390, "height": 844 }
+      "desktop": {
+        "width": 1366,
+        "height": 768
+      },
+      "tablet": {
+        "width": 1024,
+        "height": 768
+      },
+      "mobile": {
+        "width": 390,
+        "height": 844
+      }
     }
   },
   "scenarios": [

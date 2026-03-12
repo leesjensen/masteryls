@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ClassroomViewModel",
+  "allOf": [
+    { "$ref": "./view-model.common.schema.json" },
+    {
+      "type": "object",
+      "required": ["screenId", "state", "slots"],
+      "properties": {
+        "screenId": { "const": "ClassroomScreen" },
+        "state": {
+          "type": "string",
+          "enum": ["loading", "ready", "noVisibleTopics", "error", "readonlyObserver", "editorMode"]
+        },
+        "slots": {
+          "type": "object",
+          "required": ["topToolbar", "coursePane", "mainPane", "discussionPane", "overlays"],
+          "properties": {
+            "topToolbar": {
+              "type": "object",
+              "required": ["courseTitle", "topicTitle", "mode", "canPrev", "canNext"],
+              "properties": {
+                "courseTitle": { "type": "string" },
+                "topicTitle": { "type": "string" },
+                "mode": { "type": "string", "enum": ["learning", "editor"] },
+                "canPrev": { "type": "boolean" },
+                "canNext": { "type": "boolean" },
+                "observerBanner": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "coursePane": {
+              "type": "object",
+              "required": ["activeTab", "topics", "isCollapsed", "widthPx"],
+              "properties": {
+                "activeTab": { "type": "string", "enum": ["topics", "search", "settings"] },
+                "topics": {
+                  "type": "array",
+                  "items": { "$ref": "./view-model.common.schema.json#/$defs/TopicSummary" }
+                },
+                "isCollapsed": { "type": "boolean" },
+                "widthPx": { "type": "integer", "minimum": 180, "maximum": 640 }
+              },
+              "additionalProperties": false
+            },
+            "mainPane": {
+              "type": "object",
+              "required": ["loading", "topicId"],
+              "properties": {
+                "loading": { "type": "boolean" },
+                "topicId": { "type": ["string", "null"] },
+                "content": { "type": "string" },
+                "editorDraft": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "discussionPane": {
+              "type": "object",
+              "required": ["mode", "isCollapsed", "widthPx", "composerEnabled"],
+              "properties": {
+                "mode": { "type": "string", "enum": ["discuss", "notes"] },
+                "isCollapsed": { "type": "boolean" },
+                "widthPx": { "type": "integer", "minimum": 220, "maximum": 720 },
+                "composerEnabled": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            },
+            "overlays": {
+              "type": "object",
+              "required": ["activeDialog"],
+              "properties": {
+                "activeDialog": { "type": ["string", "null"] }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "state": { "const": "loading" },
+            "slots": {
+              "properties": {
+                "mainPane": { "properties": { "loading": { "const": true } } }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "ready" },
+            "slots": {
+              "properties": {
+                "mainPane": { "properties": { "topicId": { "type": "string" } } },
+                "topToolbar": { "properties": { "mode": { "const": "learning" } } }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "noVisibleTopics" },
+            "slots": {
+              "properties": {
+                "coursePane": { "properties": { "topics": { "type": "array", "maxItems": 0 } } },
+                "mainPane": { "properties": { "topicId": { "const": null } } }
+              }
+            }
+          }
+        },
+        {
+          "required": ["errors"],
+          "properties": {
+            "state": { "const": "error" },
+            "errors": { "type": "array", "minItems": 1 }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "readonlyObserver" },
+            "readonly": {
+              "type": "object",
+              "properties": {
+                "isReadOnly": { "const": true },
+                "isObserverMode": { "const": true }
+              },
+              "required": ["isReadOnly", "isObserverMode"]
+            },
+            "slots": {
+              "properties": {
+                "discussionPane": { "properties": { "composerEnabled": { "const": false } } }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "editorMode" },
+            "slots": {
+              "properties": {
+                "topToolbar": { "properties": { "mode": { "const": "editor" } } }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

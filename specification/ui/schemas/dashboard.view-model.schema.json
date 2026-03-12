@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DashboardViewModel",
+  "allOf": [
+    { "$ref": "./view-model.common.schema.json" },
+    {
+      "type": "object",
+      "required": ["screenId", "state", "slots"],
+      "properties": {
+        "screenId": { "const": "DashboardScreen" },
+        "state": {
+          "type": "string",
+          "enum": ["loading", "ready", "emptyEnrolled", "emptyDiscover", "error", "readonlyObserver"]
+        },
+        "slots": {
+          "type": "object",
+          "required": ["header", "enrolledSection", "discoverSection", "dialogs"],
+          "properties": {
+            "header": {
+              "type": "object",
+              "required": ["title", "subjectUser"],
+              "properties": {
+                "title": { "type": "string" },
+                "subjectUser": { "$ref": "./view-model.common.schema.json#/$defs/UserSummary" }
+              },
+              "additionalProperties": false
+            },
+            "enrolledSection": {
+              "type": "object",
+              "required": ["loading", "courses"],
+              "properties": {
+                "loading": { "type": "boolean" },
+                "courses": {
+                  "type": "array",
+                  "items": { "$ref": "./view-model.common.schema.json#/$defs/CourseSummary" }
+                },
+                "pagination": { "$ref": "./view-model.common.schema.json#/$defs/Pagination" }
+              },
+              "additionalProperties": false
+            },
+            "discoverSection": {
+              "type": "object",
+              "required": ["loading", "query", "courses"],
+              "properties": {
+                "loading": { "type": "boolean" },
+                "query": { "type": "string" },
+                "courses": {
+                  "type": "array",
+                  "items": { "$ref": "./view-model.common.schema.json#/$defs/CourseSummary" }
+                },
+                "pagination": { "$ref": "./view-model.common.schema.json#/$defs/Pagination" }
+              },
+              "additionalProperties": false
+            },
+            "dialogs": {
+              "type": "object",
+              "properties": {
+                "confirmLeaveEnrollmentId": { "type": ["string", "null"] }
+              },
+              "required": ["confirmLeaveEnrollmentId"],
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "state": { "const": "loading" },
+            "slots": {
+              "properties": {
+                "enrolledSection": { "properties": { "loading": { "const": true } } },
+                "discoverSection": { "properties": { "loading": { "const": true } } }
+              }
+            }
+          }
+        },
+        { "properties": { "state": { "const": "ready" } } },
+        {
+          "properties": {
+            "state": { "const": "emptyEnrolled" },
+            "slots": {
+              "properties": {
+                "enrolledSection": {
+                  "properties": {
+                    "courses": { "type": "array", "maxItems": 0 }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "emptyDiscover" },
+            "slots": {
+              "properties": {
+                "discoverSection": {
+                  "properties": {
+                    "courses": { "type": "array", "maxItems": 0 }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "required": ["errors"],
+          "properties": {
+            "state": { "const": "error" },
+            "errors": { "type": "array", "minItems": 1 }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "readonlyObserver" },
+            "readonly": {
+              "type": "object",
+              "properties": {
+                "isReadOnly": { "const": true },
+                "isObserverMode": { "const": true }
+              },
+              "required": ["isReadOnly", "isObserverMode"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

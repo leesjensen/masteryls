@@ -12,6 +12,7 @@ It is aligned to:
 - `ui-principles.md`
 - `ui-tokens.md`
 - `ui-components.md`
+- `../view-model-schemas.md`
 - `routing-state.md`
 - `architecture-system.md`
 
@@ -22,6 +23,7 @@ Manifest contract:
 - `screenId`
 - `route`
 - `viewModel`
+- `viewModelSchema`
 - `slots` (slot name + allowed components)
 - `states`
 - `allowedComponents`
@@ -36,6 +38,18 @@ Manifest files:
 - `manifests/course-creation.ui-manifest.json`
 - `manifests/course-export.ui-manifest.json`
 - `manifests/error.ui-manifest.json`
+
+View-model schema files:
+- `schemas/start.view-model.schema.json`
+- `schemas/about.view-model.schema.json`
+- `schemas/dashboard.view-model.schema.json`
+- `schemas/classroom.view-model.schema.json`
+- `schemas/metrics.view-model.schema.json`
+- `schemas/progress.view-model.schema.json`
+- `schemas/course-creation.view-model.schema.json`
+- `schemas/course-export.view-model.schema.json`
+- `schemas/error.view-model.schema.json`
+- `schemas/screen-view-model.union.schema.json` (validation entry point)
 
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%

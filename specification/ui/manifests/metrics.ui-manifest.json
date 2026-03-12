@@ -2,12 +2,52 @@
   "screenId": "MetricsScreen",
   "route": "/metrics",
   "viewModel": "MetricsScreenViewModel",
+  "viewModelSchema": "../schemas/metrics.view-model.schema.json",
   "slots": {
-    "headerFilters": { "allowed": ["TopToolbar", "FormField", "InputField", "SelectField", "Button"] },
-    "summaryCards": { "allowed": ["Card"] },
-    "charts": { "allowed": ["Panel", "EmptyState"] },
-    "insights": { "allowed": ["Panel", "Badge"] }
+    "headerFilters": {
+      "allowed": [
+        "TopToolbar",
+        "FormField",
+        "InputField",
+        "SelectField",
+        "Button"
+      ]
+    },
+    "summaryCards": {
+      "allowed": [
+        "Card"
+      ]
+    },
+    "charts": {
+      "allowed": [
+        "Panel",
+        "EmptyState"
+      ]
+    },
+    "insights": {
+      "allowed": [
+        "Panel",
+        "Badge"
+      ]
+    }
   },
-  "states": ["loading", "ready", "empty", "error", "readonlyObserver"],
-  "allowedComponents": ["TopToolbar", "FormField", "InputField", "SelectField", "Button", "Card", "Panel", "EmptyState", "Badge", "InlineError"]
+  "states": [
+    "loading",
+    "ready",
+    "empty",
+    "error",
+    "readonlyObserver"
+  ],
+  "allowedComponents": [
+    "TopToolbar",
+    "FormField",
+    "InputField",
+    "SelectField",
+    "Button",
+    "Card",
+    "Panel",
+    "EmptyState",
+    "Badge",
+    "InlineError"
+  ]
 }

@@ -2,13 +2,70 @@
   "screenId": "ClassroomScreen",
   "route": "/course/:courseId/topic/:topicId",
   "viewModel": "ClassroomViewModel",
+  "viewModelSchema": "../schemas/classroom.view-model.schema.json",
   "slots": {
-    "topToolbar": { "allowed": ["TopToolbar", "Badge", "Button"] },
-    "coursePane": { "allowed": ["CoursePane", "Tabs", "TopicList", "FormField"] },
-    "mainPane": { "allowed": ["MainPane", "Panel", "EmptyState", "InlineError"] },
-    "discussionPane": { "allowed": ["DiscussionPane", "Tabs", "FormField", "Button"] },
-    "overlays": { "allowed": ["ConfirmDialog", "ProgressOverlay", "AlertBanner"] }
+    "topToolbar": {
+      "allowed": [
+        "TopToolbar",
+        "Badge",
+        "Button"
+      ]
+    },
+    "coursePane": {
+      "allowed": [
+        "CoursePane",
+        "Tabs",
+        "TopicList",
+        "FormField"
+      ]
+    },
+    "mainPane": {
+      "allowed": [
+        "MainPane",
+        "Panel",
+        "EmptyState",
+        "InlineError"
+      ]
+    },
+    "discussionPane": {
+      "allowed": [
+        "DiscussionPane",
+        "Tabs",
+        "FormField",
+        "Button"
+      ]
+    },
+    "overlays": {
+      "allowed": [
+        "ConfirmDialog",
+        "ProgressOverlay",
+        "AlertBanner"
+      ]
+    }
   },
-  "states": ["loading", "ready", "noVisibleTopics", "error", "readonlyObserver", "editorMode"],
-  "allowedComponents": ["TopToolbar", "Badge", "Button", "CoursePane", "DiscussionPane", "MainPane", "Tabs", "TopicList", "Panel", "FormField", "EmptyState", "InlineError", "ConfirmDialog", "ProgressOverlay", "AlertBanner"]
+  "states": [
+    "loading",
+    "ready",
+    "noVisibleTopics",
+    "error",
+    "readonlyObserver",
+    "editorMode"
+  ],
+  "allowedComponents": [
+    "TopToolbar",
+    "Badge",
+    "Button",
+    "CoursePane",
+    "DiscussionPane",
+    "MainPane",
+    "Tabs",
+    "TopicList",
+    "Panel",
+    "FormField",
+    "EmptyState",
+    "InlineError",
+    "ConfirmDialog",
+    "ProgressOverlay",
+    "AlertBanner"
+  ]
 }

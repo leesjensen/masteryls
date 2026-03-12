@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MetricsScreenViewModel",
+  "allOf": [
+    { "$ref": "./view-model.common.schema.json" },
+    {
+      "type": "object",
+      "required": ["screenId", "state", "slots"],
+      "properties": {
+        "screenId": { "const": "MetricsScreen" },
+        "state": { "type": "string", "enum": ["loading", "ready", "empty", "error", "readonlyObserver"] },
+        "slots": {
+          "type": "object",
+          "required": ["headerFilters", "summaryCards", "charts", "insights"],
+          "properties": {
+            "headerFilters": {
+              "type": "object",
+              "required": ["courseId", "startAt", "endAt"],
+              "properties": {
+                "courseId": { "type": ["string", "null"] },
+                "startAt": { "type": ["string", "null"] },
+                "endAt": { "type": ["string", "null"] },
+                "subjectUserId": { "type": ["string", "null"] }
+              },
+              "additionalProperties": false
+            },
+            "summaryCards": {
+              "type": "array",
+              "items": { "type": "object", "required": ["key", "value"], "properties": { "key": { "type": "string" }, "value": { "type": ["string", "number"] } }, "additionalProperties": false }
+            },
+            "charts": {
+              "type": "object",
+              "required": ["seriesCount"],
+              "properties": {
+                "seriesCount": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            },
+            "insights": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "oneOf": [
+        { "properties": { "state": { "const": "loading" } } },
+        { "properties": { "state": { "const": "ready" } } },
+        {
+          "properties": {
+            "state": { "const": "empty" },
+            "slots": {
+              "properties": {
+                "summaryCards": { "type": "array", "maxItems": 0 },
+                "charts": { "properties": { "seriesCount": { "const": 0 } } }
+              }
+            }
+          }
+        },
+        {
+          "required": ["errors"],
+          "properties": {
+            "state": { "const": "error" },
+            "errors": { "type": "array", "minItems": 1 }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "readonlyObserver" },
+            "readonly": {
+              "type": "object",
+              "properties": {
+                "isReadOnly": { "const": true },
+                "isObserverMode": { "const": true }
+              },
+              "required": ["isReadOnly", "isObserverMode"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

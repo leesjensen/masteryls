@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MasteryLS Screen ViewModel Union",
+  "oneOf": [
+    { "$ref": "./start.view-model.schema.json" },
+    { "$ref": "./about.view-model.schema.json" },
+    { "$ref": "./dashboard.view-model.schema.json" },
+    { "$ref": "./classroom.view-model.schema.json" },
+    { "$ref": "./metrics.view-model.schema.json" },
+    { "$ref": "./progress.view-model.schema.json" },
+    { "$ref": "./course-creation.view-model.schema.json" },
+    { "$ref": "./course-export.view-model.schema.json" },
+    { "$ref": "./error.view-model.schema.json" }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StartScreenViewModel",
+  "allOf": [
+    { "$ref": "./view-model.common.schema.json" },
+    {
+      "type": "object",
+      "required": ["screenId", "state", "slots"],
+      "properties": {
+        "screenId": { "const": "StartScreen" },
+        "state": { "type": "string", "enum": ["loadingCatalog", "ready", "authError"] },
+        "readonly": {
+          "type": "object",
+          "properties": {
+            "isReadOnly": { "const": false },
+            "isObserverMode": { "const": false }
+          },
+          "required": ["isReadOnly", "isObserverMode"]
+        },
+        "slots": {
+          "type": "object",
+          "required": ["hero", "auth", "catalogPreview", "marketingSections", "footer"],
+          "properties": {
+            "hero": {
+              "type": "object",
+              "required": ["headline", "subhead"],
+              "properties": {
+                "headline": { "type": "string" },
+                "subhead": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "required": ["email", "submitting"],
+              "properties": {
+                "email": { "type": "string" },
+                "submitting": { "type": "boolean" },
+                "errorMessage": { "type": "string" }
+              },
+              "additionalProperties": false
+            },
+            "catalogPreview": {
+              "type": "object",
+              "required": ["loading", "courses"],
+              "properties": {
+                "loading": { "type": "boolean" },
+                "courses": {
+                  "type": "array",
+                  "items": { "$ref": "./view-model.common.schema.json#/$defs/CourseSummary" }
+                }
+              },
+              "additionalProperties": false
+            },
+            "marketingSections": {
+              "type": "array",
+              "items": { "type": "object", "required": ["id", "title"], "properties": { "id": { "type": "string" }, "title": { "type": "string" }, "body": { "type": "string" } }, "additionalProperties": false }
+            },
+            "footer": {
+              "type": "object",
+              "required": ["links"],
+              "properties": {
+                "links": { "type": "array", "items": { "type": "string" } }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "state": { "const": "loadingCatalog" },
+            "slots": {
+              "properties": {
+                "catalogPreview": {
+                  "properties": {
+                    "loading": { "const": true }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "state": { "const": "ready" },
+            "slots": {
+              "properties": {
+                "catalogPreview": {
+                  "properties": {
+                    "loading": { "const": false }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "required": ["errors"],
+          "properties": {
+            "state": { "const": "authError" },
+            "errors": { "type": "array", "minItems": 1 }
+          }
+        }
+      ]
+    }
+  ]
+}

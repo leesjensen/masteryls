@@ -4,7 +4,7 @@
 This is the canonical governance record for UI contract versioning.
 
 Canonical version:
-- `ui-contract`: `1.0.0`
+- `ui-contract`: `1.1.0`
 
 Version policy:
 - Semver is required for UI contract changes.
@@ -13,6 +13,13 @@ Version policy:
 - Major: removals or semantic changes that can alter rendering/behavior.
 
 ## Changelog
+
+### `1.1.0` - 2026-03-12
+- Added machine-validated screen view-model schema layer:
+  - `specification/view-model-schemas.md`
+  - `specification/ui/schemas/*.json`
+- Added per-screen state-variant validation contracts aligned to `ui/manifests/*.ui-manifest.json`.
+- Added `viewModelSchema` pointers in UI manifests for direct manifest-to-schema derivation.
 
 ### `1.0.0` - 2026-03-11
 - Established initial framework-agnostic UI contract.

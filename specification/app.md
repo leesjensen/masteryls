@@ -167,6 +167,7 @@ A course repository is expected to provide:
 - [Database Schema And Migrations](./database-schema-migrations.md)
 - [Error Handling And Resilience](./error-resilience.md)
 - [Security Hardening And Threat Model](./security-threat-model.md)
+- [View-Model Schemas](./view-model-schemas.md)
 - [Test Strategy And Coverage](./test-strategy.md)
 - [Implementation Status](./implementation-status.md)
 - [UI Overview](./ui/overview.md)
@@ -179,5 +180,4 @@ A course repository is expected to provide:
 
 ## Out Of Scope For This Document
 This file is intentionally high-level. It does not yet define:
-- Detailed UI specs per component/view.
 - Low-level implementation code or framework-specific module structure.
