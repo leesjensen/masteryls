@@ -169,6 +169,7 @@ A course repository is expected to provide:
 - [Security Hardening And Threat Model](./security-threat-model.md)
 - [View-Model Schemas](./view-model-schemas.md)
 - [Component Contract Schemas](./component-contract-schemas.md)
+- [Generation Blueprint](./generation-blueprint.md)
 - [Test Strategy And Coverage](./test-strategy.md)
 - [Implementation Status](./implementation-status.md)
 - [UI Overview](./ui/overview.md)

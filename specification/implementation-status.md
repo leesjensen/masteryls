@@ -18,6 +18,7 @@ Owner: Spec workflow (interactive)
 - View-model schema layer now exists with per-screen JSON schemas under `specification/ui/schemas/*`.
 - UI manifests now include `viewModelSchema` pointers to per-screen schema files.
 - Component contract schema layer now exists under `specification/ui/schemas/components/*`.
+- Generation blueprint now exists in `specification/generation-blueprint.md` with deterministic generation order and acceptance gates.
 - Step 1 architecture-gap specs now exist:
   - `specification/api-contracts.md`
   - `specification/database-schema-migrations.md`
@@ -75,18 +76,19 @@ Date: 2026-03-12
   - API contracts, database schema/migrations, resilience, and security threat model are now specified.
   - Strict screen view-model JSON schemas now exist for primary route/state variants.
   - Component prop/state/slot contracts now exist as machine-derivable schemas.
+  - Generation order, IR requirements, determinism rules, and acceptance gates are now specified.
 - Remaining:
-  - Define generation blueprint and acceptance checks for end-to-end regeneration from `specification/` only.
+  - Add executable generation-run checklist artifact (commands + expected stage outputs) if/when generator tooling is introduced.
 
 ## Next Steps (Keep This List Current)
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Add `specification/generation-blueprint.md` defining target stack, generation order, and acceptance checks.
-2. Add a spec-only gap matrix for currently skipped UI conformance scenarios (`about`, typed error routes, observer runtime).
-3. Define governance rule for waiver lifecycle and snapshot approval policy in `specification/ui/`.
+1. Add a spec-only gap matrix for currently skipped UI conformance scenarios (`about`, typed error routes, observer runtime).
+2. Define governance rule for waiver lifecycle and snapshot approval policy in `specification/ui/`.
 
 Completed:
+- 2026-03-12: Added `specification/generation-blueprint.md` with deterministic generation pipeline, IR contract, and acceptance gates for regeneration from `specification/` only.
 - 2026-03-12: Added `specification/component-contract-schemas.md` and component contract schema registry under `specification/ui/schemas/components/*`.
 - 2026-03-12: Added `specification/view-model-schemas.md` and per-screen JSON schemas in `specification/ui/schemas/*`, then linked them from UI screen contracts.
 - 2026-03-12: Bumped UI contract to `1.2.0` in `ui-contract-changelog.md` and updated baseline/waiver manifests.
