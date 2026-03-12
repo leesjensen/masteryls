@@ -11,6 +11,7 @@ It is aligned to:
 - `ui-screens.md`
 
 ## Must-Have Goals (Now)
+- Keep the UI specification detailed and machine-derivable enough that a functionally similar MasteryLS UI can be recreated without reference to the original source code.
 - Match and preserve the current MasteryLS look and feel with consistent visual language.
 - Keep UI derivable from specification artifacts (tokens, components, screen contracts, manifests).
 - Maintain a clean architecture boundary:

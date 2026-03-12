@@ -4,6 +4,7 @@
 MasteryLS is a web-based learning system for delivering and authoring course content with a mastery focus.
 
 Core product goals:
+- Build a specification-first system definition that is detailed enough to recreate a functionally similar MasteryLS application without relying on the original source code.
 - Deliver structured learning content organized as courses, modules, and topics.
 - Support learner progress tracking and interaction-based mastery signals.
 - Make course content maintainable by storing source content in GitHub.
