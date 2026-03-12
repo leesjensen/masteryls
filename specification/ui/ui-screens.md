@@ -12,6 +12,7 @@ It is aligned to:
 - `ui-principles.md`
 - `ui-tokens.md`
 - `ui-components.md`
+- `../component-contract-schemas.md`
 - `../view-model-schemas.md`
 - `routing-state.md`
 - `architecture-system.md`

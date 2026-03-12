@@ -7,6 +7,7 @@ It is normative for the UI contract and framework-agnostic.
 
 See also:
 - `overview.md`
+- `../component-contract-schemas.md`
 
 ## Component State Model
 All interactive components support the following state vocabulary where applicable:
@@ -53,6 +54,7 @@ stateDiagram-v2
 
 ### Content Surfaces
 - `Card`
+- `CourseCard`
 - `Panel`
 - `Badge`
 - `EmptyState`
@@ -94,6 +96,13 @@ stateDiagram-v2
 - Feature code must not create new visual primitives inline when an approved component exists.
 - Behavior logic remains in view models/capability hooks; components are render-first and side-effect-light.
 - Observer mode write locks must be reflected by component `readonly`/`disabled` state, not hidden business logic.
+
+## Machine-Derivable Contracts
+Canonical component contract artifacts:
+- `../component-contract-schemas.md`
+- `schemas/components/component-contracts.json`
+- `schemas/components/component-contract.schema.json`
+- `schemas/components/component-contracts.schema.json`
 
 ## Extension Policy
 - New component proposals must specify:

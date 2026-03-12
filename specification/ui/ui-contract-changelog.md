@@ -4,7 +4,7 @@
 This is the canonical governance record for UI contract versioning.
 
 Canonical version:
-- `ui-contract`: `1.1.0`
+- `ui-contract`: `1.2.0`
 
 Version policy:
 - Semver is required for UI contract changes.
@@ -13,6 +13,14 @@ Version policy:
 - Major: removals or semantic changes that can alter rendering/behavior.
 
 ## Changelog
+
+### `1.2.0` - 2026-03-12
+- Added component contract schema layer:
+  - `specification/component-contract-schemas.md`
+  - `specification/ui/schemas/components/component-contracts.json`
+  - `specification/ui/schemas/components/component-contract.schema.json`
+  - `specification/ui/schemas/components/component-contracts.schema.json`
+- Added `CourseCard` to approved component list and aligned component usage contracts.
 
 ### `1.1.0` - 2026-03-12
 - Added machine-validated screen view-model schema layer:

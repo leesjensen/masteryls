@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MasteryLS UI Component Contract Registry",
+  "type": "object",
+  "required": ["uiContract", "stateVocabulary", "components"],
+  "properties": {
+    "uiContract": { "type": "string" },
+    "stateVocabulary": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["default", "hover", "focusVisible", "active", "disabled", "loading", "readonly", "error"]
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": { "$ref": "./component-contract.schema.json" },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}

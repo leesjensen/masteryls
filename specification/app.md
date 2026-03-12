@@ -168,6 +168,7 @@ A course repository is expected to provide:
 - [Error Handling And Resilience](./error-resilience.md)
 - [Security Hardening And Threat Model](./security-threat-model.md)
 - [View-Model Schemas](./view-model-schemas.md)
+- [Component Contract Schemas](./component-contract-schemas.md)
 - [Test Strategy And Coverage](./test-strategy.md)
 - [Implementation Status](./implementation-status.md)
 - [UI Overview](./ui/overview.md)

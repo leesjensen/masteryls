@@ -13,6 +13,7 @@ It is aligned to:
 - `ui-principles.md`
 - `ui-tokens.md`
 - `ui-components.md`
+- `../component-contract-schemas.md`
 - `ui-screens.md`
 - `../view-model-schemas.md`
 - `../routing-state.md`
@@ -92,6 +93,7 @@ Rules:
 - `ui-principles.md`: visual and interaction intent.
 - `ui-tokens.md`: canonical token definitions.
 - `ui-components.md`: allowed component set and state contracts.
+- `../component-contract-schemas.md`: machine-validated component prop/state/slot registry.
 - `ui-screens.md`: route-level slot/state matrix + manifest references.
 - `../view-model-schemas.md`: machine-validated payload contracts for each screen/state.
 

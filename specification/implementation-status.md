@@ -9,7 +9,7 @@ Owner: Spec workflow (interactive)
 
 ## Current Snapshot
 - Core specification set exists and is linked from `specification/app.md`.
-- UI contract layer exists (`specification/ui/*`) with canonical `ui-contract: 1.1.0`.
+- UI contract layer exists (`specification/ui/*`) with canonical `ui-contract: 1.2.0`.
 - UI conformance baseline manifest exists at `specification/ui/baselines/ui-conformance-baseline.json`.
 - API-mediated data-access boundary is now normalized across architecture/auth/integration specs (no direct browser table access in target architecture).
 - Architecture spec now includes explicit tradeoff rationale for API-mediated access vs direct browser-to-DB access.
@@ -17,6 +17,7 @@ Owner: Spec workflow (interactive)
 - Auth flow boundary is now explicit: Supabase Auth SDK handles OTP/session; app API handles operational domain data.
 - View-model schema layer now exists with per-screen JSON schemas under `specification/ui/schemas/*`.
 - UI manifests now include `viewModelSchema` pointers to per-screen schema files.
+- Component contract schema layer now exists under `specification/ui/schemas/components/*`.
 - Step 1 architecture-gap specs now exist:
   - `specification/api-contracts.md`
   - `specification/database-schema-migrations.md`
@@ -73,22 +74,22 @@ Date: 2026-03-12
 - Done:
   - API contracts, database schema/migrations, resilience, and security threat model are now specified.
   - Strict screen view-model JSON schemas now exist for primary route/state variants.
+  - Component prop/state/slot contracts now exist as machine-derivable schemas.
 - Remaining:
-  - Define component prop/state contracts as machine-derivable schemas.
   - Define generation blueprint and acceptance checks for end-to-end regeneration from `specification/` only.
 
 ## Next Steps (Keep This List Current)
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Add `specification/component-contract-schemas.md` for component prop/state machine contracts.
-2. Add `specification/generation-blueprint.md` defining target stack, generation order, and acceptance checks.
-3. Add a spec-only gap matrix for currently skipped UI conformance scenarios (`about`, typed error routes, observer runtime).
-4. Define governance rule for waiver lifecycle and snapshot approval policy in `specification/ui/`.
+1. Add `specification/generation-blueprint.md` defining target stack, generation order, and acceptance checks.
+2. Add a spec-only gap matrix for currently skipped UI conformance scenarios (`about`, typed error routes, observer runtime).
+3. Define governance rule for waiver lifecycle and snapshot approval policy in `specification/ui/`.
 
 Completed:
+- 2026-03-12: Added `specification/component-contract-schemas.md` and component contract schema registry under `specification/ui/schemas/components/*`.
 - 2026-03-12: Added `specification/view-model-schemas.md` and per-screen JSON schemas in `specification/ui/schemas/*`, then linked them from UI screen contracts.
-- 2026-03-12: Bumped UI contract to `1.1.0` in `ui-contract-changelog.md` and updated baseline/waiver manifests.
+- 2026-03-12: Bumped UI contract to `1.2.0` in `ui-contract-changelog.md` and updated baseline/waiver manifests.
 - 2026-03-12: Chose direct Supabase Auth SDK flow (OTP/session) and removed app-owned `/auth/*` endpoint contracts from `api-contracts.md`; updated architecture/auth/integration docs for boundary consistency.
 - 2026-03-12: Simplified API envelope contracts: removed success `data/meta` wrappers and standardized explicit `error` object with `error.requestId` + `X-Request-Id` header.
 - 2026-03-12: Added explicit architecture tradeoff record (cost/latency vs policy/security/governance) for API boundary vs direct browser DB access in `architecture-system.md`.
@@ -106,6 +107,7 @@ Completed:
 - `specification/ui/baselines/ui-conformance-waivers.json`
 - `specification/ui/manifests/*.ui-manifest.json`
 - `specification/ui/schemas/*.json`
+- `specification/ui/schemas/components/*.json`
 
 ## Notes
 - This file tracks specification progress; executable harness work is optional and should be done in a separate implementation-focused track if needed.
