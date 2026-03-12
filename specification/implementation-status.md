@@ -4,7 +4,7 @@
 This file is the operational handoff/status record for the specification effort.
 It tracks what is complete, what is in progress, and the exact next steps.
 
-Last updated: 2026-03-11
+Last updated: 2026-03-12
 Owner: Spec workflow (interactive)
 
 ## Current Snapshot
@@ -12,9 +12,10 @@ Owner: Spec workflow (interactive)
 - UI contract layer exists (`specification/ui/*`) with canonical `ui-contract: 1.0.0`.
 - UI conformance baseline manifest exists at `specification/ui/baselines/ui-conformance-baseline.json`.
 - Playwright UI conformance capture test exists at `tests/ui-conformance.spec.ts`.
+- Source and test code are intentionally unchanged in this effort; this track is specification-only.
 
 ## Latest Verification Results
-Date: 2026-03-11
+Date: 2026-03-12
 
 - Command:
   - `npm run validate:ui-conformance-coverage`
@@ -23,10 +24,10 @@ Date: 2026-03-11
   - UI coverage validator: `pass`
   - coverage totals: `manifestStates=48 coveredStates=14 waivedStates=34 scenarios=16`
   - conformance capture: `11 passed`, `5 skipped`, `0 failed`
-- Skipped scenario reasons (intentional `fixme`):
-  - `/about` route specified in UI contract but not implemented in runtime test path.
-  - typed `/error/:code` route specified in UI contract but not implemented in runtime test path.
-  - observer-mode runtime controls are not yet modeled for deterministic capture.
+- Skipped scenario reasons (current codebase):
+  - `/about` route is in spec but not implemented in runtime.
+  - typed `/error/:code` route is in spec but not implemented in runtime.
+  - observer-mode runtime controls are not implemented for deterministic capture.
 
 ## Goal Status
 
@@ -47,7 +48,8 @@ Date: 2026-03-11
   - Added automated coverage validator:
     - every required manifest state must be represented in baseline scenarios or explicitly waived.
 - Remaining:
-  - Add screen contract assertions in Playwright (slots/components/state markers), not screenshot-only.
+  - Define full scenario-level contract assertion catalog in specification artifacts.
+  - Keep implementation/test updates out of this track until explicitly requested.
 
 ### 3) Clean, extensible, maintainable architecture
 - Status: In progress
@@ -62,13 +64,14 @@ Date: 2026-03-11
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Add contract assertions to `tests/ui-conformance.spec.ts` (required slots/components/state markers).
-2. Implement/test-enable currently skipped routes and observer runtime controls.
-3. Enable snapshot assert mode and approve initial baseline set.
-4. Add accessibility checks (`axe` + keyboard path checks) for baseline scenarios.
-5. Add governance rule for waiver lifecycle (review cadence / expiration policy).
+1. Add a spec-only gap matrix for currently skipped conformance scenarios (`about`, typed error routes, observer runtime).
+2. Define scenario-level contract assertions in spec docs (slots/components/state markers) as implementation guidance.
+3. Add governance rule for waiver lifecycle (review cadence / expiration policy).
+4. Define snapshot approval/review workflow in spec without changing app/test code.
+5. Expand baseline scenarios toward additional required manifest states to reduce long-term waiver dependency.
 
 Completed:
+- 2026-03-12: Rolled back source and test modifications to keep this effort specification-only.
 - 2026-03-11: Added manifest-to-baseline coverage validator and wired CI to fail on uncovered, unwaived states.
 - 2026-03-11: Added explicit UI conformance state waiver manifest for uncovered contract states.
 - 2026-03-11: Added UI conformance baseline spec and baseline manifest.

@@ -111,6 +111,7 @@ Not every scenario must run on every viewport. Required viewport coverage is def
 ## Architecture And Derivation Rules
 - Screens are validated against `ui-manifest.json` slot/state/component constraints.
 - Baseline scenarios map 1:1 to screen/view-model states where possible.
+- `tests/ui-conformance.spec.ts` must assert screen/state contract markers (slot and state evidence) before image capture.
 - Visual conformance is checked at screen level; behavior conformance remains covered by functional tests.
 
 ## Success Criteria
