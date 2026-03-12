@@ -5,6 +5,10 @@ This document defines the target authentication and authorization model for Mast
 
 It replaces insecure or ambiguous legacy behavior with explicit, server-enforced rules.
 
+Canonical default policy values referenced by this document are defined in:
+- `policy-defaults.md`
+- `policy-defaults.json`
+
 ## Security Objectives
 - Verify user identity with low-friction, phishing-resistant flows.
 - Enforce least privilege with explicit scoped roles.
@@ -110,7 +114,7 @@ Rules:
   - no content authoring, grading, enrollment mutation, submission, or role-management writes
 - `mentor` (course scope)
   - read scoped course metadata/content and learner submissions for mentoring workflows
-  - add mentor feedback/assessment where policy allows
+  - add mentor feedback/assessment when `policy-defaults.json.authz.mentorCanWriteAssessmentByDefault` is true (or explicit override allows)
   - read scoped progress/reporting views
   - can assume read-only observer mode for any user
   - no course structure authoring or role-management writes by default
@@ -118,7 +122,7 @@ Rules:
   - manage course metadata, modules, topics, interactions for scoped course
   - manage publish state transitions for scoped course
   - run indexing/export/repair operations for scoped course
-  - manage course-scoped editor/mentor assignments (if policy allows)
+  - manage course-scoped editor/mentor assignments only when `policy-defaults.json.authz.editorCanManageCourseRoles` is true (or explicit override allows)
   - can assume read-only observer mode for any user
 - `root` (global)
   - full administrative access across scopes
@@ -170,13 +174,13 @@ Rules:
 ### RoleAssignment
 - Grant/revoke:
   - root globally.
-  - scoped role admin policy for course roles (if enabled).
+  - scoped role admin policy for course roles when `policy-defaults.json.authz.editorCanManageCourseRoles` is true.
 - Constraint: each active course must have at least one active `editor`.
 
 ### ObserverDelegation
 - Grant/revoke:
   - root globally.
-  - user-admin policy can optionally allow delegated administration.
+  - non-root delegated administration only when `policy-defaults.json.authz.nonRootCanManageObserverDelegations` is true.
 - Constraint:
   - delegation applies only to `observer` role users.
   - delegation grants read-only proxy access only.

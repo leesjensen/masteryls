@@ -11,6 +11,7 @@ It is aligned to:
 - `domain-model.md`
 - `auth-authorization.md`
 - `editor-github-authoring.md`
+- `policy-defaults.md`
 
 ## Design Goals
 - Keep operational controls explicit and auditable.
@@ -78,7 +79,7 @@ Dirty-state behavior:
 
 ## Management rules
 - `root` can grant/revoke all course roles.
-- course-scoped admin policy may allow `editor` to manage selected course roles.
+- course-scoped admin policy may allow `editor` to manage selected course roles when `policy-defaults.json.authz.editorCanManageCourseRoles` is true.
 - each non-archived course must always retain at least one active `editor`.
 - role changes are immediate and auditable.
 
@@ -122,6 +123,7 @@ Allowed roles:
 
 Hard guards:
 - blocked when `deleteProtected == true` unless policy override allows root override
+- default root override flag is `policy-defaults.json.admin.rootCanOverrideDeleteProtection`
 - explicit confirmation dialog with impact summary
 - second-step confirmation phrase for irreversible delete
 
@@ -129,6 +131,7 @@ Delete behavior:
 - remove catalog/course metadata per policy
 - handle enrollments/progress according to retention policy
 - optionally delete backing GitHub repository when configured and authorized
+- default `deleteRepository` behavior is `policy-defaults.json.admin.defaultDeleteRepositoryOnCourseDelete`
 - emit terminal audit event with actor, scope, and outcome
 
 ## Authorization And Observer Mode

@@ -15,10 +15,15 @@ Owner: Spec workflow (interactive)
 - Architecture spec now includes explicit tradeoff rationale for API-mediated access vs direct browser-to-DB access.
 - API response envelope rules now use direct success payloads (no top-level `data`/`meta`) and explicit top-level `error` objects for failures.
 - Auth flow boundary is now explicit: Supabase Auth SDK handles OTP/session; app API handles operational domain data.
+- API contracts now include explicit bootstrap, dashboard, discussion AI, role/delegation, maintenance, and file-operation endpoint coverage.
+- API query/filter naming is normalized (`query`, `eventTypes`, `startAt`, `endAt`).
 - View-model schema layer now exists with per-screen JSON schemas under `specification/ui/schemas/*`.
 - UI manifests now include `viewModelSchema` pointers to per-screen schema files.
 - Component contract schema layer now exists under `specification/ui/schemas/components/*`.
 - Generation blueprint now exists in `specification/generation-blueprint.md` with deterministic generation order and acceptance gates.
+- Generation run checklist now exists in `specification/generation-run-checklist.md` with stage commands and expected outputs.
+- Canonical policy defaults now exist in `specification/policy-defaults.md` and `specification/policy-defaults.json`.
+- Canonical machine-readable `course.json` schema now exists in `specification/schemas/course-json.schema.json` with companion doc `specification/course-json-schema.md`.
 - UI conformance gap matrix now exists in `specification/ui/ui-conformance-gap-matrix.md` with explicit closure criteria.
 - UI conformance governance now exists in `specification/ui/ui-conformance-governance.md` with waiver lifecycle and snapshot approval policy.
 - Step 1 architecture-gap specs now exist:
@@ -76,19 +81,27 @@ Date: 2026-03-12
 - Status: In progress
 - Done:
   - API contracts, database schema/migrations, resilience, and security threat model are now specified.
+  - API contracts now cover bootstrap/profile, dashboard read model, discussion AI, role/delegation, maintenance, and file operations.
+  - Policy defaults are centralized in machine-readable form.
+  - `course.json` schema is now machine-readable and canonical.
   - Strict screen view-model JSON schemas now exist for primary route/state variants.
   - Component prop/state/slot contracts now exist as machine-derivable schemas.
   - Generation order, IR requirements, determinism rules, and acceptance gates are now specified.
+  - Generation run checklist defines executable stage expectations.
 - Remaining:
-  - Add executable generation-run checklist artifact (commands + expected stage outputs) if/when generator tooling is introduced.
+  - Define concrete API request/response JSON schema files if generator tooling requires file-based schema refs beyond markdown contracts.
 
 ## Next Steps (Keep This List Current)
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Add executable generation-run checklist artifact (commands + expected stage outputs) when generator tooling is introduced.
+1. Define concrete API request/response JSON schema files (for direct OpenAPI emitters) if generator implementation requires file-based refs.
 
 Completed:
+- 2026-03-12: Expanded `specification/api-contracts.md` to close endpoint coverage gaps (session bootstrap, dashboard, discussion AI, role/delegation admin, maintenance jobs, file operations) and normalized query/filter naming (`query`, `eventTypes`, `startAt`, `endAt`).
+- 2026-03-12: Added canonical policy defaults artifacts (`specification/policy-defaults.md`, `specification/policy-defaults.json`) and linked policy-driven specs to explicit default keys.
+- 2026-03-12: Added canonical `course.json` schema artifacts (`specification/course-json-schema.md`, `specification/schemas/course-json.schema.json`) for machine-derivable validation.
+- 2026-03-12: Added `specification/generation-run-checklist.md` and linked it from `generation-blueprint.md` and `app.md`.
 - 2026-03-12: Added `specification/ui/ui-conformance-governance.md` defining waiver lifecycle and baseline/snapshot approval policy.
 - 2026-03-12: Added `specification/ui/ui-conformance-gap-matrix.md` covering skipped conformance gaps (`about`, typed error routes, observer deterministic runtime controls) with closure criteria.
 - 2026-03-12: Added `specification/generation-blueprint.md` with deterministic generation pipeline, IR contract, and acceptance gates for regeneration from `specification/` only.
@@ -108,6 +121,13 @@ Completed:
 - 2026-03-11: Added and validated a temporary manifest-driven conformance harness (later removed for scope control).
 
 ## Canonical Artifacts
+- `specification/api-contracts.md`
+- `specification/policy-defaults.md`
+- `specification/policy-defaults.json`
+- `specification/course-json-schema.md`
+- `specification/schemas/course-json.schema.json`
+- `specification/generation-blueprint.md`
+- `specification/generation-run-checklist.md`
 - `specification/ui/baselines/ui-conformance-baseline.json`
 - `specification/ui/baselines/ui-conformance-waivers.json`
 - `specification/ui/ui-conformance-gap-matrix.md`

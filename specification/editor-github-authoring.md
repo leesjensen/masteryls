@@ -13,6 +13,7 @@ It is aligned to:
 - `auth-authorization.md`
 - `classroom-learning.md`
 - `markdown-interactions.md`
+- `policy-defaults.md`
 
 ## Design Goals
 - Treat GitHub as the canonical content repository.
@@ -95,7 +96,7 @@ It is aligned to:
   - attempt fast AI commit-message generation from the staged diff/context
   - if AI response is not returned within latency budget, immediately fall back to manual prompt
 - Latency budget:
-  - AI suggestion should return within ~1-2 seconds (policy-configurable)
+  - AI suggestion timeout: `policy-defaults.json.authoring.aiCommitMessageTimeoutMs` (default `1200` ms)
   - on timeout/failure, do not block commit workflow waiting on AI
 - Manual fallback:
   - show commit-message prompt to editor

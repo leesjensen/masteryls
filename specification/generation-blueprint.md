@@ -8,10 +8,13 @@ It is aligned to:
 - `domain-model.md`
 - `api-contracts.md`
 - `database-schema-migrations.md`
+- `course-json-schema.md`
+- `policy-defaults.md`
 - `view-model-schemas.md`
 - `component-contract-schemas.md`
 - `ui/ui-screens.md`
 - `test-strategy.md`
+- `generation-run-checklist.md`
 
 ## Core Rule
 Generation must not read existing runtime source code.
@@ -38,6 +41,8 @@ This profile is the default for reproducibility. Alternate profiles are allowed 
 - DB schema/migrations: `database-schema-migrations.md`
 - Resilience/security: `error-resilience.md`, `security-threat-model.md`
 - UI contracts: `ui/manifests/*.ui-manifest.json`, `ui/schemas/*.json`, `ui/schemas/components/*.json`
+- Policy defaults: `policy-defaults.json`
+- Course definition schema: `schemas/course-json.schema.json`
 - Routes/state: `routing-state.md`
 - Test obligations: `test-strategy.md`, `ui/ui-conformance-baseline.md`
 
@@ -95,8 +100,13 @@ flowchart LR
 ## Acceptance Checks
 A generation run is accepted only if all checks pass.
 
+Execution sequencing and expected artifacts are additionally defined in:
+- `generation-run-checklist.md`
+
 ### Contract Checks
 - all JSON schemas parse and validate
+- `schemas/course-json.schema.json` validates canonical `course.json` fixtures
+- `policy-defaults.json` parses and is referenced by policy-driven specs
 - manifest state sets match view-model schema enums
 - manifest allowed components are covered by component contract registry
 - API error shape matches `error-resilience.md`

@@ -10,6 +10,7 @@ It is aligned to:
 - `routing-state.md`
 - `integrations.md`
 - `error-resilience.md`
+- `policy-defaults.md`
 
 ## Design Goals
 - Define stable, machine-derivable request/response contracts.
@@ -47,6 +48,13 @@ It is aligned to:
 - Prefer resource nouns over verb paths.
 - Model state transitions through HTTP method + resource shape (for example `DELETE /session/observer`), not `/stop` suffixes.
 - Use nested resources where scope is intrinsic (for example topic attempts under course/topic/interaction).
+
+### Query Parameter Naming
+Canonical query field names:
+- text query: `query`
+- multi-value event filter: `eventTypes`
+- date bounds: `startAt`, `endAt`
+- pagination: `limit`, `cursor` (or `page` for compatibility)
 
 ### Success Response Shape
 - Do not wrap successful responses in top-level `data` or `meta`.
@@ -87,11 +95,11 @@ Request correlation IDs must also be returned via `X-Request-Id` response header
   - response fields: `items`, `page`, `limit`, `totalCount`, `hasMore`
 - Filter conventions:
   - repeated query fields or comma-separated values for enums
-  - date filters use ISO timestamps (`startDate`, `endDate`)
+  - date filters use ISO timestamps (`startAt`, `endAt`)
 
 ## Endpoint Groups
 
-## 1) Session Context
+## 1) Session And Identity
 
 Supabase-managed auth flows (outside this API surface):
 - OTP request
@@ -100,12 +108,40 @@ Supabase-managed auth flows (outside this API surface):
 
 App API flow below starts after auth session is established.
 
+### `GET /session` (auth)
+Purpose: bootstrap app session/profile/role context.
+
+Response `200`:
+```json
+{
+  "sessionStatus": "authenticated",
+  "user": {
+    "id": "uuid",
+    "email": "learner@example.edu",
+    "displayName": "Learner Name"
+  },
+  "effectiveRoles": [
+    {
+      "id": "uuid",
+      "role": "learner",
+      "scopeType": "global",
+      "scopeId": null
+    }
+  ],
+  "observerSession": null,
+  "capabilities": {
+    "canCreateCourse": false,
+    "canViewMetrics": true
+  }
+}
+```
+
 ### `POST /session/observer` (auth)
-Request:
+Request schema: `ObserverSessionStartRequest`
 ```json
 { "observedUserId": "uuid", "contextCourseId": "uuid", "reason": "mentor review" }
 ```
-Response `201`:
+Response `201` schema: `ObserverSessionResource`
 ```json
 {
   "observerSession": {
@@ -121,17 +157,108 @@ Response `201`:
 ### `DELETE /session/observer` (auth)
 Response `204` (active observer session ended for the current actor).
 
-## 2) Catalog, Course, Enrollment
+### `GET /users` (auth, privileged)
+Purpose: bounded user search for role/delegation management.
+
+Parameters:
+- `query` (required, min length from policy defaults)
+- `limit`, `cursor`
+
+Response `200` schema: `UserSearchResult`
+```json
+{
+  "items": [
+    { "id": "uuid", "email": "user@example.edu", "displayName": "User Name" }
+  ],
+  "nextCursor": null,
+  "hasMore": false
+}
+```
+
+## 2) Dashboard, Catalog, Course, Enrollment
+
+### `GET /dashboard` (auth)
+Purpose: single read-model endpoint for dashboard load.
+
+Parameters:
+- optional `query` (discoverable search)
+- optional `includeCompleted` (`true|false`)
+- optional `cursor`
+
+Response `200` schema: `DashboardViewResource`
+```json
+{
+  "summary": {
+    "activeEnrollmentCount": 2,
+    "completedEnrollmentCount": 1,
+    "discoverableCourseCount": 3
+  },
+  "enrolledCourses": [],
+  "discoverableCourses": [],
+  "nextCursor": null,
+  "hasMore": false
+}
+```
 
 ### `GET /courses` (public/auth)
 - Returns catalog entries filtered by visibility and effective permissions.
 
+### `POST /courses` (editor/root, non-observer)
+- Create from GitHub template or AI-generated structure.
+- Request requires `creationMode`, repository target, and metadata.
+- Response returns created course metadata and provisioning summary.
+
 ### `GET /courses/{courseId}` (public/auth)
 - Returns course metadata contract (`Course`).
+
+### `PATCH /courses/{courseId}` (editor/root, non-observer)
+Purpose: update course settings metadata.
+
+Request schema: `CoursePatchRequest`
+```json
+{
+  "title": "Updated title",
+  "description": "Updated description",
+  "state": "published",
+  "visibility": "authenticated",
+  "deleteProtected": true,
+  "externalRefs": { "canvasCourseId": "12345" }
+}
+```
+
+Response `200`: updated course metadata resource.
+
+### `DELETE /courses/{courseId}` (root, non-observer)
+Parameters:
+- optional `deleteRepository` (`true|false`, default from policy defaults)
+
+Response `204`.
 
 ### `GET /courses/{courseId}/definition` (public/auth)
 - Returns active `CourseDefinition` (modules/topics/interactions metadata).
 - Includes `definitionVersion` and `contentVersionMarker`.
+
+### `PUT /courses/{courseId}/definition` (editor/root, non-observer)
+Purpose: canonical structure commit (`course.json`).
+
+Request schema: `CourseDefinitionWriteRequest`
+```json
+{
+  "definition": {},
+  "baseCommitSha": "abcdef...",
+  "commitMessage": "Update module order"
+}
+```
+
+Response `200` schema: `CourseDefinitionWriteResult`
+```json
+{
+  "definitionVersion": 12,
+  "commitSha": "123abc...",
+  "contentVersionMarker": "123abc...",
+  "indexing": { "status": "updated", "warning": null }
+}
+```
 
 ### `POST /enrollments` (auth, non-observer)
 Request:
@@ -143,7 +270,7 @@ Response `201`: enrollment record.
 ### `DELETE /enrollments/{enrollmentId}` (auth, non-observer)
 Response `204`.
 
-## 3) Topic Content And Learning Runtime
+## 3) Topic Content, Discussion, Notes, And Learning Runtime
 
 ### `GET /courses/{courseId}/topics/{topicId}/content` (public/auth)
 Response includes latest revalidated content payload:
@@ -172,14 +299,62 @@ Request:
 Response `201`: immutable `InteractionAttempt`.
 
 ### `POST /exam-sessions` (auth, non-observer)
-- Starts a new `ExamSession`.
+Request:
+```json
+{ "courseId": "uuid", "topicId": "uuid", "enrollmentId": "uuid" }
+```
+Response `201`: `ExamSession`.
+
+### `GET /exam-sessions/{examSessionId}` (auth)
+- Returns current exam session state for authorized subject context.
 
 ### `POST /exam-sessions/{examSessionId}/submissions` (auth, non-observer)
-- Submits an active exam session.
+Request:
+```json
+{ "answers": [{ "interactionId": "uuid", "payload": {} }] }
+```
+Response `200`: submitted/graded exam summary.
+
+### `GET /courses/{courseId}/topics/{topicId}/notes` (auth)
+Parameters:
+- optional `sectionKey`
+- optional `limit`, `cursor`
+
+Response `200` schema: `NoteListResult`.
 
 ### `POST /courses/{courseId}/topics/{topicId}/notes` (auth, non-observer)
 ### `PATCH /notes/{noteId}` (auth, non-observer)
-- Create/update learner notes.
+### `DELETE /notes/{noteId}` (auth, non-observer)
+- Create/update/delete learner notes.
+
+### `POST /courses/{courseId}/topics/{topicId}/discussion/messages` (auth, non-observer)
+Purpose: AI discussion reply generation with server-built context.
+
+Request schema: `DiscussionMessageRequest`
+```json
+{
+  "message": "Can you explain this section in simpler terms?",
+  "activeSection": "event-loop",
+  "conversationMessages": [
+    { "role": "user", "content": "What is event loop?" },
+    { "role": "model", "content": "..." }
+  ]
+}
+```
+
+Response `200` schema: `DiscussionMessageResult`
+```json
+{
+  "reply": {
+    "role": "model",
+    "content": "..."
+  },
+  "contextWindow": {
+    "messageCountUsed": 8,
+    "notesIncluded": 2
+  }
+}
+```
 
 ## 4) Authoring And GitHub Content Operations
 
@@ -202,38 +377,120 @@ Response `200`:
 }
 ```
 
+### `POST /courses/{courseId}/topics/{topicId}/ai-commit-message` (editor/root, non-observer)
+Request:
+```json
+{
+  "path": "instruction/topic.md",
+  "baseCommitSha": "abcdef...",
+  "proposedContent": "# updated markdown"
+}
+```
+Response `200`:
+```json
+{
+  "suggestedMessage": "Clarify loop scheduling example",
+  "generated": true,
+  "timedOut": false
+}
+```
+
 ### `GET /courses/{courseId}/commits` (editor/root)
+Parameters:
+- required `path`
+- optional `limit`, `cursor`
+
+Response `200`: commit history page.
+
 ### `GET /courses/{courseId}/diff` (editor/root)
-- Retrieve commit history and diffs for topic/course paths.
+Parameters:
+- required `path`
+- optional `baseSha`, `headSha`
 
-### `POST /courses/{courseId}/search-index-jobs` (editor/root)
-- Starts a full search reindex job for a course.
+Response `200`: unified or split diff payload.
 
-## 5) Course Creation And Export
+### `GET /courses/{courseId}/topics/{topicId}/files` (editor/root)
+### `POST /courses/{courseId}/topics/{topicId}/files` (editor/root, non-observer)
+### `DELETE /courses/{courseId}/topics/{topicId}/files/{filePath}` (editor/root, non-observer)
+- File list/upload/delete for topic-adjacent assets.
 
-### `POST /courses` (editor/root, non-observer)
-- Create from GitHub template or AI-generated structure.
-- Returns created `courseId`, repository details, and provisioning warnings.
+## 5) Admin, Permissions, And Maintenance
+
+### `GET /courses/{courseId}/role-assignments` (editor/root)
+- Returns active course-scoped role assignments.
+
+### `POST /courses/{courseId}/role-assignments` (editor/root, non-observer)
+Request:
+```json
+{ "userId": "uuid", "role": "mentor" }
+```
+Response `201`: created `RoleAssignment`.
+
+### `DELETE /role-assignments/{roleAssignmentId}` (editor/root, non-observer)
+Response `204`.
+
+### `GET /observer-delegations` (auth, privileged)
+Parameters:
+- optional `observerUserId`
+- optional `observedUserId`
+
+### `POST /observer-delegations` (auth, privileged, non-observer)
+Request:
+```json
+{ "observerUserId": "uuid", "observedUserId": "uuid" }
+```
+Response `201`: created `ObserverDelegation`.
+
+### `DELETE /observer-delegations/{observerDelegationId}` (auth, privileged, non-observer)
+Response `204`.
+
+### `POST /courses/{courseId}/search-reindex-jobs` (editor/root, non-observer)
+### `POST /courses/{courseId}/content-refresh-jobs` (editor/root, non-observer)
+- Starts maintenance job runs.
+
+### `GET /jobs/{jobId}` (auth)
+- Returns standardized job status for export/reindex/refresh operations.
+
+## 6) Canvas Export
 
 ### `POST /courses/{courseId}/canvas-export-jobs` (editor/root, non-observer)
-### `POST /canvas-export-jobs/{exportJobId}/repairs` (editor/root, non-observer)
-- Canvas synchronization operations with structured partial failure details.
+- Starts full or incremental export.
 
-## 6) Search, Progress, Metrics
+### `POST /canvas-export-jobs/{exportJobId}/repairs` (editor/root, non-observer)
+- Starts mapping repair workflow for completed export scope.
+
+## 7) Search, Progress, Metrics
 
 ### `GET /search` (public/auth by visibility)
 Parameters:
 - `courseId` (required)
-- `q` (required)
+- `query` (required)
 - `limit`, `cursor` (optional)
+
+Response `200`:
+```json
+{
+  "query": "event loop",
+  "matches": [
+    {
+      "topicId": "uuid",
+      "topicTitle": "Asynchronous JavaScript",
+      "headlines": ["..."],
+      "rank": 0.92
+    }
+  ],
+  "nextCursor": null,
+  "hasMore": false
+}
+```
 
 ### `GET /progress` (auth)
 - Returns activity/progress records scoped by effective actor/subject permissions.
-- Supports filters: `courseId`, `topicId`, `types`, `startDate`, `endDate`, `userId` (privileged only).
+- Supports filters: `courseId`, `topicId`, `interactionId`, `eventTypes`, `startAt`, `endAt`, `subjectUserId` (privileged only).
 
 ### `GET /metrics` (auth)
 - Returns aggregated metrics read model.
-- Same scope and filtering rules as progress endpoints.
+- Supports filters: `courseId`, `eventTypes`, `groupBy`, `startAt`, `endAt`, `subjectUserId` (privileged only).
 
 ## Authorization Rules By Endpoint Family
 - Public read: start/about/catalog/published content only.
@@ -248,9 +505,12 @@ Generation requirements:
 - each endpoint must map to explicit JSON schema for request/response bodies
 - each error code must map to standardized error envelope
 - each endpoint must declare auth requirement and observer-mode write policy
+- operation identifiers should be deterministic (`<resource>.<action>`) and stable across generations
 
 ## Legacy Gaps Addressed
 - Replaces implicit service calls with explicit API contracts.
+- Adds missing contracts for bootstrap session context, dashboard read model, discussion AI calls, role/delegation admin, and maintenance jobs.
+- Normalizes query/filter naming across search/progress/metrics endpoints.
 - Normalizes error shape and retryability semantics.
 - Enforces observer actor/subject handling as first-class contract behavior.
 - Defines idempotent write behavior for conflict-prone operations.

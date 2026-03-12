@@ -103,6 +103,9 @@ Server-derived:
 - `effectiveRoles` (resolved active role assignments)
 - `observerSession` (nullable, read-only proxy context)
 
+Primary read contract:
+- `GET /session` (see `api-contracts.md`)
+
 Ownership:
 - Auth provider + backend policy layer.
 

@@ -12,6 +12,10 @@ It is normative for new development and intentionally improves on current behavi
 - Remove secrets from client-visible domain objects.
 - Make permissions and state transitions explicit.
 
+Policy default values used by this model are defined in:
+- `policy-defaults.md`
+- `policy-defaults.json`
+
 ## Bounded Contexts
 - Identity and Access: users, roles, credentials, authorization.
 - Catalog and Authoring: courses, modules, topics, interactions, publishing lifecycle.
@@ -384,7 +388,7 @@ Rules:
 - Mentor (course scope):
   - Read scoped course metadata/content including learner submissions for mentoring workflows.
   - Read scoped analytics/progress for supported mentoring operations.
-  - Add mentor feedback/assessment where policy allows.
+  - Add mentor feedback/assessment when `policy-defaults.json.authz.mentorCanWriteAssessmentByDefault` is true (or explicit override allows).
   - Can assume read-only observer mode for any user.
   - No course structure authoring or role-management writes by default.
 - Editor (course scope):

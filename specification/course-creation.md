@@ -12,6 +12,8 @@ It is aligned to:
 - `domain-model.md`
 - `auth-authorization.md`
 - `editor-github-authoring.md`
+- `policy-defaults.md`
+- `course-json-schema.md`
 
 ## Design Goals
 - Create a usable course quickly with safe defaults.
@@ -45,8 +47,8 @@ Optional:
 
 Derived defaults:
 - initial course `state`: `draft`
-- `visibility`: policy default (typically `authenticated` or `private`)
-- `deleteProtected`: policy default
+- `visibility`: `policy-defaults.json.courseCreation.defaultVisibility`
+- `deleteProtected`: `policy-defaults.json.courseCreation.defaultDeleteProtected`
 
 ## Credential Model
 - No raw GitHub token entry in client form.
@@ -91,18 +93,20 @@ Derived defaults:
 - convert legacy type aliases to canonical interaction/topic types where needed
 - set deterministic module/topic ordering
 - ensure a valid default topic exists when publishable content is present
+- validate against `schemas/course-json.schema.json`
 
 Fallback from `instruction/modules.md` (legacy support):
 - parse module headings and topic links
 - synthesize topic IDs and canonical topic records
-- prepend/ensure overview/home topic where policy requires
+- prepend/ensure overview/home topic when `policy-defaults.json.courseCreation.ensureOverviewTopic` is true
 
 ## Persistence And Post-Create Actions
 On successful create:
 1. Persist `Course` metadata in app data store.
 2. Persist initial `CourseDefinition`.
 3. Grant course-scoped `editor` role to creator (unless already covered by policy).
-4. Create creator `Enrollment` (policy-configurable; default true).
+4. Create creator `Enrollment` (default from policy defaults).
+   - Default value: `policy-defaults.json.courseCreation.autoEnrollCreator`.
 5. Refresh caller's effective permissions/session state.
 
 ## Progress UX For Long Operations
@@ -157,4 +161,3 @@ Audit payload includes:
 - Formalizes deterministic `course.json` normalization.
 - Defines clear fallback when template lacks `course.json`.
 - Adds explicit progress + recovery behavior for long-running creation steps.
-

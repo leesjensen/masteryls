@@ -11,6 +11,7 @@ It is aligned to:
 - `auth-authorization.md`
 - `classroom-learning.md`
 - `routing-state.md`
+- `policy-defaults.md`
 
 ## Design Goals
 - Provide fast, relevant search across course content.
@@ -92,7 +93,7 @@ Security guardrails:
 Input:
 - `courseId` (required)
 - `query` (required)
-- `limit` (optional, default policy value)
+- `limit` (optional, default `policy-defaults.json.search.defaultLimit`)
 
 Output:
 - `query`
@@ -104,7 +105,7 @@ Output:
 
 Behavior:
 - trim and normalize query text
-- enforce minimum query length (policy default `>= 2`)
+- enforce minimum query length from `policy-defaults.json.search.minQueryLength`
 - return deterministic rank-desc order
 - empty query returns empty result set (not full topic dump)
 
@@ -135,7 +136,7 @@ Input:
   - `courseId`
   - `topicId`
   - `interactionId`
-  - `eventTypes[]`
+  - `eventTypes`
   - `startAt` / `endAt` (ISO UTC)
 - pagination:
   - `cursor` (preferred) or `page`+`limit` (legacy compatibility)
@@ -192,7 +193,7 @@ Input:
 - optional:
   - `courseId`
   - `startAt` / `endAt`
-  - `eventTypes[]`
+  - `eventTypes`
   - `groupBy` options (`hour`, `day`, `week`, `eventType`, `topic`)
 
 Output:

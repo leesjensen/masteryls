@@ -11,6 +11,7 @@ It is aligned to:
 - `domain-model.md`
 - `auth-authorization.md`
 - `classroom-learning.md`
+- `policy-defaults.md`
 
 ## Design Goals
 - Keep discussion fast and contextual for learning.
@@ -68,7 +69,7 @@ Each AI discussion request must be built from explicit context inputs.
 - Include only roles used by the model conversation API (`user`, `model`).
 - Exclude `error` messages from model input.
 - Preserve chronological ordering.
-- Apply bounded history window (policy-configurable) to control token usage.
+- Apply bounded history window using `policy-defaults.json.discussion.maxHistoryMessages`.
 
 ### Section Context
 - If `activeSection` is set, include explicit section hint in system instruction.
@@ -77,7 +78,7 @@ Each AI discussion request must be built from explicit context inputs.
 ### Notes Context
 - Include saved notes relevant to `(courseId, topicId, sectionKey?)` when available.
 - Pass note text as contextual reference, not as authoritative facts.
-- Bound note context size to avoid prompt overgrowth.
+- Bound note context size using `policy-defaults.json.discussion.maxNoteContextChars`.
 
 ### Output Guidance
 System instruction should require:
@@ -89,7 +90,7 @@ System instruction should require:
 Baseline instruction profile (from current implementation intent):
 - include full topic title/content context in system prompt
 - if section is active, include explicit section sentence
-- prefer short responses (target: under ~200 words)
+- prefer short responses (target from `policy-defaults.json.discussion.targetMaxReplyWords`)
 - direct answers to learner question/comment
 - encourage clarity, additional examples, and critical thinking
 - redirect gently when question is off-topic
@@ -105,7 +106,7 @@ Baseline instruction profile (from current implementation intent):
   - persists canonical `Note` record.
   - emits `note.created` activity event.
 - Update note:
-  - owner edit allowed; privileged moderation optional by policy.
+  - owner edit allowed; privileged moderation defaults from `policy-defaults.json.authz.mentorCanWriteNotesByDefault` and explicit role overrides.
   - emits `note.updated` activity event.
 - Save AI response as note:
   - allowed when user has note write permission.

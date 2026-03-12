@@ -140,6 +140,7 @@ A course repository is expected to provide:
 - Fallback support can derive structure from `instruction/modules.md` if `course.json` is absent.
 
 `course.json` defines modules/topics and operational metadata (topic type, state, interactions, external refs).
+Its canonical schema is defined in `course-json-schema.md` and `schemas/course-json.schema.json`.
 
 ## Persistence And State Boundaries
 - Supabase DB persists users, roles, catalog entries, enrollments, attempts/sessions/notes/events, and indexed topic text.
@@ -160,16 +161,19 @@ A course repository is expected to provide:
 - [Editor And GitHub Authoring](./editor-github-authoring.md)
 - [Course Settings And Admin Workflows](./course-settings-admin.md)
 - [Course Creation Workflow](./course-creation.md)
+- [Course JSON Schema](./course-json-schema.md)
 - [Canvas Export Workflow](./canvas-export.md)
 - [Search, Progress, And Metrics](./search-progress-metrics.md)
 - [Integrations: Supabase, GitHub, Gemini, Canvas](./integrations.md)
 - [API Contracts](./api-contracts.md)
+- [Policy Defaults](./policy-defaults.md)
 - [Database Schema And Migrations](./database-schema-migrations.md)
 - [Error Handling And Resilience](./error-resilience.md)
 - [Security Hardening And Threat Model](./security-threat-model.md)
 - [View-Model Schemas](./view-model-schemas.md)
 - [Component Contract Schemas](./component-contract-schemas.md)
 - [Generation Blueprint](./generation-blueprint.md)
+- [Generation Run Checklist](./generation-run-checklist.md)
 - [Test Strategy And Coverage](./test-strategy.md)
 - [Implementation Status](./implementation-status.md)
 - [UI Overview](./ui/overview.md)

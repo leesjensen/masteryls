@@ -12,6 +12,7 @@ It is aligned to:
 - `routing-state.md`
 - `classroom-learning.md`
 - `search-progress-metrics.md`
+- `policy-defaults.md`
 
 ## Design Goals
 - Give each user a clear "what should I do next?" starting point.
@@ -105,7 +106,7 @@ sequenceDiagram
   participant DB as Supabase/RLS
 
   UI->>APP: loadDashboard(subjectContext)
-  APP->>API: GET /courses + GET /progress (subject context)
+  APP->>API: GET /dashboard (subject context)
   API->>DB: query enrollments + discoverable catalog (authorized)
   DB-->>API: scoped rows
   API-->>APP: DashboardView payload
@@ -135,7 +136,7 @@ sequenceDiagram
 - Search semantics:
   - case-insensitive
   - whitespace-normalized token search over title + description
-  - deterministic ordering (policy default: relevance, then title)
+  - deterministic ordering from `policy-defaults.json.dashboard.defaultDiscoverSort`
 
 ## Observer-Mode Rules
 - Dashboard renders using observed user subject context.
