@@ -45,7 +45,6 @@ jobs:
 
       - name: Test
         run: |
-          npm run validate:ui-conformance-coverage
           npx playwright install chromium
           npm run test:coverage
 

@@ -11,17 +11,13 @@ Owner: Spec workflow (interactive)
 - Core specification set exists and is linked from `specification/app.md`.
 - UI contract layer exists (`specification/ui/*`) with canonical `ui-contract: 1.0.0`.
 - UI conformance baseline manifest exists at `specification/ui/baselines/ui-conformance-baseline.json`.
-- Playwright UI conformance capture test exists at `tests/ui-conformance.spec.ts`.
-- Source and test code are intentionally unchanged in this effort; this track is specification-only.
+- Source, test, CI, and package tooling are intentionally unchanged in this effort; this track is specification-only.
+- Executable conformance harness artifacts are currently out of scope for this track and not required in-repo.
 
 ## Latest Verification Results
 Date: 2026-03-12
 
-- Command:
-  - `npm run validate:ui-conformance-coverage`
-  - `UI_CONFORMANCE=1 npx playwright test tests/ui-conformance.spec.ts`
-- Result:
-  - UI coverage validator: `pass`
+- Last observed conformance run (historical reference, before harness removal from this track):
   - coverage totals: `manifestStates=48 coveredStates=14 waivedStates=34 scenarios=16`
   - conformance capture: `11 passed`, `5 skipped`, `0 failed`
 - Skipped scenario reasons (current codebase):
@@ -71,23 +67,17 @@ Pending:
 5. Expand baseline scenarios toward additional required manifest states to reduce long-term waiver dependency.
 
 Completed:
+- 2026-03-12: Removed non-spec implementation artifacts (`scripts/`, `tests/ui-conformance.spec.ts`, `package.json` script additions, CI wiring) to preserve specification-only scope.
 - 2026-03-12: Rolled back source and test modifications to keep this effort specification-only.
 - 2026-03-11: Added manifest-to-baseline coverage validator and wired CI to fail on uncovered, unwaived states.
 - 2026-03-11: Added explicit UI conformance state waiver manifest for uncovered contract states.
 - 2026-03-11: Added UI conformance baseline spec and baseline manifest.
-- 2026-03-11: Added manifest-driven Playwright capture runner.
-- 2026-03-11: Stabilized capture run by stubbing GitHub read endpoints used by UI flows.
+- 2026-03-11: Added and validated a temporary manifest-driven conformance harness (later removed for scope control).
 
-## Runbook Commands
-- Validate manifest-state coverage (CI gate):
-  - `npm run validate:ui-conformance-coverage`
-- Capture-only run:
-  - `UI_CONFORMANCE=1 npx playwright test tests/ui-conformance.spec.ts`
-- Update snapshots (when intentional):
-  - `UI_CONFORMANCE=1 UI_CONFORMANCE_ASSERT=1 npx playwright test tests/ui-conformance.spec.ts --update-snapshots`
-- Validate tests are discoverable:
-  - `npx playwright test tests/ui-conformance.spec.ts --list`
+## Canonical Artifacts
+- `specification/ui/baselines/ui-conformance-baseline.json`
+- `specification/ui/baselines/ui-conformance-waivers.json`
+- `specification/ui/manifests/*.ui-manifest.json`
 
 ## Notes
-- `test-results/` is ephemeral and gitignored.
-- Approved durable visual baselines should come from snapshot assert mode plus review.
+- This file tracks specification progress; executable harness work is optional and should be done in a separate implementation-focused track if needed.

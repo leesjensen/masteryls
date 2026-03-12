@@ -52,8 +52,6 @@ flowchart LR
   - predictable file naming by scenario ID + viewport
 
 ## Coverage Validation
-- Validator command:
-  - `npm run validate:ui-conformance-coverage`
 - Validation rule:
   - every `screenId/state` declared in `specification/ui/manifests/*.ui-manifest.json` must be either:
     - covered by at least one baseline scenario, or
@@ -103,15 +101,15 @@ Not every scenario must run on every viewport. Required viewport coverage is def
   - fix implementation and re-capture.
 
 ## CI Conformance Gate
-- CI fails when visual diffs exceed configured threshold for approved scenarios.
-- CI also runs accessibility checks on baseline scenarios.
-- Failures must link scenario IDs to speed triage.
-- CI fails when required manifest screen/states are neither represented in baseline scenarios nor explicitly waived.
+- If an executable conformance harness is present, CI should fail when visual diffs exceed configured thresholds for approved scenarios.
+- If an executable conformance harness is present, CI should run accessibility checks on baseline scenarios.
+- Failures should link scenario IDs to speed triage.
+- CI (or equivalent quality gate) should fail when required manifest screen/states are neither represented in baseline scenarios nor explicitly waived.
 
 ## Architecture And Derivation Rules
 - Screens are validated against `ui-manifest.json` slot/state/component constraints.
 - Baseline scenarios map 1:1 to screen/view-model states where possible.
-- `tests/ui-conformance.spec.ts` must assert screen/state contract markers (slot and state evidence) before image capture.
+- Any executable conformance harness should assert screen/state contract markers (slot and state evidence) before image capture.
 - Visual conformance is checked at screen level; behavior conformance remains covered by functional tests.
 
 ## Success Criteria

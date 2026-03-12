@@ -7,10 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "playwright test",
-    "test:coverage": "COVERAGE=true nyc --reporter=json-summary --reporter=text playwright test",
-    "validate:ui-conformance-coverage": "node scripts/validate-ui-conformance-coverage.mjs",
-    "test:ui-conformance": "UI_CONFORMANCE=1 playwright test tests/ui-conformance.spec.ts",
-    "test:ui-conformance:update": "UI_CONFORMANCE=1 UI_CONFORMANCE_ASSERT=1 playwright test tests/ui-conformance.spec.ts --update-snapshots"
+    "test:coverage": "COVERAGE=true nyc --reporter=json-summary --reporter=text playwright test"
   },
   "repository": {
     "type": "git",
