@@ -11,6 +11,15 @@ Owner: Spec workflow (interactive)
 - Core specification set exists and is linked from `specification/app.md`.
 - UI contract layer exists (`specification/ui/*`) with canonical `ui-contract: 1.0.0`.
 - UI conformance baseline manifest exists at `specification/ui/baselines/ui-conformance-baseline.json`.
+- API-mediated data-access boundary is now normalized across architecture/auth/integration specs (no direct browser table access in target architecture).
+- Architecture spec now includes explicit tradeoff rationale for API-mediated access vs direct browser-to-DB access.
+- API response envelope rules now use direct success payloads (no top-level `data`/`meta`) and explicit top-level `error` objects for failures.
+- Auth flow boundary is now explicit: Supabase Auth SDK handles OTP/session; app API handles operational domain data.
+- Step 1 architecture-gap specs now exist:
+  - `specification/api-contracts.md`
+  - `specification/database-schema-migrations.md`
+  - `specification/error-resilience.md`
+  - `specification/security-threat-model.md`
 - Source, test, CI, and package tooling are intentionally unchanged in this effort; this track is specification-only.
 - Executable conformance harness artifacts are currently out of scope for this track and not required in-repo.
 
@@ -56,17 +65,31 @@ Date: 2026-03-12
   - Begin implementation-phase migration tasks by capability.
   - Add guardrails/tests that prevent ad hoc cross-capability coupling.
 
+### 4) Regenerate-From-Spec Readiness
+- Status: In progress
+- Done:
+  - API contracts, database schema/migrations, resilience, and security threat model are now specified.
+- Remaining:
+  - Define strict screen view-model JSON schemas for all route/state variants.
+  - Define component prop/state contracts as machine-derivable schemas.
+  - Define generation blueprint and acceptance checks for end-to-end regeneration from `specification/` only.
+
 ## Next Steps (Keep This List Current)
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Add a spec-only gap matrix for currently skipped conformance scenarios (`about`, typed error routes, observer runtime).
-2. Define scenario-level contract assertions in spec docs (slots/components/state markers) as implementation guidance.
-3. Add governance rule for waiver lifecycle (review cadence / expiration policy).
-4. Define snapshot approval/review workflow in spec without changing app/test code.
-5. Expand baseline scenarios toward additional required manifest states to reduce long-term waiver dependency.
+1. Add `specification/view-model-schemas.md` plus per-screen JSON schemas for route/state view models.
+2. Add `specification/component-contract-schemas.md` for component prop/state machine contracts.
+3. Add `specification/generation-blueprint.md` defining target stack, generation order, and acceptance checks.
+4. Add a spec-only gap matrix for currently skipped UI conformance scenarios (`about`, typed error routes, observer runtime).
+5. Define governance rule for waiver lifecycle and snapshot approval policy in `specification/ui/`.
 
 Completed:
+- 2026-03-12: Chose direct Supabase Auth SDK flow (OTP/session) and removed app-owned `/auth/*` endpoint contracts from `api-contracts.md`; updated architecture/auth/integration docs for boundary consistency.
+- 2026-03-12: Simplified API envelope contracts: removed success `data/meta` wrappers and standardized explicit `error` object with `error.requestId` + `X-Request-Id` header.
+- 2026-03-12: Added explicit architecture tradeoff record (cost/latency vs policy/security/governance) for API boundary vs direct browser DB access in `architecture-system.md`.
+- 2026-03-12: Normalized spec consistency for API-only data access (browser -> API/edge -> Supabase tables) across `app.md`, `architecture-system.md`, `integrations.md`, `auth-authorization.md`, and enrollment flow diagrams.
+- 2026-03-12: Added Step 1 gap-closure specs (`api-contracts.md`, `database-schema-migrations.md`, `error-resilience.md`, `security-threat-model.md`).
 - 2026-03-12: Removed non-spec implementation artifacts (`scripts/`, `tests/ui-conformance.spec.ts`, `package.json` script additions, CI wiring) to preserve specification-only scope.
 - 2026-03-12: Rolled back source and test modifications to keep this effort specification-only.
 - 2026-03-11: Added manifest-to-baseline coverage validator and wired CI to fail on uncovered, unwaived states.

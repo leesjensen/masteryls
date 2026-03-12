@@ -26,14 +26,19 @@ It is aligned to:
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 flowchart LR
-  subgraph App
+  subgraph Browser
+    UI[React SPA]
+  end
+
+  subgraph ServerBoundary
+    API[Server API / Edge Functions]
     SVC[Application Services]
     ADP[Integration Adapters]
   end
 
   subgraph Platform
-    SB[(Supabase Auth + DB + RLS)]
-    FX[Integration API / Edge Functions]
+    SA[(Supabase Auth)]
+    SDB[(Supabase DB + RLS)]
     VAULT[(Secret Store)]
   end
 
@@ -43,19 +48,27 @@ flowchart LR
     CV[Canvas]
   end
 
+  UI --> API
+  UI --> SA
+  API --> SVC
   SVC --> ADP
-  ADP --> SB
-  ADP --> FX
-  FX --> VAULT
-  FX --> GH
-  FX --> GM
-  FX --> CV
+  ADP --> SDB
+  ADP --> SA
+  ADP --> VAULT
+  ADP --> GH
+  ADP --> GM
+  ADP --> CV
 ```
 
 ## Cross-Integration Principles
 - Authorization:
   - all privileged integration calls are authorized server-side.
   - observer mode is read-only and denies all writes regardless of actor base role.
+- Data access boundary:
+  - browser clients call API contracts only.
+  - browser clients do not query operational Postgres tables directly.
+- Auth boundary:
+  - browser clients may call Supabase Auth endpoints through the SDK for OTP/session lifecycle.
 - Secret custody:
   - credentials are represented as `CredentialReference`.
   - raw secrets are never returned to browser clients.
@@ -67,7 +80,10 @@ flowchart LR
   - retry-safe semantics required for exports, indexing, and reconciliation operations.
 
 ## Application Adapter Contracts (Target)
-Application services consume integration adapters rather than provider-specific SDK calls.
+Server-side application services consume integration adapters rather than provider-specific SDK calls.
+
+Client rule:
+- browser/UI code consumes REST API contracts from `api-contracts.md` and does not call table adapters directly.
 
 Required adapter interfaces:
 - `IdentityStore` (Supabase auth/session/profile reads)
@@ -89,6 +105,8 @@ Migration rule:
 
 ### Auth Contract
 - OTP request and verify are the only supported interactive auth flows.
+- these auth flows run through Supabase Auth client SDK from the browser.
+- resulting bearer session token is attached to protected app API requests.
 - after successful verification:
   - upsert app-level `User` profile.
   - ensure default learner role if missing.
@@ -102,8 +120,9 @@ Migration rule:
 - Canonical event timestamp is `createdAt`.
 
 ### Security Contract
-- RLS enabled on all non-public tables.
+- RLS enabled on all protected tables.
 - server-side role/scope checks for privileged reads and writes.
+- no public table access for browser `anon`/`authenticated` roles.
 - no client-trusted authorization decisions.
 
 ## GitHub Integration

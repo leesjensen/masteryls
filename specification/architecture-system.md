@@ -18,15 +18,45 @@ It is aligned to:
 ## Design Goals
 - Keep architecture simple to operate and clear to reason about.
 - Enforce server-side authorization and secret custody for all sensitive operations.
+- Enforce API-mediated data access so browser clients never query operational DB tables directly.
 - Separate canonical content storage (GitHub) from operational application data (Supabase).
 - Support read-only observer mode via explicit actor/subject context.
 - Make writes auditable and read models reproducible.
 
 ## Architecture Style
 - Client: React SPA with route-driven feature views.
-- Backend platform: Supabase Auth + Postgres + RLS + Edge Functions.
+- Backend API boundary: Edge Functions / server API handlers.
+- Backend platform: Supabase Auth + Postgres + RLS (behind the API boundary).
 - External systems: GitHub (content), Canvas (LMS export), Gemini (AI).
-- Integration pattern: browser never owns long-lived external secrets; external write/read operations requiring credentials execute through server-side integration boundary.
+- Integration pattern: browser never owns long-lived external secrets and never queries operational tables directly; protected app-data reads/writes execute through server API/integration boundary.
+- Auth exception: browser uses Supabase Auth client SDK directly for OTP/session lifecycle only.
+
+## Architectural Decision: API Boundary vs Direct Browser DB Access
+Decision:
+- Use API-mediated access for operational application data (`browser -> API/edge -> DB`), instead of direct browser table access with only public RLS enforcement.
+
+Alternatives considered:
+- Direct browser-to-DB access with RLS (`browser -> DB`).
+- Hybrid access (some direct DB reads, API for writes/integrations).
+
+Tradeoff summary:
+
+| Option | Cost/latency | Security/policy consistency | Regeneration/governance |
+|---|---|---|---|
+| Direct browser -> DB | lower infra cost, fewer hops | weaker central policy composition; harder to enforce observer/session semantics uniformly | weaker contract boundary; more UI-coupled data logic |
+| API-mediated (selected) | higher infra cost, extra hop/cold start risk | stronger centralized authz, actor/subject handling, auditing, idempotency | stronger machine-derivable contracts and cleaner architecture boundaries |
+
+Why this was selected:
+- Observer-mode semantics require consistent actor/subject resolution across all operations.
+- Privileged workflows need uniform audit/event emission.
+- GitHub/Canvas/Gemini operations are already server-bound; keeping data operations in the same boundary reduces split-brain logic.
+- A single API contract surface is easier to regenerate from specification and to govern over time.
+
+Performance/cost mitigations required:
+- keep endpoints coarse enough to avoid chatty N+1 request patterns.
+- use short-lived caching and revalidation for read-heavy payloads.
+- colocate API execution and database region.
+- use async job endpoints for long-running operations (export/reindex/repair).
 
 ## System Context
 ```mermaid
@@ -34,8 +64,10 @@ It is aligned to:
 flowchart LR
   U[User] --> B[Browser SPA]
   B --> H[Static Hosting]
-  B --> S[(Supabase Auth + Postgres + RLS)]
-  B --> F[Server Integration Boundary<br/>Edge Functions / API]
+  B --> AUTH[(Supabase Auth)]
+  B --> F[Server API Boundary<br/>Edge Functions / API]
+  F --> DB[(Supabase Postgres + RLS)]
+  F --> AUTH
   F --> V[(Secret Vault / Credential Store)]
   F --> G[GitHub API]
   F --> C[Canvas API]
@@ -49,7 +81,7 @@ flowchart TB
   subgraph Browser
     APP[App Shell + Router]
     VIEWS[Feature Views]
-    OPS[useCourseOperations<br/>Application Service Facade]
+    OPS[Client Orchestration Hooks<br/>useCourseOperations + capability hooks]
     STORE[Session + Learning + UI State]
     CACHE[Client Cache<br/>Revalidated]
   end
@@ -57,7 +89,7 @@ flowchart TB
   subgraph Platform
     DB[(Supabase Postgres + RLS)]
     AUTH[Supabase Auth]
-    FX[Edge Functions / Integration API]
+    FX[Server API / Edge Functions]
   end
 
   subgraph External
@@ -70,9 +102,10 @@ flowchart TB
   VIEWS --> OPS
   OPS --> STORE
   OPS --> CACHE
-  OPS --> DB
   OPS --> AUTH
   OPS --> FX
+  FX --> DB
+  FX --> AUTH
   FX --> GH
   FX --> CV
   FX --> GM
@@ -82,8 +115,10 @@ flowchart TB
 - Presentation Layer:
   - route views, panes, editor, interactions, metrics/progress dashboards.
   - governed by UI contract artifacts in `specification/ui/*` and screen manifests in `specification/ui/manifests/*`.
-- Application Layer:
-  - orchestration/service facades (`useCourseOperations`) coordinating workflows.
+- Client Orchestration Layer:
+  - hook facades (`useCourseOperations`, capability hooks) coordinate route/view workflows.
+- Server Application Layer:
+  - endpoint handlers and application services enforce authz, observer context, and domain operations.
 - Domain Layer:
   - explicit domain entities from `domain-model.md` and policy decisions from `auth-authorization.md`.
 - Infrastructure Layer:
@@ -91,7 +126,9 @@ flowchart TB
 
 Rules:
 - UI layer does not implement authoritative permission logic.
-- Application layer resolves actor/subject context and calls server-authorized operations.
+- Client orchestration calls API contracts only; it does not read/write operational tables directly.
+- Browser-to-Supabase direct calls are limited to Auth SDK session/OTP flows.
+- Server application layer resolves actor/subject context and executes server-authorized operations.
 - Infrastructure layer is replaceable without changing domain contracts.
 
 UI rendering boundary:
@@ -168,18 +205,18 @@ Definition of done:
 sequenceDiagram
   participant U as User
   participant UI as Classroom UI
-  participant OPS as App Service Facade
+  participant OPS as Client Orchestration
+  participant API as Server API Boundary
   participant DB as Supabase/RLS
-  participant FX as Integration Boundary
   participant GH as GitHub
 
   U->>UI: Open /course/:courseId/topic/:topicId
   UI->>OPS: Resolve session + subject context
-  OPS->>DB: Load enrollment/visibility/roles
-  OPS->>FX: Request latest topic content (revalidated)
-  FX->>GH: Read course.json/topic markdown
-  GH-->>FX: Content + version marker
-  FX-->>OPS: Authorized content response
+  OPS->>API: GET /courses/{courseId}/topics/{topicId}/content
+  API->>DB: Load enrollment/visibility/roles
+  API->>GH: Read course.json/topic markdown
+  GH-->>API: Content + version marker
+  API-->>OPS: Authorized content response
   OPS-->>UI: Rendered topic view model
 ```
 
@@ -189,20 +226,20 @@ sequenceDiagram
 sequenceDiagram
   participant E as Editor
   participant UI as Editor UI
-  participant OPS as App Service Facade
-  participant FX as Integration Boundary
+  participant OPS as Client Orchestration
+  participant API as Server API Boundary
   participant GH as GitHub
   participant DB as Supabase
 
   E->>UI: Commit topic changes
   UI->>OPS: Validate + submit commit intent
-  OPS->>FX: Write request (authorized)
-  FX->>GH: Commit topic markdown/course.json
-  GH-->>FX: Commit SHA
-  FX->>DB: Emit content.updated event
-  FX->>DB: Incremental SearchDocument update (affected topic)
-  DB-->>FX: Index result
-  FX-->>OPS: Commit result + index status
+  OPS->>API: Write request (authorized)
+  API->>GH: Commit topic markdown/course.json
+  GH-->>API: Commit SHA
+  API->>DB: Emit content.updated event
+  API->>DB: Incremental SearchDocument update (affected topic)
+  DB-->>API: Index result
+  API-->>OPS: Commit result + index status
   OPS-->>UI: Success (or warning if index update failed)
 ```
 
@@ -212,19 +249,19 @@ sequenceDiagram
 sequenceDiagram
   participant L as Learner
   participant UI as Interaction UI
-  participant OPS as App Service Facade
+  participant OPS as Client Orchestration
+  participant API as Server API Boundary
   participant DB as Supabase
-  participant FX as Integration Boundary
   participant GM as Gemini
 
   L->>UI: Submit interaction
   UI->>OPS: Submission payload
-  OPS->>DB: Persist InteractionAttempt
-  OPS->>FX: Optional AI grading/feedback
-  FX->>GM: Generate feedback
-  GM-->>FX: Feedback
-  FX-->>OPS: Grading result
-  OPS->>DB: Append ActivityEvent + update derived views
+  OPS->>API: POST /courses/{courseId}/topics/{topicId}/interactions/{interactionId}/attempts
+  API->>DB: Persist InteractionAttempt
+  API->>GM: Generate feedback
+  GM-->>API: Feedback
+  API->>DB: Append ActivityEvent + update derived views
+  API-->>OPS: Grading result
   OPS-->>UI: Result + updated progress snapshot
 ```
 
@@ -234,6 +271,9 @@ sequenceDiagram
 - Authorization:
   - RLS + policy checks enforce read/write constraints.
   - observer mode switches subject context and hard-denies writes.
+- Data access boundary:
+  - browser clients never read/write operational tables directly.
+  - API/edge layer is the only caller of protected table operations.
 - Secrets:
   - GitHub/Canvas/AI credentials are server-custodied (`CredentialReference`); never exposed to client.
 - Content safety:
@@ -273,7 +313,7 @@ sequenceDiagram
 ## Deployment Topology (Target)
 - Frontend SPA hosted as static assets.
 - Supabase project provides Auth, Postgres, RLS, and Edge Functions.
-- Edge Functions act as the integration/API boundary for secret-bound external operations.
+- Edge Functions/API act as the boundary for all protected application data operations and secret-bound external operations.
 - Environment-specific config contains only non-secret public values in frontend runtime config.
 
 ## Legacy Gaps Addressed

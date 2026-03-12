@@ -13,7 +13,7 @@ Core product goals:
 
 ## System Context
 MasteryLS is a React single-page application that integrates with external systems:
-- Supabase: authentication (OTP), relational data, search index table, edge functions.
+- Supabase: authentication (OTP), relational data, search index table, edge functions (all DB access is server-mediated).
 - GitHub: source of truth for course content (`course.json`, markdown, media), version history, file commits.
 - Gemini (through Supabase edge function): AI generation and feedback.
 - Canvas (through Supabase edge function): course/module/page export and reference repair.
@@ -21,8 +21,9 @@ MasteryLS is a React single-page application that integrates with external syste
 ```mermaid
 %%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 flowchart LR
-  UI[React SPA] --> SB[(Supabase Auth + DB + RLS)]
-  UI --> FX[Server Integration Boundary]
+  UI[React SPA] --> SA[(Supabase Auth)]
+  UI --> FX[Server API / Edge Function Boundary]
+  FX --> SB[(Supabase DB + RLS)]
   FX --> GH[GitHub]
   FX --> GM[Gemini]
   FX --> CV[Canvas]
@@ -38,7 +39,8 @@ flowchart LR
 
 ## Runtime Architecture
 - App bootstrap:
-  - Loads current user session from Supabase.
+  - Restores auth session via Supabase client SDK.
+  - Loads app profile/roles and learning context via API contracts.
   - Creates router and global providers (alerts, progress overlay).
 - Router-level pages:
   - `/` start page and public catalog entry points.
@@ -66,12 +68,12 @@ flowchart LR
 ## Functional Scope
 1. Authentication And Identity
 - Email OTP login/signup via Supabase auth.
-- First-login user record upsert into app `user` table.
+- First-login user record upsert into app `user` table through server auth/session workflows.
 - Logout clears app-local state.
 
 2. Course Discovery And Enrollment
 - Dashboard shows enrolled courses and published courses available for enrollment.
-- Enrollment creation/deletion is persisted in Supabase.
+- Enrollment creation/deletion is persisted in Supabase via server API operations.
 - Learner cards expose course mastery percentage and quick navigation.
 
 3. Classroom Delivery
@@ -141,6 +143,7 @@ A course repository is expected to provide:
 
 ## Persistence And State Boundaries
 - Supabase DB persists users, roles, catalog entries, enrollments, attempts/sessions/notes/events, and indexed topic text.
+- Browser clients do not query Supabase tables directly; all operational table access is through server API/edge functions.
 - GitHub persists authored instructional content and assets.
 - Local storage persists UI preferences and topic-level AI discussion cache.
 - In-memory global stores support app bar state, search state, and interaction-progress state.
@@ -160,6 +163,10 @@ A course repository is expected to provide:
 - [Canvas Export Workflow](./canvas-export.md)
 - [Search, Progress, And Metrics](./search-progress-metrics.md)
 - [Integrations: Supabase, GitHub, Gemini, Canvas](./integrations.md)
+- [API Contracts](./api-contracts.md)
+- [Database Schema And Migrations](./database-schema-migrations.md)
+- [Error Handling And Resilience](./error-resilience.md)
+- [Security Hardening And Threat Model](./security-threat-model.md)
 - [Test Strategy And Coverage](./test-strategy.md)
 - [Implementation Status](./implementation-status.md)
 - [UI Overview](./ui/overview.md)
@@ -173,7 +180,4 @@ A course repository is expected to provide:
 ## Out Of Scope For This Document
 This file is intentionally high-level. It does not yet define:
 - Detailed UI specs per component/view.
-- API-level request/response contracts for each integration call.
-- Exact database schema and migration rules.
-- Error-state matrix and retry/backoff behavior.
-- Security hardening requirements and threat model.
+- Low-level implementation code or framework-specific module structure.

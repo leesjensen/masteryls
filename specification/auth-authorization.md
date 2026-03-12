@@ -37,8 +37,9 @@ Required behavior:
 - Session is established only after successful OTP verification.
 
 ### Session Management
-- Session tokens are managed by Supabase client SDK.
+- Session tokens are issued and refreshed via Supabase Auth client SDK.
 - Access control decisions must be validated by backend policies (RLS/API), not trust client state.
+- Browser clients never query protected application tables directly.
 - Logout must clear only app-scoped local keys; never call global `localStorage.clear()`.
 - Session expiry and refresh failures force re-authentication.
 
@@ -189,6 +190,7 @@ Rules:
 
 ## Row-Level Security Requirements (Supabase)
 - RLS enabled on all app tables containing non-public data.
+- Browser `anon` and `authenticated` roles must not have direct operational table access.
 - Policies enforced on:
   - ownership (`userId = auth.uid()`)
   - scope membership (course-scoped role checks for mentor/editor/root)

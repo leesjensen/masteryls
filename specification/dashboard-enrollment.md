@@ -100,12 +100,15 @@ stateDiagram-v2
 %%{init: {"theme": "base", "themeVariables": {"background": "#ffffff", "lineColor": "#9ca3af", "primaryBorderColor": "#9ca3af", "secondaryBorderColor": "#9ca3af", "tertiaryBorderColor": "#9ca3af", "clusterBorder": "#9ca3af", "edgeLabelBackground": "#ffffff", "primaryTextColor": "#111827"}}}%%
 sequenceDiagram
   participant UI as Dashboard UI
-  participant APP as App Service
+  participant APP as Client Orchestration
+  participant API as Server API
   participant DB as Supabase/RLS
 
   UI->>APP: loadDashboard(subjectContext)
-  APP->>DB: query enrollments + discoverable catalog (authorized)
-  DB-->>APP: scoped rows
+  APP->>API: GET /courses + GET /progress (subject context)
+  API->>DB: query enrollments + discoverable catalog (authorized)
+  DB-->>API: scoped rows
+  API-->>APP: DashboardView payload
   APP-->>UI: DashboardView
 ```
 
