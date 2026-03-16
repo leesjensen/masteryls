@@ -1,0 +1,2068 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masteryls.spec/schemas/api/api-contracts.schema.json",
+  "title": "MasteryLS API Contract Schemas",
+  "type": "object",
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "IsoTimestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "Cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "Role": {
+      "type": "string",
+      "enum": [
+        "root",
+        "editor",
+        "mentor",
+        "learner",
+        "observer"
+      ]
+    },
+    "ScopeType": {
+      "type": "string",
+      "enum": [
+        "global",
+        "course"
+      ]
+    },
+    "CourseState": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ]
+    },
+    "Visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "authenticated",
+        "private"
+      ]
+    },
+    "TopicType": {
+      "type": "string",
+      "enum": [
+        "instruction",
+        "exam",
+        "project",
+        "embedded",
+        "video"
+      ]
+    },
+    "TopicStatus": {
+      "type": "string",
+      "enum": [
+        "stub",
+        "draft",
+        "published",
+        "archived"
+      ]
+    },
+    "ErrorEnvelope": {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "object",
+          "required": [
+            "category",
+            "code",
+            "message",
+            "retryable",
+            "details",
+            "requestId"
+          ],
+          "properties": {
+            "category": {
+              "type": "string",
+              "enum": [
+                "validation",
+                "permission",
+                "auth",
+                "conflict",
+                "not_found",
+                "rate_limit",
+                "integration",
+                "system"
+              ]
+            },
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            },
+            "details": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "requestId": {
+              "$ref": "#/$defs/Uuid"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "UserSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "email",
+        "displayName"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RoleAssignmentSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "userId",
+        "role",
+        "scopeType",
+        "scopeId"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "userId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "scopeType": {
+          "$ref": "#/$defs/ScopeType"
+        },
+        "scopeId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObserverSession": {
+      "type": "object",
+      "required": [
+        "id",
+        "actorUserId",
+        "observedUserId",
+        "assumedByRole",
+        "startedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "actorUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "observedUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "assumedByRole": {
+          "type": "string",
+          "enum": [
+            "observer",
+            "mentor",
+            "editor",
+            "root"
+          ]
+        },
+        "startedAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "endedAt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/IsoTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "CourseSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "slug",
+        "name",
+        "title",
+        "description",
+        "state",
+        "visibility"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/CourseState"
+        },
+        "visibility": {
+          "$ref": "#/$defs/Visibility"
+        }
+      },
+      "additionalProperties": true
+    },
+    "EnrollmentSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "userId",
+        "courseId",
+        "status",
+        "masteryPercent"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "userId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "completed",
+            "withdrawn"
+          ]
+        },
+        "masteryPercent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "lastTopicId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "startedAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "completedAt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/IsoTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "JobResource": {
+      "type": "object",
+      "required": [
+        "id",
+        "jobType",
+        "status",
+        "createdAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "jobType": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "success",
+            "partial_failure",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "courseId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "startedAt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/IsoTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "completedAt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/IsoTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "ObserverSessionStartRequest": {
+      "type": "object",
+      "required": [
+        "observedUserId"
+      ],
+      "properties": {
+        "observedUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "contextCourseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CourseCreateRequest": {
+      "type": "object",
+      "required": [
+        "name",
+        "title",
+        "description",
+        "owner",
+        "repository",
+        "creationMode"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "creationMode": {
+          "type": "string",
+          "enum": [
+            "template",
+            "ai_generated"
+          ]
+        },
+        "templateRepository": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CoursePatchRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "state": {
+          "$ref": "#/$defs/CourseState"
+        },
+        "visibility": {
+          "$ref": "#/$defs/Visibility"
+        },
+        "deleteProtected": {
+          "type": "boolean"
+        },
+        "externalRefs": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "CourseDefinitionWriteRequest": {
+      "type": "object",
+      "required": [
+        "definition",
+        "baseCommitSha",
+        "commitMessage"
+      ],
+      "properties": {
+        "definition": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "baseCommitSha": {
+          "type": "string",
+          "minLength": 6
+        },
+        "commitMessage": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "EnrollmentCreateRequest": {
+      "type": "object",
+      "required": [
+        "courseId"
+      ],
+      "properties": {
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "InteractionAttemptCreateRequest": {
+      "type": "object",
+      "required": [
+        "type",
+        "payload"
+      ],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExamSessionCreateRequest": {
+      "type": "object",
+      "required": [
+        "courseId",
+        "topicId",
+        "enrollmentId"
+      ],
+      "properties": {
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "topicId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "enrollmentId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ExamSubmissionRequest": {
+      "type": "object",
+      "required": [
+        "answers"
+      ],
+      "properties": {
+        "answers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "interactionId",
+              "payload"
+            ],
+            "properties": {
+              "interactionId": {
+                "$ref": "#/$defs/Uuid"
+              },
+              "payload": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "NoteCreateRequest": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "sectionKey": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotePatchRequest": {
+      "type": "object",
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "DiscussionMessageRequest": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "activeSection": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conversationMessages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "role",
+              "content"
+            ],
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "user",
+                  "model"
+                ]
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "TopicContentWriteRequest": {
+      "type": "object",
+      "required": [
+        "path",
+        "content",
+        "baseCommitSha",
+        "commitMessage"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string"
+        },
+        "baseCommitSha": {
+          "type": "string",
+          "minLength": 6
+        },
+        "commitMessage": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "AiCommitMessageRequest": {
+      "type": "object",
+      "required": [
+        "path",
+        "baseCommitSha",
+        "proposedContent"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseCommitSha": {
+          "type": "string",
+          "minLength": 6
+        },
+        "proposedContent": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TopicFileUploadRequest": {
+      "type": "object",
+      "required": [
+        "fileName",
+        "contentBase64"
+      ],
+      "properties": {
+        "fileName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contentType": {
+          "type": "string"
+        },
+        "contentBase64": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "RoleAssignmentCreateRequest": {
+      "type": "object",
+      "required": [
+        "userId",
+        "role"
+      ],
+      "properties": {
+        "userId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "mentor",
+            "editor"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObserverDelegationCreateRequest": {
+      "type": "object",
+      "required": [
+        "observerUserId",
+        "observedUserId"
+      ],
+      "properties": {
+        "observerUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "observedUserId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SearchReindexJobRequest": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ContentRefreshJobRequest": {
+      "type": "object",
+      "properties": {
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CanvasExportJobRequest": {
+      "type": "object",
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "full",
+            "incremental"
+          ]
+        },
+        "topicId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "cleanupFirst": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CanvasExportRepairRequest": {
+      "type": "object",
+      "properties": {
+        "nonDestructive": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "UsersQuery": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 2
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DashboardQuery": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "includeCompleted": {
+          "type": "boolean"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CommitsQuery": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DiffQuery": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseSha": {
+          "type": "string"
+        },
+        "headSha": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NotesQuery": {
+      "type": "object",
+      "properties": {
+        "sectionKey": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObserverDelegationsQuery": {
+      "type": "object",
+      "properties": {
+        "observerUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "observedUserId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SearchQuery": {
+      "type": "object",
+      "required": [
+        "courseId",
+        "query"
+      ],
+      "properties": {
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 2
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ProgressQuery": {
+      "type": "object",
+      "properties": {
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "topicId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "interactionId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "eventTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "endAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "subjectUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "MetricsQuery": {
+      "type": "object",
+      "properties": {
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "eventTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "groupBy": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "hour",
+              "day",
+              "week",
+              "eventType",
+              "topic"
+            ]
+          }
+        },
+        "startAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "endAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "subjectUserId": {
+          "$ref": "#/$defs/Uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SessionBootstrapResponse": {
+      "type": "object",
+      "required": [
+        "sessionStatus",
+        "user",
+        "effectiveRoles",
+        "observerSession",
+        "capabilities"
+      ],
+      "properties": {
+        "sessionStatus": {
+          "type": "string",
+          "enum": [
+            "anonymous",
+            "authenticated",
+            "expired"
+          ]
+        },
+        "user": {
+          "$ref": "#/$defs/UserSummary"
+        },
+        "effectiveRoles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RoleAssignmentSummary"
+          }
+        },
+        "observerSession": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ObserverSession"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capabilities": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObserverSessionResource": {
+      "type": "object",
+      "required": [
+        "observerSession"
+      ],
+      "properties": {
+        "observerSession": {
+          "$ref": "#/$defs/ObserverSession"
+        }
+      },
+      "additionalProperties": false
+    },
+    "UserSearchResult": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor",
+        "hasMore"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UserSummary"
+          }
+        },
+        "nextCursor": {
+          "$ref": "#/$defs/Cursor"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DashboardViewResource": {
+      "type": "object",
+      "required": [
+        "summary",
+        "enrolledCourses",
+        "discoverableCourses",
+        "nextCursor",
+        "hasMore"
+      ],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "required": [
+            "activeEnrollmentCount",
+            "completedEnrollmentCount",
+            "discoverableCourseCount"
+          ],
+          "properties": {
+            "activeEnrollmentCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "completedEnrollmentCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "discoverableCourseCount": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "enrolledCourses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "discoverableCourses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "nextCursor": {
+          "$ref": "#/$defs/Cursor"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CourseListResponse": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor",
+        "hasMore"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CourseSummary"
+          }
+        },
+        "nextCursor": {
+          "$ref": "#/$defs/Cursor"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CourseResource": {
+      "$ref": "#/$defs/CourseSummary"
+    },
+    "CourseCreateResponse": {
+      "type": "object",
+      "required": [
+        "course",
+        "provisioning"
+      ],
+      "properties": {
+        "course": {
+          "$ref": "#/$defs/CourseSummary"
+        },
+        "provisioning": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "CourseDefinitionResource": {
+      "type": "object",
+      "required": [
+        "courseId",
+        "definitionVersion",
+        "contentVersionMarker",
+        "modules",
+        "topics"
+      ],
+      "properties": {
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "definitionVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "contentVersionMarker": {
+          "type": "string"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "topics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "CourseDefinitionWriteResult": {
+      "type": "object",
+      "required": [
+        "definitionVersion",
+        "commitSha",
+        "contentVersionMarker",
+        "indexing"
+      ],
+      "properties": {
+        "definitionVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "commitSha": {
+          "type": "string"
+        },
+        "contentVersionMarker": {
+          "type": "string"
+        },
+        "indexing": {
+          "type": "object",
+          "required": [
+            "status",
+            "warning"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "updated",
+                "queued",
+                "failed"
+              ]
+            },
+            "warning": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "EnrollmentResource": {
+      "$ref": "#/$defs/EnrollmentSummary"
+    },
+    "TopicContentResource": {
+      "type": "object",
+      "required": [
+        "topicId",
+        "content",
+        "contentRef"
+      ],
+      "properties": {
+        "topicId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "content": {
+          "type": "string"
+        },
+        "contentRef": {
+          "type": "object",
+          "required": [
+            "provider",
+            "repository",
+            "path",
+            "etag",
+            "commitSha"
+          ],
+          "properties": {
+            "provider": {
+              "const": "github"
+            },
+            "repository": {
+              "type": "string"
+            },
+            "path": {
+              "type": "string"
+            },
+            "etag": {
+              "type": "string"
+            },
+            "commitSha": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "InteractionAttemptResource": {
+      "type": "object",
+      "required": [
+        "id",
+        "courseId",
+        "topicId",
+        "interactionId",
+        "enrollmentId",
+        "userId",
+        "attemptNumber",
+        "submittedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "topicId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "interactionId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "enrollmentId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "userId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "attemptNumber": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "submittedAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "ExamSessionResource": {
+      "type": "object",
+      "required": [
+        "id",
+        "courseId",
+        "topicId",
+        "enrollmentId",
+        "userId",
+        "state",
+        "createdAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "topicId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "enrollmentId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "userId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "in_progress",
+            "submitted",
+            "graded"
+          ]
+        },
+        "createdAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        }
+      },
+      "additionalProperties": true
+    },
+    "ExamSubmissionResult": {
+      "type": "object",
+      "required": [
+        "examSessionId",
+        "state"
+      ],
+      "properties": {
+        "examSessionId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "submitted",
+            "graded"
+          ]
+        },
+        "summary": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "NoteResource": {
+      "type": "object",
+      "required": [
+        "id",
+        "courseId",
+        "topicId",
+        "enrollmentId",
+        "userId",
+        "content",
+        "createdAt",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "courseId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "topicId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "enrollmentId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "userId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "sectionKey": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "content": {
+          "type": "string"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "updatedAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NoteListResult": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor",
+        "hasMore"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NoteResource"
+          }
+        },
+        "nextCursor": {
+          "$ref": "#/$defs/Cursor"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DiscussionMessageResult": {
+      "type": "object",
+      "required": [
+        "reply",
+        "contextWindow"
+      ],
+      "properties": {
+        "reply": {
+          "type": "object",
+          "required": [
+            "role",
+            "content"
+          ],
+          "properties": {
+            "role": {
+              "const": "model"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "contextWindow": {
+          "type": "object",
+          "required": [
+            "messageCountUsed",
+            "notesIncluded"
+          ],
+          "properties": {
+            "messageCountUsed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "notesIncluded": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "TopicContentWriteResult": {
+      "type": "object",
+      "required": [
+        "commitSha",
+        "contentVersionMarker",
+        "indexing"
+      ],
+      "properties": {
+        "commitSha": {
+          "type": "string"
+        },
+        "contentVersionMarker": {
+          "type": "string"
+        },
+        "indexing": {
+          "type": "object",
+          "required": [
+            "status",
+            "warning"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "updated",
+                "queued",
+                "failed"
+              ]
+            },
+            "warning": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "AiCommitMessageResult": {
+      "type": "object",
+      "required": [
+        "suggestedMessage",
+        "generated",
+        "timedOut"
+      ],
+      "properties": {
+        "suggestedMessage": {
+          "type": "string"
+        },
+        "generated": {
+          "type": "boolean"
+        },
+        "timedOut": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CommitHistoryResult": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor",
+        "hasMore"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "sha",
+              "author",
+              "timestamp",
+              "message"
+            ],
+            "properties": {
+              "sha": {
+                "type": "string"
+              },
+              "author": {
+                "type": "string"
+              },
+              "timestamp": {
+                "$ref": "#/$defs/IsoTimestamp"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "$ref": "#/$defs/Cursor"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DiffResult": {
+      "type": "object",
+      "required": [
+        "path",
+        "baseSha",
+        "headSha",
+        "diff"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "baseSha": {
+          "type": "string"
+        },
+        "headSha": {
+          "type": "string"
+        },
+        "diff": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TopicFileListResult": {
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "name"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "contentType": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "RoleAssignmentListResult": {
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RoleAssignmentSummary"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObserverDelegationResource": {
+      "type": "object",
+      "required": [
+        "id",
+        "observerUserId",
+        "observedUserId",
+        "createdAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "observerUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "observedUserId": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "revokedAt": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/IsoTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ObserverDelegationListResult": {
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObserverDelegationResource"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "SearchResult": {
+      "type": "object",
+      "required": [
+        "query",
+        "matches",
+        "nextCursor",
+        "hasMore"
+      ],
+      "properties": {
+        "query": {
+          "type": "string"
+        },
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "topicId",
+              "topicTitle",
+              "headlines",
+              "rank"
+            ],
+            "properties": {
+              "topicId": {
+                "$ref": "#/$defs/Uuid"
+              },
+              "topicTitle": {
+                "type": "string"
+              },
+              "headlines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rank": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "$ref": "#/$defs/Cursor"
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ActivityEnvelope": {
+      "type": "object",
+      "required": [
+        "id",
+        "eventType",
+        "happenedAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "eventType": {
+          "type": "string"
+        },
+        "happenedAt": {
+          "$ref": "#/$defs/IsoTimestamp"
+        },
+        "courseId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "topicId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interactionId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "durationSec": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceType": {
+          "type": "string"
+        },
+        "sourceId": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "number",
+              "string",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "ProgressResult": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor",
+        "hasMore"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ActivityEnvelope"
+          }
+        },
+        "nextCursor": {
+          "$ref": "#/$defs/Cursor"
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "totalCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "MetricsResult": {
+      "type": "object",
+      "required": [
+        "summary",
+        "series"
+      ],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "required": [
+            "totalActivities",
+            "totalDurationSec",
+            "averageDurationSec",
+            "firstActivityAt",
+            "lastActivityAt"
+          ],
+          "properties": {
+            "totalActivities": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalDurationSec": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "averageDurationSec": {
+              "type": "number",
+              "minimum": 0
+            },
+            "firstActivityAt": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/IsoTimestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastActivityAt": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/IsoTimestamp"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "series": {
+          "type": "object",
+          "required": [
+            "byHour",
+            "byDay",
+            "byWeek",
+            "byEventType",
+            "topTopics"
+          ],
+          "properties": {
+            "byHour": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "byDay": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "byWeek": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "byEventType": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            },
+            "topTopics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

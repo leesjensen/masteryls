@@ -1,0 +1,441 @@
+{
+  "apiContract": "1.0.0",
+  "schemaBundle": "./api-contracts.schema.json",
+  "mediaType": "application/json",
+  "endpoints": [
+    {
+      "operationId": "session.get",
+      "method": "GET",
+      "path": "/session",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/SessionBootstrapResponse",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "session.observer.start",
+      "method": "POST",
+      "path": "/session/observer",
+      "requestSchema": "./api-contracts.schema.json#/$defs/ObserverSessionStartRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/ObserverSessionResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "session.observer.stop",
+      "method": "DELETE",
+      "path": "/session/observer",
+      "responseSchemas": {
+        "204": null,
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "users.list",
+      "method": "GET",
+      "path": "/users",
+      "querySchema": "./api-contracts.schema.json#/$defs/UsersQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/UserSearchResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "dashboard.get",
+      "method": "GET",
+      "path": "/dashboard",
+      "querySchema": "./api-contracts.schema.json#/$defs/DashboardQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/DashboardViewResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courses.list",
+      "method": "GET",
+      "path": "/courses",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/CourseListResponse",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courses.create",
+      "method": "POST",
+      "path": "/courses",
+      "requestSchema": "./api-contracts.schema.json#/$defs/CourseCreateRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/CourseCreateResponse",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courses.get",
+      "method": "GET",
+      "path": "/courses/{courseId}",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/CourseResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courses.update",
+      "method": "PATCH",
+      "path": "/courses/{courseId}",
+      "requestSchema": "./api-contracts.schema.json#/$defs/CoursePatchRequest",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/CourseResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courses.delete",
+      "method": "DELETE",
+      "path": "/courses/{courseId}",
+      "responseSchemas": {
+        "204": null,
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courseDefinition.get",
+      "method": "GET",
+      "path": "/courses/{courseId}/definition",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/CourseDefinitionResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courseDefinition.update",
+      "method": "PUT",
+      "path": "/courses/{courseId}/definition",
+      "requestSchema": "./api-contracts.schema.json#/$defs/CourseDefinitionWriteRequest",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/CourseDefinitionWriteResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "enrollments.create",
+      "method": "POST",
+      "path": "/enrollments",
+      "requestSchema": "./api-contracts.schema.json#/$defs/EnrollmentCreateRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/EnrollmentResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "enrollments.delete",
+      "method": "DELETE",
+      "path": "/enrollments/{enrollmentId}",
+      "responseSchemas": {
+        "204": null,
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "topicContent.get",
+      "method": "GET",
+      "path": "/courses/{courseId}/topics/{topicId}/content",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/TopicContentResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "topicAttempts.create",
+      "method": "POST",
+      "path": "/courses/{courseId}/topics/{topicId}/interactions/{interactionId}/attempts",
+      "requestSchema": "./api-contracts.schema.json#/$defs/InteractionAttemptCreateRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/InteractionAttemptResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "examSessions.create",
+      "method": "POST",
+      "path": "/exam-sessions",
+      "requestSchema": "./api-contracts.schema.json#/$defs/ExamSessionCreateRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/ExamSessionResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "examSessions.get",
+      "method": "GET",
+      "path": "/exam-sessions/{examSessionId}",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/ExamSessionResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "examSessions.submit",
+      "method": "POST",
+      "path": "/exam-sessions/{examSessionId}/submissions",
+      "requestSchema": "./api-contracts.schema.json#/$defs/ExamSubmissionRequest",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/ExamSubmissionResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "notes.list",
+      "method": "GET",
+      "path": "/courses/{courseId}/topics/{topicId}/notes",
+      "querySchema": "./api-contracts.schema.json#/$defs/NotesQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/NoteListResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "notes.create",
+      "method": "POST",
+      "path": "/courses/{courseId}/topics/{topicId}/notes",
+      "requestSchema": "./api-contracts.schema.json#/$defs/NoteCreateRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/NoteResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "notes.update",
+      "method": "PATCH",
+      "path": "/notes/{noteId}",
+      "requestSchema": "./api-contracts.schema.json#/$defs/NotePatchRequest",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/NoteResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "notes.delete",
+      "method": "DELETE",
+      "path": "/notes/{noteId}",
+      "responseSchemas": {
+        "204": null,
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "discussion.messages.create",
+      "method": "POST",
+      "path": "/courses/{courseId}/topics/{topicId}/discussion/messages",
+      "requestSchema": "./api-contracts.schema.json#/$defs/DiscussionMessageRequest",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/DiscussionMessageResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "authoring.topicContent.update",
+      "method": "PUT",
+      "path": "/courses/{courseId}/topics/{topicId}/content",
+      "requestSchema": "./api-contracts.schema.json#/$defs/TopicContentWriteRequest",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/TopicContentWriteResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "authoring.commitMessage.suggest",
+      "method": "POST",
+      "path": "/courses/{courseId}/topics/{topicId}/ai-commit-message",
+      "requestSchema": "./api-contracts.schema.json#/$defs/AiCommitMessageRequest",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/AiCommitMessageResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "commits.list",
+      "method": "GET",
+      "path": "/courses/{courseId}/commits",
+      "querySchema": "./api-contracts.schema.json#/$defs/CommitsQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/CommitHistoryResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "diff.get",
+      "method": "GET",
+      "path": "/courses/{courseId}/diff",
+      "querySchema": "./api-contracts.schema.json#/$defs/DiffQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/DiffResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "topicFiles.list",
+      "method": "GET",
+      "path": "/courses/{courseId}/topics/{topicId}/files",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/TopicFileListResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "topicFiles.upload",
+      "method": "POST",
+      "path": "/courses/{courseId}/topics/{topicId}/files",
+      "requestSchema": "./api-contracts.schema.json#/$defs/TopicFileUploadRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/TopicFileListResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "topicFiles.delete",
+      "method": "DELETE",
+      "path": "/courses/{courseId}/topics/{topicId}/files/{filePath}",
+      "responseSchemas": {
+        "204": null,
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courseRoleAssignments.list",
+      "method": "GET",
+      "path": "/courses/{courseId}/role-assignments",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/RoleAssignmentListResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courseRoleAssignments.create",
+      "method": "POST",
+      "path": "/courses/{courseId}/role-assignments",
+      "requestSchema": "./api-contracts.schema.json#/$defs/RoleAssignmentCreateRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/RoleAssignmentSummary",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "courseRoleAssignments.delete",
+      "method": "DELETE",
+      "path": "/role-assignments/{roleAssignmentId}",
+      "responseSchemas": {
+        "204": null,
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "observerDelegations.list",
+      "method": "GET",
+      "path": "/observer-delegations",
+      "querySchema": "./api-contracts.schema.json#/$defs/ObserverDelegationsQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/ObserverDelegationListResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "observerDelegations.create",
+      "method": "POST",
+      "path": "/observer-delegations",
+      "requestSchema": "./api-contracts.schema.json#/$defs/ObserverDelegationCreateRequest",
+      "responseSchemas": {
+        "201": "./api-contracts.schema.json#/$defs/ObserverDelegationResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "observerDelegations.delete",
+      "method": "DELETE",
+      "path": "/observer-delegations/{observerDelegationId}",
+      "responseSchemas": {
+        "204": null,
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "jobs.searchReindex.create",
+      "method": "POST",
+      "path": "/courses/{courseId}/search-reindex-jobs",
+      "requestSchema": "./api-contracts.schema.json#/$defs/SearchReindexJobRequest",
+      "responseSchemas": {
+        "202": "./api-contracts.schema.json#/$defs/JobResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "jobs.contentRefresh.create",
+      "method": "POST",
+      "path": "/courses/{courseId}/content-refresh-jobs",
+      "requestSchema": "./api-contracts.schema.json#/$defs/ContentRefreshJobRequest",
+      "responseSchemas": {
+        "202": "./api-contracts.schema.json#/$defs/JobResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "jobs.get",
+      "method": "GET",
+      "path": "/jobs/{jobId}",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/JobResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "canvasExportJobs.create",
+      "method": "POST",
+      "path": "/courses/{courseId}/canvas-export-jobs",
+      "requestSchema": "./api-contracts.schema.json#/$defs/CanvasExportJobRequest",
+      "responseSchemas": {
+        "202": "./api-contracts.schema.json#/$defs/JobResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "canvasExportJobs.repair",
+      "method": "POST",
+      "path": "/canvas-export-jobs/{exportJobId}/repairs",
+      "requestSchema": "./api-contracts.schema.json#/$defs/CanvasExportRepairRequest",
+      "responseSchemas": {
+        "202": "./api-contracts.schema.json#/$defs/JobResource",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "search.get",
+      "method": "GET",
+      "path": "/search",
+      "querySchema": "./api-contracts.schema.json#/$defs/SearchQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/SearchResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "progress.get",
+      "method": "GET",
+      "path": "/progress",
+      "querySchema": "./api-contracts.schema.json#/$defs/ProgressQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/ProgressResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    },
+    {
+      "operationId": "metrics.get",
+      "method": "GET",
+      "path": "/metrics",
+      "querySchema": "./api-contracts.schema.json#/$defs/MetricsQuery",
+      "responseSchemas": {
+        "200": "./api-contracts.schema.json#/$defs/MetricsResult",
+        "default": "./api-contracts.schema.json#/$defs/ErrorEnvelope"
+      }
+    }
+  ]
+}

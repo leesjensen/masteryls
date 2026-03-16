@@ -166,6 +166,8 @@ Its canonical schema is defined in `course-json-schema.md` and `schemas/course-j
 - [Search, Progress, And Metrics](./search-progress-metrics.md)
 - [Integrations: Supabase, GitHub, Gemini, Canvas](./integrations.md)
 - [API Contracts](./api-contracts.md)
+- [API Schema Bundle](./schemas/api/api-contracts.schema.json)
+- [API Endpoint Map](./schemas/api/endpoint-map.json)
 - [Policy Defaults](./policy-defaults.md)
 - [Database Schema And Migrations](./database-schema-migrations.md)
 - [Error Handling And Resilience](./error-resilience.md)

@@ -17,6 +17,9 @@ Owner: Spec workflow (interactive)
 - Auth flow boundary is now explicit: Supabase Auth SDK handles OTP/session; app API handles operational domain data.
 - API contracts now include explicit bootstrap, dashboard, discussion AI, role/delegation, maintenance, and file-operation endpoint coverage.
 - API query/filter naming is normalized (`query`, `eventTypes`, `startAt`, `endAt`).
+- File-based API schema artifacts now exist:
+  - `specification/schemas/api/api-contracts.schema.json`
+  - `specification/schemas/api/endpoint-map.json`
 - View-model schema layer now exists with per-screen JSON schemas under `specification/ui/schemas/*`.
 - UI manifests now include `viewModelSchema` pointers to per-screen schema files.
 - Component contract schema layer now exists under `specification/ui/schemas/components/*`.
@@ -89,15 +92,16 @@ Date: 2026-03-12
   - Generation order, IR requirements, determinism rules, and acceptance gates are now specified.
   - Generation run checklist defines executable stage expectations.
 - Remaining:
-  - Define concrete API request/response JSON schema files if generator tooling requires file-based schema refs beyond markdown contracts.
+  - Add optional fixture pack of canonical API request/response examples for contract test generation.
 
 ## Next Steps (Keep This List Current)
 Update rule: when a step is completed, move it to `Completed` with completion date and add the next highest-value pending step.
 
 Pending:
-1. Define concrete API request/response JSON schema files (for direct OpenAPI emitters) if generator implementation requires file-based refs.
+1. Add optional fixture pack of canonical API request/response examples for contract test generation.
 
 Completed:
+- 2026-03-12: Added file-based API contract artifacts (`specification/schemas/api/api-contracts.schema.json`, `specification/schemas/api/endpoint-map.json`) and linked them from `api-contracts.md`/`generation-blueprint.md`; endpoint coverage now matches all API contract routes.
 - 2026-03-12: Expanded `specification/api-contracts.md` to close endpoint coverage gaps (session bootstrap, dashboard, discussion AI, role/delegation admin, maintenance jobs, file operations) and normalized query/filter naming (`query`, `eventTypes`, `startAt`, `endAt`).
 - 2026-03-12: Added canonical policy defaults artifacts (`specification/policy-defaults.md`, `specification/policy-defaults.json`) and linked policy-driven specs to explicit default keys.
 - 2026-03-12: Added canonical `course.json` schema artifacts (`specification/course-json-schema.md`, `specification/schemas/course-json.schema.json`) for machine-derivable validation.
@@ -128,6 +132,8 @@ Completed:
 - `specification/schemas/course-json.schema.json`
 - `specification/generation-blueprint.md`
 - `specification/generation-run-checklist.md`
+- `specification/schemas/api/api-contracts.schema.json`
+- `specification/schemas/api/endpoint-map.json`
 - `specification/ui/baselines/ui-conformance-baseline.json`
 - `specification/ui/baselines/ui-conformance-waivers.json`
 - `specification/ui/ui-conformance-gap-matrix.md`

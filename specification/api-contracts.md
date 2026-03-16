@@ -97,6 +97,17 @@ Request correlation IDs must also be returned via `X-Request-Id` response header
   - repeated query fields or comma-separated values for enums
   - date filters use ISO timestamps (`startAt`, `endAt`)
 
+## File-Based API Schema Artifacts
+Canonical machine-readable API schema artifacts:
+- `schemas/api/api-contracts.schema.json` (request/query/response schemas)
+- `schemas/api/endpoint-map.json` (operationId + method/path + schema refs)
+
+Contract rules:
+- Every endpoint defined in this document must exist in `endpoint-map.json`.
+- Every request/query/response schema ref in `endpoint-map.json` must resolve to `api-contracts.schema.json`.
+- `ErrorEnvelope` is the default non-success schema for all operations.
+- Any inline schema name in this document (for example `ObserverSessionStartRequest`) resolves to `schemas/api/api-contracts.schema.json#/$defs/<SchemaName>`.
+
 ## Endpoint Groups
 
 ## 1) Session And Identity
@@ -506,6 +517,7 @@ Generation requirements:
 - each error code must map to standardized error envelope
 - each endpoint must declare auth requirement and observer-mode write policy
 - operation identifiers should be deterministic (`<resource>.<action>`) and stable across generations
+- generated OpenAPI should be derivable directly from `schemas/api/endpoint-map.json` + `schemas/api/api-contracts.schema.json`
 
 ## Legacy Gaps Addressed
 - Replaces implicit service calls with explicit API contracts.

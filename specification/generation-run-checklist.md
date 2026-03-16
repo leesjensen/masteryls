@@ -24,6 +24,8 @@ Required checks:
 - markdown reference graph resolves
 - JSON schemas parse
 - API contracts include request/response schema IDs
+- `schemas/api/endpoint-map.json` covers every endpoint in `api-contracts.md`
+- every schema ref in `schemas/api/endpoint-map.json` resolves in `schemas/api/api-contracts.schema.json`
 - UI manifests link valid screen and schema contracts
 
 ### 2. Build Deterministic IR

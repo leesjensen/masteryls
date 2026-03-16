@@ -38,6 +38,8 @@ This profile is the default for reproducibility. Alternate profiles are allowed 
 - Domain contracts: `domain-model.md`
 - Authz policy: `auth-authorization.md`
 - API contracts: `api-contracts.md`
+- API schema bundle: `schemas/api/api-contracts.schema.json`
+- API endpoint mapping: `schemas/api/endpoint-map.json`
 - DB schema/migrations: `database-schema-migrations.md`
 - Resilience/security: `error-resilience.md`, `security-threat-model.md`
 - UI contracts: `ui/manifests/*.ui-manifest.json`, `ui/schemas/*.json`, `ui/schemas/components/*.json`
@@ -107,6 +109,8 @@ Execution sequencing and expected artifacts are additionally defined in:
 - all JSON schemas parse and validate
 - `schemas/course-json.schema.json` validates canonical `course.json` fixtures
 - `policy-defaults.json` parses and is referenced by policy-driven specs
+- every endpoint in `api-contracts.md` is covered by `schemas/api/endpoint-map.json`
+- every schema ref in `schemas/api/endpoint-map.json` resolves in `schemas/api/api-contracts.schema.json`
 - manifest state sets match view-model schema enums
 - manifest allowed components are covered by component contract registry
 - API error shape matches `error-resilience.md`
