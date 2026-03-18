@@ -670,7 +670,7 @@ async function navigateToCourse(page: any) {
 }
 
 async function navigateToCourseNoLogin(page: any) {
-  await page.goto('http://localhost:5173/');
+  await page.goto('http://localhost:5173/demo-courses');
 
   // Open the course
   await page.getByText('Rocket Science').click();

@@ -3,13 +3,7 @@ import { initBasicCourse, navigateToCourse, navigateToCourseNoLogin } from './te
 
 test('unregistered user', async ({ page }) => {
   await initBasicCourse({ page });
-  await page.goto('http://localhost:5173/');
-
-  await page
-    .locator('div')
-    .filter({ hasText: /^Rocket Science$/ })
-    .first()
-    .click();
+  await navigateToCourseNoLogin(page);
 
   await expect(page.getByText('markdown!')).toBeVisible();
 });
