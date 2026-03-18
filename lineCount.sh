@@ -2,7 +2,8 @@
 
 # Count lines of code by file type, excluding third-party and generated files
 
-ROOT="$(dirname "$0")"
+#ROOT="$(dirname "$0")"
+ROOT="."
 
 EXCLUDES=(
   '*/node_modules/*'
@@ -25,6 +26,7 @@ done
 
 EXTENSIONS=(jsx js ts tsx css html md sql yml json)
 
+printf "\nExamining directory: %s\n" "$ROOT"
 printf "\n%-10s %6s %8s\n" "Type" "Files" "Lines"
 printf "%-10s %6s %8s\n" "----------" "------" "--------"
 
