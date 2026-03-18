@@ -12,6 +12,7 @@ import MetricsView from './views/metrics/metricsView.jsx';
 import CourseCreationView from './views/courseCreation/courseCreationView.jsx';
 import CourseExportView from './views/courseExport/courseExportView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
+import AboutView from './views/about/aboutView.jsx';
 import ErrorPage from './components/errorPage.jsx';
 import service from './service/service.js';
 
@@ -23,6 +24,7 @@ export function createAppRouter(user) {
       errorElement: <ErrorPage user={user} />,
       children: [
         { index: true, element: <StartPage /> },
+        { path: 'about', element: <AboutPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'course/:courseId/topic/:topicId', element: <ClassroomPage /> },
@@ -105,6 +107,11 @@ function DashboardPage() {
   const { courseOps, service, user } = useOutletContext();
   service.removeCourseUiSettings();
   return <DashboardView courseOps={courseOps} service={service} user={user} />;
+}
+
+function AboutPage() {
+  const { courseOps } = useOutletContext();
+  return <AboutView courseOps={courseOps} />;
 }
 
 function MetricsPage() {
