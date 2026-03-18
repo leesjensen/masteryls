@@ -28,9 +28,12 @@ const Start = ({ courseOps }) => {
           <div className="w-full max-w-md">
             <Login courseOps={courseOps} />
           </div>
-          <div className="mt-5 text-center w-full max-w-md">
+          <div className="mt-5 w-full max-w-md flex items-center justify-center gap-6 text-sm sm:text-base">
+            <button onClick={() => navigate('/demo-courses')} className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
+              Demo
+            </button>
             <button onClick={() => navigate('/about')} className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
-              Learn more about Mastery LS
+              About
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
 
@@ -13,44 +13,34 @@ const stockImages = {
   contact: 'https://images.unsplash.com/photo-1423666639041-f56000c27a9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1473&h=980',
 };
 
-function AboutView({ courseOps }) {
-  const [catalog, setCatalog] = useState([]);
-
+function AboutView() {
+  const navigate = useNavigate();
   useEffect(() => {
     updateAppBar({ title: 'About', tools: null });
   }, []);
 
-  useEffect(() => {
-    const c = courseOps.courseCatalog() || [];
-    setCatalog(c);
-  }, [courseOps]);
-
   return (
     <div>
-      {catalog.length > 0 && (
-        <section id="catalog-section" className="py-16 bg-amber-50">
-          <div className="max-w-7xl mx-auto px-8">
-            <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Try a course</h2>
-
-            <div className="max-w-xl mx-auto">
-              <label className="block text-xl font-medium text-gray-800 mb-4">
-                Browse a course without creating an account. Register to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
-              </label>
-
-              <div role="listbox" aria-label="Courses" tabIndex={0} className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
-                {catalog.map((entry) => (
-                  <CourseEntry key={entry.id} entry={entry} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      <section className="py-14 bg-amber-50 border-b border-amber-100">
+        <div className="max-w-4xl mx-auto px-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-5">What is Mastery LS?</h1>
+          <p className="text-lg text-gray-700 leading-relaxed">Mastery LS is a modern learning platform that combines expert-led instruction with AI-powered support so you can learn faster, practice with purpose, and make measurable progress. MasteryLS helps you spend less time guessing what to study next and more time building real skills through guided projects, personalized feedback, and clear progress tracking.</p>
+          <p className="text-lg text-gray-700 leading-relaxed mt-4">
+            Whether you're looking to break into a new field, upskill for your current job, or just learn something new, Mastery LS provides the tools and support you need to succeed.{' '}
+            <a onClick={() => navigate('/')} className="text-amber-600 hover:text-amber-800 cursor-pointer">
+              Create an account
+            </a>{' '}
+            today to start your mastery of new skills and achieve your learning goals.
+          </p>
+        </div>
+      </section>
 
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-8">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Take a tour with us</h2>
-          <iframe width="560" height="315" src="https://www.youtube.com/embed/HXNx_Gp0jyM" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+          <div className="flex justify-center">
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/HXNx_Gp0jyM" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+          </div>
         </div>
       </section>
 
@@ -77,7 +67,7 @@ function AboutView({ courseOps }) {
               <p className="text-amber-200 text-lg">Active Learners</p>
             </div>
             <div className="text-white">
-              <h3 className="text-4xl font-bold mb-2">{catalog.length}</h3>
+              <h3 className="text-4xl font-bold mb-2">12</h3>
               <p className="text-amber-200 text-lg">Courses Available</p>
             </div>
             <div className="text-white">
@@ -135,25 +125,6 @@ function PromoCard({ image, title, description }) {
       <img src={image} alt={title} className="w-full h-48 object-cover rounded-lg mb-6 hover:scale-103 transition-transform duration-300" />
       <h3 className="text-2xl font-semibold text-gray-900 mb-4">{title}</h3>
       <p className="text-gray-600 leading-relaxed">{description}</p>
-    </div>
-  );
-}
-
-function CourseEntry({ entry }) {
-  const navigate = useNavigate();
-  return (
-    <div
-      role="option"
-      onClick={() => {
-        navigate(`/course/${entry.id}`);
-      }}
-      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-200'}
-    >
-      <div className="flex items-center justify-between">
-        <div className="font-semibold text-amber-600">{entry.title}</div>
-        <div className="text-sm text-gray-500">{entry.duration || ''}</div>
-      </div>
-      {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}
     </div>
   );
 }

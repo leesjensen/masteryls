@@ -13,6 +13,7 @@ import CourseCreationView from './views/courseCreation/courseCreationView.jsx';
 import CourseExportView from './views/courseExport/courseExportView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
 import AboutView from './views/about/aboutView.jsx';
+import DemoCoursesView from './views/demoCourses/demoCoursesView.jsx';
 import ErrorPage from './components/errorPage.jsx';
 import service from './service/service.js';
 
@@ -24,6 +25,7 @@ export function createAppRouter(user) {
       errorElement: <ErrorPage user={user} />,
       children: [
         { index: true, element: <StartPage /> },
+        { path: 'demo-courses', element: <DemoCoursesPage /> },
         { path: 'about', element: <AboutPage /> },
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
@@ -110,8 +112,12 @@ function DashboardPage() {
 }
 
 function AboutPage() {
+  return <AboutView />;
+}
+
+function DemoCoursesPage() {
   const { courseOps } = useOutletContext();
-  return <AboutView courseOps={courseOps} />;
+  return <DemoCoursesView courseOps={courseOps} />;
 }
 
 function MetricsPage() {
