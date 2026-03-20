@@ -121,3 +121,80 @@ Simple **multiple choice** question
   await expect(page.getByRole('main')).toContainText('1/1 questions submitted');
   await expect(page.locator('pre')).toContainText('Fantastic job');
 });
+
+test('markdown heading note icon opens filtered notes discussion', async ({ page }) => {
+  const headingMarkdown = `
+# Topic with Notes
+
+## Outcomes
+
+This section should map to saved notes.
+`;
+
+  await initBasicCourse({ page, topicMarkdown: headingMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  await expect(page.getByRole('heading', { name: 'Outcomes' })).toBeVisible();
+
+  await page.locator('h2:has-text("Outcomes")').getByTitle('View notes for this section').click();
+
+  await expect(page.getByTitle('Close discussion')).toBeVisible();
+  await expect(page.getByText('Filtered by: Outcomes')).toBeVisible();
+});
+
+test('markdown custom links navigate to relative and root-relative destinations', async ({ page }) => {
+  const linkMarkdown = `
+# Link Topic
+
+[Go To Topic 2](topic2.md)
+
+[Go To Home](/course/14602d77-0ff3-4267-b25e-4a7c3c47848b/topic/2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e)
+`;
+
+  await initBasicCourse({ page, topicMarkdown: linkMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  await page.getByRole('link', { name: 'Go To Topic 2' }).click();
+  await expect(page).toHaveURL(/\/course\/14602d77-0ff3-4267-b25e-4a7c3c47848b\/topic\/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b/);
+
+  await page.getByRole('link', { name: 'Go To Home' }).click();
+  await expect(page).toHaveURL(/\/course\/14602d77-0ff3-4267-b25e-4a7c3c47848b\/topic\/2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e/);
+});
+
+test('markdown anchor links keep current route', async ({ page }) => {
+  const anchorMarkdown = `
+# Anchors
+
+[Jump to Lists](#lists)
+
+## Lists
+
+Anchor target section
+`;
+
+  await initBasicCourse({ page, topicMarkdown: anchorMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  const currentUrl = page.url();
+
+  await page.getByRole('link', { name: 'Jump to Lists' }).click();
+  await expect(page).toHaveURL(currentUrl);
+});
+
+test('markdown iframe renderer allows https and blocks non-https sources', async ({ page }) => {
+  const iframeMarkdown = `
+# Frame Test
+
+<iframe title="Insecure frame" src="http://insecure.example.com/embed"></iframe>
+<iframe title="Secure frame" src="https://example.com/embed"></iframe>
+`;
+
+  await initBasicCourse({ page, topicMarkdown: iframeMarkdown });
+  await navigateToCourseNoLogin(page);
+
+  await expect(page.locator('iframe[title="Insecure frame"]')).toHaveCount(0);
+  await expect(page.locator('iframe[title="Secure frame"]')).toBeVisible();
+});

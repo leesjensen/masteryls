@@ -117,6 +117,31 @@ const topicFiles = [
   },
 ];
 
+const topicCommits = [
+  {
+    sha: '1111111111111111111111111111111111111111',
+    html_url: 'https://github.com/ghAccount/ghRepo/commit/1111111',
+    commit: {
+      author: {
+        name: 'Bud',
+        date: '2025-12-01T10:00:00Z',
+      },
+      message: 'Initial topic commit',
+    },
+  },
+  {
+    sha: '2222222222222222222222222222222222222222',
+    html_url: 'https://github.com/ghAccount/ghRepo/commit/2222222',
+    commit: {
+      author: {
+        name: 'Sally',
+        date: '2025-12-02T11:30:00Z',
+      },
+      message: 'Improve topic wording',
+    },
+  },
+];
+
 const defaultTopicMarkdown = `
 # Home
 
@@ -606,6 +631,18 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     }
   });
 
+  // GitHub - request for byuLogo.png file
+  await context.route('https://api.github.com/**/contents/byuLogo.png', async (route) => {
+    switch (route.request().method()) {
+      case 'GET':
+        await route.fulfill({ json: topicFiles[1] });
+        break;
+      case 'DELETE':
+        await route.fulfill({ status: 200, json: { commit: { sha: 'fakecommitsha123' } } });
+        break;
+    }
+  });
+
   // GitHub - request for course.json
   await context.route('https://api.github.com/**/contents/course.json', async (route) => {
     switch (route.request().method()) {
@@ -616,6 +653,12 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
         await route.fulfill({ json: resolvedCourseJson });
         break;
     }
+  });
+
+  // GitHub - API request for commit history on a file
+  await context.route(/https:\/\/api\.github\.com\/.*\/commits\?.*/, async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({ json: topicCommits });
   });
 
   // GitHub - Get a specific topic SVG file

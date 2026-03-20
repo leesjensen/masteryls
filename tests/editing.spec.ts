@@ -110,3 +110,44 @@ test('settings delete dialog can be opened and canceled', async ({ page }) => {
   await page.getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('heading', { name: '⚠️ Delete course' })).not.toBeVisible();
 });
+
+test('editor toolbar and files panel actions', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+
+  await page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).click();
+  await page.getByRole('button', { name: 'Insert' }).click();
+  await expect(page.getByRole('button', { name: 'Insert' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Delete' }).click();
+  await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' })).not.toBeVisible();
+
+  await page.getByRole('button', { name: 'Table' }).click();
+  await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Image' }).click();
+  await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Word Wrap: On' }).click();
+  await expect(page.getByRole('button', { name: 'Word Wrap: Off' })).toBeVisible();
+});
+
+test('editor commits can be shown with diff and apply actions', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByRole('button', { name: 'Show Commits' }).click();
+
+  await expect(page.getByText('Initial topic commit')).toBeVisible();
+  await expect(page.getByText('Improve topic wording')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Diff' }).first().click();
+  await expect(page.getByRole('button', { name: 'Diff' }).first()).toBeVisible();
+
+  await page.getByRole('button', { name: 'Apply' }).first().click();
+  await expect(page.getByRole('button', { name: 'Discard' })).toBeEnabled();
+
+  await page.getByRole('button', { name: 'Hide Commits' }).click();
+  await expect(page.getByText('Initial topic commit')).not.toBeVisible();
+});
