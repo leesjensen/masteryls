@@ -328,29 +328,15 @@ async function blockExternalProviders(page: any) {
   });
 }
 
-async function initBasicCourse({
-  page,
-  topicMarkdown = defaultTopicMarkdown,
-  courseJsonOverride,
-  searchTopicsResults,
-  searchTopicsError = false,
-}: {
-  page: any;
-  topicMarkdown?: string;
-  courseJsonOverride?: any;
-  searchTopicsResults?: any[];
-  searchTopicsError?: boolean;
-}) {
+async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, courseJsonOverride, searchTopicsResults, searchTopicsError = false }: { page: any; topicMarkdown?: string; courseJsonOverride?: any; searchTopicsResults?: any[]; searchTopicsError?: boolean }) {
   const context = page.context();
   const resolvedCourseJson = courseJsonOverride ? { ...courseJson, ...courseJsonOverride } : courseJson;
-  const resolvedSearchTopicsResults =
-    searchTopicsResults ||
-    [
-      {
-        id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
-        headline: 'Result for <mark>topic</mark> ... Another <mark>topic</mark> mention',
-      },
-    ];
+  const resolvedSearchTopicsResults = searchTopicsResults || [
+    {
+      id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+      headline: 'Result for <mark>topic</mark> ... Another <mark>topic</mark> mention',
+    },
+  ];
 
   await blockExternalProviders(page);
 

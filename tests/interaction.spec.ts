@@ -164,6 +164,66 @@ test('interaction essay with student name possessive', async ({ page }) => {
   await verifyAiEssayResponse(page, "Hi [Student's Name]\nwell done", 'Hi Bud well done');
 });
 
+test('interaction teaching submit session', async ({ page }) => {
+  const interactionMarkdown = `
+# Teaching
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123472", "title":"Teach me", "type":"teaching" }
+Help the learner understand testing.
+\`\`\`
+`;
+
+  await setAiResponse(page, 'Nice explanation.\n\nUnderstanding Score: 82%');
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+
+  const respondButton = page.getByRole('button', { name: '▶ Respond' });
+  const submitSession = page.getByRole('button', { name: 'Submit session' });
+  const clearButton = page.getByRole('button', { name: 'Clear' });
+  const input = page.getByPlaceholder('As a teacher, respond to the learner ...');
+
+  await expect(submitSession).toBeDisabled();
+  await expect(clearButton).toBeDisabled();
+
+  await input.click();
+  await input.type('I would explain testing with small examples.');
+  await expect(respondButton).toBeEnabled();
+  await respondButton.click();
+
+  await expect(page.getByText('Understanding: 82%')).toBeVisible();
+  await expect(submitSession).toBeEnabled();
+  await expect(clearButton).toBeEnabled();
+
+  await submitSession.click();
+  await expect(page.getByText('Session submitted')).toBeVisible();
+});
+
+test('interaction teaching shows ai error message', async ({ page }) => {
+  const interactionMarkdown = `
+# Teaching
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123473", "title":"Teach me", "type":"teaching" }
+Help the learner understand testing.
+\`\`\`
+`;
+
+  await setAiErrorResponse(page, 'service down');
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  const input = page.getByPlaceholder('As a teacher, respond to the learner ...');
+  const respondButton = page.getByRole('button', { name: '▶ Respond' });
+  await input.click();
+  await input.type('A response that will fail.');
+  await expect(respondButton).toBeEnabled();
+  await respondButton.click();
+
+  await expect(page.getByText('Sorry, I encountered an error: service down')).toBeVisible();
+});
+
 test('interaction survey single-select', async ({ page }) => {
   const interactionMarkdown = `
 # Survey
@@ -279,6 +339,20 @@ async function setAiResponse(page, response) {
             ],
           },
         });
+        return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+}
+
+async function setAiErrorResponse(page, message) {
+  await page.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'OPTIONS':
+        await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+        return;
+      case 'POST':
+        await route.fulfill({ json: { error: { message } } });
         return;
     }
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
