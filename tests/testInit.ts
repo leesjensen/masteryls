@@ -319,13 +319,18 @@ async function blockExternalProviders(page: any) {
     throw new Error(`Unmocked Supabase endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
   });
 
+  await context.route(/https:\/\/[^/]*instructure\.com\/.*/, async (route) => {
+    throw new Error(`Unmocked Canvas endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
+  });
+
   await context.route(/https:\/\/generativelanguage\.googleapis\.com\/.*/, async (route) => {
     throw new Error(`Unmocked Gemini endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
   });
 }
 
-async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: { page: any; topicMarkdown?: string }) {
+async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, courseJsonOverride }: { page: any; topicMarkdown?: string; courseJsonOverride?: any }) {
   const context = page.context();
+  const resolvedCourseJson = courseJsonOverride ? { ...courseJson, ...courseJsonOverride } : courseJson;
 
   await blockExternalProviders(page);
 
@@ -581,7 +586,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
         await route.fulfill({ status: 201, json: { commit: { sha: 'fakecommitsha123' } } });
         break;
       case 'GET':
-        await route.fulfill({ json: courseJson });
+        await route.fulfill({ json: resolvedCourseJson });
         break;
     }
   });
@@ -598,7 +603,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown }: {
   // GitHub - Get the course description file
   await context.route('https://raw.githubusercontent.com/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');
-    await route.fulfill({ json: courseJson });
+    await route.fulfill({ json: resolvedCourseJson });
   });
 
   // GitHub - Get any markdown file

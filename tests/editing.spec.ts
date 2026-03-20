@@ -54,3 +54,21 @@ test('settings editing', async ({ page }) => {
 
   await expect(page.getByText('Settings saved')).toBeVisible();
 });
+
+test('settings repair and state changes', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByText('Settings').click();
+
+  const saveButton = page.getByRole('button', { name: 'Save changes' });
+  await expect(saveButton).toBeDisabled();
+
+  const courseTitleInput = page.getByRole('textbox', { name: 'Enter course title' });
+  const currentTitle = await courseTitleInput.inputValue();
+  await courseTitleInput.fill(`${currentTitle} ${Math.floor(Math.random() * 100000)}`);
+  await expect(saveButton).toBeEnabled();
+
+  await saveButton.click();
+  await expect(page.getByText('Settings saved')).toBeVisible();
+});
