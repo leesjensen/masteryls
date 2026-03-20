@@ -328,9 +328,29 @@ async function blockExternalProviders(page: any) {
   });
 }
 
-async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, courseJsonOverride }: { page: any; topicMarkdown?: string; courseJsonOverride?: any }) {
+async function initBasicCourse({
+  page,
+  topicMarkdown = defaultTopicMarkdown,
+  courseJsonOverride,
+  searchTopicsResults,
+  searchTopicsError = false,
+}: {
+  page: any;
+  topicMarkdown?: string;
+  courseJsonOverride?: any;
+  searchTopicsResults?: any[];
+  searchTopicsError?: boolean;
+}) {
   const context = page.context();
   const resolvedCourseJson = courseJsonOverride ? { ...courseJson, ...courseJsonOverride } : courseJson;
+  const resolvedSearchTopicsResults =
+    searchTopicsResults ||
+    [
+      {
+        id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+        headline: 'Result for <mark>topic</mark> ... Another <mark>topic</mark> mention',
+      },
+    ];
 
   await blockExternalProviders(page);
 
@@ -558,6 +578,27 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
         });
         return;
     }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
+  // Supabase - Topic search RPC
+  await context.route(/.*supabase.co\/rest\/v1\/rpc\/search_topics(\?.+)?/, async (route) => {
+    if (route.request().method() === 'POST') {
+      if (searchTopicsError) {
+        await route.fulfill({
+          status: 500,
+          json: { message: 'search failed' },
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        json: resolvedSearchTopicsResults,
+      });
+      return;
+    }
+
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 

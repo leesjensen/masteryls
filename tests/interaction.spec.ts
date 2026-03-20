@@ -164,6 +164,74 @@ test('interaction essay with student name possessive', async ({ page }) => {
   await verifyAiEssayResponse(page, "Hi [Student's Name]\nwell done", 'Hi Bud well done');
 });
 
+test('interaction survey single-select', async ({ page }) => {
+  const interactionMarkdown = `
+# Survey
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123470", "title":"Survey", "type":"survey"}
+How do you feel about this topic?
+
+- [ ] Great
+- [ ] Okay
+- [ ] Needs work
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+
+  const submit = page.getByRole('button', { name: 'Submit' });
+  const great = page.getByRole('radio', { name: 'Great' });
+  const okay = page.getByRole('radio', { name: 'Okay' });
+
+  await expect(submit).toBeDisabled();
+  await great.check();
+  await expect(submit).toBeEnabled();
+  await expect(great).toBeChecked();
+
+  await okay.check();
+  await expect(okay).toBeChecked();
+  await expect(great).not.toBeChecked();
+
+  await submit.click();
+  await expect(page.getByText('Total respondents:')).toBeVisible();
+});
+
+test('interaction survey multi-select', async ({ page }) => {
+  const interactionMarkdown = `
+# Survey
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123471", "title":"Survey Multi", "type":"survey", "multipleSelect":"true"}
+Pick all that apply.
+
+- [ ] Great
+- [ ] Helpful
+- [ ] Confusing
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+
+  const submit = page.getByRole('button', { name: 'Submit' });
+  const great = page.getByRole('checkbox', { name: 'Great' });
+  const helpful = page.getByRole('checkbox', { name: 'Helpful' });
+
+  await expect(submit).toBeEnabled();
+  await great.check();
+  await helpful.check();
+  await expect(great).toBeChecked();
+  await expect(helpful).toBeChecked();
+
+  await submit.click();
+  await expect(page.getByText('Total respondents:')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
+});
+
 async function verifyAiEssayResponse(page, generatedResponse, expectedResponse) {
   const interactionMarkdown = `
 # Quiz
