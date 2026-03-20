@@ -72,3 +72,41 @@ test('settings repair and state changes', async ({ page }) => {
   await saveButton.click();
   await expect(page.getByText('Settings saved')).toBeVisible();
 });
+
+test('settings editor management requires at least one editor', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByText('Settings').click();
+
+  await expect(page.getByText('2 editors assigned')).toBeVisible();
+  await page.getByRole('button', { name: 'Manage editors' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Manage editors' })).toBeVisible();
+
+  const userSearch = page.getByPlaceholder('Search by name or email');
+
+  await userSearch.fill('bu');
+  const addedButtons = page.getByRole('button', { name: 'Added' });
+  await expect(addedButtons).toHaveCount(2);
+  await addedButtons.nth(0).click();
+  await addedButtons.nth(0).click();
+
+  await page.getByRole('button', { name: 'Close' }).click();
+
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('At least one editor must be selected')).toBeVisible();
+});
+
+test('settings delete dialog can be opened and canceled', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByText('Settings').click();
+
+  await page.getByRole('button', { name: 'Delete course' }).click();
+  await expect(page.getByRole('heading', { name: '⚠️ Delete course' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('heading', { name: '⚠️ Delete course' })).not.toBeVisible();
+});
