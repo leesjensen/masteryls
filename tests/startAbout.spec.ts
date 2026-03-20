@@ -1,4 +1,4 @@
-import { test, expect } from 'playwright-test-coverage';
+import { test, expect } from './fixtures';
 import { initBasicCourse } from './testInit';
 
 test('start page links to About and Demo Courses', async ({ page }) => {

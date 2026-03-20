@@ -1,4 +1,4 @@
-import { test, expect } from 'playwright-test-coverage';
+import { test, expect } from './fixtures';
 import { initBasicCourse, navigateToDashboard } from './testInit';
 
 async function mockCourseCreationExternalRequests(
