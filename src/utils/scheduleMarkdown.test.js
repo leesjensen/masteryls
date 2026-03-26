@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildWeeks, parseCellItems, parseScheduleMarkdown, serializeScheduleMarkdown } from './scheduleMarkdown.js';
+import { buildWeeks, parseCellItems, parseScheduleMarkdown, serializeScheduleMarkdown, SCHEDULE_WARNING } from './scheduleMarkdown.js';
 
 test('parseScheduleMarkdown extracts title links table and special days', () => {
   const md = `# Winter 2026 Schedule
@@ -88,4 +88,73 @@ test('buildWeeks creates sequential empty week rows', () => {
   assert.equal(weeks[0].dueItems.length, 0);
   assert.equal(weeks[0].topicsCovered.length, 0);
   assert.equal(weeks[0].slides.length, 0);
+});
+
+test('parseScheduleMarkdown supports header aliases and normalizes to canonical fields', () => {
+  const md = `# Alias Header Schedule
+
+| Week | Date | Module | Assignments Due | Topics | Slides |
+| :--: | ---- | ------ | --------------- | ------ | ------ |
+| 1 | Jan 1 | Intro | [A](../a.md) | [B](../b.md) | |
+
+## Special days
+
+- Jan 1: Start
+`;
+
+  const parsed = parseScheduleMarkdown(md);
+  assert.equal(parsed.weeks.length, 1);
+  assert.equal(parsed.weeks[0].dueItems[0].href, '../a.md');
+  assert.equal(parsed.weeks[0].topicsCovered[0].href, '../b.md');
+});
+
+test('parseScheduleMarkdown emits warnings and preserves optional tail content', () => {
+  const md = `No title line here
+This line is not a link
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+| 1 | Jan 1 | Intro | [A](../a.md) | [B](../b.md) | |
+
+## Special days
+
+non-bullet special line
+- Jan 1: Start
+
+## Appendix
+
+Extra trailing notes
+`;
+
+  const parsed = parseScheduleMarkdown(md);
+  const warningCodes = parsed.warnings.map((w) => w.code);
+
+  assert.ok(warningCodes.includes(SCHEDULE_WARNING.MISSING_TITLE));
+  assert.ok(warningCodes.includes(SCHEDULE_WARNING.UNMAPPED_PRETABLE_LINE));
+  assert.ok(warningCodes.includes(SCHEDULE_WARNING.NON_BULLET_SPECIAL_DAYS_LINE));
+  assert.ok(parsed.optionalTail.content.includes('Extra trailing notes'));
+});
+
+test('parseScheduleMarkdown strict mode throws on malformed table row width', () => {
+  const md = `# Broken Table
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+| 1 | Jan 1 | Intro | [A](../a.md) |
+`;
+
+  assert.throws(() => parseScheduleMarkdown(md, { strict: true }), /Malformed schedule table row/);
+});
+
+test('serializeScheduleMarkdown appends optionalTail content and normalizes spacing', () => {
+  const markdown = serializeScheduleMarkdown({
+    docTitle: 'Tail Test',
+    links: [],
+    weeks: buildWeeks(1),
+    specialDays: [],
+    optionalTail: { content: '## Appendix\n\nNotes here' },
+  });
+
+  assert.ok(markdown.includes('## Appendix'));
+  assert.ok(markdown.endsWith('\n'));
 });

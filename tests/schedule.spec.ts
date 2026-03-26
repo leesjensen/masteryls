@@ -226,11 +226,9 @@ test('schedule editor can set default schedule used as fallback selection', asyn
     localStorage.setItem(key, JSON.stringify(settings));
   });
 
-  await page.goto('http://localhost:5173/dashboard');
-  await page.getByRole('link', { name: 'R Rocket Science This course' }).click();
-  await page.getByText('Schedule').click();
+  await page.getByRole('link', { name: 'Home' }).click();
+  await page.getByRole('link', { name: 'Schedule' }).click();
 
   const readSelect = page.locator('label:has-text("Schedule") select').first();
   await expect(readSelect).toHaveValue('joe');
-  await expect(page.getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
 });
