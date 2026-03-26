@@ -36,16 +36,7 @@ export function serializeScheduleMarkdown(model) {
   lines.push('| :--: | ---- | ------ | --- | -------------- | ------ |');
 
   (model.weeks || []).forEach((week) => {
-    const row = [
-      week.week ?? '',
-      week.date || '',
-      week.module || '',
-      serializeCellItems(week.dueItems),
-      serializeCellItems(week.topicsCovered),
-      serializeCellItems(week.slides),
-    ]
-      .map((value) => String(value).replace(/\|/g, '\\|'))
-      .join(' | ');
+    const row = [week.week ?? '', week.date || '', week.module || '', serializeCellItems(week.dueItems), serializeCellItems(week.topicsCovered), serializeCellItems(week.slides)].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ');
 
     lines.push(`| ${row} |`);
   });
@@ -70,7 +61,12 @@ export function serializeScheduleMarkdown(model) {
     }
   });
 
-  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+  return (
+    lines
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim() + '\n'
+  );
 }
 
 function findScheduleTableStart(lines) {

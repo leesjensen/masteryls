@@ -48,6 +48,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
   const [selectedFile, setSelectedFile] = React.useState(null);
+  const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
+  const [newSchedulePath, setNewSchedulePath] = React.useState('');
+  const [creatingSchedule, setCreatingSchedule] = React.useState(false);
   const [model, setModel] = React.useState(createEmptyModel());
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
@@ -62,7 +65,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
     setFiles(scheduleFiles);
     setSelectedFileId(activeFile?.id || '');
-  }, [learningSession?.topic?.id]);
+  }, [learningSession?.topic]);
 
   React.useEffect(() => {
     if (!selectedFileId || !learningSession?.topic) {
@@ -77,7 +80,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       setModel({ ...createEmptyModel(), ...parsed });
       setDirty(false);
     });
-  }, [selectedFileId, files.length, learningSession?.topic?.id]);
+  }, [selectedFileId, files, learningSession?.topic]);
 
   function updateModel(nextModel) {
     setModel(nextModel);
@@ -223,6 +226,32 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     courseOps.setSelectedScheduleFile(learningSession.topic, nextId);
   }
 
+  async function createSchedule() {
+    const title = newScheduleTitle.trim();
+    if (!title || creatingSchedule) {
+      return;
+    }
+
+    if (dirty && !window.confirm('Discard unsaved schedule changes before creating another schedule?')) {
+      return;
+    }
+
+    setCreatingSchedule(true);
+    try {
+      const createdFile = await courseOps.createScheduleFile(learningSession.topic, title, newSchedulePath.trim());
+      if (createdFile) {
+        setFiles((prev) => [...prev, createdFile]);
+        setSelectedFileId(createdFile.id);
+      }
+      setNewScheduleTitle('');
+      setNewSchedulePath('');
+    } catch (error) {
+      alert(error.message || 'Unable to create schedule file.');
+    } finally {
+      setCreatingSchedule(false);
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="basis-[36px] pt-2 px-2 flex items-center justify-between border-b border-gray-200">
@@ -247,6 +276,14 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
             {committing ? 'Committing...' : 'Commit'}
           </button>
         </div>
+      </div>
+
+      <div className="px-2 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+        <input value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="New schedule title" className="w-56 border border-gray-300 rounded px-2 py-1 text-sm" />
+        <input value={newSchedulePath} onChange={(e) => setNewSchedulePath(e.target.value)} placeholder="Optional file path (e.g., winter-2027.md)" className="w-72 border border-gray-300 rounded px-2 py-1 text-sm" />
+        <button className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:bg-gray-400 text-xs" onClick={createSchedule} disabled={!newScheduleTitle.trim() || creatingSchedule}>
+          {creatingSchedule ? 'Creating...' : '+ Add schedule file'}
+        </button>
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-6">

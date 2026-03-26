@@ -505,14 +505,16 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   function getScheduleFiles(topic = learningSession?.topic) {
     if (!learningSession?.course || !topic) return [];
 
+    const legacySchedule = resolveScheduleFile(topic, topic.path, 'default', topic.title || 'Schedule', true);
     const configured = topic.externalRefs?.schedules;
     if (Array.isArray(configured) && configured.length > 0) {
-      return configured
-        .filter((file) => file && file.path)
-        .map((file, index) => resolveScheduleFile(topic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default)));
+      const configuredFiles = configured.filter((file) => file && file.path).map((file, index) => resolveScheduleFile(topic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default)));
+
+      const hasLegacy = configuredFiles.some((file) => file.rawUrl === legacySchedule.rawUrl);
+      return hasLegacy ? configuredFiles : [legacySchedule, ...configuredFiles];
     }
 
-    return [resolveScheduleFile(topic, topic.path, 'default', topic.title || 'Schedule', true)];
+    return [legacySchedule];
   }
 
   function getSelectedScheduleFile(topic = learningSession?.topic, scheduleFiles = null) {
@@ -534,6 +536,96 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     saveEnrollmentUiSettings(learningSession.course.id, { selectedScheduleFiles });
   }
 
+  async function createScheduleFile(topic, scheduleTitle, configuredPath = '') {
+    if (!learningSession?.course || !topic) {
+      return null;
+    }
+
+    const title = (scheduleTitle || '').trim();
+    if (!title) {
+      throw new Error('Schedule title is required.');
+    }
+
+    const course = learningSession.course;
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!user.isEditor(course.id) || !token) {
+      throw new Error('You do not have permission to create schedules for this course.');
+    }
+
+    const updatedCourse = Course.copy(course);
+    const updatedTopic = updatedCourse.topicFromId(topic.id);
+    let existingSchedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
+    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
+    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
+    if (!existingSchedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
+      existingSchedules = [legacyDescriptor, ...existingSchedules];
+    }
+
+    const path = sanitizeSchedulePath(configuredPath || title);
+    if (existingSchedules.some((entry) => sanitizeSchedulePath(entry.path) === path)) {
+      throw new Error(`A schedule file already exists for '${path}'.`);
+    }
+
+    const newSchedule = {
+      id: `schedule-${generateId()}`,
+      title,
+      path,
+      default: false,
+    };
+
+    updatedTopic.externalRefs = {
+      ...(updatedTopic.externalRefs || {}),
+      schedules: [...existingSchedules, newSchedule],
+    };
+
+    const resolved = resolveScheduleFile(updatedTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default);
+    const initialMarkdown = createInitialScheduleMarkdown(title);
+
+    await service.commitGitHubFile(resolved.apiUrl, initialMarkdown, token, `add(schedule) ${title}`);
+    updatedCourse.markdownCache.set(resolved.rawUrl, initialMarkdown);
+
+    await _updateCourseStructure(token, updatedCourse, `update(course) add schedule ${title}`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+    setSelectedScheduleFile(updatedTopic, newSchedule.id);
+
+    return resolved;
+  }
+
+  function sanitizeSchedulePath(rawPath) {
+    let normalized = String(rawPath || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\.md$/i, '')
+      .replace(/[^a-z0-9/_-]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^[-/]+|[-/]+$/g, '');
+
+    if (!normalized) {
+      normalized = `schedule-${Date.now()}`;
+    }
+
+    const parts = normalized
+      .split('/')
+      .map((part) => part.replace(/^-+|-+$/g, ''))
+      .filter(Boolean);
+
+    return `${parts.join('/')}.md`;
+  }
+
+  function buildLegacyScheduleDescriptor(topic) {
+    const path = topic.path.split('/').pop() || 'schedule.md';
+    return {
+      id: 'default',
+      title: topic.title || 'Schedule',
+      path,
+      default: true,
+    };
+  }
+
+  function createInitialScheduleMarkdown(title) {
+    return `# ${title}\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n\n## Special days\n`;
+  }
+
   function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false) {
     const course = learningSession?.course;
     const rawRoot = course.links.gitHub.rawUrl;
@@ -547,7 +639,17 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault };
     }
 
-    const relativePath = configuredPath.startsWith('/') ? configuredPath.slice(1) : `${topicDir}/${configuredPath}`;
+    let relativePath = '';
+    if (configuredPath.startsWith('/')) {
+      relativePath = configuredPath.slice(1);
+    } else if (configuredPath.startsWith('./') || configuredPath.startsWith('../')) {
+      relativePath = `${topicDir}/${configuredPath}`;
+    } else if (configuredPath.includes('/')) {
+      relativePath = configuredPath;
+    } else {
+      relativePath = `${topicDir}/${configuredPath}`;
+    }
+
     const normalizedRepoPath = relativePath.replace(/^\.\//, '');
 
     return {
@@ -1080,6 +1182,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getScheduleFiles,
     getSelectedScheduleFile,
     setSelectedScheduleFile,
+    createScheduleFile,
     getScheduleTopicContent,
     updateScheduleTopicContent,
     addTopicFiles,

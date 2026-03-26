@@ -17,7 +17,7 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
 
     const selected = courseOps.getSelectedScheduleFile(topic, scheduleFiles);
     setSelectedFileId(selected?.id || '');
-  }, [learningSession?.topic?.id]);
+  }, [learningSession?.topic]);
 
   React.useEffect(() => {
     const topic = learningSession?.topic;
@@ -32,7 +32,7 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
     courseOps.getScheduleTopicContent(topic, selectedFileId).then((markdown) => {
       setContent(markdown || '');
     });
-  }, [selectedFileId, learningSession?.topic?.id]);
+  }, [selectedFileId, learningSession?.topic]);
 
   function handleSelectionChange(event) {
     const fileId = event.target.value;
