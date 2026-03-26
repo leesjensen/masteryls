@@ -25,6 +25,7 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
           <option value="embedded">Embedded</option>
           <option value="exam">Exam</option>
           <option value="project">Project</option>
+          <option value="schedule">Schedule</option>
         </select>
         <textarea placeholder={newType === 'embedded' ? 'Embedded URL' : 'Description'} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" rows={3} disabled={isLoading} />
         <div className="flex gap-2">

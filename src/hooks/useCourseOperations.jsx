@@ -497,6 +497,109 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return course.adjacentTopic(learningSession.topic.path, direction);
   }
 
+  function getScheduleTopic(course = learningSession?.course) {
+    if (!course) return null;
+    return course.allTopics.find((topic) => topic.type === 'schedule' && (!topic.state || topic.state === 'published')) || null;
+  }
+
+  function getScheduleFiles(topic = learningSession?.topic) {
+    if (!learningSession?.course || !topic) return [];
+
+    const configured = topic.externalRefs?.schedules;
+    if (Array.isArray(configured) && configured.length > 0) {
+      return configured
+        .filter((file) => file && file.path)
+        .map((file, index) => resolveScheduleFile(topic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default)));
+    }
+
+    return [resolveScheduleFile(topic, topic.path, 'default', topic.title || 'Schedule', true)];
+  }
+
+  function getSelectedScheduleFile(topic = learningSession?.topic, scheduleFiles = null) {
+    const files = scheduleFiles || getScheduleFiles(topic);
+    if (!files.length) return null;
+
+    const settings = getEnrollmentUiSettings(learningSession?.course?.id);
+    const selectedByTopic = settings?.selectedScheduleFiles || {};
+    const selectedId = selectedByTopic?.[topic.id];
+
+    return files.find((file) => file.id === selectedId) || files.find((file) => file.default) || files[0];
+  }
+
+  function setSelectedScheduleFile(topic, fileId) {
+    if (!learningSession?.course || !topic || !fileId) return;
+
+    const settings = getEnrollmentUiSettings(learningSession.course.id);
+    const selectedScheduleFiles = { ...(settings.selectedScheduleFiles || {}), [topic.id]: fileId };
+    saveEnrollmentUiSettings(learningSession.course.id, { selectedScheduleFiles });
+  }
+
+  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false) {
+    const course = learningSession?.course;
+    const rawRoot = course.links.gitHub.rawUrl;
+    const apiRoot = course.links.gitHub.apiUrl;
+    const topicRepoPath = topic.path.replace(`${rawRoot}/`, '');
+    const topicDir = topicRepoPath.substring(0, topicRepoPath.lastIndexOf('/'));
+
+    if (configuredPath.startsWith('http://') || configuredPath.startsWith('https://')) {
+      const repoPath = configuredPath.replace(`${rawRoot}/`, '');
+      const apiUrl = configuredPath.startsWith(rawRoot) ? `${apiRoot}/${repoPath}` : null;
+      return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault };
+    }
+
+    const relativePath = configuredPath.startsWith('/') ? configuredPath.slice(1) : `${topicDir}/${configuredPath}`;
+    const normalizedRepoPath = relativePath.replace(/^\.\//, '');
+
+    return {
+      id,
+      title,
+      path: configuredPath,
+      rawUrl: `${rawRoot}/${normalizedRepoPath}`,
+      apiUrl: `${apiRoot}/${normalizedRepoPath}`,
+      repoPath: normalizedRepoPath,
+      default: isDefault,
+    };
+  }
+
+  async function getScheduleTopicContent(topic, fileId, forceRefresh = false) {
+    if (!topic) return '';
+
+    const files = getScheduleFiles(topic);
+    const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files) || files[0];
+    if (!selectedFile) return '';
+
+    if (!forceRefresh && learningSession?.course?.markdownCache.has(selectedFile.rawUrl)) {
+      return learningSession.course.markdownCache.get(selectedFile.rawUrl);
+    }
+
+    const response = await fetch(selectedFile.rawUrl);
+    const markdown = await response.text();
+    learningSession?.course?.markdownCache.set(selectedFile.rawUrl, markdown);
+    setSelectedScheduleFile(topic, selectedFile.id);
+
+    return markdown;
+  }
+
+  async function updateScheduleTopicContent(topic, fileId, content, commitMessage = `update(${topic.title})`) {
+    if (!learningSession?.course || !topic) return;
+
+    const files = getScheduleFiles(topic);
+    const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files);
+    if (!selectedFile) return;
+
+    const token = user.getSetting('gitHubToken', learningSession.course.id);
+    const commit = await service.updateGitHubFile(selectedFile.apiUrl, content, token, commitMessage);
+
+    const updatedCourse = Course.copy(learningSession.course);
+    const updatedTopic = updatedCourse.topicFromId(topic.id);
+    updatedTopic.commit = commit;
+
+    updatedCourse.markdownCache.set(selectedFile.rawUrl, content);
+    await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+    setSelectedScheduleFile(topic, selectedFile.id);
+  }
+
   async function deleteTopicFiles(topic, files) {
     if (!learningSession?.course) return;
     const course = learningSession.course;
@@ -973,6 +1076,12 @@ ${topicDescription || 'overview content placeholder'}`;
     renameTopic,
     updateTopic,
     getAdjacentTopic,
+    getScheduleTopic,
+    getScheduleFiles,
+    getSelectedScheduleFile,
+    setSelectedScheduleFile,
+    getScheduleTopicContent,
+    updateScheduleTopicContent,
     addTopicFiles,
     deleteTopicFiles,
     getTopicFiles,

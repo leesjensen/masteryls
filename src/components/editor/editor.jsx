@@ -8,6 +8,7 @@ import useEditorPreviewSync from '../../hooks/useEditorPreviewSync';
 import useSplitPaneState from '../../hooks/useSplitPaneState';
 import useTopicContentLifecycle from '../../hooks/useTopicContentLifecycle';
 import Splitter from '../Splitter.jsx';
+import ScheduleEditor from './scheduleEditor.jsx';
 
 export default function Editor({ courseOps, user, learningSession }) {
   const [showCommits, setShowCommits] = React.useState(false);
@@ -79,6 +80,8 @@ export default function Editor({ courseOps, user, learningSession }) {
             <EmbeddedInstruction learningSession={{ ...learningSession, topic: { ...learningSession.topic, path: content } }} />
           </div>
         );
+      case 'schedule':
+        return <ScheduleEditor courseOps={courseOps} learningSession={learningSession} />;
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
