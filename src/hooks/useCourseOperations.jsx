@@ -591,6 +591,177 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return resolved;
   }
 
+  async function renameScheduleFile(topic, fileId, newTitle, newConfiguredPath = '') {
+    if (!learningSession?.course || !topic) {
+      return null;
+    }
+
+    const title = (newTitle || '').trim();
+    if (!title) {
+      throw new Error('Schedule title is required.');
+    }
+
+    const course = learningSession.course;
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!user.isEditor(course.id) || !token) {
+      throw new Error('You do not have permission to rename schedules for this course.');
+    }
+
+    const updatedCourse = Course.copy(course);
+    const updatedTopic = updatedCourse.topicFromId(topic.id);
+    let schedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
+    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
+    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
+    if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
+      schedules = [legacyDescriptor, ...schedules];
+    }
+
+    const index = schedules.findIndex((entry) => entry.id === fileId);
+    if (index === -1) {
+      throw new Error('Unable to find selected schedule file.');
+    }
+
+    const existing = schedules[index];
+    const nextPath = sanitizeSchedulePath(newConfiguredPath || existing.path);
+    const currentPath = sanitizeSchedulePath(existing.path);
+    const pathChanged = currentPath !== nextPath;
+
+    if (existing.id === 'default' && pathChanged) {
+      throw new Error('The default schedule file path cannot be renamed. Create a new schedule instead.');
+    }
+
+    if (pathChanged && schedules.some((entry, i) => i !== index && sanitizeSchedulePath(entry.path) === nextPath)) {
+      throw new Error(`A schedule file already exists for '${nextPath}'.`);
+    }
+
+    if (pathChanged) {
+      const oldResolved = resolveScheduleFile(updatedTopic, existing.path, existing.id, existing.title, Boolean(existing.default));
+      const newResolved = resolveScheduleFile(updatedTopic, nextPath, existing.id, title, Boolean(existing.default));
+      const markdown = await getScheduleTopicContent(topic, fileId, true);
+
+      await service.commitGitHubFile(newResolved.apiUrl, markdown, token, `rename(schedule) ${title}`);
+      await service.deleteGitHubFile(oldResolved.apiUrl, token, `rename(schedule) cleanup ${existing.title || existing.path}`);
+
+      updatedCourse.markdownCache.delete(oldResolved.rawUrl);
+      updatedCourse.markdownCache.set(newResolved.rawUrl, markdown);
+    }
+
+    schedules[index] = {
+      ...existing,
+      title,
+      path: pathChanged ? nextPath : existing.path,
+    };
+
+    updatedTopic.externalRefs = {
+      ...(updatedTopic.externalRefs || {}),
+      schedules,
+    };
+
+    await _updateCourseStructure(token, updatedCourse, `update(course) rename schedule ${title}`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+    setSelectedScheduleFile(updatedTopic, existing.id);
+
+    return resolveScheduleFile(updatedTopic, schedules[index].path, schedules[index].id, schedules[index].title, Boolean(schedules[index].default));
+  }
+
+  async function deleteScheduleFile(topic, fileId) {
+    if (!learningSession?.course || !topic) {
+      return null;
+    }
+
+    const course = learningSession.course;
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!user.isEditor(course.id) || !token) {
+      throw new Error('You do not have permission to delete schedules for this course.');
+    }
+
+    const updatedCourse = Course.copy(course);
+    const updatedTopic = updatedCourse.topicFromId(topic.id);
+    let schedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
+    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
+    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
+    if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
+      schedules = [legacyDescriptor, ...schedules];
+    }
+
+    if (schedules.length <= 1) {
+      throw new Error('At least one schedule file is required.');
+    }
+
+    const index = schedules.findIndex((entry) => entry.id === fileId);
+    if (index === -1) {
+      throw new Error('Unable to find selected schedule file.');
+    }
+
+    const removing = schedules[index];
+    if (removing.id === 'default') {
+      throw new Error('The default schedule file cannot be deleted.');
+    }
+
+    const resolved = resolveScheduleFile(updatedTopic, removing.path, removing.id, removing.title, Boolean(removing.default));
+    await service.deleteGitHubFile(resolved.apiUrl, token, `remove(schedule) ${removing.title || removing.path}`);
+
+    updatedCourse.markdownCache.delete(resolved.rawUrl);
+    schedules.splice(index, 1);
+
+    if (!schedules.some((entry) => entry.default)) {
+      schedules[0] = { ...schedules[0], default: true };
+    }
+
+    updatedTopic.externalRefs = {
+      ...(updatedTopic.externalRefs || {}),
+      schedules,
+    };
+
+    const nextSelection = schedules.find((entry) => entry.default) || schedules[0];
+
+    await _updateCourseStructure(token, updatedCourse, `update(course) delete schedule ${removing.title || removing.path}`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+    if (nextSelection?.id) {
+      setSelectedScheduleFile(updatedTopic, nextSelection.id);
+    }
+
+    return nextSelection?.id || null;
+  }
+
+  async function setDefaultScheduleFile(topic, fileId) {
+    if (!learningSession?.course || !topic || !fileId) {
+      return null;
+    }
+
+    const course = learningSession.course;
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!user.isEditor(course.id) || !token) {
+      throw new Error('You do not have permission to update default schedules for this course.');
+    }
+
+    const updatedCourse = Course.copy(course);
+    const updatedTopic = updatedCourse.topicFromId(topic.id);
+    let schedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
+    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
+    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
+    if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
+      schedules = [legacyDescriptor, ...schedules];
+    }
+
+    if (!schedules.some((entry) => entry.id === fileId)) {
+      throw new Error('Unable to find selected schedule file.');
+    }
+
+    schedules = schedules.map((entry) => ({ ...entry, default: entry.id === fileId }));
+
+    updatedTopic.externalRefs = {
+      ...(updatedTopic.externalRefs || {}),
+      schedules,
+    };
+
+    await _updateCourseStructure(token, updatedCourse, `update(course) default schedule ${fileId}`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+    setSelectedScheduleFile(updatedTopic, fileId);
+
+    return fileId;
+  }
+
   function sanitizeSchedulePath(rawPath) {
     let normalized = String(rawPath || '')
       .trim()
@@ -1183,6 +1354,9 @@ ${topicDescription || 'overview content placeholder'}`;
     getSelectedScheduleFile,
     setSelectedScheduleFile,
     createScheduleFile,
+    renameScheduleFile,
+    deleteScheduleFile,
+    setDefaultScheduleFile,
     getScheduleTopicContent,
     updateScheduleTopicContent,
     addTopicFiles,

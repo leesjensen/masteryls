@@ -36,8 +36,9 @@ function installScheduleRoutes(page: any) {
   ]);
 
   const schedulePuts: Array<{ path: string; markdown: string }> = [];
+  const scheduleDeletes: string[] = [];
 
-  context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/instruction\/schedule\/.*\.md$/, async (route) => {
+  context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/instruction\/schedule\/.*\.md$/, async (route: any) => {
     const url = route.request().url();
     const match = url.match(/\/main\/(instruction\/schedule\/[^?]+)/);
     const repoPath = match?.[1];
@@ -53,7 +54,7 @@ function installScheduleRoutes(page: any) {
     await route.continue();
   });
 
-  context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/instruction\/schedule\/.*\.md$/, async (route) => {
+  context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/instruction\/schedule\/.*\.md$/, async (route: any) => {
     const method = route.request().method();
     const url = route.request().url();
     const match = url.match(/\/contents\/(instruction\/schedule\/[^?]+)/);
@@ -86,10 +87,17 @@ function installScheduleRoutes(page: any) {
       return;
     }
 
+    if (method === 'DELETE') {
+      markdownByRepoPath.delete(repoPath);
+      scheduleDeletes.push(repoPath);
+      await route.fulfill({ status: 200, json: { commit: { sha: 'schedule-delete-sha' } } });
+      return;
+    }
+
     await route.continue();
   });
 
-  return { markdownByRepoPath, schedulePuts };
+  return { markdownByRepoPath, schedulePuts, scheduleDeletes };
 }
 
 test('schedule read view lets learner switch files', async ({ page }) => {
@@ -168,4 +176,61 @@ test('schedule editor confirms before switching files with unsaved changes', asy
 
   await expect(fileSelect).toHaveValue('joe');
   await expect(titleInput).toHaveValue("Joe's schedule");
+});
+
+test('schedule editor can rename and delete non-default schedule files', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  const { schedulePuts, scheduleDeletes } = installScheduleRoutes(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+  await page.locator('.absolute.left-0\\.5').click();
+
+  const fileSelect = page.locator('label:has-text("File") select').first();
+  await fileSelect.selectOption('joe');
+
+  await page.getByPlaceholder('Selected schedule title').fill("Joe's evening schedule");
+  await page.getByPlaceholder('Selected schedule path').fill('joe-evening.md');
+  await page.getByRole('button', { name: 'Rename schedule' }).click();
+
+  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/joe-evening.md'))).toBeTruthy();
+  await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-s-schedule.md'))).toBeTruthy();
+
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+  await page.getByRole('button', { name: 'Delete schedule' }).click();
+
+  await expect(fileSelect).toHaveValue('default');
+  await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-evening.md'))).toBeTruthy();
+});
+
+test('schedule editor can set default schedule used as fallback selection', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  installScheduleRoutes(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+  await page.locator('.absolute.left-0\\.5').click();
+
+  const fileSelect = page.locator('label:has-text("File") select').first();
+  await fileSelect.selectOption('joe');
+  await page.getByRole('button', { name: 'Set as default' }).click();
+
+  await page.evaluate(() => {
+    const key = 'uiSettings-14602d77-0ff3-4267-b25e-4a7c3c47848b';
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    const settings = JSON.parse(raw);
+    delete settings.selectedScheduleFiles;
+    localStorage.setItem(key, JSON.stringify(settings));
+  });
+
+  await page.goto('http://localhost:5173/dashboard');
+  await page.getByRole('link', { name: 'R Rocket Science This course' }).click();
+  await page.getByText('Schedule').click();
+
+  const readSelect = page.locator('label:has-text("Schedule") select').first();
+  await expect(readSelect).toHaveValue('joe');
+  await expect(page.getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
 });

@@ -51,6 +51,11 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
   const [newSchedulePath, setNewSchedulePath] = React.useState('');
   const [creatingSchedule, setCreatingSchedule] = React.useState(false);
+  const [editScheduleTitle, setEditScheduleTitle] = React.useState('');
+  const [editSchedulePath, setEditSchedulePath] = React.useState('');
+  const [updatingScheduleMeta, setUpdatingScheduleMeta] = React.useState(false);
+  const [deletingSchedule, setDeletingSchedule] = React.useState(false);
+  const [settingDefault, setSettingDefault] = React.useState(false);
   const [model, setModel] = React.useState(createEmptyModel());
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
@@ -81,6 +86,17 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       setDirty(false);
     });
   }, [selectedFileId, files, learningSession?.topic]);
+
+  React.useEffect(() => {
+    if (!selectedFile) {
+      setEditScheduleTitle('');
+      setEditSchedulePath('');
+      return;
+    }
+
+    setEditScheduleTitle(selectedFile.title || '');
+    setEditSchedulePath(selectedFile.path || '');
+  }, [selectedFile]);
 
   function updateModel(nextModel) {
     setModel(nextModel);
@@ -252,6 +268,69 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     }
   }
 
+  async function renameSchedule() {
+    if (!selectedFile || !editScheduleTitle.trim() || updatingScheduleMeta) {
+      return;
+    }
+
+    if (dirty && !window.confirm('Discard unsaved schedule content changes before renaming this schedule file?')) {
+      return;
+    }
+
+    setUpdatingScheduleMeta(true);
+    try {
+      const renamed = await courseOps.renameScheduleFile(learningSession.topic, selectedFile.id, editScheduleTitle.trim(), editSchedulePath.trim());
+      if (renamed) {
+        setSelectedFileId(renamed.id);
+      }
+    } catch (error) {
+      alert(error.message || 'Unable to rename schedule file.');
+    } finally {
+      setUpdatingScheduleMeta(false);
+    }
+  }
+
+  async function deleteSchedule() {
+    if (!selectedFile || deletingSchedule) {
+      return;
+    }
+
+    if (dirty && !window.confirm('Discard unsaved schedule content changes before deleting this schedule file?')) {
+      return;
+    }
+
+    if (!window.confirm(`Delete schedule file '${selectedFile.title}'?`)) {
+      return;
+    }
+
+    setDeletingSchedule(true);
+    try {
+      const nextFileId = await courseOps.deleteScheduleFile(learningSession.topic, selectedFile.id);
+      if (nextFileId) {
+        setSelectedFileId(nextFileId);
+      }
+    } catch (error) {
+      alert(error.message || 'Unable to delete schedule file.');
+    } finally {
+      setDeletingSchedule(false);
+    }
+  }
+
+  async function setDefaultSchedule() {
+    if (!selectedFile || settingDefault) {
+      return;
+    }
+
+    setSettingDefault(true);
+    try {
+      await courseOps.setDefaultScheduleFile(learningSession.topic, selectedFile.id);
+    } catch (error) {
+      alert(error.message || 'Unable to set default schedule file.');
+    } finally {
+      setSettingDefault(false);
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="basis-[36px] pt-2 px-2 flex items-center justify-between border-b border-gray-200">
@@ -283,6 +362,20 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         <input value={newSchedulePath} onChange={(e) => setNewSchedulePath(e.target.value)} placeholder="Optional file path (e.g., winter-2027.md)" className="w-72 border border-gray-300 rounded px-2 py-1 text-sm" />
         <button className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:bg-gray-400 text-xs" onClick={createSchedule} disabled={!newScheduleTitle.trim() || creatingSchedule}>
           {creatingSchedule ? 'Creating...' : '+ Add schedule file'}
+        </button>
+      </div>
+
+      <div className="px-2 py-2 border-b border-gray-100 bg-white flex items-center gap-2">
+        <input value={editScheduleTitle} onChange={(e) => setEditScheduleTitle(e.target.value)} placeholder="Selected schedule title" className="w-56 border border-gray-300 rounded px-2 py-1 text-sm" />
+        <input value={editSchedulePath} onChange={(e) => setEditSchedulePath(e.target.value)} placeholder="Selected schedule path" className="w-72 border border-gray-300 rounded px-2 py-1 text-sm" disabled={selectedFile?.id === 'default'} />
+        <button className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-800 disabled:bg-gray-400 text-xs" onClick={renameSchedule} disabled={!selectedFile || !editScheduleTitle.trim() || updatingScheduleMeta}>
+          {updatingScheduleMeta ? 'Renaming...' : 'Rename schedule'}
+        </button>
+        <button className="px-3 py-1 bg-indigo-700 text-white rounded hover:bg-indigo-800 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
+          {settingDefault ? 'Updating...' : selectedFile?.default ? 'Default schedule' : 'Set as default'}
+        </button>
+        <button className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800 disabled:bg-gray-400 text-xs" onClick={deleteSchedule} disabled={!selectedFile || selectedFile.id === 'default' || deletingSchedule}>
+          {deletingSchedule ? 'Deleting...' : 'Delete schedule'}
         </button>
       </div>
 
