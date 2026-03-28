@@ -39,6 +39,19 @@ function relativePath(fromFileRepoPath, toFileRepoPath) {
   return `${prefix}${down.join('/')}`;
 }
 
+function normalizeWeekGroups(rows) {
+  let previousWeek = null;
+  let nextWeek = 0;
+
+  return rows.map((row, index) => {
+    if (index === 0 || row.week !== previousWeek) {
+      nextWeek += 1;
+    }
+    previousWeek = row.week;
+    return { ...row, week: nextWeek };
+  });
+}
+
 export default function ScheduleEditor({ courseOps, learningSession }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
@@ -100,10 +113,11 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     updateModel({ ...model, weeks: [...model.weeks, row] });
   }
 
-  function insertWeek(afterIndex) {
+  function addSession(afterIndex) {
+    const sourceWeek = model.weeks[afterIndex]?.week || 1;
     const row = {
       id: `week-${Date.now()}-${afterIndex}`,
-      week: '',
+      week: sourceWeek,
       date: '',
       module: '',
       dueItems: [],
@@ -112,12 +126,12 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     };
     const nextWeeks = [...model.weeks];
     nextWeeks.splice(afterIndex + 1, 0, row);
-    updateModel({ ...model, weeks: nextWeeks });
+    updateModel({ ...model, weeks: normalizeWeekGroups(nextWeeks) });
   }
 
   function removeWeek(rowId) {
     const nextWeeks = model.weeks.filter((row) => row.id !== rowId);
-    updateModel({ ...model, weeks: nextWeeks.length ? nextWeeks : buildWeeks(1) });
+    updateModel({ ...model, weeks: nextWeeks.length ? normalizeWeekGroups(nextWeeks) : buildWeeks(1) });
   }
 
   function updateLinks(index, patch) {
@@ -369,12 +383,12 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
             {model.weeks.map((row, index) => (
               <div key={row.id} className="border border-gray-300 rounded p-3 space-y-2">
                 <div className="grid grid-cols-12 gap-2">
-                  <div className="col-span-1 border border-gray-300 rounded px-2 py-1 text-xs bg-gray-50 text-gray-700">{index + 1}</div>
+                  <div className="col-span-1 border border-gray-300 rounded px-2 py-1 text-xs bg-gray-50 text-gray-700">{index === 0 || model.weeks[index - 1].week !== row.week ? row.week : ''}</div>
                   <input className="col-span-3 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
                   <input className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
                   <div className="col-span-4 flex justify-end gap-2 text-xs">
-                    <button className="text-blue-700" onClick={() => insertWeek(index)}>
-                      Insert below
+                    <button className="text-blue-700" onClick={() => addSession(index)}>
+                      Add session
                     </button>
                     <button className="text-red-700" onClick={() => removeWeek(row.id)}>
                       Remove

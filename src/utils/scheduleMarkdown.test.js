@@ -185,3 +185,38 @@ test('week numbers are derived by order when parsing and serializing', () => {
   assert.ok(serialized.includes('| 1 | Jan 1 | Intro |'));
   assert.ok(serialized.includes('| 2 | Jan 8 | Module 2 |'));
 });
+
+test('parseScheduleMarkdown supports multiple session rows within the same week', () => {
+  const md = `# Multi Session
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+| 1 | Tue Jan 13 | Module A | | | |
+|   | Thu Jan 15 |         | | | |
+| 2 | Tue Jan 20 | Module B | | | |
+`;
+
+  const parsed = parseScheduleMarkdown(md);
+  assert.equal(parsed.weeks.length, 3);
+  assert.deepEqual(
+    parsed.weeks.map((w) => w.week),
+    [1, 1, 2],
+  );
+});
+
+test('serializeScheduleMarkdown writes blank week cells for additional sessions in the same week', () => {
+  const markdown = serializeScheduleMarkdown({
+    docTitle: 'Multi Session Serialize',
+    links: [],
+    weeks: [
+      { id: 'w1', week: 1, date: 'Tue Jan 13', module: 'Module A', dueItems: [], topicsCovered: [], slides: [] },
+      { id: 'w2', week: 1, date: 'Thu Jan 15', module: '', dueItems: [], topicsCovered: [], slides: [] },
+      { id: 'w3', week: 2, date: 'Tue Jan 20', module: 'Module B', dueItems: [], topicsCovered: [], slides: [] },
+    ],
+    specialDays: [],
+  });
+
+  assert.ok(markdown.includes('| 1 | Tue Jan 13 | Module A |'));
+  assert.ok(markdown.includes('|  | Thu Jan 15 |  |'));
+  assert.ok(markdown.includes('| 2 | Tue Jan 20 | Module B |'));
+});

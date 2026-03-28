@@ -76,8 +76,16 @@ export function serializeScheduleMarkdown(model) {
   lines.push(`| ${CANONICAL_HEADERS.join(' | ')} |`);
   lines.push('| :--: | ---- | ------ | --- | -------------- | ------ |');
 
-  (model.weeks || []).forEach((week, index) => {
-    const row = [index + 1, week.date || '', week.module || '', serializeCellItems(week.dueItems), serializeCellItems(week.topicsCovered), serializeCellItems(week.slides)].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ');
+  let displayWeek = 0;
+  const weeks = model.weeks || [];
+  weeks.forEach((week, index) => {
+    const isNewWeek = index === 0 || week.week !== weeks[index - 1].week;
+    if (isNewWeek) {
+      displayWeek += 1;
+    }
+
+    const weekCell = isNewWeek ? displayWeek : '';
+    const row = [weekCell, week.date || '', week.module || '', serializeCellItems(week.dueItems), serializeCellItems(week.topicsCovered), serializeCellItems(week.slides)].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ');
 
     lines.push(`| ${row} |`);
   });
@@ -195,6 +203,7 @@ function parseScheduleTable(lines, tableStart) {
   const weeks = [];
   const tableWarnings = [];
   const expectedCells = splitTableRow(lines[tableStart]).length;
+  let currentWeek = 0;
   let index = tableStart + 2;
   while (index < lines.length && looksLikeTableLine(lines[index])) {
     const cells = splitTableRow(lines[index]);
@@ -204,9 +213,16 @@ function parseScheduleTable(lines, tableStart) {
       continue;
     }
 
+    const weekCell = getCell(cells, colMap.week).trim();
+    if (weekCell) {
+      currentWeek += 1;
+    } else if (currentWeek === 0) {
+      currentWeek = 1;
+    }
+
     weeks.push({
       id: `week-${index}`,
-      week: weeks.length + 1,
+      week: currentWeek,
       date: getCell(cells, colMap.date),
       module: getCell(cells, colMap.module),
       dueItems: parseCellItems(getCell(cells, colMap.dueItems)),
