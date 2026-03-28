@@ -725,7 +725,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   function createInitialScheduleMarkdown(title) {
-    return `# ${title}\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n\n## Special days\n`;
+    return `# ${title}\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n`;
   }
 
   function extractScheduleTitleFromMarkdown(markdown = '') {
