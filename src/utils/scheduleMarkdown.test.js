@@ -155,6 +155,7 @@ test('serializeScheduleMarkdown appends optionalTail content and normalizes spac
     optionalTail: { content: '## Appendix\n\nNotes here' },
   });
 
+  assert.ok(!markdown.includes('## Special days'));
   assert.ok(markdown.includes('## Appendix'));
   assert.ok(markdown.endsWith('\n'));
 });

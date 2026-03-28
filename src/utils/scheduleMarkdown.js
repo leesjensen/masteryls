@@ -82,11 +82,14 @@ export function serializeScheduleMarkdown(model) {
     lines.push(`| ${row} |`);
   });
 
-  lines.push('');
-  lines.push('## Special days');
-  lines.push('');
+  const specialDays = (model.specialDays || []).filter((day) => day && (day.label || day.dateText));
+  if (specialDays.length) {
+    lines.push('');
+    lines.push('## Special days');
+    lines.push('');
+  }
 
-  (model.specialDays || []).forEach((day) => {
+  specialDays.forEach((day) => {
     if (!day?.label && !day?.dateText) {
       return;
     }
