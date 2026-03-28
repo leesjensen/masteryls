@@ -340,16 +340,13 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs" onClick={commit} disabled={!dirty || committing}>
             {committing ? 'Committing...' : 'Commit'}
           </button>
+          <button className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
+            {settingDefault ? 'Updating...' : 'Default'}
+          </button>
+          <button className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800 disabled:bg-gray-400 text-xs" onClick={deleteSchedule} disabled={!selectedFile || selectedFile.id === 'default' || deletingSchedule}>
+            {deletingSchedule ? 'Deleting...' : 'Delete'}
+          </button>
         </div>
-      </div>
-
-      <div className="px-2 py-2 border-b border-gray-100 bg-white flex items-center gap-2">
-        <button className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
-          {settingDefault ? 'Updating...' : selectedFile?.default ? 'Default schedule' : 'Set as default'}
-        </button>
-        <button className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800 disabled:bg-gray-400 text-xs" onClick={deleteSchedule} disabled={!selectedFile || selectedFile.id === 'default' || deletingSchedule}>
-          {deletingSchedule ? 'Deleting...' : 'Delete schedule'}
-        </button>
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-6">
