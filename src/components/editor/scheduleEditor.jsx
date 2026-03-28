@@ -13,14 +13,6 @@ function createEmptyModel() {
   };
 }
 
-function nextWeekNumber(weeks) {
-  const maxWeek = weeks.reduce((max, row) => {
-    const n = Number(row.week);
-    return Number.isFinite(n) ? Math.max(max, n) : max;
-  }, 0);
-  return maxWeek + 1;
-}
-
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
     return '';
@@ -57,7 +49,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [model, setModel] = React.useState(createEmptyModel());
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
-  const [weekCount, setWeekCount] = React.useState(14);
   const newScheduleDialogRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -99,7 +90,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   function addWeek() {
     const row = {
       id: `week-${Date.now()}`,
-      week: nextWeekNumber(model.weeks),
+      week: model.weeks.length + 1,
       date: '',
       module: '',
       dueItems: [],
@@ -172,11 +163,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       };
     });
     updateModel({ ...model, weeks: nextWeeks });
-  }
-
-  function generateWeekGrid() {
-    const count = Math.max(1, Number(weekCount) || 1);
-    updateModel({ ...model, weeks: buildWeeks(count) });
   }
 
   function addTopicLink(rowId, field, topicId) {
@@ -374,10 +360,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         <section className="space-y-2">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-gray-700">Weeks</h2>
-            <input type="number" min="1" value={weekCount} onChange={(e) => setWeekCount(e.target.value)} className="w-20 border border-gray-300 rounded px-2 py-1 text-sm" />
-            <button className="text-xs text-blue-700" onClick={generateWeekGrid}>
-              Generate weeks
-            </button>
             <button className="text-xs text-blue-700" onClick={addWeek}>
               + Add week
             </button>
@@ -387,7 +369,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
             {model.weeks.map((row, index) => (
               <div key={row.id} className="border border-gray-300 rounded p-3 space-y-2">
                 <div className="grid grid-cols-12 gap-2">
-                  <input className="col-span-1 border border-gray-300 rounded px-2 py-1 text-xs" value={row.week} onChange={(e) => updateWeek(row.id, { week: e.target.value })} placeholder="Week" />
+                  <div className="col-span-1 border border-gray-300 rounded px-2 py-1 text-xs bg-gray-50 text-gray-700">{index + 1}</div>
                   <input className="col-span-3 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
                   <input className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
                   <div className="col-span-4 flex justify-end gap-2 text-xs">

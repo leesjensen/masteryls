@@ -159,3 +159,29 @@ test('serializeScheduleMarkdown appends optionalTail content and normalizes spac
   assert.ok(markdown.includes('## Appendix'));
   assert.ok(markdown.endsWith('\n'));
 });
+
+test('week numbers are derived by order when parsing and serializing', () => {
+  const md = `# Week Number Test
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+| 99 | Jan 1 | Intro |  |  |  |
+| 42 | Jan 8 | Module 2 |  |  |  |
+`;
+
+  const parsed = parseScheduleMarkdown(md);
+  assert.deepEqual(
+    parsed.weeks.map((w) => w.week),
+    [1, 2],
+  );
+
+  const serialized = serializeScheduleMarkdown({
+    docTitle: parsed.docTitle,
+    links: parsed.links,
+    weeks: [{ ...parsed.weeks[0], week: 777 }, { ...parsed.weeks[1], week: -3 }],
+    specialDays: parsed.specialDays,
+  });
+
+  assert.ok(serialized.includes('| 1 | Jan 1 | Intro |'));
+  assert.ok(serialized.includes('| 2 | Jan 8 | Module 2 |'));
+});

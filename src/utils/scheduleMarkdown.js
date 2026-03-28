@@ -76,8 +76,8 @@ export function serializeScheduleMarkdown(model) {
   lines.push(`| ${CANONICAL_HEADERS.join(' | ')} |`);
   lines.push('| :--: | ---- | ------ | --- | -------------- | ------ |');
 
-  (model.weeks || []).forEach((week) => {
-    const row = [week.week ?? '', week.date || '', week.module || '', serializeCellItems(week.dueItems), serializeCellItems(week.topicsCovered), serializeCellItems(week.slides)].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ');
+  (model.weeks || []).forEach((week, index) => {
+    const row = [index + 1, week.date || '', week.module || '', serializeCellItems(week.dueItems), serializeCellItems(week.topicsCovered), serializeCellItems(week.slides)].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ');
 
     lines.push(`| ${row} |`);
   });
@@ -206,7 +206,7 @@ function parseScheduleTable(lines, tableStart) {
 
     weeks.push({
       id: `week-${index}`,
-      week: parseWeek(getCell(cells, colMap.week)),
+      week: weeks.length + 1,
       date: getCell(cells, colMap.date),
       module: getCell(cells, colMap.module),
       dueItems: parseCellItems(getCell(cells, colMap.dueItems)),
@@ -346,20 +346,6 @@ function mapHeaderAlias(header) {
   if (header === 'assignments due') return 'due';
   if (header === 'topics') return 'topics covered';
   return header;
-}
-
-function parseWeek(value) {
-  const trimmed = String(value || '').trim();
-  if (!trimmed) {
-    return '';
-  }
-
-  const number = Number(trimmed);
-  if (Number.isFinite(number) && number > 0) {
-    return number;
-  }
-
-  return trimmed;
 }
 
 function getCell(cells, index) {
