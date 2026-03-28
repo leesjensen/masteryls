@@ -414,9 +414,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
           <div className="space-y-4">
             {weekGroups.map((group) => (
-              <div key={`week-group-${group.week}`} className="rounded-lg border-2 border-blue-200 bg-blue-50/40 p-3 space-y-3 shadow-sm">
-                <div className="flex items-center justify-between border-b border-blue-200 pb-2">
-                  <div className="inline-flex items-center rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
+              <div key={`week-group-${group.week}`} className="rounded-lg border-2 border-gray-300 bg-gray-50 p-3 space-y-3 shadow-sm">
+                <div className="flex items-center justify-between border-b border-gray-300 pb-2">
+                  <div className="inline-flex items-center rounded-full bg-gray-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
                   <div className="flex items-center gap-3 text-xs">
                     <button className="text-blue-700" onClick={() => addSession(group.week)}>
                       + Add session
@@ -429,9 +429,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
                 <div className="space-y-3">
                   {group.sessions.map((row, sessionIndex) => (
-                    <div key={row.id} className="rounded border-l-4 border-l-amber-500 border border-amber-200 bg-amber-50/40 p-2 space-y-2">
+                    <div key={row.id} className="rounded border-l-4 border-l-blue-500 border border-blue-200 bg-blue-50/50 p-2 space-y-2">
                       <div className="grid grid-cols-12 gap-2">
-                        <div className="col-span-1 border border-amber-300 rounded px-2 py-1 text-xs bg-white text-amber-800 font-semibold text-center">Session {sessionIndex + 1}</div>
+                        <div className="col-span-1 border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
                         <input className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
                         <input className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
                         <div className="col-span-2 flex justify-end items-center text-xs">
