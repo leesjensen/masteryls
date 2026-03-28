@@ -1,5 +1,8 @@
 import React from 'react';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
+import InputDialog from '../../hooks/inputDialog.jsx';
+
+const NEW_SCHEDULE_OPTION = '__new_schedule__';
 
 function createEmptyModel() {
   return {
@@ -48,7 +51,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
   const [selectedFile, setSelectedFile] = React.useState(null);
-  const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
   const [creatingSchedule, setCreatingSchedule] = React.useState(false);
   const [deletingSchedule, setDeletingSchedule] = React.useState(false);
   const [settingDefault, setSettingDefault] = React.useState(false);
@@ -56,6 +58,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
   const [weekCount, setWeekCount] = React.useState(14);
+  const newScheduleDialogRef = React.useRef(null);
 
   React.useEffect(() => {
     const topic = learningSession?.topic;
@@ -217,8 +220,13 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     setDirty(false);
   }
 
-  function handleFileChange(event) {
+  async function handleFileChange(event) {
     const nextId = event.target.value;
+    if (nextId === NEW_SCHEDULE_OPTION) {
+      await promptAndCreateSchedule();
+      return;
+    }
+
     if (dirty && !window.confirm('Discard unsaved schedule changes?')) {
       return;
     }
@@ -227,9 +235,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     courseOps.setSelectedScheduleFile(learningSession.topic, nextId);
   }
 
-  async function createSchedule() {
-    const title = newScheduleTitle.trim();
-    if (!title || creatingSchedule) {
+  async function createSchedule(title) {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle || creatingSchedule) {
       return;
     }
 
@@ -239,17 +247,32 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
     setCreatingSchedule(true);
     try {
-      const createdFile = await courseOps.createScheduleFile(learningSession.topic, title);
+      const createdFile = await courseOps.createScheduleFile(learningSession.topic, trimmedTitle);
       if (createdFile) {
         setFiles((prev) => [...prev, createdFile]);
         setSelectedFileId(createdFile.id);
       }
-      setNewScheduleTitle('');
     } catch (error) {
       alert(error.message || 'Unable to create schedule file.');
     } finally {
       setCreatingSchedule(false);
     }
+  }
+
+  async function promptAndCreateSchedule() {
+    const title = await newScheduleDialogRef.current?.show({
+      title: 'New schedule',
+      description: 'Enter a title for the new schedule.',
+      placeholder: 'Schedule title',
+      confirmButtonText: 'Create',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (!title) {
+      return;
+    }
+
+    await createSchedule(title);
   }
 
   async function deleteSchedule() {
@@ -308,6 +331,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                   {file.title}
                 </option>
               ))}
+              <option value={NEW_SCHEDULE_OPTION}>+ New schedule...</option>
             </select>
           </label>
           <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
@@ -317,13 +341,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
             {committing ? 'Committing...' : 'Commit'}
           </button>
         </div>
-      </div>
-
-      <div className="px-2 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-        <input value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="New schedule title" className="w-56 border border-gray-300 rounded px-2 py-1 text-sm" />
-        <button className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:bg-gray-400 text-xs" onClick={createSchedule} disabled={!newScheduleTitle.trim() || creatingSchedule}>
-          {creatingSchedule ? 'Creating...' : '+ Add schedule file'}
-        </button>
       </div>
 
       <div className="px-2 py-2 border-b border-gray-100 bg-white flex items-center gap-2">
@@ -443,6 +460,8 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           </button>
         </section>
       </div>
+
+      <InputDialog dialogRef={newScheduleDialogRef} />
     </div>
   );
 }
