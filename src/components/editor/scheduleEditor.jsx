@@ -225,7 +225,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       id: `item-${Date.now()}`,
       text: topic.title,
       href,
-      checked: false,
     });
   }
 
@@ -456,7 +455,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                                   </option>
                                 ))}
                               </select>
-                              <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '', checked: false })}>
+                              <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
                                 + Item
                               </button>
                             </div>
@@ -465,8 +464,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                           <div className="space-y-1">
                             {row[field].map((item) => (
                               <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                                <input type="checkbox" checked={Boolean(item.checked)} onChange={(e) => updateItem(row.id, field, item.id, { checked: e.target.checked })} className="col-span-1" />
-                                <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" />
+                                <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" />
                                 <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
                                 <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
                                   x

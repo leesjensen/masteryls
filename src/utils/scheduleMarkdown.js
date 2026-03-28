@@ -308,9 +308,8 @@ export function parseCellItems(value = '') {
 }
 
 function parseCellItem(entry, index) {
-  const checkedMatch = entry.match(/^(☑|- \[(?:x|X)\])\s+(.+)$/);
-  const checked = Boolean(checkedMatch);
-  const core = checked ? checkedMatch[2].trim() : entry;
+  // Accept checkbox prefixes in imported markdown, but do not persist checked state.
+  const core = entry.replace(/^(?:☑\s+|-\s*\[(?:x|X)\]\s+)/, '').trim();
 
   const linkMatch = core.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
   if (linkMatch) {
@@ -318,7 +317,6 @@ function parseCellItem(entry, index) {
       id: `item-${index}`,
       text: linkMatch[1].trim(),
       href: linkMatch[2].trim(),
-      checked,
     };
   }
 
@@ -326,7 +324,6 @@ function parseCellItem(entry, index) {
     id: `item-${index}`,
     text: core,
     href: '',
-    checked,
   };
 }
 
@@ -334,8 +331,7 @@ function serializeCellItems(items = []) {
   return items
     .filter((item) => item && item.text)
     .map((item) => {
-      const base = item.href ? `[${item.text}](${item.href})` : item.text;
-      return item.checked ? `☑ ${base}` : base;
+      return item.href ? `[${item.text}](${item.href})` : item.text;
     })
     .join('</br>');
 }
