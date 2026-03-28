@@ -52,6 +52,19 @@ function normalizeWeekGroups(rows) {
   });
 }
 
+function groupSessionsByWeek(rows) {
+  const groups = [];
+  rows.forEach((row) => {
+    const last = groups[groups.length - 1];
+    if (!last || last.week !== row.week) {
+      groups.push({ week: row.week, sessions: [row] });
+    } else {
+      last.sessions.push(row);
+    }
+  });
+  return groups;
+}
+
 export default function ScheduleEditor({ courseOps, learningSession }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
@@ -101,23 +114,39 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   }
 
   function addWeek() {
+    const maxWeek = model.weeks.reduce((max, row) => Math.max(max, Number(row.week) || 0), 0);
     const row = {
       id: `week-${Date.now()}`,
-      week: model.weeks.length + 1,
+      week: maxWeek + 1,
       date: '',
       module: '',
       dueItems: [],
       topicsCovered: [],
       slides: [],
     };
-    updateModel({ ...model, weeks: [...model.weeks, row] });
+    updateModel({ ...model, weeks: normalizeWeekGroups([...model.weeks, row]) });
   }
 
-  function addSession(afterIndex) {
-    const sourceWeek = model.weeks[afterIndex]?.week || 1;
+  function addSession(weekNumber) {
+    const insertAfterIndex = (() => {
+      let idx = -1;
+      for (let i = 0; i < model.weeks.length; i += 1) {
+        if (model.weeks[i].week === weekNumber) {
+          idx = i;
+        } else if (idx >= 0) {
+          break;
+        }
+      }
+      return idx;
+    })();
+
+    if (insertAfterIndex < 0) {
+      return;
+    }
+
     const row = {
-      id: `week-${Date.now()}-${afterIndex}`,
-      week: sourceWeek,
+      id: `week-${Date.now()}-${insertAfterIndex}`,
+      week: weekNumber,
       date: '',
       module: '',
       dueItems: [],
@@ -125,12 +154,17 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       slides: [],
     };
     const nextWeeks = [...model.weeks];
-    nextWeeks.splice(afterIndex + 1, 0, row);
+    nextWeeks.splice(insertAfterIndex + 1, 0, row);
     updateModel({ ...model, weeks: normalizeWeekGroups(nextWeeks) });
   }
 
-  function removeWeek(rowId) {
+  function removeSession(rowId) {
     const nextWeeks = model.weeks.filter((row) => row.id !== rowId);
+    updateModel({ ...model, weeks: nextWeeks.length ? normalizeWeekGroups(nextWeeks) : buildWeeks(1) });
+  }
+
+  function removeWeek(weekNumber) {
+    const nextWeeks = model.weeks.filter((row) => row.week !== weekNumber);
     updateModel({ ...model, weeks: nextWeeks.length ? normalizeWeekGroups(nextWeeks) : buildWeeks(1) });
   }
 
@@ -316,6 +350,8 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     }
   }
 
+  const weekGroups = groupSessionsByWeek(model.weeks || []);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="basis-[47px] p-2 flex items-center justify-between border-b border-gray-200">
@@ -374,65 +410,80 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         <section className="space-y-2">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-gray-700">Weeks</h2>
-            <button className="text-xs text-blue-700" onClick={addWeek}>
-              + Add week
-            </button>
           </div>
 
           <div className="space-y-3">
-            {model.weeks.map((row, index) => (
-              <div key={row.id} className="border border-gray-300 rounded p-3 space-y-2">
-                <div className="grid grid-cols-12 gap-2">
-                  <div className="col-span-1 border border-gray-300 rounded px-2 py-1 text-xs bg-gray-50 text-gray-700">{index === 0 || model.weeks[index - 1].week !== row.week ? row.week : ''}</div>
-                  <input className="col-span-3 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
-                  <input className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
-                  <div className="col-span-4 flex justify-end gap-2 text-xs">
-                    <button className="text-blue-700" onClick={() => addSession(index)}>
-                      Add session
+            {weekGroups.map((group) => (
+              <div key={`week-group-${group.week}`} className="border border-gray-300 rounded p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-gray-700">Week {group.week}</div>
+                  <div className="flex items-center gap-3 text-xs">
+                    <button className="text-blue-700" onClick={() => addSession(group.week)}>
+                      + Add session
                     </button>
-                    <button className="text-red-700" onClick={() => removeWeek(row.id)}>
-                      Remove
+                    <button className="text-red-700" onClick={() => removeWeek(group.week)}>
+                      Remove week
                     </button>
                   </div>
                 </div>
 
-                {['dueItems', 'topicsCovered', 'slides'].map((field) => (
-                  <div key={field} className="border border-gray-200 rounded p-2">
-                    <div className="flex justify-between items-center mb-1">
-                      <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
-                      <div className="flex items-center gap-2">
-                        <select className="text-xs border border-gray-300 rounded px-1 py-0.5" defaultValue="" onChange={(e) => addTopicLink(row.id, field, e.target.value)}>
-                          <option value="" disabled>
-                            Add topic link...
-                          </option>
-                          {learningSession.course.allTopics.map((topic) => (
-                            <option key={topic.id} value={topic.id}>
-                              {topic.title}
-                            </option>
-                          ))}
-                        </select>
-                        <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '', checked: false })}>
-                          + Item
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      {row[field].map((item) => (
-                        <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                          <input type="checkbox" checked={Boolean(item.checked)} onChange={(e) => updateItem(row.id, field, item.id, { checked: e.target.checked })} className="col-span-1" />
-                          <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" />
-                          <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
-                          <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
-                            x
+                <div className="space-y-3">
+                  {group.sessions.map((row, sessionIndex) => (
+                    <div key={row.id} className="border border-gray-200 rounded p-2 space-y-2 bg-white">
+                      <div className="grid grid-cols-12 gap-2">
+                        <div className="col-span-1 border border-gray-300 rounded px-2 py-1 text-xs bg-gray-50 text-gray-700 text-center">Session {sessionIndex + 1}</div>
+                        <input className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
+                        <input className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
+                        <div className="col-span-2 flex justify-end items-center text-xs">
+                          <button className="text-red-700" onClick={() => removeSession(row.id)}>
+                            Remove
                           </button>
+                        </div>
+                      </div>
+
+                      {['dueItems', 'topicsCovered', 'slides'].map((field) => (
+                        <div key={field} className="border border-gray-200 rounded p-2">
+                          <div className="flex justify-between items-center mb-1">
+                            <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
+                            <div className="flex items-center gap-2">
+                              <select className="text-xs border border-gray-300 rounded px-1 py-0.5" defaultValue="" onChange={(e) => addTopicLink(row.id, field, e.target.value)}>
+                                <option value="" disabled>
+                                  Add topic link...
+                                </option>
+                                {learningSession.course.allTopics.map((topic) => (
+                                  <option key={topic.id} value={topic.id}>
+                                    {topic.title}
+                                  </option>
+                                ))}
+                              </select>
+                              <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '', checked: false })}>
+                                + Item
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            {row[field].map((item) => (
+                              <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                                <input type="checkbox" checked={Boolean(item.checked)} onChange={(e) => updateItem(row.id, field, item.id, { checked: e.target.checked })} className="col-span-1" />
+                                <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" />
+                                <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
+                                <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
+                                  x
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ))}
+            <button className="text-xs text-blue-700" onClick={addWeek}>
+              + Add week
+            </button>
           </div>
         </section>
 
