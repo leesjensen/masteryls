@@ -49,11 +49,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [selectedFileId, setSelectedFileId] = React.useState('');
   const [selectedFile, setSelectedFile] = React.useState(null);
   const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
-  const [newSchedulePath, setNewSchedulePath] = React.useState('');
   const [creatingSchedule, setCreatingSchedule] = React.useState(false);
-  const [editScheduleTitle, setEditScheduleTitle] = React.useState('');
-  const [editSchedulePath, setEditSchedulePath] = React.useState('');
-  const [updatingScheduleMeta, setUpdatingScheduleMeta] = React.useState(false);
   const [deletingSchedule, setDeletingSchedule] = React.useState(false);
   const [settingDefault, setSettingDefault] = React.useState(false);
   const [model, setModel] = React.useState(createEmptyModel());
@@ -86,17 +82,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       setDirty(false);
     });
   }, [selectedFileId, files, learningSession?.topic]);
-
-  React.useEffect(() => {
-    if (!selectedFile) {
-      setEditScheduleTitle('');
-      setEditSchedulePath('');
-      return;
-    }
-
-    setEditScheduleTitle(selectedFile.title || '');
-    setEditSchedulePath(selectedFile.path || '');
-  }, [selectedFile]);
 
   function updateModel(nextModel) {
     setModel(nextModel);
@@ -254,39 +239,16 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
     setCreatingSchedule(true);
     try {
-      const createdFile = await courseOps.createScheduleFile(learningSession.topic, title, newSchedulePath.trim());
+      const createdFile = await courseOps.createScheduleFile(learningSession.topic, title);
       if (createdFile) {
         setFiles((prev) => [...prev, createdFile]);
         setSelectedFileId(createdFile.id);
       }
       setNewScheduleTitle('');
-      setNewSchedulePath('');
     } catch (error) {
       alert(error.message || 'Unable to create schedule file.');
     } finally {
       setCreatingSchedule(false);
-    }
-  }
-
-  async function renameSchedule() {
-    if (!selectedFile || !editScheduleTitle.trim() || updatingScheduleMeta) {
-      return;
-    }
-
-    if (dirty && !window.confirm('Discard unsaved schedule content changes before renaming this schedule file?')) {
-      return;
-    }
-
-    setUpdatingScheduleMeta(true);
-    try {
-      const renamed = await courseOps.renameScheduleFile(learningSession.topic, selectedFile.id, editScheduleTitle.trim(), editSchedulePath.trim());
-      if (renamed) {
-        setSelectedFileId(renamed.id);
-      }
-    } catch (error) {
-      alert(error.message || 'Unable to rename schedule file.');
-    } finally {
-      setUpdatingScheduleMeta(false);
     }
   }
 
@@ -359,18 +321,15 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
       <div className="px-2 py-2 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
         <input value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="New schedule title" className="w-56 border border-gray-300 rounded px-2 py-1 text-sm" />
-        <input value={newSchedulePath} onChange={(e) => setNewSchedulePath(e.target.value)} placeholder="Optional file path (e.g., winter-2027.md)" className="w-72 border border-gray-300 rounded px-2 py-1 text-sm" />
         <button className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:bg-gray-400 text-xs" onClick={createSchedule} disabled={!newScheduleTitle.trim() || creatingSchedule}>
           {creatingSchedule ? 'Creating...' : '+ Add schedule file'}
         </button>
       </div>
 
       <div className="px-2 py-2 border-b border-gray-100 bg-white flex items-center gap-2">
-        <input value={editScheduleTitle} onChange={(e) => setEditScheduleTitle(e.target.value)} placeholder="Selected schedule title" className="w-56 border border-gray-300 rounded px-2 py-1 text-sm" />
-        <input value={editSchedulePath} onChange={(e) => setEditSchedulePath(e.target.value)} placeholder="Selected schedule path" className="w-72 border border-gray-300 rounded px-2 py-1 text-sm" disabled={selectedFile?.id === 'default'} />
-        <button className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-800 disabled:bg-gray-400 text-xs" onClick={renameSchedule} disabled={!selectedFile || !editScheduleTitle.trim() || updatingScheduleMeta}>
-          {updatingScheduleMeta ? 'Renaming...' : 'Rename schedule'}
-        </button>
+        <div className="text-sm text-gray-700">
+          File name is generated automatically from the schedule title and cannot be renamed.
+        </div>
         <button className="px-3 py-1 bg-indigo-700 text-white rounded hover:bg-indigo-800 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
           {settingDefault ? 'Updating...' : selectedFile?.default ? 'Default schedule' : 'Set as default'}
         </button>

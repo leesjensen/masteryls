@@ -536,7 +536,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     saveEnrollmentUiSettings(learningSession.course.id, { selectedScheduleFiles });
   }
 
-  async function createScheduleFile(topic, scheduleTitle, configuredPath = '') {
+  async function createScheduleFile(topic, scheduleTitle) {
     if (!learningSession?.course || !topic) {
       return null;
     }
@@ -561,7 +561,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       existingSchedules = [legacyDescriptor, ...existingSchedules];
     }
 
-    const path = sanitizeSchedulePath(configuredPath || title);
+    const path = sanitizeSchedulePath(title);
     if (existingSchedules.some((entry) => sanitizeSchedulePath(entry.path) === path)) {
       throw new Error(`A schedule file already exists for '${path}'.`);
     }
@@ -591,77 +591,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return resolved;
   }
 
-  async function renameScheduleFile(topic, fileId, newTitle, newConfiguredPath = '') {
-    if (!learningSession?.course || !topic) {
-      return null;
-    }
-
-    const title = (newTitle || '').trim();
-    if (!title) {
-      throw new Error('Schedule title is required.');
-    }
-
-    const course = learningSession.course;
-    const token = user.getSetting('gitHubToken', course.id);
-    if (!user.isEditor(course.id) || !token) {
-      throw new Error('You do not have permission to rename schedules for this course.');
-    }
-
-    const updatedCourse = Course.copy(course);
-    const updatedTopic = updatedCourse.topicFromId(topic.id);
-    let schedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
-    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
-    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
-    if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
-      schedules = [legacyDescriptor, ...schedules];
-    }
-
-    const index = schedules.findIndex((entry) => entry.id === fileId);
-    if (index === -1) {
-      throw new Error('Unable to find selected schedule file.');
-    }
-
-    const existing = schedules[index];
-    const nextPath = sanitizeSchedulePath(newConfiguredPath || existing.path);
-    const currentPath = sanitizeSchedulePath(existing.path);
-    const pathChanged = currentPath !== nextPath;
-
-    if (existing.id === 'default' && pathChanged) {
-      throw new Error('The default schedule file path cannot be renamed. Create a new schedule instead.');
-    }
-
-    if (pathChanged && schedules.some((entry, i) => i !== index && sanitizeSchedulePath(entry.path) === nextPath)) {
-      throw new Error(`A schedule file already exists for '${nextPath}'.`);
-    }
-
-    if (pathChanged) {
-      const oldResolved = resolveScheduleFile(updatedTopic, existing.path, existing.id, existing.title, Boolean(existing.default));
-      const newResolved = resolveScheduleFile(updatedTopic, nextPath, existing.id, title, Boolean(existing.default));
-      const markdown = await getScheduleTopicContent(topic, fileId, true);
-
-      await service.commitGitHubFile(newResolved.apiUrl, markdown, token, `rename(schedule) ${title}`);
-      await service.deleteGitHubFile(oldResolved.apiUrl, token, `rename(schedule) cleanup ${existing.title || existing.path}`);
-
-      updatedCourse.markdownCache.delete(oldResolved.rawUrl);
-      updatedCourse.markdownCache.set(newResolved.rawUrl, markdown);
-    }
-
-    schedules[index] = {
-      ...existing,
-      title,
-      path: pathChanged ? nextPath : existing.path,
-    };
-
-    updatedTopic.externalRefs = {
-      ...(updatedTopic.externalRefs || {}),
-      schedules,
-    };
-
-    await _updateCourseStructure(token, updatedCourse, `update(course) rename schedule ${title}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
-    setSelectedScheduleFile(updatedTopic, existing.id);
-
-    return resolveScheduleFile(updatedTopic, schedules[index].path, schedules[index].id, schedules[index].title, Boolean(schedules[index].default));
+  async function renameScheduleFile() {
+    throw new Error('Renaming schedule files is not supported. File names are generated from the original schedule title.');
   }
 
   async function deleteScheduleFile(topic, fileId) {
@@ -797,6 +728,11 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return `# ${title}\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n\n## Special days\n`;
   }
 
+  function extractScheduleTitleFromMarkdown(markdown = '') {
+    const match = String(markdown).match(/^\s*#\s+(.+)$/m);
+    return match ? match[1].trim() : '';
+  }
+
   function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false) {
     const course = learningSession?.course;
     const rawRoot = course.links.gitHub.rawUrl;
@@ -866,6 +802,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const updatedCourse = Course.copy(learningSession.course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
     updatedTopic.commit = commit;
+
+    const nextTitle = extractScheduleTitleFromMarkdown(content);
+    if (nextTitle && Array.isArray(updatedTopic.externalRefs?.schedules)) {
+      updatedTopic.externalRefs = {
+        ...(updatedTopic.externalRefs || {}),
+        schedules: updatedTopic.externalRefs.schedules.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry)),
+      };
+    }
 
     updatedCourse.markdownCache.set(selectedFile.rawUrl, content);
     await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
