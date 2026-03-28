@@ -167,7 +167,7 @@ Enter the information about the course. Don't generate the course from your desc
 
 You need to provide your GitHub account name, repo, and personal access token (PAT) for the location where you want to create the course repository. Make sure that the PAT you provide has **Administration** and **Contents** read/write rights.
 
-![Provide course properties](courseParams.png)
+![Provide course properties](docs/courseParams.png)
 
 Congratulations! You have successfully installed MasteryLS and created your first course.
 
