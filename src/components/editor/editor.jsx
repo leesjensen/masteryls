@@ -57,8 +57,8 @@ export default function Editor({ courseOps, user, learningSession }) {
       case 'video':
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
-            <div className="basis-[32px] pt-2 flex items-center justify-between">
-              <h1 className="text-lg font-bold pl-2 text-gray-800 mr-2">
+            <div className="basis-[47px] p-2 flex items-center justify-between">
+              <h1 className="text-lg font-bold text-gray-800 mr-2">
                 Editor
                 <sup className="inline-block w-[1ch] text-center">{dirty ? '*' : ''}</sup>
               </h1>
@@ -85,8 +85,8 @@ export default function Editor({ courseOps, user, learningSession }) {
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">
-            <div className="basis-[32px] pt-2 flex items-center justify-between">
-              <h1 className={`text-lg font-bold pl-2 text-gray-800 mr-2`}>
+            <div className="basis-[47px] p-2 flex items-center justify-between">
+              <h1 className={`text-lg font-bold text-gray-800 mr-2`}>
                 Editor <sup className="inline-block w-[1ch] text-center">{dirty ? '*' : ''}</sup>
               </h1>
 

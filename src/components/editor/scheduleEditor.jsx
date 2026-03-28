@@ -318,9 +318,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      <div className="basis-[36px] pt-2 px-2 flex items-center justify-between border-b border-gray-200">
+      <div className="basis-[47px] p-2 flex items-center justify-between border-b border-gray-200">
         <h1 className="text-lg font-bold text-gray-800">
-          Schedule editor <sup className="inline-block w-[1ch] text-center">{dirty ? '*' : ''}</sup>
+          Editor <sup className="inline-block w-[1ch] text-center">{dirty ? '*' : ''}</sup>
         </h1>
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-700 flex items-center gap-1">
