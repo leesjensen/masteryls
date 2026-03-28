@@ -327,10 +327,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       </div>
 
       <div className="px-2 py-2 border-b border-gray-100 bg-white flex items-center gap-2">
-        <div className="text-sm text-gray-700">
-          File name is generated automatically from the schedule title and cannot be renamed.
-        </div>
-        <button className="px-3 py-1 bg-indigo-700 text-white rounded hover:bg-indigo-800 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
+        <button className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
           {settingDefault ? 'Updating...' : selectedFile?.default ? 'Default schedule' : 'Set as default'}
         </button>
         <button className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800 disabled:bg-gray-400 text-xs" onClick={deleteSchedule} disabled={!selectedFile || selectedFile.id === 'default' || deletingSchedule}>
