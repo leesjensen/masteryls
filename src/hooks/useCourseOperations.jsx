@@ -237,6 +237,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           interactions: topic.interactions,
           description: topic.description,
           commit: topic.commit,
+          schedules: topic.schedules,
           externalRefs: topic.externalRefs,
         })),
       })),
@@ -379,6 +380,18 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           path: _generateTopicPath(course, topicTitle, topicDescription, topicType),
           description: topicDescription,
         };
+
+        if (topicType === 'schedule') {
+          const schedulePath = newTopic.path.split('/').pop() || 'schedule.md';
+          setTopicSchedules(newTopic, [
+            {
+              id: 'default',
+              title: topicTitle,
+              path: schedulePath,
+              default: true,
+            },
+          ]);
+        }
 
         const updatedCourse = Course.copy(course);
         const module = updatedCourse.modules[moduleIndex];
@@ -807,7 +820,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     // If caller has a newer schedule list (e.g. just-created schedule), carry it
     // forward so this update does not overwrite course.json with stale schedules.
     if (Array.isArray(topic?.schedules)) {
-      setTopicSchedules(updatedTopic, getTopicSchedules(topic).map((entry) => ({ ...entry })));
+      setTopicSchedules(
+        updatedTopic,
+        getTopicSchedules(topic).map((entry) => ({ ...entry })),
+      );
     }
 
     updatedTopic.commit = commit;
@@ -902,6 +918,9 @@ ${topicDescription || 'overview content placeholder'}`;
       case 'video':
       case 'embedded':
         return null;
+      case 'schedule':
+        basicContent = createInitialScheduleMarkdown(topic.title || 'Schedule');
+        break;
       case 'exam':
         if (topicDescription && topicDescription.trim().length > 0) {
           basicContent = await aiExamGenerator(learningSession.course.description, topic.title, topicDescription);

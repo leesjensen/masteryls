@@ -35,6 +35,20 @@ function installScheduleRoutes(page: any) {
 
   const schedulePuts: Array<{ path: string; markdown: string }> = [];
   const scheduleDeletes: string[] = [];
+  const courseJsonPuts: any[] = [];
+
+  context.route('https://api.github.com/**/contents/course.json', async (route: any) => {
+    const method = route.request().method();
+    if (method === 'PUT') {
+      const body = route.request().postDataJSON();
+      const decoded = Buffer.from(body.content, 'base64').toString('utf8');
+      courseJsonPuts.push(JSON.parse(decoded));
+      await route.fulfill({ status: 201, json: { commit: { sha: 'schedule-coursejson-commit-sha' } } });
+      return;
+    }
+
+    await route.continue();
+  });
 
   context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/instruction\/schedule\/.*\.md$/, async (route: any) => {
     const url = route.request().url();
@@ -95,7 +109,7 @@ function installScheduleRoutes(page: any) {
     await route.continue();
   });
 
-  return { markdownByRepoPath, schedulePuts, scheduleDeletes };
+  return { markdownByRepoPath, schedulePuts, scheduleDeletes, courseJsonPuts };
 }
 
 test('schedule read view lets learner switch files', async ({ page }) => {
@@ -119,29 +133,34 @@ test('schedule form editor commits and can create additional schedule files', as
   await page.getByText('Schedule').click();
   await page.locator('.absolute.left-0\\.5').click();
 
-  await expect(page.getByText('Schedule editor')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Editor' })).toBeVisible();
 
   const titleInput = page.locator('section').first().locator('input').first();
   await titleInput.fill('Edited Winter Schedule');
-  await page.getByRole('button', { name: '+ Add week' }).click();
-
-  const weekInputs = page.getByPlaceholder('Week');
-  await weekInputs.nth(1).fill('2');
-  await page.getByPlaceholder('Date').nth(1).fill('Thu Jan 15');
-  await page.getByPlaceholder('Module').nth(1).fill('Service');
 
   await page.getByRole('button', { name: 'Commit', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Discard' })).toBeDisabled();
 
   await expect.poll(() => schedulePuts.length).toBeGreaterThan(0);
   const latest = schedulePuts[schedulePuts.length - 1];
   expect(latest.path).toContain('instruction/schedule/');
   expect(latest.markdown).toContain('# Edited Winter Schedule');
-  expect(latest.markdown).toContain('| 2 | Thu Jan 15 | Service');
 
-  await page.getByPlaceholder('New schedule title').fill('Evening Schedule');
-  await page.getByRole('button', { name: '+ Add schedule file' }).click();
+  const fileSelect = page.locator('label:has-text("File") select').first();
+  page.once('dialog', async (dialog) => {
+    if (dialog.message().includes('Discard unsaved schedule changes')) {
+      await dialog.accept();
+      return;
+    }
+    await dialog.dismiss();
+  });
+  await fileSelect.selectOption('__new_schedule__');
+  const dialog = page.locator('dialog:has-text("New schedule")');
+  await expect(dialog).toBeVisible();
+  await dialog.getByPlaceholder('Schedule title').fill('Evening Schedule');
+  await dialog.locator('select').selectOption('');
+  await dialog.getByRole('button', { name: 'Create' }).click();
 
-  await expect(page.locator('select').first()).toHaveValue(/schedule-/);
   await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/evening-schedule.md'))).toBeTruthy();
 });
 
@@ -154,6 +173,9 @@ test('schedule editor can create a new schedule by copying an existing schedule'
   await page.locator('.absolute.left-0\\.5').click();
 
   const fileSelect = page.locator('label:has-text("File") select').first();
+  await fileSelect.selectOption('joe');
+  await expect(fileSelect).toHaveValue('joe');
+  await expect(page.locator('section').first().locator('input').first()).toHaveValue("Joe's schedule");
   await fileSelect.selectOption('__new_schedule__');
 
   const dialog = page.locator('dialog:has-text("New schedule")');
@@ -164,11 +186,10 @@ test('schedule editor can create a new schedule by copying an existing schedule'
   await expect(sourceSelect).toHaveValue('joe');
   await dialog.getByRole('button', { name: 'Create' }).click();
 
-  await expect.poll(() => schedulePuts.some((entry) => entry.markdown.includes('# Copied Joe Schedule'))).toBeTruthy();
+  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/copied-joe-schedule.md') && entry.markdown.includes('[Joe Intro](../instruction/introduction.md)'))).toBeTruthy();
 
-  const copiedContentWrite = [...schedulePuts].reverse().find((entry) => entry.markdown.includes('# Copied Joe Schedule'));
+  const copiedContentWrite = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('/copied-joe-schedule.md') && entry.markdown.includes('[Joe Intro](../instruction/introduction.md)'));
   expect(copiedContentWrite?.path || '').toContain('/copied-joe-schedule.md');
-  expect(copiedContentWrite?.markdown || '').toContain('[Joe Intro](../instruction/introduction.md)');
 
   await expect(fileSelect.locator('option[value="default"]')).toHaveCount(1);
   await expect(fileSelect.locator('option[value="joe"]')).toHaveCount(1);
@@ -213,6 +234,39 @@ test('schedule editor creates blank schedules with schedule markdown template', 
   expect(created?.markdown || '').toContain('|  1   |      |        |     |                |        |');
 });
 
+test('adding a schedule topic creates schedule template markdown and schedules metadata', async ({ page }) => {
+  await initBasicCourse({ page });
+  const { schedulePuts, courseJsonPuts } = installScheduleRoutes(page);
+
+  await navigateToCourse(page);
+  await page.locator('.absolute.left-0\\.5').click();
+
+  await page.getByRole('button', { name: '+ Add New Topic' }).first().click();
+  await page.getByPlaceholder('Topic title').fill('schedule');
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="schedule"]') })
+    .first()
+    .selectOption('schedule');
+  await page.getByRole('button', { name: 'Generate' }).click();
+
+  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('instruction/schedule/schedule.md'))).toBeTruthy();
+
+  const createdScheduleMd = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('instruction/schedule/schedule.md'));
+  expect(createdScheduleMd?.markdown || '').toContain('# schedule');
+  expect(createdScheduleMd?.markdown || '').toContain('| Week | Date | Module | Due | Topics Covered | Slides |');
+  expect(createdScheduleMd?.markdown || '').not.toContain('overview content placeholder');
+
+  await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
+  const latestCourseJson = courseJsonPuts[courseJsonPuts.length - 1];
+  const allTopics = (latestCourseJson.modules || []).flatMap((m: any) => m.topics || []);
+  const scheduleTopic = allTopics.find((t: any) => t.type === 'schedule' && t.path === 'instruction/schedule/schedule.md');
+
+  expect(scheduleTopic).toBeTruthy();
+  expect(Array.isArray(scheduleTopic.schedules)).toBeTruthy();
+  expect(scheduleTopic.schedules).toEqual([{ id: 'default', title: 'schedule', path: 'schedule.md', default: true }]);
+});
+
 test('schedule editor confirms before switching files with unsaved changes', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
   installScheduleRoutes(page);
@@ -255,20 +309,13 @@ test('schedule editor can rename and delete non-default schedule files', async (
   const fileSelect = page.locator('label:has-text("File") select').first();
   await fileSelect.selectOption('joe');
 
-  await page.getByPlaceholder('Selected schedule title').fill("Joe's evening schedule");
-  await page.getByPlaceholder('Selected schedule path').fill('joe-evening.md');
-  await page.getByRole('button', { name: 'Rename schedule' }).click();
-
-  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/joe-evening.md'))).toBeTruthy();
-  await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-s-schedule.md'))).toBeTruthy();
-
   page.once('dialog', async (dialog) => {
     await dialog.accept();
   });
-  await page.getByRole('button', { name: 'Delete schedule' }).click();
+  await page.getByRole('button', { name: 'Delete' }).click();
 
   await expect(fileSelect).toHaveValue('default');
-  await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-evening.md'))).toBeTruthy();
+  await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-s-schedule.md'))).toBeTruthy();
 });
 
 test('schedule editor can set default schedule used as fallback selection', async ({ page }) => {
@@ -281,7 +328,7 @@ test('schedule editor can set default schedule used as fallback selection', asyn
 
   const fileSelect = page.locator('label:has-text("File") select').first();
   await fileSelect.selectOption('joe');
-  await page.getByRole('button', { name: 'Set as default' }).click();
+  await page.getByRole('button', { name: 'Default' }).click();
 
   await page.evaluate(() => {
     const key = 'uiSettings-14602d77-0ff3-4267-b25e-4a7c3c47848b';

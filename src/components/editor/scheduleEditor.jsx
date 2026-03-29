@@ -463,10 +463,10 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
     let copiedMarkdown = '';
     if (sourceFileId) {
-      const sourceFile = files.find((file) => file.id === sourceFileId);
-      if (sourceFile?.rawUrl) {
-        const sourceResponse = await fetch(sourceFile.rawUrl);
-        const sourceMarkdown = await sourceResponse.text();
+      if (sourceFileId === selectedFileId) {
+        copiedMarkdown = serializeScheduleMarkdown({ ...model, docTitle: trimmedTitle });
+      } else {
+        const sourceMarkdown = await courseOps.getScheduleTopicContent(learningSession.topic, sourceFileId, true);
         const parsed = parseScheduleMarkdown(sourceMarkdown || '');
         copiedMarkdown = serializeScheduleMarkdown({ ...createEmptyModel(), ...parsed, docTitle: trimmedTitle });
       }
