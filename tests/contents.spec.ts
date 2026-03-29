@@ -116,3 +116,43 @@ test('adding a topic with an existing slug generates a unique path', async ({ pa
   expect(duplicateTitleTopics.some((t: any) => t.path === 'instruction/topic-1/topic-1.md')).toBeTruthy();
   expect(duplicateTitleTopics.some((t: any) => t.path === 'instruction/topic-1-2/topic-1-2.md')).toBeTruthy();
 });
+
+test('sidebar annotates topics with due dates from selected schedule', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'Module 1',
+          topics: [
+            { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
+            { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'Topic 1', type: 'instruction', path: 'instruction/topic-1.md' },
+            {
+              id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
+              title: 'Schedule',
+              type: 'schedule',
+              path: 'instruction/schedule/schedule.md',
+              state: 'published',
+              schedules: [{ id: 'default', title: 'Winter', path: 'schedule.md', default: true }],
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  const context = page.context();
+  await context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/instruction\/schedule\/schedule\.md$/, async (route: any) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/plain; charset=utf-8',
+      body: `# Winter 2026 Schedule\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   | Sat Apr 4, 2026 | Intro | [Topic 1](../topic-1.md) | | |\n`,
+    });
+  });
+
+  await navigateToCourseNoLogin(page);
+
+  await expect(page.getByRole('button', { name: '▼ Module 1' })).toBeVisible();
+  await expect(page.getByText('Topic 1')).toBeVisible();
+  await expect(page.getByText('Due Apr 4')).toBeVisible();
+});

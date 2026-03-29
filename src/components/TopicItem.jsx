@@ -4,7 +4,7 @@ import { BadgeCheck, StickyNote } from 'lucide-react';
 import { TopicIcon } from '../utils/Icons';
 import { useNavigate } from 'react-router-dom';
 
-function TopicItem({ course, topic, currentTopic, enrollment }) {
+function TopicItem({ course, topic, currentTopic, enrollment, dueDateLabel = '' }) {
   const navigate = useNavigate();
   const [progressMeter, setProgressMeter] = React.useState(null);
 
@@ -40,6 +40,11 @@ function TopicItem({ course, topic, currentTopic, enrollment }) {
         <a href={`/course/${course.id}/topic/${topic.id}`} onClick={navigateToTopic} className={`mr-1 no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
           {topic.title}
         </a>
+        {dueDateLabel && (
+          <span className="inline-flex items-center justify-center text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 mr-1 whitespace-nowrap" title={`Due ${dueDateLabel}`}>
+            Due {dueDateLabel}
+          </span>
+        )}
         {enrollment?.progress[topic.id]?.notes && (
           <a className="text-blue-300 mr-1" onClick={(e) => navigateToTopic(e, '@note')}>
             <StickyNote size={16} />

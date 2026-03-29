@@ -7,7 +7,7 @@ import NewTopicButton from './NewTopicButton';
 import useClickOutside from '../hooks/useClickOutside';
 import ConfirmDialog from '../hooks/confirmDialog.jsx';
 
-function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible }) {
+function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible, dueDatesByTopicId = {} }) {
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState(module.title || '');
@@ -48,10 +48,11 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
   }
 
   function getTopicItem(topic, topicIndex) {
+    const dueDateLabel = dueDatesByTopicId[topic.id] || '';
     if (editorVisible) {
-      return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} course={learningSession.course} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} />;
+      return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} course={learningSession.course} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} dueDateLabel={dueDateLabel} />;
     }
-    return <TopicItem key={topic.id} course={learningSession.course} topic={topic} currentTopic={currentTopic} enrollment={learningSession.enrollment} />;
+    return <TopicItem key={topic.id} course={learningSession.course} topic={topic} currentTopic={currentTopic} enrollment={learningSession.enrollment} dueDateLabel={dueDateLabel} />;
   }
 
   return (

@@ -6,10 +6,183 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
+import { parseScheduleMarkdown } from './utils/scheduleMarkdown.js';
+
+function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
+  if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
+    return '';
+  }
+
+  return rawUrl.slice(rawRoot.length + 1);
+}
+
+function resolveRelativeRepoPath(fromFileRepoPath, rawPath) {
+  if (!fromFileRepoPath || !rawPath) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(rawPath)) {
+    return '';
+  }
+
+  const baseDir = fromFileRepoPath.slice(0, Math.max(0, fromFileRepoPath.lastIndexOf('/')));
+  const joined = rawPath.startsWith('/') ? rawPath.slice(1) : `${baseDir}/${rawPath}`;
+
+  const normalized = [];
+  joined.split('/').forEach((segment) => {
+    if (!segment || segment === '.') {
+      return;
+    }
+
+    if (segment === '..') {
+      normalized.pop();
+      return;
+    }
+
+    normalized.push(segment);
+  });
+
+  return normalized.join('/');
+}
+
+function formatDueLabel(dates) {
+  const compactDates = [];
+  dates.forEach((dateText) => {
+    const raw = String(dateText || '').trim();
+    if (!raw) {
+      return;
+    }
+
+    // Schedule rows are commonly stored as "Tue Jan 8" or "Tue Jan 8 2026".
+    const partsMatch = raw.match(/^(?:[A-Za-z]{3}\s+)?([A-Za-z]{3,9})\s+(\d{1,2})(?:,?\s+\d{4})?$/);
+    if (partsMatch) {
+      compactDates.push(`${partsMatch[1].slice(0, 3)} ${Number(partsMatch[2])}`);
+      return;
+    }
+
+    // Support ISO and long-form textual dates like "Sat Apr 4, 2026".
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00`) : new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      compactDates.push(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(parsed));
+      return;
+    }
+
+    compactDates.push(raw);
+  });
+
+  const uniqueDates = compactDates.filter((date, index) => compactDates.indexOf(date) === index);
+
+  if (!uniqueDates.length) {
+    return '';
+  }
+
+  if (uniqueDates.length === 1) {
+    return uniqueDates[0];
+  }
+
+  return `${uniqueDates[0]} (+${uniqueDates.length - 1})`;
+}
 
 function Contents({ courseOps, learningSession, editorVisible }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
+  const [dueDatesByTopicId, setDueDatesByTopicId] = React.useState({});
+
+  const scheduleTopic = courseOps.getScheduleTopic(learningSession?.course);
+  const scheduleFiles = scheduleTopic ? courseOps.getScheduleFiles(scheduleTopic) : [];
+  const selectedScheduleFile = scheduleTopic ? courseOps.getSelectedScheduleFile(scheduleTopic, scheduleFiles) : null;
+
+  React.useEffect(() => {
+    let active = true;
+
+    async function syncDueDates() {
+      if (!learningSession?.course || !scheduleTopic || !selectedScheduleFile) {
+        if (active) {
+          setDueDatesByTopicId({});
+        }
+        return;
+      }
+
+      const markdown = await courseOps.getScheduleTopicContent(scheduleTopic, selectedScheduleFile.id);
+      if (!active) {
+        return;
+      }
+
+      const model = parseScheduleMarkdown(markdown || '');
+      const topicByRepoPath = new Map();
+      const topicByTitle = new Map();
+      const rawRoot = learningSession.course.links?.gitHub?.rawUrl;
+
+      learningSession.course.allTopics.forEach((topic) => {
+        const repoPath = repoRelativePathFromRawUrl(topic.path, rawRoot);
+        if (repoPath) {
+          topicByRepoPath.set(repoPath, topic.id);
+        }
+
+        if (topic.title) {
+          topicByTitle.set(topic.title.trim().toLowerCase(), topic.id);
+        }
+      });
+
+      const dueMap = new Map();
+      const rows = Array.isArray(model?.weeks) ? model.weeks : [];
+      rows.forEach((row) => {
+        const date = String(row?.date || '').trim();
+        if (!date) {
+          return;
+        }
+
+        const dueItems = Array.isArray(row?.dueItems) ? row.dueItems : [];
+        dueItems.forEach((item) => {
+          const href = String(item?.href || '').trim();
+          const text = String(item?.text || '').trim();
+
+          let topicId = null;
+          if (href) {
+            const repoPath = resolveRelativeRepoPath(selectedScheduleFile.repoPath, href);
+            topicId = topicByRepoPath.get(repoPath) || null;
+          }
+
+          if (!topicId && text) {
+            topicId = topicByTitle.get(text.toLowerCase()) || null;
+          }
+
+          if (!topicId) {
+            return;
+          }
+
+          if (!dueMap.has(topicId)) {
+            dueMap.set(topicId, []);
+          }
+
+          const existing = dueMap.get(topicId);
+          if (!existing.includes(date)) {
+            existing.push(date);
+          }
+        });
+      });
+
+      const nextDueDates = {};
+      dueMap.forEach((dates, topicId) => {
+        const label = formatDueLabel(dates);
+        if (label) {
+          nextDueDates[topicId] = label;
+        }
+      });
+
+      setDueDatesByTopicId(nextDueDates);
+    }
+
+    syncDueDates().catch(() => {
+      if (active) {
+        setDueDatesByTopicId({});
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [courseOps, learningSession?.course, scheduleTopic?.id, selectedScheduleFile?.id]);
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
@@ -93,7 +266,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const moduleJsx = (
     <ul className="list-none p-0">
       {moduleMap.map((module, moduleIndex) => (
-        <ModuleSection key={moduleIndex} courseOps={courseOps} learningSession={learningSession} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={learningSession.topic} editorVisible={editorVisible} />
+        <ModuleSection key={moduleIndex} courseOps={courseOps} learningSession={learningSession} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={learningSession.topic} editorVisible={editorVisible} dueDatesByTopicId={dueDatesByTopicId} />
       ))}
     </ul>
   );
