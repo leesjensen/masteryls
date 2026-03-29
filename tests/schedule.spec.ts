@@ -264,7 +264,11 @@ test('adding a schedule topic creates schedule template markdown and schedules m
 
   expect(scheduleTopic).toBeTruthy();
   expect(Array.isArray(scheduleTopic.schedules)).toBeTruthy();
-  expect(scheduleTopic.schedules).toEqual([{ id: 'default', title: 'schedule', path: 'schedule.md', default: true }]);
+  expect(scheduleTopic.schedules).toHaveLength(1);
+  expect(scheduleTopic.schedules[0].title).toBe('schedule');
+  expect(scheduleTopic.schedules[0].path).toBe('schedule.md');
+  expect(scheduleTopic.schedules[0].default).toBe(true);
+  expect(scheduleTopic.schedules[0].id).toMatch(/^[0-9a-f-]{36}$/i);
 });
 
 test('schedule editor confirms before switching files with unsaved changes', async ({ page }) => {

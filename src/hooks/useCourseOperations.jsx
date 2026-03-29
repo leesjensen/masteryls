@@ -385,7 +385,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           const schedulePath = newTopic.path.split('/').pop() || 'schedule.md';
           setTopicSchedules(newTopic, [
             {
-              id: 'default',
+              id: generateId(),
               title: topicTitle,
               path: schedulePath,
               default: true,
@@ -591,7 +591,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     const newSchedule = {
-      id: `schedule-${generateId()}`,
+      id: generateId(),
       title,
       path,
       default: false,
@@ -646,7 +646,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     const removing = schedules[index];
-    if (removing.id === 'default') {
+    if (removing.default) {
       throw new Error('The default schedule file cannot be deleted.');
     }
 
