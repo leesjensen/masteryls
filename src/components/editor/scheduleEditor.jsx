@@ -3,6 +3,9 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
+import Markdown from '../../components/Markdown';
+import Splitter from '../Splitter.jsx';
+import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
 const NEW_SCHEDULE_OPTION = '__new_schedule__';
@@ -259,6 +262,8 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
   const [newScheduleSourceId, setNewScheduleSourceId] = React.useState('');
   const newScheduleDialogRef = React.useRef(null);
+  const { panePercent: editorPanePercent, splitContainerRef, onPaneMoved: onEditorPaneMoved, onPaneResized: onEditorPaneResized } = useSplitPaneState(55);
+  const previewMarkdown = React.useMemo(() => serializeScheduleMarkdown(model), [model]);
 
   React.useEffect(() => {
     const topic = learningSession?.topic;
@@ -652,84 +657,98 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 space-y-6">
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-700">Title</h2>
-          <input value={model.docTitle} onChange={(e) => updateModel({ ...model, docTitle: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
-        </section>
+      <div className="flex-1 overflow-hidden p-4">
+        <div className="flex h-full overflow-hidden min-w-0 border border-gray-200 rounded" ref={splitContainerRef}>
+          <div className="h-full overflow-auto min-w-0 shrink-0 p-4" style={{ width: `${editorPanePercent}%` }}>
+            <div className="space-y-6">
+              <section className="space-y-2">
+                <h2 className="text-sm font-semibold text-gray-700">Title</h2>
+                <input value={model.docTitle} onChange={(e) => updateModel({ ...model, docTitle: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+              </section>
 
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-700">External links</h2>
-          {model.links.map((link, index) => (
-            <div key={link.id || index} className="flex gap-2 items-center">
-              <input value={link.label || ''} onChange={(e) => updateLinks(index, { label: e.target.value })} placeholder="Label" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" />
-              <input value={link.url || ''} onChange={(e) => updateLinks(index, { url: e.target.value })} placeholder="URL" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" />
-              <button className="text-xs text-red-700" onClick={() => updateModel({ ...model, links: model.links.filter((_, i) => i !== index) })}>
-                Remove
-              </button>
-            </div>
-          ))}
-          <button className="text-xs text-blue-700" onClick={() => updateModel({ ...model, links: [...model.links, { id: `link-${Date.now()}`, label: '', url: '' }] })}>
-            + Add link
-          </button>
-        </section>
-
-        <section className="space-y-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-700">Weeks</h2>
-          </div>
-
-          <DndContext collisionDetection={closestCenter} onDragEnd={handleSessionDragEnd}>
-            <SortableContext items={(model.weeks || []).map((row) => row.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-4">
-                {weekGroups.map((group) => (
-                  <div key={`week-group-${group.week}`} className="rounded-lg border-2 border-gray-300 bg-gray-50 p-3 space-y-3 shadow-sm">
-                    <div className="flex items-center justify-between border-b border-gray-300 pb-2">
-                      <div className="inline-flex items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <button className="text-red-700" onClick={() => removeWeek(group.week)}>
-                          Remove week
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      {group.sessions.map((row, sessionIndex) => (
-                        <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
-                      ))}
-                    </div>
-
-                    <button className="text-xs text-blue-700" onClick={() => addSession(group.week)}>
-                      + Add session
+              <section className="space-y-2">
+                <h2 className="text-sm font-semibold text-gray-700">External links</h2>
+                {model.links.map((link, index) => (
+                  <div key={link.id || index} className="flex gap-2 items-center">
+                    <input value={link.label || ''} onChange={(e) => updateLinks(index, { label: e.target.value })} placeholder="Label" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" />
+                    <input value={link.url || ''} onChange={(e) => updateLinks(index, { url: e.target.value })} placeholder="URL" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" />
+                    <button className="text-xs text-red-700" onClick={() => updateModel({ ...model, links: model.links.filter((_, i) => i !== index) })}>
+                      Remove
                     </button>
                   </div>
                 ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-          <button className="text-xs text-blue-700" onClick={addWeek}>
-            + Add week
-          </button>
-        </section>
+                <button className="text-xs text-blue-700" onClick={() => updateModel({ ...model, links: [...model.links, { id: `link-${Date.now()}`, label: '', url: '' }] })}>
+                  + Add link
+                </button>
+              </section>
 
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-700">Special days</h2>
-          {model.specialDays.map((day, index) => (
-            <div key={day.id || index} className="grid grid-cols-12 gap-2 items-center">
-              <div className="col-span-3 min-w-0 flex items-center gap-2">
-                <input type="date" value={pickerValueFromTextDate(day.dateText)} onChange={(e) => updateSpecialDay(index, { dateText: textDateFromPickerValue(e.target.value) })} className="w-[150px] border border-gray-300 rounded px-2 py-1 text-sm" />
-              </div>
-              <input value={day.label || ''} onChange={(e) => updateSpecialDay(index, { label: e.target.value })} placeholder="Label" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
-              <input value={day.notes || ''} onChange={(e) => updateSpecialDay(index, { notes: e.target.value })} placeholder="Notes" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
-              <button className="col-span-1 text-xs text-red-700" onClick={() => updateModel({ ...model, specialDays: model.specialDays.filter((_, i) => i !== index) })}>
-                Remove
-              </button>
+              <section className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-gray-700">Weeks</h2>
+                </div>
+
+                <DndContext collisionDetection={closestCenter} onDragEnd={handleSessionDragEnd}>
+                  <SortableContext items={(model.weeks || []).map((row) => row.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-4">
+                      {weekGroups.map((group) => (
+                        <div key={`week-group-${group.week}`} className="rounded-lg border-2 border-gray-300 bg-gray-50 p-3 space-y-3 shadow-sm">
+                          <div className="flex items-center justify-between border-b border-gray-300 pb-2">
+                            <div className="inline-flex items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
+                            <div className="flex items-center gap-3 text-xs">
+                              <button className="text-red-700" onClick={() => removeWeek(group.week)}>
+                                Remove week
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            {group.sessions.map((row, sessionIndex) => (
+                              <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
+                            ))}
+                          </div>
+
+                          <button className="text-xs text-blue-700" onClick={() => addSession(group.week)}>
+                            + Add session
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+                <button className="text-xs text-blue-700" onClick={addWeek}>
+                  + Add week
+                </button>
+              </section>
+
+              <section className="space-y-2">
+                <h2 className="text-sm font-semibold text-gray-700">Special days</h2>
+                {model.specialDays.map((day, index) => (
+                  <div key={day.id || index} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-3 min-w-0 flex items-center gap-2">
+                      <input type="date" value={pickerValueFromTextDate(day.dateText)} onChange={(e) => updateSpecialDay(index, { dateText: textDateFromPickerValue(e.target.value) })} className="w-[150px] border border-gray-300 rounded px-2 py-1 text-sm" />
+                    </div>
+                    <input value={day.label || ''} onChange={(e) => updateSpecialDay(index, { label: e.target.value })} placeholder="Label" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
+                    <input value={day.notes || ''} onChange={(e) => updateSpecialDay(index, { notes: e.target.value })} placeholder="Notes" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
+                    <button className="col-span-1 text-xs text-red-700" onClick={() => updateModel({ ...model, specialDays: model.specialDays.filter((_, i) => i !== index) })}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button className="text-xs text-blue-700" onClick={() => updateModel({ ...model, specialDays: [...model.specialDays, { id: `sd-${Date.now()}`, dateText: '', label: '', notes: '' }] })}>
+                  + Add special day
+                </button>
+              </section>
             </div>
-          ))}
-          <button className="text-xs text-blue-700" onClick={() => updateModel({ ...model, specialDays: [...model.specialDays, { id: `sd-${Date.now()}`, dateText: '', label: '', notes: '' }] })}>
-            + Add special day
-          </button>
-        </section>
+          </div>
+
+          <Splitter onMove={onEditorPaneMoved} onResized={onEditorPaneResized} minPosition={0} maxPosition={window.innerWidth} />
+
+          <div className="h-full flex-1 min-w-0 overflow-auto border-l border-gray-200 bg-white">
+            <div className="markdown-body p-4">
+              <Markdown learningSession={learningSession} content={previewMarkdown} />
+            </div>
+          </div>
+        </div>
       </div>
 
       <dialog ref={newScheduleDialogRef} className="w-full p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
