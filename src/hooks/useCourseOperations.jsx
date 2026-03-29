@@ -373,11 +373,16 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
       try {
+        const updatedCourse = Course.copy(course);
+        const existingPaths = new Set(updatedCourse.allTopics.map((topic) => topic.path));
+        const basePath = _generateTopicPath(course, topicTitle, topicDescription, topicType);
+        const resolvedPath = _resolveUniqueTopicPath(course, basePath, existingPaths);
+
         const newTopic = {
           id: generateId(),
           title: topicTitle,
           type: topicType,
-          path: _generateTopicPath(course, topicTitle, topicDescription, topicType),
+          path: resolvedPath,
           description: topicDescription,
         };
 
@@ -393,7 +398,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           ]);
         }
 
-        const updatedCourse = Course.copy(course);
         const module = updatedCourse.modules[moduleIndex];
         module.topics.push(newTopic);
 
@@ -1280,6 +1284,35 @@ ${topicDescription || 'overview content placeholder'}`;
       .replace(/--+/g, '-')
       .trim('-');
     return `${course.links.gitHub.rawUrl}/instruction/${slugTitle}/${slugTitle}.md`;
+  }
+
+  function _resolveUniqueTopicPath(course, topicPath, existingPaths) {
+    const rawRoot = course?.links?.gitHub?.rawUrl;
+    if (!rawRoot || !topicPath || !existingPaths) {
+      return topicPath;
+    }
+
+    const isExternalHttpPath = /^https?:\/\//i.test(topicPath) && !topicPath.startsWith(`${rawRoot}/`);
+    if (isExternalHttpPath) {
+      return topicPath;
+    }
+
+    const match = topicPath.match(new RegExp(`^${rawRoot.replace(/[.*+?^${}()|[\\]\\]/g, '\\\\$&')}/instruction/([^/]+)/\\1\\.md$`));
+    if (!match) {
+      return topicPath;
+    }
+
+    const baseSlug = match[1];
+    let suffix = 1;
+    let candidatePath = topicPath;
+
+    while (existingPaths.has(candidatePath)) {
+      suffix += 1;
+      const nextSlug = `${baseSlug}-${suffix}`;
+      candidatePath = `${rawRoot}/instruction/${nextSlug}/${nextSlug}.md`;
+    }
+
+    return candidatePath;
   }
 
   function _extractInteractionIds(content) {
