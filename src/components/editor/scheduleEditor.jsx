@@ -92,6 +92,75 @@ function groupSessionsByWeek(rows) {
   return groups;
 }
 
+function pickerValueFromTextDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  // Support schedule formats like "Tue Jan 13", "Jan 13", "Tue Jan 13 2027", "Jan 13 2027".
+  const partsMatch = raw.match(/^(?:[A-Za-z]{3}\s+)?([A-Za-z]{3,9})\s+(\d{1,2})(?:\s+(\d{4}))?$/);
+  if (partsMatch) {
+    const monthText = partsMatch[1].slice(0, 3).toLowerCase();
+    const day = Number(partsMatch[2]);
+    const parsedYear = partsMatch[3] ? Number(partsMatch[3]) : NaN;
+    const monthMap = {
+      jan: 1,
+      feb: 2,
+      mar: 3,
+      apr: 4,
+      may: 5,
+      jun: 6,
+      jul: 7,
+      aug: 8,
+      sep: 9,
+      oct: 10,
+      nov: 11,
+      dec: 12,
+    };
+
+    const month = monthMap[monthText];
+    if (month && day >= 1 && day <= 31) {
+      const year = Number.isFinite(parsedYear) ? parsedYear : new Date().getFullYear();
+      const mm = String(month).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      return `${year}-${mm}-${dd}`;
+    }
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+
+  return parsed.toISOString().slice(0, 10);
+}
+
+function textDateFromPickerValue(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  const parsed = new Date(`${raw}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return raw;
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+    .format(parsed)
+    .replace(',', '');
+}
+
 export default function ScheduleEditor({ courseOps, learningSession }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
@@ -482,7 +551,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                     <div key={row.id} className="rounded border-l-4 border-l-blue-500 border border-blue-200 bg-blue-50/50 p-2 space-y-2">
                       <div className="grid grid-cols-[90px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
                         <div className="w-[90px] whitespace-nowrap border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
-                        <input className="min-w-0 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
+                        <div className="min-w-0 flex items-center gap-2">
+                          <input type="date" value={pickerValueFromTextDate(row.date)} onChange={(e) => updateWeek(row.id, { date: textDateFromPickerValue(e.target.value) })} className="w-[150px] border border-gray-300 rounded px-2 py-1 text-xs" />
+                        </div>
                         <input className="min-w-0 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
                         <div className="flex justify-end items-center text-xs whitespace-nowrap">
                           <button className="text-red-700" onClick={() => removeSession(row.id)}>
@@ -558,7 +629,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           <h2 className="text-sm font-semibold text-gray-700">Special days</h2>
           {model.specialDays.map((day, index) => (
             <div key={day.id || index} className="grid grid-cols-12 gap-2 items-center">
-              <input value={day.dateText || ''} onChange={(e) => updateSpecialDay(index, { dateText: e.target.value })} placeholder="Date" className="col-span-3 border border-gray-300 rounded px-2 py-1 text-sm" />
+              <div className="col-span-3 min-w-0 flex items-center gap-2">
+                <input type="date" value={pickerValueFromTextDate(day.dateText)} onChange={(e) => updateSpecialDay(index, { dateText: textDateFromPickerValue(e.target.value) })} className="w-[150px] border border-gray-300 rounded px-2 py-1 text-sm" />
+              </div>
               <input value={day.label || ''} onChange={(e) => updateSpecialDay(index, { label: e.target.value })} placeholder="Label" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
               <input value={day.notes || ''} onChange={(e) => updateSpecialDay(index, { notes: e.target.value })} placeholder="Notes" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
               <button className="col-span-1 text-xs text-red-700" onClick={() => updateModel({ ...model, specialDays: model.specialDays.filter((_, i) => i !== index) })}>
