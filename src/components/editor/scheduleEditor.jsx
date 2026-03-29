@@ -1,4 +1,8 @@
 import React from 'react';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 import InputDialog from '../../hooks/inputDialog.jsx';
 
@@ -159,6 +163,88 @@ function textDateFromPickerValue(value) {
   })
     .format(parsed)
     .replace(',', '');
+}
+
+function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`rounded border-l-4 border-l-blue-500 border border-blue-200 bg-blue-50/50 p-2 space-y-2 ${isDragging ? 'opacity-60' : ''}`}>
+      <div className="grid grid-cols-[90px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
+        <div className="w-[90px] whitespace-nowrap border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
+        <div className="min-w-0 flex items-center gap-2">
+          <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-500 hover:text-amber-600" title="Drag to reorder session">
+            <GripVertical size={14} />
+          </button>
+          <input type="date" value={pickerValueFromTextDate(row.date)} onChange={(e) => updateWeek(row.id, { date: textDateFromPickerValue(e.target.value) })} className="w-[150px] border border-gray-300 rounded px-2 py-1 text-xs" />
+        </div>
+        <input className="min-w-0 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
+        <div className="flex justify-end items-center text-xs whitespace-nowrap">
+          <button className="text-red-700" onClick={() => removeSession(row.id)}>
+            Remove
+          </button>
+        </div>
+      </div>
+
+      {['dueItems', 'topicsCovered', 'slides'].map((field) => (
+        <div key={field} className="border border-gray-200 rounded p-2">
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
+            <div className="flex items-center gap-2">
+              <select className="text-xs border border-gray-300 rounded px-1 py-0.5" defaultValue="" onChange={(e) => addTopicLink(row.id, field, e.target.value)}>
+                <option value="" disabled>
+                  Add topic link...
+                </option>
+                {learningSession.course.allTopics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.title}
+                  </option>
+                ))}
+              </select>
+              <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
+                + Item
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {row[field].map((item) =>
+              (() => {
+                const linkedTopic = getLinkedTopic(item.href);
+                if (linkedTopic) {
+                  return (
+                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="col-span-11 min-w-0 max-w-[300px] border border-blue-300 bg-blue-50 rounded px-2 py-1 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
+                        {linkedTopic.title}
+                      </a>
+                      <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
+                        x
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                    <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" />
+                    <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
+                    <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
+                      x
+                    </button>
+                  </div>
+                );
+              })(),
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function ScheduleEditor({ courseOps, learningSession }) {
@@ -471,6 +557,30 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     return topicByRepoPath.get(repoPath) || null;
   }
 
+  function handleSessionDragEnd(event) {
+    const { active, over } = event;
+    if (!active || !over || active.id === over.id) {
+      return;
+    }
+
+    const rows = model.weeks || [];
+    const oldIndex = rows.findIndex((row) => row.id === active.id);
+    const newIndex = rows.findIndex((row) => row.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+
+    const targetWeek = rows[newIndex].week;
+    const reordered = arrayMove(rows, oldIndex, newIndex).map((row) => {
+      if (row.id !== active.id) {
+        return row;
+      }
+      return { ...row, week: targetWeek };
+    });
+
+    updateModel({ ...model, weeks: normalizeWeekGroups(reordered) });
+  }
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="basis-[47px] p-2 flex items-center justify-between border-b border-gray-200">
@@ -532,98 +642,36 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
             <h2 className="text-sm font-semibold text-gray-700">Weeks</h2>
           </div>
 
-          <div className="space-y-4">
-            {weekGroups.map((group) => (
-              <div key={`week-group-${group.week}`} className="rounded-lg border-2 border-gray-300 bg-gray-50 p-3 space-y-3 shadow-sm">
-                <div className="flex items-center justify-between border-b border-gray-300 pb-2">
-                  <div className="inline-flex items-center rounded-full bg-gray-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
-                  <div className="flex items-center gap-3 text-xs">
-                    <button className="text-blue-700" onClick={() => addSession(group.week)}>
-                      + Add session
-                    </button>
-                    <button className="text-red-700" onClick={() => removeWeek(group.week)}>
-                      Remove week
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {group.sessions.map((row, sessionIndex) => (
-                    <div key={row.id} className="rounded border-l-4 border-l-blue-500 border border-blue-200 bg-blue-50/50 p-2 space-y-2">
-                      <div className="grid grid-cols-[90px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
-                        <div className="w-[90px] whitespace-nowrap border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
-                        <div className="min-w-0 flex items-center gap-2">
-                          <input type="date" value={pickerValueFromTextDate(row.date)} onChange={(e) => updateWeek(row.id, { date: textDateFromPickerValue(e.target.value) })} className="w-[150px] border border-gray-300 rounded px-2 py-1 text-xs" />
-                        </div>
-                        <input className="min-w-0 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
-                        <div className="flex justify-end items-center text-xs whitespace-nowrap">
-                          <button className="text-red-700" onClick={() => removeSession(row.id)}>
-                            Remove
-                          </button>
-                        </div>
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleSessionDragEnd}>
+            <SortableContext items={(model.weeks || []).map((row) => row.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-4">
+                {weekGroups.map((group) => (
+                  <div key={`week-group-${group.week}`} className="rounded-lg border-2 border-gray-300 bg-gray-50 p-3 space-y-3 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-gray-300 pb-2">
+                      <div className="inline-flex items-center rounded-full bg-gray-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <button className="text-blue-700" onClick={() => addSession(group.week)}>
+                          + Add session
+                        </button>
+                        <button className="text-red-700" onClick={() => removeWeek(group.week)}>
+                          Remove week
+                        </button>
                       </div>
+                    </div>
 
-                      {['dueItems', 'topicsCovered', 'slides'].map((field) => (
-                        <div key={field} className="border border-gray-200 rounded p-2">
-                          <div className="flex justify-between items-center mb-1">
-                            <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
-                            <div className="flex items-center gap-2">
-                              <select className="text-xs border border-gray-300 rounded px-1 py-0.5" defaultValue="" onChange={(e) => addTopicLink(row.id, field, e.target.value)}>
-                                <option value="" disabled>
-                                  Add topic link...
-                                </option>
-                                {learningSession.course.allTopics.map((topic) => (
-                                  <option key={topic.id} value={topic.id}>
-                                    {topic.title}
-                                  </option>
-                                ))}
-                              </select>
-                              <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
-                                + Item
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            {row[field].map((item) =>
-                              (() => {
-                                const linkedTopic = getLinkedTopic(item.href);
-                                if (linkedTopic) {
-                                  return (
-                                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="col-span-11 min-w-0 max-w-[300px] border border-blue-300 bg-blue-50 rounded px-2 py-1 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
-                                        {linkedTopic.title}
-                                      </a>
-                                      <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
-                                        x
-                                      </button>
-                                    </div>
-                                  );
-                                }
-
-                                return (
-                                  <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                                    <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" />
-                                    <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
-                                    <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
-                                      x
-                                    </button>
-                                  </div>
-                                );
-                              })(),
-                            )}
-                          </div>
-                        </div>
+                    <div className="space-y-3">
+                      {group.sessions.map((row, sessionIndex) => (
+                        <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
                       ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
-            <button className="text-xs text-blue-700" onClick={addWeek}>
-              + Add week
-            </button>
-          </div>
+            </SortableContext>
+          </DndContext>
+          <button className="text-xs text-blue-700" onClick={addWeek}>
+            + Add week
+          </button>
         </section>
 
         <section className="space-y-2">
