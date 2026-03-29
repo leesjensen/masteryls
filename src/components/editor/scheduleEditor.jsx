@@ -230,8 +230,8 @@ function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, r
 
                 return (
                   <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                    <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" />
-                    <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
+                    <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                    <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
                     <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
                       x
                     </button>
@@ -685,11 +685,8 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                 {weekGroups.map((group) => (
                   <div key={`week-group-${group.week}`} className="rounded-lg border-2 border-gray-300 bg-gray-50 p-3 space-y-3 shadow-sm">
                     <div className="flex items-center justify-between border-b border-gray-300 pb-2">
-                      <div className="inline-flex items-center rounded-full bg-gray-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
+                      <div className="inline-flex items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
                       <div className="flex items-center gap-3 text-xs">
-                        <button className="text-blue-700" onClick={() => addSession(group.week)}>
-                          + Add session
-                        </button>
                         <button className="text-red-700" onClick={() => removeWeek(group.week)}>
                           Remove week
                         </button>
@@ -701,6 +698,10 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                         <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
                       ))}
                     </div>
+
+                    <button className="text-xs text-blue-700" onClick={() => addSession(group.week)}>
+                      + Add session
+                    </button>
                   </div>
                 ))}
               </div>
