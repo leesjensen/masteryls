@@ -630,17 +630,14 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           Editor <sup className="inline-block w-[1ch] text-center">{dirty ? '*' : ''}</sup>
         </h1>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-700 flex items-center gap-1">
-            File
-            <select value={selectedFileId} onChange={handleFileChange} className="border border-gray-300 rounded px-2 py-1 text-sm">
-              {files.map((file) => (
-                <option key={file.id} value={file.id}>
-                  {file.title}
-                </option>
-              ))}
-              <option value={NEW_SCHEDULE_OPTION}>+ New schedule...</option>
-            </select>
-          </label>
+          <select value={selectedFileId} onChange={handleFileChange} className="border border-gray-300 rounded px-2 py-1 text-sm">
+            {files.map((file) => (
+              <option key={file.id} value={file.id}>
+                {file.title}
+              </option>
+            ))}
+            <option value={NEW_SCHEDULE_OPTION}>+ New schedule...</option>
+          </select>
           <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
             Discard
           </button>
