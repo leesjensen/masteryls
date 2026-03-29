@@ -85,7 +85,7 @@ export function serializeScheduleMarkdown(model) {
     }
 
     const weekCell = isNewWeek ? displayWeek : '';
-    const row = [weekCell, week.date || '', week.module || '', serializeCellItems(week.dueItems), serializeCellItems(week.topicsCovered), serializeCellItems(week.slides)].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ');
+    const row = [weekCell, week.date || '', serializeModuleCell(week.module), serializeCellItems(week.dueItems), serializeCellItems(week.topicsCovered), serializeCellItems(week.slides)].map((value) => String(value).replace(/\|/g, '\\|')).join(' | ');
 
     lines.push(`| ${row} |`);
   });
@@ -224,7 +224,7 @@ function parseScheduleTable(lines, tableStart) {
       id: `week-${index}`,
       week: currentWeek,
       date: getCell(cells, colMap.date),
-      module: getCell(cells, colMap.module),
+      module: parseModuleCell(getCell(cells, colMap.module)),
       dueItems: parseCellItems(getCell(cells, colMap.dueItems)),
       topicsCovered: parseCellItems(getCell(cells, colMap.topicsCovered)),
       slides: parseCellItems(getCell(cells, colMap.slides)),
@@ -334,6 +334,22 @@ function serializeCellItems(items = []) {
       return item.href ? `[${item.text}](${item.href})` : item.text;
     })
     .join('</br>');
+}
+
+function parseModuleCell(value = '') {
+  const trimmed = String(value || '').trim();
+  const match = trimmed.match(/^`([^`]+)`$/);
+  return match ? match[1].trim() : trimmed;
+}
+
+function serializeModuleCell(value = '') {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const plain = parseModuleCell(trimmed);
+  return `\`${plain}\``;
 }
 
 function looksLikeTableLine(line) {

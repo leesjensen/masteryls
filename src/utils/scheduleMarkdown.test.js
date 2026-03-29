@@ -184,8 +184,8 @@ test('week numbers are derived by order when parsing and serializing', () => {
     specialDays: parsed.specialDays,
   });
 
-  assert.ok(serialized.includes('| 1 | Jan 1 | Intro |'));
-  assert.ok(serialized.includes('| 2 | Jan 8 | Module 2 |'));
+  assert.ok(serialized.includes('| 1 | Jan 1 | `Intro` |'));
+  assert.ok(serialized.includes('| 2 | Jan 8 | `Module 2` |'));
 });
 
 test('parseScheduleMarkdown supports multiple session rows within the same week', () => {
@@ -218,7 +218,19 @@ test('serializeScheduleMarkdown writes blank week cells for additional sessions 
     specialDays: [],
   });
 
-  assert.ok(markdown.includes('| 1 | Tue Jan 13 | Module A |'));
+  assert.ok(markdown.includes('| 1 | Tue Jan 13 | `Module A` |'));
   assert.ok(markdown.includes('|  | Thu Jan 15 |  |'));
-  assert.ok(markdown.includes('| 2 | Tue Jan 20 | Module B |'));
+  assert.ok(markdown.includes('| 2 | Tue Jan 20 | `Module B` |'));
+});
+
+test('parseScheduleMarkdown strips module inline-code fences for editor display', () => {
+  const md = `# Module Parse
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+| 1 | Tue Jan 13 | \`Web framework\` | | | |
+`;
+
+  const parsed = parseScheduleMarkdown(md);
+  assert.equal(parsed.weeks[0].module, 'Web framework');
 });
