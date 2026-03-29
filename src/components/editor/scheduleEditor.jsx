@@ -19,6 +19,19 @@ function createEmptyModel() {
   };
 }
 
+function dedupeScheduleFiles(files) {
+  const seen = new Set();
+  return (files || []).filter((file) => {
+    if (!file) return false;
+    const key = `${file.id || ''}::${file.path || file.repoPath || file.rawUrl || ''}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
     return '';
@@ -269,7 +282,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     const topic = learningSession?.topic;
     if (!topic) return;
 
-    const scheduleFiles = courseOps.getScheduleFiles(topic);
+    const scheduleFiles = dedupeScheduleFiles(courseOps.getScheduleFiles(topic));
     const activeFile = courseOps.getSelectedScheduleFile(topic, scheduleFiles);
 
     setFiles(scheduleFiles);
@@ -485,22 +498,26 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           // createScheduleFile updates course state asynchronously; ensure the copy update
           // targets the newly created schedule by constructing a topic that includes it.
           const priorSchedules = Array.isArray(learningSession?.topic?.schedules) ? learningSession.topic.schedules : [];
+          const hasCreatedSchedule = priorSchedules.some((entry) => entry?.id === createdFile.id || entry?.path === createdFile.path);
+          const nextSchedules = hasCreatedSchedule
+            ? priorSchedules
+            : [
+                ...priorSchedules,
+                {
+                  id: createdFile.id,
+                  title: createdFile.title,
+                  path: createdFile.path,
+                  default: Boolean(createdFile.default),
+                },
+              ];
           const topicWithCreatedSchedule = {
             ...learningSession.topic,
-            schedules: [
-              ...priorSchedules,
-              {
-                id: createdFile.id,
-                title: createdFile.title,
-                path: createdFile.path,
-                default: Boolean(createdFile.default),
-              },
-            ],
+            schedules: nextSchedules,
           };
 
           await courseOps.updateScheduleTopicContent(topicWithCreatedSchedule, createdFile.id, copiedMarkdown, `copy(schedule) ${trimmedTitle}`);
         }
-        setFiles((prev) => [...prev, createdFile]);
+        setFiles((prev) => dedupeScheduleFiles([...prev, createdFile]));
         setSelectedFileId(createdFile.id);
       }
     } catch (error) {

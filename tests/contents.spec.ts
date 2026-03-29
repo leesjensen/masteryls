@@ -86,9 +86,14 @@ test('adding a topic with an existing slug generates a unique path', async ({ pa
     await route.continue();
   });
 
-  await context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/instruction\/.*\.md$/, async (route: any) => {
+  await context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/instruction\/.*/, async (route: any) => {
     if (route.request().method() === 'PUT') {
       await route.fulfill({ status: 201, json: { commit: { sha: 'topic-commit-sha' } } });
+      return;
+    }
+
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 404, json: { message: 'Not Found' } });
       return;
     }
 

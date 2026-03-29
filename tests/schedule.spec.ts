@@ -146,7 +146,7 @@ test('schedule form editor commits and can create additional schedule files', as
   expect(latest.path).toContain('instruction/schedule/');
   expect(latest.markdown).toContain('# Edited Winter Schedule');
 
-  const fileSelect = page.locator('label:has-text("File") select').first();
+  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   page.once('dialog', async (dialog) => {
     if (dialog.message().includes('Discard unsaved schedule changes')) {
       await dialog.accept();
@@ -172,7 +172,7 @@ test('schedule editor can create a new schedule by copying an existing schedule'
   await page.getByText('Schedule').click();
   await page.locator('.absolute.left-0\\.5').click();
 
-  const fileSelect = page.locator('label:has-text("File") select').first();
+  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await fileSelect.selectOption('joe');
   await expect(fileSelect).toHaveValue('joe');
   await expect(page.locator('section').first().locator('input').first()).toHaveValue("Joe's schedule");
@@ -217,7 +217,7 @@ test('schedule editor creates blank schedules with schedule markdown template', 
   await page.getByText('Schedule').click();
   await page.locator('.absolute.left-0\\.5').click();
 
-  const fileSelect = page.locator('label:has-text("File") select').first();
+  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await fileSelect.selectOption('__new_schedule__');
 
   const dialog = page.locator('dialog:has-text("New schedule")');
@@ -279,7 +279,7 @@ test('schedule editor confirms before switching files with unsaved changes', asy
   await page.getByText('Schedule').click();
   await page.locator('.absolute.left-0\\.5').click();
 
-  const fileSelect = page.locator('label:has-text("File") select').first();
+  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await expect(fileSelect).toHaveValue('default');
 
   const titleInput = page.locator('section').first().locator('input').first();
@@ -310,7 +310,7 @@ test('schedule editor can rename and delete non-default schedule files', async (
   await page.getByText('Schedule').click();
   await page.locator('.absolute.left-0\\.5').click();
 
-  const fileSelect = page.locator('label:has-text("File") select').first();
+  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await fileSelect.selectOption('joe');
 
   page.once('dialog', async (dialog) => {
@@ -330,7 +330,7 @@ test('schedule editor can set default schedule used as fallback selection', asyn
   await page.getByText('Schedule').click();
   await page.locator('.absolute.left-0\\.5').click();
 
-  const fileSelect = page.locator('label:has-text("File") select').first();
+  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await fileSelect.selectOption('joe');
   await page.getByRole('button', { name: 'Default' }).click();
 
@@ -346,6 +346,6 @@ test('schedule editor can set default schedule used as fallback selection', asyn
   await page.getByRole('link', { name: 'Home' }).click();
   await page.getByRole('link', { name: 'Schedule' }).click();
 
-  const readSelect = page.locator('label:has-text("Schedule") select').first();
+  const readSelect = page.locator('select:has(option[value="default"])').first();
   await expect(readSelect).toHaveValue('joe');
 });
