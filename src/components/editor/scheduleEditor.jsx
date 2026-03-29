@@ -180,6 +180,83 @@ function textDateFromPickerValue(value) {
     .replace(',', '');
 }
 
+function parseScheduleDateTextToDate(value) {
+  const iso = pickerValueFromTextDate(value);
+  if (!iso) {
+    return null;
+  }
+
+  const parsed = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
+function formatScheduleDateFromDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+    .format(date)
+    .replace(',', '');
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function remapScheduleDatesForStartDate(sourceModel, startDateIso) {
+  const rawStart = String(startDateIso || '').trim();
+  if (!rawStart) {
+    return sourceModel;
+  }
+
+  const startDate = new Date(`${rawStart}T00:00:00`);
+  if (Number.isNaN(startDate.getTime())) {
+    return sourceModel;
+  }
+  startDate.setHours(0, 0, 0, 0);
+
+  const rows = Array.isArray(sourceModel?.weeks) ? sourceModel.weeks : [];
+  const parsedRows = rows.map((row) => ({ row, parsedDate: parseScheduleDateTextToDate(row?.date) }));
+  const anchor = parsedRows.find((entry) => entry.parsedDate);
+
+  if (!anchor?.parsedDate) {
+    return sourceModel;
+  }
+
+  const dayShift = Math.round((startDate.getTime() - anchor.parsedDate.getTime()) / (24 * 60 * 60 * 1000));
+
+  const nextWeeks = rows.map((row) => {
+    const originalDate = parseScheduleDateTextToDate(row?.date);
+    if (!originalDate) {
+      return row;
+    }
+
+    return {
+      ...row,
+      date: formatScheduleDateFromDate(addDays(originalDate, dayShift)),
+    };
+  });
+
+  return {
+    ...sourceModel,
+    weeks: nextWeeks,
+  };
+}
+
 function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
 
@@ -274,6 +351,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [committing, setCommitting] = React.useState(false);
   const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
   const [newScheduleSourceId, setNewScheduleSourceId] = React.useState('');
+  const [newScheduleStartDate, setNewScheduleStartDate] = React.useState('');
   const newScheduleDialogRef = React.useRef(null);
   const { panePercent: editorPanePercent, splitContainerRef, onPaneMoved: onEditorPaneMoved, onPaneResized: onEditorPaneResized } = useSplitPaneState(55);
   const previewMarkdown = React.useMemo(() => serializeScheduleMarkdown(model), [model]);
@@ -469,7 +547,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     courseOps.setSelectedScheduleFile(learningSession.topic, nextId);
   }
 
-  async function createSchedule(title, sourceFileId = '') {
+  async function createSchedule(title, sourceFileId = '', startDateIso = '') {
     const trimmedTitle = title.trim();
     if (!trimmedTitle || creatingSchedule) {
       return;
@@ -481,13 +559,17 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
     let copiedMarkdown = '';
     if (sourceFileId) {
+      let sourceModel = null;
       if (sourceFileId === selectedFileId) {
-        copiedMarkdown = serializeScheduleMarkdown({ ...model, docTitle: trimmedTitle });
+        sourceModel = { ...createEmptyModel(), ...model };
       } else {
         const sourceMarkdown = await courseOps.getScheduleTopicContent(learningSession.topic, sourceFileId, true);
         const parsed = parseScheduleMarkdown(sourceMarkdown || '');
-        copiedMarkdown = serializeScheduleMarkdown({ ...createEmptyModel(), ...parsed, docTitle: trimmedTitle });
+        sourceModel = { ...createEmptyModel(), ...parsed };
       }
+
+      const remappedModel = remapScheduleDatesForStartDate(sourceModel, startDateIso);
+      copiedMarkdown = serializeScheduleMarkdown({ ...remappedModel, docTitle: trimmedTitle });
     }
 
     setCreatingSchedule(true);
@@ -530,6 +612,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   async function promptAndCreateSchedule() {
     setNewScheduleTitle('');
     setNewScheduleSourceId(selectedFileId || '');
+    setNewScheduleStartDate('');
     newScheduleDialogRef.current?.showModal();
   }
 
@@ -537,6 +620,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     newScheduleDialogRef.current?.close();
     setNewScheduleTitle('');
     setNewScheduleSourceId('');
+    setNewScheduleStartDate('');
   }
 
   async function confirmNewScheduleDialog() {
@@ -545,7 +629,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       return;
     }
 
-    await createSchedule(title, newScheduleSourceId);
+    await createSchedule(title, newScheduleSourceId, newScheduleStartDate);
     cancelNewScheduleDialog();
   }
 
@@ -779,6 +863,15 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
             </option>
           ))}
         </select>
+
+        {newScheduleSourceId && (
+          <>
+            <label htmlFor="new-schedule-start-date" className="mb-2 block text-gray-700">
+              First session date (optional)
+            </label>
+            <input id="new-schedule-start-date" type="date" value={newScheduleStartDate} onChange={(e) => setNewScheduleStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4" />
+          </>
+        )}
 
         <div className="flex justify-end gap-3">
           <button onClick={cancelNewScheduleDialog} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors" disabled={creatingSchedule}>
