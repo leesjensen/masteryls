@@ -39,6 +39,33 @@ function relativePath(fromFileRepoPath, toFileRepoPath) {
   return `${prefix}${down.join('/')}`;
 }
 
+function resolveRelativeRepoPath(fromFileRepoPath, rawPath) {
+  if (!fromFileRepoPath || !rawPath) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(rawPath)) {
+    return '';
+  }
+
+  const baseDir = fromFileRepoPath.slice(0, Math.max(0, fromFileRepoPath.lastIndexOf('/')));
+  const joined = rawPath.startsWith('/') ? rawPath.slice(1) : `${baseDir}/${rawPath}`;
+
+  const normalized = [];
+  joined.split('/').forEach((segment) => {
+    if (!segment || segment === '.') {
+      return;
+    }
+    if (segment === '..') {
+      normalized.pop();
+      return;
+    }
+    normalized.push(segment);
+  });
+
+  return normalized.join('/');
+}
+
 function normalizeWeekGroups(rows) {
   let previousWeek = null;
   let nextWeek = 0;
@@ -350,6 +377,30 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   }
 
   const weekGroups = groupSessionsByWeek(model.weeks || []);
+  const topicByRepoPath = React.useMemo(() => {
+    const entries = new Map();
+    const rawRoot = learningSession?.course?.links?.gitHub?.rawUrl;
+    (learningSession?.course?.allTopics || []).forEach((topic) => {
+      const repoPath = repoRelativePathFromRawUrl(topic.path, rawRoot);
+      if (repoPath) {
+        entries.set(repoPath, topic);
+      }
+    });
+    return entries;
+  }, [learningSession?.course]);
+
+  function getLinkedTopic(itemHref) {
+    if (!itemHref || !selectedFile?.repoPath) {
+      return null;
+    }
+
+    const repoPath = resolveRelativeRepoPath(selectedFile.repoPath, itemHref);
+    if (!repoPath) {
+      return null;
+    }
+
+    return topicByRepoPath.get(repoPath) || null;
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -429,11 +480,11 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                 <div className="space-y-3">
                   {group.sessions.map((row, sessionIndex) => (
                     <div key={row.id} className="rounded border-l-4 border-l-blue-500 border border-blue-200 bg-blue-50/50 p-2 space-y-2">
-                      <div className="grid grid-cols-12 gap-2">
-                        <div className="col-span-1 border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
-                        <input className="col-span-4 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
-                        <input className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
-                        <div className="col-span-2 flex justify-end items-center text-xs">
+                      <div className="grid grid-cols-[90px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
+                        <div className="w-[90px] whitespace-nowrap border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
+                        <input className="min-w-0 border border-gray-300 rounded px-2 py-1 text-xs" value={row.date} onChange={(e) => updateWeek(row.id, { date: e.target.value })} placeholder="Date" />
+                        <input className="min-w-0 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
+                        <div className="flex justify-end items-center text-xs whitespace-nowrap">
                           <button className="text-red-700" onClick={() => removeSession(row.id)}>
                             Remove
                           </button>
@@ -462,15 +513,33 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                           </div>
 
                           <div className="space-y-1">
-                            {row[field].map((item) => (
-                              <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                                <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" />
-                                <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
-                                <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
-                                  x
-                                </button>
-                              </div>
-                            ))}
+                            {row[field].map((item) =>
+                              (() => {
+                                const linkedTopic = getLinkedTopic(item.href);
+                                if (linkedTopic) {
+                                  return (
+                                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="col-span-11 min-w-0 max-w-[300px] border border-blue-300 bg-blue-50 rounded px-2 py-1 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
+                                        {linkedTopic.title}
+                                      </a>
+                                      <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
+                                        x
+                                      </button>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                                    <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 rounded px-2 py-1 text-xs" />
+                                    <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 rounded px-2 py-1 text-xs" />
+                                    <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
+                                      x
+                                    </button>
+                                  </div>
+                                );
+                              })(),
+                            )}
                           </div>
                         </div>
                       ))}
