@@ -188,6 +188,31 @@ test('schedule editor can create a new schedule by copying an existing schedule'
   expect(markdownByRepoPath.get('instruction/schedule/joe-s-schedule.md')).toContain("# Joe's schedule");
 });
 
+test('schedule editor creates blank schedules with schedule markdown template', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  const { schedulePuts } = installScheduleRoutes(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+  await page.locator('.absolute.left-0\\.5').click();
+
+  const fileSelect = page.locator('label:has-text("File") select').first();
+  await fileSelect.selectOption('__new_schedule__');
+
+  const dialog = page.locator('dialog:has-text("New schedule")');
+  await expect(dialog).toBeVisible();
+  await dialog.getByPlaceholder('Schedule title').fill('Blank Section A');
+  await dialog.locator('select').selectOption('');
+  await dialog.getByRole('button', { name: 'Create' }).click();
+
+  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/blank-section-a.md'))).toBeTruthy();
+
+  const created = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('/blank-section-a.md'));
+  expect(created?.markdown || '').toContain('# Blank Section A');
+  expect(created?.markdown || '').toContain('| Week | Date | Module | Due | Topics Covered | Slides |');
+  expect(created?.markdown || '').toContain('|  1   |      |        |     |                |        |');
+});
+
 test('schedule editor confirms before switching files with unsaved changes', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
   installScheduleRoutes(page);
