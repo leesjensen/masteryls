@@ -492,8 +492,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
             Discard
           </button>
-          <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs" onClick={commit} disabled={!dirty || committing}>
-            {committing ? 'Committing...' : 'Commit'}
+          <button className="w-[96px] px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs inline-flex items-center justify-center gap-2" onClick={commit} disabled={!dirty || committing}>
+            {committing && <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+            <span>Commit</span>
           </button>
           <button className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
             {settingDefault ? 'Updating...' : 'Default'}
