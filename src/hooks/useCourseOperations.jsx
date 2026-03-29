@@ -502,11 +502,22 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return course.allTopics.find((topic) => topic.type === 'schedule' && (!topic.state || topic.state === 'published')) || null;
   }
 
+  function getTopicSchedules(topic) {
+    if (!topic) return [];
+    return Array.isArray(topic.schedules) ? topic.schedules : [];
+  }
+
+  function setTopicSchedules(topic, schedules) {
+    if (!topic) return;
+
+    topic.schedules = schedules;
+  }
+
   function getScheduleFiles(topic = learningSession?.topic) {
     if (!learningSession?.course || !topic) return [];
 
     const legacySchedule = resolveScheduleFile(topic, topic.path, 'default', topic.title || 'Schedule', true);
-    const configured = topic.externalRefs?.schedules;
+    const configured = getTopicSchedules(topic);
     if (Array.isArray(configured) && configured.length > 0) {
       const configuredFiles = configured.filter((file) => file && file.path).map((file, index) => resolveScheduleFile(topic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default)));
 
@@ -554,7 +565,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
-    let existingSchedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
+    let existingSchedules = [...getTopicSchedules(updatedTopic)];
     const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
     const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
     if (!existingSchedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
@@ -573,10 +584,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       default: false,
     };
 
-    updatedTopic.externalRefs = {
-      ...(updatedTopic.externalRefs || {}),
-      schedules: [...existingSchedules, newSchedule],
-    };
+    setTopicSchedules(updatedTopic, [...existingSchedules, newSchedule]);
 
     const resolved = resolveScheduleFile(updatedTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default);
     const initialMarkdown = createInitialScheduleMarkdown(title);
@@ -608,7 +616,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
-    let schedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
+    let schedules = [...getTopicSchedules(updatedTopic)];
     const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
     const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
     if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
@@ -639,10 +647,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       schedules[0] = { ...schedules[0], default: true };
     }
 
-    updatedTopic.externalRefs = {
-      ...(updatedTopic.externalRefs || {}),
-      schedules,
-    };
+    setTopicSchedules(updatedTopic, schedules);
 
     const nextSelection = schedules.find((entry) => entry.default) || schedules[0];
 
@@ -668,7 +673,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
-    let schedules = Array.isArray(updatedTopic.externalRefs?.schedules) ? [...updatedTopic.externalRefs.schedules] : [];
+    let schedules = [...getTopicSchedules(updatedTopic)];
     const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
     const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
     if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
@@ -681,10 +686,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     schedules = schedules.map((entry) => ({ ...entry, default: entry.id === fileId }));
 
-    updatedTopic.externalRefs = {
-      ...(updatedTopic.externalRefs || {}),
-      schedules,
-    };
+    setTopicSchedules(updatedTopic, schedules);
 
     await _updateCourseStructure(token, updatedCourse, `update(course) default schedule ${fileId}`);
     setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
@@ -801,14 +803,22 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const updatedCourse = Course.copy(learningSession.course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
+
+    // If caller has a newer schedule list (e.g. just-created schedule), carry it
+    // forward so this update does not overwrite course.json with stale schedules.
+    if (Array.isArray(topic?.schedules)) {
+      setTopicSchedules(updatedTopic, getTopicSchedules(topic).map((entry) => ({ ...entry })));
+    }
+
     updatedTopic.commit = commit;
 
     const nextTitle = extractScheduleTitleFromMarkdown(content);
-    if (nextTitle && Array.isArray(updatedTopic.externalRefs?.schedules)) {
-      updatedTopic.externalRefs = {
-        ...(updatedTopic.externalRefs || {}),
-        schedules: updatedTopic.externalRefs.schedules.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry)),
-      };
+    const updatedSchedules = getTopicSchedules(updatedTopic);
+    if (nextTitle && Array.isArray(updatedSchedules)) {
+      setTopicSchedules(
+        updatedTopic,
+        updatedSchedules.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry)),
+      );
     }
 
     updatedCourse.markdownCache.set(selectedFile.rawUrl, content);

@@ -14,12 +14,10 @@ function scheduleCourseOverride() {
             type: 'schedule',
             path: 'instruction/schedule/schedule.md',
             state: 'published',
-            externalRefs: {
-              schedules: [
-                { id: 'default', title: 'Winter', path: 'schedule.md', default: true },
-                { id: 'joe', title: "Joe's schedule", path: 'joe-s-schedule.md', default: false },
-              ],
-            },
+            schedules: [
+              { id: 'default', title: 'Winter', path: 'schedule.md', default: true },
+              { id: 'joe', title: "Joe's schedule", path: 'joe-s-schedule.md', default: false },
+            ],
           },
         ],
       },
@@ -145,6 +143,49 @@ test('schedule form editor commits and can create additional schedule files', as
 
   await expect(page.locator('select').first()).toHaveValue(/schedule-/);
   await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/evening-schedule.md'))).toBeTruthy();
+});
+
+test('schedule editor can create a new schedule by copying an existing schedule', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  const { schedulePuts, markdownByRepoPath } = installScheduleRoutes(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+  await page.locator('.absolute.left-0\\.5').click();
+
+  const fileSelect = page.locator('label:has-text("File") select').first();
+  await fileSelect.selectOption('__new_schedule__');
+
+  const dialog = page.locator('dialog:has-text("New schedule")');
+  await expect(dialog).toBeVisible();
+  await dialog.getByPlaceholder('Schedule title').fill('Copied Joe Schedule');
+  const sourceSelect = dialog.locator('select');
+  await sourceSelect.selectOption('joe');
+  await expect(sourceSelect).toHaveValue('joe');
+  await dialog.getByRole('button', { name: 'Create' }).click();
+
+  await expect.poll(() => schedulePuts.some((entry) => entry.markdown.includes('# Copied Joe Schedule'))).toBeTruthy();
+
+  const copiedContentWrite = [...schedulePuts].reverse().find((entry) => entry.markdown.includes('# Copied Joe Schedule'));
+  expect(copiedContentWrite?.path || '').toContain('/copied-joe-schedule.md');
+  expect(copiedContentWrite?.markdown || '').toContain('[Joe Intro](../instruction/introduction.md)');
+
+  await expect(fileSelect.locator('option[value="default"]')).toHaveCount(1);
+  await expect(fileSelect.locator('option[value="joe"]')).toHaveCount(1);
+
+  const copiedOption = fileSelect.locator('option').filter({ hasText: 'Copied Joe Schedule' });
+  await expect(copiedOption).toHaveCount(1);
+  const copiedOptionValue = await copiedOption.first().getAttribute('value');
+  expect(copiedOptionValue).toBeTruthy();
+  if (!copiedOptionValue) {
+    throw new Error('Expected copied schedule option to have a value.');
+  }
+
+  await fileSelect.selectOption(copiedOptionValue);
+  await expect(fileSelect).toHaveValue(copiedOptionValue);
+  await expect(page.locator('section').first().locator('input').first()).toHaveValue('Copied Joe Schedule');
+
+  expect(markdownByRepoPath.get('instruction/schedule/joe-s-schedule.md')).toContain("# Joe's schedule");
 });
 
 test('schedule editor confirms before switching files with unsaved changes', async ({ page }) => {

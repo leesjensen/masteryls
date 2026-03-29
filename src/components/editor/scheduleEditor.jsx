@@ -4,7 +4,6 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
-import InputDialog from '../../hooks/inputDialog.jsx';
 
 const NEW_SCHEDULE_OPTION = '__new_schedule__';
 
@@ -257,6 +256,8 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [model, setModel] = React.useState(createEmptyModel());
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
+  const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
+  const [newScheduleSourceId, setNewScheduleSourceId] = React.useState('');
   const newScheduleDialogRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -450,7 +451,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     courseOps.setSelectedScheduleFile(learningSession.topic, nextId);
   }
 
-  async function createSchedule(title) {
+  async function createSchedule(title, sourceFileId = '') {
     const trimmedTitle = title.trim();
     if (!trimmedTitle || creatingSchedule) {
       return;
@@ -460,10 +461,40 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       return;
     }
 
+    let copiedMarkdown = '';
+    if (sourceFileId) {
+      const sourceFile = files.find((file) => file.id === sourceFileId);
+      if (sourceFile?.rawUrl) {
+        const sourceResponse = await fetch(sourceFile.rawUrl);
+        const sourceMarkdown = await sourceResponse.text();
+        const parsed = parseScheduleMarkdown(sourceMarkdown || '');
+        copiedMarkdown = serializeScheduleMarkdown({ ...createEmptyModel(), ...parsed, docTitle: trimmedTitle });
+      }
+    }
+
     setCreatingSchedule(true);
     try {
       const createdFile = await courseOps.createScheduleFile(learningSession.topic, trimmedTitle);
       if (createdFile) {
+        if (copiedMarkdown) {
+          // createScheduleFile updates course state asynchronously; ensure the copy update
+          // targets the newly created schedule by constructing a topic that includes it.
+          const priorSchedules = Array.isArray(learningSession?.topic?.schedules) ? learningSession.topic.schedules : [];
+          const topicWithCreatedSchedule = {
+            ...learningSession.topic,
+            schedules: [
+              ...priorSchedules,
+              {
+                id: createdFile.id,
+                title: createdFile.title,
+                path: createdFile.path,
+                default: Boolean(createdFile.default),
+              },
+            ],
+          };
+
+          await courseOps.updateScheduleTopicContent(topicWithCreatedSchedule, createdFile.id, copiedMarkdown, `copy(schedule) ${trimmedTitle}`);
+        }
         setFiles((prev) => [...prev, createdFile]);
         setSelectedFileId(createdFile.id);
       }
@@ -475,19 +506,25 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   }
 
   async function promptAndCreateSchedule() {
-    const title = await newScheduleDialogRef.current?.show({
-      title: 'New schedule',
-      description: 'Enter a title for the new schedule.',
-      placeholder: 'Schedule title',
-      confirmButtonText: 'Create',
-      cancelButtonText: 'Cancel',
-    });
+    setNewScheduleTitle('');
+    setNewScheduleSourceId(selectedFileId || '');
+    newScheduleDialogRef.current?.showModal();
+  }
 
-    if (!title) {
+  function cancelNewScheduleDialog() {
+    newScheduleDialogRef.current?.close();
+    setNewScheduleTitle('');
+    setNewScheduleSourceId('');
+  }
+
+  async function confirmNewScheduleDialog() {
+    const title = newScheduleTitle.trim();
+    if (!title || creatingSchedule) {
       return;
     }
 
-    await createSchedule(title);
+    await createSchedule(title, newScheduleSourceId);
+    cancelNewScheduleDialog();
   }
 
   async function deleteSchedule() {
@@ -694,7 +731,30 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         </section>
       </div>
 
-      <InputDialog dialogRef={newScheduleDialogRef} />
+      <dialog ref={newScheduleDialogRef} className="w-full p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold text-amber-500 mb-4">New schedule</h2>
+        <div className="mb-2 text-gray-700">Enter a title for the new schedule.</div>
+        <input type="text" value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="Schedule title" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent mb-4" />
+
+        <div className="mb-2 text-gray-700">Create from</div>
+        <select value={newScheduleSourceId} onChange={(e) => setNewScheduleSourceId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
+          <option value="">Blank schedule</option>
+          {files.map((file) => (
+            <option key={file.id} value={file.id}>
+              {file.title}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex justify-end gap-3">
+          <button onClick={cancelNewScheduleDialog} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors" disabled={creatingSchedule}>
+            Cancel
+          </button>
+          <button onClick={confirmNewScheduleDialog} disabled={!newScheduleTitle.trim() || creatingSchedule} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+            {creatingSchedule ? 'Creating...' : 'Create'}
+          </button>
+        </div>
+      </dialog>
     </div>
   );
 }
