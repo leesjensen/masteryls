@@ -13,9 +13,7 @@ function scheduleCourseOverride() {
     modules: [
       {
         title: 'Module 1',
-        topics: [
-          { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
-        ],
+        topics: [{ id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' }],
       },
     ],
   };

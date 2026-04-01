@@ -165,30 +165,38 @@ function ClassroomPage() {
 
           let topic = learningSession?.topic;
           if (course) {
+            const getDefaultTopicOrThrow = () => {
+              const defaultTopic = course.defaultTopic();
+              if (!defaultTopic) throw new Error('No default topic found for course');
+              return defaultTopic;
+            };
+
+            const redirectToDefaultTopic = (saveAsCurrentTopic = false) => {
+              const targetTopic = getDefaultTopicOrThrow();
+              if (saveAsCurrentTopic) {
+                courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: targetTopic.id });
+              }
+              navigate(`/course/${courseId}/topic/${targetTopic.id}`);
+            };
+
             if (isScheduleRoute) {
               topic = courseOps.getScheduleTopic(course);
               if (topic) {
                 courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: 'schedule' });
               } else {
-                topic = course.defaultTopic();
-                if (!topic) throw new Error('No default topic found for course');
-                navigate(`/course/${courseId}/topic/${topic.id}`);
+                redirectToDefaultTopic();
                 return;
               }
             } else if (!topicId) {
-              topic = course.defaultTopic();
-              if (!topic) throw new Error('No default topic found for course');
-              navigate(`/course/${courseId}/topic/${topic.id}`);
+              redirectToDefaultTopic();
               return;
             } else if (!topic || topic.id !== topicId) {
-              topic = await course.topicFromId(topicId);
-              if (topic) {
+              const resolvedTopic = await course.topicFromId(topicId);
+              if (resolvedTopic) {
+                topic = resolvedTopic;
                 courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
               } else {
-                topic = course.defaultTopic();
-                if (!topic) throw new Error('No default topic found for course');
-                courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
-                navigate(`/course/${courseId}/topic/${topic.id}`);
+                redirectToDefaultTopic(true);
                 return;
               }
             }
