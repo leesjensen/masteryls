@@ -297,32 +297,32 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
             });
 
             return (
-          <div className="flex justify-between items-center mb-1">
-            <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
-            <div className="flex items-center gap-2">
-              <select
-                className="text-xs border border-gray-300 rounded px-1 py-0.5"
-                defaultValue=""
-                disabled={availableTopics.length === 0}
-                onChange={(e) => {
-                  addTopicLink(row.id, field, e.target.value);
-                  e.currentTarget.value = '';
-                }}
-              >
-                <option value="" disabled>
-                  {availableTopics.length === 0 ? 'No more topics' : 'Add topic link...'}
-                </option>
-                {availableTopics.map((topic) => (
-                  <option key={topic.id} value={topic.id}>
-                    {topic.title}
-                  </option>
-                ))}
-              </select>
-              <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
-                + Item
-              </button>
-            </div>
-          </div>
+              <div className="flex justify-between items-center mb-1">
+                <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="text-xs border border-gray-300 rounded px-1 py-0.5"
+                    defaultValue=""
+                    disabled={availableTopics.length === 0}
+                    onChange={(e) => {
+                      addTopicLink(row.id, field, e.target.value);
+                      e.currentTarget.value = '';
+                    }}
+                  >
+                    <option value="" disabled>
+                      {availableTopics.length === 0 ? 'No more topics' : 'Add topic link...'}
+                    </option>
+                    {availableTopics.map((topic) => (
+                      <option key={topic.id} value={topic.id}>
+                        {topic.title}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
+                    + Item
+                  </button>
+                </div>
+              </div>
             );
           })()}
 
@@ -836,22 +836,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
                           <div className="space-y-3">
                             {group.sessions.map((row, sessionIndex) => (
-                              <SortableSessionCard
-                                key={row.id}
-                                row={row}
-                                sessionIndex={sessionIndex}
-                                learningSession={learningSession}
-                                selectedFileRepoPath={selectedFile?.repoPath || ''}
-                                dueLinkedHrefs={dueLinkedHrefs}
-                                coveredOrSlidesLinkedHrefs={coveredOrSlidesLinkedHrefs}
-                                updateWeek={updateWeek}
-                                removeSession={removeSession}
-                                addTopicLink={addTopicLink}
-                                addItem={addItem}
-                                updateItem={updateItem}
-                                removeItem={removeItem}
-                                getLinkedTopic={getLinkedTopic}
-                              />
+                              <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} selectedFileRepoPath={selectedFile?.repoPath || ''} dueLinkedHrefs={dueLinkedHrefs} coveredOrSlidesLinkedHrefs={coveredOrSlidesLinkedHrefs} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
                             ))}
                           </div>
 
