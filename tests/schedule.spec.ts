@@ -401,7 +401,7 @@ test('schedule editor can set default schedule used as fallback selection', asyn
     const raw = localStorage.getItem(key);
     if (!raw) return;
     const settings = JSON.parse(raw);
-    delete settings.selectedScheduleFiles;
+    delete settings.selectedScheduleFile;
     localStorage.setItem(key, JSON.stringify(settings));
   });
 

@@ -580,8 +580,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (!files.length) return null;
 
     const settings = getEnrollmentUiSettings(learningSession?.course?.id);
-    const selectedByCourse = settings?.selectedScheduleFiles || {};
-    const selectedId = selectedByCourse?.[learningSession?.course?.id];
+    const selectedId = settings?.selectedScheduleFile;
 
     return files.find((file) => file.id === selectedId) || files.find((file) => file.default) || files[0];
   }
@@ -589,9 +588,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   function setSelectedScheduleFile(topic, fileId) {
     if (!learningSession?.course || !fileId) return;
 
-    const settings = getEnrollmentUiSettings(learningSession.course.id);
-    const selectedScheduleFiles = { ...(settings.selectedScheduleFiles || {}), [learningSession.course.id]: fileId };
-    saveEnrollmentUiSettings(learningSession.course.id, { selectedScheduleFiles });
+    saveEnrollmentUiSettings(learningSession.course.id, { selectedScheduleFile: fileId });
   }
 
   async function createSchedule(scheduleTitle = 'Schedule') {
