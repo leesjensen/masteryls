@@ -85,6 +85,23 @@ function resolveRelativeRepoPath(fromFileRepoPath, rawPath) {
   return normalized.join('/');
 }
 
+function buildScheduleTopicHref(topic, rawRoot, selectedFileRepoPath, courseId) {
+  if (!topic) {
+    return '';
+  }
+
+  const repoPath = repoRelativePathFromRawUrl(topic.path, rawRoot);
+  if (repoPath && selectedFileRepoPath) {
+    return relativePath(selectedFileRepoPath, repoPath);
+  }
+
+  if (topic.id && courseId) {
+    return `/course/${courseId}/topic/${topic.id}`;
+  }
+
+  return '';
+}
+
 function normalizeWeekGroups(rows) {
   let previousWeek = null;
   let nextWeek = 0;
@@ -288,11 +305,10 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
           {(() => {
             const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
             const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
-              const toRepoPath = repoRelativePathFromRawUrl(topic.path, learningSession.course.links.gitHub.rawUrl);
-              if (!toRepoPath || !selectedFileRepoPath) {
+              const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFileRepoPath, learningSession.course.id);
+              if (!href) {
                 return false;
               }
-              const href = relativePath(selectedFileRepoPath, toRepoPath);
               return !blockedHrefs.has(href);
             });
 
@@ -518,10 +534,8 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     const topic = learningSession.course.topicFromId(topicId);
     if (!topic || !selectedFile) return;
 
-    const toRepoPath = repoRelativePathFromRawUrl(topic.path, learningSession.course.links.gitHub.rawUrl);
-    if (!toRepoPath) return;
-
-    const href = relativePath(selectedFile.repoPath, toRepoPath);
+    const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFile.repoPath, learningSession.course.id);
+    if (!href) return;
 
     const sectionGroup = field === 'dueItems' ? ['dueItems'] : ['topicsCovered', 'slides'];
     const hrefAlreadyLinked = (model.weeks || []).some((row) => sectionGroup.some((section) => (row[section] || []).some((item) => item?.href === href)));
@@ -723,7 +737,16 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   }, [model.weeks]);
 
   function getLinkedTopic(itemHref) {
-    if (!itemHref || !selectedFile?.repoPath) {
+    if (!itemHref) {
+      return null;
+    }
+
+    const internalTopicRouteMatch = itemHref.match(/^\/course\/[^/]+\/topic\/([^/?#]+)/);
+    if (internalTopicRouteMatch?.[1]) {
+      return learningSession?.course?.topicFromId(internalTopicRouteMatch[1]) || null;
+    }
+
+    if (!selectedFile?.repoPath) {
       return null;
     }
 
