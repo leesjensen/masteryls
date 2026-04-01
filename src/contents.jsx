@@ -304,10 +304,14 @@ function Contents({ courseOps, learningSession, editorVisible }) {
       <nav>
         {scheduleTopic && (
           <div className="mb-2">
-            <a href={`/course/${learningSession.course.id}/schedule`} onClick={(e) => {
-              e.preventDefault();
-              navigate(`/course/${learningSession.course.id}/schedule`);
-            }} className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'schedule' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}>
+            <a
+              href={`/course/${learningSession.course.id}/schedule`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/course/${learningSession.course.id}/schedule`);
+              }}
+              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'schedule' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
+            >
               <CalendarDays size={14} />
               Schedule
             </a>

@@ -56,7 +56,7 @@ function App({ initialUser }) {
         const enrollment = await service.currentEnrollment(initialUser.id);
         if (enrollment) {
           const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
-            const topicPath = enrollmentUiSettings?.currentTopic ? (enrollmentUiSettings.currentTopic === 'schedule' ? '/schedule' : `/topic/${enrollmentUiSettings.currentTopic}`) : '';
+          const topicPath = enrollmentUiSettings?.currentTopic ? (enrollmentUiSettings.currentTopic === 'schedule' ? '/schedule' : `/topic/${enrollmentUiSettings.currentTopic}`) : '';
           navigate(`/course/${enrollment.catalogId}${topicPath}`);
         } else {
           navigate('/dashboard');
