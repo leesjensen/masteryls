@@ -22,7 +22,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   function navigateToSchedule() {
     const scheduleTopic = courseOps.getScheduleTopic(learningSession.course);
     if (scheduleTopic) {
-      navigate(`/course/${learningSession.course.id}/topic/${scheduleTopic.id}`);
+      navigate(`/course/${learningSession.course.id}/schedule`);
     }
   }
 

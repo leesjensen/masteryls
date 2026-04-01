@@ -7,6 +7,8 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 import { parseScheduleMarkdown } from './utils/scheduleMarkdown.js';
+import { useNavigate } from 'react-router-dom';
+import { CalendarDays } from 'lucide-react';
 
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
@@ -84,6 +86,7 @@ function formatDueLabel(dates) {
 }
 
 function Contents({ courseOps, learningSession, editorVisible }) {
+  const navigate = useNavigate();
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
   const [dueDatesByTopicId, setDueDatesByTopicId] = React.useState({});
@@ -263,6 +266,30 @@ function Contents({ courseOps, learningSession, editorVisible }) {
     }
   }
 
+  async function createSchedule() {
+    if (!learningSession?.course) return;
+
+    try {
+      await courseOps.createSchedule('Schedule');
+      navigate(`/course/${learningSession.course.id}/schedule`);
+    } catch (error) {
+      alert(error.message || 'Unable to create schedule.');
+    }
+  }
+
+  async function deleteSchedule() {
+    if (!learningSession?.course) return;
+    if (!window.confirm('Delete the course schedule and all schedule files?')) {
+      return;
+    }
+
+    try {
+      await courseOps.deleteCourseSchedule();
+    } catch (error) {
+      alert(error.message || 'Unable to delete schedule.');
+    }
+  }
+
   const moduleMap = editorVisible ? learningSession.course.modules : filterTopicsByState();
   const moduleJsx = (
     <ul className="list-none p-0">
@@ -275,6 +302,17 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   return (
     <div id="content" className="h-full overflow-auto p-4 text-sm">
       <nav>
+        {scheduleTopic && (
+          <div className="mb-2">
+            <a href={`/course/${learningSession.course.id}/schedule`} onClick={(e) => {
+              e.preventDefault();
+              navigate(`/course/${learningSession.course.id}/schedule`);
+            }} className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'schedule' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}>
+              <CalendarDays size={14} />
+              Schedule
+            </a>
+          </div>
+        )}
         {editorVisible ? (
           <>
             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -283,6 +321,16 @@ function Contents({ courseOps, learningSession, editorVisible }) {
               </SortableContext>
             </DndContext>
             <NewModuleButton courseOps={courseOps} />
+            {!scheduleTopic && (
+              <div onClick={createSchedule} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
+                + Create schedule
+              </div>
+            )}
+            {scheduleTopic && (
+              <div onClick={deleteSchedule} className="text-gray-400 hover:text-red-600 text-sm py-1 cursor-pointer">
+                - Delete schedule
+              </div>
+            )}
             {hasStubbedTopics && (
               <div onClick={generateAllTopics} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
                 + Generate all stubbed topics

@@ -23,6 +23,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   const courseCache = React.useRef(new Map());
   const discussionToggleHandler = React.useRef(null);
 
+  function getWorkingCourse() {
+    const courseId = learningSession?.course?.id;
+    if (!courseId) {
+      return learningSession?.course;
+    }
+    return courseCache.current.get(courseId) || learningSession.course;
+  }
+
   async function login(user) {
     setUser(user);
   }
@@ -221,10 +229,27 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function _updateCourseStructure(token, course, commitMessage = 'update course structure', updateCourseCommit = true) {
+    const schedule = course.schedule
+      ? {
+          id: course.schedule.id || generateId(),
+          files: Array.isArray(course.schedule.files)
+            ? course.schedule.files.map((file) => ({
+                id: file.id,
+                title: file.title,
+                path: String(file.path || '').replace(`${course.links.gitHub.rawUrl}/`, ''),
+                default: Boolean(file.default),
+                state: file.state,
+                commit: file.commit,
+              }))
+            : [],
+        }
+      : undefined;
+
     const courseData = {
       title: course.title,
       links: course.links ? Object.fromEntries(Object.entries(course.links).filter(([key]) => key !== 'gitHub')) : undefined,
       externalRefs: course.externalRefs,
+      schedule,
       modules: course.modules.map((module) => ({
         title: module.title,
         externalRefs: module.externalRefs,
@@ -237,7 +262,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           interactions: topic.interactions,
           description: topic.description,
           commit: topic.commit,
-          schedules: topic.schedules,
           externalRefs: topic.externalRefs,
         })),
       })),
@@ -369,6 +393,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     topicTitle = topicTitle.trim();
     topicType = topicType || 'instruction';
     if (!topicTitle) return;
+    if (topicType === 'schedule') {
+      throw new Error('Schedule is managed at the course level and cannot be created as a topic.');
+    }
 
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
@@ -385,18 +412,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           path: resolvedPath,
           description: topicDescription,
         };
-
-        if (topicType === 'schedule') {
-          const schedulePath = newTopic.path.split('/').pop() || 'schedule.md';
-          setTopicSchedules(newTopic, [
-            {
-              id: generateId(),
-              title: topicTitle,
-              path: schedulePath,
-              default: true,
-            },
-          ]);
-        }
 
         const module = updatedCourse.modules[moduleIndex];
         module.topics.push(newTopic);
@@ -516,56 +531,72 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   function getScheduleTopic(course = learningSession?.course) {
     if (!course) return null;
-    return course.allTopics.find((topic) => topic.type === 'schedule' && (!topic.state || topic.state === 'published')) || null;
-  }
+    if (!course.schedule?.id) {
+      return null;
+    }
 
-  function getTopicSchedules(topic) {
-    if (!topic) return [];
-    return Array.isArray(topic.schedules) ? topic.schedules : [];
-  }
+    const files = Array.isArray(course.schedule.files) ? course.schedule.files.filter((file) => file && file.path) : [];
+    if (!files.length) {
+      return null;
+    }
 
-  function setTopicSchedules(topic, schedules) {
-    if (!topic) return;
+    const defaultFile = files.find((file) => file.default) || files[0];
 
-    topic.schedules = schedules;
+    return {
+      id: course.schedule.id,
+      title: defaultFile.title || 'Schedule',
+      type: 'schedule',
+      path: defaultFile.path,
+      state: defaultFile.state || 'published',
+      commit: defaultFile.commit,
+    };
   }
 
   function getScheduleFiles(topic = learningSession?.topic) {
-    if (!learningSession?.course || !topic) return [];
+    const course = getWorkingCourse();
+    if (!course) return [];
+    const scheduleTopic = getScheduleTopic(course);
+    if (!scheduleTopic) return [];
 
-    const legacySchedule = resolveScheduleFile(topic, topic.path, 'default', topic.title || 'Schedule', true);
-    const configured = getTopicSchedules(topic);
-    if (Array.isArray(configured) && configured.length > 0) {
-      const configuredFiles = configured.filter((file) => file && file.path).map((file, index) => resolveScheduleFile(topic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default)));
-
-      const hasLegacy = configuredFiles.some((file) => file.rawUrl === legacySchedule.rawUrl);
-      return hasLegacy ? configuredFiles : [legacySchedule, ...configuredFiles];
+    let files = Array.isArray(course.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
+    if (!files.length) return [];
+    if (!files.some((file) => file.default)) {
+      files[0] = { ...files[0], default: true };
+      course.schedule.files = files;
     }
 
-    return [legacySchedule];
+    return files
+      .filter((file) => file && file.path)
+      .map((file, index) => {
+        if (!file.id) {
+          file.id = generateId();
+        }
+        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default));
+      });
   }
 
   function getSelectedScheduleFile(topic = learningSession?.topic, scheduleFiles = null) {
-    const files = scheduleFiles || getScheduleFiles(topic);
+    const files = scheduleFiles || getScheduleFiles();
     if (!files.length) return null;
 
     const settings = getEnrollmentUiSettings(learningSession?.course?.id);
-    const selectedByTopic = settings?.selectedScheduleFiles || {};
-    const selectedId = selectedByTopic?.[topic.id];
+    const selectedByCourse = settings?.selectedScheduleFiles || {};
+    const selectedId = selectedByCourse?.[learningSession?.course?.id];
 
     return files.find((file) => file.id === selectedId) || files.find((file) => file.default) || files[0];
   }
 
   function setSelectedScheduleFile(topic, fileId) {
-    if (!learningSession?.course || !topic || !fileId) return;
+    if (!learningSession?.course || !fileId) return;
 
     const settings = getEnrollmentUiSettings(learningSession.course.id);
-    const selectedScheduleFiles = { ...(settings.selectedScheduleFiles || {}), [topic.id]: fileId };
+    const selectedScheduleFiles = { ...(settings.selectedScheduleFiles || {}), [learningSession.course.id]: fileId };
     saveEnrollmentUiSettings(learningSession.course.id, { selectedScheduleFiles });
   }
 
-  async function createScheduleFile(topic, scheduleTitle) {
-    if (!learningSession?.course || !topic) {
+  async function createSchedule(scheduleTitle = 'Schedule') {
+    const course = getWorkingCourse();
+    if (!course) {
       return null;
     }
 
@@ -574,20 +605,67 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       throw new Error('Schedule title is required.');
     }
 
-    const course = learningSession.course;
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!user.isEditor(course.id) || !token) {
+      throw new Error('You do not have permission to create schedules for this course.');
+    }
+    if (course.schedule?.id) {
+      throw new Error('This course already has a schedule.');
+    }
+
+    const updatedCourse = Course.copy(course);
+    const scheduleId = generateId();
+    const defaultFileId = generateId();
+    const defaultPath = `${course.links.gitHub.rawUrl}/schedule/schedule.md`;
+
+    updatedCourse.schedule = {
+      id: scheduleId,
+      files: [
+        {
+          id: defaultFileId,
+          title,
+          path: defaultPath,
+          default: true,
+          state: 'published',
+        },
+      ],
+    };
+
+    const scheduleTopic = getScheduleTopic(updatedCourse);
+    const resolved = resolveScheduleFile(scheduleTopic, defaultPath, defaultFileId, title, true);
+    const initialMarkdown = createInitialScheduleMarkdown(title);
+
+    await service.commitGitHubFile(resolved.apiUrl, initialMarkdown, token, `add(schedule) ${title}`);
+    updatedCourse.markdownCache.set(resolved.rawUrl, initialMarkdown);
+    await _updateCourseStructure(token, updatedCourse, `update(course) add schedule ${title}`);
+
+    setSelectedScheduleFile(scheduleTopic, defaultFileId);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
+    return resolved;
+  }
+
+  async function createScheduleFile(topic, scheduleTitle) {
+    const course = getWorkingCourse();
+    if (!course) {
+      return null;
+    }
+
+    const title = (scheduleTitle || '').trim();
+    if (!title) {
+      throw new Error('Schedule title is required.');
+    }
+
+    if (!course.schedule?.id) {
+      return createSchedule(title);
+    }
     const token = user.getSetting('gitHubToken', course.id);
     if (!user.isEditor(course.id) || !token) {
       throw new Error('You do not have permission to create schedules for this course.');
     }
 
     const updatedCourse = Course.copy(course);
-    const updatedTopic = updatedCourse.topicFromId(topic.id);
-    let existingSchedules = [...getTopicSchedules(updatedTopic)];
-    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
-    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
-    if (!existingSchedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
-      existingSchedules = [legacyDescriptor, ...existingSchedules];
-    }
+    const updatedSchedule = updatedCourse.schedule;
+    let existingSchedules = Array.isArray(updatedSchedule.files) ? [...updatedSchedule.files] : [];
 
     const path = sanitizeSchedulePath(title);
     if (existingSchedules.some((entry) => sanitizeSchedulePath(entry.path) === path)) {
@@ -601,17 +679,18 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       default: false,
     };
 
-    setTopicSchedules(updatedTopic, [...existingSchedules, newSchedule]);
+    updatedSchedule.files = [...existingSchedules, newSchedule];
 
-    const resolved = resolveScheduleFile(updatedTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default);
+    const scheduleTopic = getScheduleTopic(updatedCourse);
+    const resolved = resolveScheduleFile(scheduleTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default);
     const initialMarkdown = createInitialScheduleMarkdown(title);
 
     await service.commitGitHubFile(resolved.apiUrl, initialMarkdown, token, `add(schedule) ${title}`);
     updatedCourse.markdownCache.set(resolved.rawUrl, initialMarkdown);
 
     await _updateCourseStructure(token, updatedCourse, `update(course) add schedule ${title}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
-    setSelectedScheduleFile(updatedTopic, newSchedule.id);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
+    setSelectedScheduleFile(scheduleTopic, newSchedule.id);
 
     return resolved;
   }
@@ -621,24 +700,20 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function deleteScheduleFile(topic, fileId) {
-    if (!learningSession?.course || !topic) {
+    const course = getWorkingCourse();
+    if (!course) {
       return null;
     }
-
-    const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
     if (!user.isEditor(course.id) || !token) {
       throw new Error('You do not have permission to delete schedules for this course.');
     }
+    if (!course.schedule?.id) {
+      throw new Error('No schedule exists for this course.');
+    }
 
     const updatedCourse = Course.copy(course);
-    const updatedTopic = updatedCourse.topicFromId(topic.id);
-    let schedules = [...getTopicSchedules(updatedTopic)];
-    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
-    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
-    if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
-      schedules = [legacyDescriptor, ...schedules];
-    }
+    let schedules = Array.isArray(updatedCourse.schedule.files) ? [...updatedCourse.schedule.files] : [];
 
     if (schedules.length <= 1) {
       throw new Error('At least one schedule file is required.');
@@ -654,7 +729,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       throw new Error('The default schedule file cannot be deleted.');
     }
 
-    const resolved = resolveScheduleFile(updatedTopic, removing.path, removing.id, removing.title, Boolean(removing.default));
+    const scheduleTopic = getScheduleTopic(updatedCourse);
+    const resolved = resolveScheduleFile(scheduleTopic, removing.path, removing.id, removing.title, Boolean(removing.default));
     await service.deleteGitHubFile(resolved.apiUrl, token, `remove(schedule) ${removing.title || removing.path}`);
 
     updatedCourse.markdownCache.delete(resolved.rawUrl);
@@ -664,50 +740,73 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       schedules[0] = { ...schedules[0], default: true };
     }
 
-    setTopicSchedules(updatedTopic, schedules);
+    updatedCourse.schedule.files = schedules;
 
     const nextSelection = schedules.find((entry) => entry.default) || schedules[0];
 
     await _updateCourseStructure(token, updatedCourse, `update(course) delete schedule ${removing.title || removing.path}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
     if (nextSelection?.id) {
-      setSelectedScheduleFile(updatedTopic, nextSelection.id);
+      setSelectedScheduleFile(scheduleTopic, nextSelection.id);
     }
 
     return nextSelection?.id || null;
   }
 
-  async function setDefaultScheduleFile(topic, fileId) {
-    if (!learningSession?.course || !topic || !fileId) {
-      return null;
+  async function deleteCourseSchedule() {
+    const course = getWorkingCourse();
+    if (!course) return;
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!user.isEditor(course.id) || !token) {
+      throw new Error('You do not have permission to delete schedules for this course.');
+    }
+    if (!course.schedule?.id) {
+      throw new Error('No schedule exists for this course.');
     }
 
-    const course = learningSession.course;
+    const updatedCourse = Course.copy(course);
+    const scheduleTopic = getScheduleTopic(updatedCourse);
+    const scheduleFiles = getScheduleFiles(scheduleTopic);
+
+    for (const file of scheduleFiles) {
+      await service.deleteGitHubFile(file.apiUrl, token, `remove(schedule) ${file.title || file.path}`);
+      updatedCourse.markdownCache.delete(file.rawUrl);
+    }
+
+    updatedCourse.schedule = undefined;
+
+    const nextTopic = updatedCourse.defaultTopic();
+    await _updateCourseStructure(token, updatedCourse, `update(course) delete schedule`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: nextTopic });
+  }
+
+  async function setDefaultScheduleFile(topic, fileId) {
+    const course = getWorkingCourse();
+    if (!course || !fileId) {
+      return null;
+    }
     const token = user.getSetting('gitHubToken', course.id);
     if (!user.isEditor(course.id) || !token) {
       throw new Error('You do not have permission to update default schedules for this course.');
     }
+    if (!course.schedule?.id) {
+      throw new Error('No schedule exists for this course.');
+    }
 
     const updatedCourse = Course.copy(course);
-    const updatedTopic = updatedCourse.topicFromId(topic.id);
-    let schedules = [...getTopicSchedules(updatedTopic)];
-    const legacyDescriptor = buildLegacyScheduleDescriptor(updatedTopic);
-    const legacyPathKey = sanitizeSchedulePath(legacyDescriptor.path);
-    if (!schedules.some((entry) => sanitizeSchedulePath(entry.path) === legacyPathKey)) {
-      schedules = [legacyDescriptor, ...schedules];
-    }
+    const scheduleTopic = getScheduleTopic(updatedCourse);
+    let schedules = Array.isArray(updatedCourse.schedule.files) ? [...updatedCourse.schedule.files] : [];
 
     if (!schedules.some((entry) => entry.id === fileId)) {
       throw new Error('Unable to find selected schedule file.');
     }
 
     schedules = schedules.map((entry) => ({ ...entry, default: entry.id === fileId }));
-
-    setTopicSchedules(updatedTopic, schedules);
+    updatedCourse.schedule.files = schedules;
 
     await _updateCourseStructure(token, updatedCourse, `update(course) default schedule ${fileId}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
-    setSelectedScheduleFile(updatedTopic, fileId);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
+    setSelectedScheduleFile(scheduleTopic, fileId);
 
     return fileId;
   }
@@ -733,16 +832,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return `${parts.join('/')}.md`;
   }
 
-  function buildLegacyScheduleDescriptor(topic) {
-    const path = topic.path.split('/').pop() || 'schedule.md';
-    return {
-      id: 'default',
-      title: topic.title || 'Schedule',
-      path,
-      default: true,
-    };
-  }
-
   function createInitialScheduleMarkdown(title) {
     return `# ${title}\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n`;
   }
@@ -756,7 +845,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const course = learningSession?.course;
     const rawRoot = course.links.gitHub.rawUrl;
     const apiRoot = course.links.gitHub.apiUrl;
-    const topicRepoPath = topic.path.replace(`${rawRoot}/`, '');
+    const topicRepoPath = String(topic.path || '').replace(`${rawRoot}/`, '');
     const topicDir = topicRepoPath.substring(0, topicRepoPath.lastIndexOf('/'));
 
     if (configuredPath.startsWith('http://') || configuredPath.startsWith('https://')) {
@@ -809,42 +898,31 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function updateScheduleTopicContent(topic, fileId, content, commitMessage = `update(${topic.title})`) {
-    if (!learningSession?.course || !topic) return;
+    const course = getWorkingCourse();
+    if (!course || !topic) return;
 
     const files = getScheduleFiles(topic);
     const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files);
     if (!selectedFile) return;
 
-    const token = user.getSetting('gitHubToken', learningSession.course.id);
+    const token = user.getSetting('gitHubToken', course.id);
     const commit = await service.updateGitHubFile(selectedFile.apiUrl, content, token, commitMessage);
 
-    const updatedCourse = Course.copy(learningSession.course);
-    const updatedTopic = updatedCourse.topicFromId(topic.id);
-
-    // If caller has a newer schedule list (e.g. just-created schedule), carry it
-    // forward so this update does not overwrite course.json with stale schedules.
-    if (Array.isArray(topic?.schedules)) {
-      setTopicSchedules(
-        updatedTopic,
-        getTopicSchedules(topic).map((entry) => ({ ...entry })),
-      );
+    const updatedCourse = Course.copy(course);
+    const updatedScheduleTopic = getScheduleTopic(updatedCourse);
+    if (Array.isArray(updatedCourse.schedule.files)) {
+      updatedCourse.schedule.files = updatedCourse.schedule.files.map((entry) => (entry?.id === selectedFile.id ? { ...entry, commit } : entry));
     }
 
-    updatedTopic.commit = commit;
-
     const nextTitle = extractScheduleTitleFromMarkdown(content);
-    const updatedSchedules = getTopicSchedules(updatedTopic);
-    if (nextTitle && Array.isArray(updatedSchedules)) {
-      setTopicSchedules(
-        updatedTopic,
-        updatedSchedules.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry)),
-      );
+    if (nextTitle && Array.isArray(updatedCourse.schedule.files)) {
+      updatedCourse.schedule.files = updatedCourse.schedule.files.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry));
     }
 
     updatedCourse.markdownCache.set(selectedFile.rawUrl, content);
-    await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
-    setSelectedScheduleFile(topic, selectedFile.id);
+    await _updateCourseStructure(token, updatedCourse, `update(course) schedule ${topic.title}`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedScheduleTopic });
+    setSelectedScheduleFile(updatedScheduleTopic, selectedFile.id);
   }
 
   async function deleteTopicFiles(topic, files) {
@@ -1361,9 +1439,11 @@ ${topicDescription || 'overview content placeholder'}`;
     getScheduleFiles,
     getSelectedScheduleFile,
     setSelectedScheduleFile,
+    createSchedule,
     createScheduleFile,
     renameScheduleFile,
     deleteScheduleFile,
+    deleteCourseSchedule,
     setDefaultScheduleFile,
     getScheduleTopicContent,
     updateScheduleTopicContent,

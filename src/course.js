@@ -22,7 +22,16 @@ export default class Course {
       ...module,
       topics: module.topics.map((topic) => ({ ...topic })),
     }));
-    const newCourse = new Course({ ...course, modules: newModules });
+    const newCourse = new Course({
+      ...course,
+      modules: newModules,
+      schedule: course.schedule
+        ? {
+            ...course.schedule,
+            files: Array.isArray(course.schedule.files) ? course.schedule.files.map((file) => ({ ...file })) : [],
+          }
+        : undefined,
+    });
 
     newCourse.markdownCache = new Map(course.markdownCache);
     newCourse.allTopics = newCourse.modules.flatMap((m) => m.topics);
@@ -133,6 +142,26 @@ async function loadFromDefinition(catalogEntry) {
       if (!topic.state) {
         topic.state = 'published';
       }
+    }
+  }
+
+  if (courseDefinition.schedule) {
+    if (!courseDefinition.schedule.id) {
+      courseDefinition.schedule.id = generateId();
+    }
+    const scheduleFiles = Array.isArray(courseDefinition.schedule.files) ? courseDefinition.schedule.files : [];
+
+    courseDefinition.schedule.files = scheduleFiles
+      .filter((file) => file && file.path)
+      .map((file) => ({
+        ...file,
+        id: file.id || generateId(),
+        path: file.path && !file.path.startsWith('http') ? `${gitHubLinks.rawUrl}/${file.path}` : file.path,
+        state: file.state || 'published',
+      }));
+
+    if (courseDefinition.schedule.files.length > 0 && !courseDefinition.schedule.files.some((file) => file.default)) {
+      courseDefinition.schedule.files[0].default = true;
     }
   }
 

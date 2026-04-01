@@ -577,27 +577,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       const createdFile = await courseOps.createScheduleFile(learningSession.topic, trimmedTitle);
       if (createdFile) {
         if (copiedMarkdown) {
-          // createScheduleFile updates course state asynchronously; ensure the copy update
-          // targets the newly created schedule by constructing a topic that includes it.
-          const priorSchedules = Array.isArray(learningSession?.topic?.schedules) ? learningSession.topic.schedules : [];
-          const hasCreatedSchedule = priorSchedules.some((entry) => entry?.id === createdFile.id || entry?.path === createdFile.path);
-          const nextSchedules = hasCreatedSchedule
-            ? priorSchedules
-            : [
-                ...priorSchedules,
-                {
-                  id: createdFile.id,
-                  title: createdFile.title,
-                  path: createdFile.path,
-                  default: Boolean(createdFile.default),
-                },
-              ];
-          const topicWithCreatedSchedule = {
-            ...learningSession.topic,
-            schedules: nextSchedules,
-          };
-
-          await courseOps.updateScheduleTopicContent(topicWithCreatedSchedule, createdFile.id, copiedMarkdown, `copy(schedule) ${trimmedTitle}`);
+          await courseOps.updateScheduleTopicContent(learningSession.topic, createdFile.id, copiedMarkdown, `copy(schedule) ${trimmedTitle}`);
         }
         setFiles((prev) => dedupeScheduleFiles([...prev, createdFile]));
         setSelectedFileId(createdFile.id);

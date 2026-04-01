@@ -30,6 +30,7 @@ export function createAppRouter(user) {
         { path: 'dashboard', element: <DashboardPage /> },
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'course/:courseId/topic/:topicId', element: <ClassroomPage /> },
+        { path: 'course/:courseId/schedule', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'courseCreation', element: <CourseCreationPage /> },
         { path: 'courseExport', element: <CourseExportPage /> },
@@ -55,7 +56,7 @@ function App({ initialUser }) {
         const enrollment = await service.currentEnrollment(initialUser.id);
         if (enrollment) {
           const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
-          const topicPath = enrollmentUiSettings?.currentTopic ? `/topic/${enrollmentUiSettings.currentTopic}` : '';
+            const topicPath = enrollmentUiSettings?.currentTopic ? (enrollmentUiSettings.currentTopic === 'schedule' ? '/schedule' : `/topic/${enrollmentUiSettings.currentTopic}`) : '';
           navigate(`/course/${enrollment.catalogId}${topicPath}`);
         } else {
           navigate('/dashboard');
@@ -144,6 +145,7 @@ function ClassroomPage() {
   const { courseOps, service, user, learningSession, setLearningSession, settings } = useOutletContext();
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { setSearchResults } = useSearchResults();
 
   const { courseId, topicId } = useParams();
@@ -151,6 +153,7 @@ function ClassroomPage() {
     (async () => {
       try {
         if (courseId !== null) {
+          const isScheduleRoute = location.pathname.endsWith('/schedule');
           let course = learningSession?.course;
           if (!course || course.id !== courseId) {
             course = await courseOps.getCourse(courseId);
@@ -162,7 +165,17 @@ function ClassroomPage() {
 
           let topic = learningSession?.topic;
           if (course) {
-            if (!topicId) {
+            if (isScheduleRoute) {
+              topic = courseOps.getScheduleTopic(course);
+              if (topic) {
+                courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: 'schedule' });
+              } else {
+                topic = course.defaultTopic();
+                if (!topic) throw new Error('No default topic found for course');
+                navigate(`/course/${courseId}/topic/${topic.id}`);
+                return;
+              }
+            } else if (!topicId) {
               topic = course.defaultTopic();
               if (!topic) throw new Error('No default topic found for course');
               navigate(`/course/${courseId}/topic/${topic.id}`);
@@ -184,7 +197,7 @@ function ClassroomPage() {
         setErrorMsg(`Unable to load course: ${error.message}`);
       }
     })();
-  }, [courseId, topicId, user]);
+  }, [courseId, topicId, user, location.pathname]);
 
   if (errorMsg) {
     throw new Error(errorMsg);
