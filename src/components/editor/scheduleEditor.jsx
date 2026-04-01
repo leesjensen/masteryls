@@ -267,16 +267,16 @@ function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, r
 
   return (
     <div ref={setNodeRef} style={style} className={`rounded border-l-4 border-l-blue-500 border border-blue-200 bg-blue-50/50 p-2 space-y-2 ${isDragging ? 'opacity-60' : ''}`}>
-      <div className="grid grid-cols-[90px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
+      <div className="grid grid-cols-1 gap-2 items-start sm:grid-cols-[90px_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center">
         <div className="w-[90px] whitespace-nowrap border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
-        <div className="min-w-0 flex items-center gap-2">
+        <div className="min-w-0 flex items-center gap-2 sm:col-auto">
           <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-500 hover:text-amber-600" title="Drag to reorder session">
             <GripVertical size={14} />
           </button>
-          <input type="date" value={pickerValueFromTextDate(row.date)} onChange={(e) => updateWeek(row.id, { date: textDateFromPickerValue(e.target.value) })} className="w-[150px] border border-gray-300 rounded px-2 py-1 text-xs" />
+          <input type="date" value={pickerValueFromTextDate(row.date)} onChange={(e) => updateWeek(row.id, { date: textDateFromPickerValue(e.target.value) })} className="min-w-0 w-full sm:w-[150px] border border-gray-300 rounded px-2 py-1 text-xs" />
         </div>
-        <input className="min-w-0 border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
-        <div className="flex justify-end items-center text-xs whitespace-nowrap">
+        <input className="min-w-0 w-full border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
+        <div className="flex justify-end items-center text-xs whitespace-nowrap sm:justify-end">
           <button className="text-red-700" onClick={() => removeSession(row.id)}>
             Remove
           </button>
