@@ -257,7 +257,7 @@ function remapScheduleDatesForStartDate(sourceModel, startDateIso) {
   };
 }
 
-function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
+function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileRepoPath, dueLinkedHrefs, coveredOrSlidesLinkedHrefs, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
 
   const style = {
@@ -285,21 +285,34 @@ function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, r
 
       {['dueItems', 'topicsCovered', 'slides'].map((field) => (
         <div key={field} className="border border-gray-200 rounded p-2">
+          {(() => {
+            const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
+            const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
+              const toRepoPath = repoRelativePathFromRawUrl(topic.path, learningSession.course.links.gitHub.rawUrl);
+              if (!toRepoPath || !selectedFileRepoPath) {
+                return false;
+              }
+              const href = relativePath(selectedFileRepoPath, toRepoPath);
+              return !blockedHrefs.has(href);
+            });
+
+            return (
           <div className="flex justify-between items-center mb-1">
             <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
             <div className="flex items-center gap-2">
               <select
                 className="text-xs border border-gray-300 rounded px-1 py-0.5"
                 defaultValue=""
+                disabled={availableTopics.length === 0}
                 onChange={(e) => {
                   addTopicLink(row.id, field, e.target.value);
                   e.currentTarget.value = '';
                 }}
               >
                 <option value="" disabled>
-                  Add topic link...
+                  {availableTopics.length === 0 ? 'No more topics' : 'Add topic link...'}
                 </option>
-                {learningSession.course.allTopics.map((topic) => (
+                {availableTopics.map((topic) => (
                   <option key={topic.id} value={topic.id}>
                     {topic.title}
                   </option>
@@ -310,6 +323,8 @@ function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, r
               </button>
             </div>
           </div>
+            );
+          })()}
 
           <div className="space-y-1">
             {row[field].map((item) =>
@@ -507,6 +522,13 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     if (!toRepoPath) return;
 
     const href = relativePath(selectedFile.repoPath, toRepoPath);
+
+    const sectionGroup = field === 'dueItems' ? ['dueItems'] : ['topicsCovered', 'slides'];
+    const hrefAlreadyLinked = (model.weeks || []).some((row) => sectionGroup.some((section) => (row[section] || []).some((item) => item?.href === href)));
+    if (hrefAlreadyLinked) {
+      return;
+    }
+
     addItem(rowId, field, {
       id: `item-${Date.now()}`,
       text: topic.title,
@@ -674,6 +696,32 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     return entries;
   }, [learningSession?.course]);
 
+  const dueLinkedHrefs = React.useMemo(() => {
+    const hrefs = new Set();
+    (model.weeks || []).forEach((row) => {
+      (row.dueItems || []).forEach((item) => {
+        if (item?.href) {
+          hrefs.add(item.href);
+        }
+      });
+    });
+    return hrefs;
+  }, [model.weeks]);
+
+  const coveredOrSlidesLinkedHrefs = React.useMemo(() => {
+    const hrefs = new Set();
+    (model.weeks || []).forEach((row) => {
+      ['topicsCovered', 'slides'].forEach((field) => {
+        (row[field] || []).forEach((item) => {
+          if (item?.href) {
+            hrefs.add(item.href);
+          }
+        });
+      });
+    });
+    return hrefs;
+  }, [model.weeks]);
+
   function getLinkedTopic(itemHref) {
     if (!itemHref || !selectedFile?.repoPath) {
       return null;
@@ -788,7 +836,22 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
                           <div className="space-y-3">
                             {group.sessions.map((row, sessionIndex) => (
-                              <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
+                              <SortableSessionCard
+                                key={row.id}
+                                row={row}
+                                sessionIndex={sessionIndex}
+                                learningSession={learningSession}
+                                selectedFileRepoPath={selectedFile?.repoPath || ''}
+                                dueLinkedHrefs={dueLinkedHrefs}
+                                coveredOrSlidesLinkedHrefs={coveredOrSlidesLinkedHrefs}
+                                updateWeek={updateWeek}
+                                removeSession={removeSession}
+                                addTopicLink={addTopicLink}
+                                addItem={addItem}
+                                updateItem={updateItem}
+                                removeItem={removeItem}
+                                getLinkedTopic={getLinkedTopic}
+                              />
                             ))}
                           </div>
 
