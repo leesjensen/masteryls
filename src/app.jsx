@@ -165,14 +165,9 @@ function ClassroomPage() {
 
           let topic = learningSession?.topic;
           if (course) {
-            const getDefaultTopicOrThrow = () => {
-              const defaultTopic = course.defaultTopic();
-              if (!defaultTopic) throw new Error('No default topic found for course');
-              return defaultTopic;
-            };
-
             const redirectToDefaultTopic = (saveAsCurrentTopic = false) => {
-              const targetTopic = getDefaultTopicOrThrow();
+              const targetTopic = course.defaultTopic();
+              if (!targetTopic) throw new Error('No default topic found for course');
               if (saveAsCurrentTopic) {
                 courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: targetTopic.id });
               }
