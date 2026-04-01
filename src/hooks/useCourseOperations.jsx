@@ -1283,7 +1283,8 @@ ${topicDescription || 'overview content placeholder'}`;
       .replace(/\s+/g, '-')
       .replace(/--+/g, '-')
       .trim('-');
-    return `${course.links.gitHub.rawUrl}/instruction/${slugTitle}/${slugTitle}.md`;
+    const topicFolder = topicType === 'schedule' ? 'schedule' : 'instruction';
+    return `${course.links.gitHub.rawUrl}/${topicFolder}/${slugTitle}/${slugTitle}.md`;
   }
 
   function _resolveUniqueTopicPath(course, topicPath, existingPaths) {
@@ -1297,19 +1298,20 @@ ${topicDescription || 'overview content placeholder'}`;
       return topicPath;
     }
 
-    const match = topicPath.match(new RegExp(`^${rawRoot.replace(/[.*+?^${}()|[\\]\\]/g, '\\\\$&')}/instruction/([^/]+)/\\1\\.md$`));
+    const match = topicPath.match(new RegExp(`^${rawRoot.replace(/[.*+?^${}()|[\\]\\]/g, '\\\\$&')}/([^/]+)/([^/]+)/\\2\\.md$`));
     if (!match) {
       return topicPath;
     }
 
-    const baseSlug = match[1];
+    const folder = match[1];
+    const baseSlug = match[2];
     let suffix = 1;
     let candidatePath = topicPath;
 
     while (existingPaths.has(candidatePath)) {
       suffix += 1;
       const nextSlug = `${baseSlug}-${suffix}`;
-      candidatePath = `${rawRoot}/instruction/${nextSlug}/${nextSlug}.md`;
+      candidatePath = `${rawRoot}/${folder}/${nextSlug}/${nextSlug}.md`;
     }
 
     return candidatePath;
