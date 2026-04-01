@@ -219,6 +219,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
 
   const modules = learningSession?.course?.modules;
   const allTopicIds = modules ? modules.flatMap((m) => m.topics.map((t) => t.id)) : [];
+  const hasStubbedTopics = learningSession.course.allTopics.some((topic) => topic.state === 'stub' && topic.description);
 
   function filterTopicsByState() {
     return learningSession.course.modules
@@ -282,9 +283,11 @@ function Contents({ courseOps, learningSession, editorVisible }) {
               </SortableContext>
             </DndContext>
             <NewModuleButton courseOps={courseOps} />
-            <div onClick={generateAllTopics} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
-              + Generate all stubbed topics
-            </div>
+            {hasStubbedTopics && (
+              <div onClick={generateAllTopics} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
+                + Generate all stubbed topics
+              </div>
+            )}
           </>
         ) : (
           moduleJsx
