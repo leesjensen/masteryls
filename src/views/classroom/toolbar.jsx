@@ -20,10 +20,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   }
 
   function navigateToSchedule() {
-    const scheduleTopic = courseOps.getScheduleTopic(learningSession.course);
-    if (scheduleTopic) {
-      navigate(`/course/${learningSession.course.id}/schedule`);
-    }
+    navigate(`/course/${learningSession.course.id}/schedule`);
   }
 
   async function updateCanvasPage() {

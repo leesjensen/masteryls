@@ -288,7 +288,14 @@ function SortableSessionCard({ row, sessionIndex, learningSession, updateWeek, r
           <div className="flex justify-between items-center mb-1">
             <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
             <div className="flex items-center gap-2">
-              <select className="text-xs border border-gray-300 rounded px-1 py-0.5" defaultValue="" onChange={(e) => addTopicLink(row.id, field, e.target.value)}>
+              <select
+                className="text-xs border border-gray-300 rounded px-1 py-0.5"
+                defaultValue=""
+                onChange={(e) => {
+                  addTopicLink(row.id, field, e.target.value);
+                  e.currentTarget.value = '';
+                }}
+              >
                 <option value="" disabled>
                   Add topic link...
                 </option>
