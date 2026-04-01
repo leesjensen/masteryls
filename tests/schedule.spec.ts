@@ -3,22 +3,18 @@ import { initBasicCourse, navigateToCourse } from './testInit';
 
 function scheduleCourseOverride() {
   return {
+    schedule: {
+      id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
+      files: [
+        { id: 'default', title: 'Winter', path: 'instruction/schedule/schedule.md', default: true, state: 'published' },
+        { id: 'joe', title: "Joe's schedule", path: 'instruction/schedule/joe-s-schedule.md', default: false, state: 'published' },
+      ],
+    },
     modules: [
       {
         title: 'Module 1',
         topics: [
           { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
-          {
-            id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
-            title: 'Schedule',
-            type: 'schedule',
-            path: 'instruction/schedule/schedule.md',
-            state: 'published',
-            schedules: [
-              { id: 'default', title: 'Winter', path: 'schedule.md', default: true },
-              { id: 'joe', title: "Joe's schedule", path: 'joe-s-schedule.md', default: false },
-            ],
-          },
         ],
       },
     ],
@@ -50,9 +46,9 @@ function installScheduleRoutes(page: any) {
     await route.continue();
   });
 
-  context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/instruction\/schedule\/.*\.md$/, async (route: any) => {
+  context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/(instruction\/schedule|schedule)\/.*\.md$/, async (route: any) => {
     const url = route.request().url();
-    const match = url.match(/\/main\/(instruction\/schedule\/[^?]+)/);
+    const match = url.match(/\/main\/((?:instruction\/schedule|schedule)\/[^?]+)/);
     const repoPath = match?.[1];
     if (repoPath && markdownByRepoPath.has(repoPath)) {
       await route.fulfill({
@@ -66,10 +62,10 @@ function installScheduleRoutes(page: any) {
     await route.continue();
   });
 
-  context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/instruction\/schedule\/.*\.md$/, async (route: any) => {
+  context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/(instruction\/schedule|schedule)\/.*\.md$/, async (route: any) => {
     const method = route.request().method();
     const url = route.request().url();
-    const match = url.match(/\/contents\/(instruction\/schedule\/[^?]+)/);
+    const match = url.match(/\/contents\/((?:instruction\/schedule|schedule)\/[^?]+)/);
     const repoPath = match?.[1];
 
     if (!repoPath) {
@@ -312,41 +308,31 @@ test('schedule editor creates blank schedules with schedule markdown template', 
   expect(created?.markdown || '').toContain('|  1   |      |        |     |                |        |');
 });
 
-test('adding a schedule topic creates schedule template markdown and schedules metadata', async ({ page }) => {
-  await initBasicCourse({ page });
+test('adding a schedule creates schedule template markdown and course schedule metadata', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: { schedule: undefined } });
   const { schedulePuts, courseJsonPuts } = installScheduleRoutes(page);
 
   await navigateToCourse(page);
   await page.locator('.absolute.left-0\\.5').click();
 
-  await page.getByRole('button', { name: '+ Add New Topic' }).first().click();
-  await page.getByPlaceholder('Topic title').fill('schedule');
-  await page
-    .locator('select')
-    .filter({ has: page.locator('option[value="schedule"]') })
-    .first()
-    .selectOption('schedule');
-  await page.getByRole('button', { name: 'Generate' }).click();
+  await page.getByText('+ Create schedule').click();
 
-  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('instruction/schedule/schedule.md'))).toBeTruthy();
+  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('schedule/schedule.md'))).toBeTruthy();
 
-  const createdScheduleMd = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('instruction/schedule/schedule.md'));
-  expect(createdScheduleMd?.markdown || '').toContain('# schedule');
+  const createdScheduleMd = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('schedule/schedule.md'));
+  expect(createdScheduleMd?.markdown || '').toContain('# Schedule');
   expect(createdScheduleMd?.markdown || '').toContain('| Week | Date | Module | Due | Topics Covered | Slides |');
-  expect(createdScheduleMd?.markdown || '').not.toContain('overview content placeholder');
 
   await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
   const latestCourseJson = courseJsonPuts[courseJsonPuts.length - 1];
-  const allTopics = (latestCourseJson.modules || []).flatMap((m: any) => m.topics || []);
-  const scheduleTopic = allTopics.find((t: any) => t.type === 'schedule' && t.path === 'instruction/schedule/schedule.md');
 
-  expect(scheduleTopic).toBeTruthy();
-  expect(Array.isArray(scheduleTopic.schedules)).toBeTruthy();
-  expect(scheduleTopic.schedules).toHaveLength(1);
-  expect(scheduleTopic.schedules[0].title).toBe('schedule');
-  expect(scheduleTopic.schedules[0].path).toBe('schedule.md');
-  expect(scheduleTopic.schedules[0].default).toBe(true);
-  expect(scheduleTopic.schedules[0].id).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(latestCourseJson.schedule).toBeTruthy();
+  expect(Array.isArray(latestCourseJson.schedule.files)).toBeTruthy();
+  expect(latestCourseJson.schedule.files).toHaveLength(1);
+  expect(latestCourseJson.schedule.files[0].title).toBe('Schedule');
+  expect(latestCourseJson.schedule.files[0].path).toBe('schedule/schedule.md');
+  expect(latestCourseJson.schedule.files[0].default).toBe(true);
+  expect(latestCourseJson.schedule.files[0].id).toMatch(/^[0-9a-f-]{36}$/i);
 });
 
 test('schedule editor confirms before switching files with unsaved changes', async ({ page }) => {

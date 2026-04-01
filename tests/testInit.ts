@@ -57,7 +57,10 @@ const catalog = [
 
 const courseJson = {
   title: 'Rocket Science',
-  schedule: 'schedule/schedule.md',
+  schedule: {
+    id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
+    files: [{ id: 'default', title: 'Schedule', path: 'schedule/schedule.md', default: true, state: 'published' }],
+  },
   syllabus: 'instruction/syllabus/syllabus.md',
   links: {
     canvas: 'https://byu.instructure.com/courses/31151',

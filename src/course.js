@@ -145,7 +145,7 @@ async function loadFromDefinition(catalogEntry) {
     }
   }
 
-  if (courseDefinition.schedule) {
+  if (courseDefinition.schedule && typeof courseDefinition.schedule === 'object') {
     if (!courseDefinition.schedule.id) {
       courseDefinition.schedule.id = generateId();
     }

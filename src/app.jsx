@@ -184,6 +184,12 @@ function ClassroomPage() {
               topic = await course.topicFromId(topicId);
               if (topic) {
                 courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+              } else {
+                topic = course.defaultTopic();
+                if (!topic) throw new Error('No default topic found for course');
+                courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: topic.id });
+                navigate(`/course/${courseId}/topic/${topic.id}`);
+                return;
               }
             }
           }

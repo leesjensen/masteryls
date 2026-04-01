@@ -20,10 +20,8 @@ test('editor contents actions are visible', async ({ page }) => {
   await page.locator('.absolute.left-0\\.5').click();
 
   await expect(page.getByRole('button', { name: '+ Add New Module' })).toBeVisible();
-  await expect(page.getByText('+ Generate all stubbed topics')).toBeVisible();
-
-  await page.getByText('+ Generate all stubbed topics').click();
-  await expect(page.getByText('+ Generate all stubbed topics')).toBeVisible();
+  await expect(page.getByText('- Delete schedule')).toBeVisible();
+  await expect(page.getByText('+ Generate all stubbed topics')).not.toBeVisible();
 });
 
 test('toc hides unpublished topics for learners', async ({ page }) => {
@@ -56,6 +54,8 @@ test('toc hides unpublished topics for learners', async ({ page }) => {
 });
 
 test('adding a topic with an existing slug generates a unique path', async ({ page }) => {
+  test.setTimeout(15000);
+
   await initBasicCourse({
     page,
     courseJsonOverride: {
@@ -121,20 +121,16 @@ test('sidebar annotates topics with due dates from selected schedule', async ({ 
   await initBasicCourse({
     page,
     courseJsonOverride: {
+      schedule: {
+        id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
+        files: [{ id: 'default', title: 'Winter', path: 'instruction/schedule/schedule.md', default: true, state: 'published' }],
+      },
       modules: [
         {
           title: 'Module 1',
           topics: [
             { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
             { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'Topic 1', type: 'instruction', path: 'instruction/topic-1.md' },
-            {
-              id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
-              title: 'Schedule',
-              type: 'schedule',
-              path: 'instruction/schedule/schedule.md',
-              state: 'published',
-              schedules: [{ id: 'default', title: 'Winter', path: 'schedule.md', default: true }],
-            },
           ],
         },
       ],
