@@ -571,7 +571,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         if (!file.id) {
           file.id = generateId();
         }
-        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default));
+        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default), file.commit);
       });
   }
 
@@ -679,7 +679,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     updatedSchedule.files = [...existingSchedules, newSchedule];
 
     const scheduleTopic = getScheduleTopic(updatedCourse);
-    const resolved = resolveScheduleFile(scheduleTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default);
+    const resolved = resolveScheduleFile(scheduleTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default, newSchedule.commit);
     const initialMarkdown = createInitialScheduleMarkdown(title);
 
     await service.commitGitHubFile(resolved.apiUrl, initialMarkdown, token, `add(schedule) ${title}`);
@@ -727,7 +727,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     const scheduleTopic = getScheduleTopic(updatedCourse);
-    const resolved = resolveScheduleFile(scheduleTopic, removing.path, removing.id, removing.title, Boolean(removing.default));
+    const resolved = resolveScheduleFile(scheduleTopic, removing.path, removing.id, removing.title, Boolean(removing.default), removing.commit);
     await service.deleteGitHubFile(resolved.apiUrl, token, `remove(schedule) ${removing.title || removing.path}`);
 
     updatedCourse.markdownCache.delete(resolved.rawUrl);
@@ -842,7 +842,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return match ? match[1].trim() : '';
   }
 
-  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false) {
+  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false, commit = null) {
     const course = learningSession?.course;
     const rawRoot = course.links.gitHub.rawUrl;
     const apiRoot = course.links.gitHub.apiUrl;
@@ -852,7 +852,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (configuredPath.startsWith('http://') || configuredPath.startsWith('https://')) {
       const repoPath = configuredPath.replace(`${rawRoot}/`, '');
       const apiUrl = configuredPath.startsWith(rawRoot) ? `${apiRoot}/${repoPath}` : null;
-      return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault };
+      return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault, commit };
     }
 
     let relativePath = '';
@@ -876,6 +876,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       apiUrl: `${apiRoot}/${normalizedRepoPath}`,
       repoPath: normalizedRepoPath,
       default: isDefault,
+      commit,
     };
   }
 
@@ -886,13 +887,15 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files) || files[0];
     if (!selectedFile) return '';
 
-    if (!forceRefresh && learningSession?.course?.markdownCache.has(selectedFile.rawUrl)) {
-      return learningSession.course.markdownCache.get(selectedFile.rawUrl);
+    const fetchUrl = selectedFile.commit ? selectedFile.rawUrl.replace(/(\/main\/)/, `/${selectedFile.commit}/`) : selectedFile.rawUrl;
+
+    if (!forceRefresh && learningSession?.course?.markdownCache.has(fetchUrl)) {
+      return learningSession.course.markdownCache.get(fetchUrl);
     }
 
-    const response = await fetch(selectedFile.rawUrl);
+    const response = await fetch(fetchUrl, { cache: 'no-store' });
     const markdown = await response.text();
-    learningSession?.course?.markdownCache.set(selectedFile.rawUrl, markdown);
+    learningSession?.course?.markdownCache.set(fetchUrl, markdown);
     setSelectedScheduleFile(topic, selectedFile.id);
 
     return markdown;
