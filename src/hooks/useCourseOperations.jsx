@@ -829,6 +829,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       .map((part) => part.replace(/^-+|-+$/g, ''))
       .filter(Boolean);
 
+    if (!parts.includes('schedule')) {
+      parts.unshift('schedule');
+    }
+
     return `${parts.join('/')}.md`;
   }
 

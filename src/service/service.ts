@@ -712,14 +712,16 @@ class Service {
    */
   async deleteGitHubFile(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
     const commitSha = await this._getGitHubFileSha(gitHubUrl, token);
-    const body = {
-      message: commitMessage,
-      sha: commitSha,
-    };
+    if (commitSha) {
+      const body = {
+        message: commitMessage,
+        sha: commitSha,
+      };
 
-    const deleteRes = await this.makeGitHubApiRequest(token, gitHubUrl, 'DELETE', body);
-    if (!deleteRes.ok) {
-      throw new Error(`Failed to delete file: ${deleteRes.status} ${deleteRes.statusText}`);
+      const deleteRes = await this.makeGitHubApiRequest(token, gitHubUrl, 'DELETE', body);
+      if (!deleteRes.ok) {
+        throw new Error(`Failed to delete file: ${deleteRes.status} ${deleteRes.statusText}`);
+      }
     }
   }
 
@@ -826,8 +828,8 @@ class Service {
 
   async _getGitHubFileSha(gitHubUrl: string, token: string): Promise<string | undefined> {
     const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
-    const getData = await getRes.json();
     if (getRes.ok) {
+      const getData = await getRes.json();
       return getData.sha;
     }
   }
