@@ -300,8 +300,9 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
         </div>
       </div>
 
-      {['dueItems', 'topicsCovered', 'slides'].map((field) => (
-        <div key={field} className="border border-gray-200 rounded p-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        {['dueItems', 'topicsCovered', 'slides'].map((field) => (
+          <div key={field} className="border border-gray-200 rounded p-2 min-w-0">
           {(() => {
             const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
             const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
@@ -313,11 +314,11 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
             });
 
             return (
-              <div className="flex justify-between items-center mb-1">
-                <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics Covered' : 'Slides'}</div>
-                <div className="flex items-center gap-2">
+              <div className="flex justify-between items-center mb-1 gap-2">
+                <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics' : 'Slides'}</div>
+                <div className="flex items-center gap-2 min-w-0">
                   <select
-                    className="text-xs border border-gray-300 rounded px-1 py-0.5"
+                    className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0"
                     defaultValue=""
                     disabled={availableTopics.length === 0}
                     onChange={(e) => {
@@ -371,8 +372,9 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
               })(),
             )}
           </div>
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
