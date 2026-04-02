@@ -2,11 +2,10 @@ import React from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X } from 'lucide-react';
+import { Check, GripVertical, X } from 'lucide-react';
 import Markdown from '../../components/Markdown';
 import Splitter from '../Splitter.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
-import useClickOutside from '../../hooks/useClickOutside.jsx';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
 const NEW_SCHEDULE_OPTION = '__new_schedule__';
@@ -279,13 +278,6 @@ function remapScheduleDatesForStartDate(sourceModel, startDateIso) {
 function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileRepoPath, dueLinkedHrefs, coveredOrSlidesLinkedHrefs, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
   const [editingItemKey, setEditingItemKey] = React.useState('');
-  const activeEditorRef = React.useRef(null);
-
-  useClickOutside(activeEditorRef, () => {
-    if (editingItemKey) {
-      setEditingItemKey('');
-    }
-  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -355,9 +347,12 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                           </button>
                         </div>
                         {isEditing && (
-                          <div ref={activeEditorRef} className="w-full grid grid-cols-12 gap-2 items-center border border-gray-200 rounded p-2 bg-white/70">
-                            <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                            <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                          <div className="w-full grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_24px] gap-2 items-center border border-gray-200 rounded p-2 bg-white/70">
+                            <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="min-w-0 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                            <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="min-w-0 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                            <button type="button" className="w-6 h-6 inline-flex items-center justify-center text-blue-700 hover:text-green-700 transition-colors" onClick={() => setEditingItemKey('')} title="Apply changes" aria-label="Apply changes">
+                              <Check size={12} />
+                            </button>
                           </div>
                         )}
                       </React.Fragment>
