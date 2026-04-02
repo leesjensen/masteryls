@@ -303,75 +303,75 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {['dueItems', 'topicsCovered', 'slides'].map((field) => (
           <div key={field} className="border border-gray-200 rounded p-2 min-w-0">
-          {(() => {
-            const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
-            const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
-              const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFileRepoPath, learningSession.course.id);
-              if (!href) {
-                return false;
-              }
-              return !blockedHrefs.has(href);
-            });
+            {(() => {
+              const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
+              const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
+                const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFileRepoPath, learningSession.course.id);
+                if (!href) {
+                  return false;
+                }
+                return !blockedHrefs.has(href);
+              });
 
-            return (
-              <div className="flex justify-between items-center mb-1 gap-2">
-                <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics' : 'Slides'}</div>
-                <div className="flex items-center gap-2 min-w-0">
-                  <select
-                    className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0"
-                    defaultValue=""
-                    disabled={availableTopics.length === 0}
-                    onChange={(e) => {
-                      addTopicLink(row.id, field, e.target.value);
-                      e.currentTarget.value = '';
-                    }}
-                  >
-                    <option value="" disabled>
-                      {availableTopics.length === 0 ? 'No more topics' : 'Add topic link...'}
-                    </option>
-                    {availableTopics.map((topic) => (
-                      <option key={topic.id} value={topic.id}>
-                        {topic.title}
+              return (
+                <div className="flex justify-between items-center mb-1 gap-2">
+                  <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics' : 'Slides'}</div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <select
+                      className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0"
+                      defaultValue=""
+                      disabled={availableTopics.length === 0}
+                      onChange={(e) => {
+                        addTopicLink(row.id, field, e.target.value);
+                        e.currentTarget.value = '';
+                      }}
+                    >
+                      <option value="" disabled>
+                        {availableTopics.length === 0 ? 'No more topics' : 'Add topic link...'}
                       </option>
-                    ))}
-                  </select>
-                  <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
-                    + Item
-                  </button>
+                      {availableTopics.map((topic) => (
+                        <option key={topic.id} value={topic.id}>
+                          {topic.title}
+                        </option>
+                      ))}
+                    </select>
+                    <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
+                      + Item
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
-          <div className="flex flex-wrap gap-1">
-            {row[field].map((item) =>
-              (() => {
-                const linkedTopic = getLinkedTopic(item.href);
-                if (linkedTopic) {
+            <div className="flex flex-wrap gap-1">
+              {row[field].map((item) =>
+                (() => {
+                  const linkedTopic = getLinkedTopic(item.href);
+                  if (linkedTopic) {
+                    return (
+                      <div key={item.id} className="inline-flex items-center min-w-0 max-w-full border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
+                        <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
+                          {linkedTopic.title}
+                        </a>
+                        <button className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)}>
+                          x
+                        </button>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div key={item.id} className="inline-flex items-center min-w-0 max-w-full border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
-                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
-                        {linkedTopic.title}
-                      </a>
-                      <button className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)}>
+                    <div key={item.id} className="w-full grid grid-cols-12 gap-2 items-center">
+                      <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                      <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                      <button className="col-span-1 text-blue-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
                         x
                       </button>
                     </div>
                   );
-                }
-
-                return (
-                  <div key={item.id} className="w-full grid grid-cols-12 gap-2 items-center">
-                    <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                    <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                    <button className="col-span-1 text-blue-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
-                      x
-                    </button>
-                  </div>
-                );
-              })(),
-            )}
-          </div>
+                })(),
+              )}
+            </div>
           </div>
         ))}
       </div>
