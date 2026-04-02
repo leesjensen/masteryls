@@ -133,6 +133,54 @@ test('editor toolbar and files panel actions', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Word Wrap: Off' })).toBeVisible();
 });
 
+test('editor can insert AI generated quiz markdown', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        json: {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: '```masteryls\n{"id":"", "title":"AI Quiz", "type":"multiple-choice"}\nWhat is 2 + 2?\n\n- [ ] 3\n- [x] 4\n- [ ] 5\n- [ ] 22\n```',
+                  },
+                ],
+                role: 'model',
+              },
+              finishReason: 'STOP',
+              index: 0,
+            },
+          ],
+          modelVersion: 'gemini-2.5-flash',
+          responseId: 'ai-quiz-test-response',
+        },
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByTitle('AI generated quiz').click();
+
+  await page.getByPlaceholder('subject').fill('basic arithmetic');
+  await page.getByRole('button', { name: 'Generate', exact: true }).click();
+
+  const editorCode = page.getByRole('code');
+  await expect(editorCode).toContainText('"title":"AI Quiz"');
+  await expect(editorCode).toContainText('What is 2 + 2?');
+  await expect(editorCode).toContainText('- [x] 4');
+});
+
 test('editor commits can be shown with diff and apply actions', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 

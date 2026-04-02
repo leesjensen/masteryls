@@ -673,6 +673,17 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     });
   });
 
+  // GitHub - Get any raw image file referenced by markdown content.
+  await context.route(/https:\/\/raw\.githubusercontent\.com\/.*\.(png|jpg|jpeg|gif|webp|avif)(\?.*)?$/i, async (route) => {
+    expect(route.request().method()).toBe('GET');
+
+    const transparentPng1x1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5fNzsAAAAASUVORK5CYII=', 'base64');
+    await route.fulfill({
+      body: transparentPng1x1,
+      contentType: 'image/png',
+    });
+  });
+
   // GitHub - Get the course description file
   await context.route('https://raw.githubusercontent.com/**/course.json', async (route) => {
     expect(route.request().method()).toBe('GET');
