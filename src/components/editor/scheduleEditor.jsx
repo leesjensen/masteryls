@@ -9,6 +9,7 @@ import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
 const NEW_SCHEDULE_OPTION = '__new_schedule__';
+const NEW_MANUAL_ITEM_OPTION = '__new_manual_item__';
 
 function createEmptyModel() {
   return {
@@ -320,24 +321,26 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                     <select
                       className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0"
                       defaultValue=""
-                      disabled={availableTopics.length === 0}
                       onChange={(e) => {
-                        addTopicLink(row.id, field, e.target.value);
+                        const value = e.target.value;
+                        if (value === NEW_MANUAL_ITEM_OPTION) {
+                          addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' });
+                        } else {
+                          addTopicLink(row.id, field, value);
+                        }
                         e.currentTarget.value = '';
                       }}
                     >
                       <option value="" disabled>
-                        {availableTopics.length === 0 ? 'No more topics' : 'Add topic link...'}
+                        Add item...
                       </option>
+                      <option value={NEW_MANUAL_ITEM_OPTION}>Custom item...</option>
                       {availableTopics.map((topic) => (
                         <option key={topic.id} value={topic.id}>
-                          {topic.title}
+                          Link: {topic.title}
                         </option>
                       ))}
                     </select>
-                    <button className="text-xs text-blue-700" onClick={() => addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' })}>
-                      + Item
-                    </button>
                   </div>
                 </div>
               );
