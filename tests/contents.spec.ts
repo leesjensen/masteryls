@@ -150,5 +150,5 @@ test('sidebar annotates topics with due dates from selected schedule', async ({ 
 
   await expect(page.getByRole('button', { name: '▼ Module 1' })).toBeVisible();
   await expect(page.getByText('Topic 1')).toBeVisible();
-  await expect(page.getByText('Due Apr 4')).toBeVisible();
+  await expect(page.getByText('Apr 4')).toBeVisible();
 });
