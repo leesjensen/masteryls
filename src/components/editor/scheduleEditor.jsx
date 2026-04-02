@@ -342,14 +342,14 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
             );
           })()}
 
-          <div className="space-y-1">
+          <div className="flex flex-wrap gap-1">
             {row[field].map((item) =>
               (() => {
                 const linkedTopic = getLinkedTopic(item.href);
                 if (linkedTopic) {
                   return (
-                    <div key={item.id} className="flex items-center min-w-0 max-w-[340px] border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
-                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
+                    <div key={item.id} className="inline-flex items-center min-w-0 max-w-full border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
+                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
                         {linkedTopic.title}
                       </a>
                       <button className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)}>
@@ -360,7 +360,7 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                 }
 
                 return (
-                  <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
+                  <div key={item.id} className="w-full grid grid-cols-12 gap-2 items-center">
                     <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
                     <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
                     <button className="col-span-1 text-blue-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
