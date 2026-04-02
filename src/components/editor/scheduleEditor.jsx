@@ -2,7 +2,7 @@ import React from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, X } from 'lucide-react';
 import Markdown from '../../components/Markdown';
 import Splitter from '../Splitter.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
@@ -304,8 +304,8 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
         </div>
         <input className="min-w-0 w-full border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
         <div className="flex justify-end items-center text-xs whitespace-nowrap sm:justify-end">
-          <button className="text-blue-700" onClick={() => removeSession(row.id)}>
-            Remove
+          <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors" onClick={() => removeSession(row.id)} title="Remove session" aria-label="Remove session">
+            <X size={14} />
           </button>
         </div>
       </div>
@@ -336,8 +336,8 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                           <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
                             {linkedTopic.title}
                           </a>
-                          <button className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)}>
-                            x
+                          <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item" aria-label="Remove item">
+                            <X size={12} />
                           </button>
                         </div>
                       );
@@ -350,8 +350,8 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                           <button type="button" className="min-w-0 text-xs text-gray-700 truncate whitespace-nowrap" onClick={() => setEditingItemKey(isEditing ? '' : itemKey)} title="Edit item">
                             {(item.text || '').trim() || 'Custom item'}
                           </button>
-                          <button type="button" className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item">
-                            x
+                          <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item" aria-label="Remove item">
+                            <X size={12} />
                           </button>
                         </div>
                         {isEditing && (
@@ -874,8 +874,8 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                           <div className="flex items-center justify-between border-b border-gray-300 pb-2">
                             <div className="inline-flex items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
                             <div className="flex items-center gap-3 text-xs">
-                              <button className="text-blue-700" onClick={() => removeWeek(group.week)}>
-                                Remove week
+                              <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors" onClick={() => removeWeek(group.week)} title="Remove week" aria-label="Remove week">
+                                <X size={14} />
                               </button>
                             </div>
                           </div>
