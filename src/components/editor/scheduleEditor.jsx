@@ -294,7 +294,7 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
         </div>
         <input className="min-w-0 w-full border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
         <div className="flex justify-end items-center text-xs whitespace-nowrap sm:justify-end">
-          <button className="text-red-700" onClick={() => removeSession(row.id)}>
+          <button className="text-blue-700" onClick={() => removeSession(row.id)}>
             Remove
           </button>
         </div>
@@ -348,11 +348,11 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                 const linkedTopic = getLinkedTopic(item.href);
                 if (linkedTopic) {
                   return (
-                    <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="col-span-11 min-w-0 max-w-[300px] border border-blue-300 bg-blue-50 rounded px-2 py-1 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
+                    <div key={item.id} className="flex items-center min-w-0 max-w-[340px] border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
+                      <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
                         {linkedTopic.title}
                       </a>
-                      <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
+                      <button className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)}>
                         x
                       </button>
                     </div>
@@ -363,7 +363,7 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                   <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
                     <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
                     <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                    <button className="col-span-1 text-red-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
+                    <button className="col-span-1 text-blue-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
                       x
                     </button>
                   </div>
@@ -828,7 +828,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                   <div key={link.id || index} className="flex gap-2 items-center">
                     <input value={link.label || ''} onChange={(e) => updateLinks(index, { label: e.target.value })} placeholder="Label" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" />
                     <input value={link.url || ''} onChange={(e) => updateLinks(index, { url: e.target.value })} placeholder="URL" className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm" />
-                    <button className="text-xs text-red-700" onClick={() => updateModel({ ...model, links: model.links.filter((_, i) => i !== index) })}>
+                    <button className="text-xs text-blue-700" onClick={() => updateModel({ ...model, links: model.links.filter((_, i) => i !== index) })}>
                       Remove
                     </button>
                   </div>
@@ -851,7 +851,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                           <div className="flex items-center justify-between border-b border-gray-300 pb-2">
                             <div className="inline-flex items-center rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold text-white">Week {group.week}</div>
                             <div className="flex items-center gap-3 text-xs">
-                              <button className="text-red-700" onClick={() => removeWeek(group.week)}>
+                              <button className="text-blue-700" onClick={() => removeWeek(group.week)}>
                                 Remove week
                               </button>
                             </div>
@@ -885,7 +885,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                     </div>
                     <input value={day.label || ''} onChange={(e) => updateSpecialDay(index, { label: e.target.value })} placeholder="Label" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
                     <input value={day.notes || ''} onChange={(e) => updateSpecialDay(index, { notes: e.target.value })} placeholder="Notes" className="col-span-4 border border-gray-300 rounded px-2 py-1 text-sm" />
-                    <button className="col-span-1 text-xs text-red-700" onClick={() => updateModel({ ...model, specialDays: model.specialDays.filter((_, i) => i !== index) })}>
+                    <button className="col-span-1 text-xs text-blue-700" onClick={() => updateModel({ ...model, specialDays: model.specialDays.filter((_, i) => i !== index) })}>
                       Remove
                     </button>
                   </div>
