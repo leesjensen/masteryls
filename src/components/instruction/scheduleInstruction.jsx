@@ -41,7 +41,7 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
   }
 
   return (
-    <div className="h-full w-full min-h-0 flex flex-col">
+    <div className="h-full w-full min-h-0 min-w-0 flex flex-col">
       <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
         <label className="text-sm text-gray-700 flex items-center gap-2">
           Schedule
@@ -54,8 +54,8 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
           </select>
         </label>
       </div>
-      <div className="flex-1 min-h-0 flex overflow-hidden">
-        <div className="flex-1 min-h-0 flex">
+      <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden">
+        <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden">
           <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />
         </div>
       </div>
