@@ -73,15 +73,22 @@
   font-size: 1rem;
 }
 
-/* Add table wrapping so tables in rendered markdown can wrap */
-.markdown-body table {
-  display: block;
+/* Keep markdown tables unwrapped and horizontally scrollable. */
+.markdown-body .markdown-table-scroll {
   width: 100%;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
+
+.markdown-body .markdown-table-scroll table {
+  width: max-content;
+  min-width: 100%;
+}
+
 .markdown-body th,
 .markdown-body td {
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
 }

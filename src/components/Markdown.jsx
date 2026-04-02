@@ -86,6 +86,13 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     h5: createHighlightedComponent('h5', searchTerms),
     h6: createHighlightedComponent('h6', searchTerms),
     li: createHighlightedComponent('li', searchTerms),
+    table({ node, children, ...props }) {
+      return (
+        <div className="markdown-table-scroll" role="region" aria-label="Scrollable table">
+          <table {...props}>{children}</table>
+        </div>
+      );
+    },
     td: createHighlightedComponent('td', searchTerms),
     th: createHighlightedComponent('th', searchTerms),
     blockquote: createHighlightedComponent('blockquote', searchTerms),
