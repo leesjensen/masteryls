@@ -6,14 +6,15 @@ import { GripVertical } from 'lucide-react';
 import Markdown from '../../components/Markdown';
 import Splitter from '../Splitter.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
+import useClickOutside from '../../hooks/useClickOutside.jsx';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
 const NEW_SCHEDULE_OPTION = '__new_schedule__';
+const ADD_ITEM_MENU_OPTION = '__add_item_menu__';
 const NEW_MANUAL_ITEM_OPTION = '__new_manual_item__';
 
 function createEmptyModel() {
   return {
-    docTitle: 'Schedule',
     links: [],
     weeks: buildWeeks(1),
     specialDays: [],
@@ -22,12 +23,12 @@ function createEmptyModel() {
 
 function dedupeScheduleFiles(files) {
   const seen = new Set();
+
   return (files || []).filter((file) => {
     if (!file) return false;
+
     const key = `${file.id || ''}::${file.path || file.repoPath || file.rawUrl || ''}`;
-    if (seen.has(key)) {
-      return false;
-    }
+    if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
@@ -277,6 +278,14 @@ function remapScheduleDatesForStartDate(sourceModel, startDateIso) {
 
 function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileRepoPath, dueLinkedHrefs, coveredOrSlidesLinkedHrefs, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
+  const [editingItemKey, setEditingItemKey] = React.useState('');
+  const activeEditorRef = React.useRef(null);
+
+  useClickOutside(activeEditorRef, () => {
+    if (editingItemKey) {
+      setEditingItemKey('');
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -302,81 +311,90 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        {['dueItems', 'topicsCovered', 'slides'].map((field) => (
-          <div key={field} className="border border-gray-200 rounded p-2 min-w-0">
-            {(() => {
-              const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
-              const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
-                const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFileRepoPath, learningSession.course.id);
-                if (!href) {
-                  return false;
-                }
-                return !blockedHrefs.has(href);
-              });
+        {['dueItems', 'topicsCovered', 'slides'].map((field) => {
+          const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
+          const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
+            const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFileRepoPath, learningSession.course.id);
+            if (!href) {
+              return false;
+            }
+            return !blockedHrefs.has(href);
+          });
 
-              return (
-                <div className="flex justify-between items-center mb-1 gap-2">
-                  <div className="text-xs font-semibold text-gray-700">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics' : 'Slides'}</div>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <select
-                      className="text-xs border border-gray-300 rounded px-1 py-0.5 min-w-0"
-                      defaultValue=""
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === NEW_MANUAL_ITEM_OPTION) {
-                          addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' });
-                        } else {
-                          addTopicLink(row.id, field, value);
-                        }
-                        e.currentTarget.value = '';
-                      }}
-                    >
-                      <option value="" disabled>
-                        Add item...
-                      </option>
-                      <option value={NEW_MANUAL_ITEM_OPTION}>Custom item...</option>
-                      {availableTopics.map((topic) => (
-                        <option key={topic.id} value={topic.id}>
-                          Link: {topic.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              );
-            })()}
+          return (
+            <div key={field} className="border border-gray-200 rounded p-2 min-w-0">
+              <div className="text-xs font-semibold text-gray-700 mb-1">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics' : 'Slides'}</div>
 
-            <div className="flex flex-wrap gap-1">
-              {row[field].map((item) =>
-                (() => {
-                  const linkedTopic = getLinkedTopic(item.href);
-                  if (linkedTopic) {
+              <div className="flex flex-wrap gap-1">
+                {row[field].map((item) =>
+                  (() => {
+                    const linkedTopic = getLinkedTopic(item.href);
+                    const itemKey = `${field}:${item.id}`;
+                    if (linkedTopic) {
+                      return (
+                        <div key={item.id} className="inline-flex items-center min-w-0 max-w-full border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
+                          <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
+                            {linkedTopic.title}
+                          </a>
+                          <button className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)}>
+                            x
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    const isEditing = editingItemKey === itemKey;
                     return (
-                      <div key={item.id} className="inline-flex items-center min-w-0 max-w-full border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
-                        <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
-                          {linkedTopic.title}
-                        </a>
-                        <button className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)}>
-                          x
-                        </button>
-                      </div>
+                      <React.Fragment key={item.id}>
+                        <div className="inline-flex items-center min-w-0 max-w-full border border-gray-300 bg-white rounded px-2 py-1 gap-2">
+                          <button type="button" className="min-w-0 text-xs text-gray-700 truncate whitespace-nowrap" onClick={() => setEditingItemKey(isEditing ? '' : itemKey)} title="Edit item">
+                            {(item.text || '').trim() || 'Custom item'}
+                          </button>
+                          <button type="button" className="text-blue-700 text-xs shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item">
+                            x
+                          </button>
+                        </div>
+                        {isEditing && (
+                          <div ref={activeEditorRef} className="w-full grid grid-cols-12 gap-2 items-center border border-gray-200 rounded p-2 bg-white/70">
+                            <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                            <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+                          </div>
+                        )}
+                      </React.Fragment>
                     );
-                  }
+                  })(),
+                )}
+                <select
+                  className="w-8 h-7 text-sm font-semibold text-blue-700 border border-blue-300 rounded bg-white text-center px-0"
+                  defaultValue={ADD_ITEM_MENU_OPTION}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === ADD_ITEM_MENU_OPTION) {
+                      return;
+                    }
 
-                  return (
-                    <div key={item.id} className="w-full grid grid-cols-12 gap-2 items-center">
-                      <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="col-span-5 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                      <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="col-span-6 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                      <button className="col-span-1 text-blue-700 text-xs" onClick={() => removeItem(row.id, field, item.id)}>
-                        x
-                      </button>
-                    </div>
-                  );
-                })(),
-              )}
+                    if (value === NEW_MANUAL_ITEM_OPTION) {
+                      addItem(row.id, field, { id: `item-${Date.now()}`, text: '', href: '' });
+                    } else {
+                      addTopicLink(row.id, field, value);
+                    }
+                    e.currentTarget.value = ADD_ITEM_MENU_OPTION;
+                  }}
+                  title="Add item"
+                >
+                  <option value={ADD_ITEM_MENU_OPTION}>+</option>
+                  <option value={NEW_MANUAL_ITEM_OPTION}>Custom item...</option>
+                  {availableTopics.length > 0 && <option disabled>──────────</option>}
+                  {availableTopics.map((topic) => (
+                    <option key={topic.id} value={topic.id}>
+                      {topic.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
