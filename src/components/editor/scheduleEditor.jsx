@@ -289,15 +289,15 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
       <div className="grid grid-cols-1 gap-2 items-start sm:grid-cols-[90px_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-center">
         <div className="w-[90px] whitespace-nowrap border border-blue-300 rounded px-2 py-1 text-xs bg-white text-blue-800 font-semibold text-center">Session {sessionIndex + 1}</div>
         <div className="min-w-0 flex items-center gap-2 sm:col-auto">
-          <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-500 hover:text-amber-600" title="Drag to reorder session">
-            <GripVertical size={14} />
-          </button>
           <input type="date" value={pickerValueFromTextDate(row.date)} onChange={(e) => updateWeek(row.id, { date: textDateFromPickerValue(e.target.value) })} className="min-w-0 w-full sm:w-[150px] border border-gray-300 rounded px-2 py-1 text-xs" />
         </div>
         <input className="min-w-0 w-full border border-gray-300 rounded px-2 py-1 text-xs" value={row.module} onChange={(e) => updateWeek(row.id, { module: e.target.value })} placeholder="Module" />
-        <div className="flex justify-end items-center text-xs whitespace-nowrap sm:justify-end">
+        <div className="flex justify-end items-center gap-2 text-xs whitespace-nowrap sm:justify-end">
           <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors" onClick={() => removeSession(row.id)} title="Remove session" aria-label="Remove session">
             <X size={14} />
+          </button>
+          <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-500 hover:text-amber-600" title="Drag to reorder session" aria-label="Drag to reorder session">
+            <GripVertical size={14} />
           </button>
         </div>
       </div>
