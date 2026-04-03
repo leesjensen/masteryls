@@ -1,5 +1,5 @@
 import React from 'react';
-import { SquarePen, X, GripHorizontal } from 'lucide-react';
+import { SquarePen, X, GripVertical } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TopicItem from './TopicItem';
@@ -78,7 +78,7 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
             <X size={12} />
           </button>
           <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500 pr-1" title="Drag to reorder">
-            <GripHorizontal size={12} />
+            <GripVertical size={12} />
           </span>
         </div>
       </div>
