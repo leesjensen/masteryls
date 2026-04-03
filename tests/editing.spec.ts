@@ -179,6 +179,16 @@ test('editor can insert AI generated quiz markdown', async ({ page }) => {
   await expect(editorCode).toContainText('"title":"AI Quiz"');
   await expect(editorCode).toContainText('What is 2 + 2?');
   await expect(editorCode).toContainText('- [x] 4');
+
+  const insertedMarkdown = await page.evaluate(() => {
+    const monaco = (window as any).monaco;
+    const models = monaco?.editor?.getModels?.() || [];
+    const matchingModel = models.find((model: any) => String(model.getValue()).includes('AI Quiz'));
+    return matchingModel ? String(matchingModel.getValue()) : '';
+  });
+
+  expect(insertedMarkdown).toContain('```masteryls');
+  expect(/```masteryls[\s\S]*```/.test(insertedMarkdown)).toBeTruthy();
 });
 
 test('editor commits can be shown with diff and apply actions', async ({ page }) => {

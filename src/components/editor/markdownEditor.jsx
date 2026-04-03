@@ -6,6 +6,24 @@ import InputDialog from '../../hooks/inputDialog';
 
 const defaultImagePlaceholderUrl = 'https://images.unsplash.com/photo-1767597186218-813e8e6c44d6?q=80&w=400';
 
+function ensureMasterylsFence(markdown) {
+  const trimmed = String(markdown || '').trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  if (/^```masteryls\b[\s\S]*```$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const genericFenceMatch = trimmed.match(/^```[\w-]*\s*\n?([\s\S]*?)\n?```$/i);
+  if (genericFenceMatch) {
+    return `\`\`\`masteryls\n${genericFenceMatch[1].trim()}\n\`\`\``;
+  }
+
+  return `\`\`\`masteryls\n${trimmed}\n\`\`\``;
+}
+
 const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady }, ref) {
   const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
@@ -192,8 +210,10 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
 
     if (subject) {
       const topic = currentTopic.description || currentTopic.title;
-      let response = '\n' + (await aiQuizGenerator(topic, subject)) + '\n';
-      insertText(response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`));
+      const rawResponse = await aiQuizGenerator(topic, subject);
+      const fencedResponse = ensureMasterylsFence(rawResponse);
+      const withId = fencedResponse.replace(/"id"\s*:\s*"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
+      insertText(`\n${withId}\n`);
     }
   };
 

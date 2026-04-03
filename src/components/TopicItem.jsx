@@ -41,7 +41,7 @@ function TopicItem({ course, topic, currentTopic, enrollment, dueDateLabel = '' 
           {topic.title}
         </a>
         {dueDateLabel && (
-          <span className="inline-flex items-center justify-center text-[10px] text-blue-400 bg-gray-50/10 border border-gray-200/70 rounded px-1 mr-1 whitespace-nowrap" title={`Due ${dueDateLabel}`}>
+          <span className="inline-flex items-center justify-center text-[10px] text-blue-400  border-gray-200/70 px-1 mr-1 whitespace-nowrap" title={`Due ${dueDateLabel}`}>
             {dueDateLabel}
           </span>
         )}
