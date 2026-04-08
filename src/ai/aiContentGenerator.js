@@ -53,10 +53,12 @@ Requirements:
 - The path for other topics should follow the format "instruction/topic-name/topic-name.md" where topic-name is a lowercase, hyphenated version of the topic title
 - The course title should match the provided title exactly
 - The course description should be relevant to the topics included
-- The course should have 8 modules
-- There should be around 100 topics spread evenly across the modules
+- The course should have 3 modules
+- There should be around 30 topics spread evenly across the modules
+- Each module should teach a distinct subset of topics for the overall course material, but all modules should work together to achieve the learning outcomes implied by the course title and description
 - The course contains a capstone project that integrates the topics covered in each module
 - Each topic should have a concise, descriptive title
+- Each topic should have a description that contains a prompt for the AI to generate content for that topic, and the description should be relevant to the course title and description
 `;
   return makeSimpleAiRequest(prompt);
 }
