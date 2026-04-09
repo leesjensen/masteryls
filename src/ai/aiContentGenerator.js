@@ -1,5 +1,7 @@
 import service from '../service/service';
 
+const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
+
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
  *
@@ -220,6 +222,7 @@ Requirements:
 - The section title should be concise and descriptive
 - The section body should be clear and unambiguous
 - Ensure that the section is educational and reinforces key concepts from the topic
+- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
 `;
 
   return makeSimpleAiRequest(prompt);
@@ -385,6 +388,7 @@ Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
 - Prefer short responses of less than 200 words with one or two concise paragraphs
 - Prefer to use bullet points, lists, mermaid diagrams, and code examples instead of text
+- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
 - Directly addresses the student's question or comment
 - References specific parts of the topic content when relevant
 - Provides additional context, examples, or explanations that enhance understanding
