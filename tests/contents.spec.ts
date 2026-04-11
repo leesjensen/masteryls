@@ -20,7 +20,7 @@ test('editor contents actions are visible', async ({ page }) => {
   await page.locator('.absolute.left-0\\.5').click();
 
   await expect(page.getByRole('button', { name: '+ Add New Module' })).toBeVisible();
-  await expect(page.getByText('- Delete schedule')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Delete schedule' })).toBeVisible();
   await expect(page.getByText('+ Generate all stubbed topics')).not.toBeVisible();
 });
 

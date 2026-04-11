@@ -120,7 +120,7 @@ test('editor toolbar and files panel actions', async ({ page }) => {
   await page.getByRole('button', { name: 'Insert' }).click();
   await expect(page.getByRole('button', { name: 'Insert' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' })).not.toBeVisible();
 
   await page.getByRole('button', { name: 'Table' }).click();

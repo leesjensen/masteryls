@@ -8,7 +8,7 @@ import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 import { parseScheduleMarkdown } from './utils/scheduleMarkdown.js';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, X } from 'lucide-react';
 
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
@@ -326,7 +326,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
     <div id="content" className="h-full overflow-auto p-4 text-sm">
       <nav>
         {scheduleTopic && (
-          <div className="mb-2">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <a
               href={`/course/${learningSession.course.id}/schedule`}
               onClick={(e) => {
@@ -338,6 +338,11 @@ function Contents({ courseOps, learningSession, editorVisible }) {
               <CalendarDays size={14} />
               Schedule
             </a>
+            {editorVisible && (
+              <button onClick={deleteSchedule} className="font-semibold text-gray-400 hover:text-red-600 pr-1" title="Delete schedule" aria-label="Delete schedule">
+                <X size={12} />
+              </button>
+            )}
           </div>
         )}
         {editorVisible ? (
@@ -351,11 +356,6 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             {!scheduleTopic && (
               <div onClick={createSchedule} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
                 + Create schedule
-              </div>
-            )}
-            {scheduleTopic && (
-              <div onClick={deleteSchedule} className="text-gray-400 hover:text-red-600 text-sm py-1 cursor-pointer">
-                - Delete schedule
               </div>
             )}
             {hasStubbedTopics && (

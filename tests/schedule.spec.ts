@@ -46,7 +46,7 @@ function installScheduleRoutes(page: any) {
 
   context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/(instruction\/schedule|schedule)\/.*\.md$/, async (route: any) => {
     const url = route.request().url();
-    const match = url.match(/\/main\/((?:instruction\/schedule|schedule)\/[^?]+)/);
+    const match = url.match(/\/(?:main|[A-Za-z0-9._-]+)\/((?:instruction\/schedule|schedule)\/[^?]+)/);
     const repoPath = match?.[1];
     if (repoPath && markdownByRepoPath.has(repoPath)) {
       await route.fulfill({
@@ -378,7 +378,7 @@ test('schedule editor can rename and delete non-default schedule files', async (
   page.once('dialog', async (dialog) => {
     await dialog.accept();
   });
-  await page.getByRole('button', { name: 'Delete' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
   await expect(fileSelect).toHaveValue('default');
   await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-s-schedule.md'))).toBeTruthy();
