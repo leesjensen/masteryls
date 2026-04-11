@@ -27,6 +27,7 @@ function ensureMasterylsFence(markdown) {
 const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady }, ref) {
   const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
+  const [generatingContent, setGeneratingContent] = React.useState(false);
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
 
@@ -193,9 +194,14 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     });
 
     if (subject) {
-      const topic = currentTopic.description || currentTopic.title;
-      const response = '\n' + (await aiSectionGenerator(topic, subject)) + '\n';
-      insertText(response);
+      try {
+        setGeneratingContent(true);
+        const topic = currentTopic.description || currentTopic.title;
+        const response = '\n' + (await aiSectionGenerator(topic, subject)) + '\n';
+        insertText(response);
+      } finally {
+        setGeneratingContent(false);
+      }
     }
   };
 
@@ -209,11 +215,16 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     });
 
     if (subject) {
-      const topic = currentTopic.description || currentTopic.title;
-      const rawResponse = await aiQuizGenerator(topic, subject);
-      const fencedResponse = ensureMasterylsFence(rawResponse);
-      const withId = fencedResponse.replace(/"id"\s*:\s*"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
-      insertText(`\n${withId}\n`);
+      try {
+        setGeneratingContent(true);
+        const topic = currentTopic.description || currentTopic.title;
+        const rawResponse = await aiQuizGenerator(topic, subject);
+        const fencedResponse = ensureMasterylsFence(rawResponse);
+        const withId = fencedResponse.replace(/"id"\s*:\s*"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
+        insertText(`\n${withId}\n`);
+      } finally {
+        setGeneratingContent(false);
+      }
     }
   };
 
@@ -227,9 +238,14 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     });
 
     if (subject) {
-      const topic = currentTopic.description || currentTopic.title;
-      const response = '\n' + (await aiGeneralPromptResponse(topic, subject)) + '\n';
-      insertText(response);
+      try {
+        setGeneratingContent(true);
+        const topic = currentTopic.description || currentTopic.title;
+        const response = '\n' + (await aiGeneralPromptResponse(topic, subject)) + '\n';
+        insertText(response);
+      } finally {
+        setGeneratingContent(false);
+      }
     }
   };
 
@@ -289,6 +305,15 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       <div className="flex-1 overflow-hidden">
         <MonacoMarkdownEditor content={content} diffContent={diffContent} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" options={editorOptions} />
       </div>
+
+      {generatingContent && (
+        <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50 rounded">
+          <div className="flex items-center gap-3 text-gray-700">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600"></div>
+            <span className="text-sm font-medium">Generating content...</span>
+          </div>
+        </div>
+      )}
 
       <InputDialog dialogRef={subjectDialogRef} />
     </div>
