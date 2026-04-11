@@ -45,7 +45,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
               <span className="text-slate-500">{enrollment.progress.mastery}%</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded bg-slate-100">
-              <div className="h-full rounded bg-amber-500 transition-all duration-300" style={{ width: `${enrollment.progress.mastery}%` }} />
+              <div className="h-full rounded bg-blue-500 transition-all duration-300" style={{ width: `${enrollment.progress.mastery}%` }} />
             </div>
           </div>
         ) : (
