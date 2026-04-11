@@ -28,8 +28,35 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const [generatingContent, setGeneratingContent] = React.useState(false);
+  const [topicLinkQuery, setTopicLinkQuery] = React.useState('');
+  const [selectedTopicId, setSelectedTopicId] = React.useState('');
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
+  const topicLinkDialogRef = React.useRef(null);
+  const topicLinkSearchRef = React.useRef(null);
+  const topicLinkResolverRef = React.useRef(null);
+
+  const availableTopics = React.useMemo(() => {
+    if (!course || !Array.isArray(course.allTopics)) {
+      return [];
+    }
+
+    return course.allTopics;
+  }, [course]);
+
+  const filteredTopics = React.useMemo(() => {
+    const query = topicLinkQuery.trim().toLowerCase();
+    if (!query) {
+      return availableTopics;
+    }
+
+    return availableTopics.filter((topic) => {
+      const title = String(topic.title || '').toLowerCase();
+      const description = String(topic.description || '').toLowerCase();
+      const path = String(topic.path || '').toLowerCase();
+      return title.includes(query) || description.includes(query) || path.includes(query);
+    });
+  }, [availableTopics, topicLinkQuery]);
 
   React.useEffect(() => {
     const savedOptions = localStorage.getItem('markdownEditorOptions');
@@ -133,24 +160,41 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   };
 
   const insertLink = () => {
-    if (!course || !Array.isArray(course.allTopics) || course.allTopics.length === 0) {
+    if (availableTopics.length === 0) {
       window.alert('No topics available to link.');
       return;
     }
 
-    const topics = course.allTopics;
-    const list = topics.map((t, i) => `${i + 1}. ${t.title || t.description || t.path || '(untitled)'}`).join('\n');
+    openTopicLinkDialog().then((topic) => {
+      if (!topic) return;
 
-    const choice = window.prompt(`Select a topic to insert (enter number):\n\n${list}`);
-    if (!choice) return;
+      const markdown = `[${topic.title}](/course/${course.id}/topic/${topic.id})`;
+      insertText(markdown);
+    });
+  };
 
-    const index = parseInt(choice, 10) - 1;
-    if (!Number.isFinite(index) || index < 0 || index >= topics.length) return;
+  const openTopicLinkDialog = () => {
+    return new Promise((resolve) => {
+      topicLinkResolverRef.current = resolve;
+      setTopicLinkQuery('');
+      setSelectedTopicId(availableTopics[0]?.id || '');
+      topicLinkDialogRef.current?.showModal();
+      setTimeout(() => topicLinkSearchRef.current?.focus(), 0);
+    });
+  };
 
-    const topic = topics[index];
-    const markdown = `[${topic.title}](/course/${course.id}/topic/${topic.id})`;
+  const closeTopicLinkDialog = (topic = null) => {
+    topicLinkDialogRef.current?.close();
+    const resolve = topicLinkResolverRef.current;
+    topicLinkResolverRef.current = null;
+    if (resolve) {
+      resolve(topic);
+    }
+  };
 
-    insertText(markdown);
+  const confirmTopicLink = () => {
+    const topic = availableTopics.find((item) => item.id === selectedTopicId) || filteredTopics[0] || null;
+    closeTopicLinkDialog(topic);
   };
 
   const prefixInsertText = (text) => {
@@ -314,6 +358,57 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           </div>
         </div>
       )}
+
+      <dialog
+        ref={topicLinkDialogRef}
+        className="w-full p-6 rounded-lg shadow-xl max-w-3xl mt-20 mx-auto"
+        onCancel={(e) => {
+          e.preventDefault();
+          closeTopicLinkDialog(null);
+        }}
+      >
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">Insert topic link</h3>
+            <p className="text-xs text-gray-500">Select a topic to insert a course link.</p>
+          </div>
+          <button type="button" onClick={() => closeTopicLinkDialog(null)} className="text-sm text-gray-500 hover:text-gray-700">
+            Close
+          </button>
+        </div>
+
+        <input ref={topicLinkSearchRef} type="text" value={topicLinkQuery} onChange={(e) => setTopicLinkQuery(e.target.value)} placeholder="Search topics by title, description, or path" className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+
+        <div className="mt-3 border border-gray-200 rounded-lg max-h-80 overflow-y-auto bg-white">
+          {filteredTopics.length > 0 ? (
+            <ul className="divide-y divide-gray-100">
+              {filteredTopics.map((topic) => {
+                const isSelected = selectedTopicId === topic.id;
+                const label = topic.title || topic.description || topic.path || '(untitled)';
+                return (
+                  <li key={topic.id}>
+                    <button type="button" onClick={() => setSelectedTopicId(topic.id)} onDoubleClick={confirmTopicLink} className={`w-full text-left px-3 py-2 transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                      <div className="text-sm text-gray-800">{label}</div>
+                      {topic.path && <div className="text-xs text-gray-500 mt-1">{topic.path}</div>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="p-4 text-sm text-gray-500">No topics match your search.</div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 mt-4">
+          <button type="button" onClick={() => closeTopicLinkDialog(null)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors">
+            Cancel
+          </button>
+          <button type="button" onClick={confirmTopicLink} disabled={!selectedTopicId && filteredTopics.length === 0} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+            Insert link
+          </button>
+        </div>
+      </dialog>
 
       <InputDialog dialogRef={subjectDialogRef} />
     </div>
