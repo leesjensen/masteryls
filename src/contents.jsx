@@ -90,6 +90,8 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
   const [dueDatesByTopicId, setDueDatesByTopicId] = React.useState({});
+  const [optimisticModules, setOptimisticModules] = React.useState(null);
+  const [isReordering, setIsReordering] = React.useState(false);
 
   const scheduleTopic = courseOps.getScheduleTopic(learningSession?.course);
   const scheduleFiles = scheduleTopic ? courseOps.getScheduleFiles(scheduleTopic) : [];
@@ -187,11 +189,22 @@ function Contents({ courseOps, learningSession, editorVisible }) {
     };
   }, [courseOps, learningSession?.course, scheduleTopic?.id, selectedScheduleFile?.id]);
 
+  React.useEffect(() => {
+    setOptimisticModules(null);
+    setIsReordering(false);
+  }, [learningSession?.course]);
+
   const handleDragEnd = async (event) => {
     const { active, over } = event;
-    if (!active || !over || active.id === over.id) return;
+    if (!active || !over || active.id === over.id || isReordering || !learningSession?.course) return;
 
     const updatedCourse = Course.copy(learningSession.course);
+    const sourceModules = optimisticModules || learningSession.course.modules;
+    updatedCourse.modules = sourceModules.map((module) => ({
+      ...module,
+      topics: [...(module.topics || [])],
+    }));
+
     let fromModuleIdx = -1,
       fromTopicIdx = -1;
     let toModuleIdx = -1,
@@ -213,19 +226,29 @@ function Contents({ courseOps, learningSession, editorVisible }) {
     const [moved] = updatedCourse.modules[fromModuleIdx].topics.splice(fromTopicIdx, 1);
     updatedCourse.modules[toModuleIdx].topics.splice(toTopicIdx, 0, moved);
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
-    await courseOps.updateCourseStructure(updatedCourse, null, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
+
+    setOptimisticModules(updatedCourse.modules);
+    setIsReordering(true);
+    try {
+      await courseOps.updateCourseStructure(updatedCourse, null, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
+    } catch (error) {
+      setOptimisticModules(null);
+      alert(error?.message || 'Unable to reorder topic.');
+    } finally {
+      setIsReordering(false);
+    }
   };
 
   if (!learningSession?.course) {
     return <div className="p-4 text-gray-500"></div>;
   }
 
-  const modules = learningSession?.course?.modules;
+  const modules = optimisticModules || learningSession?.course?.modules;
   const allTopicIds = modules ? modules.flatMap((m) => m.topics.map((t) => t.id)) : [];
   const hasStubbedTopics = learningSession.course.allTopics.some((topic) => topic.state === 'stub' && topic.description);
 
-  function filterTopicsByState() {
-    return learningSession.course.modules
+  function filterTopicsByState(modulesToFilter) {
+    return (modulesToFilter || [])
       .map((module) => ({
         ...module,
         topics: module.topics.filter((topic) => !topic.state || topic.state === 'published'),
@@ -290,7 +313,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
     }
   }
 
-  const moduleMap = editorVisible ? learningSession.course.modules : filterTopicsByState();
+  const moduleMap = editorVisible ? modules : filterTopicsByState(modules);
   const moduleJsx = (
     <ul className="list-none p-0">
       {moduleMap.map((module, moduleIndex) => (

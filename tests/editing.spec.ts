@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 import { initBasicCourse, navigateToCourse } from './testInit';
 
-async function initAndOpenBasicCourse({ page }) {
+async function initAndOpenBasicCourse({ page }: { page: any }) {
   await initBasicCourse({ page });
   await navigateToCourse(page);
 }
@@ -131,6 +131,58 @@ test('editor toolbar and files panel actions', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Word Wrap: On' }).click();
   await expect(page.getByRole('button', { name: 'Word Wrap: Off' })).toBeVisible();
+});
+
+test('topic drag reorder stays in dropped position while save is pending', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  let delayedUpdateStarted = false;
+  let delayedUpdateFinished = false;
+
+  await page.context().route('https://api.github.com/**/contents/course.json', async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.fallback();
+      return;
+    }
+
+    delayedUpdateStarted = true;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    delayedUpdateFinished = true;
+    await route.fulfill({ status: 201, json: { commit: { sha: 'delayed-reorder-commit' } } });
+  });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await expect(page.getByRole('link', { name: 'topic 1' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'exam' })).toBeVisible();
+
+  const dragHandles = page.locator('[title="Drag to reorder"]');
+  await expect(dragHandles).toHaveCount(3);
+
+  const source = dragHandles.nth(2);
+  const target = dragHandles.nth(1);
+  const sourceBox = await source.boundingBox();
+  const targetBox = await target.boundingBox();
+  if (!sourceBox || !targetBox) {
+    throw new Error('Unable to resolve drag handle bounds for reorder test.');
+  }
+
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2, { steps: 8 });
+  await page.mouse.up();
+
+  await expect.poll(() => delayedUpdateStarted).toBeTruthy();
+
+  // Regression check: while persistence is still pending, the dropped order should already be reflected.
+  const pendingCheckDeadline = Date.now() + 1000;
+  while (!delayedUpdateFinished && Date.now() < pendingCheckDeadline) {
+    const examBox = await page.getByRole('link', { name: 'exam' }).boundingBox();
+    const topic1Box = await page.getByRole('link', { name: 'topic 1' }).boundingBox();
+    expect(examBox && topic1Box && examBox.y < topic1Box.y).toBeTruthy();
+    await page.waitForTimeout(100);
+  }
+
+  await expect.poll(() => delayedUpdateFinished).toBeTruthy();
 });
 
 test('editor link insertion uses topic dialog with search', async ({ page }) => {
