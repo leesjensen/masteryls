@@ -9,24 +9,6 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
 
-    monaco.languages.setLanguageConfiguration('markdown', {
-      wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
-      onEnterRules: [
-        {
-          beforeText: /^\s*[\-\+]\s+.*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, appendText: '- ' },
-        },
-        {
-          beforeText: /^\s*[\*\+]\s+.*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, appendText: '* ' },
-        },
-        {
-          beforeText: /^\s*\d+\.\s+.*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, appendText: '1. ' },
-        },
-      ],
-    });
-
     // Setup spell checker if enabled and not in compare mode
     if (spellCheckerRef.current && !diffContent) {
       spellCheckerRef.current.setupEditor(editor, monaco);
@@ -40,10 +22,6 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
 
   function handleDiffEditorDidMount(diffEditor, monaco) {
     editorRef.current = diffEditor;
-
-    monaco.languages.setLanguageConfiguration('markdown', {
-      wordPattern: /(-?\d*\.\d\w*)|([^\`\~\!\@\#\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g,
-    });
 
     // Set up onChange listener for the modified editor (right side)
     if (onChange && diffEditor.getModifiedEditor) {
@@ -84,6 +62,11 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
     lineNumbersMinChars: 1,
     lineDecorationsWidth: 0,
     stickyScroll: { enabled: false },
+    autoClosingBrackets: 'never',
+    autoClosingQuotes: 'never',
+    autoClosingOvertype: 'never',
+    autoSurround: 'never',
+    autoIndent: 'none',
   };
 
   if (diffContent) {
