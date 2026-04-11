@@ -133,6 +133,34 @@ test('editor toolbar and files panel actions', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Word Wrap: Off' })).toBeVisible();
 });
 
+test('editor link insertion uses topic dialog with search', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+
+  await page.getByRole('button', { name: 'Link' }).click();
+  await expect(page.getByRole('heading', { name: 'Insert topic link' })).toBeVisible();
+
+  const searchInput = page.getByPlaceholder('Search topics by title, description, or path');
+  await searchInput.fill('topic 2');
+  await page
+    .getByRole('button', { name: /^topic 2/i })
+    .first()
+    .click();
+  await page.getByRole('button', { name: 'Insert link' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Insert topic link' })).not.toBeVisible();
+
+  const insertedMarkdown = await page.evaluate(() => {
+    const monaco = (window as any).monaco;
+    const models = monaco?.editor?.getModels?.() || [];
+    const matchingModel = models.find((model: any) => String(model.getValue()).includes('[topic 2](/course/14602d77-0ff3-4267-b25e-4a7c3c47848b/topic/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b)'));
+    return matchingModel ? String(matchingModel.getValue()) : '';
+  });
+
+  expect(insertedMarkdown).toContain('[topic 2](/course/14602d77-0ff3-4267-b25e-4a7c3c47848b/topic/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b)');
+});
+
 test('editor can insert AI generated quiz markdown', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
