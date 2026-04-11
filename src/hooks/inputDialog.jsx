@@ -38,13 +38,12 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
         return new Promise((resolve) => {
           dialog._resolve = resolve;
           setDynamicContent(options);
-          setInputValue('');
+          setInputValue(options.initialValue ?? '');
           dialog.showModal();
         });
       };
 
       const handleOpen = () => {
-        setInputValue('');
         // Focus the input after the dialog opens
         setTimeout(() => {
           const input = dialog.querySelector('input');

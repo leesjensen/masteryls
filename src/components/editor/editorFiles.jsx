@@ -1,10 +1,31 @@
 import React from 'react';
+import { createUploadDescriptors } from './fileUploadUtils';
 
-export default function EditorFiles({ courseOps, course, currentTopic, onInsertFiles }) {
+const PASTE_HANDLED_FLAG = '__masterylsPasteHandled';
+
+export default function EditorFiles({ courseOps, course, currentTopic, onInsertFiles, externalAddedFiles = [] }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [isDragOver, setIsDragOver] = React.useState(false);
   const lastSelectedIndexRef = React.useRef(-1);
+
+  function addFilesToPanelAndUpload(incomingFiles) {
+    if (!Array.isArray(incomingFiles) || incomingFiles.length === 0) return;
+
+    const newFiles = createUploadDescriptors(incomingFiles);
+    courseOps.addTopicFiles(newFiles);
+
+    setFiles((prevFiles) => {
+      const existingNames = new Set(prevFiles.map((f) => f.name));
+      const uniqueNewFiles = newFiles.filter((f) => !existingNames.has(f.name));
+      return [...prevFiles, ...uniqueNewFiles];
+    });
+
+    setSelectedFiles((prevSelected) => {
+      const merged = [...prevSelected, ...newFiles.map((file) => file.name)];
+      return Array.from(new Set(merged));
+    });
+  }
 
   React.useEffect(() => {
     const contentAvailable = !!(currentTopic && currentTopic.path && (!currentTopic.state || currentTopic.state === 'published'));
@@ -110,32 +131,53 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
 
     const droppedFiles = Array.from(e.dataTransfer.files);
 
-    function cleanFilename(name) {
-      return name.replace(/[^a-zA-Z0-9-_\.]/g, '_');
-    }
-
     if (droppedFiles.length > 0) {
-      // Convert File objects to the format expected by the component
-      const newFiles = droppedFiles.map((file) => {
-        const name = cleanFilename(file.name);
-        return {
-          name,
-          size: file.size,
-          type: file.type,
-          lastModified: file.lastModified,
-          props: file,
-        };
-      });
-      courseOps.addTopicFiles(newFiles);
-
-      // Add new files to existing files, avoiding duplicates
-      setFiles((prevFiles) => {
-        const existingNames = new Set(prevFiles.map((f) => f.name));
-        const uniqueNewFiles = newFiles.filter((f) => !existingNames.has(f.name));
-        return [...prevFiles, ...uniqueNewFiles];
-      });
+      addFilesToPanelAndUpload(droppedFiles);
     }
   };
+
+  React.useEffect(() => {
+    if (!Array.isArray(externalAddedFiles) || externalAddedFiles.length === 0) {
+      return;
+    }
+
+    setFiles((prevFiles) => {
+      const existingNames = new Set((prevFiles || []).map((f) => f.name));
+      const uniqueNewFiles = externalAddedFiles.filter((f) => f?.name && !existingNames.has(f.name));
+      return [...(prevFiles || []), ...uniqueNewFiles];
+    });
+
+    setSelectedFiles((prevSelected) => {
+      const merged = [...(prevSelected || []), ...externalAddedFiles.map((file) => file.name)];
+      return Array.from(new Set(merged));
+    });
+  }, [externalAddedFiles]);
+
+  React.useEffect(() => {
+    const onPaste = (event) => {
+      if (event?.[PASTE_HANDLED_FLAG]) {
+        return;
+      }
+
+      const items = Array.from(event?.clipboardData?.items || []);
+      const imageFiles = items
+        .filter((item) => item?.kind === 'file' && String(item?.type || '').startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter(Boolean);
+
+      if (imageFiles.length === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      addFilesToPanelAndUpload(imageFiles);
+    };
+
+    window.addEventListener('paste', onPaste);
+    return () => {
+      window.removeEventListener('paste', onPaste);
+    };
+  }, [courseOps, currentTopic]);
 
   return (
     <div className="flex flex-col p-2 w-full">
@@ -183,7 +225,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
             <div className="text-center">
               <div className="text-2xl mb-2">📁</div>
               <div>No files yet</div>
-              <div className="text-sm">Drag and drop files here to add them</div>
+              <div className="text-sm">Drag/drop files or paste an image to add it</div>
             </div>
           </div>
         )}

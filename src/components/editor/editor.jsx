@@ -5,9 +5,11 @@ import EditorFiles from './editorFiles';
 import EmbeddedInstruction from '../instruction/embeddedInstruction.jsx';
 import EditorCommits from '../../components/EditorCommits';
 import useEditorPreviewSync from '../../hooks/useEditorPreviewSync';
+import usePastedTopicFiles from '../../hooks/usePastedTopicFiles';
 import useSplitPaneState from '../../hooks/useSplitPaneState';
 import useTopicContentLifecycle from '../../hooks/useTopicContentLifecycle';
 import Splitter from '../Splitter.jsx';
+import CommitOverlay from './commitOverlay.jsx';
 import ScheduleEditor from './scheduleEditor.jsx';
 
 export default function Editor({ courseOps, user, learningSession }) {
@@ -34,6 +36,8 @@ export default function Editor({ courseOps, user, learningSession }) {
     editorPanePercent,
   });
 
+  const { externalAddedFiles, pastingImageCommit, setPastingImageCommit, handlePastedFiles, getExistingTopicFileNames } = usePastedTopicFiles(courseOps);
+
   function toggleShowCommits() {
     setShowCommits((v) => !v);
     setDiffContent(null);
@@ -46,7 +50,7 @@ export default function Editor({ courseOps, user, learningSession }) {
   function getEditor() {
     let editor = null;
     if (learningSession.topic?.type !== 'embedded' && learningSession.topic?.type !== 'video') {
-      editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} onEditorReady={handleEditorReady} />;
+      editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} diffContent={diffContent} onChange={handleEditorChange} commit={commit} onEditorReady={handleEditorReady} onPasteFiles={handlePastedFiles} onPasteCommitStateChange={setPastingImageCommit} getExistingTopicFileNames={getExistingTopicFileNames} />;
     }
     return editor;
   }
@@ -116,16 +120,9 @@ export default function Editor({ courseOps, user, learningSession }) {
               </div>
             </div>
             <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
+              <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} externalAddedFiles={externalAddedFiles} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
             </div>
-            {committing && (
-              <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50 rounded">
-                <div className="flex items-center gap-3 text-gray-700">
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600"></div>
-                  <span className="text-sm font-medium">Committing changes...</span>
-                </div>
-              </div>
-            )}
+            {(committing || pastingImageCommit) && <CommitOverlay message="Committing changes..." />}
           </div>
         );
     }

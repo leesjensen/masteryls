@@ -1,12 +1,103 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
 import TopicLinkDialog from './topicLinkDialog';
+import ImageInsertDialog from './imageInsertDialog';
 import { createTopicLinkMarkdown } from './topicLinkUtils';
+import { cleanFilename, extensionFromMimeType, toUploadDescriptor } from './fileUploadUtils';
 
 const defaultImagePlaceholderUrl = 'https://images.unsplash.com/photo-1767597186218-813e8e6c44d6?q=80&w=400';
+const PASTE_HANDLED_FLAG = '__masterylsPasteHandled';
+
+function splitNameAndExtension(fileName) {
+  const clean = String(fileName || '').trim();
+  const dotIndex = clean.lastIndexOf('.');
+  if (dotIndex <= 0 || dotIndex === clean.length - 1) {
+    return { base: clean || 'pasted-image', extension: '' };
+  }
+
+  return {
+    base: clean.slice(0, dotIndex),
+    extension: clean.slice(dotIndex + 1),
+  };
+}
+
+function buildUniqueFileName(fileName, existingNames) {
+  const { base, extension } = splitNameAndExtension(fileName);
+  const safeBase = cleanFilename(base || 'pasted-image') || 'pasted-image';
+  const safeExtension = cleanFilename(extension || '').replace(/^\.+/, '');
+  const initialName = safeExtension ? `${safeBase}.${safeExtension}` : safeBase;
+
+  if (!existingNames.has(initialName)) {
+    return initialName;
+  }
+
+  let index = 1;
+  while (true) {
+    const candidate = safeExtension ? `${safeBase}-${index}.${safeExtension}` : `${safeBase}-${index}`;
+    if (!existingNames.has(candidate)) {
+      return candidate;
+    }
+    index += 1;
+  }
+}
+
+async function readImageDimensions(file) {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const nextImage = new window.Image();
+      nextImage.onload = () => resolve(nextImage);
+      nextImage.onerror = () => reject(new Error('Failed to load pasted image.'));
+      nextImage.src = objectUrl;
+    });
+
+    return {
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      image,
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function resizeImageFile(file, targetWidth, targetHeight) {
+  const { width: originalWidth, height: originalHeight, image } = await readImageDimensions(file);
+  if (targetWidth === originalWidth && targetHeight === originalHeight) {
+    return file;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Unable to resize image.');
+  }
+
+  context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  const outputType = String(file.type || '').startsWith('image/') ? file.type : 'image/png';
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (result) => {
+        if (!result) {
+          reject(new Error('Image resize failed.'));
+          return;
+        }
+        resolve(result);
+      },
+      outputType,
+      0.92,
+    );
+  });
+
+  return new File([blob], file.name, { type: blob.type, lastModified: Date.now() });
+}
 
 function ensureMasterylsFence(markdown) {
   const trimmed = String(markdown || '').trim();
@@ -26,13 +117,14 @@ function ensureMasterylsFence(markdown) {
   return `\`\`\`masteryls\n${trimmed}\n\`\`\``;
 }
 
-const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady }, ref) {
+const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames }, ref) {
   const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const [generatingContent, setGeneratingContent] = React.useState(false);
   const editorRef = React.useRef(null);
   const subjectDialogRef = React.useRef(null);
   const topicLinkDialogRef = React.useRef(null);
+  const imageInsertDialogRef = React.useRef(null);
 
   React.useEffect(() => {
     const savedOptions = localStorage.getItem('markdownEditorOptions');
@@ -80,6 +172,83 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     // Multi-cursor select next occurrence
     textEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyD, () => {
       textEditor.getAction('editor.action.addSelectionToNextFindMatch').run();
+    });
+
+    const handlePaste = async (event) => {
+      if (!textEditor.hasTextFocus?.()) {
+        return;
+      }
+
+      if (event?.[PASTE_HANDLED_FLAG]) {
+        return;
+      }
+
+      const items = Array.from(event?.clipboardData?.items || []);
+      const imageFiles = items
+        .filter((item) => item?.kind === 'file' && String(item?.type || '').startsWith('image/'))
+        .map((item) => item.getAsFile())
+        .filter(Boolean);
+
+      if (imageFiles.length === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      event[PASTE_HANDLED_FLAG] = true;
+
+      const existingNames = new Set((await getExistingTopicFileNames?.()) || []);
+
+      for (const imageFile of imageFiles) {
+        const initialDescriptor = toUploadDescriptor(imageFile);
+        const suggestedName = buildUniqueFileName(initialDescriptor.name, existingNames);
+        const dimensions = await readImageDimensions(imageFile);
+        const objectUrl = URL.createObjectURL(imageFile);
+
+        let dialogResult = null;
+        try {
+          dialogResult = await imageInsertDialogRef.current?.show({
+            suggestedName,
+            originalDimensions: dimensions,
+            previewObjectUrl: objectUrl,
+          });
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+
+        if (!dialogResult) {
+          return;
+        }
+
+        onPasteCommitStateChange?.(true);
+
+        const requestedNameSanitized = cleanFilename(dialogResult.fileName?.trim()) || suggestedName;
+        const requestedWithExt = requestedNameSanitized.includes('.') ? requestedNameSanitized : `${requestedNameSanitized}.${extensionFromMimeType(imageFile.type)}`;
+        const finalFileName = buildUniqueFileName(requestedWithExt, existingNames);
+        const targetWidth = Number(dialogResult.width) || dimensions.width;
+        const targetHeight = Math.max(1, Math.round((targetWidth / dimensions.width) * dimensions.height));
+
+        const resizedFile = await resizeImageFile(imageFile, targetWidth, targetHeight);
+
+        const renamedFile = new File([resizedFile], finalFileName, {
+          type: resizedFile.type || imageFile.type || 'image/png',
+          lastModified: Date.now(),
+        });
+
+        const uploadDescriptor = toUploadDescriptor(renamedFile);
+        try {
+          await onPasteFiles?.([uploadDescriptor]);
+          insertFiles([uploadDescriptor.name]);
+          existingNames.add(uploadDescriptor.name);
+        } finally {
+          onPasteCommitStateChange?.(false);
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste, true);
+    textEditor.onDidDispose?.(() => {
+      window.removeEventListener('paste', handlePaste, true);
     });
   }
 
@@ -284,7 +453,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={Table} onClick={() => insertText(defaultTableTemplate)} title="Table" />
           <EditorButton icon={List} onClick={() => prefixInsertText('- ')} title="Bullet List" />
           <EditorButton icon={Link} onClick={() => insertLink()} title="Link" />
-          <EditorButton icon={Image} onClick={() => insertText(`![alt text](${defaultImagePlaceholderUrl})`)} title="Image" />
+          <EditorButton icon={ImageIcon} onClick={() => insertText(`![alt text](${defaultImagePlaceholderUrl})`)} title="Image" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Quiz</span>
           <EditorButton icon={CircleDot} onClick={() => insertQuiz(defaultMultipleChoiceInteractionTemplate)} title="Multiple Choice Quiz" />
@@ -313,6 +482,8 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       )}
 
       <TopicLinkDialog ref={topicLinkDialogRef} />
+
+      <ImageInsertDialog ref={imageInsertDialogRef} />
 
       <InputDialog dialogRef={subjectDialogRef} />
     </div>
