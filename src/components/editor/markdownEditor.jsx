@@ -330,7 +330,7 @@ A **multiple select** question can have multiple answers. Incorrect selections c
 const defaultMultipleChoiceInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"Multiple choice", "type":"multiple-choice" }
-Simple **multiple choice** question"
+Simple **multiple choice** question
 
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
@@ -341,7 +341,7 @@ Simple **multiple choice** question"
 const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"Essay", "type":"essay" }
-Simple **essay** question"
+Simple **essay** question
 \`\`\`
 `;
 
