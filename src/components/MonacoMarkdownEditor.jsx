@@ -62,6 +62,12 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
     lineNumbersMinChars: 1,
     lineDecorationsWidth: 0,
     stickyScroll: { enabled: false },
+    renderControlCharacters: false,
+    unicodeHighlight: {
+      nonBasicASCII: false,
+      ambiguousCharacters: false,
+      invisibleCharacters: false,
+    },
     autoClosingBrackets: 'never',
     autoClosingQuotes: 'never',
     autoClosingOvertype: 'never',
