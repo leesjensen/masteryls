@@ -41,7 +41,7 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
   const editorOptions = {
     readOnly,
     fontSize: 14,
-    fontFamily: "'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+    fontFamily: "'Roboto Mono', 'Monaco', monospace",
     wrappingIndent: 'indent',
     minimap: { enabled: false },
     scrollBeyondLastLine: false,
