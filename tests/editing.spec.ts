@@ -133,6 +133,25 @@ test('editor toolbar and files panel actions', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Word Wrap: Off' })).toBeVisible();
 });
 
+test('editor changed lines markers can be toggled', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+
+  await expect(page.getByRole('textbox', { name: 'Editor content' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Changed Lines: On' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Table' }).click();
+  await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeEnabled();
+
+  await expect.poll(async () => await page.evaluate(() => document.querySelectorAll('.mls-line-changed-gutter').length)).toBeGreaterThan(0);
+
+  await page.getByRole('button', { name: 'Changed Lines: On' }).click();
+  await expect(page.getByRole('button', { name: 'Changed Lines: Off' })).toBeVisible();
+
+  await expect.poll(async () => await page.evaluate(() => document.querySelectorAll('.mls-line-changed-gutter').length)).toBe(0);
+});
+
 test('topic drag reorder stays in dropped position while save is pending', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
