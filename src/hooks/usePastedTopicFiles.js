@@ -5,7 +5,7 @@ export default function usePastedTopicFiles(courseOps) {
   const [pastingImageCommit, setPastingImageCommit] = React.useState(false);
 
   const waitForFilesToExist = React.useCallback(
-    async (fileNames, timeoutMs = 12000, intervalMs = 300) => {
+    async (fileNames, timeoutMs = 12000, intervalMs = 1000) => {
       const target = new Set((Array.isArray(fileNames) ? fileNames : []).filter(Boolean));
       if (target.size === 0) {
         return true;
