@@ -933,11 +933,21 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (!learningSession?.course) return;
     const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
+    const contentPath = topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
+    if (!contentPath) return;
 
-    files.forEach(async (file) => {
-      const contentPath = topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
+    for (const file of files) {
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}${file}`;
       await service.deleteGitHubFile(gitHubUrl, token, `remove(topic) file ${file}`);
+    }
+  }
+
+  function readFileAsUint8Array(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(new Uint8Array(reader.result));
+      reader.onerror = () => reject(reader.error || new Error('Failed to read file for upload.'));
+      reader.readAsArrayBuffer(file);
     });
   }
 
@@ -946,18 +956,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const course = learningSession.course;
     const token = user.getSetting('gitHubToken', course.id);
     const commitMessage = `enhance(topic) ${learningSession.topic.title} with new file`;
+    const contentPath = learningSession.topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
+    if (!contentPath) return;
 
-    files.forEach(async (file) => {
-      const contentPath = learningSession.topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
+    for (const file of files) {
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}${file.name}`;
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        file.content = new Uint8Array(reader.result);
-        service.commitGitHubFile(gitHubUrl, file.content, token, commitMessage);
-      };
-      reader.readAsArrayBuffer(file.props);
-    });
+      const content = await readFileAsUint8Array(file.props);
+      await service.commitGitHubFile(gitHubUrl, content, token, commitMessage);
+    }
   }
 
   async function getTopicFiles() {
