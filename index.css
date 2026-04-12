@@ -5,6 +5,20 @@ body {
   font-family: 'Quicksand', sans-serif;
 }
 
+.monaco-editor .mls-line-changed-bg {
+  background-color: rgba(59, 130, 246, 0.09);
+}
+
+.monaco-editor .mls-line-changed-gutter {
+  border-left: 3px solid #3b82f6;
+  margin-left: 2px;
+}
+
+.monaco-editor .mls-line-deleted-gutter {
+  border-left: 3px solid #ef4444;
+  margin-left: 2px;
+}
+
 @layer utilities {
   dialog::backdrop {
     @apply bg-gray-900/40;

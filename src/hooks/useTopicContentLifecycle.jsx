@@ -3,6 +3,7 @@ import useLatest from './useLatest';
 
 export default function useTopicContentLifecycle({ courseOps, learningSession, contentAvailable, onTopicLoaded }) {
   const [content, setContent] = React.useState('');
+  const [committedContent, setCommittedContent] = React.useState('');
   const [committing, setCommitting] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
 
@@ -15,6 +16,7 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
     setCommitting(true);
     try {
       await courseOps.updateTopic(learningSession.topic, contentRef.current);
+      setCommittedContent(contentRef.current);
       setDirty(false);
     } catch (error) {
       alert('Failed to commit changes. Please try again.');
@@ -32,6 +34,7 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
     }
     setDirty(false);
     setContent(nextContent);
+    setCommittedContent(nextContent);
   }
 
   function handleEditorChange(value) {
@@ -44,10 +47,14 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
     if (!contentAvailable) return;
 
     if (learningSession.topic?.type === 'embedded' || learningSession.topic?.type === 'video') {
-      setContent(learningSession.topic.path || '');
+      const nextContent = learningSession.topic.path || '';
+      setContent(nextContent);
+      setCommittedContent(nextContent);
     } else {
       courseOps.getTopic(learningSession.topic).then((markdown) => {
-        setContent(markdown);
+        const nextContent = markdown || '';
+        setContent(nextContent);
+        setCommittedContent(nextContent);
       });
     }
 
@@ -65,6 +72,7 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
 
   return {
     content,
+    committedContent,
     setContent,
     committing,
     dirty,

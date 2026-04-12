@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
@@ -117,11 +117,113 @@ function ensureMasterylsFence(markdown) {
   return `\`\`\`masteryls\n${trimmed}\n\`\`\``;
 }
 
-const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames }, ref) {
-  const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on' });
+function toLines(value) {
+  return String(value || '').split(/\r?\n/);
+}
+
+function compressLineNumbers(lineNumbers) {
+  const sorted = Array.from(new Set(lineNumbers)).sort((a, b) => a - b);
+  if (sorted.length === 0) {
+    return [];
+  }
+
+  const ranges = [];
+  let start = sorted[0];
+  let prev = sorted[0];
+  for (let index = 1; index < sorted.length; index += 1) {
+    const current = sorted[index];
+    if (current === prev + 1) {
+      prev = current;
+      continue;
+    }
+    ranges.push([start, prev]);
+    start = current;
+    prev = current;
+  }
+  ranges.push([start, prev]);
+  return ranges;
+}
+
+function fallbackChangedLines(baseLines, currentLines) {
+  const changed = [];
+  const length = Math.max(baseLines.length, currentLines.length);
+  for (let index = 0; index < length; index += 1) {
+    if (baseLines[index] !== currentLines[index]) {
+      changed.push(index + 1);
+    }
+  }
+  return changed;
+}
+
+function computeChangedLineMarkers(baseText, currentText) {
+  const baseLines = toLines(baseText);
+  const currentLines = toLines(currentText);
+
+  const n = baseLines.length;
+  const m = currentLines.length;
+
+  // Fallback for very large files to keep updates responsive.
+  if (n * m > 1000000) {
+    return {
+      changedRanges: compressLineNumbers(fallbackChangedLines(baseLines, currentLines)),
+      deletedAnchors: [],
+    };
+  }
+
+  const lcs = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i -= 1) {
+    for (let j = m - 1; j >= 0; j -= 1) {
+      if (baseLines[i] === currentLines[j]) {
+        lcs[i][j] = lcs[i + 1][j + 1] + 1;
+      } else {
+        lcs[i][j] = Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+      }
+    }
+  }
+
+  const changedLines = [];
+  const deletedAnchors = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (baseLines[i] === currentLines[j]) {
+      i += 1;
+      j += 1;
+      continue;
+    }
+
+    if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+      deletedAnchors.push(j + 1);
+      i += 1;
+    } else {
+      changedLines.push(j + 1);
+      j += 1;
+    }
+  }
+
+  while (j < m) {
+    changedLines.push(j + 1);
+    j += 1;
+  }
+
+  while (i < n) {
+    deletedAnchors.push(m > 0 ? Math.min(m, Math.max(1, j)) : 1);
+    i += 1;
+  }
+
+  return {
+    changedRanges: compressLineNumbers(changedLines),
+    deletedAnchors: Array.from(new Set(deletedAnchors.filter((line) => Number.isFinite(line) && line >= 1))),
+  };
+}
+
+const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, committedContent, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames }, ref) {
+  const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on', changedLines: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const [generatingContent, setGeneratingContent] = React.useState(false);
   const editorRef = React.useRef(null);
+  const monacoRef = React.useRef(null);
+  const changedLineDecorationIdsRef = React.useRef([]);
   const subjectDialogRef = React.useRef(null);
   const topicLinkDialogRef = React.useRef(null);
   const imageInsertDialogRef = React.useRef(null);
@@ -129,9 +231,50 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   React.useEffect(() => {
     const savedOptions = localStorage.getItem('markdownEditorOptions');
     if (savedOptions) {
-      setEditorOptions(JSON.parse(savedOptions));
+      const parsed = JSON.parse(savedOptions);
+      setEditorOptions((prev) => ({ ...prev, ...parsed, changedLines: parsed.changedLines || 'on' }));
     }
   }, []);
+
+  const updateChangedLineDecorations = React.useCallback(() => {
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) {
+      return;
+    }
+
+    if (diffContent || editorOptions.changedLines === 'off') {
+      changedLineDecorationIdsRef.current = editor.deltaDecorations(changedLineDecorationIdsRef.current, []);
+      return;
+    }
+
+    const baseline = String(committedContent || '');
+    const current = String(content || '');
+    if (baseline === current) {
+      changedLineDecorationIdsRef.current = editor.deltaDecorations(changedLineDecorationIdsRef.current, []);
+      return;
+    }
+
+    const markers = computeChangedLineMarkers(baseline, current);
+    const changedDecorations = markers.changedRanges.map(([startLine, endLine]) => ({
+      range: new monaco.Range(startLine, 1, endLine, 1),
+      options: {
+        isWholeLine: true,
+        className: 'mls-line-changed-bg',
+        linesDecorationsClassName: 'mls-line-changed-gutter',
+      },
+    }));
+
+    const deletedDecorations = markers.deletedAnchors.map((lineNumber) => ({
+      range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+      options: {
+        isWholeLine: true,
+        linesDecorationsClassName: 'mls-line-deleted-gutter',
+      },
+    }));
+
+    changedLineDecorationIdsRef.current = editor.deltaDecorations(changedLineDecorationIdsRef.current, [...changedDecorations, ...deletedDecorations]);
+  }, [committedContent, content, diffContent, editorOptions.changedLines]);
 
   // Expose insertText and insertFiles functions to parent via ref
   React.useImperativeHandle(
@@ -150,6 +293,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     textEditor.setPosition({ lineNumber: 1, column: 1 });
     textEditor.focus();
     editorRef.current = textEditor;
+    monacoRef.current = monaco;
     onEditorReady?.(textEditor);
 
     setEditorLoaded(true);
@@ -255,6 +399,10 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   React.useEffect(() => {
     return () => onEditorReady?.(null);
   }, []);
+
+  React.useEffect(() => {
+    updateChangedLineDecorations();
+  }, [updateChangedLineDecorations]);
 
   // Helper functions for editor actions
   const insertText = (text) => {
@@ -425,6 +573,11 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     saveEditorOptions({ ...editorOptions, lineNumbers: nextLineNumbers });
   };
 
+  const toggleChangedLines = () => {
+    const nextChangedLines = editorOptions.changedLines === 'off' ? 'on' : 'off';
+    saveEditorOptions({ ...editorOptions, changedLines: nextChangedLines });
+  };
+
   const saveEditorOptions = (options) => {
     localStorage.setItem('markdownEditorOptions', JSON.stringify(options));
     setEditorOptions(options);
@@ -441,6 +594,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <div className="flex items-center gap-1 border border-gray-200 rounded bg-white p-1">
             <EditorButton icon={WrapText} className={getToggleColor(editorOptions.wordWrap)} onClick={toggleWordWrap} title={`Word Wrap: ${getToggleText(editorOptions.wordWrap)}`} />
             <EditorButton icon={ListOrdered} className={getToggleColor(editorOptions.lineNumbers)} onClick={toggleLineNumbers} title={`Line Numbers: ${getToggleText(editorOptions.lineNumbers)}`} />
+            <EditorButton icon={GitCompare} className={getToggleColor(editorOptions.changedLines)} onClick={toggleChangedLines} title={`Changed Lines: ${getToggleText(editorOptions.changedLines)}`} />
           </div>
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
           <EditorButton icon={Bold} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
