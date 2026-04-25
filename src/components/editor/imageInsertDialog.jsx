@@ -9,6 +9,9 @@ function clampDimension(value) {
 const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
   const dialogRef = React.useRef(null);
   const resolveRef = React.useRef(null);
+  const [title, setTitle] = React.useState('Paste image');
+  const [description, setDescription] = React.useState('Set the file name and image size before inserting.');
+  const [confirmButtonText, setConfirmButtonText] = React.useState('Commit');
   const [fileName, setFileName] = React.useState('');
   const [width, setWidth] = React.useState('');
   const [originalWidth, setOriginalWidth] = React.useState(0);
@@ -28,10 +31,13 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
   }, []);
 
   React.useImperativeHandle(ref, () => ({
-    show: ({ suggestedName, originalDimensions, previewObjectUrl }) => {
+    show: ({ suggestedName, originalDimensions, previewObjectUrl, title: nextTitle, description: nextDescription, confirmButtonText: nextConfirmButtonText }) => {
       const initialWidth = Number(originalDimensions?.width) || 0;
       const initialHeight = Number(originalDimensions?.height) || 0;
 
+      setTitle(nextTitle || 'Paste image');
+      setDescription(nextDescription || 'Set the file name and image size before inserting.');
+      setConfirmButtonText(nextConfirmButtonText || 'Commit');
       setFileName(suggestedName || 'pasted-image.png');
       setWidth(String(initialWidth || ''));
       setOriginalWidth(initialWidth);
@@ -61,11 +67,11 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
   }, [closeDialog]);
 
   return (
-    <dialog ref={dialogRef} className="w-full p-6 rounded-lg shadow-lg max-w-2xl mt-20 mx-auto" onClick={(event) => event.stopPropagation()}>
-      <h2 className="text-xl font-bold text-amber-500 mb-2">Paste image</h2>
-      <p className="mb-4 text-gray-700">Set the file name and image size before inserting.</p>
+    <dialog ref={dialogRef} className="w-[92vw] max-w-6xl p-6 rounded-lg shadow-lg mt-20 mx-auto" onClick={(event) => event.stopPropagation()}>
+      <h2 className="text-xl font-bold text-amber-500 mb-2">{title}</h2>
+      <p className="mb-4 text-gray-700">{description}</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] gap-6">
         <div className="flex flex-col gap-3">
           <label className="text-sm font-medium text-gray-700" htmlFor="image-file-name">
             File name
@@ -85,7 +91,9 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
           </p>
         </div>
 
-        <div className="border border-gray-200 rounded-md p-3 bg-gray-50 min-h-56 flex items-center justify-center overflow-auto">{previewUrl ? <img src={previewUrl} alt="Image preview" style={{ width: `${previewWidth}px`, height: `${previewHeight}px`, objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }} /> : <div className="text-sm text-gray-500">No preview available.</div>}</div>
+        <div className="border border-gray-200 rounded-md p-3 bg-gray-50 min-h-80 max-h-[65vh] flex items-center justify-center overflow-auto">
+          {previewUrl ? <img src={previewUrl} alt="Image preview" style={{ width: `${previewWidth}px`, height: `${previewHeight}px`, objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }} /> : <div className="text-sm text-gray-500">No preview available.</div>}
+        </div>
       </div>
 
       <div className="flex justify-end gap-3 mt-6">
@@ -102,7 +110,7 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
           disabled={!canCommit}
           className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
         >
-          Commit
+          {confirmButtonText}
         </button>
       </div>
     </dialog>

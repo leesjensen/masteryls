@@ -826,6 +826,50 @@ class Service {
     return data.candidates[0].content.parts[0].text;
   }
 
+  /**
+   * Invokes the Gemini image generation model via a Supabase Edge Function.
+   * @param body - The prompt and image generation configuration.
+   * @returns The generated image data and mime type.
+   */
+  async makeGeminiImageApiRequest(body: object): Promise<{ data: string; mimeType: string }> {
+    const { data, error } = await this.supabase.functions.invoke('gemini', {
+      body: { method: 'POST', model: 'gemini-3-pro-image-preview', body },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data.error) {
+      throw new Error((data.error.message || 'Error from AI image service').split('.')[0]);
+    }
+
+    const candidate = data?.candidates?.[0];
+    const parts = candidate?.content?.parts;
+    if (!Array.isArray(parts)) {
+      throw new Error('Invalid response format from AI image service');
+    }
+
+    const imagePart = parts.find((part) => part?.inlineData?.data || part?.inline_data?.data || part?.inlineData?.data?.data || part?.inline_data?.data?.data);
+    const inlineData = imagePart?.inlineData || imagePart?.inline_data;
+    const imageData = typeof inlineData?.data === 'string' ? inlineData.data : inlineData?.data?.data;
+    const mimeType = inlineData?.mimeType || inlineData?.mime_type || inlineData?.data?.mimeType || inlineData?.data?.mime_type || 'image/png';
+
+    if (!imageData) {
+      const textResponse = parts
+        .map((part) => part?.text)
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      const finishReason = candidate?.finishReason || candidate?.finish_reason;
+      const blockReason = data?.promptFeedback?.blockReason || data?.prompt_feedback?.block_reason;
+      const detail = textResponse || blockReason || finishReason;
+      throw new Error(`AI image service did not return an image${detail ? `: ${detail}` : ''}`);
+    }
+
+    return { data: imageData, mimeType };
+  }
+
   async _getGitHubFileSha(gitHubUrl: string, token: string): Promise<string | undefined> {
     const getRes = await this.makeGitHubApiRequest(token, gitHubUrl);
     if (getRes.ok) {

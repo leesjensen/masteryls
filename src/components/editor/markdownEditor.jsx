@@ -1,7 +1,7 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
-import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier } from '../../ai/aiContentGenerator';
+import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
 import TopicLinkDialog from './topicLinkDialog';
 import ImageInsertDialog from './imageInsertDialog';
@@ -97,6 +97,28 @@ async function resizeImageFile(file, targetWidth, targetHeight) {
   });
 
   return new File([blob], file.name, { type: blob.type, lastModified: Date.now() });
+}
+
+function base64ImageToFile(base64Data, fileName, mimeType = 'image/png') {
+  const binaryString = window.atob(String(base64Data || '').replace(/^data:[^,]+,/, ''));
+  const bytes = new Uint8Array(binaryString.length);
+  for (let index = 0; index < binaryString.length; index += 1) {
+    bytes[index] = binaryString.charCodeAt(index);
+  }
+  return new File([bytes], fileName, { type: mimeType, lastModified: Date.now() });
+}
+
+function suggestedAiImageName(prompt, mimeType) {
+  const extension = extensionFromMimeType(mimeType);
+  const slug = String(prompt || 'ai-generated-image')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 48)
+    .replace(/^-+|-+$/g, '');
+  return `ai-${slug || 'generated-image'}.${extension}`;
 }
 
 function ensureMasterylsFence(markdown) {
@@ -611,6 +633,83 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     }
   };
 
+  const generateAndInsertAiImage = async () => {
+    const editor = editorRef.current;
+    const insertionSelection = editor?.getSelection();
+
+    const prompt = await subjectDialogRef.current.show({
+      title: 'Generate image',
+      description: 'Describe the image to generate for this topic.',
+      placeholder: 'e.g., a clear diagram of the event loop moving tasks between queues',
+      confirmButtonText: 'Generate',
+      required: true,
+      multiline: true,
+      rows: 5,
+    });
+
+    if (!prompt) {
+      editor?.focus();
+      return;
+    }
+
+    let previewObjectUrl = '';
+    let dialogResult = null;
+    try {
+      setGeneratingContent(true);
+      const generatedImage = await aiImageGenerator(prompt);
+      const initialFile = base64ImageToFile(generatedImage.data, suggestedAiImageName(prompt, generatedImage.mimeType), generatedImage.mimeType);
+      const dimensions = await readImageDimensions(initialFile);
+      const existingNames = new Set((await getExistingTopicFileNames?.()) || []);
+      const suggestedName = buildUniqueFileName(initialFile.name, existingNames);
+      previewObjectUrl = URL.createObjectURL(initialFile);
+      setGeneratingContent(false);
+
+      dialogResult = await imageInsertDialogRef.current?.show({
+        title: 'Generated image',
+        description: 'Preview the image, then confirm the file name and size before inserting it.',
+        confirmButtonText: 'Use image',
+        suggestedName,
+        originalDimensions: dimensions,
+        previewObjectUrl,
+      });
+
+      if (!dialogResult) {
+        editor?.focus();
+        return;
+      }
+
+      onPasteCommitStateChange?.(true);
+
+      const requestedNameSanitized = cleanFilename(dialogResult.fileName?.trim()) || suggestedName;
+      const requestedWithExt = requestedNameSanitized.includes('.') ? requestedNameSanitized : `${requestedNameSanitized}.${extensionFromMimeType(initialFile.type)}`;
+      const finalFileName = buildUniqueFileName(requestedWithExt, existingNames);
+      const targetWidth = Number(dialogResult.width) || dimensions.width;
+      const targetHeight = Math.max(1, Math.round((targetWidth / dimensions.width) * dimensions.height));
+      const resizedFile = await resizeImageFile(initialFile, targetWidth, targetHeight);
+      const renamedFile = new File([resizedFile], finalFileName, {
+        type: resizedFile.type || initialFile.type || 'image/png',
+        lastModified: Date.now(),
+      });
+      const uploadDescriptor = toUploadDescriptor(renamedFile, 'ai-generated-image');
+
+      if (insertionSelection && editor) {
+        editor.setSelection(insertionSelection);
+      }
+      await onPasteFiles?.([uploadDescriptor]);
+      insertFiles([uploadDescriptor.name]);
+      existingNames.add(uploadDescriptor.name);
+    } catch (error) {
+      window.alert(`Failed to generate image: ${error.message}`);
+    } finally {
+      if (previewObjectUrl) {
+        URL.revokeObjectURL(previewObjectUrl);
+      }
+      setGeneratingContent(false);
+      onPasteCommitStateChange?.(false);
+      editor?.focus();
+    }
+  };
+
   const toggleWordWrap = () => {
     const nextWordWrap = editorOptions.wordWrap === 'off' ? 'on' : 'off';
     saveEditorOptions({ ...editorOptions, wordWrap: nextWordWrap });
@@ -669,6 +768,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={TextSelect} onClick={() => insertAiSection()} title="AI generated section" />
           <EditorButton icon={Bot} onClick={() => insertPromptContent()} title="AI prompt response" />
           <EditorButton icon={WandSparkles} onClick={() => modifySelectedMarkdown()} title="AI modify selected markdown" />
+          <EditorButton icon={ImagePlus} onClick={() => generateAndInsertAiImage()} title="AI generated image" />
         </div>
       )}
       <div className="flex-1 overflow-hidden">

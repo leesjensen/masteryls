@@ -3,10 +3,11 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 interface reqPayload {
   endpoint: string;
   method: string;
+  model?: string;
   body: string | null;
 }
 
-const model = 'gemini-3-flash-preview';
+const defaultModel = 'gemini-3-flash-preview';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,14 +20,14 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const { method, body }: reqPayload = await req.json();
+  const { method, model, body }: reqPayload = await req.json();
 
   let reqBody = undefined;
   if (body) {
     reqBody = JSON.stringify(body);
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model || defaultModel}:generateContent`;
   const token = Deno.env.get('GEMINI_API_KEY');
   const canvasRequest = {
     method: method,

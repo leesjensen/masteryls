@@ -126,7 +126,7 @@ test('editor toolbar and files panel actions', async ({ page }) => {
   await page.getByRole('button', { name: 'Table' }).click();
   await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Image' }).click();
+  await page.getByRole('button', { name: 'Image', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeEnabled();
 
   await page.getByRole('button', { name: 'Word Wrap: On' }).click();
@@ -365,6 +365,123 @@ test('editor can modify selected markdown with AI', async ({ page }) => {
   expect(promptPayload).toContain('Selected markdown to revise');
   expect(promptPayload).toContain('markdown!');
   expect(promptPayload).toContain('make the selected sentence clearer');
+});
+
+test('editor can generate preview and insert an AI image', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  const generatedImageFile = {
+    name: 'ai-event-loop-queues.png',
+    path: 'ai-event-loop-queues.png',
+    sha: 'generated-image-sha',
+    size: 68,
+    url: 'https://api.github.com/repos/ghAccount/ghRepo/contents/ai-event-loop-queues.png?ref=main',
+    html_url: 'https://github.com/ghAccount/ghRepo/blob/main/ai-event-loop-queues.png',
+    git_url: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/generated-image-sha',
+    download_url: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/ai-event-loop-queues.png',
+    type: 'file',
+  };
+  const transparentPng1x1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5fNzsAAAAASUVORK5CYII=';
+  let geminiPromptPayload = '';
+  let uploadedImageContent = '';
+  let imageUploaded = false;
+
+  await page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    if (route.request().method() === 'POST') {
+      geminiPromptPayload = route.request().postData() || '';
+      await route.fulfill({
+        json: {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: 'Generated image ready.' },
+                  { inlineData: { mimeType: 'image/png', data: transparentPng1x1 } },
+                ],
+                role: 'model',
+              },
+              finishReason: 'STOP',
+              index: 0,
+            },
+          ],
+          modelVersion: 'gemini-3-pro-image-preview',
+          responseId: 'ai-image-test-response',
+        },
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.context().route('https://api.github.com/**/contents', async (route) => {
+    if (route.request().method() === 'GET') {
+      const files = imageUploaded ? [generatedImageFile] : [];
+      await route.fulfill({
+        json: [
+          {
+            name: 'README.md',
+            path: 'README.md',
+            sha: 'cd54f565190cb64e5b8fb63d05df57b975997385',
+            size: 2691,
+            url: 'https://api.github.com/repos/ghAccount/ghRepo/contents/README.md?ref=main',
+            html_url: 'https://github.com/ghAccount/ghRepo/blob/main/README.md',
+            git_url: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/cd54f565190cb64e5b8fb63d05df57b975997385',
+            download_url: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/README.md',
+            type: 'file',
+          },
+          ...files,
+        ],
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.context().route('https://api.github.com/**/contents/ai-event-loop-queues.png', async (route) => {
+    if (route.request().method() === 'PUT') {
+      const postData = route.request().postDataJSON();
+      uploadedImageContent = postData.content;
+      imageUploaded = true;
+      await route.fulfill({ status: 201, json: { commit: { sha: 'generated-image-commit-sha' } } });
+      return;
+    }
+
+    await route.fulfill({ status: 404, json: { message: 'Not Found' } });
+  });
+
+  await page.locator('.absolute.left-0\\.5').click();
+
+  await page.getByText('# Home').click();
+  await page.getByRole('textbox', { name: 'Editor content' }).press('End');
+  await page.getByTitle('AI generated image').click();
+  await page.getByPlaceholder('e.g., a clear diagram of the event loop moving tasks between queues').fill('Event loop queues');
+  await page.getByRole('button', { name: 'Generate', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'Generated image' })).toBeVisible();
+  await expect(page.getByAltText('Image preview')).toBeVisible();
+  await page.getByRole('button', { name: 'Use image' }).click();
+
+  await expect.poll(() => imageUploaded).toBeTruthy();
+  expect(geminiPromptPayload).toContain('Event loop queues');
+  expect(uploadedImageContent).toBe(transparentPng1x1);
+
+  const getUpdatedMarkdown = async () => page.evaluate(() => {
+    const monaco = (window as any).monaco;
+    const models = monaco?.editor?.getModels?.() || [];
+    const matchingModel = models.find((model: any) => String(model.getValue()).includes('![ai-event-loop-queues.png](ai-event-loop-queues.png)'));
+    return matchingModel ? String(matchingModel.getValue()) : '';
+  });
+
+  await expect.poll(getUpdatedMarkdown).toContain('![ai-event-loop-queues.png](ai-event-loop-queues.png)');
+  const updatedMarkdown = await getUpdatedMarkdown();
+  expect(updatedMarkdown).toContain('![ai-event-loop-queues.png](ai-event-loop-queues.png)');
 });
 
 test('editor commits can be shown with diff and apply actions', async ({ page }) => {

@@ -355,6 +355,32 @@ Requirements:
 }
 
 /**
+ * Generates an image from a text prompt.
+ *
+ * @async
+ * @param {string} prompt - The image prompt.
+ * @returns {Promise<{data: string, mimeType: string}>} The base64 image data and mime type.
+ */
+export async function aiImageGenerator(prompt) {
+  const body = {
+    contents: [
+      {
+        parts: [
+          {
+            text: `Create a high-quality instructional image for course content based on this prompt:\n\n${prompt}\n\nThe image should be a friendly and clean modern educational infographic in a vector illustration style. The image is professional looking and appropriate for a university audience. All graphical elements, including icons, flowcharts, thought bubbles, and UI screens, have clear black borders. The modern digital color palette is vibrant, using clean blues, greens, yellows, and reds, set against a clean plain background. It integrates clear, legible modern sans-serif typography for all text, including the title and modular section callouts. The structured, modular layout uses simple illustrative icons and flowcharts to explain complex concepts, presenting computer and phone interfaces clearly, connected by illustrative arrows.`,
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+    },
+  };
+
+  return service.makeGeminiImageApiRequest(body);
+}
+
+/**
  * Generates a discussion response for a teaching quiz where the user is taking on the role of a teacher to an AI student.
  *
  * @async
