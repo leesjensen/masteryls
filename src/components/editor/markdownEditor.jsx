@@ -1,7 +1,7 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
-import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse } from '../../ai/aiContentGenerator';
+import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
 import TopicLinkDialog from './topicLinkDialog';
 import ImageInsertDialog from './imageInsertDialog';
@@ -563,6 +563,54 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     }
   };
 
+  const modifySelectedMarkdown = async () => {
+    const editor = editorRef.current;
+    const selection = editor?.getSelection();
+    const model = editor?.getModel();
+    const selectedMarkdown = selection && model ? model.getValueInRange(selection) : '';
+
+    if (!selectedMarkdown.trim()) {
+      window.alert('Select markdown in the editor before using AI modify.');
+      editor?.focus();
+      return;
+    }
+
+    const prompt = await subjectDialogRef.current.show({
+      title: 'Modify selection',
+      description: 'How should AI change the selected markdown?',
+      placeholder: 'e.g., make this clearer and add one concise example',
+      confirmButtonText: 'Apply',
+      required: true,
+      multiline: true,
+      rows: 5,
+    });
+
+    if (!prompt) {
+      editor?.focus();
+      return;
+    }
+
+    try {
+      setGeneratingContent(true);
+      const topic = currentTopic.description || currentTopic.title;
+      const replacement = await aiSelectedMarkdownModifier(topic, content, selectedMarkdown, prompt);
+      editor.pushUndoStop?.();
+      editor.executeEdits('ai-selection-modifier', [
+        {
+          range: selection,
+          text: replacement,
+          forceMoveMarkers: true,
+        },
+      ]);
+      editor.pushUndoStop?.();
+      editor.focus();
+    } catch (error) {
+      window.alert(`Failed to modify selection: ${error.message}`);
+    } finally {
+      setGeneratingContent(false);
+    }
+  };
+
   const toggleWordWrap = () => {
     const nextWordWrap = editorOptions.wordWrap === 'off' ? 'on' : 'off';
     saveEditorOptions({ ...editorOptions, wordWrap: nextWordWrap });
@@ -620,6 +668,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={ListChecks} onClick={() => insertAiQuiz()} title="AI generated quiz" />
           <EditorButton icon={TextSelect} onClick={() => insertAiSection()} title="AI generated section" />
           <EditorButton icon={Bot} onClick={() => insertPromptContent()} title="AI prompt response" />
+          <EditorButton icon={WandSparkles} onClick={() => modifySelectedMarkdown()} title="AI modify selected markdown" />
         </div>
       )}
       <div className="flex-1 overflow-hidden">
@@ -650,7 +699,7 @@ export function EditorButton({ icon: Icon, onClick, title = undefined, size = 16
   const buttonClassName = ['bg-transparent border border-gray-50 hover:text-amber-600 transition-all duration-200 ease-in-out', className].filter(Boolean).join(' ');
 
   return (
-    <button title={title} onClick={onClick} className={buttonClassName}>
+    <button title={title} onMouseDown={(event) => event.preventDefault()} onClick={onClick} className={buttonClassName}>
       <Icon size={size} />
     </button>
   );

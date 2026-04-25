@@ -290,6 +290,83 @@ test('editor can insert AI generated quiz markdown', async ({ page }) => {
   expect(/```masteryls[\s\S]*```/.test(insertedMarkdown)).toBeTruthy();
 });
 
+test('editor can modify selected markdown with AI', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  let promptPayload = '';
+  await page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    if (route.request().method() === 'POST') {
+      promptPayload = route.request().postData() || '';
+      await route.fulfill({
+        json: {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: 'Improved markdown!',
+                  },
+                ],
+                role: 'model',
+              },
+              finishReason: 'STOP',
+              index: 0,
+            },
+          ],
+          modelVersion: 'gemini-2.5-flash',
+          responseId: 'ai-selection-modify-test-response',
+        },
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await expect(page.getByRole('code')).toContainText('markdown!');
+
+  const selectedMarkdown = await page.evaluate(() => {
+    const monaco = (window as any).monaco;
+    const editors = monaco?.editor?.getEditors?.() || [];
+    const editor = editors.find((candidate: any) => String(candidate.getModel?.()?.getValue()).includes('# Home'));
+    if (!editor) {
+      throw new Error('Unable to find Monaco editor.');
+    }
+
+    editor.setValue('# Home\n\nmarkdown!\n\nunchanged');
+    editor.setSelection(new monaco.Selection(3, 1, 3, 'markdown!'.length + 1));
+    editor.focus();
+    return editor.getModel().getValueInRange(editor.getSelection());
+  });
+  expect(selectedMarkdown).toBe('markdown!');
+
+  await page.getByTitle('AI modify selected markdown').click();
+  await expect(page.getByRole('heading', { name: 'Modify selection' })).toBeVisible();
+  await page.getByPlaceholder('e.g., make this clearer and add one concise example').fill('make the selected sentence clearer');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+
+  const getUpdatedMarkdown = async () => page.evaluate(() => {
+    const monaco = (window as any).monaco;
+    const models = monaco?.editor?.getModels?.() || [];
+    const matchingModel = models.find((model: any) => String(model.getValue()).includes('Improved markdown!'));
+    return matchingModel ? String(matchingModel.getValue()) : '';
+  });
+
+  await expect.poll(getUpdatedMarkdown).toContain('Improved markdown!');
+  const updatedMarkdown = await getUpdatedMarkdown();
+
+  expect(updatedMarkdown).toBe('# Home\n\nImproved markdown!\n\nunchanged');
+  expect(promptPayload).toContain('Selected markdown to revise');
+  expect(promptPayload).toContain('markdown!');
+  expect(promptPayload).toContain('make the selected sentence clearer');
+});
+
 test('editor commits can be shown with diff and apply actions', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 

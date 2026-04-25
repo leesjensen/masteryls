@@ -1,6 +1,7 @@
 import service from '../service/service';
 
 const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
+const mermaidTheme = "%%{init: { 'theme': 'neutral', 'themeVariables': { 'lineColor': '#000000', 'primaryTextColor': '#000000', 'actorBorder': '#000000', 'participantBorder': '#000000', 'noteBorderColor': '#000000' } }}%%";
 
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
@@ -96,6 +97,7 @@ Requirements:
 - Do not over create bulleted lists with multiple levels
 - Make content educational and engaging
 - Prefer textual prose
+- If you include a Mermaid diagram, include this theme: ${mermaidTheme}
 - Include practical examples where applicable
 - Include references to external resources if relevant
 - Encourage thoughtful engagement with the material
@@ -222,7 +224,7 @@ Requirements:
 - The section title should be concise and descriptive
 - The section body should be clear and unambiguous
 - Ensure that the section is educational and reinforces key concepts from the topic
-- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
+- If you include a Mermaid diagram, include this theme: ${mermaidTheme}
 `;
 
   return makeSimpleAiRequest(prompt);
@@ -294,6 +296,62 @@ Requirements:
 `;
 
   return makeSimpleAiRequest(fullPrompt);
+}
+
+/**
+ * Rewrites selected markdown according to an editor prompt.
+ *
+ * @async
+ * @param {string} topic - The instructional topic for context.
+ * @param {string} fullMarkdown - The full markdown document for context only.
+ * @param {string} selectedMarkdown - The selected markdown to rewrite.
+ * @param {string} prompt - The editor's requested change.
+ * @returns {Promise<string>} The replacement markdown for the selected range.
+ */
+export async function aiSelectedMarkdownModifier(topic, fullMarkdown, selectedMarkdown, prompt) {
+  const fullPrompt = `You are an expert educational content editor.
+Revise only the selected markdown according to the editor's request.
+
+Instructional topic: ${topic}
+
+Full topic markdown is provided only for context. Do not rewrite it unless it is part of the selected markdown.
+
+Full topic markdown:
+<topic-markdown>
+${fullMarkdown}
+</topic-markdown>
+
+Selected markdown to revise:
+<selected-markdown>
+${selectedMarkdown}
+</selected-markdown>
+
+Editor request:
+${prompt}
+
+Requirements:
+- Return only the revised selected markdown that should replace the selected markdown
+- Preserve valid GitHub-flavored markdown
+- Preserve important formatting, markdown structure, code fences, MasteryLS interaction fences, IDs, links, and image references unless the request explicitly changes them
+- Do not include explanations, apologies, notes, surrounding quotes, or markdown code fence wrappers around the whole response
+- Do not modify or include unselected sections
+`;
+
+  const body = {
+    ...standardRequestBody,
+    contents: [
+      {
+        parts: [
+          {
+            text: fullPrompt,
+          },
+        ],
+      },
+    ],
+  };
+
+  const responseText = await service.makeGeminiApiRequest(body);
+  return cleanSelectedMarkdownResponse(responseText);
 }
 
 /**
@@ -416,6 +474,17 @@ function createDiscussionContents(messages) {
     .map((msg) => {
       return { role: msg.type, parts: [{ text: msg.content }] };
     });
+}
+
+function cleanSelectedMarkdownResponse(responseText) {
+  const text = String(responseText ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/^\n+|\n+$/g, '');
+  const markdownFence = text.match(/^\s*```(?:markdown|md|gfm)\s*\n([\s\S]*?)\n?```\s*$/i);
+  if (markdownFence) {
+    return markdownFence[1].replace(/^\n+|\n+$/g, '');
+  }
+  return text;
 }
 
 /**

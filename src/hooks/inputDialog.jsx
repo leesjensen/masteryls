@@ -11,6 +11,8 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
   const currentPlaceholder = dynamicContent.placeholder ?? defaultPlaceholder;
   const currentConfirmButtonText = dynamicContent.confirmButtonText ?? defaultConfirmButtonText;
   const currentCancelButtonText = dynamicContent.cancelButtonText ?? defaultCancelButtonText;
+  const currentMultiline = Boolean(dynamicContent.multiline);
+  const currentRows = dynamicContent.rows ?? 6;
 
   const closeDialog = (value) => {
     dialogRef.current.close();
@@ -23,7 +25,7 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === 'Escape') {
+    if (e.key === 'Escape' || (e.key === 'Enter' && (!currentMultiline || e.metaKey || e.ctrlKey))) {
       e.preventDefault();
       closeDialog(e.key === 'Enter' ? inputValue : null);
     }
@@ -40,6 +42,10 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
           setDynamicContent(options);
           setInputValue(options.initialValue ?? '');
           dialog.showModal();
+          setTimeout(() => {
+            const input = dialog.querySelector(options.multiline ? 'textarea' : 'input');
+            if (input) input.focus();
+          }, 0);
         });
       };
 
@@ -66,7 +72,11 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
       {currentTitle && <h2 className="text-xl font-bold text-amber-500 mb-4">{currentTitle}</h2>}
       {currentDescription && <div className="mb-4 text-gray-700">{currentDescription}</div>}
 
-      <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={currentPlaceholder} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent mb-4" onKeyDown={handleKeyDown} />
+      {currentMultiline ? (
+        <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={currentPlaceholder} rows={currentRows} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent mb-4 resize-y" onKeyDown={handleKeyDown} />
+      ) : (
+        <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={currentPlaceholder} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent mb-4" onKeyDown={handleKeyDown} />
+      )}
 
       <div className="flex justify-end gap-3">
         <button onClick={() => closeDialog(null)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors">
