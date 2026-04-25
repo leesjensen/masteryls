@@ -347,7 +347,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         topic.description = prompt;
         topic.state = 'published';
 
-        const basicContent = await generateTopicContent(topic, prompt);
+        const basicContent = await generateTopicContent(topic, prompt, updatedCourse);
         if (basicContent) {
           const gitHubUrl = topic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
           await service.updateGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${topic.title}`);
@@ -372,7 +372,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           progressCallback && (await progressCallback(topic, i));
           topic.state = 'published';
 
-          const basicContent = await generateTopicContent(topic, topic.description);
+          const basicContent = await generateTopicContent(topic, topic.description, updatedCourse);
           if (basicContent) {
             console.log('Generated content:', basicContent.substring(0, 200) + '...');
             const gitHubUrl = topic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
@@ -418,7 +418,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
         updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 
-        const basicContent = await generateTopicContent(newTopic, topicDescription);
+        const basicContent = await generateTopicContent(newTopic, topicDescription, updatedCourse);
         if (basicContent) {
           const gitHubUrl = newTopic.path.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
           await service.commitGitHubFile(gitHubUrl, basicContent, token, `add(topic) ${newTopic.title}`);
@@ -998,7 +998,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return topicPath;
   }
 
-  async function generateTopicContent(topic, topicDescription) {
+  async function generateTopicContent(topic, topicDescription, courseContext = learningSession.course) {
     let basicContent = `
 # ${topic.title}
 
@@ -1015,7 +1015,7 @@ ${topicDescription || 'overview content placeholder'}`;
         break;
       case 'exam':
         if (topicDescription && topicDescription.trim().length > 0) {
-          basicContent = await aiExamGenerator(learningSession.course.description, topic.title, topicDescription);
+          basicContent = await aiExamGenerator(courseContext.description, topic.title, topicDescription);
         }
         break;
       case 'project':
@@ -1023,12 +1023,12 @@ ${topicDescription || 'overview content placeholder'}`;
         break;
       default:
         if (topicDescription && topicDescription.trim().length > 0) {
-          const module = learningSession.course.moduleFromTopic(topic);
-          const otherTopicDescriptions = module.topics
+          const module = courseContext.moduleFromTopic(topic);
+          const otherTopicDescriptions = (module?.topics || [])
             .map((t) => (t.id !== topic.id ? t.title : null))
             .filter(Boolean)
             .join('; ');
-          basicContent = await aiTopicGenerator(learningSession.course.description, topic.title, topicDescription, module.title, otherTopicDescriptions);
+          basicContent = await aiTopicGenerator(courseContext.description, topic.title, topicDescription, module?.title || '', otherTopicDescriptions);
         }
         break;
     }
