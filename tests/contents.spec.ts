@@ -53,6 +53,47 @@ test('toc hides unpublished topics for learners', async ({ page }) => {
   await expect(page.getByText('topic 3')).toBeVisible();
 });
 
+test('editing contents keeps topic actions fixed for long topic titles', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'The React Event-Driven State Model With a Very Long Module Title',
+          topics: [
+            { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Overview', path: 'README.md' },
+            { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'Understanding useState as an Event Listener With a Title Too Long for the Sidebar', type: 'instruction', state: 'stub', path: 'something/more/topic1.md' },
+            { id: '5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b', title: 'Short Topic', type: 'instruction', state: 'stub', path: 'something/more/topic2.md' },
+          ],
+        },
+      ],
+    },
+  });
+  await navigateToCourse(page);
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await expect(page.getByTitle('Understanding useState as an Event Listener With a Title Too Long for the Sidebar')).toBeVisible();
+
+  const sidebarBox = await page.getByRole('complementary').boundingBox();
+  expect(sidebarBox).toBeTruthy();
+
+  const actionControls = page.locator('[title="Edit this topic"], [title="Remove this topic"], [title="Drag to reorder"]');
+  await expect(actionControls).toHaveCount(9);
+
+  for (let index = 0; index < (await actionControls.count()); index += 1) {
+    const box = await actionControls.nth(index).boundingBox();
+    expect(box).toBeTruthy();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(sidebarBox!.x + sidebarBox!.width);
+  }
+
+  const editButtons = page.locator('[title="Edit this topic"]');
+  const firstEditBox = await editButtons.nth(0).boundingBox();
+  const longTitleEditBox = await editButtons.nth(1).boundingBox();
+  expect(firstEditBox).toBeTruthy();
+  expect(longTitleEditBox).toBeTruthy();
+  expect(Math.abs(firstEditBox!.x - longTitleEditBox!.x)).toBeLessThan(2);
+});
+
 test('adding a plain instruction topic creates the topic file and course entry', async ({ page }) => {
   await initBasicCourse({ page });
 

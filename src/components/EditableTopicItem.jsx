@@ -58,10 +58,10 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} className={isDragging ? 'opacity-50' : ''}>
-      <div className="flex items-right justify-between">
-        <div className="flex flex-row flex-1 items-center">
-          <div className="flex flex-col">
+    <div ref={setNodeRef} style={style} {...attributes} className={`w-full min-w-0 ${isDragging ? 'opacity-50' : ''}`}>
+      <div className="flex items-start justify-between gap-1 w-full min-w-0">
+        <div className="flex flex-row flex-1 items-center min-w-0">
+          <div className="flex flex-col min-w-0 w-full">
             <TopicItem course={course} topic={topic} currentTopic={currentTopic} dueDateLabel={dueDateLabel} />
             {showEditForm && (
               <div ref={editorRef}>
@@ -70,14 +70,14 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
             )}
           </div>
         </div>
-        <div className="flex flex-row justify-between items-center">
-          <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1 text-[6pt]" title="Edit this topic">
+        <div className="flex flex-row justify-end items-center shrink-0 w-12 pt-0.5">
+          <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 p-0.5 text-[6pt]" title="Edit this topic">
             <SquarePen size={12} />
           </button>
-          <button onClick={removeTopic} className="font-semibold text-gray-400 hover:text-red-600  pr-1" title="Remove this topic">
+          <button onClick={removeTopic} className="font-semibold text-gray-400 hover:text-red-600 p-0.5" title="Remove this topic">
             <X size={12} />
           </button>
-          <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500 pr-1" title="Drag to reorder">
+          <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500 p-0.5" title="Drag to reorder">
             <GripVertical size={12} />
           </span>
         </div>

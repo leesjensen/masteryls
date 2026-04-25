@@ -27,31 +27,31 @@ function TopicItem({ course, topic, currentTopic, enrollment, dueDateLabel = '' 
   }
 
   return (
-    <li className="mb-0.5 flex justify-between items-center group">
-      <div className="flex flex-row">
+    <li className="mb-0.5 flex justify-between items-center group min-w-0 w-full">
+      <div className="flex flex-row items-center min-w-0 w-full">
         {topic.state && topic.state !== 'published' && (
-          <span className="text-xs text-white bg-gray-500 rounded px-1 mr-1" title={`This topic is in "${topic.state}" state`}>
+          <span className="text-xs text-white bg-gray-500 rounded px-1 mr-1 shrink-0" title={`This topic is in "${topic.state}" state`}>
             {topic.state}
           </span>
         )}
-        <span className="mr-2">
+        <span className="mr-2 shrink-0">
           <TopicIcon type={topic.type} />
         </span>
-        <a href={`/course/${course.id}/topic/${topic.id}`} onClick={navigateToTopic} className={`mr-1 no-underline cursor-pointer truncate max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
+        <a href={`/course/${course.id}/topic/${topic.id}`} onClick={navigateToTopic} className={`mr-1 no-underline cursor-pointer truncate min-w-0 max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
           {topic.title}
         </a>
         {dueDateLabel && (
-          <span className="inline-flex items-center justify-center text-[10px] text-blue-400  border-gray-200/70 px-1 mr-1 whitespace-nowrap" title={`Due ${dueDateLabel}`}>
+          <span className="inline-flex items-center justify-center text-[10px] text-blue-400  border-gray-200/70 px-1 mr-1 whitespace-nowrap shrink-0" title={`Due ${dueDateLabel}`}>
             {dueDateLabel}
           </span>
         )}
         {enrollment?.progress[topic.id]?.notes && (
-          <a className="text-blue-300 mr-1" onClick={(e) => navigateToTopic(e, '@note')}>
+          <a className="text-blue-300 mr-1 shrink-0" onClick={(e) => navigateToTopic(e, '@note')}>
             <StickyNote size={16} />
           </a>
         )}
         {progressMeter && (
-          <span className="text-xs text-gray-400 flex items-center mr-1">
+          <span className="text-xs text-gray-400 flex items-center mr-1 shrink-0">
             {progressMeter.completed === progressMeter.total ? (
               <span className="animate-fade-in text-blue-400" title="Studied">
                 <BadgeCheck size={14} />

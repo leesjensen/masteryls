@@ -58,17 +58,17 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
   return (
     <div>
       <li className="mb-1">
-        <div className="flex items-center justify-between">
-          <button onClick={() => onToggle(moduleIndex)} className="no-underline text-gray-500 font-semibold bg-transparent border-none cursor-pointer p-0 truncate max-w-full flex whitespace-nowrap overflow-hidden text-ellipsis items-center" aria-expanded={isOpen} title={module.title}>
-            <span className="mr-2">{isOpen ? '▼' : '▶'}</span>
-            {module.title}
+        <div className="flex items-center justify-between gap-1 min-w-0">
+          <button onClick={() => onToggle(moduleIndex)} className="no-underline text-gray-500 font-semibold bg-transparent border-none cursor-pointer p-0 flex flex-1 min-w-0 whitespace-nowrap overflow-hidden items-center" aria-expanded={isOpen} title={module.title}>
+            <span className="mr-2 shrink-0">{isOpen ? '▼' : '▶'}</span>
+            <span className="truncate min-w-0">{module.title}</span>
           </button>
           {editorVisible && (
-            <div className="flex items-center">
-              <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 pr-1  text-[6pt]" title="Edit this module">
+            <div className="flex items-center justify-end shrink-0 w-9">
+              <button onClick={() => setShowEditForm(true)} className="font-semibold text-gray-400 hover:text-blue-600 p-0.5 text-[6pt]" title="Edit this module">
                 <SquarePen size={12} />
               </button>
-              <button onClick={() => dialogRef.current.showModal()} className="font-semibold text-gray-400 hover:text-red-600 pr-1" title="Remove this module">
+              <button onClick={() => dialogRef.current.showModal()} className="font-semibold text-gray-400 hover:text-red-600 p-0.5" title="Remove this module">
                 <X size={12} />
               </button>
             </div>
