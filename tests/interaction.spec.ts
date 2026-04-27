@@ -64,6 +64,51 @@ Simple **multiple select** question
   await expect(page.locator('pre')).toContainText('Fantastic job');
 });
 
+test('interaction web page renders relative html file', async ({ page }) => {
+  const interactionMarkdown = `
+# Web Page
+\`\`\`masteryls
+{"id":"a3b2a9f8-25e3-4ca4-8cca-42f3eb20537e", "title":"Web page", "type":"web-page" "file":"index.html", "height":520}
+\`\`\`
+`;
+
+  await page.route(/https:\/\/raw\.githubusercontent\.com\/ghAccount\/ghRepo\/main\/(something\/more\/)?index\.html/, async (route) => {
+    await route.fulfill({
+      body: '<!doctype html><html><body><h1>Embedded Web Page</h1></body></html>',
+      contentType: 'text/html; charset=utf-8',
+    });
+  });
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f/);
+
+  const iframe = page.locator('iframe[title="Web page"]');
+  const frameContainer = page.locator('[data-plugin-masteryls-web-page]');
+  const resizeHandle = page.locator('[data-plugin-masteryls-web-page-resize-handle]');
+  await expect(iframe).toBeVisible();
+  await expect(frameContainer).toHaveCSS('height', '520px');
+  await expect(frameContainer).toHaveCSS('resize', 'vertical');
+  await expect(iframe).toHaveAttribute('data-src', 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/something/more/index.html');
+  await expect(page.frameLocator('iframe[title="Web page"]').getByRole('heading', { name: 'Embedded Web Page' })).toBeVisible();
+
+  const box = await frameContainer.boundingBox();
+  if (!box) throw new Error('Expected web page frame to have a bounding box');
+  await resizeHandle.hover();
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height + 80);
+  await page.mouse.up();
+
+  await expect
+    .poll(async () => {
+      const resizedBox = await frameContainer.boundingBox();
+      return resizedBox?.height || 0;
+    })
+    .toBeGreaterThan(580);
+});
+
 test('interaction prompt', async ({ page }) => {
   const markdown = `
 # Quiz

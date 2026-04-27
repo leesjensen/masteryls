@@ -4,6 +4,7 @@ import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteract
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
+import { extractInteractionMetas, isSubmittableInteractionType } from '../utils/interactionMeta';
 import { createCourseInternal } from './courseCreation.js';
 
 /**
@@ -1406,14 +1407,9 @@ ${topicDescription || 'overview content placeholder'}`;
   }
 
   function _extractInteractionIds(content) {
-    const regex = /```masteryls\s*\{"id":"([^"]+)"/g;
-    const interactionIds = [];
-    let match;
-
-    while ((match = regex.exec(content)) !== null) {
-      interactionIds.push(match[1]);
-    }
-    return interactionIds;
+    return extractInteractionMetas(content)
+      .filter((meta) => meta.id && isSubmittableInteractionType(meta.type))
+      .map((meta) => meta.id);
   }
 
   return {

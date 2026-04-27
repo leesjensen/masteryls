@@ -7,9 +7,11 @@ import SurveyInteraction from './surveyInteraction';
 import FileInteraction from './fileInteraction';
 import UrlInteraction from './urlInteraction';
 import TeachingInteraction from './teachingInteraction';
+import WebPageInteraction from './webPageInteraction';
 import InteractionFeedback from './interactionFeedback';
 import { updateInteractionProgress, getInteractionProgress } from './interactionProgressStore';
 import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
+import { isSubmittableInteractionType, parseInteractionMeta } from '../../../utils/interactionMeta';
 
 /**
  * InteractionInstruction component that renders interactive quiz content within markdown instruction.
@@ -43,6 +45,7 @@ import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
  * - url-submission: URL link submissions
  * - teaching: AI-assisted teaching sessions
  * - prompt: AI prompt generation
+ * - web-page: Embedded HTML file rendered in an iframe
  *
  * @returns {JSX.Element} The rendered interaction instruction component
  */
@@ -53,19 +56,11 @@ export default function InteractionInstruction({ courseOps, learningSession, use
    * @returns {JSX.Element} Interaction JSX element
    */
   function injectInteraction(interactionContent) {
-    const jsonMatch = interactionContent.match(/^\{[\s\S]*?\}(?:\n|$)/);
-    let meta = { id: undefined, title: '', type: 'multiple-choice' };
-    let interactionBody = interactionContent;
+    const { meta, body: interactionBody } = parseInteractionMeta(interactionContent);
 
-    if (jsonMatch) {
-      try {
-        meta = { ...meta, ...JSON.parse(jsonMatch[0]) };
-        meta.type = meta.type.toLowerCase();
-      } catch {}
-      interactionBody = interactionContent.slice(jsonMatch.index + jsonMatch[0].length).trim();
+    if (isSubmittableInteractionType(meta.type)) {
+      quizStateReporter?.(meta.id);
     }
-
-    quizStateReporter?.(meta.id);
 
     let controlJsx = generateInteractionComponent(meta, interactionBody);
     const progress = getInteractionProgress(meta.id);
@@ -94,6 +89,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {
       return <PromptInteraction id={meta.id} body={interactionBody} />;
+    } else if (meta.type === 'web-page') {
+      return <WebPageInteraction title={meta.title} file={meta.file} height={meta.height} topicPath={learningSession?.topic?.path} />;
     }
 
     return null;
