@@ -60,6 +60,7 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
   const containerRef = React.useRef(null);
   const resizeCleanupRef = React.useRef(null);
   const [currentHeight, setCurrentHeight] = React.useState(frameHeight);
+  const [isResizing, setIsResizing] = React.useState(false);
   const [srcDoc, setSrcDoc] = React.useState('');
   const [error, setError] = React.useState('');
 
@@ -111,6 +112,19 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
 
     const startY = event.clientY;
     const startHeight = containerRef.current.getBoundingClientRect().height;
+    const handle = event.currentTarget;
+    const iframe = containerRef.current.querySelector('[data-plugin-masteryls-web-page-frame]');
+    const previousIframePointerEvents = iframe?.style.pointerEvents || '';
+    const previousBodyCursor = document.body.style.cursor;
+    const previousBodyUserSelect = document.body.style.userSelect;
+
+    iframe?.style.setProperty('pointer-events', 'none');
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    setIsResizing(true);
+    try {
+      handle.setPointerCapture?.(event.pointerId);
+    } catch {}
 
     const handlePointerMove = (moveEvent) => {
       const nextHeight = Math.max(MIN_WEB_PAGE_HEIGHT_PX, Math.round(startHeight + moveEvent.clientY - startY));
@@ -120,11 +134,26 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
     const cleanup = () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', cleanup);
+      window.removeEventListener('pointercancel', cleanup);
+      window.removeEventListener('blur', cleanup);
+      if (iframe) {
+        iframe.style.pointerEvents = previousIframePointerEvents;
+      }
+      document.body.style.cursor = previousBodyCursor;
+      document.body.style.userSelect = previousBodyUserSelect;
+      setIsResizing(false);
+      try {
+        if (handle.hasPointerCapture?.(event.pointerId)) {
+          handle.releasePointerCapture?.(event.pointerId);
+        }
+      } catch {}
       resizeCleanupRef.current = null;
     };
 
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', cleanup);
+    window.addEventListener('pointercancel', cleanup);
+    window.addEventListener('blur', cleanup);
     resizeCleanupRef.current = cleanup;
   }
 
@@ -148,9 +177,9 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
 
   return (
     <div data-plugin-masteryls-body={file}>
-      <div ref={containerRef} className="relative w-full bg-white border border-neutral-300" data-plugin-masteryls-web-page style={{ height: currentHeight, minHeight: MIN_WEB_PAGE_HEIGHT, resize: 'vertical', overflow: 'hidden' }}>
-        {srcDoc ? <iframe className="block w-full h-full bg-white border-0" srcDoc={srcDoc} data-src={src} data-plugin-masteryls-web-page-frame title={title || file} loading="lazy" scrolling="no" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
-        <div className="absolute bottom-0 left-0 right-0 w-full cursor-row-resize bg-neutral-100/90 border-t border-neutral-300 hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-400" data-plugin-masteryls-web-page-resize-handle role="separator" aria-orientation="horizontal" aria-label="Resize web page" tabIndex={0} style={{ height: '10px' }} onPointerDown={startResize} onKeyDown={handleResizeKeyDown} />
+      <div ref={containerRef} className="relative w-full" data-plugin-masteryls-web-page style={{ height: currentHeight, minHeight: MIN_WEB_PAGE_HEIGHT, resize: 'vertical', overflow: 'hidden' }}>
+        {srcDoc ? <iframe className="block w-full h-full bg-white border-0" style={{ pointerEvents: isResizing ? 'none' : undefined }} srcDoc={srcDoc} data-src={src} data-plugin-masteryls-web-page-frame title={title || file} loading="lazy" scrolling="no" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
+        <div className="absolute bottom-0 left-0 right-0 w-full cursor-row-resize touch-none bg-transparent hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-blue-400" data-plugin-masteryls-web-page-resize-handle role="separator" aria-orientation="horizontal" aria-label="Resize web page" tabIndex={0} style={{ height: '10px' }} onPointerDown={startResize} onKeyDown={handleResizeKeyDown} />
       </div>
     </div>
   );

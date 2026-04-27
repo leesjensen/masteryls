@@ -63,6 +63,10 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     }
 
     let controlJsx = generateInteractionComponent(meta, interactionBody);
+    if (meta.type === 'web-page') {
+      return controlJsx;
+    }
+
     const progress = getInteractionProgress(meta.id);
     const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
     return (

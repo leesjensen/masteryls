@@ -89,7 +89,10 @@ test('interaction web page renders relative html file', async ({ page }) => {
   const frameContainer = page.locator('[data-plugin-masteryls-web-page]');
   const resizeHandle = page.locator('[data-plugin-masteryls-web-page-resize-handle]');
   await expect(iframe).toBeVisible();
+  await expect(page.getByText('Web page', { exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-plugin-masteryls-root][data-plugin-masteryls-type="web-page"]')).toHaveCount(0);
   await expect(frameContainer).toHaveCSS('height', '520px');
+  await expect(frameContainer).toHaveCSS('border-top-width', '0px');
   await expect(frameContainer).toHaveCSS('resize', 'vertical');
   await expect(iframe).toHaveAttribute('data-src', 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/something/more/index.html');
   await expect(iframe).toHaveAttribute('scrolling', 'no');
@@ -126,6 +129,22 @@ test('interaction web page renders relative html file', async ({ page }) => {
       return resizedBox?.height || 0;
     })
     .toBeGreaterThan(580);
+
+  const expandedBox = await frameContainer.boundingBox();
+  if (!expandedBox) throw new Error('Expected resized web page frame to have a bounding box');
+  await resizeHandle.hover();
+  await page.mouse.down();
+  await page.mouse.move(expandedBox.x + expandedBox.width / 2, expandedBox.y + 120);
+  await expect(iframe).toHaveCSS('pointer-events', 'none');
+  await page.mouse.up();
+  await expect(iframe).toHaveCSS('pointer-events', 'auto');
+
+  await expect
+    .poll(async () => {
+      const resizedBox = await frameContainer.boundingBox();
+      return resizedBox?.height || 0;
+    })
+    .toBeLessThan(expandedBox.height - 100);
 });
 
 test('interaction prompt', async ({ page }) => {
