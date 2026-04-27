@@ -74,7 +74,7 @@ test('interaction web page renders relative html file', async ({ page }) => {
 
   await page.route(/https:\/\/raw\.githubusercontent\.com\/ghAccount\/ghRepo\/main\/(something\/more\/)?index\.html/, async (route) => {
     await route.fulfill({
-      body: '<!doctype html><html><body><h1>Embedded Web Page</h1></body></html>',
+      body: '<!doctype html><html><body style="margin:24px"><h1>Embedded Web Page</h1><div style="width:2000px;height:2000px"></div></body></html>',
       contentType: 'text/html; charset=utf-8',
     });
   });
@@ -92,7 +92,26 @@ test('interaction web page renders relative html file', async ({ page }) => {
   await expect(frameContainer).toHaveCSS('height', '520px');
   await expect(frameContainer).toHaveCSS('resize', 'vertical');
   await expect(iframe).toHaveAttribute('data-src', 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/something/more/index.html');
+  await expect(iframe).toHaveAttribute('scrolling', 'no');
   await expect(page.frameLocator('iframe[title="Web page"]').getByRole('heading', { name: 'Embedded Web Page' })).toBeVisible();
+
+  const iframeHandle = await iframe.elementHandle();
+  const frame = await iframeHandle?.contentFrame();
+  if (!frame) throw new Error('Expected web page iframe to have a frame');
+  const frameSizing = await frame.evaluate(() => ({
+    bodyMargin: getComputedStyle(document.body).margin,
+    bodyOverflow: getComputedStyle(document.body).overflow,
+    clientHeight: document.documentElement.clientHeight,
+    clientWidth: document.documentElement.clientWidth,
+    htmlOverflow: getComputedStyle(document.documentElement).overflow,
+    innerHeight: window.innerHeight,
+    innerWidth: window.innerWidth,
+  }));
+  expect(frameSizing.bodyMargin).toBe('0px');
+  expect(frameSizing.bodyOverflow).toBe('hidden');
+  expect(frameSizing.htmlOverflow).toBe('hidden');
+  expect(Math.abs(frameSizing.innerHeight - frameSizing.clientHeight)).toBeLessThanOrEqual(1);
+  expect(Math.abs(frameSizing.innerWidth - frameSizing.clientWidth)).toBeLessThanOrEqual(1);
 
   const box = await frameContainer.boundingBox();
   if (!box) throw new Error('Expected web page frame to have a bounding box');

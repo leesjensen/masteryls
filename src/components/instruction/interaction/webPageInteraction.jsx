@@ -37,18 +37,21 @@ function escapeAttribute(value) {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
-function addBaseElement(html, src) {
-  const baseTag = `<base href="${escapeAttribute(src)}">`;
+function frameHeadContent(src) {
+  return `<base href="${escapeAttribute(src)}"><style data-masteryls-frame-sizing>html,body{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;overflow:hidden!important;}*,*::before,*::after{box-sizing:border-box;}</style>`;
+}
 
+function prepareFrameDocument(html, src) {
+  const headContent = frameHeadContent(src);
   if (/<head(\s[^>]*)?>/i.test(html)) {
-    return html.replace(/<head(\s[^>]*)?>/i, `$&${baseTag}`);
+    return html.replace(/<head(\s[^>]*)?>/i, `$&${headContent}`);
   }
 
   if (/<html(\s[^>]*)?>/i.test(html)) {
-    return html.replace(/<html(\s[^>]*)?>/i, `$&<head>${baseTag}</head>`);
+    return html.replace(/<html(\s[^>]*)?>/i, `$&<head>${headContent}</head>`);
   }
 
-  return `<!doctype html><html><head>${baseTag}</head><body>${html}</body></html>`;
+  return `<!doctype html><html><head>${headContent}</head><body>${html}</body></html>`;
 }
 
 export default function WebPageInteraction({ title, file, height, topicPath }) {
@@ -83,7 +86,7 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
         return response.text();
       })
       .then((html) => {
-        setSrcDoc(addBaseElement(html, src));
+        setSrcDoc(prepareFrameDocument(html, src));
       })
       .catch((err) => {
         if (err.name !== 'AbortError') {
@@ -145,9 +148,9 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
 
   return (
     <div data-plugin-masteryls-body={file}>
-      <div ref={containerRef} className="w-full bg-white border border-neutral-300" data-plugin-masteryls-web-page style={{ height: currentHeight, minHeight: MIN_WEB_PAGE_HEIGHT, resize: 'vertical', overflow: 'hidden' }}>
-        {srcDoc ? <iframe className="block w-full bg-white border-0" style={{ height: 'calc(100% - 10px)' }} srcDoc={srcDoc} data-src={src} data-plugin-masteryls-web-page-frame title={title || file} loading="lazy" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
-        <div className="w-full cursor-row-resize bg-neutral-100 border-t border-neutral-300 hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-400" data-plugin-masteryls-web-page-resize-handle role="separator" aria-orientation="horizontal" aria-label="Resize web page" tabIndex={0} style={{ height: '10px' }} onPointerDown={startResize} onKeyDown={handleResizeKeyDown} />
+      <div ref={containerRef} className="relative w-full bg-white border border-neutral-300" data-plugin-masteryls-web-page style={{ height: currentHeight, minHeight: MIN_WEB_PAGE_HEIGHT, resize: 'vertical', overflow: 'hidden' }}>
+        {srcDoc ? <iframe className="block w-full h-full bg-white border-0" srcDoc={srcDoc} data-src={src} data-plugin-masteryls-web-page-frame title={title || file} loading="lazy" scrolling="no" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
+        <div className="absolute bottom-0 left-0 right-0 w-full cursor-row-resize bg-neutral-100/90 border-t border-neutral-300 hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-400" data-plugin-masteryls-web-page-resize-handle role="separator" aria-orientation="horizontal" aria-label="Resize web page" tabIndex={0} style={{ height: '10px' }} onPointerDown={startResize} onKeyDown={handleResizeKeyDown} />
       </div>
     </div>
   );
