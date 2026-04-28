@@ -41,8 +41,8 @@ function frameHeadContent(src) {
   return `<base href="${escapeAttribute(src)}"><style data-masteryls-frame-sizing>html,body{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;overflow:hidden!important;}*,*::before,*::after{box-sizing:border-box;}</style>`;
 }
 
-function prepareFrameDocument(html, src) {
-  const headContent = frameHeadContent(src);
+function prepareFrameDocument(html, baseUrl) {
+  const headContent = frameHeadContent(baseUrl);
   if (/<head(\s[^>]*)?>/i.test(html)) {
     return html.replace(/<head(\s[^>]*)?>/i, `$&${headContent}`);
   }
@@ -54,8 +54,9 @@ function prepareFrameDocument(html, src) {
   return `<!doctype html><html><head>${headContent}</head><body>${html}</body></html>`;
 }
 
-export default function WebPageInteraction({ title, file, height, topicPath }) {
+export default function WebPageInteraction({ title, file, html, height, topicPath }) {
   const src = React.useMemo(() => resolveWebPageUrl(file, topicPath), [file, topicPath]);
+  const baseUrl = src || topicPath || window.location.href;
   const frameHeight = React.useMemo(() => normalizeHeight(height), [height]);
   const containerRef = React.useRef(null);
   const resizeCleanupRef = React.useRef(null);
@@ -73,6 +74,12 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
   }, []);
 
   React.useEffect(() => {
+    if (html) {
+      setSrcDoc(prepareFrameDocument(html, baseUrl));
+      setError('');
+      return;
+    }
+
     if (!src) return;
 
     const controller = new AbortController();
@@ -96,7 +103,7 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
       });
 
     return () => controller.abort();
-  }, [src]);
+  }, [baseUrl, html, src]);
 
   function resizeBy(delta) {
     const current = containerRef.current?.getBoundingClientRect().height || MIN_WEB_PAGE_HEIGHT_PX;
@@ -167,18 +174,18 @@ export default function WebPageInteraction({ title, file, height, topicPath }) {
     }
   }
 
-  if (!file) {
+  if (!file && !html) {
     return <div className="text-sm text-red-700">Missing web page file.</div>;
   }
 
-  if (!src || error) {
+  if ((!src && !html) || error) {
     return <div className="text-sm text-red-700">Unable to load web page file.</div>;
   }
 
   return (
-    <div data-plugin-masteryls-body={file}>
+    <div data-plugin-masteryls-body={file || 'generated'}>
       <div ref={containerRef} className="relative w-full" data-plugin-masteryls-web-page style={{ height: currentHeight, minHeight: MIN_WEB_PAGE_HEIGHT, resize: 'vertical', overflow: 'hidden' }}>
-        {srcDoc ? <iframe className="block w-full h-full bg-white border-0" style={{ pointerEvents: isResizing ? 'none' : undefined }} srcDoc={srcDoc} data-src={src} data-plugin-masteryls-web-page-frame title={title || file} loading="lazy" scrolling="no" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
+        {srcDoc ? <iframe className="block w-full h-full bg-white border-0" style={{ pointerEvents: isResizing ? 'none' : undefined }} srcDoc={srcDoc} data-src={src || 'generated'} data-plugin-masteryls-web-page-frame title={title || file || 'Generated web page'} loading="lazy" scrolling="no" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
         <div className="absolute bottom-0 left-0 right-0 w-full cursor-row-resize touch-none bg-transparent hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-blue-400" data-plugin-masteryls-web-page-resize-handle role="separator" aria-orientation="horizontal" aria-label="Resize web page" tabIndex={0} style={{ height: '10px' }} onPointerDown={startResize} onKeyDown={handleResizeKeyDown} />
       </div>
     </div>

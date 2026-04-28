@@ -17,3 +17,7 @@ test('extractInteractionMetas identifies passive web page interactions', () => {
   assert.equal(isSubmittableInteractionType(metas[0].type), false);
   assert.equal(isSubmittableInteractionType(metas[1].type), true);
 });
+
+test('ai web page interactions are submittable', () => {
+  assert.equal(isSubmittableInteractionType('ai-web-page'), true);
+});

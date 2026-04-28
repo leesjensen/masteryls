@@ -171,6 +171,62 @@ Simple **prompt** question
   await expect(page.locator('pre')).toContainText('Fantastic job on this question!');
 });
 
+test('interaction ai web page stores generated html submission', async ({ page }) => {
+  const generatedHtml = '<!doctype html><html><body><main><h1>Generated AI Page</h1><p>Responsive layout submitted.</p></main></body></html>';
+  const interactionMarkdown = `
+# AI Web Page
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123460", "title":"AI web page", "type":"ai-web-page", "height":420}
+Create an HTML page from your prompt.
+\`\`\`
+`;
+
+  await setAiResponse(page, `\`\`\`html\n${generatedHtml}\n\`\`\``);
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f/);
+  await expect(page.getByText('AI web page', { exact: true })).toBeVisible();
+  await expect(page.getByText('Create an HTML page from your prompt.')).toBeVisible();
+
+  const progressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
+  const promptInput = page.getByPlaceholder('Describe the web page you want to generate ...');
+  const generateButton = page.getByRole('button', { name: 'Generate page' });
+  await promptInput.fill('Make a responsive page about CSS grid.');
+  await expect(generateButton).toBeEnabled();
+  await generateButton.click();
+
+  const progressRequest = await progressPost;
+  const progressBody = progressRequest.postDataJSON()[0];
+  expect(progressBody.type).toBe('quizSubmit');
+  expect(progressBody.interactionId).toBe('a1b2c3d4-e5f6-7890-1234-567890123460');
+  expect(progressBody.details.prompt).toBe('Make a responsive page about CSS grid.');
+  expect(progressBody.details.html).toContain('Generated AI Page');
+
+  const iframe = page.locator('iframe[title="AI web page"]');
+  await expect(iframe).toBeVisible();
+  await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Generated AI Page' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Regenerate page' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'View source' }).click();
+  const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');
+  await expect(sourceEditor).toBeVisible();
+  await expect(sourceEditor).toHaveValue(/Generated AI Page/);
+
+  const editedHtml = generatedHtml.replace('Generated AI Page', 'Edited AI Page');
+  const sourceProgressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
+  await sourceEditor.fill(editedHtml);
+  await expect(page.getByRole('button', { name: 'Save source' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Save source' }).click();
+
+  const sourceProgressRequest = await sourceProgressPost;
+  const sourceProgressBody = sourceProgressRequest.postDataJSON()[0];
+  expect(sourceProgressBody.details.prompt).toBe('Make a responsive page about CSS grid.');
+  expect(sourceProgressBody.details.html).toContain('Edited AI Page');
+  await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Edited AI Page' })).toBeVisible();
+});
+
 test('interaction submission file', async ({ page }) => {
   const interactionMarkdown = `
 # Quiz

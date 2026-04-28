@@ -8,6 +8,7 @@ import FileInteraction from './fileInteraction';
 import UrlInteraction from './urlInteraction';
 import TeachingInteraction from './teachingInteraction';
 import WebPageInteraction from './webPageInteraction';
+import AiWebPageInteraction from './aiWebPageInteraction';
 import InteractionFeedback from './interactionFeedback';
 import { updateInteractionProgress, getInteractionProgress } from './interactionProgressStore';
 import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
@@ -46,6 +47,7 @@ import { isSubmittableInteractionType, parseInteractionMeta } from '../../../uti
  * - teaching: AI-assisted teaching sessions
  * - prompt: AI prompt generation
  * - web-page: Embedded HTML file rendered in an iframe
+ * - ai-web-page: AI generated HTML page rendered in an iframe
  *
  * @returns {JSX.Element} The rendered interaction instruction component
  */
@@ -95,6 +97,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       return <PromptInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'web-page') {
       return <WebPageInteraction title={meta.title} file={meta.file} height={meta.height} topicPath={learningSession?.topic?.path} />;
+    } else if (meta.type === 'ai-web-page') {
+      return <AiWebPageInteraction id={meta.id} title={meta.title} body={interactionBody} height={meta.height} topicPath={learningSession?.topic?.path} />;
     }
 
     return null;
@@ -112,6 +116,21 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const bodyElem = interactionRoot.querySelector('[data-plugin-masteryls-body]');
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type) {
+      if (event.target.tagName === 'BUTTON' && event.target.id === `save-source-${id}`) {
+        event.target.disabled = true;
+        visualizeGrading(interactionRoot);
+
+        const sourceElement = interactionRoot.querySelector('[data-plugin-masteryls-ai-web-page-source]');
+        const promptElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
+        if (sourceElement && sourceElement.value && sourceElement.validity.valid) {
+          const percentCorrect = await onAiWebPageSourceSave({ id, type, prompt: promptElement?.value || '', html: sourceElement.value });
+          displayGrade(interactionRoot, percentCorrect);
+        }
+
+        event.target.disabled = false;
+        return;
+      }
+
       if (event.target.tagName === 'BUTTON' && event.target.id === `submit-${id}`) {
         event.target.disabled = true;
         visualizeGrading(interactionRoot);
@@ -181,6 +200,12 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             const percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value });
             displayGrade(interactionRoot, percentCorrect);
           }
+        } else if (type === 'ai-web-page') {
+          const interactionElement = interactionRoot.querySelector('textarea');
+          if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
+            const percentCorrect = await onAiWebPageInteraction({ id, title, type, body, prompt: interactionElement.value });
+            displayGrade(interactionRoot, percentCorrect);
+          }
         }
 
         event.target.disabled = false;
@@ -241,6 +266,31 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return -1;
+  }
+
+  function normalizeGeneratedHtml(response) {
+    return response
+      .trim()
+      .replace(/^```(?:html)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+  }
+
+  async function onAiWebPageInteraction({ id, title, type, body, prompt }) {
+    if (!prompt) return false;
+    const html = normalizeGeneratedHtml(await courseOps.getAiWebPageResponse({ title, instructions: body, prompt }));
+    const details = { type, prompt, html, feedback: 'Generated page submitted.' };
+    updateInteractionProgress(id, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return 100;
+  }
+
+  async function onAiWebPageSourceSave({ id, type, prompt, html }) {
+    if (!html) return false;
+    const details = { type, prompt, html, feedback: 'Updated page source submitted.' };
+    updateInteractionProgress(id, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return 100;
   }
 
   async function onFileInteraction({ id, title, type, body, files }) {

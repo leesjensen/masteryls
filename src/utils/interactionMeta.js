@@ -1,5 +1,5 @@
 const DEFAULT_INTERACTION_META = { id: undefined, title: '', type: 'multiple-choice' };
-const SUBMITTABLE_INTERACTION_TYPES = new Set(['multiple-choice', 'multiple-select', 'survey', 'essay', 'file-submission', 'url-submission', 'teaching', 'prompt']);
+const SUBMITTABLE_INTERACTION_TYPES = new Set(['multiple-choice', 'multiple-select', 'survey', 'essay', 'file-submission', 'url-submission', 'teaching', 'prompt', 'ai-web-page']);
 
 function normalizeInteractionMetaJson(jsonText) {
   return jsonText.replace(/("(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?|true|false|null)\s+(?="[^"]+"\s*:)/g, '$1, ');

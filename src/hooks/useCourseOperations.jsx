@@ -1050,6 +1050,28 @@ ${topicDescription || 'overview content placeholder'}`;
     return makeSimpleAiRequest(data, user);
   }
 
+  async function getAiWebPageResponse({ title, instructions, prompt }) {
+    const data = `Create a complete, standalone HTML web page for a learner submission.
+
+Interaction title: ${title || 'Generated web page'}
+Interaction instructions:
+${instructions || ''}
+
+Learner prompt:
+${prompt}
+
+Requirements:
+- Return only HTML. Do not include markdown code fences or explanatory commentary.
+- Include all CSS and JavaScript inline in the document.
+- The page must be valid HTML and fit responsively inside an iframe viewport.
+- Use accessible semantic markup and readable text.
+- Do not use external network resources, remote scripts, remote stylesheets, or tracking.
+- If images are needed, use inline SVG, CSS, or simple placeholders.
+`;
+
+    return makeSimpleAiRequest(data, user);
+  }
+
   async function getExamState() {
     if (learningSession?.enrollment && learningSession?.topic) {
       const progress = await service.getProgress({ types: ['exam'], topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
@@ -1459,6 +1481,7 @@ ${topicDescription || 'overview content placeholder'}`;
     getEssayInteractionFeedback,
     getChoiceInteractionFeedback,
     getPromptResponse,
+    getAiWebPageResponse,
     addProgress,
     getProgress,
     getTopicProgress,
