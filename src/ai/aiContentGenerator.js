@@ -97,7 +97,7 @@ Requirements:
 - Do not over create bulleted lists with multiple levels
 - Make content educational and engaging
 - Prefer textual prose
-- If you include a Mermaid diagram, include this theme: ${mermaidTheme}
+- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
 - Include practical examples where applicable
 - Include references to external resources if relevant
 - Encourage thoughtful engagement with the material
@@ -224,7 +224,7 @@ Requirements:
 - The section title should be concise and descriptive
 - The section body should be clear and unambiguous
 - Ensure that the section is educational and reinforces key concepts from the topic
-- If you include a Mermaid diagram, include this theme: ${mermaidTheme}
+- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
 `;
 
   return makeSimpleAiRequest(prompt);
