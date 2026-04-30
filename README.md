@@ -85,6 +85,16 @@ A [detailed log](/progress) for everything a learner does is tracked of all cour
 
 ![progress.jpg](docs/features/progress.jpg)
 
+### Topic interactions
+
+| Group        | Types                                          | Grading                                      | AI                                              |
+| ------------ | ---------------------------------------------- | -------------------------------------------- | ----------------------------------------------- |
+| Choice-based | `multiple-choice`, `multiple-select`, `survey` | Auto-scored by choices; survey unscored      | Feedback on multiple-choice and multiple-select |
+| Text-based   | `essay`, `prompt`                              | essay AI graded; prompt unscored             | Yes - grading and response generation           |
+| AI-chat      | `teaching`                                     | AI scores understanding %                    | Yes - conversational feedback                   |
+| Submission   | `file-submission`, `url-submission`            | Auto 100% on submit                          | None                                            |
+| Web content  | `web-page`, `ai-web-page`                      | web-page display only; ai-web-page auto 100% | ai-web-page generation only                     |
+
 # Deploying MasteryLS
 
 You can deploy your own installation of MasterLS with two simple steps.
