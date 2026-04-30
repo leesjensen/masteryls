@@ -96,7 +96,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     } else if (meta.type === 'prompt') {
       return <PromptInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'web-page') {
-      return <WebPageInteraction title={meta.title} file={meta.file} height={meta.height} topicPath={learningSession?.topic?.path} />;
+      return <WebPageInteraction title={meta.title} file={meta.file} html={interactionBody || undefined} height={meta.height} topicPath={learningSession?.topic?.path} />;
     } else if (meta.type === 'ai-web-page') {
       return <AiWebPageInteraction id={meta.id} title={meta.title} body={interactionBody} height={meta.height} topicPath={learningSession?.topic?.path} />;
     }
