@@ -98,7 +98,14 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     } else if (meta.type === 'web-page') {
       return <WebPageInteraction title={meta.title} file={meta.file} html={interactionBody || undefined} height={meta.height} topicPath={learningSession?.topic?.path} />;
     } else if (meta.type === 'ai-web-page') {
-      return <AiWebPageInteraction id={meta.id} title={meta.title} body={interactionBody} height={meta.height} topicPath={learningSession?.topic?.path} />;
+      const enrollmentId = learningSession?.enrollment?.id;
+      const getSubmissionHistory = enrollmentId
+        ? async () => {
+            const result = await courseOps.getProgress({ interactionId: meta.id, enrollmentId, types: ['quizSubmit'], limit: 50 });
+            return (result?.data || []);
+          }
+        : null;
+      return <AiWebPageInteraction id={meta.id} title={meta.title} body={interactionBody} height={meta.height} topicPath={learningSession?.topic?.path} getSubmissionHistory={getSubmissionHistory} />;
     }
 
     return null;
@@ -307,9 +314,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   async function onAiWebPageSourceSave({ id, type, prompt, html }) {
     if (!html) return false;
-    const details = { type, prompt, html, feedback: 'Updated page source submitted.' };
+    const details = { type, prompt, html };
     updateInteractionProgress(id, details);
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;
   }
 

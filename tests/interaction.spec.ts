@@ -236,16 +236,37 @@ Create an HTML page from your prompt.
   await expect(sourceEditor).toHaveValue(/Generated AI Page/);
 
   const editedHtml = generatedHtml.replace('Generated AI Page', 'Edited AI Page');
-  const sourceProgressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
   await sourceEditor.fill(editedHtml);
   await expect(page.getByRole('button', { name: 'Apply source' })).toBeEnabled();
   await page.getByRole('button', { name: 'Apply source' }).click();
 
-  const sourceProgressRequest = await sourceProgressPost;
-  const sourceProgressBody = sourceProgressRequest.postDataJSON()[0];
-  expect(sourceProgressBody.details.prompt).toBe('Make a responsive page about CSS grid.');
-  expect(sourceProgressBody.details.html).toContain('Edited AI Page');
   await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Edited AI Page' })).toBeVisible();
+
+  // Set up history GET mock (page-level overrides context-level for future requests)
+  const historicalHtml = '<!doctype html><html><body><main><h1>Historical Page</h1></main></body></html>';
+  await page.route(/.*supabase\.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        json: [
+          {
+            id: 'history-1',
+            createdAt: '2025-11-30T15:00:00.000Z',
+            details: { type: 'ai-web-page', prompt: 'Build a CSS grid demo', html: historicalHtml, percentCorrect: 90, feedback: 'Excellent CSS grid implementation!' },
+          },
+        ],
+      });
+      return;
+    }
+    await route.fulfill({ status: 200, json: {} });
+  });
+
+  await page.getByRole('button', { name: 'Previous submissions' }).click();
+  await expect(page.locator('[data-plugin-masteryls-history-item]')).toBeVisible();
+  await expect(page.getByText('90%')).toBeVisible();
+
+  await page.locator('[data-plugin-masteryls-history-item]').click();
+  await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Historical Page' })).toBeVisible();
 });
 
 test('interaction submission file', async ({ page }) => {

@@ -1174,7 +1174,7 @@ Requirements:
     const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, types, limit: 1000 });
     return progressItems.data.reduce((acc, item) => {
       const interactionId = item.interactionId;
-      if (!acc[interactionId] || new Date(item.creationDate) > new Date(acc[interactionId].creationDate)) {
+      if (!acc[interactionId] || new Date(item.createdAt) > new Date(acc[interactionId].creationDate)) {
         acc[interactionId] = item;
       }
       return acc;
@@ -1186,7 +1186,7 @@ Requirements:
     // Only use the user's latest submission
     const voters = progressItems.data.reduce((acc, item) => {
       const userId = item.userId;
-      if (!acc[userId] || new Date(item.creationDate) > new Date(acc[userId].creationDate)) {
+      if (!acc[userId] || new Date(item.createdAt) > new Date(acc[userId].creationDate)) {
         acc[userId] = item;
       }
       return acc;
