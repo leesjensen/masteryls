@@ -190,7 +190,6 @@ Create an HTML page from your prompt.
   await expect(page.getByText('AI web page', { exact: true })).toBeVisible();
   await expect(page.getByText('Create an HTML page from your prompt.')).toBeVisible();
 
-  const progressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
   const promptInput = page.getByPlaceholder('Describe the web page you want to generate ...');
   const generateButton = page.getByRole('button', { name: 'Generate page' });
   await promptInput.click();
@@ -198,17 +197,21 @@ Create an HTML page from your prompt.
   await expect(generateButton).toBeEnabled();
   await generateButton.click();
 
+  const iframe = page.locator('iframe[title="AI web page"]');
+  await expect(iframe).toBeVisible();
+  await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Generated AI Page' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Execute prompt' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+
+  const progressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
+  await page.getByRole('button', { name: 'Submit' }).click();
+
   const progressRequest = await progressPost;
   const progressBody = progressRequest.postDataJSON()[0];
   expect(progressBody.type).toBe('quizSubmit');
   expect(progressBody.interactionId).toBe('a1b2c3d4-e5f6-7890-1234-567890123460');
   expect(progressBody.details.prompt).toBe('Make a responsive page about CSS grid.');
   expect(progressBody.details.html).toContain('Generated AI Page');
-
-  const iframe = page.locator('iframe[title="AI web page"]');
-  await expect(iframe).toBeVisible();
-  await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Generated AI Page' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Execute prompt' })).toBeVisible();
 
   await page.getByRole('button', { name: 'View source' }).click();
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');

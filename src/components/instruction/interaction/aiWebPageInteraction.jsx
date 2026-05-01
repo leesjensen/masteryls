@@ -21,7 +21,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
         {inlineLiteMarkdown(body)}
       </div>
       <textarea name={`interaction-${id}`} className="w-full h-32 p-3 border bg-white border-gray-300 rounded-lg resize-y transition-colors duration-200 placeholder-gray-400" placeholder="Describe the web page you want to generate ..." defaultValue={value} onChange={(e) => setCurrentValue(e.target.value)}></textarea>
-      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={!currentValue.trim()}>
+      <button id={`generate-${id}`} type="button" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={!currentValue.trim()}>
         {generatedHtml ? 'Execute prompt' : 'Generate page'}
       </button>
       {generatedHtml && (
@@ -35,6 +35,9 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
                 Apply source
               </button>
             )}
+            <button id={`submit-${id}`} type="submit" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+              Submit
+            </button>
           </div>
           {sourceOpen && <textarea className="w-full h-72 p-3 border bg-gray-950 text-gray-100 border-gray-700 rounded-lg resize-y font-mono text-sm leading-5 transition-colors duration-200" data-plugin-masteryls-ai-web-page-source value={sourceValue} spellCheck="false" onChange={(e) => setSourceValue(e.target.value)} />}
           <WebPageInteraction title={title || 'Generated web page'} html={generatedHtml} height={height} topicPath={topicPath} />

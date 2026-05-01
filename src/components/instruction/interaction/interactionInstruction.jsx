@@ -116,6 +116,17 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const bodyElem = interactionRoot.querySelector('[data-plugin-masteryls-body]');
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type) {
+      if (event.target.tagName === 'BUTTON' && event.target.id === `generate-${id}`) {
+        event.target.disabled = true;
+        const interactionElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
+        if (interactionElement && interactionElement.value) {
+          const html = normalizeGeneratedHtml(await courseOps.getAiWebPageResponse({ prompt: interactionElement.value }));
+          updateInteractionProgress(id, { type, prompt: interactionElement.value, html });
+        }
+        event.target.disabled = false;
+        return;
+      }
+
       if (event.target.tagName === 'BUTTON' && event.target.id === `save-source-${id}`) {
         event.target.disabled = true;
         visualizeGrading(interactionRoot);
@@ -201,9 +212,10 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'ai-web-page') {
-          const interactionElement = interactionRoot.querySelector('textarea');
-          if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            const percentCorrect = await onAiWebPageInteraction({ id, title, type, body, prompt: interactionElement.value });
+          const progress = getInteractionProgress(id);
+          const promptElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
+          if (progress?.html) {
+            const percentCorrect = await onAiWebPageSubmit({ id, type, prompt: promptElement?.value || progress?.prompt || '', html: progress.html });
             displayGrade(interactionRoot, percentCorrect);
           }
         }
@@ -276,9 +288,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       .trim();
   }
 
-  async function onAiWebPageInteraction({ id, title, type, body, prompt }) {
-    if (!prompt) return false;
-    const html = normalizeGeneratedHtml(await courseOps.getAiWebPageResponse({ prompt }));
+  async function onAiWebPageSubmit({ id, type, prompt, html }) {
+    if (!html) return false;
     const details = { type, prompt, html, feedback: 'Generated page submitted.' };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
