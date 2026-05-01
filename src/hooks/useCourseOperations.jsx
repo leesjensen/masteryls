@@ -1050,12 +1050,8 @@ ${topicDescription || 'overview content placeholder'}`;
     return makeSimpleAiRequest(data, user);
   }
 
-  async function getAiWebPageResponse({ title, instructions, prompt }) {
+  async function getAiWebPageResponse({ prompt }) {
     const data = `Create a complete, standalone HTML web page for a learner submission.
-
-Interaction title: ${title || 'Generated web page'}
-Interaction instructions:
-${instructions || ''}
 
 Learner prompt:
 ${prompt}

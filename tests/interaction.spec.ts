@@ -193,6 +193,7 @@ Create an HTML page from your prompt.
   const progressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
   const promptInput = page.getByPlaceholder('Describe the web page you want to generate ...');
   const generateButton = page.getByRole('button', { name: 'Generate page' });
+  await promptInput.click();
   await promptInput.fill('Make a responsive page about CSS grid.');
   await expect(generateButton).toBeEnabled();
   await generateButton.click();
@@ -207,7 +208,7 @@ Create an HTML page from your prompt.
   const iframe = page.locator('iframe[title="AI web page"]');
   await expect(iframe).toBeVisible();
   await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Generated AI Page' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Regenerate page' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Execute prompt' })).toBeVisible();
 
   await page.getByRole('button', { name: 'View source' }).click();
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');
@@ -217,8 +218,8 @@ Create an HTML page from your prompt.
   const editedHtml = generatedHtml.replace('Generated AI Page', 'Edited AI Page');
   const sourceProgressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
   await sourceEditor.fill(editedHtml);
-  await expect(page.getByRole('button', { name: 'Save source' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Save source' }).click();
+  await expect(page.getByRole('button', { name: 'Apply source' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Apply source' }).click();
 
   const sourceProgressRequest = await sourceProgressPost;
   const sourceProgressBody = sourceProgressRequest.postDataJSON()[0];

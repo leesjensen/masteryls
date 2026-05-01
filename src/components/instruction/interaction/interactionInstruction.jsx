@@ -278,7 +278,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   async function onAiWebPageInteraction({ id, title, type, body, prompt }) {
     if (!prompt) return false;
-    const html = normalizeGeneratedHtml(await courseOps.getAiWebPageResponse({ title, instructions: body, prompt }));
+    const html = normalizeGeneratedHtml(await courseOps.getAiWebPageResponse({ prompt }));
     const details = { type, prompt, html, feedback: 'Generated page submitted.' };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
