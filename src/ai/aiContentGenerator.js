@@ -579,6 +579,39 @@ Requirements:
   return { feedback, percentCorrect: feedbackData.percentCorrect };
 }
 
+export async function aiWebPageFeedbackGenerator(data, user) {
+  const prompt = `You are an expert educational code reviewer.
+Evaluate a learner's submitted HTML web page.
+
+${Object.entries(data)
+  .filter(([, v]) => v)
+  .map(([key, value]) => `- ${key}: ${value}`)
+  .join('\n')}
+
+Requirements:
+- Start the response with json that indicates the score in the format: {"percentCorrect": XX}
+- Score 0–100 based on: code quality, whether the page fulfills the learner's prompt, and adherence to interaction instructions
+- Address the student directly
+- Acknowledge what the submission does well
+- Note any gaps or issues clearly but constructively
+- Keep the tone encouraging
+- Limit feedback to 150 words or less
+`;
+
+  let feedbackData = { percentCorrect: undefined };
+  let feedback = await makeSimpleAiRequest(prompt, user);
+  const jsonMatch = feedback.match(/^\s*(?:`+json\s*)?(\{[\s\S]*?\})(?:\s*`+)?/);
+  if (jsonMatch) {
+    try {
+      feedbackData = JSON.parse(jsonMatch[1]);
+      feedback = feedback.slice(jsonMatch.index + jsonMatch[0].length).trim();
+    } catch (error) {
+      console.error('Failed to parse AI feedback JSON:', error);
+    }
+  }
+  return { feedback, percentCorrect: feedbackData.percentCorrect ?? 100 };
+}
+
 /**
  * Sends a prompt to the Gemini generative language model and returns the generated content.
  *

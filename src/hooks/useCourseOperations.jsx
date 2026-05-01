@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -1050,6 +1050,10 @@ ${topicDescription || 'overview content placeholder'}`;
     return makeSimpleAiRequest(data, user);
   }
 
+  async function getAiWebPageFeedback(data) {
+    return aiWebPageFeedbackGenerator(data, user);
+  }
+
   async function getAiWebPageResponse({ prompt }) {
     const data = `Create a complete, standalone HTML web page for a learner submission.
 
@@ -1477,6 +1481,7 @@ Requirements:
     getEssayInteractionFeedback,
     getChoiceInteractionFeedback,
     getPromptResponse,
+    getAiWebPageFeedback,
     getAiWebPageResponse,
     addProgress,
     getProgress,

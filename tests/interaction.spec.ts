@@ -181,7 +181,22 @@ Create an HTML page from your prompt.
 \`\`\`
 `;
 
-  await setAiResponse(page, `\`\`\`html\n${generatedHtml}\n\`\`\``);
+  const feedbackText = 'Great work! Your page matches the prompt well.';
+  let geminiCallCount = 0;
+  await page.route(/.*supabase\.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    if (route.request().method() === 'POST') {
+      geminiCallCount++;
+      const text = geminiCallCount === 1 ? `\`\`\`html\n${generatedHtml}\n\`\`\`` : `{"percentCorrect": 85}\n${feedbackText}`;
+      await route.fulfill({ json: { candidates: [{ content: { parts: [{ text }], role: 'model' }, finishReason: 'STOP', index: 0 }] } });
+      return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
   await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
   await navigateToCourse(page);
 
@@ -212,6 +227,8 @@ Create an HTML page from your prompt.
   expect(progressBody.interactionId).toBe('a1b2c3d4-e5f6-7890-1234-567890123460');
   expect(progressBody.details.prompt).toBe('Make a responsive page about CSS grid.');
   expect(progressBody.details.html).toContain('Generated AI Page');
+  expect(progressBody.details.percentCorrect).toBe(85);
+  expect(progressBody.details.feedback).toBe(feedbackText);
 
   await page.getByRole('button', { name: 'View source' }).click();
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');

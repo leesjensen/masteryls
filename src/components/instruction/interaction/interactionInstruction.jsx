@@ -215,7 +215,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const progress = getInteractionProgress(id);
           const promptElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
           if (progress?.html) {
-            const percentCorrect = await onAiWebPageSubmit({ id, type, prompt: promptElement?.value || progress?.prompt || '', html: progress.html });
+            const percentCorrect = await onAiWebPageSubmit({ id, type, body, prompt: promptElement?.value || progress?.prompt || '', html: progress.html });
             displayGrade(interactionRoot, percentCorrect);
           }
         }
@@ -288,12 +288,21 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       .trim();
   }
 
-  async function onAiWebPageSubmit({ id, type, prompt, html }) {
+  async function onAiWebPageSubmit({ id, type, body, prompt, html }) {
     if (!html) return false;
-    const details = { type, prompt, html, feedback: 'Generated page submitted.' };
+    let feedback = 'Generated page submitted.';
+    let percentCorrect = 100;
+    try {
+      const result = await courseOps.getAiWebPageFeedback({ instructions: body, prompt, html });
+      feedback = result.feedback;
+      percentCorrect = result.percentCorrect ?? 100;
+    } catch {
+      // fall through with defaults
+    }
+    const details = { type, prompt, html, percentCorrect, feedback };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
-    return 100;
+    return percentCorrect;
   }
 
   async function onAiWebPageSourceSave({ id, type, prompt, html }) {
