@@ -223,8 +223,9 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   const generationFeedback = progress.generationFeedback || '';
   const canApplySource = sourceValue.trim() && sourceValue !== currentHtml;
   const promptDisabled = !currentPrompt.trim() || generationState === 'loading';
-  const lastSubmittedHtml = progress.submittedHtml || (progress.feedback ? progress.html : '');
-  const hasSourceChangesForSubmit = !lastSubmittedHtml || currentHtml !== lastSubmittedHtml;
+  const starterHtmlBaseline = htmlFromBody || fileHtml || '';
+  const submitBaselineHtml = progress.submittedHtml || starterHtmlBaseline;
+  const hasSourceChangesForSubmit = currentHtml !== submitBaselineHtml;
   const submitDisabled = !currentHtml.trim() || generationState === 'loading' || !hasSourceChangesForSubmit;
   const saveDisabled = !canApplySource || generationState === 'loading';
 
