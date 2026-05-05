@@ -229,12 +229,13 @@ Create an HTML page from your prompt.
   expect(progressBody.details.html).toContain('Generated AI Page');
   expect(progressBody.details.percentCorrect).toBe(100);
   expect(progressBody.details.feedback).toBe('Submission received. Full credit awarded.');
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeDisabled();
 
   // Newly submitted work should appear in history immediately.
-  await page.getByRole('button', { name: /Expand submission history/ }).click();
+  await page.getByRole('button', { name: /Submission history/ }).click();
   await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toBeVisible();
   await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toContainText('100%');
-  await page.getByRole('button', { name: /Collapse submission history/ }).click();
+  await page.getByRole('button', { name: /Submission history/ }).click();
 
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');
   await expect(sourceEditor).toBeVisible();
@@ -244,6 +245,7 @@ Create an HTML page from your prompt.
   await sourceEditor.fill(editedHtml);
   await expect(page.getByRole('button', { name: 'Apply HTML changes' })).toBeEnabled();
   await page.getByRole('button', { name: 'Apply HTML changes' }).click();
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeEnabled();
 
   await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Edited AI Page' })).toBeVisible();
 
@@ -266,7 +268,7 @@ Create an HTML page from your prompt.
     await route.fulfill({ status: 200, json: {} });
   });
 
-  await page.getByRole('button', { name: /Expand submission history/ }).click();
+  await page.getByRole('button', { name: /Submission history/ }).click();
   await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toBeVisible();
   await expect(page.locator('[data-plugin-masteryls-history-item]').filter({ hasText: '90%' })).toBeVisible();
 

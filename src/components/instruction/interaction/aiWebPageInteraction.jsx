@@ -70,6 +70,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   const [currentPrompt, setCurrentPrompt] = React.useState(progress.prompt || '');
   const [sourceOpen, setSourceOpen] = React.useState(true);
   const [sourceValue, setSourceValue] = React.useState(currentHtml);
+  const [promptOpen, setPromptOpen] = React.useState(false);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [historyItems, setHistoryItems] = React.useState(null);
   const [localHistoryItems, setLocalHistoryItems] = React.useState([]);
@@ -249,12 +250,22 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
       {fileLoadError && <div className="text-sm text-red-700">{fileLoadError}</div>}
 
       {allowAiPrompt && (
-        <div className="mt-3 space-y-2">
-          <div className="text-xs text-gray-600">Use AI to generate or revise HTML from a natural-language prompt.</div>
-          <textarea name={`interaction-${id}`} className="w-full h-28 p-3 border bg-white border-gray-300 rounded-lg resize-y transition-colors duration-200 placeholder-gray-400" placeholder="Describe the web page you want to generate ..." value={currentPrompt} onChange={(e) => setCurrentPrompt(e.target.value)}></textarea>
-          <button id={`generate-${id}`} type="button" className="px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={promptDisabled}>
-            {currentHtml ? 'Execute prompt' : 'Generate page'}
+        <div className="mt-3 border border-blue-200 bg-blue-50/40 rounded-lg p-3 space-y-2">
+          <button type="button" onClick={() => setPromptOpen((open) => !open)} aria-expanded={promptOpen} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-200 bg-blue-50 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors duration-200">
+            <span aria-hidden="true" className="text-xs leading-none">
+              {promptOpen ? '▾' : '▸'}
+            </span>
+            AI assistance
           </button>
+
+          {promptOpen && (
+            <div className="space-y-2 border border-blue-100 bg-white rounded-lg p-2">
+              <textarea name={`interaction-${id}`} className="w-full h-28 p-3 border bg-white border-gray-300 rounded-lg resize-y transition-colors duration-200 placeholder-gray-400" placeholder="Describe the web page you want to generate ..." value={currentPrompt} onChange={(e) => setCurrentPrompt(e.target.value)}></textarea>
+              <button id={`generate-${id}`} type="button" className="px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={promptDisabled}>
+                {currentHtml ? 'Execute prompt' : 'Generate page'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -275,9 +286,6 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
           <button id={`submit-${id}`} type="submit" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={submitDisabled}>
             Submit
           </button>
-          {!hasSourceChangesForSubmit && (
-            <span className="text-xs text-gray-500">Update the HTML source before submitting again.</span>
-          )}
         </div>
 
         {sourceOpen && <textarea className="w-full h-72 p-3 border bg-gray-950 text-gray-100 border-gray-700 rounded-lg resize-y font-mono text-sm leading-5 transition-colors duration-200" data-plugin-masteryls-ai-web-page-source value={sourceValue} placeholder={`<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  </head>\n  <body>\n  </body>\n</html>`} spellCheck="false" onChange={(e) => setSourceValue(e.target.value)} />}
@@ -290,8 +298,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
               <span aria-hidden="true" className="text-xs leading-none">
                 {historyOpen ? '▾' : '▸'}
               </span>
-              {historyOpen ? 'Collapse submission history' : 'Expand submission history'}
-              {mergedHistoryItems.length > 0 && <span className="inline-flex items-center justify-center rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">{mergedHistoryItems.length}</span>}
+              Submission history
             </button>
 
             {loadingHistory && <p className="text-sm text-gray-500 py-1">Loading...</p>}
