@@ -227,18 +227,23 @@ Create an HTML page from your prompt.
   expect(progressBody.interactionId).toBe('a1b2c3d4-e5f6-7890-1234-567890123460');
   expect(progressBody.details.prompt).toBe('Make a responsive page about CSS grid.');
   expect(progressBody.details.html).toContain('Generated AI Page');
-  expect(progressBody.details.percentCorrect).toBe(85);
-  expect(progressBody.details.feedback).toBe(feedbackText);
+  expect(progressBody.details.percentCorrect).toBe(100);
+  expect(progressBody.details.feedback).toBe('Submission received. Full credit awarded.');
 
-  await page.getByRole('button', { name: 'View source' }).click();
+  // Newly submitted work should appear in history immediately.
+  await page.getByRole('button', { name: /Expand submission history/ }).click();
+  await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toBeVisible();
+  await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toContainText('100%');
+  await page.getByRole('button', { name: /Collapse submission history/ }).click();
+
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');
   await expect(sourceEditor).toBeVisible();
   await expect(sourceEditor).toHaveValue(/Generated AI Page/);
 
   const editedHtml = generatedHtml.replace('Generated AI Page', 'Edited AI Page');
   await sourceEditor.fill(editedHtml);
-  await expect(page.getByRole('button', { name: 'Apply source' })).toBeEnabled();
-  await page.getByRole('button', { name: 'Apply source' }).click();
+  await expect(page.getByRole('button', { name: 'Apply HTML changes' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Apply HTML changes' }).click();
 
   await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Edited AI Page' })).toBeVisible();
 
@@ -261,11 +266,11 @@ Create an HTML page from your prompt.
     await route.fulfill({ status: 200, json: {} });
   });
 
-  await page.getByRole('button', { name: 'Previous submissions' }).click();
-  await expect(page.locator('[data-plugin-masteryls-history-item]')).toBeVisible();
-  await expect(page.getByText('90%')).toBeVisible();
+  await page.getByRole('button', { name: /Expand submission history/ }).click();
+  await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toBeVisible();
+  await expect(page.locator('[data-plugin-masteryls-history-item]').filter({ hasText: '90%' })).toBeVisible();
 
-  await page.locator('[data-plugin-masteryls-history-item]').click();
+  await page.locator('[data-plugin-masteryls-history-item]').filter({ hasText: '90%' }).click();
   await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Historical Page' })).toBeVisible();
 });
 

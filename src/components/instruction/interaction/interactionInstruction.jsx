@@ -52,6 +52,16 @@ import { isSubmittableInteractionType, parseInteractionMeta } from '../../../uti
  * @returns {JSX.Element} The rendered interaction instruction component
  */
 export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
+  function toBoolean(value, fallback = false) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
+    return fallback;
+  }
+
   /**
    * injectInteraction responds to a Markdown processor request to render an interaction.
    * @param {string} interactionContent - The raw interaction markdown content
@@ -72,7 +82,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const progress = getInteractionProgress(meta.id);
     const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
     return (
-      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type}>
+      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || meta.criteria || ''}>
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         <div className="space-y-3">{controlJsx}</div>
         {instructionState !== 'exam' && meta.type !== 'survey' && <InteractionFeedback quizId={meta.id} />}
@@ -98,14 +108,16 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     } else if (meta.type === 'web-page') {
       return <WebPageInteraction title={meta.title} file={meta.file} html={interactionBody || undefined} height={meta.height} topicPath={learningSession?.topic?.path} />;
     } else if (meta.type === 'ai-web-page') {
+      const courseAllowsAiPrompt = toBoolean(learningSession?.course?.settings?.allowAiWebPagePrompt, true);
+      const metaAllowsAiPrompt = toBoolean(meta.allowAiPrompt ?? meta.enableAiPrompt, courseAllowsAiPrompt);
       const enrollmentId = learningSession?.enrollment?.id;
       const getSubmissionHistory = enrollmentId
         ? async () => {
             const result = await courseOps.getProgress({ interactionId: meta.id, enrollmentId, types: ['quizSubmit'], limit: 50 });
-            return (result?.data || []);
+            return result?.data || [];
           }
         : null;
-      return <AiWebPageInteraction id={meta.id} title={meta.title} body={interactionBody} height={meta.height} topicPath={learningSession?.topic?.path} getSubmissionHistory={getSubmissionHistory} />;
+      return <AiWebPageInteraction id={meta.id} title={meta.title} body={interactionBody} height={meta.height} topicPath={learningSession?.topic?.path} file={meta.file} allowAiPrompt={metaAllowsAiPrompt} getSubmissionHistory={getSubmissionHistory} />;
     }
 
     return null;
@@ -120,6 +132,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const type = interactionRoot.getAttribute('data-plugin-masteryls-type') || undefined;
     const id = interactionRoot.getAttribute('data-plugin-masteryls-id') || undefined;
     const title = interactionRoot.getAttribute('data-plugin-masteryls-title') || undefined;
+    const gradingCriteria = interactionRoot.getAttribute('data-plugin-masteryls-grading-criteria') || '';
     const bodyElem = interactionRoot.querySelector('[data-plugin-masteryls-body]');
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type) {
@@ -127,24 +140,16 @@ export default function InteractionInstruction({ courseOps, learningSession, use
         event.target.disabled = true;
         const interactionElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
         if (interactionElement && interactionElement.value) {
-          const html = normalizeGeneratedHtml(await courseOps.getAiWebPageResponse({ prompt: interactionElement.value }));
-          updateInteractionProgress(id, { type, prompt: interactionElement.value, html });
+          const prompt = interactionElement.value;
+          updateInteractionProgress(id, { ...(getInteractionProgress(id) || {}), type, prompt, generationState: 'loading', generationFeedback: 'Generating HTML from your prompt…' });
+
+          try {
+            const html = normalizeGeneratedHtml(await courseOps.getAiWebPageResponse({ prompt }));
+            updateInteractionProgress(id, { ...(getInteractionProgress(id) || {}), type, prompt, html, generationState: 'success', generationFeedback: 'HTML generated. Review and edit before submitting.' });
+          } catch {
+            updateInteractionProgress(id, { ...(getInteractionProgress(id) || {}), type, prompt, generationState: 'error', generationFeedback: 'Unable to generate HTML right now. Please try again.' });
+          }
         }
-        event.target.disabled = false;
-        return;
-      }
-
-      if (event.target.tagName === 'BUTTON' && event.target.id === `save-source-${id}`) {
-        event.target.disabled = true;
-        visualizeGrading(interactionRoot);
-
-        const sourceElement = interactionRoot.querySelector('[data-plugin-masteryls-ai-web-page-source]');
-        const promptElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
-        if (sourceElement && sourceElement.value && sourceElement.validity.valid) {
-          const percentCorrect = await onAiWebPageSourceSave({ id, type, prompt: promptElement?.value || '', html: sourceElement.value });
-          displayGrade(interactionRoot, percentCorrect);
-        }
-
         event.target.disabled = false;
         return;
       }
@@ -222,7 +227,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const progress = getInteractionProgress(id);
           const promptElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
           if (progress?.html) {
-            const percentCorrect = await onAiWebPageSubmit({ id, type, body, prompt: promptElement?.value || progress?.prompt || '', html: progress.html });
+            const percentCorrect = await onAiWebPageSubmit({ id, type, body, gradingCriteria, prompt: promptElement?.value || progress?.prompt || '', html: progress.html });
             displayGrade(interactionRoot, percentCorrect);
           }
         }
@@ -295,28 +300,30 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       .trim();
   }
 
-  async function onAiWebPageSubmit({ id, type, body, prompt, html }) {
+  async function onAiWebPageSubmit({ id, type, body, gradingCriteria, prompt, html }) {
     if (!html) return false;
-    let feedback = 'Generated page submitted.';
+    const normalizedCriteria = (gradingCriteria || '').trim();
+    const shouldGradeWithAi = Boolean(normalizedCriteria);
+    let feedback = shouldGradeWithAi ? 'Submission graded with AI criteria.' : 'Submission received. Full credit awarded.';
     let percentCorrect = 100;
-    try {
-      const result = await courseOps.getAiWebPageFeedback({ instructions: body, prompt, html });
-      feedback = result.feedback;
-      percentCorrect = result.percentCorrect ?? 100;
-    } catch {
-      // fall through with defaults
+
+    if (shouldGradeWithAi) {
+      try {
+        const result = await courseOps.getAiWebPageFeedback({ instructions: normalizedCriteria, directions: body, prompt, html });
+        feedback = result.feedback;
+        percentCorrect = result.percentCorrect ?? 100;
+      } catch {
+        feedback = 'Submission received. Grading criteria were provided, but AI grading is currently unavailable. Full credit awarded.';
+        percentCorrect = 100;
+      }
     }
-    const details = { type, prompt, html, percentCorrect, feedback };
+
+    const submittedAt = new Date().toISOString();
+    const submissionKey = `${submittedAt}:${Math.random().toString(36).slice(2, 10)}`;
+    const details = { type, prompt, html, submittedHtml: html, percentCorrect, feedback, gradingCriteria: normalizedCriteria || undefined, submittedAt, submissionKey };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
-  }
-
-  async function onAiWebPageSourceSave({ id, type, prompt, html }) {
-    if (!html) return false;
-    const details = { type, prompt, html };
-    updateInteractionProgress(id, details);
-    return 100;
   }
 
   async function onFileInteraction({ id, title, type, body, files }) {

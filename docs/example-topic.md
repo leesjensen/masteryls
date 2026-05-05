@@ -42,6 +42,52 @@ Simple **submission** by file
 Simple **submission** by url
 ```
 
+```masteryls
+{"id":"39285", "title":"AI Web Page (Prompt + Starter HTML)", "type":"ai-web-page", "height":420, "gradingCriteria":"Create a responsive page with semantic HTML, accessible labels, and a clear call-to-action. Score based on structure, accessibility, and prompt alignment."}
+Build a landing page for a student coding club.
+Use the prompt box to generate a first version, then edit and submit.
+
+~~~html
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Coding Club</title>
+    <style>
+      body { font-family: sans-serif; margin: 0; padding: 24px; }
+      main { max-width: 720px; margin: 0 auto; }
+      .cta { display: inline-block; padding: 10px 14px; background: #0b60d0; color: #fff; text-decoration: none; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Join Coding Club</h1>
+      <p>Build projects, prepare for hackathons, and level up your skills.</p>
+      <a class="cta" href="#join">Join now</a>
+    </main>
+  </body>
+</html>
+~~~
+```
+
+```masteryls
+{"id":"39286", "title":"AI Web Page (Manual Only)", "type":"ai-web-page", "allowAiPrompt":false, "file":"instruction/topic1/starter-page.html"}
+Revise the starter HTML manually, then submit.
+This interaction hides AI prompt generation and starts from the configured file.
+```
+
+### ai-web-page authoring notes
+
+- `title`: Displayed above the interaction.
+- Directions: Use regular markdown body text (outside code fences).
+- Starter HTML from body: Provide an optional `html` code fence in the interaction body (prefer `~~~html` inside a `masteryls` fence).
+- Starter HTML from file: Provide optional `file` metadata with a path resolvable from the topic.
+- `allowAiPrompt`: Optional boolean (`true` by default). If `false`, prompt generation UI is hidden.
+- `gradingCriteria`: Optional text criteria used for AI grading on submit.
+  - If omitted, submission receives full credit (100%).
+- Submission history: Learners can load a previous submission, edit it, and submit again as a new record.
+
 ## Lists
 
 - Item 1
