@@ -205,6 +205,8 @@ Create an HTML page from your prompt.
   await expect(page.getByText('AI web page', { exact: true })).toBeVisible();
   await expect(page.getByText('Create an HTML page from your prompt.')).toBeVisible();
 
+  await page.getByRole('button', { name: /AI assistance/ }).click();
+
   const promptInput = page.getByPlaceholder('Describe the web page you want to generate ...');
   const generateButton = page.getByRole('button', { name: 'Generate page' });
   await promptInput.click();
@@ -237,6 +239,7 @@ Create an HTML page from your prompt.
   await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toContainText('100%');
   await page.getByRole('button', { name: /Submission history/ }).click();
 
+  await page.getByRole('button', { name: /Source code/ }).click();
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');
   await expect(sourceEditor).toBeVisible();
   await expect(sourceEditor).toHaveValue(/Generated AI Page/);

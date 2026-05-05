@@ -323,8 +323,9 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const submittedAt = new Date().toISOString();
     const submissionKey = `${submittedAt}:${Math.random().toString(36).slice(2, 10)}`;
     const details = { type, prompt, html, submittedHtml: html, percentCorrect, feedback, gradingCriteria: normalizedCriteria || undefined, submittedAt, submissionKey };
+    const { submittedHtml, ...persistedDetails } = details;
     updateInteractionProgress(id, details);
-    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, persistedDetails);
     return percentCorrect;
   }
 
