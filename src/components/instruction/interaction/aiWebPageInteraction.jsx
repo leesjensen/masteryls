@@ -205,6 +205,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
     updateInteractionProgress(id, {
       ...progress,
       prompt: currentPrompt,
+      submittedHtml: progress.submittedHtml || (progress.feedback ? progress.html : undefined),
       html: sourceValue,
       generationState: 'idle',
       generationFeedback: '',
@@ -224,7 +225,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   const canApplySource = sourceValue.trim() && sourceValue !== currentHtml;
   const promptDisabled = !currentPrompt.trim() || generationState === 'loading';
   const starterHtmlBaseline = htmlFromBody || fileHtml || '';
-  const submitBaselineHtml = progress.submittedHtml || starterHtmlBaseline;
+  const submitBaselineHtml = progress.submittedHtml || (progress.feedback ? progress.html || '' : starterHtmlBaseline);
   const hasSourceChangesForSubmit = currentHtml !== submitBaselineHtml;
   const submitDisabled = !currentHtml.trim() || generationState === 'loading' || !hasSourceChangesForSubmit;
   const saveDisabled = !canApplySource || generationState === 'loading';

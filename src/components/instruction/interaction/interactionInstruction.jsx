@@ -226,11 +226,13 @@ export default function InteractionInstruction({ courseOps, learningSession, use
         } else if (type === 'ai-web-page') {
           const progress = getInteractionProgress(id);
           const promptElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
-          const lastSubmittedHtml = progress?.submittedHtml || (progress?.feedback ? progress?.html : '');
-          const hasChanges = !lastSubmittedHtml || progress?.html !== lastSubmittedHtml;
+          const submitBaselineHtml = progress?.submittedHtml || (progress?.feedback ? progress?.html || '' : '');
+          const hasChanges = Boolean(progress?.html) && progress.html !== submitBaselineHtml;
           if (progress?.html && hasChanges) {
             const percentCorrect = await onAiWebPageSubmit({ id, type, body, gradingCriteria, prompt: promptElement?.value || progress?.prompt || '', html: progress.html });
             displayGrade(interactionRoot, percentCorrect);
+          } else {
+            displayGrade(interactionRoot, progress?.percentCorrect ?? -1);
           }
         }
 
