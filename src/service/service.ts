@@ -409,7 +409,7 @@ class Service {
    * @returns The UI settings object.
    */
   getEnrollmentUiSettings(courseId: string | undefined) {
-    const defaultEnrollmentSettings = { editing: true, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
+    const defaultEnrollmentSettings = { tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 
     if (courseId) {
       const settings = localStorage.getItem(`uiSettings-${courseId}`);

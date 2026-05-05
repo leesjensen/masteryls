@@ -42,7 +42,7 @@ export function createAppRouter(user) {
 }
 
 function App({ initialUser }) {
-  const defaultUiSettings = { editing: false, tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
+  const defaultUiSettings = { tocIndexes: [0], sidebarVisible: 'split', sidebarWidth: 300, currentTopic: null };
 
   const [user, setUser] = useState(initialUser);
   const [settings, setSettings] = useState(defaultUiSettings);
