@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
@@ -762,6 +762,8 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={BookOpenCheck} onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" />
           <EditorButton icon={FileUp} onClick={() => insertQuiz(defaultFileInteractionTemplate)} title="File Submission Quiz" />
           <EditorButton icon={CloudUpload} onClick={() => insertQuiz(defaultUrlInteractionTemplate)} title="URL Submission Quiz" />
+          <EditorButton icon={Globe} onClick={() => insertQuiz(defaultWebPageInteractionTemplate)} title="Web Page Interaction" />
+          <EditorButton icon={FileCode2} onClick={() => insertQuiz(defaultAiWebPageInteractionTemplate)} title="AI Web Page Interaction" />
           <div className="w-px h-4 bg-gray-300 mx-1"></div>
           <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">AI</span>
           <EditorButton icon={ListChecks} onClick={() => insertAiQuiz()} title="AI generated quiz" />
@@ -854,5 +856,27 @@ const defaultUrlInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"URL submission", "type":"url-submission", "allowComment":true }
 Simple **submission** by url
+\`\`\`
+`;
+
+const defaultWebPageInteractionTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"Web page", "type":"web-page", "height":250}
+  <body style="margin:0;display:grid;place-items:center;min-height:100vh;background:radial-gradient(circle at 20% 20%,#22d3ee,#0f172a);color:#ecfeff;font-family:ui-monospace,monospace;">
+    <h1 style="font-size:clamp(1.4rem,4vw,2.4rem);letter-spacing:.06em;">Hello, curious learner.</h1>
+  </body>
+\`\`\`
+`;
+
+const defaultAiWebPageInteractionTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"Web page development", "type":"ai-web-page", "height":500 }
+Interactively create an HTML page from your prompt.
+
+~~~html
+  <body style="margin:0;display:grid;place-items:center;min-height:100vh;background:radial-gradient(circle at 20% 20%,#22d3aa,#004949);color:#ecfeff;font-family:ui-monospace,monospace;">
+    <h1 style="font-size:clamp(1.4rem,4vw,2.4rem);letter-spacing:.06em;">Hello, curious learner.</h1>
+  </body>
+~~~
 \`\`\`
 `;

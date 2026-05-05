@@ -285,14 +285,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
               <button id={`save-source-${id}`} type="button" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={saveDisabled} onClick={applySource}>
                 Apply HTML changes
               </button>
-              <textarea
-                className="w-full h-72 p-3 border bg-gray-950 text-gray-100 border-gray-700 rounded-lg resize-y font-mono text-sm leading-5 transition-colors duration-200"
-                data-plugin-masteryls-ai-web-page-source
-                value={sourceValue}
-                placeholder={`<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  </head>\n  <body>\n  </body>\n</html>`}
-                spellCheck="false"
-                onChange={(e) => setSourceValue(e.target.value)}
-              />
+              <textarea className="w-full h-72 p-3 border bg-gray-950 text-gray-100 border-gray-700 rounded-lg resize-y font-mono text-sm leading-5 transition-colors duration-200" data-plugin-masteryls-ai-web-page-source value={sourceValue} placeholder={`<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  </head>\n  <body>\n  </body>\n</html>`} spellCheck="false" onChange={(e) => setSourceValue(e.target.value)} />
             </div>
           )}
         </div>
