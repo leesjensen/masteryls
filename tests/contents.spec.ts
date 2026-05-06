@@ -139,7 +139,7 @@ test('adding a plain instruction topic creates the topic file and course entry',
   await page.getByRole('button', { name: '+ Add New Topic' }).first().click();
   await page.getByPlaceholder('Topic title').fill('Fresh Instruction Topic');
   await page.getByRole('combobox').selectOption('instruction');
-  await page.getByRole('button', { name: 'Generate' }).click();
+  await page.getByRole('button', { name: 'Generate', exact: true }).click();
 
   await expect.poll(() => topicFilePuts.length).toBe(1);
   await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
@@ -242,7 +242,7 @@ test('adding an instruction topic with a description uses AI generated content',
   await page.getByPlaceholder('Topic title').fill('AI Generated Topic');
   await page.getByRole('combobox').selectOption('instruction');
   await page.getByRole('textbox', { name: 'Description' }).fill('Teach orbital staging with a short worked example.');
-  await page.getByRole('button', { name: 'Generate' }).click();
+  await page.getByRole('button', { name: 'Generate', exact: true }).click();
 
   await expect.poll(() => topicFilePuts.length).toBe(1);
   await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
@@ -322,7 +322,7 @@ test('adding a topic with an existing slug generates a unique path', async ({ pa
 
   await page.getByRole('button', { name: '+ Add New Topic' }).first().click();
   await page.getByPlaceholder('Topic title').fill('Topic 1');
-  await page.getByRole('button', { name: 'Generate' }).click();
+  await page.getByRole('button', { name: 'Generate', exact: true }).click();
 
   await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
   const latestCourseJson = courseJsonPuts[courseJsonPuts.length - 1];

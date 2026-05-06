@@ -1,4 +1,5 @@
 import React from 'react';
+import Editor from '@monaco-editor/react';
 import { useInteractionProgressStore, updateInteractionProgress } from './interactionProgressStore';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import WebPageInteraction from './webPageInteraction';
@@ -285,12 +286,30 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
 
           {sourceOpen && (
             <div className="space-y-2 border border-blue-100 bg-white rounded-lg p-2">
-              <button id={`save-source-${id}`} type="button" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={saveDisabled} onClick={applySource}>
-                Apply HTML changes
-              </button>
-              <div className="relative">
-                <CopyToClipboard text={sourceValue} surface="dark" />
-                <textarea className="w-full h-72 p-3 border bg-gray-950 text-gray-100 border-gray-700 rounded-lg resize-y font-mono text-sm leading-5 transition-colors duration-200" data-plugin-masteryls-ai-web-page-source value={sourceValue} placeholder={`<!doctype html>\n<html>\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n  </head>\n  <body>\n  </body>\n</html>`} spellCheck="false" onChange={(e) => setSourceValue(e.target.value)} />
+              <div className="border border-gray-200 rounded-lg overflow-hidden" data-plugin-masteryls-ai-web-page-source>
+                <Editor
+                  height="18rem"
+                  language="html"
+                  value={sourceValue}
+                  onChange={(value) => setSourceValue(value || '')}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    fontSize: 13,
+                    lineNumbersMinChars: 2,
+                    tabSize: 2,
+                    insertSpaces: true,
+                    wordWrap: 'on',
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <button id={`save-source-${id}`} type="button" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={saveDisabled} onClick={applySource}>
+                  Apply HTML changes
+                </button>
+                <CopyToClipboard text={sourceValue} position="inline" />
               </div>
             </div>
           )}

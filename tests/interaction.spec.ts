@@ -242,10 +242,12 @@ Create an HTML page from your prompt.
   await page.getByRole('button', { name: /Source code/ }).click();
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');
   await expect(sourceEditor).toBeVisible();
-  await expect(sourceEditor).toHaveValue(/Generated AI Page/);
+  await expect(sourceEditor).toContainText('Generated AI Page');
 
   const editedHtml = generatedHtml.replace('Generated AI Page', 'Edited AI Page');
-  await sourceEditor.fill(editedHtml);
+  const sourceEditorInput = sourceEditor.getByRole('textbox', { name: 'Editor content' });
+  await sourceEditorInput.click({ force: true });
+  await sourceEditorInput.fill(editedHtml);
   await expect(page.getByRole('button', { name: 'Apply HTML changes' })).toBeEnabled();
   await page.getByRole('button', { name: 'Apply HTML changes' }).click();
   await expect(page.getByRole('button', { name: 'Submit' })).toBeEnabled();
