@@ -150,12 +150,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
             <label htmlFor="schedule-file" className="block text-lg font-medium text-gray-700 mb-1">
               Schedule for due dates
             </label>
-            <select
-              id="schedule-file"
-              value={selectedScheduleFileId}
-              onChange={(e) => setSelectedScheduleFileId(e.target.value)}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
-            >
+            <select id="schedule-file" value={selectedScheduleFileId} onChange={(e) => setSelectedScheduleFileId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
               {course.schedule.files.map((file) => (
                 <option key={file.id || file.path} value={file.id || ''}>
                   {file.title || file.path}

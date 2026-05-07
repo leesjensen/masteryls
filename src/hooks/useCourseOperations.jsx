@@ -1308,10 +1308,7 @@ Requirements:
       return {};
     }
 
-    const selected =
-      scheduleFiles.find((file) => file.id === selectedScheduleFileId) ||
-      scheduleFiles.find((file) => file.default) ||
-      scheduleFiles[0];
+    const selected = scheduleFiles.find((file) => file.id === selectedScheduleFileId) || scheduleFiles.find((file) => file.default) || scheduleFiles[0];
     if (!selected?.path) {
       return {};
     }
