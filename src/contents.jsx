@@ -323,7 +323,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   );
 
   return (
-    <div id="content" className="h-full overflow-auto p-4 text-sm">
+    <div id="content" className="h-full overflow-auto p-2 text-sm">
       <nav>
         {scheduleTopic && (
           <div className="mb-2 flex items-center justify-between gap-2">
