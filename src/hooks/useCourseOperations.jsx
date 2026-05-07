@@ -1231,10 +1231,10 @@ Requirements:
     }
 
     setUpdateMessage(`Updating course information`);
-    await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
+    await updateCourseStructure(updatedCourse, null, `linked to canvas courseId ${canvasCourseId}`);
   }
 
-  async function exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
+  async function linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
     const token = user.getSetting('gitHubToken', course.id);
     if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
 
@@ -1263,17 +1263,17 @@ Requirements:
       await publishCanvasModule(module, canvasCourseId);
       for (const topic of module.topics) {
         try {
-          setUpdateMessage(`Exporting topic '${topic.title}' to Canvas`);
+          setUpdateMessage(`Linking topic '${topic.title}' to Canvas`);
           await updateCanvasPage(updatedCourse, topic, canvasCourseId);
         } catch (error) {
-          console.error(`Failed to export topic '${topic.title}' to Canvas: ${error.message}`);
-          setUpdateMessage(`Failed to export topic '${topic.title}' to Canvas: ${error.message}`);
+          console.error(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
+          setUpdateMessage(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
         }
       }
     }
 
     setUpdateMessage(`Updating course information`);
-    await updateCourseStructure(updatedCourse, null, `exported to canvas courseId ${canvasCourseId}`);
+    await updateCourseStructure(updatedCourse, null, `linked to canvas courseId ${canvasCourseId}`);
   }
 
   async function createCanvasModule(module, canvasCourseId) {
@@ -1489,7 +1489,7 @@ Requirements:
     getSurveySummary,
     getExamState,
     repairCanvas,
-    exportToCanvas,
+    linkToCanvas,
     updateCanvasPage,
     service,
   };

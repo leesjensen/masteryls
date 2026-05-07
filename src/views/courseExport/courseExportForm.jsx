@@ -19,14 +19,14 @@ export default function CourseExportForm({ courseOps, onClose }) {
     }
   }
 
-  async function beginExport() {
+  async function beginLink() {
     setIsLoading(true);
     try {
-      setUpdateMessage('Exporting course...');
-      await courseOps.exportToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage);
-      showAlert({ message: `${course.title} exported successfully`, type: 'info' });
+      setUpdateMessage('Linking course...');
+      await courseOps.linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage);
+      showAlert({ message: `${course.title} linked successfully`, type: 'info' });
     } catch (error) {
-      showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
+      showAlert({ message: `Error linking course: ${error.message}`, type: 'error' });
     }
     setIsLoading(false);
   }
@@ -38,7 +38,7 @@ export default function CourseExportForm({ courseOps, onClose }) {
       await courseOps.repairCanvas(course, canvasCourseId, setUpdateMessage);
       showAlert({ message: `${course.title} repaired successfully`, type: 'info' });
     } catch (error) {
-      showAlert({ message: `Error exporting course: ${error.message}`, type: 'error' });
+      showAlert({ message: `Error repairing course references: ${error.message}`, type: 'error' });
     }
     setIsLoading(false);
   }
@@ -119,7 +119,7 @@ export default function CourseExportForm({ courseOps, onClose }) {
             Cancel
           </button>
 
-          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginExport}>
+          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginLink}>
             {course?.externalRefs?.canvasCourseId ? 'Re-link course' : 'Link course'}
           </button>
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={repairRefs}>

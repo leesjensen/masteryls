@@ -1,17 +1,17 @@
 import { test, expect } from './fixtures';
 import { initBasicCourse, navigateToDashboard } from './testInit';
 
-async function openCourseExport(page: any) {
+async function openCourseLinking(page: any) {
   await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'Export course' }).click();
-  await expect(page.getByRole('heading', { name: 'Export a Course' })).toBeVisible();
+  await page.getByRole('button', { name: 'Link course' }).click();
+  await expect(page.getByRole('heading', { name: 'Link a Course' })).toBeVisible();
 }
 
-async function mockExportRequests(page: any) {
+async function mockLinkRequests(page: any) {
   let nextModuleId = 1000;
   let nextPageId = 5000;
 
-  // verifyGitHubAccount() checks this endpoint before exporting.
+  // verifyGitHubAccount() checks this endpoint before linking.
   await page.route('https://api.github.com/user', async (route: any) => {
     await route.fulfill({ status: 200, json: { login: 'mock-user' } });
   });
@@ -62,18 +62,18 @@ async function mockExportRequests(page: any) {
   });
 }
 
-test('course export form renders and validates required fields', async ({ page }) => {
+test('course link form renders and validates required fields', async ({ page }) => {
   await initBasicCourse({ page });
 
   await navigateToDashboard(page);
-  await openCourseExport(page);
+  await openCourseLinking(page);
 
-  const exportButton = page.getByRole('button', { name: 'Export course' });
+  const linkButton = page.getByRole('button', { name: 'Link course' });
   const repairButton = page.getByRole('button', { name: 'Repair' });
   const viewCanvasButton = page.getByRole('button', { name: 'View Canvas' });
   const viewCourseButton = page.getByRole('button', { name: 'View Course' });
 
-  await expect(exportButton).toBeDisabled();
+  await expect(linkButton).toBeDisabled();
   await expect(repairButton).toBeDisabled();
   await expect(viewCanvasButton).toBeDisabled();
   await expect(viewCourseButton).toBeDisabled();
@@ -86,19 +86,19 @@ test('course export form renders and validates required fields', async ({ page }
   await expect(page.getByLabel('Canvas course ID', { exact: true })).toHaveValue('12345');
 });
 
-test('course export performs successful export flow', async ({ page }) => {
+test('course link performs successful link flow', async ({ page }) => {
   await initBasicCourse({ page });
-  await mockExportRequests(page);
+  await mockLinkRequests(page);
 
   await navigateToDashboard(page);
-  await openCourseExport(page);
+  await openCourseLinking(page);
 
   await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
   await page.waitForTimeout(300);
   await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
-  await expect(page.getByRole('button', { name: 'Export course' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Link course' })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Export course' }).click();
+  await page.getByRole('button', { name: 'Link course' }).click();
 
-  await expect(page.locator('#root')).toContainText('Rocket Science exported successfully');
+  await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
 });

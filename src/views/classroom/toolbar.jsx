@@ -23,9 +23,9 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     navigate(`/course/${learningSession.course.id}/schedule`);
   }
 
-  async function updateCanvasPage() {
+  async function linkCanvasTopic() {
     await courseOps.updateCanvasPage(learningSession.course, learningSession.topic, learningSession.course.externalRefs.canvasCourseId);
-    showAlert({ message: `${learningSession.topic.title} exported successfully`, type: 'info' });
+    showAlert({ message: `${learningSession.topic.title} linked successfully`, type: 'info' });
   }
 
   return (
@@ -38,7 +38,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
         {user && user.isEditor(learningSession.course.id) && <EditorToggleSlider editing={editing} onToggle={toggleEditor} />}
-        {user && user.isEditor(learningSession.course.id) && learningSession.topic?.externalRefs?.canvasPageId && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Export topic" onClick={() => updateCanvasPage()} icon={FileDown} />}
+        {user && user.isEditor(learningSession.course.id) && learningSession.topic?.externalRefs?.canvasPageId && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
         {learningSession.course.links?.chat && <ToolBarButton title="Course chat server" onClick={() => window.open(learningSession.course.links.chat, '_blank')} icon={MessageCircleQuestionMark} />}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" onClick={navigateToSchedule} icon={CalendarDays} />}
         {learningSession.course.externalRefs?.canvasCourseId && learningSession.topic.externalRefs?.canvasPageId && <ToolBarButton title="Canvas course site" onClick={() => window.open(`https://byu.instructure.com/courses/${learningSession.course.externalRefs.canvasCourseId}/pages/${learningSession.topic.externalRefs.canvasPageId}`, '_blank')} icon={Canvas} />}
