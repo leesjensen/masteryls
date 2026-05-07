@@ -1234,11 +1234,17 @@ Requirements:
     await updateCourseStructure(updatedCourse, null, `linked to canvas courseId ${canvasCourseId}`);
   }
 
-  async function unlinkFromCanvas(course, setUpdateMessage = () => {}) {
+  async function unlinkFromCanvas(course, deleteExisting = false, setUpdateMessage = () => {}) {
     const token = user.getSetting('gitHubToken', course.id);
     if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
 
     const updatedCourse = Course.copy(course);
+
+    if (deleteExisting && updatedCourse.externalRefs?.canvasCourseId) {
+      setUpdateMessage(`Cleaning up existing Canvas course content`);
+      await cleanCanvasCourse(updatedCourse.externalRefs.canvasCourseId, setUpdateMessage);
+    }
+
     setUpdateMessage(`Removing Canvas references`);
 
     if (updatedCourse.externalRefs) {

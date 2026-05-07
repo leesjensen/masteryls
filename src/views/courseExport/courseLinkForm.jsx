@@ -55,7 +55,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     setIsLoading(true);
     try {
       setUpdateMessage('Unlinking course...');
-      await courseOps.unlinkFromCanvas(course, setUpdateMessage);
+      await courseOps.unlinkFromCanvas(course, deleteExisting, setUpdateMessage);
       const updatedCourse = await courseOps.getCourse(course.id);
       setCourse(updatedCourse);
       setCanvasCourseId('');
