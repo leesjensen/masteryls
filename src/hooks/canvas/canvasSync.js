@@ -130,6 +130,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       quiz: {
         title: topic.title,
         description: `<h1>${topic.title}</h1>`,
+        points_possible: 200,
         published: true,
       },
     };
@@ -147,6 +148,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       assignment: {
         name: topic.title,
         description: `<h1>${topic.title}</h1>`,
+        points_possible: 100,
         published: true,
       },
     };
@@ -167,6 +169,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         quiz: {
           title: topic.title,
           description: html,
+          points_possible: 200,
           published: true,
         },
       };
@@ -179,6 +182,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         assignment: {
           name: topic.title,
           description: html,
+          points_possible: 100,
           published: true,
         },
       };
