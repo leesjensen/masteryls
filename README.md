@@ -105,8 +105,6 @@ Interaction examples:
 - Full interaction examples: [docs/example-topic.md](docs/example-topic.md)
 - AI web page authoring examples: [docs/example-topic.md#ai-web-page-authoring-notes](docs/example-topic.md#ai-web-page-authoring-notes)
 
-You can view examples of interactions in the [instruction documentation](docs/example-topic.md).
-
 # Deploying MasteryLS
 
 You can deploy your own installation of MasterLS with two simple steps.
