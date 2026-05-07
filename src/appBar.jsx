@@ -140,7 +140,7 @@ function UserMenu({ user, courseOps }) {
             <div className="border-t border-gray-200 my-1"></div>
 
             <AppBarMenuItem icon={PackagePlus} onClick={() => handleMenuItemClick(() => navigate('/courseCreation'))} title="New course" />
-            <AppBarMenuItem icon={Link2} onClick={() => handleMenuItemClick(() => navigate('/courseExport'))} title="Link course" />
+            <AppBarMenuItem icon={Link2} onClick={() => handleMenuItemClick(() => navigate('/courseLink'))} title="Link course" />
 
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem

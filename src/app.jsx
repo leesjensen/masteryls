@@ -33,7 +33,7 @@ export function createAppRouter(user) {
         { path: 'course/:courseId/schedule', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'courseCreation', element: <CourseCreationPage /> },
-        { path: 'courseExport', element: <CourseLinkPage /> },
+        { path: 'courseLink', element: <CourseLinkPage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: '*', element: <ErrorPage user={user} message="It seems we have gotten lost." /> },
       ],
