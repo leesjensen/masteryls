@@ -4,6 +4,7 @@ import { useAlert } from '../../contexts/AlertContext.jsx';
 export default function CourseLinkForm({ courseOps, onClose }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
   const [course, setCourse] = useState();
+  const [selectedScheduleFileId, setSelectedScheduleFileId] = useState('');
   const [deleteExisting, setDeleteExisting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingTitle, setLoadingTitle] = useState('Linking Your Course');
@@ -13,6 +14,9 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   async function selectCourse(courseId) {
     const course = await courseOps.getCourse(courseId);
     setCourse(course);
+    const scheduleFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files : [];
+    const defaultSchedule = scheduleFiles.find((file) => file.default) || scheduleFiles[0];
+    setSelectedScheduleFileId(defaultSchedule?.id || '');
     if (course.externalRefs?.canvasCourseId) {
       setCanvasCourseId(course.externalRefs.canvasCourseId);
     } else {
@@ -25,7 +29,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     setIsLoading(true);
     try {
       setUpdateMessage('Linking course...');
-      await courseOps.linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage);
+      await courseOps.linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId || null);
       showAlert({ message: `${course.title} linked successfully`, type: 'info' });
     } catch (error) {
       showAlert({ message: `Error linking course: ${error.message}`, type: 'error' });
@@ -140,6 +144,27 @@ export default function CourseLinkForm({ courseOps, onClose }) {
             </label>
           </div>
         </div>
+
+        {Array.isArray(course?.schedule?.files) && course.schedule.files.length > 0 && (
+          <div>
+            <label htmlFor="schedule-file" className="block text-lg font-medium text-gray-700 mb-1">
+              Schedule for due dates
+            </label>
+            <select
+              id="schedule-file"
+              value={selectedScheduleFileId}
+              onChange={(e) => setSelectedScheduleFileId(e.target.value)}
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+            >
+              {course.schedule.files.map((file) => (
+                <option key={file.id || file.path} value={file.id || ''}>
+                  {file.title || file.path}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Exam and project due dates will be read from the selected schedule file.</p>
+          </div>
+        )}
 
         <div className="flex items-center justify-end space-x-3 pt-2">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">

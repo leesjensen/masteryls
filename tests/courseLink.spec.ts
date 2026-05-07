@@ -16,6 +16,12 @@ async function mockLinkRequests(page: any) {
     create: { pages: 0, quizzes: 0, assignments: 0 },
     update: { pages: 0, quizzes: 0, assignments: 0 },
     moduleItems: { Page: 0, Quiz: 0, Assignment: 0 },
+    dueAt: {
+      createQuiz: [] as string[],
+      createAssignment: [] as string[],
+      updateQuiz: [] as string[],
+      updateAssignment: [] as string[],
+    },
   };
 
   // verifyGitHubAccount() checks this endpoint before linking.
@@ -54,6 +60,9 @@ async function mockLinkRequests(page: any) {
     if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/quizzes$/)) {
       nextQuizId += 1;
       requestLog.create.quizzes += 1;
+      if (body?.body?.quiz?.due_at) {
+        requestLog.dueAt.createQuiz.push(body.body.quiz.due_at);
+      }
       await route.fulfill({ status: 200, json: { id: nextQuizId, title: `Quiz ${nextQuizId}` } });
       return;
     }
@@ -61,6 +70,9 @@ async function mockLinkRequests(page: any) {
     if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/assignments$/)) {
       nextAssignmentId += 1;
       requestLog.create.assignments += 1;
+      if (body?.body?.assignment?.due_at) {
+        requestLog.dueAt.createAssignment.push(body.body.assignment.due_at);
+      }
       await route.fulfill({ status: 200, json: { id: nextAssignmentId, name: `Assignment ${nextAssignmentId}` } });
       return;
     }
@@ -87,12 +99,18 @@ async function mockLinkRequests(page: any) {
 
     if (method === 'PUT' && endpoint?.match(/^\/courses\/\d+\/quizzes\/\d+$/)) {
       requestLog.update.quizzes += 1;
+      if (body?.body?.quiz?.due_at) {
+        requestLog.dueAt.updateQuiz.push(body.body.quiz.due_at);
+      }
       await route.fulfill({ status: 200, json: { id: 1, published: true } });
       return;
     }
 
     if (method === 'PUT' && endpoint?.match(/^\/courses\/\d+\/assignments\/\d+$/)) {
       requestLog.update.assignments += 1;
+      if (body?.body?.assignment?.due_at) {
+        requestLog.dueAt.updateAssignment.push(body.body.assignment.due_at);
+      }
       await route.fulfill({ status: 200, json: { id: 1, published: true } });
       return;
     }
@@ -124,6 +142,7 @@ test('course link form renders and validates required fields', async ({ page }) 
   await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
   await page.waitForTimeout(300);
   await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await expect(page.getByLabel('Schedule for due dates', { exact: true })).toBeVisible();
 
   await expect(page.getByLabel('Course', { exact: true })).toHaveValue('14602d77-0ff3-4267-b25e-4a7c3c47848b');
   await expect(page.getByLabel('Canvas course ID', { exact: true })).toHaveValue('12345');
@@ -183,4 +202,43 @@ test('course link maps topic types to page, quiz, and assignment endpoints', asy
   await expect.poll(() => requestLog.moduleItems.Page).toBe(2);
   await expect.poll(() => requestLog.moduleItems.Quiz).toBe(1);
   await expect.poll(() => requestLog.moduleItems.Assignment).toBe(1);
+});
+
+test('course link applies schedule due dates to exam quizzes and project assignments', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    topicMarkdown: `# Spring 2027 Schedule
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+| 1 | Jan 10 2027 | Type Coverage | [Exam Topic](../instruction/exam-topic/exam-topic.md) | | |
+| 1 | Jan 12 2027 | Type Coverage | [Project Topic](../instruction/project-topic/project-topic.md) | | |
+`,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'Type Coverage',
+          topics: [
+            { id: 'a2', title: 'Exam Topic', type: 'exam', path: 'instruction/exam-topic/exam-topic.md' },
+            { id: 'a3', title: 'Project Topic', type: 'project', path: 'instruction/project-topic/project-topic.md' },
+          ],
+        },
+      ],
+    },
+  });
+  const requestLog = await mockLinkRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseLinking(page);
+
+  await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
+  await page.waitForTimeout(300);
+  await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
+
+  await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
+  await expect.poll(() => requestLog.dueAt.createQuiz.length).toBeGreaterThan(0);
+  await expect.poll(() => requestLog.dueAt.createAssignment.length).toBeGreaterThan(0);
+  await expect.poll(() => requestLog.dueAt.updateQuiz.length).toBeGreaterThan(0);
+  await expect.poll(() => requestLog.dueAt.updateAssignment.length).toBeGreaterThan(0);
 });

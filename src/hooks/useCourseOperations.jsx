@@ -5,6 +5,7 @@ import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { extractInteractionMetas, isSubmittableInteractionType } from '../utils/interactionMeta';
+import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 
@@ -1237,6 +1238,137 @@ Requirements:
     }
   }
 
+  function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
+    if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
+      return '';
+    }
+
+    return rawUrl.slice(rawRoot.length + 1);
+  }
+
+  function resolveRelativeRepoPath(fromFileRepoPath, rawPath) {
+    if (!fromFileRepoPath || !rawPath) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(rawPath)) {
+      return '';
+    }
+
+    const baseDir = fromFileRepoPath.slice(0, Math.max(0, fromFileRepoPath.lastIndexOf('/')));
+    const joined = rawPath.startsWith('/') ? rawPath.slice(1) : `${baseDir}/${rawPath}`;
+
+    const normalized = [];
+    joined.split('/').forEach((segment) => {
+      if (!segment || segment === '.') {
+        return;
+      }
+
+      if (segment === '..') {
+        normalized.pop();
+        return;
+      }
+
+      normalized.push(segment);
+    });
+
+    return normalized.join('/');
+  }
+
+  function parseScheduleDateToIso(dateText) {
+    const raw = String(dateText || '').trim();
+    if (!raw) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      const parsed = new Date(`${raw}T23:59:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    }
+
+    const partsMatch = raw.match(/^(?:[A-Za-z]{3}\s+)?([A-Za-z]{3,9})\s+(\d{1,2})(?:,?\s+(\d{4}))?$/);
+    if (partsMatch) {
+      const year = partsMatch[3] ? Number(partsMatch[3]) : new Date().getFullYear();
+      const parsed = new Date(`${partsMatch[1]} ${Number(partsMatch[2])}, ${year} 23:59:00`);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    }
+
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) {
+      parsed.setHours(23, 59, 0, 0);
+      return parsed.toISOString();
+    }
+
+    return null;
+  }
+
+  async function getScheduleDueDatesByTopicId(course, selectedScheduleFileId = null) {
+    const scheduleFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
+    if (!scheduleFiles.length) {
+      return {};
+    }
+
+    const selected =
+      scheduleFiles.find((file) => file.id === selectedScheduleFileId) ||
+      scheduleFiles.find((file) => file.default) ||
+      scheduleFiles[0];
+    if (!selected?.path) {
+      return {};
+    }
+
+    const fetchUrl = selected.commit ? selected.path.replace(/(\/main\/)/, `/${selected.commit}/`) : selected.path;
+    const markdown = await fetch(fetchUrl, { cache: 'no-store' }).then((res) => res.text());
+    const model = parseScheduleMarkdown(markdown || '');
+    const rawRoot = course.links?.gitHub?.rawUrl;
+    const selectedRepoPath = repoRelativePathFromRawUrl(selected.path, rawRoot);
+
+    const topicByRepoPath = new Map();
+    const topicByTitle = new Map();
+    course.allTopics.forEach((topic) => {
+      const repoPath = repoRelativePathFromRawUrl(topic.path, rawRoot);
+      if (repoPath) {
+        topicByRepoPath.set(repoPath, topic.id);
+      }
+      if (topic.title) {
+        topicByTitle.set(topic.title.trim().toLowerCase(), topic.id);
+      }
+    });
+
+    const dueDatesByTopicId = {};
+    const weeks = Array.isArray(model?.weeks) ? model.weeks : [];
+    weeks.forEach((row) => {
+      const dueAt = parseScheduleDateToIso(row?.date || '');
+      if (!dueAt) {
+        return;
+      }
+
+      const dueItems = Array.isArray(row?.dueItems) ? row.dueItems : [];
+      dueItems.forEach((item) => {
+        const href = String(item?.href || '').trim();
+        const text = String(item?.text || '').trim();
+
+        let topicId = null;
+        if (href) {
+          const repoPath = resolveRelativeRepoPath(selectedRepoPath, href);
+          topicId = topicByRepoPath.get(repoPath) || null;
+        }
+        if (!topicId && text) {
+          topicId = topicByTitle.get(text.toLowerCase()) || null;
+        }
+        if (!topicId) {
+          return;
+        }
+
+        const topic = course.topicFromId(topicId);
+        if (topic?.type === 'exam' || topic?.type === 'project') {
+          dueDatesByTopicId[topicId] = dueAt;
+        }
+      });
+    });
+
+    return dueDatesByTopicId;
+  }
+
   async function repairCanvas(course, canvasCourseId, setUpdateMessage) {
     await verifyCanvasAccess(course);
     const updatedCourse = Course.copy(course);
@@ -1263,7 +1395,7 @@ Requirements:
     await updateCourseStructure(updatedCourse, null, `unlinked from canvas`);
   }
 
-  async function linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
+  async function linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId = null) {
     await verifyCanvasAccess(course);
 
     const updatedCourse = Course.copy(course);
@@ -1273,10 +1405,13 @@ Requirements:
       setUpdateMessage(`Cleaning up existing Canvas course content`);
       await canvasSync.cleanCanvasCourse({ canvasCourseId, setUpdateMessage });
     }
+
+    const dueDatesByTopicId = await getScheduleDueDatesByTopicId(updatedCourse, selectedScheduleFileId);
     await canvasSync.linkCourseResources({
       updatedCourse,
       canvasCourseId,
       setUpdateMessage,
+      dueDatesByTopicId,
       onTopicUpdateError: (topic, error) => {
         console.error(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
         setUpdateMessage(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);

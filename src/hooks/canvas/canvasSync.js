@@ -135,12 +135,13 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     return canvasPage;
   }
 
-  async function createCanvasQuiz(topic, canvasCourseId, canvasModule = null) {
+  async function createCanvasQuiz(topic, canvasCourseId, canvasModule = null, dueAt = null) {
     const body = {
       quiz: {
         title: topic.title,
         description: `<h1>${topic.title}</h1>`,
         points_possible: pointsForTopic(topic),
+        ...(dueAt ? { due_at: dueAt } : {}),
         published: true,
       },
     };
@@ -153,12 +154,13 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     return canvasQuiz;
   }
 
-  async function createCanvasAssignment(topic, canvasCourseId, canvasModule = null) {
+  async function createCanvasAssignment(topic, canvasCourseId, canvasModule = null, dueAt = null) {
     const body = {
       assignment: {
         name: topic.title,
         description: `<h1>${topic.title}</h1>`,
         points_possible: pointsForTopic(topic),
+        ...(dueAt ? { due_at: dueAt } : {}),
         published: true,
       },
     };
@@ -171,8 +173,9 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     return canvasAssignment;
   }
 
-  async function updateCanvasTopic({ course, topic, canvasCourseId }) {
+  async function updateCanvasTopic({ course, topic, canvasCourseId, dueDatesByTopicId = {} }) {
     const html = await renderTopicHtml(course, topic);
+    const dueAt = dueDatesByTopicId?.[topic.id] || null;
 
     if (topic.type === 'exam' && topic.externalRefs?.canvasQuizId) {
       const quizBody = {
@@ -180,6 +183,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
           title: topic.title,
           description: html,
           points_possible: pointsForTopic(topic),
+          ...(dueAt ? { due_at: dueAt } : {}),
           published: true,
         },
       };
@@ -193,6 +197,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
           name: topic.title,
           description: html,
           points_possible: pointsForTopic(topic),
+          ...(dueAt ? { due_at: dueAt } : {}),
           published: true,
         },
       };
@@ -289,7 +294,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     }
   }
 
-  async function linkCourseResources({ updatedCourse, canvasCourseId, setUpdateMessage, onTopicUpdateError }) {
+  async function linkCourseResources({ updatedCourse, canvasCourseId, setUpdateMessage, dueDatesByTopicId = {}, onTopicUpdateError }) {
     // create the modules and resources first
     for (const module of updatedCourse.modules) {
       setUpdateMessage(`Creating module '${module.title}' in Canvas`);
@@ -300,11 +305,11 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
         if (target === 'quiz') {
           setUpdateMessage(`Creating quiz '${topic.title}' in Canvas`);
-          const canvasQuiz = await createCanvasQuiz(topic, canvasCourseId, canvasModule);
+          const canvasQuiz = await createCanvasQuiz(topic, canvasCourseId, canvasModule, dueDatesByTopicId?.[topic.id] || null);
           topic.externalRefs = { ...topic.externalRefs, canvasQuizId: canvasQuiz.id };
         } else if (target === 'assignment') {
           setUpdateMessage(`Creating assignment '${topic.title}' in Canvas`);
-          const canvasAssignment = await createCanvasAssignment(topic, canvasCourseId, canvasModule);
+          const canvasAssignment = await createCanvasAssignment(topic, canvasCourseId, canvasModule, dueDatesByTopicId?.[topic.id] || null);
           topic.externalRefs = { ...topic.externalRefs, canvasAssignmentId: canvasAssignment.id };
         } else {
           setUpdateMessage(`Creating topic '${topic.title}' in Canvas`);
@@ -320,7 +325,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       for (const topic of module.topics) {
         try {
           setUpdateMessage(`Linking topic '${topic.title}' to Canvas`);
-          await updateCanvasTopic({ course: updatedCourse, topic, canvasCourseId });
+          await updateCanvasTopic({ course: updatedCourse, topic, canvasCourseId, dueDatesByTopicId });
         } catch (error) {
           if (onTopicUpdateError) {
             onTopicUpdateError(topic, error);
