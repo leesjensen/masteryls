@@ -10,6 +10,13 @@ async function openCourseLinking(page: any) {
 async function mockLinkRequests(page: any) {
   let nextModuleId = 1000;
   let nextPageId = 5000;
+  let nextQuizId = 7000;
+  let nextAssignmentId = 9000;
+  const requestLog = {
+    create: { pages: 0, quizzes: 0, assignments: 0 },
+    update: { pages: 0, quizzes: 0, assignments: 0 },
+    moduleItems: { Page: 0, Quiz: 0, Assignment: 0 },
+  };
 
   // verifyGitHubAccount() checks this endpoint before linking.
   await page.route('https://api.github.com/user', async (route: any) => {
@@ -39,11 +46,30 @@ async function mockLinkRequests(page: any) {
 
     if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/pages$/)) {
       nextPageId += 1;
+      requestLog.create.pages += 1;
       await route.fulfill({ status: 200, json: { page_id: nextPageId, url: `page-${nextPageId}`, title: `Page ${nextPageId}` } });
       return;
     }
 
+    if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/quizzes$/)) {
+      nextQuizId += 1;
+      requestLog.create.quizzes += 1;
+      await route.fulfill({ status: 200, json: { id: nextQuizId, title: `Quiz ${nextQuizId}` } });
+      return;
+    }
+
+    if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/assignments$/)) {
+      nextAssignmentId += 1;
+      requestLog.create.assignments += 1;
+      await route.fulfill({ status: 200, json: { id: nextAssignmentId, name: `Assignment ${nextAssignmentId}` } });
+      return;
+    }
+
     if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/modules\/\d+\/items$/)) {
+      const moduleItemType = body?.body?.module_item?.type;
+      if (moduleItemType && Object.prototype.hasOwnProperty.call(requestLog.moduleItems, moduleItemType)) {
+        requestLog.moduleItems[moduleItemType as keyof typeof requestLog.moduleItems] += 1;
+      }
       await route.fulfill({ status: 200, json: { id: 1 } });
       return;
     }
@@ -54,12 +80,27 @@ async function mockLinkRequests(page: any) {
     }
 
     if (method === 'PUT' && endpoint?.match(/^\/courses\/\d+\/pages\/\d+$/)) {
+      requestLog.update.pages += 1;
+      await route.fulfill({ status: 200, json: { id: 1, published: true } });
+      return;
+    }
+
+    if (method === 'PUT' && endpoint?.match(/^\/courses\/\d+\/quizzes\/\d+$/)) {
+      requestLog.update.quizzes += 1;
+      await route.fulfill({ status: 200, json: { id: 1, published: true } });
+      return;
+    }
+
+    if (method === 'PUT' && endpoint?.match(/^\/courses\/\d+\/assignments\/\d+$/)) {
+      requestLog.update.assignments += 1;
       await route.fulfill({ status: 200, json: { id: 1, published: true } });
       return;
     }
 
     throw new Error(`Unhandled canvas invoke payload: ${JSON.stringify(body)}`);
   });
+
+  return requestLog;
 }
 
 test('course link form renders and validates required fields', async ({ page }) => {
@@ -103,4 +144,43 @@ test('course link performs successful link flow', async ({ page }) => {
   await page.getByRole('button', { name: 'Link course', exact: true }).click();
 
   await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
+});
+
+test('course link maps topic types to page, quiz, and assignment endpoints', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'Type Coverage',
+          topics: [
+            { id: 'a1', title: 'Instruction Topic', type: 'instruction', path: 'instruction/instruction-topic/instruction-topic.md' },
+            { id: 'a2', title: 'Exam Topic', type: 'exam', path: 'instruction/exam-topic/exam-topic.md' },
+            { id: 'a3', title: 'Project Topic', type: 'project', path: 'instruction/project-topic/project-topic.md' },
+            { id: 'a4', title: 'Embedded Topic', type: 'embedded', path: 'https://www.youtube.com/embed/HXNx_Gp0jyM' },
+          ],
+        },
+      ],
+    },
+  });
+  const requestLog = await mockLinkRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseLinking(page);
+
+  await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
+  await page.waitForTimeout(300);
+  await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
+
+  await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
+  await expect.poll(() => requestLog.create.pages).toBe(2);
+  await expect.poll(() => requestLog.create.quizzes).toBe(1);
+  await expect.poll(() => requestLog.create.assignments).toBe(1);
+  await expect.poll(() => requestLog.update.pages).toBe(2);
+  await expect.poll(() => requestLog.update.quizzes).toBe(1);
+  await expect.poll(() => requestLog.update.assignments).toBe(1);
+  await expect.poll(() => requestLog.moduleItems.Page).toBe(2);
+  await expect.poll(() => requestLog.moduleItems.Quiz).toBe(1);
+  await expect.poll(() => requestLog.moduleItems.Assignment).toBe(1);
 });

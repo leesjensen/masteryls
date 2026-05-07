@@ -1230,6 +1230,42 @@ Requirements:
       }
     }
 
+    pagePos = 1;
+    count = desiredCount;
+    const quizzes = [];
+    while (count == desiredCount) {
+      const canvasQuizzes = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes?page=${pagePos}&per_page=${desiredCount}`, 'GET');
+      quizzes.push(...canvasQuizzes);
+      count = canvasQuizzes.length;
+      pagePos++;
+    }
+
+    for (const quiz of quizzes) {
+      setUpdateMessage(`Updating Canvas quiz reference for '${quiz.title}'`);
+      const topic = updatedCourse.allTopics.find((topic) => topic.title === quiz.title);
+      if (topic) {
+        topic.externalRefs = { ...topic.externalRefs, canvasQuizId: quiz.id };
+      }
+    }
+
+    pagePos = 1;
+    count = desiredCount;
+    const assignments = [];
+    while (count == desiredCount) {
+      const canvasAssignments = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments?page=${pagePos}&per_page=${desiredCount}`, 'GET');
+      assignments.push(...canvasAssignments);
+      count = canvasAssignments.length;
+      pagePos++;
+    }
+
+    for (const assignment of assignments) {
+      setUpdateMessage(`Updating Canvas assignment reference for '${assignment.name}'`);
+      const topic = updatedCourse.allTopics.find((topic) => topic.title === assignment.name);
+      if (topic) {
+        topic.externalRefs = { ...topic.externalRefs, canvasAssignmentId: assignment.id };
+      }
+    }
+
     setUpdateMessage(`Updating course information`);
     await updateCourseStructure(updatedCourse, null, `linked to canvas courseId ${canvasCourseId}`);
   }
@@ -1260,7 +1296,7 @@ Requirements:
 
       for (const topic of module.topics) {
         if (topic.externalRefs) {
-          const { canvasPageId, ...remainingTopicRefs } = topic.externalRefs;
+          const { canvasPageId, canvasQuizId, canvasAssignmentId, ...remainingTopicRefs } = topic.externalRefs;
           topic.externalRefs = Object.keys(remainingTopicRefs).length > 0 ? remainingTopicRefs : undefined;
         }
       }
@@ -1288,9 +1324,19 @@ Requirements:
       const canvasModule = await createCanvasModule(module, canvasCourseId);
       module.externalRefs = { ...module.externalRefs, canvasModuleId: canvasModule.id };
       for (const topic of module.topics) {
-        setUpdateMessage(`Creating topic '${topic.title}' in Canvas`);
-        const canvasPage = await createCanvasPage(topic, canvasCourseId, canvasModule);
-        topic.externalRefs = { ...topic.externalRefs, canvasPageId: canvasPage.page_id };
+        if (topic.type === 'exam') {
+          setUpdateMessage(`Creating quiz '${topic.title}' in Canvas`);
+          const canvasQuiz = await createCanvasQuiz(topic, canvasCourseId, canvasModule);
+          topic.externalRefs = { ...topic.externalRefs, canvasQuizId: canvasQuiz.id };
+        } else if (topic.type === 'project') {
+          setUpdateMessage(`Creating assignment '${topic.title}' in Canvas`);
+          const canvasAssignment = await createCanvasAssignment(topic, canvasCourseId, canvasModule);
+          topic.externalRefs = { ...topic.externalRefs, canvasAssignmentId: canvasAssignment.id };
+        } else {
+          setUpdateMessage(`Creating topic '${topic.title}' in Canvas`);
+          const canvasPage = await createCanvasPage(topic, canvasCourseId, canvasModule);
+          topic.externalRefs = { ...topic.externalRefs, canvasPageId: canvasPage.page_id };
+        }
       }
     }
 
@@ -1351,6 +1397,40 @@ Requirements:
     return canvasPage;
   }
 
+  async function createCanvasQuiz(topic, canvasCourseId, canvasModule = null) {
+    const body = {
+      quiz: {
+        title: topic.title,
+        description: `<h1>${topic.title}</h1>`,
+        published: true,
+      },
+    };
+
+    const canvasQuiz = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes`, 'POST', body);
+
+    if (canvasModule) {
+      await addQuizToModule(canvasModule, canvasQuiz, canvasCourseId);
+    }
+    return canvasQuiz;
+  }
+
+  async function createCanvasAssignment(topic, canvasCourseId, canvasModule = null) {
+    const body = {
+      assignment: {
+        name: topic.title,
+        description: `<h1>${topic.title}</h1>`,
+        published: true,
+      },
+    };
+
+    const canvasAssignment = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments`, 'POST', body);
+
+    if (canvasModule) {
+      await addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId);
+    }
+    return canvasAssignment;
+  }
+
   async function updateCanvasPage(course, topic, canvasCourseId) {
     let html = '';
     if (topic.type === 'video' || topic.type === 'embedded') {
@@ -1360,6 +1440,30 @@ Requirements:
       // Canvas inserts its own title header, so remove any top-level headers from the markdown
       md = md.replace(/^\w*#\s.+\n/gm, '');
       html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+    }
+
+    if (topic.type === 'exam' && topic.externalRefs?.canvasQuizId) {
+      const quizBody = {
+        quiz: {
+          title: topic.title,
+          description: html,
+          published: true,
+        },
+      };
+
+      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${topic.externalRefs.canvasQuizId}`, 'PUT', quizBody);
+    }
+
+    if (topic.type === 'project' && topic.externalRefs?.canvasAssignmentId) {
+      const assignmentBody = {
+        assignment: {
+          name: topic.title,
+          description: html,
+          published: true,
+        },
+      };
+
+      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${topic.externalRefs.canvasAssignmentId}`, 'PUT', assignmentBody);
     }
 
     const body = {
@@ -1379,6 +1483,32 @@ Requirements:
         type: 'Page',
         page_url: canvasPage.url,
         title: canvasPage.title,
+        published: true,
+      },
+    };
+
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
+  }
+
+  async function addQuizToModule(canvasModule, canvasQuiz, canvasCourseId) {
+    const body = {
+      module_item: {
+        type: 'Quiz',
+        content_id: canvasQuiz.id,
+        title: canvasQuiz.title,
+        published: true,
+      },
+    };
+
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
+  }
+
+  async function addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId) {
+    const body = {
+      module_item: {
+        type: 'Assignment',
+        content_id: canvasAssignment.id,
+        title: canvasAssignment.name,
         published: true,
       },
     };
