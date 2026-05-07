@@ -3,6 +3,7 @@ import { Menu, FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareCh
 import { GitHub, Canvas } from '../../utils/Icons.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
+import { getCanvasTopicUrl, hasCanvasTopicLink } from '../../hooks/canvas/canvasSync.js';
 
 export default function Toolbar({ courseOps, user, learningSession, settings, editing, toggleEditor }) {
   const navigate = useNavigate();
@@ -28,28 +29,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     showAlert({ message: `${learningSession.topic.title} linked successfully`, type: 'info' });
   }
 
-  function topicHasCanvasLink(topic) {
-    return !!(topic?.externalRefs?.canvasPageId || topic?.externalRefs?.canvasQuizId || topic?.externalRefs?.canvasAssignmentId);
-  }
-
-  function getCanvasTopicUrl(course, topic) {
-    const courseId = course?.externalRefs?.canvasCourseId;
-    if (!courseId || !topic?.externalRefs) {
-      return null;
-    }
-    if (topic.externalRefs.canvasPageId) {
-      return `https://byu.instructure.com/courses/${courseId}/pages/${topic.externalRefs.canvasPageId}`;
-    }
-    if (topic.externalRefs.canvasQuizId) {
-      return `https://byu.instructure.com/courses/${courseId}/quizzes/${topic.externalRefs.canvasQuizId}`;
-    }
-    if (topic.externalRefs.canvasAssignmentId) {
-      return `https://byu.instructure.com/courses/${courseId}/assignments/${topic.externalRefs.canvasAssignmentId}`;
-    }
-    return null;
-  }
-
-  const canvasTopicUrl = getCanvasTopicUrl(learningSession.course, learningSession.topic);
+  const canvasTopicUrl = getCanvasTopicUrl(learningSession.course?.externalRefs?.canvasCourseId, learningSession.topic);
 
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
@@ -61,7 +41,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
         {user && user.isEditor(learningSession.course.id) && <EditorToggleSlider editing={editing} onToggle={toggleEditor} />}
-        {user && user.isEditor(learningSession.course.id) && topicHasCanvasLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
+        {user && user.isEditor(learningSession.course.id) && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
         {learningSession.course.links?.chat && <ToolBarButton title="Course chat server" onClick={() => window.open(learningSession.course.links.chat, '_blank')} icon={MessageCircleQuestionMark} />}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" onClick={navigateToSchedule} icon={CalendarDays} />}
         {learningSession.course.externalRefs?.canvasCourseId && canvasTopicUrl && <ToolBarButton title="Canvas course site" onClick={() => window.open(canvasTopicUrl, '_blank')} icon={Canvas} />}

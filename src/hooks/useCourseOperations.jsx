@@ -6,6 +6,7 @@ import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { extractInteractionMetas, isSubmittableInteractionType } from '../utils/interactionMeta';
 import { createCourseInternal } from './courseCreation.js';
+import { createCanvasSync } from './canvas/canvasSync.js';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -1203,378 +1204,78 @@ Requirements:
     return { voters: Object.keys(voters).length, votes };
   }
 
-  async function repairCanvas(course, canvasCourseId, setUpdateMessage) {
+  async function renderCanvasTopicHtml(course, topic) {
+    if (topic.type === 'video' || topic.type === 'embedded') {
+      return `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="${topic.path}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
+    }
+
+    let md = await getTopic(topic);
+    // Canvas inserts its own title header, so remove any top-level headers from the markdown.
+    md = md.replace(/^\w*#\s.+\n/gm, '');
+    return ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
+  }
+
+  const canvasSync = createCanvasSync({ service, renderTopicHtml: renderCanvasTopicHtml });
+
+  async function verifyCanvasAccess(course) {
     const token = user.getSetting('gitHubToken', course.id);
-    if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
+    if (!(await service.verifyGitHubAccount(token))) {
+      throw new Error('You do not have permission to associate this course with canvas.');
+    }
+  }
 
+  async function repairCanvas(course, canvasCourseId, setUpdateMessage) {
+    await verifyCanvasAccess(course);
     const updatedCourse = Course.copy(course);
-    updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
-
-    let pagePos = 1;
-    const desiredCount = 20;
-    let count = desiredCount;
-    const pages = [];
-    while (count == desiredCount) {
-      const canvasPages = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages?page=${pagePos}&per_page=${desiredCount}`, 'GET');
-      pages.push(...canvasPages);
-      count = canvasPages.length;
-      pagePos++;
-    }
-
-    for (const page of pages) {
-      setUpdateMessage(`Updating Canvas page reference for '${page.title}'`);
-      const topic = updatedCourse.allTopics.find((topic) => topic.title === page.title);
-      if (topic) {
-        topic.externalRefs = { ...topic.externalRefs, canvasPageId: page.page_id };
-        console.log(`Checking page '${page.title}' topic:${page.page_id}`);
-      }
-    }
-
-    pagePos = 1;
-    count = desiredCount;
-    const quizzes = [];
-    while (count == desiredCount) {
-      const canvasQuizzes = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes?page=${pagePos}&per_page=${desiredCount}`, 'GET');
-      quizzes.push(...canvasQuizzes);
-      count = canvasQuizzes.length;
-      pagePos++;
-    }
-
-    for (const quiz of quizzes) {
-      setUpdateMessage(`Updating Canvas quiz reference for '${quiz.title}'`);
-      const topic = updatedCourse.allTopics.find((topic) => topic.title === quiz.title);
-      if (topic) {
-        topic.externalRefs = { ...topic.externalRefs, canvasQuizId: quiz.id };
-      }
-    }
-
-    pagePos = 1;
-    count = desiredCount;
-    const assignments = [];
-    while (count == desiredCount) {
-      const canvasAssignments = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments?page=${pagePos}&per_page=${desiredCount}`, 'GET');
-      assignments.push(...canvasAssignments);
-      count = canvasAssignments.length;
-      pagePos++;
-    }
-
-    for (const assignment of assignments) {
-      setUpdateMessage(`Updating Canvas assignment reference for '${assignment.name}'`);
-      const topic = updatedCourse.allTopics.find((topic) => topic.title === assignment.name);
-      if (topic) {
-        topic.externalRefs = { ...topic.externalRefs, canvasAssignmentId: assignment.id };
-      }
-    }
+    await canvasSync.repairCanvasReferences({ updatedCourse, canvasCourseId, setUpdateMessage });
 
     setUpdateMessage(`Updating course information`);
     await updateCourseStructure(updatedCourse, null, `linked to canvas courseId ${canvasCourseId}`);
   }
 
   async function unlinkFromCanvas(course, deleteExisting = false, setUpdateMessage = () => {}) {
-    const token = user.getSetting('gitHubToken', course.id);
-    if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
+    await verifyCanvasAccess(course);
 
     const updatedCourse = Course.copy(course);
 
     if (deleteExisting && updatedCourse.externalRefs?.canvasCourseId) {
       setUpdateMessage(`Cleaning up existing Canvas course content`);
-      await cleanCanvasCourse(updatedCourse.externalRefs.canvasCourseId, setUpdateMessage);
+      await canvasSync.cleanCanvasCourse({ canvasCourseId: updatedCourse.externalRefs.canvasCourseId, setUpdateMessage });
     }
 
     setUpdateMessage(`Removing Canvas references`);
-
-    if (updatedCourse.externalRefs) {
-      const { canvasCourseId, ...remainingCourseRefs } = updatedCourse.externalRefs;
-      updatedCourse.externalRefs = Object.keys(remainingCourseRefs).length > 0 ? remainingCourseRefs : undefined;
-    }
-
-    for (const module of updatedCourse.modules) {
-      if (module.externalRefs) {
-        const { canvasModuleId, ...remainingModuleRefs } = module.externalRefs;
-        module.externalRefs = Object.keys(remainingModuleRefs).length > 0 ? remainingModuleRefs : undefined;
-      }
-
-      for (const topic of module.topics) {
-        if (topic.externalRefs) {
-          const { canvasPageId, canvasQuizId, canvasAssignmentId, ...remainingTopicRefs } = topic.externalRefs;
-          topic.externalRefs = Object.keys(remainingTopicRefs).length > 0 ? remainingTopicRefs : undefined;
-        }
-      }
-    }
+    canvasSync.removeCanvasReferences(updatedCourse);
 
     setUpdateMessage(`Updating course information`);
     await updateCourseStructure(updatedCourse, null, `unlinked from canvas`);
   }
 
   async function linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
-    const token = user.getSetting('gitHubToken', course.id);
-    if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
+    await verifyCanvasAccess(course);
 
     const updatedCourse = Course.copy(course);
     updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
 
     if (deleteExisting) {
       setUpdateMessage(`Cleaning up existing Canvas course content`);
-      await cleanCanvasCourse(canvasCourseId, setUpdateMessage);
+      await canvasSync.cleanCanvasCourse({ canvasCourseId, setUpdateMessage });
     }
-
-    // create the modules and pages first
-    for (const module of updatedCourse.modules) {
-      setUpdateMessage(`Creating module '${module.title}' in Canvas`);
-      const canvasModule = await createCanvasModule(module, canvasCourseId);
-      module.externalRefs = { ...module.externalRefs, canvasModuleId: canvasModule.id };
-      for (const topic of module.topics) {
-        if (topic.type === 'exam') {
-          setUpdateMessage(`Creating quiz '${topic.title}' in Canvas`);
-          const canvasQuiz = await createCanvasQuiz(topic, canvasCourseId, canvasModule);
-          topic.externalRefs = { ...topic.externalRefs, canvasQuizId: canvasQuiz.id };
-        } else if (topic.type === 'project') {
-          setUpdateMessage(`Creating assignment '${topic.title}' in Canvas`);
-          const canvasAssignment = await createCanvasAssignment(topic, canvasCourseId, canvasModule);
-          topic.externalRefs = { ...topic.externalRefs, canvasAssignmentId: canvasAssignment.id };
-        } else {
-          setUpdateMessage(`Creating topic '${topic.title}' in Canvas`);
-          const canvasPage = await createCanvasPage(topic, canvasCourseId, canvasModule);
-          topic.externalRefs = { ...topic.externalRefs, canvasPageId: canvasPage.page_id };
-        }
-      }
-    }
-
-    // now update the modules and pages with content
-    for (const module of updatedCourse.modules) {
-      await publishCanvasModule(module, canvasCourseId);
-      for (const topic of module.topics) {
-        try {
-          setUpdateMessage(`Linking topic '${topic.title}' to Canvas`);
-          await updateCanvasPage(updatedCourse, topic, canvasCourseId);
-        } catch (error) {
-          console.error(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
-          setUpdateMessage(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
-        }
-      }
-    }
+    await canvasSync.linkCourseResources({
+      updatedCourse,
+      canvasCourseId,
+      setUpdateMessage,
+      onTopicUpdateError: (topic, error) => {
+        console.error(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
+        setUpdateMessage(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
+      },
+    });
 
     setUpdateMessage(`Updating course information`);
     await updateCourseStructure(updatedCourse, null, `linked to canvas courseId ${canvasCourseId}`);
   }
 
-  async function createCanvasModule(module, canvasCourseId) {
-    const body = {
-      module: {
-        name: module.title,
-        published: true,
-      },
-    };
-
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules`, 'POST', body);
-  }
-
-  async function publishCanvasModule(module, canvasCourseId) {
-    const body = {
-      module: {
-        published: true,
-      },
-    };
-
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.externalRefs.canvasModuleId}`, 'PUT', body);
-  }
-
-  async function createCanvasPage(topic, canvasCourseId, canvasModule = null) {
-    const body = {
-      wiki_page: {
-        title: topic.title,
-        body: `<h1>${topic.title}</h1>`,
-        published: true,
-        front_page: false,
-      },
-    };
-
-    const canvasPage = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages`, 'POST', body);
-
-    if (canvasModule) {
-      await addPageToModule(canvasModule, canvasPage, canvasCourseId);
-    }
-    return canvasPage;
-  }
-
-  async function createCanvasQuiz(topic, canvasCourseId, canvasModule = null) {
-    const body = {
-      quiz: {
-        title: topic.title,
-        description: `<h1>${topic.title}</h1>`,
-        published: true,
-      },
-    };
-
-    const canvasQuiz = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes`, 'POST', body);
-
-    if (canvasModule) {
-      await addQuizToModule(canvasModule, canvasQuiz, canvasCourseId);
-    }
-    return canvasQuiz;
-  }
-
-  async function createCanvasAssignment(topic, canvasCourseId, canvasModule = null) {
-    const body = {
-      assignment: {
-        name: topic.title,
-        description: `<h1>${topic.title}</h1>`,
-        published: true,
-      },
-    };
-
-    const canvasAssignment = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments`, 'POST', body);
-
-    if (canvasModule) {
-      await addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId);
-    }
-    return canvasAssignment;
-  }
-
   async function updateCanvasPage(course, topic, canvasCourseId) {
-    let html = '';
-    if (topic.type === 'video' || topic.type === 'embedded') {
-      html = `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="${topic.path}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
-    } else {
-      let md = await getTopic(topic);
-      // Canvas inserts its own title header, so remove any top-level headers from the markdown
-      md = md.replace(/^\w*#\s.+\n/gm, '');
-      html = ReactDOMServer.renderToStaticMarkup(<MarkdownStatic course={course} topic={topic} content={md} languagePlugins={[]} />);
-    }
-
-    if (topic.type === 'exam' && topic.externalRefs?.canvasQuizId) {
-      const quizBody = {
-        quiz: {
-          title: topic.title,
-          description: html,
-          published: true,
-        },
-      };
-
-      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${topic.externalRefs.canvasQuizId}`, 'PUT', quizBody);
-    }
-
-    if (topic.type === 'project' && topic.externalRefs?.canvasAssignmentId) {
-      const assignmentBody = {
-        assignment: {
-          name: topic.title,
-          description: html,
-          published: true,
-        },
-      };
-
-      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${topic.externalRefs.canvasAssignmentId}`, 'PUT', assignmentBody);
-    }
-
-    const body = {
-      wiki_page: {
-        title: topic.title,
-        body: html,
-        published: true,
-      },
-    };
-
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${topic.externalRefs.canvasPageId}`, 'PUT', body);
-  }
-
-  async function addPageToModule(canvasModule, canvasPage, canvasCourseId) {
-    const body = {
-      module_item: {
-        type: 'Page',
-        page_url: canvasPage.url,
-        title: canvasPage.title,
-        published: true,
-      },
-    };
-
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
-  }
-
-  async function addQuizToModule(canvasModule, canvasQuiz, canvasCourseId) {
-    const body = {
-      module_item: {
-        type: 'Quiz',
-        content_id: canvasQuiz.id,
-        title: canvasQuiz.title,
-        published: true,
-      },
-    };
-
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
-  }
-
-  async function addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId) {
-    const body = {
-      module_item: {
-        type: 'Assignment',
-        content_id: canvasAssignment.id,
-        title: canvasAssignment.name,
-        published: true,
-      },
-    };
-
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
-  }
-
-  async function cleanCanvasCourse(canvasCourseId, setUpdateMessage) {
-    async function getAllCanvasItems(endpointBase) {
-      let pagePos = 1;
-      const desiredCount = 20;
-      let count = desiredCount;
-      const items = [];
-
-      while (count == desiredCount) {
-        const pageItems = await service.makeCanvasApiRequest(`${endpointBase}?page=${pagePos}&per_page=${desiredCount}`, 'GET');
-        items.push(...pageItems);
-        count = pageItems.length;
-        pagePos++;
-      }
-
-      return items;
-    }
-
-    let pagePos = 1;
-    const desiredCount = 20;
-    let count = desiredCount;
-    const pages = [];
-    while (count == desiredCount) {
-      const canvasPages = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages?page=${pagePos}&per_page=${desiredCount}`, 'GET');
-      pages.push(...canvasPages);
-      count = canvasPages.length;
-      pagePos++;
-    }
-
-    for (const page of pages) {
-      setUpdateMessage(`Deleting Canvas page '${page.title}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${page.page_id}`, 'DELETE');
-    }
-
-    const quizzes = await getAllCanvasItems(`/courses/${canvasCourseId}/quizzes`);
-    for (const quiz of quizzes) {
-      setUpdateMessage(`Deleting Canvas quiz '${quiz.title || quiz.name || quiz.id}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${quiz.id}`, 'DELETE');
-    }
-
-    const assignments = await getAllCanvasItems(`/courses/${canvasCourseId}/assignments`);
-    for (const assignment of assignments) {
-      setUpdateMessage(`Deleting Canvas assignment '${assignment.name || assignment.id}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${assignment.id}`, 'DELETE');
-    }
-
-    count = desiredCount;
-    const modules = [];
-    pagePos = 1;
-    while (count == desiredCount) {
-      const canvasModules = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules?page=${pagePos}&per_page=${desiredCount}`, 'GET');
-      modules.push(...canvasModules);
-      count = canvasModules.length;
-      pagePos++;
-    }
-
-    for (const module of modules) {
-      setUpdateMessage(`Deleting Canvas module '${module.name}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.id}`, 'DELETE');
-    }
+    return canvasSync.updateCanvasTopic({ course, topic, canvasCourseId });
   }
 
   function _generateTopicPath(course, topicTitle, topicDescription, topicType) {
