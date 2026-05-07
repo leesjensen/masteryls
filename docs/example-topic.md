@@ -6,6 +6,8 @@ This is the content of the instruction. It can include **bold text**, _italic te
 
 Quizzes in Mastery LS format
 
+### Multiple choice
+
 ```masteryls
 {"id":"39280", "title":"Multiple choice", "type":"multiple-choice" }
 Simple **multiple choice** question
@@ -15,6 +17,8 @@ Simple **multiple choice** question
 - [ ] This one has a [link](https://cow.com)
 - [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
 ```
+
+### Multiple select
 
 ```masteryls
 {"id":"39281", "title":"Multiple select", "type":"multiple-select" }
@@ -27,20 +31,58 @@ A **multiple select** question can have multiple answers. Incorrect selections c
 - [ ] This is **not** the right answer
 ```
 
+### Essay
+
 ```masteryls
 {"id":"39282", "title":"Essay", "type":"essay" }
 Simple **essay** question
 ```
+
+### Survey
+
+```masteryls
+{"id":"40824056-92f3-48e6-8f68-f0f63d67071f", "title":"Multiple select survey", "type":"survey",  "multipleSelect": "true" }
+What would you have as a pet?
+
+- [ ] 🐱 Cat
+- [ ] 🐶 Dog
+- [ ] 🐹 Hamster
+- [ ] 🐠 Fish
+- [ ] 🪨 Rock
+- [ ] Other
+```
+
+```masteryls
+{"id":"bd56d044-03ce-45f2-b004-462c911ce27d",   "title":"Multiple choice survey", "type":"survey" }
+I found this instruction helpful?
+
+- [ ] 🙂 Helpful
+- [ ] 😐 **Somewhat** helpful
+- [ ] 🙁 **Not** helpful
+```
+
+### File submission
 
 ```masteryls
 {"id":"39283", "title":"File submission", "type":"file-submission" "allowComment":true  }
 Simple **submission** by file
 ```
 
+### URL submission
+
 ```masteryls
 {"id":"39284", "title":"URL submission", "type":"url-submission" "allowComment":true }
 Simple **submission** by url
 ```
+
+### Teaching
+
+```masteryls
+{"id":"b1de730b-9331-4e2f-8c7b-b8ff66a51a03", "title":"Teaching", "type":"teaching" }
+Help me understand the **Socratic method**.
+```
+
+### AI Web Page
 
 ```masteryls
 {"id":"39285", "title":"AI Web Page (Prompt + Starter HTML)", "type":"ai-web-page", "height":420, "gradingCriteria":"Create a responsive page with semantic HTML, accessible labels, and a clear call-to-action. Score based on structure, accessibility, and prompt alignment."}
@@ -77,7 +119,7 @@ Revise the starter HTML manually, then submit.
 This interaction hides AI prompt generation and starts from the configured file.
 ```
 
-### ai-web-page authoring notes
+#### ai-web-page authoring notes
 
 - `title`: Displayed above the interaction.
 - Directions: Use regular markdown body text (outside code fences).
