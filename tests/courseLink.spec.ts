@@ -3,7 +3,7 @@ import { initBasicCourse, navigateToDashboard } from './testInit';
 
 async function openCourseLinking(page: any) {
   await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'Link course' }).click();
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Link a Course' })).toBeVisible();
 }
 
@@ -68,12 +68,14 @@ test('course link form renders and validates required fields', async ({ page }) 
   await navigateToDashboard(page);
   await openCourseLinking(page);
 
-  const linkButton = page.getByRole('button', { name: 'Link course' });
+  const linkButton = page.getByRole('button', { name: 'Link course', exact: true });
+  const unlinkButton = page.getByRole('button', { name: 'Unlink course' });
   const repairButton = page.getByRole('button', { name: 'Repair' });
   const viewCanvasButton = page.getByRole('button', { name: 'View Canvas' });
   const viewCourseButton = page.getByRole('button', { name: 'View Course' });
 
   await expect(linkButton).toBeDisabled();
+  await expect(unlinkButton).toBeDisabled();
   await expect(repairButton).toBeDisabled();
   await expect(viewCanvasButton).toBeDisabled();
   await expect(viewCourseButton).toBeDisabled();
@@ -96,9 +98,9 @@ test('course link performs successful link flow', async ({ page }) => {
   await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
   await page.waitForTimeout(300);
   await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
-  await expect(page.getByRole('button', { name: 'Link course' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Link course', exact: true })).toBeEnabled();
 
-  await page.getByRole('button', { name: 'Link course' }).click();
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
 
   await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
 });

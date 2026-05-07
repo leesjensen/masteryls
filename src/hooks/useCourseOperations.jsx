@@ -1234,6 +1234,36 @@ Requirements:
     await updateCourseStructure(updatedCourse, null, `linked to canvas courseId ${canvasCourseId}`);
   }
 
+  async function unlinkFromCanvas(course, setUpdateMessage = () => {}) {
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
+
+    const updatedCourse = Course.copy(course);
+    setUpdateMessage(`Removing Canvas references`);
+
+    if (updatedCourse.externalRefs) {
+      const { canvasCourseId, ...remainingCourseRefs } = updatedCourse.externalRefs;
+      updatedCourse.externalRefs = Object.keys(remainingCourseRefs).length > 0 ? remainingCourseRefs : undefined;
+    }
+
+    for (const module of updatedCourse.modules) {
+      if (module.externalRefs) {
+        const { canvasModuleId, ...remainingModuleRefs } = module.externalRefs;
+        module.externalRefs = Object.keys(remainingModuleRefs).length > 0 ? remainingModuleRefs : undefined;
+      }
+
+      for (const topic of module.topics) {
+        if (topic.externalRefs) {
+          const { canvasPageId, ...remainingTopicRefs } = topic.externalRefs;
+          topic.externalRefs = Object.keys(remainingTopicRefs).length > 0 ? remainingTopicRefs : undefined;
+        }
+      }
+    }
+
+    setUpdateMessage(`Updating course information`);
+    await updateCourseStructure(updatedCourse, null, `unlinked from canvas`);
+  }
+
   async function linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage) {
     const token = user.getSetting('gitHubToken', course.id);
     if (!(await service.verifyGitHubAccount(token))) throw new Error('You do not have permission to associate this course with canvas.');
@@ -1489,6 +1519,7 @@ Requirements:
     getSurveySummary,
     getExamState,
     repairCanvas,
+    unlinkFromCanvas,
     linkToCanvas,
     updateCanvasPage,
     service,

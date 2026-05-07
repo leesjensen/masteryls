@@ -43,6 +43,29 @@ export default function CourseExportForm({ courseOps, onClose }) {
     setIsLoading(false);
   }
 
+  async function unlinkCourse() {
+    if (!course?.externalRefs?.canvasCourseId) {
+      return;
+    }
+
+    if (!window.confirm(`Unlink '${course.title}' from Canvas?`)) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      setUpdateMessage('Unlinking course...');
+      await courseOps.unlinkFromCanvas(course, setUpdateMessage);
+      const updatedCourse = await courseOps.getCourse(course.id);
+      setCourse(updatedCourse);
+      setCanvasCourseId('');
+      showAlert({ message: `${course.title} unlinked successfully`, type: 'info' });
+    } catch (error) {
+      showAlert({ message: `Error unlinking course: ${error.message}`, type: 'error' });
+    }
+    setIsLoading(false);
+  }
+
   function viewCanvas() {
     const url = `https://byu.instructure.com/courses/${canvasCourseId}`;
     window.open(url, '_blank');
@@ -130,6 +153,9 @@ export default function CourseExportForm({ courseOps, onClose }) {
           </button>
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={viewCourse}>
             View Course
+          </button>
+          <button disabled={!course?.externalRefs?.canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-rose-500 hover:bg-rose-600 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={unlinkCourse}>
+            Unlink course
           </button>
         </div>
       </form>
