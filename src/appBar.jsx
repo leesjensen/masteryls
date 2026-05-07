@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Download, PackagePlus, SquareStar, Columns3Cog, ChartArea, LogOut } from 'lucide-react';
+import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, LogOut } from 'lucide-react';
 
 export function AppBar({ user, courseOps }) {
   const { title, subTitle, tools } = useAppBarState();
@@ -140,7 +140,7 @@ function UserMenu({ user, courseOps }) {
             <div className="border-t border-gray-200 my-1"></div>
 
             <AppBarMenuItem icon={PackagePlus} onClick={() => handleMenuItemClick(() => navigate('/courseCreation'))} title="New course" />
-            <AppBarMenuItem icon={Download} onClick={() => handleMenuItemClick(() => navigate('/courseExport'))} title="Export course" />
+            <AppBarMenuItem icon={Link2} onClick={() => handleMenuItemClick(() => navigate('/courseExport'))} title="Link course" />
 
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem

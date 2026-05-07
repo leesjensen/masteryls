@@ -66,7 +66,7 @@ export default function CourseExportForm({ courseOps, onClose }) {
 
           {/* Loading Message */}
           <div className="space-y-2 text-center">
-            <h3 className="text-2xl font-semibold text-gray-800">Exporting Your Course</h3>
+            <h3 className="text-2xl font-semibold text-gray-800">Linking Your Course</h3>
             <p className="text-xl text-gray-600 animate-pulse">{updateMessage}</p>
           </div>
 
@@ -79,10 +79,10 @@ export default function CourseExportForm({ courseOps, onClose }) {
         </div>
       )}
       <div className="px-6 py-4">
-        <h2 className="text-xl font-semibold text-gray-800">Export a Course</h2>
-        <p className="text-sm text-gray-500 mt-1">Export all modules and topics to a Canvas course.</p>
+        <h2 className="text-xl font-semibold text-gray-800">Link a Course</h2>
+        <p className="text-sm text-gray-500 mt-1">Link all modules, assignments, and topics to a Canvas course.</p>
         <p className="text-sm text-gray-500 mt-2">
-          <b>Note: </b>This will not create the course, only export the MasteryLS content to the Canvas course.
+          <b>Note: </b>This will not create a Canvas course, only link the MasteryLS course to the Canvas course.
         </p>
       </div>
 
@@ -109,7 +109,7 @@ export default function CourseExportForm({ courseOps, onClose }) {
           <div className="mt-3 flex items-center space-x-2">
             <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
             <label htmlFor="delete-existing" className="text-sm text-gray-700">
-              Delete existing pages and modules
+              Delete existing pages, assignments, and modules
             </label>
           </div>
         </div>
@@ -120,7 +120,7 @@ export default function CourseExportForm({ courseOps, onClose }) {
           </button>
 
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginExport}>
-            {course?.externalRefs?.canvasCourseId ? 'Re-export course' : 'Export course'}
+            {course?.externalRefs?.canvasCourseId ? 'Re-link course' : 'Link course'}
           </button>
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={repairRefs}>
             Repair

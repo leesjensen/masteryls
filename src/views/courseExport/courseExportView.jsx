@@ -11,7 +11,7 @@ export default function CourseExportView({ courseOps }) {
   };
 
   useEffect(() => {
-    updateAppBar({ title: 'Export course', tools: null });
+    updateAppBar({ title: 'Link course', tools: null });
   }, []);
 
   return (
