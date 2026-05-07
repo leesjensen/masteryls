@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
-export default function CourseExportForm({ courseOps, onClose }) {
+export default function CourseLinkForm({ courseOps, onClose }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
   const [course, setCourse] = useState();
   const [deleteExisting, setDeleteExisting] = useState(false);

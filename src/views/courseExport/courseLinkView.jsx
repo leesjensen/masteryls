@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
-import CourseExportForm from './courseExportForm.jsx';
+import CourseLinkForm from './courseLinkForm.jsx';
 
-export default function CourseExportView({ courseOps }) {
+export default function CourseLinkView({ courseOps }) {
   const navigate = useNavigate();
 
   const close = () => {
@@ -17,7 +17,7 @@ export default function CourseExportView({ courseOps }) {
   return (
     <>
       <div className="flex-1 m-6 flex flex-col bg-white">
-        <CourseExportForm courseOps={courseOps} onClose={close} />
+        <CourseLinkForm courseOps={courseOps} onClose={close} />
       </div>
     </>
   );

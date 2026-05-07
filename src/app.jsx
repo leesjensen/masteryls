@@ -10,7 +10,7 @@ import DashboardView from './views/dashboard/dashboardView.jsx';
 import ClassroomView from './views/classroom/classroomView.jsx';
 import MetricsView from './views/metrics/metricsView.jsx';
 import CourseCreationView from './views/courseCreation/courseCreationView.jsx';
-import CourseExportView from './views/courseExport/courseExportView.jsx';
+import CourseLinkView from './views/courseExport/courseLinkView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
 import AboutView from './views/about/aboutView.jsx';
 import DemoCoursesView from './views/demoCourses/demoCoursesView.jsx';
@@ -33,7 +33,7 @@ export function createAppRouter(user) {
         { path: 'course/:courseId/schedule', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'courseCreation', element: <CourseCreationPage /> },
-        { path: 'courseExport', element: <CourseExportPage /> },
+        { path: 'courseExport', element: <CourseLinkPage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: '*', element: <ErrorPage user={user} message="It seems we have gotten lost." /> },
       ],
@@ -131,9 +131,9 @@ function CourseCreationPage() {
   return <CourseCreationView courseOps={courseOps} />;
 }
 
-function CourseExportPage() {
+function CourseLinkPage() {
   const { courseOps } = useOutletContext();
-  return <CourseExportView courseOps={courseOps} />;
+  return <CourseLinkView courseOps={courseOps} />;
 }
 
 function ProgressPage() {
