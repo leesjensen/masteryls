@@ -6,6 +6,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   const [course, setCourse] = useState();
   const [deleteExisting, setDeleteExisting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingTitle, setLoadingTitle] = useState('Linking Your Course');
   const [updateMessage, setUpdateMessage] = useState('Initializing');
   const { showAlert } = useAlert();
 
@@ -20,6 +21,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   }
 
   async function beginLink() {
+    setLoadingTitle('Linking Your Course');
     setIsLoading(true);
     try {
       setUpdateMessage('Linking course...');
@@ -32,6 +34,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   }
 
   async function repairRefs() {
+    setLoadingTitle('Repairing Course Links');
     setIsLoading(true);
     try {
       setUpdateMessage('Repairing references...');
@@ -52,6 +55,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
       return;
     }
 
+    setLoadingTitle('Unlinking Your Course');
     setIsLoading(true);
     try {
       setUpdateMessage('Unlinking course...');
@@ -89,7 +93,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
 
           {/* Loading Message */}
           <div className="space-y-2 text-center">
-            <h3 className="text-2xl font-semibold text-gray-800">Linking Your Course</h3>
+            <h3 className="text-2xl font-semibold text-gray-800">{loadingTitle}</h3>
             <p className="text-xl text-gray-600 animate-pulse">{updateMessage}</p>
           </div>
 
