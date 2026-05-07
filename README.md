@@ -85,6 +85,11 @@ A [detailed log](/progress) for everything a learner does is tracked of all cour
 
 ![progress.jpg](docs/features/progress.jpg)
 
+| Semester    | Online | In-person    |
+| ----------- | ------ | ------------ |
+| Winter 2025 | 23.5%  | 19.7%, 20.6% |
+| Winter 2026 | 24.6%  | 3.8%, 5%     |
+
 ### Topic interactions
 
 | Group        | Types                                          | Grading                                                         | AI                                              |
@@ -99,6 +104,8 @@ Interaction examples:
 
 - Full interaction examples: [docs/example-topic.md](docs/example-topic.md)
 - AI web page authoring examples: [docs/example-topic.md#ai-web-page-authoring-notes](docs/example-topic.md#ai-web-page-authoring-notes)
+
+You can view examples of interactions in the [instruction documentation](docs/example-topic.md).
 
 # Deploying MasteryLS
 
