@@ -8,6 +8,16 @@ function topicCanvasTarget(topic) {
   return 'page';
 }
 
+function pointsForTopic(topic) {
+  if (topic?.type === 'exam') {
+    return Number(topic?.points ?? 200);
+  }
+  if (topic?.type === 'project') {
+    return Number(topic?.points ?? 100);
+  }
+  return undefined;
+}
+
 export function hasCanvasTopicLink(topic) {
   return !!(topic?.externalRefs?.canvasPageId || topic?.externalRefs?.canvasQuizId || topic?.externalRefs?.canvasAssignmentId);
 }
@@ -130,7 +140,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       quiz: {
         title: topic.title,
         description: `<h1>${topic.title}</h1>`,
-        points_possible: 200,
+        points_possible: pointsForTopic(topic),
         published: true,
       },
     };
@@ -148,7 +158,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       assignment: {
         name: topic.title,
         description: `<h1>${topic.title}</h1>`,
-        points_possible: 100,
+        points_possible: pointsForTopic(topic),
         published: true,
       },
     };
@@ -169,7 +179,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         quiz: {
           title: topic.title,
           description: html,
-          points_possible: 200,
+          points_possible: pointsForTopic(topic),
           published: true,
         },
       };
@@ -182,7 +192,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         assignment: {
           name: topic.title,
           description: html,
-          points_possible: 100,
+          points_possible: pointsForTopic(topic),
           published: true,
         },
       };

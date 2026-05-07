@@ -60,6 +60,7 @@ export type Topic = {
   title: string;
   path: string;
   type: 'instruction' | 'exam' | 'project' | 'embedded';
+  points?: number;
 };
 
 export type Progress = {

@@ -258,6 +258,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         topics: module.topics.map((topic) => ({
           title: topic.title,
           type: topic.type,
+          points: topic.points,
           path: topic.path.replace(`${course.links.gitHub.rawUrl}/`, ''),
           id: topic.id || generateId(),
           state: topic.state,
@@ -277,6 +278,16 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     courseCache.current.set(course.id, course);
 
     return course;
+  }
+
+  function defaultPointsForTopicType(topicType) {
+    if (topicType === 'exam') {
+      return 200;
+    }
+    if (topicType === 'project') {
+      return 100;
+    }
+    return undefined;
   }
 
   async function addModule(title) {
@@ -389,7 +400,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function addTopic(moduleIndex, topicTitle, topicDescription, topicType) {
+  async function addTopic(moduleIndex, topicTitle, topicDescription, topicType, topicPoints) {
     if (!learningSession?.course) return;
     const course = learningSession.course;
     topicTitle = topicTitle.trim();
@@ -411,6 +422,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           id: generateId(),
           title: topicTitle,
           type: topicType,
+          points: topicPoints ?? defaultPointsForTopicType(topicType),
           path: resolvedPath,
           description: topicDescription,
         };
@@ -485,7 +497,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
   }
 
-  async function renameTopic(moduleIdx, topicIdx, newTitle, newDescription, newType) {
+  async function renameTopic(moduleIdx, topicIdx, newTitle, newDescription, newType, newPoints) {
     if (!newTitle.trim()) return;
     if (!learningSession?.course) return;
     const course = learningSession.course;
@@ -495,6 +507,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     topic.title = newTitle.trim();
     topic.description = newDescription.trim();
     topic.type = newType || topic.type;
+    topic.points = newPoints ?? defaultPointsForTopicType(topic.type);
     updatedCourse.modules[moduleIdx].topics[topicIdx] = topic;
     updatedCourse.allTopics = updatedCourse.modules.flatMap((m) => m.topics);
 

@@ -7,10 +7,10 @@ export default function NewTopicButton({ moduleIndex, courseOps }) {
   const [isLoading, setIsLoading] = useState(false);
   const editorRef = React.useRef(null);
 
-  const handleSubmitForm = async (title, description, type) => {
+  const handleSubmitForm = async (title, description, type, points) => {
     setIsLoading(true);
     try {
-      await courseOps.addTopic(moduleIndex, title, description, type);
+      await courseOps.addTopic(moduleIndex, title, description, type, points);
       setShowForm(false);
     } catch (error) {
       console.error('Error adding topic:', error);

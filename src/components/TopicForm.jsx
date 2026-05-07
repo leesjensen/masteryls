@@ -4,6 +4,17 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
   const [newTitle, setNewTitle] = React.useState(topic.title || '');
   const [newType, setNewType] = React.useState(topic.type || 'instruction');
   const [newDescription, setNewDescription] = React.useState(topic.description || '');
+  const [newPoints, setNewPoints] = React.useState(topic.points ?? (topic.type === 'exam' ? 200 : topic.type === 'project' ? 100 : ''));
+
+  React.useEffect(() => {
+    if (newType === 'exam') {
+      setNewPoints((prev) => (prev === '' || prev === undefined || prev === null ? 200 : prev));
+    } else if (newType === 'project') {
+      setNewPoints((prev) => (prev === '' || prev === undefined || prev === null ? 100 : prev));
+    } else {
+      setNewPoints('');
+    }
+  }, [newType]);
 
   const submitButtonText = topic.state === 'stub' ? 'Generate' : 'Save';
 
@@ -26,9 +37,21 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
           <option value="exam">Exam</option>
           <option value="project">Project</option>
         </select>
+        {(newType === 'exam' || newType === 'project') && (
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={newPoints}
+            onChange={(e) => setNewPoints(e.target.value === '' ? '' : Number(e.target.value))}
+            className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+            placeholder="Points"
+            disabled={isLoading}
+          />
+        )}
         <textarea placeholder={newType === 'embedded' ? 'Embedded URL' : 'Description'} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" rows={3} disabled={isLoading} />
         <div className="flex gap-2">
-          <button onClick={() => onSubmit(newTitle, newDescription, newType)} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1" disabled={!newTitle.trim() || isLoading}>
+          <button onClick={() => onSubmit(newTitle, newDescription, newType, newPoints === '' ? undefined : Number(newPoints))} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1" disabled={!newTitle.trim() || isLoading}>
             {isLoading && <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>}
             {isLoading ? 'Adding...' : submitButtonText || 'Add'}
           </button>

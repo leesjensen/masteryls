@@ -142,6 +142,12 @@ async function loadFromDefinition(catalogEntry) {
       if (!topic.state) {
         topic.state = 'published';
       }
+      if (topic.type === 'exam' && topic.points === undefined) {
+        topic.points = 200;
+      }
+      if (topic.type === 'project' && topic.points === undefined) {
+        topic.points = 100;
+      }
     }
   }
 
