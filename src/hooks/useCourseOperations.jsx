@@ -1381,6 +1381,22 @@ Requirements:
   }
 
   async function cleanCanvasCourse(canvasCourseId, setUpdateMessage) {
+    async function getAllCanvasItems(endpointBase) {
+      let pagePos = 1;
+      const desiredCount = 20;
+      let count = desiredCount;
+      const items = [];
+
+      while (count == desiredCount) {
+        const pageItems = await service.makeCanvasApiRequest(`${endpointBase}?page=${pagePos}&per_page=${desiredCount}`, 'GET');
+        items.push(...pageItems);
+        count = pageItems.length;
+        pagePos++;
+      }
+
+      return items;
+    }
+
     let pagePos = 1;
     const desiredCount = 20;
     let count = desiredCount;
@@ -1395,6 +1411,18 @@ Requirements:
     for (const page of pages) {
       setUpdateMessage(`Deleting Canvas page '${page.title}'`);
       await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${page.page_id}`, 'DELETE');
+    }
+
+    const quizzes = await getAllCanvasItems(`/courses/${canvasCourseId}/quizzes`);
+    for (const quiz of quizzes) {
+      setUpdateMessage(`Deleting Canvas quiz '${quiz.title || quiz.name || quiz.id}'`);
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${quiz.id}`, 'DELETE');
+    }
+
+    const assignments = await getAllCanvasItems(`/courses/${canvasCourseId}/assignments`);
+    for (const assignment of assignments) {
+      setUpdateMessage(`Deleting Canvas assignment '${assignment.name || assignment.id}'`);
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${assignment.id}`, 'DELETE');
     }
 
     count = desiredCount;

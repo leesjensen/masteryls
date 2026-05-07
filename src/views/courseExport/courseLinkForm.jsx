@@ -132,7 +132,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
           <div className="mt-3 flex items-center space-x-2">
             <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
             <label htmlFor="delete-existing" className="text-sm text-gray-700">
-              Delete existing pages, assignments, and modules
+              Delete existing pages, quizzes, assignments, and modules
             </label>
           </div>
         </div>
