@@ -120,7 +120,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
   } else {
     // notStarted
     return (
-      <div className="p-6">
+      <div className="p-6 w-full">
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-blue-500">{learningSession?.topic.title}</div>
           <p className="my-4">{learningSession?.topic.description}</p>
