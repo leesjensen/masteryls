@@ -154,7 +154,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={viewCourse}>
             View Course
           </button>
-          <button disabled={!course?.externalRefs?.canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-rose-500 hover:bg-rose-600 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={unlinkCourse}>
+          <button disabled={!course?.externalRefs?.canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={unlinkCourse}>
             Unlink course
           </button>
         </div>
