@@ -1396,14 +1396,24 @@ Requirements:
     await verifyCanvasAccess(course);
 
     const updatedCourse = Course.copy(course);
-    updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
+    const scheduleFiles = Array.isArray(updatedCourse?.schedule?.files) ? updatedCourse.schedule.files.filter((file) => file && file.path) : [];
+    const selectedSchedule = scheduleFiles.find((file) => file.id === selectedScheduleFileId) || scheduleFiles.find((file) => file.default) || scheduleFiles[0] || null;
+    updatedCourse.externalRefs = {
+      ...updatedCourse.externalRefs,
+      canvasCourseId,
+      ...(selectedSchedule?.id ? { canvasScheduleFileId: selectedSchedule.id } : {}),
+    };
+    if (!selectedSchedule?.id && updatedCourse.externalRefs?.canvasScheduleFileId) {
+      const { canvasScheduleFileId, ...remainingRefs } = updatedCourse.externalRefs;
+      updatedCourse.externalRefs = remainingRefs;
+    }
 
     if (deleteExisting) {
       setUpdateMessage(`Cleaning up existing Canvas course content`);
       await canvasSync.cleanCanvasCourse({ canvasCourseId, setUpdateMessage });
     }
 
-    const dueDatesByTopicId = await getScheduleDueDatesByTopicId(updatedCourse, selectedScheduleFileId);
+    const dueDatesByTopicId = await getScheduleDueDatesByTopicId(updatedCourse, selectedSchedule?.id || null);
     await canvasSync.linkCourseResources({
       updatedCourse,
       canvasCourseId,

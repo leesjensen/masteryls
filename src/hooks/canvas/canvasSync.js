@@ -275,7 +275,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
   function removeCanvasReferences(updatedCourse) {
     if (updatedCourse.externalRefs) {
-      const { canvasCourseId, ...remainingCourseRefs } = updatedCourse.externalRefs;
+      const { canvasCourseId, canvasScheduleFileId, ...remainingCourseRefs } = updatedCourse.externalRefs;
       updatedCourse.externalRefs = Object.keys(remainingCourseRefs).length > 0 ? remainingCourseRefs : undefined;
     }
 

@@ -165,6 +165,33 @@ test('course link performs successful link flow', async ({ page }) => {
   await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
 });
 
+test('course link preselects saved schedule from course external refs', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    courseJsonOverride: {
+      externalRefs: {
+        canvasCourseId: '12345',
+        canvasScheduleFileId: 'alt-schedule',
+      },
+      schedule: {
+        id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
+        files: [
+          { id: 'default', title: 'Default Schedule', path: 'schedule/schedule.md', default: true, state: 'published' },
+          { id: 'alt-schedule', title: 'Alt Schedule', path: 'schedule/alt-schedule.md', default: false, state: 'published' },
+        ],
+      },
+    },
+  });
+
+  await navigateToDashboard(page);
+  await openCourseLinking(page);
+
+  await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
+  await page.waitForTimeout(300);
+  await expect(page.getByLabel('Canvas course ID', { exact: true })).toHaveValue('12345');
+  await expect(page.getByLabel('Schedule for due dates', { exact: true })).toHaveValue('alt-schedule');
+});
+
 test('course link maps topic types to page, quiz, and assignment endpoints', async ({ page }) => {
   await initBasicCourse({
     page,

@@ -15,8 +15,10 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     const course = await courseOps.getCourse(courseId);
     setCourse(course);
     const scheduleFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files : [];
+    const persistedScheduleId = course?.externalRefs?.canvasScheduleFileId;
+    const persistedSchedule = persistedScheduleId ? scheduleFiles.find((file) => file.id === persistedScheduleId) : null;
     const defaultSchedule = scheduleFiles.find((file) => file.default) || scheduleFiles[0];
-    setSelectedScheduleFileId(defaultSchedule?.id || '');
+    setSelectedScheduleFileId((persistedSchedule || defaultSchedule)?.id || '');
     if (course.externalRefs?.canvasCourseId) {
       setCanvasCourseId(course.externalRefs.canvasCourseId);
     } else {
@@ -84,6 +86,24 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     window.open(url, '_blank');
   }
 
+  function openSchedulePage(event) {
+    event.preventDefault();
+
+    if (!course?.id) {
+      return;
+    }
+
+    if (selectedScheduleFileId) {
+      courseOps.saveEnrollmentUiSettings(course.id, { selectedScheduleFile: selectedScheduleFileId });
+    }
+
+    window.open(`/course/${course.id}/schedule`, '_blank');
+  }
+
+  const scheduleFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files : [];
+  const selectedSchedule = scheduleFiles.find((file) => file.id === selectedScheduleFileId) || scheduleFiles[0];
+  const selectedScheduleTitle = selectedSchedule?.title || selectedSchedule?.path || 'No schedule selected';
+
   return (
     <>
       {/* Loading Overlay */}
@@ -145,18 +165,31 @@ export default function CourseLinkForm({ courseOps, onClose }) {
           </div>
         </div>
 
-        {Array.isArray(course?.schedule?.files) && course.schedule.files.length > 0 && (
+        {scheduleFiles.length > 0 && (
           <div>
             <label htmlFor="schedule-file" className="block text-lg font-medium text-gray-700 mb-1">
               Schedule for due dates
             </label>
             <select id="schedule-file" value={selectedScheduleFileId} onChange={(e) => setSelectedScheduleFileId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
-              {course.schedule.files.map((file) => (
+              {scheduleFiles.map((file) => (
                 <option key={file.id || file.path} value={file.id || ''}>
                   {file.title || file.path}
                 </option>
               ))}
             </select>
+            <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+              <span>
+                Due dates source:{' '}
+                {course?.id ? (
+                  <a href={`/course/${course.id}/schedule`} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-800" onClick={openSchedulePage}>
+                    {selectedScheduleTitle}
+                  </a>
+                ) : (
+                  <strong>{selectedScheduleTitle}</strong>
+                )}
+              </span>
+            </div>
             <p className="text-xs text-gray-500 mt-1">Exam and project due dates will be read from the selected schedule file.</p>
           </div>
         )}
