@@ -108,7 +108,7 @@ Simple **submission** by file
 ### URL submission
 
 ```masteryls
-{"id":"39284", "title":"URL submission", "type":"url-submission" "allowComment":true }
+{"id":"39284", "title":"URL submission", "type":"url-submission", "allowComment":true, "validateUrl":true }
 Simple **submission** by url
 ```
 

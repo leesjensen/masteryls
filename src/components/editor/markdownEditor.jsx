@@ -854,7 +854,7 @@ Simple **submission** by file
 
 const defaultUrlInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"URL submission", "type":"url-submission", "allowComment":true }
+{"id":"", "title":"URL submission", "type":"url-submission", "allowComment":true, "validateUrl":true }
 Simple **submission** by url
 \`\`\`
 `;
