@@ -10,6 +10,36 @@ function parseVisibilityMode(showResults) {
   return normalized === 'always' ? 'always' : 'editor';
 }
 
+const SEGMENT_COLORS = ['bg-slate-300', 'bg-cyan-400', 'bg-sky-500', 'bg-blue-600', 'bg-indigo-600', 'bg-indigo-700', 'bg-slate-700'];
+const AVG_CHIP_COLORS = ['border-slate-300 text-slate-700', 'border-cyan-400 text-cyan-700', 'border-sky-500 text-sky-700', 'border-blue-600 text-blue-700', 'border-indigo-600 text-indigo-700', 'border-indigo-700 text-indigo-800', 'border-slate-700 text-slate-800'];
+
+function getAverageBadgeClass(average, scaleValues) {
+  if (!Array.isArray(scaleValues) || scaleValues.length === 0) {
+    return AVG_CHIP_COLORS[0];
+  }
+
+  const numericAverage = Number(average);
+  const sortedScale = [...scaleValues].map(Number).sort((a, b) => a - b);
+  let closestIndex = 0;
+  let closestDistance = Infinity;
+
+  sortedScale.forEach((value, index) => {
+    const distance = Math.abs(value - numericAverage);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestIndex = index;
+    }
+  });
+
+  // Keep chip colors aligned with the same ordered palette used by summary segments.
+  return AVG_CHIP_COLORS[Math.min(closestIndex, AVG_CHIP_COLORS.length - 1)];
+}
+
+function formatAverage(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(2) : '0.00';
+}
+
 export default function LikertInteraction({ id, body, meta, courseOps }) {
   const progress = useInteractionProgressStore(id) || {};
   const { prompt, questions, scale } = parseLikertBody(body, meta);
@@ -75,53 +105,76 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
         </button>
 
         {canViewResults && (
-          <details className="mt-4 border rounded bg-blue-50 border-blue-700">
-            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-gray-800">Results</summary>
+          <details className="mt-4 rounded-xl border border-blue-700 bg-gradient-to-br from-blue-50 to-slate-100 shadow-sm">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-800">Results</summary>
             <div className="px-4 pb-4">
-              <div className="flex justify-end mb-3">
-                <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onClick={loadSummary}>
-                  Refresh
-                </button>
-              </div>
               {!summary && <div className="text-sm text-gray-500">No responses yet.</div>}
               {summary && (
                 <div className="space-y-4">
                   {(() => {
-                    const globalMaxCount = Math.max(1, ...summary.questions.flatMap((question) => Object.values(question.counts || {})));
+                    return (
+                      <>
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                          <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-3 py-1.5 text-slate-700">
+                            <span className="text-xs text-slate-500">Respondents</span>
+                            <span className="font-semibold">{summary.voters}</span>
+                          </span>
+                          <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-3 py-1.5 text-slate-700">
+                            <span className="text-xs text-slate-500">Overall average</span>
+                            <span className="font-semibold tabular-nums">{formatAverage(summary.overallAverage)}</span>
+                          </span>
+                          <button className="sm:ml-auto px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onClick={loadSummary}>
+                            Refresh
+                          </button>
+                        </div>
 
-                    return summary.questions.map((item) => {
-                      return (
-                        <div key={item.qid}>
-                          <div className="flex justify-between mb-1 items-end">
-                            <span className="font-medium text-gray-700 flex-1 mr-4">{inlineLiteMarkdown(item.text)}</span>
-                            <span className="text-xs text-gray-500 whitespace-nowrap">
-                              Avg {item.average} ({item.responses} responses)
-                            </span>
-                          </div>
-                          <div className="space-y-1">
-                            {scale.values.map((value) => {
-                              const count = item.counts[value] || 0;
-                              const width = Math.round((count / globalMaxCount) * 100);
-                              return (
-                                <div key={value} className="text-xs">
-                                  <div className="flex justify-between text-gray-600 mb-0.5 gap-2">
-                                    <span className="truncate">{scale.labels[value]}</span>
-                                    <span>{count}</span>
-                                  </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                    <div className="bg-blue-500 h-full transition-all duration-700 ease-out" style={{ width: `${width}%` }} />
-                                  </div>
-                                </div>
-                              );
-                            })}
+                        <div className="rounded-lg border border-slate-200 bg-white/70 px-3 py-2">
+                          <div className="flex flex-wrap gap-3 text-xs text-slate-600">
+                            {scale.values.map((value, index) => (
+                              <span key={value} className="inline-flex items-center gap-1.5">
+                                <span className={`inline-block h-2.5 w-2.5 rounded-full ${SEGMENT_COLORS[index % SEGMENT_COLORS.length]}`} />
+                                {scale.labels[value]}
+                              </span>
+                            ))}
                           </div>
                         </div>
-                      );
-                    });
+
+                        {summary.questions.map((item, questionIndex) => {
+                          const badgeClass = getAverageBadgeClass(item.average, scale.values);
+                          const totalResponses = Math.max(0, item.responses);
+
+                          return (
+                            <div key={item.qid} className="rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm" style={{ animationDelay: `${questionIndex * 50}ms` }}>
+                              <div className="mb-2 flex items-start justify-between gap-3">
+                                <span className="font-medium text-slate-700">{inlineLiteMarkdown(item.text)}</span>
+                                <span className={`whitespace-nowrap rounded-full border bg-white px-2.5 py-1 text-xs font-semibold tabular-nums min-w-[6.5rem] text-center ${badgeClass}`}>Avg {formatAverage(item.average)}</span>
+                              </div>
+
+                              <div className="h-4 w-full overflow-hidden rounded-lg bg-slate-100 flex">
+                                {scale.values.map((value, index) => {
+                                  const count = item.counts[value] || 0;
+                                  const percentage = totalResponses > 0 ? (count / totalResponses) * 100 : 0;
+                                  return <div key={value} className={`${SEGMENT_COLORS[index % SEGMENT_COLORS.length]} h-full transition-all duration-700 ease-out`} style={{ width: `${percentage}%` }} title={`${scale.labels[value]}: ${count} (${Math.round(percentage)}%)`} />;
+                                })}
+                              </div>
+
+                              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                                {scale.values.map((value) => {
+                                  const count = item.counts[value] || 0;
+                                  const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
+                                  return (
+                                    <span key={value} className="rounded-full bg-slate-100 px-2 py-0.5">
+                                      {scale.labels[value]}: {count} ({percentage}%)
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    );
                   })()}
-                  <div className="pt-2 border-t text-right text-xs text-gray-500">
-                    Overall average: {summary.overallAverage} | Total respondents: {summary.voters}
-                  </div>
                 </div>
               )}
             </div>
