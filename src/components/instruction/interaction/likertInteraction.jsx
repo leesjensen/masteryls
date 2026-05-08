@@ -86,36 +86,39 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
               {!summary && <div className="text-sm text-gray-500">No responses yet.</div>}
               {summary && (
                 <div className="space-y-4">
-                  {summary.questions.map((item) => {
-                    const maxCount = Math.max(1, ...Object.values(item.counts));
-                    return (
-                      <div key={item.qid}>
-                        <div className="flex justify-between mb-1 items-end">
-                          <span className="font-medium text-gray-700 flex-1 mr-4">{inlineLiteMarkdown(item.text)}</span>
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
-                            Avg {item.average} ({item.responses} responses)
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          {scale.values.map((value) => {
-                            const count = item.counts[value] || 0;
-                            const width = Math.round((count / maxCount) * 100);
-                            return (
-                              <div key={value} className="text-xs">
-                                <div className="flex justify-between text-gray-600 mb-0.5 gap-2">
-                                  <span className="truncate">{scale.labels[value]}</span>
-                                  <span>{count}</span>
+                  {(() => {
+                    const globalMaxCount = Math.max(1, ...summary.questions.flatMap((question) => Object.values(question.counts || {})));
+
+                    return summary.questions.map((item) => {
+                      return (
+                        <div key={item.qid}>
+                          <div className="flex justify-between mb-1 items-end">
+                            <span className="font-medium text-gray-700 flex-1 mr-4">{inlineLiteMarkdown(item.text)}</span>
+                            <span className="text-xs text-gray-500 whitespace-nowrap">
+                              Avg {item.average} ({item.responses} responses)
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {scale.values.map((value) => {
+                              const count = item.counts[value] || 0;
+                              const width = Math.round((count / globalMaxCount) * 100);
+                              return (
+                                <div key={value} className="text-xs">
+                                  <div className="flex justify-between text-gray-600 mb-0.5 gap-2">
+                                    <span className="truncate">{scale.labels[value]}</span>
+                                    <span>{count}</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                    <div className="bg-blue-500 h-full transition-all duration-700 ease-out" style={{ width: `${width}%` }} />
+                                  </div>
                                 </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                  <div className="bg-amber-400 h-full transition-all duration-700 ease-out" style={{ width: `${width}%` }} />
-                                </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                   <div className="pt-2 border-t text-right text-xs text-gray-500">
                     Overall average: {summary.overallAverage} | Total respondents: {summary.voters}
                   </div>
