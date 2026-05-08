@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { aiTeachingResponseGenerator } from '../../../ai/aiContentGenerator';
 import Markdown from '../../Markdown';
 import { updateInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
+import ScoreStars from './scoreStars';
 
 export default function TeachingInteraction({ id, topicTitle, body }) {
   const progress = useInteractionProgressStore(id) || {};
@@ -87,7 +88,10 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
         <div className="markdown-body">
           <Markdown content={text} />
         </div>
-        <div className="mt-2 text-sm text-gray-400 text-right">Understanding: {score}%</div>
+        <div className="mt-2 flex items-center justify-end gap-2 text-sm text-gray-500">
+          <span>Understanding:</span>
+          <ScoreStars percent={score} />
+        </div>
       </div>
     );
   };

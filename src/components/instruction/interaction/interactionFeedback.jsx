@@ -1,6 +1,7 @@
 import React from 'react';
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
+import ScoreStars from './scoreStars';
 
 export default function InteractionFeedback({ quizId }) {
   const details = useInteractionProgressStore(quizId);
@@ -10,7 +11,11 @@ export default function InteractionFeedback({ quizId }) {
 
   return (
     <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900 relative">
-      {details.percentCorrect !== undefined && <div className={`absolute bottom-0 right-0 px-1 w-12 text-center bg-blue-100 text-white text-sm font-semibold rounded-br-sm`}>{details.percentCorrect}%</div>}
+      {details.percentCorrect !== undefined && (
+        <div className="absolute bottom-1 right-1 rounded-full border border-blue-200 bg-white/90 px-2 py-1">
+          <ScoreStars percent={details.percentCorrect} />
+        </div>
+      )}
       <div>{inlineLiteMarkdown(details.feedback)}</div>
     </div>
   );

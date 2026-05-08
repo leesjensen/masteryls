@@ -4,6 +4,7 @@ import { useInteractionProgressStore, updateInteractionProgress } from './intera
 import inlineLiteMarkdown from './inlineLiteMarkdown';
 import WebPageInteraction from './webPageInteraction';
 import CopyToClipboard from '../../CopyToClipboard';
+import ScoreStars from './scoreStars';
 
 function fmtDate(d) {
   return new Date(d).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
@@ -346,7 +347,11 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
                   </button>
                   <span>{`Submission ${historyIndex + 1} of ${mergedHistoryItems.length}`}</span>
                   {selectedHistoryDate && <span className="text-gray-500">{selectedHistoryDate}</span>}
-                  {selectedHistoryScore != null && <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">{selectedHistoryScore}%</span>}
+                  {selectedHistoryScore != null && (
+                    <span className="inline-flex items-center rounded-full border border-blue-200 bg-white px-2 py-0.5">
+                      <ScoreStars percent={selectedHistoryScore} />
+                    </span>
+                  )}
                 </div>
 
                 <div className="h-[120px] overflow-y-auto space-y-1 pr-1">
@@ -362,7 +367,11 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
                       className={`w-full text-left border rounded px-3 py-1 text-sm transition-colors duration-200 flex items-center justify-between ${currentHtml === item.details?.html ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
                     >
                       <span className="text-gray-700">{fmtDate(item.createdAt)}</span>
-                      {item.details?.percentCorrect != null && <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">{item.details.percentCorrect}%</span>}
+                      {item.details?.percentCorrect != null && (
+                        <span className="inline-flex items-center rounded-full border border-blue-200 bg-white px-2 py-0.5">
+                          <ScoreStars percent={item.details.percentCorrect} />
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
