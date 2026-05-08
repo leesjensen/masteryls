@@ -790,8 +790,28 @@ class Service {
    * @returns The response data.
    */
   async makeCanvasApiRequest(endpoint: string, method: string = 'GET', body?: object) {
+    const courseMatch = endpoint.match(/^\/courses\/(\d+)(?:\/|\?|$)/);
+    if (!courseMatch?.[1]) {
+      throw new Error('Canvas endpoint must include a course id prefix like /courses/{courseId}/...');
+    }
+
     const { data, error } = await this.supabase.functions.invoke('canvas', {
-      body: { endpoint, method, body },
+      body: { courseId: courseMatch[1], endpoint, method, body },
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  /**
+   * Invokes the Canvas gradebook edge function for secure grade passback.
+   */
+  async makeCanvasGradebookRequest(params: { courseId: string; topicType: 'exam' | 'project'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string }) {
+    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+      body: params,
     });
 
     if (error) {

@@ -345,6 +345,184 @@ Simple **url submission** question
   await expect(page.getByText('Submission received.')).toBeVisible();
 });
 
+test('project submission posts grade via canvasgradebook', async ({ page }) => {
+  const interactionMarkdown = `
+# Project Submission
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123470", "title":"URL submission", "type":"url-submission", "allowComment":true }
+Submit your project URL.
+\`\`\`
+`;
+
+  const gradebookCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    const body = await route.request().postDataJSON();
+    gradebookCalls.push(body);
+    await route.fulfill({ status: 200, json: { ok: true, postedGrade: 100 } });
+  });
+
+  await initBasicCourse({
+    page,
+    topicMarkdown: interactionMarkdown,
+    courseJsonOverride: {
+      externalRefs: {
+        canvasCourseId: '12345',
+      },
+      modules: [
+        {
+          title: 'Projects',
+          topics: [
+            {
+              id: 'project-topic-1',
+              title: 'Project Topic',
+              type: 'project',
+              points: 100,
+              path: 'something/more/topic1.md',
+              externalRefs: { canvasAssignmentId: 999 },
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  await navigateToCourse(page);
+  await expect(page).toHaveURL(/\/topic\/project-topic-1/);
+
+  await page.locator('input[type="url"]').fill('https://example.com/my-project');
+  await page.getByRole('button', { name: 'Submit URL' }).click();
+
+  await expect(page.getByText('Submission received.')).toBeVisible();
+  await expect.poll(() => gradebookCalls.length).toBe(1);
+  const payload = gradebookCalls[0];
+  expect(payload.courseId).toBe('12345');
+  expect(payload.topicType).toBe('project');
+  expect(payload.percentCorrect).toBe(100);
+  expect(payload.pointsPossible).toBe(100);
+  expect(payload.canvasAssignmentId).toBe(999);
+});
+
+test('exam completion posts grade via canvasgradebook', async ({ page }) => {
+  const examMarkdown = `
+# Exam
+\`\`\`masteryls
+{"id":"exam-q1", "title":"Q1", "type":"multiple-choice" }
+Pick the right answer.
+
+- [ ] No
+- [x] Yes
+\`\`\`
+`;
+
+  const gradebookCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    gradebookCalls.push(await route.request().postDataJSON());
+    await route.fulfill({ status: 200, json: { ok: true, postedGrade: 200 } });
+  });
+
+  await initBasicCourse({
+    page,
+    topicMarkdown: examMarkdown,
+    courseJsonOverride: {
+      externalRefs: {
+        canvasCourseId: '12345',
+      },
+      modules: [
+        {
+          title: 'Exams',
+          topics: [
+            {
+              id: 'exam-topic-1',
+              title: 'Exam Topic',
+              type: 'exam',
+              points: 200,
+              path: 'something/more/topic1.md',
+              externalRefs: { canvasQuizId: 701 },
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  await navigateToCourse(page);
+  await expect(page).toHaveURL(/\/topic\/exam-topic-1/);
+
+  await page.getByRole('button', { name: 'Start exam' }).click();
+  await page.getByRole('radio', { name: 'Yes' }).check();
+  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+  await page.getByRole('button', { name: 'Submit exam' }).click();
+
+  await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
+  await expect.poll(() => gradebookCalls.length).toBe(1);
+  const payload = gradebookCalls[0];
+  expect(payload.courseId).toBe('12345');
+  expect(payload.topicType).toBe('exam');
+  expect(payload.pointsPossible).toBe(200);
+  expect(payload.canvasQuizId).toBe(701);
+});
+
+test('project submission still succeeds when canvasgradebook denies request', async ({ page }) => {
+  const interactionMarkdown = `
+# Project Submission
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123471", "title":"URL submission", "type":"url-submission", "allowComment":true }
+Submit your project URL.
+\`\`\`
+`;
+
+  await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    await route.fulfill({ status: 403, json: { error: 'User is not authorized to update this grade' } });
+  });
+
+  await initBasicCourse({
+    page,
+    topicMarkdown: interactionMarkdown,
+    courseJsonOverride: {
+      externalRefs: {
+        canvasCourseId: '12345',
+      },
+      modules: [
+        {
+          title: 'Projects',
+          topics: [
+            {
+              id: 'project-topic-2',
+              title: 'Project Topic',
+              type: 'project',
+              points: 100,
+              path: 'something/more/topic1.md',
+              externalRefs: { canvasAssignmentId: 1001 },
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  await navigateToCourse(page);
+  await expect(page).toHaveURL(/\/topic\/project-topic-2/);
+
+  await page.locator('input[type="url"]').fill('https://example.com/my-project');
+  await page.getByRole('button', { name: 'Submit URL' }).click();
+
+  await expect(page.getByText('Submission received.')).toBeVisible();
+});
+
 test('interaction essay', async ({ page }) => {
   await verifyAiEssayResponse(page, 'Good job joe', 'Good job joe');
 });

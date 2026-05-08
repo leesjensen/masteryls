@@ -870,7 +870,7 @@ const defaultWebPageInteractionTemplate = `
 
 const defaultAiWebPageInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Web page development", "type":"ai-web-page", "gradingCriteria":"The word 'byu' must be included in the HTML.", "height":500 }
+{"id":"", "title":"Web page development", "type":"ai-web-page", "allowAiPrompt":true, "gradingCriteria":"The word 'byu' must be included in the HTML.", "height":500 }
 Interactively create an HTML page from your prompt.
 
 ~~~html

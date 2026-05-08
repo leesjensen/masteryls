@@ -2,6 +2,7 @@ node_modules
 *config.js
 dist
 .DS_Store
+supabase/.temp
 
 # Playwright
 /test-results/

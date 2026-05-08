@@ -1102,7 +1102,49 @@ Requirements:
     const progressUser = providedUser || user;
     if (progressUser) {
       _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type);
-      return service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
+      const saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
+
+      const topic = learningSession?.topic;
+      const course = learningSession?.course;
+      if (topic && course?.externalRefs?.canvasCourseId && (topic.type === 'exam' || topic.type === 'project')) {
+        const shouldSyncExam = topic.type === 'exam' && type === 'exam' && details?.state === 'completed';
+        const shouldSyncProject = topic.type === 'project' && type === 'quizSubmit';
+
+        if (shouldSyncExam || shouldSyncProject) {
+          let percentCorrect = Number.NaN;
+          if (shouldSyncExam) {
+            percentCorrect = Number(details?.results?.ai?.percentCorrect);
+          } else {
+            const submittedPercent = Number(details?.percentCorrect);
+            if (Number.isFinite(submittedPercent)) {
+              percentCorrect = submittedPercent;
+            } else if (details?.type === 'file-submission' || details?.type === 'url-submission') {
+              percentCorrect = 100;
+            }
+          }
+
+          if (Number.isFinite(percentCorrect)) {
+            const pointsPossible = Number(topic?.points ?? (topic.type === 'exam' ? 200 : 100));
+            if (Number.isFinite(pointsPossible) && pointsPossible > 0) {
+              try {
+                await service.makeCanvasGradebookRequest({
+                  courseId: String(course.externalRefs.canvasCourseId),
+                  topicType: topic.type,
+                  percentCorrect,
+                  pointsPossible,
+                  canvasAssignmentId: topic.externalRefs?.canvasAssignmentId,
+                  canvasQuizId: topic.externalRefs?.canvasQuizId,
+                  learnerEmail: progressUser.email,
+                });
+              } catch (error) {
+                console.error(`Unable to sync Canvas grade for topic '${topic.title}': ${error.message}`);
+              }
+            }
+          }
+        }
+      }
+
+      return saved;
     }
   }
 

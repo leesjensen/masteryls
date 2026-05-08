@@ -43,6 +43,11 @@ async function mockLinkRequests(page: any) {
     const body = await route.request().postDataJSON();
     const endpoint = body?.endpoint as string;
     const method = body?.method as string;
+    const courseId = body?.courseId as string;
+    const endpointCourseId = endpoint?.match(/^\/courses\/(\d+)(?:\/|\?|$)/)?.[1];
+    if (!courseId || !endpointCourseId || String(courseId) !== String(endpointCourseId)) {
+      throw new Error(`Canvas payload missing/mismatched courseId for endpoint '${endpoint}': ${JSON.stringify(body)}`);
+    }
 
     if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/modules$/)) {
       nextModuleId += 1;

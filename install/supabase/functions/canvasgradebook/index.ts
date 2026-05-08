@@ -1,8 +1,8 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { createCanvasFunctionHandler } from './handler.js';
+import { createCanvasGradebookHandler } from './handler.js';
 
-const handler = createCanvasFunctionHandler({
+const handler = createCanvasGradebookHandler({
   createSupabaseClientFromAuthHeader: (authHeader: string) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';

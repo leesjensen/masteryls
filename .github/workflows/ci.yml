@@ -45,6 +45,7 @@ jobs:
 
       - name: Test
         run: |
+          npm run test:edge-auth
           npx playwright install chromium
           npm run test:coverage
 
