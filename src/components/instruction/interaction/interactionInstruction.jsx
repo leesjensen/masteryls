@@ -85,7 +85,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const progress = getInteractionProgress(meta.id);
     const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
     return (
-      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || meta.criteria || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'}>
+      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || meta.criteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'}>
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         <div className="space-y-3">{controlJsx}</div>
         {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} />}
@@ -105,7 +105,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     } else if (meta.type === 'file-submission') {
       return <FileInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlInteraction id={meta.id} body={interactionBody} validateUrl={toBoolean(meta.validateUrl, false)} />;
+      return <UrlInteraction id={meta.id} body={interactionBody} validateUrl={toBoolean(meta.validateUrl, false)} urlPrompt={meta.urlPrompt || ''} gradingCriteria={meta.gradingCriteria || meta.criteria || ''} />;
     } else if (meta.type === 'teaching') {
       return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {
@@ -228,7 +228,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const interactionElement = interactionRoot.querySelector('input[type="url"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const validateUrl = toBoolean(interactionRoot.getAttribute('data-plugin-masteryls-validate-url'), false);
-            const percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value, validateUrl });
+            const urlPrompt = interactionRoot.getAttribute('data-plugin-masteryls-url-prompt') || '';
+            const percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value, validateUrl, gradingCriteria, urlPrompt });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'teaching') {
@@ -367,8 +368,48 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return 100;
   }
 
-  async function onUrlInteraction({ id, title, type, body, url, validateUrl = false }) {
+  async function onUrlInteraction({ id, title, type, body, url, validateUrl = false, gradingCriteria = '', urlPrompt = '' }) {
     if (!url) return 0;
+
+    const normalizedCriteria = String(gradingCriteria || '').trim();
+    const normalizedUrlPrompt = String(urlPrompt || '').trim();
+
+    if (normalizedCriteria) {
+      try {
+        const result = await courseOps.getCriteriaTargetFeedback({ title, type, body, learnerUrl: url }, normalizedCriteria, normalizedUrlPrompt);
+        const percentCorrect = Number(result?.percentCorrect ?? 0);
+        const feedback = result?.feedback || 'Submission received.';
+        const details = {
+          type,
+          url,
+          validateUrl,
+          gradingCriteria: normalizedCriteria,
+          urlPrompt: normalizedUrlPrompt,
+          targetUrl: result?.targetUrl,
+          fetchStatus: result?.fetchStatus,
+          percentCorrect,
+          feedback,
+        };
+        updateInteractionProgress(id, details);
+        await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+        return percentCorrect;
+      } catch (error) {
+        const feedback = `Unable to complete criteria-based grading: ${error?.message || String(error)}`;
+        const details = {
+          type,
+          url,
+          validateUrl,
+          gradingCriteria: normalizedCriteria,
+          urlPrompt: normalizedUrlPrompt,
+          percentCorrect: 0,
+          feedback,
+        };
+        updateInteractionProgress(id, details);
+        await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+        return 0;
+      }
+    }
+
     const validateWithServer = validateUrl
       ? ({ url: normalizedUrl, timeoutMs }) => {
           if (typeof courseOps?.validateUrlFromServer === 'function') {

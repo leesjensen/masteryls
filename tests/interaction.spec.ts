@@ -236,7 +236,12 @@ Create an HTML page from your prompt.
   // Newly submitted work should appear in history immediately.
   await page.getByRole('button', { name: /Submission history/ }).click();
   await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toBeVisible();
-  await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toContainText('100%');
+  await expect(
+    page
+      .locator('[data-plugin-masteryls-history-item]')
+      .first()
+      .getByRole('img', { name: /100% score/i }),
+  ).toBeVisible();
   await page.getByRole('button', { name: /Submission history/ }).click();
 
   await page.getByRole('button', { name: /Source code/ }).click();
@@ -275,9 +280,10 @@ Create an HTML page from your prompt.
 
   await page.getByRole('button', { name: /Submission history/ }).click();
   await expect(page.locator('[data-plugin-masteryls-history-item]').first()).toBeVisible();
-  await expect(page.locator('[data-plugin-masteryls-history-item]').filter({ hasText: '90%' })).toBeVisible();
+  const ninetyPercentHistoryItem = page.locator('[data-plugin-masteryls-history-item]').filter({ has: page.getByRole('img', { name: /90% score/i }) });
+  await expect(ninetyPercentHistoryItem).toBeVisible();
 
-  await page.locator('[data-plugin-masteryls-history-item]').filter({ hasText: '90%' }).click();
+  await ninetyPercentHistoryItem.click();
   await expect(page.frameLocator('iframe[title="AI web page"]').getByRole('heading', { name: 'Historical Page' })).toBeVisible();
 });
 
@@ -383,6 +389,186 @@ Simple **url submission** question
   await expect.poll(() => validationCalls.length).toBe(1);
   expect(validationCalls[0].url).toBe('https://cow.com/');
   await expect(page.getByText('URL verified successfully.', { exact: false })).toBeVisible();
+});
+
+test('interaction submission url uses urlPrompt and gradingCriteria for AI grading', async ({ page }) => {
+  const interactionMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123459", "title":"URL submission", "type":"url-submission", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file.", "gradingCriteria":"- the content contains a section named HTML Deliverable" }
+Simple **url submission** question
+\`\`\`
+`;
+
+  const geminiCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    const body = await route.request().postDataJSON();
+    geminiCalls.push(body);
+
+    if (geminiCalls.length === 1) {
+      await route.fulfill({
+        status: 200,
+        json: {
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: 'https://raw.githubusercontent.com/byucsstudent/startup/main/README.md',
+                  },
+                ],
+                role: 'model',
+              },
+              finishReason: 'STOP',
+              index: 0,
+            },
+          ],
+        },
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      json: {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: '{"percentCorrect": 88}\nGreat work. You covered the HTML Deliverable section and most rubric items clearly.',
+                },
+              ],
+              role: 'model',
+            },
+            finishReason: 'STOP',
+            index: 0,
+          },
+        ],
+      },
+    });
+  });
+
+  const urlValidatorCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/urlvalidator(?:\/)?(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    const body = await route.request().postDataJSON();
+    urlValidatorCalls.push(body);
+    await route.fulfill({
+      status: 200,
+      json: {
+        ok: true,
+        status: 200,
+        title: 'Startup README',
+        contentExcerpt: '# HTML Deliverable\n- [x] item 1\n- [ ] item 2',
+      },
+    });
+  });
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+  await page.getByText('topic 1').click();
+
+  await expect(page.getByText('This submission will be examined by AI using your provided URL.')).toBeVisible();
+
+  const urlInput = page.locator('input[type="url"]');
+  await urlInput.click();
+  await urlInput.clear();
+  await urlInput.fill('https://raw.githubusercontent.com/byucsstudent/startup');
+  await expect(urlInput).toHaveValue('https://raw.githubusercontent.com/byucsstudent/startup');
+
+  await page.getByRole('button', { name: 'Submit URL' }).click();
+
+  await expect.poll(() => geminiCalls.length).toBe(2);
+  await expect.poll(() => urlValidatorCalls.length).toBe(1);
+  expect(urlValidatorCalls[0].url).toBe('https://raw.githubusercontent.com/byucsstudent/startup/main/README.md');
+  await expect(page.getByText('Great work. You covered the HTML Deliverable section and most rubric items clearly.')).toBeVisible();
+});
+
+test('interaction submission url uses gradingCriteria directly when urlPrompt is missing', async ({ page }) => {
+  const interactionMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123460", "title":"URL submission", "type":"url-submission", "gradingCriteria":"- the content contains a section named HTML Deliverable" }
+Simple **url submission** question
+\`\`\`
+`;
+
+  const geminiCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    geminiCalls.push(await route.request().postDataJSON());
+    await route.fulfill({
+      status: 200,
+      json: {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: '{"percentCorrect": 77}\nGood progress. You included part of the expected deliverable checklist.',
+                },
+              ],
+              role: 'model',
+            },
+            finishReason: 'STOP',
+            index: 0,
+          },
+        ],
+      },
+    });
+  });
+
+  const urlValidatorCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/urlvalidator(?:\/)?(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    urlValidatorCalls.push(await route.request().postDataJSON());
+    await route.fulfill({
+      status: 200,
+      json: {
+        ok: true,
+        status: 200,
+        title: 'Startup README',
+        contentExcerpt: '# HTML Deliverable\n- [x] item 1\n- [ ] item 2',
+      },
+    });
+  });
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+  await page.getByText('topic 1').click();
+
+  await expect(page.getByText('This submission will be examined by AI using your provided URL.')).toBeVisible();
+
+  const urlInput = page.locator('input[type="url"]');
+  await urlInput.click();
+  await urlInput.clear();
+  await urlInput.fill('https://raw.githubusercontent.com/byucsstudent/startup/main/README.md');
+  await expect(urlInput).toHaveValue('https://raw.githubusercontent.com/byucsstudent/startup/main/README.md');
+
+  await page.getByRole('button', { name: 'Submit URL' }).click();
+
+  await expect.poll(() => geminiCalls.length).toBe(1);
+  await expect.poll(() => urlValidatorCalls.length).toBe(1);
+  expect(urlValidatorCalls[0].url).toBe('https://raw.githubusercontent.com/byucsstudent/startup/main/README.md');
+  await expect(page.getByText('Good progress. You included part of the expected deliverable checklist.')).toBeVisible();
 });
 
 test('project submission posts grade via canvasgradebook', async ({ page }) => {
@@ -603,7 +789,7 @@ Help the learner understand testing.
   await expect(respondButton).toBeEnabled();
   await respondButton.click();
 
-  await expect(page.getByText('Understanding: 82%')).toBeVisible();
+  await expect(page.getByRole('img', { name: /82% score/i })).toBeVisible();
   await expect(submitSession).toBeEnabled();
   await expect(clearButton).toBeEnabled();
 

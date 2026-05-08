@@ -612,6 +612,127 @@ Requirements:
   return { feedback, percentCorrect: feedbackData.percentCorrect ?? 100 };
 }
 
+function extractFirstHttpUrl(text) {
+  const match = String(text || '').match(/https?:\/\/[^\s)\]"'<>]+/i);
+  return match ? match[0] : '';
+}
+
+/**
+ * Generates feedback using explicit grading criteria against fetched target content.
+ *
+ * @async
+ * @param {Object} data - Learner submission context and metadata.
+ * @param {string} gradingCriteria - Criteria used to score the submission.
+ * @param {string} urlPrompt - Prompt used by AI to generate the target URL.
+ * @param {Object} user - Current learner/user context.
+ * @returns {Promise<{ feedback: string, percentCorrect: number, targetUrl: string, fetchStatus?: number }>} Grading feedback and score.
+ */
+export async function aiUrlFeedbackGenerator(data, gradingCriteria, urlPrompt, user) {
+  const sourceUrl = String(data?.learnerUrl || '').trim();
+  if (!sourceUrl) {
+    throw new Error('A learner URL is required for criteria-target grading.');
+  }
+
+  let targetUrl = sourceUrl;
+  const normalizedUrlPrompt = String(urlPrompt || '').trim();
+  if (normalizedUrlPrompt) {
+    const urlGenerationPrompt = `You are a URL targeting assistant.
+Transform the user-provided URL into exactly one target URL to fetch.
+
+User provided URL:
+${sourceUrl}
+
+Transformation instruction:
+${normalizedUrlPrompt}
+
+Example:
+- User provided URL: https://raw.githubusercontent.com/byucsstudent/startup
+- Instruction: Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file.
+- Output URL: https://raw.githubusercontent.com/byucsstudent/startup/main/README.md
+
+Requirements:
+- Return exactly one absolute http or https URL
+- The output must be based on the user provided URL and instruction
+- Prefer deterministic URL transformation (do not invent unrelated URLs)
+- For GitHub repository links, convert to the correct raw content URL when requested
+- Do not return markdown, quotes, labels, or commentary
+- Output must be only the URL`;
+
+    const generatedUrlText = await makeSimpleAiRequest(urlGenerationPrompt, user);
+    targetUrl = extractFirstHttpUrl(generatedUrlText);
+    if (!targetUrl) {
+      throw new Error('Unable to generate a valid target URL from prompt.');
+    }
+  }
+
+  const fetched = await service.makeUrlValidationRequest({
+    url: targetUrl,
+    includeContent: true,
+    maxChars: 12000,
+    timeoutMs: 10000,
+  });
+
+  if (!fetched?.ok) {
+    const fetchReason = fetched?.error || 'Unable to fetch target URL.';
+    return {
+      feedback: `Unable to evaluate against the target URL: ${fetchReason}`,
+      percentCorrect: 0,
+      targetUrl,
+      fetchStatus: fetched?.status,
+    };
+  }
+
+  const prompt = `You are an expert educational reviewer.
+Evaluate the learner submission using the grading criteria and the fetched target reference.
+
+${Object.entries(data || {})
+  .filter(([, v]) => v !== undefined && v !== null && v !== '')
+  .map(([key, value]) => `- ${key}: ${value}`)
+  .join('\n')}
+
+Grading Criteria:
+${gradingCriteria}
+
+Target URL:
+${targetUrl}
+
+Fetched Target Title:
+${fetched?.title || 'N/A'}
+
+Fetched Target Content Excerpt:
+${fetched?.contentExcerpt || ''}
+
+Requirements:
+- Start the response with json in the format: {"percentCorrect": XX}
+- Score 0-100 based on alignment with grading criteria and target reference
+- If grading criteria references checklist completion, count checked items, evaluate quality of described work for each checked item, and weight score by both completion and quality
+- If expected sections are missing, explain what is missing and reduce score accordingly
+- Address the student directly
+- Acknowledge strengths
+- Identify improvement areas clearly and constructively
+- Keep feedback supportive
+- Limit feedback to 180 words or less`;
+
+  let feedbackData = { percentCorrect: undefined };
+  let feedback = await makeSimpleAiRequest(prompt, user);
+  const jsonMatch = feedback.match(/^\s*(?:`+json\s*)?(\{[\s\S]*?\})(?:\s*`+)?/);
+  if (jsonMatch) {
+    try {
+      feedbackData = JSON.parse(jsonMatch[1]);
+      feedback = feedback.slice(jsonMatch.index + jsonMatch[0].length).trim();
+    } catch (error) {
+      console.error('Failed to parse AI feedback JSON:', error);
+    }
+  }
+
+  return {
+    feedback,
+    percentCorrect: feedbackData.percentCorrect ?? 100,
+    targetUrl,
+    fetchStatus: fetched?.status,
+  };
+}
+
 /**
  * Sends a prompt to the Gemini generative language model and returns the generated content.
  *
