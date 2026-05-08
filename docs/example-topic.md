@@ -67,7 +67,7 @@ I found this instruction helpful?
 {"id":"9f6b1470-6384-45f8-a13a-045b9278f6a2", "title":"Lesson Reflection", "type":"likert", "showResults":"always"}
 Rate each statement on the same scale.
 
-Scale: 1=Strongly disagree | 2=Disagree | 3=Neutral | 4=Agree | 5=Strongly agree
+Scale: Strongly disagree | Disagree | Neutral | Agree | Strongly agree
 
 | qid | item |
 |-----|------|
@@ -80,7 +80,7 @@ Scale: 1=Strongly disagree | 2=Disagree | 3=Neutral | 4=Agree | 5=Strongly agree
 {"id":"ef1f9d20-99b5-4adc-ab98-3a6536234103", "title":"Team Pulse (Editor Results)", "type":"likert", "showResults":"editor", "required":"false"}
 Rate each statement.
 
-Scale: 1=Never | 2=Rarely | 3=Sometimes | 4=Often | 5=Always
+Scale: Never | Rarely | Sometimes | Often | Always
 
 | id | statement |
 |----|-----------|
@@ -94,7 +94,7 @@ Scale: 1=Never | 2=Rarely | 3=Sometimes | 4=Often | 5=Always
 - `type`: Must be `likert`.
 - `showResults`: Optional. `always` shows summaries to everyone, `editor` restricts summary visibility to editors/root users.
 - `required`: Optional. Defaults to `true`; set to `false` to allow partial responses.
-- Scale: Use one inline line like `Scale: 1=... | 2=... | ...`.
+- Scale: Use one inline line like `Scale: Strongly disagree | Disagree | Neutral | Agree | Strongly agree` (positions are inferred by ordering).
 - Questions: Use a markdown table with two columns (`qid`/`id` and `item`/`statement`/`question`).
 - Summary: Includes per-question distributions and averages, plus overall average/respondent count.
 

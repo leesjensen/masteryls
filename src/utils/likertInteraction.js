@@ -1,18 +1,17 @@
 export function parseLikertScale(scaleLine = '', fallbackMin = 1, fallbackMax = 5, fallbackLabels = null) {
   const parsedFromLine = {};
+  let scaleTokens = [];
 
   if (typeof scaleLine === 'string' && /^\s*scale\s*:/i.test(scaleLine)) {
-    const tokens = scaleLine
+    scaleTokens = scaleLine
       .replace(/^\s*scale\s*:/i, '')
       .split('|')
       .map((token) => token.trim())
       .filter(Boolean);
 
-    tokens.forEach((token) => {
-      const match = token.match(/^(\d+)\s*=\s*(.+)$/);
-      if (match) {
-        parsedFromLine[Number(match[1])] = match[2].trim();
-      }
+    // Infer values by position from ordered labels.
+    scaleTokens.forEach((token, index) => {
+      parsedFromLine[index + 1] = token;
     });
   }
 

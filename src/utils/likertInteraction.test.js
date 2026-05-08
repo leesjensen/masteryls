@@ -3,8 +3,8 @@ import test from 'node:test';
 
 import { canViewLikertResults, parseLikertBody, parseLikertScale, summarizeLikertResponses } from './likertInteraction.js';
 
-test('parseLikertScale supports inline Scale line tokens', () => {
-  const scale = parseLikertScale('Scale: 1=Strongly disagree | 2=Disagree | 3=Neutral | 4=Agree | 5=Strongly agree');
+test('parseLikertScale supports ordered label-only Scale line tokens', () => {
+  const scale = parseLikertScale('Scale: Strongly disagree | Disagree | Neutral | Agree | Strongly agree');
 
   assert.deepEqual(scale.values, [1, 2, 3, 4, 5]);
   assert.equal(scale.labels[1], 'Strongly disagree');
@@ -12,7 +12,7 @@ test('parseLikertScale supports inline Scale line tokens', () => {
 });
 
 test('parseLikertBody extracts prompt and qid/item rows', () => {
-  const body = `Please rate each statement.\n\nScale: 1=Strongly disagree | 2=Disagree | 3=Neutral | 4=Agree | 5=Strongly agree\n\n| qid | item |\n|-----|------|\n| prep | I came prepared for class. |\n| engage | I stayed engaged. |`;
+  const body = `Please rate each statement.\n\nScale: Strongly disagree | Disagree | Neutral | Agree | Strongly agree\n\n| qid | item |\n|-----|------|\n| prep | I came prepared for class. |\n| engage | I stayed engaged. |`;
 
   const parsed = parseLikertBody(body);
 
