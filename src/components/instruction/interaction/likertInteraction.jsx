@@ -82,16 +82,16 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
         {inlineLiteMarkdown(prompt)}
       </div>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {questions.map((question) => (
-          <div key={question.qid} className="border border-gray-200 rounded p-3">
-            <div className="font-medium text-sm mb-2">{inlineLiteMarkdown(question.text)}</div>
-            <div className="flex flex-wrap gap-3">
+          <div key={question.qid} className="border border-gray-200 rounded-lg px-3 py-2">
+            <div className="font-medium text-sm mb-1.5 leading-snug">{inlineLiteMarkdown(question.text)}</div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1.5">
               {scale.values.map((value) => {
                 const selected = Number(responses[question.qid]) === value;
                 return (
-                  <label key={value} className="cursor-pointer inline-flex items-center gap-1 text-sm">
-                    <input type="radio" name={`likert-${id}-${question.qid}`} value={value} checked={selected} onChange={() => handleSelect(question.qid, value)} data-plugin-masteryls-likert-question={question.qid} data-plugin-masteryls-likert-value={value} />
+                  <label key={value} className="cursor-pointer inline-flex items-center gap-1.5 text-xs sm:text-sm leading-tight">
+                    <input className="h-4 w-4 accent-blue-600 border-slate-400 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1" type="radio" name={`likert-${id}-${question.qid}`} value={value} checked={selected} onChange={() => handleSelect(question.qid, value)} data-plugin-masteryls-likert-question={question.qid} data-plugin-masteryls-likert-value={value} />
                     <span>{scale.labels[value]}</span>
                   </label>
                 );
@@ -110,7 +110,7 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
             <div className="px-4 pb-4">
               {!summary && <div className="text-sm text-gray-500">No responses yet.</div>}
               {summary && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {(() => {
                     return (
                       <>
@@ -144,9 +144,9 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
                           const totalResponses = Math.max(0, item.responses);
 
                           return (
-                            <div key={item.qid} className="rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm" style={{ animationDelay: `${questionIndex * 50}ms` }}>
-                              <div className="mb-2 flex items-start justify-between gap-3">
-                                <span className="font-medium text-slate-700">{inlineLiteMarkdown(item.text)}</span>
+                            <div key={item.qid} className="rounded-lg border border-slate-200 bg-white/80 p-2.5 shadow-sm" style={{ animationDelay: `${questionIndex * 50}ms` }}>
+                              <div className="mb-1.5 flex items-start justify-between gap-2.5">
+                                <span className="font-medium text-slate-700 text-sm leading-snug">{inlineLiteMarkdown(item.text)}</span>
                                 <span className={`whitespace-nowrap rounded-full border bg-white px-2.5 py-1 text-xs font-semibold tabular-nums min-w-[6.5rem] text-center ${badgeClass}`}>Avg {formatAverage(item.average)}</span>
                               </div>
 
@@ -158,12 +158,12 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
                                 })}
                               </div>
 
-                              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-600">
+                              <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs text-slate-600">
                                 {scale.values.map((value) => {
                                   const count = item.counts[value] || 0;
                                   const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
                                   return (
-                                    <span key={value} className="rounded-full bg-slate-100 px-2 py-0.5">
+                                    <span key={value} className="rounded-full bg-slate-100 px-1.5 py-0.5">
                                       {scale.labels[value]}: {count} ({percentage}%)
                                     </span>
                                   );
