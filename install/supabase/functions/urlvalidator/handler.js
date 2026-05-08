@@ -26,6 +26,28 @@ function isBlockedHost(hostname) {
   return false;
 }
 
+function extractTextContent(rawHtml) {
+  const html = String(rawHtml || '');
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractTitle(rawHtml) {
+  const match = String(rawHtml || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (!match) return '';
+  return String(match[1] || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function createUrlValidatorHandler({ createSupabaseClientFromAuthHeader, getEnv, fetchFn = fetch }) {
   return async function handleUrlValidator(req) {
     if (req.method === 'OPTIONS') {
@@ -52,6 +74,8 @@ export function createUrlValidatorHandler({ createSupabaseClientFromAuthHeader, 
     const payload = await req.json();
     const rawUrl = String(payload?.url || '').trim();
     const timeoutMs = Math.min(Math.max(Number(payload?.timeoutMs) || 8000, 1000), 15000);
+    const includeContent = Boolean(payload?.includeContent);
+    const maxChars = Math.min(Math.max(Number(payload?.maxChars) || 12000, 1000), 50000);
 
     if (!rawUrl) {
       return new Response(JSON.stringify({ ok: false, error: 'Please provide a URL before submitting.' }), {
@@ -104,12 +128,22 @@ export function createUrlValidatorHandler({ createSupabaseClientFromAuthHeader, 
 
       if (timerId) clearTimeout(timerId);
 
+      let contentExcerpt = undefined;
+      let title = undefined;
+      if (includeContent) {
+        const rawBody = await response.text();
+        title = extractTitle(rawBody) || undefined;
+        const cleaned = extractTextContent(rawBody);
+        contentExcerpt = cleaned ? cleaned.slice(0, maxChars) : '';
+      }
+
       return new Response(
         JSON.stringify({
           ok: response.ok,
           status: response.status,
           statusText: response.statusText,
           finalUrl: response.url,
+          ...(includeContent ? { title, contentExcerpt } : {}),
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

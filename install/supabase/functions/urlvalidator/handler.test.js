@@ -34,6 +34,26 @@ test('urlvalidator returns success when fetch responds ok', async () => {
   assert.equal(body.status, 200);
 });
 
+test('urlvalidator can return fetched content excerpt when requested', async () => {
+  const handler = createUrlValidatorHandler({
+    createSupabaseClientFromAuthHeader: () => createMockSupabase({ user: { id: 'u5', email: 'u5@test.com' } }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+    fetchFn: async () =>
+      new Response('<html><head><title>Example Page</title></head><body><h1>Hello</h1><p>World</p></body></html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html; charset=utf-8' },
+      }),
+  });
+
+  const response = await handler(makeRequest({ url: 'https://example.com', includeContent: true, maxChars: 200 }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.title, 'Example Page');
+  assert.match(String(body.contentExcerpt), /Hello/);
+  assert.match(String(body.contentExcerpt), /World/);
+});
+
 test('urlvalidator returns non-ok with status for HTTP errors', async () => {
   const handler = createUrlValidatorHandler({
     createSupabaseClientFromAuthHeader: () => createMockSupabase({ user: { id: 'u2', email: 'u2@test.com' } }),

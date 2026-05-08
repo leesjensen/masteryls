@@ -824,7 +824,7 @@ class Service {
   /**
    * Invokes the URL validation edge function to validate URL reachability server-side.
    */
-  async makeUrlValidationRequest(params: { url: string; timeoutMs?: number }) {
+  async makeUrlValidationRequest(params: { url: string; timeoutMs?: number; includeContent?: boolean; maxChars?: number }) {
     const { data, error } = await this.supabase.functions.invoke('urlvalidator', {
       body: params,
     });
