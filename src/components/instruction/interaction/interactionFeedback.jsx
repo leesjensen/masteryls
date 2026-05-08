@@ -12,7 +12,7 @@ export default function InteractionFeedback({ quizId }) {
   return (
     <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900 relative">
       {details.percentCorrect !== undefined && (
-        <div className="absolute bottom-1 right-1 rounded-full border border-blue-200 bg-white/90 px-2 py-1">
+        <div className="absolute bottom-1 right-2 ">
           <ScoreStars percent={details.percentCorrect} />
         </div>
       )}
