@@ -101,14 +101,14 @@ Scale: Never | Rarely | Sometimes | Often | Always
 ### File submission
 
 ```masteryls
-{"id":"39283", "title":"File submission", "type":"file-submission" "allowComment":true  }
+{"id":"39283", "title":"File submission", "type":"file-submission" }
 Simple **submission** by file
 ```
 
 ### URL submission
 
 ```masteryls
-{"id":"39284", "title":"URL submission", "type":"url-submission", "allowComment":true, "validateUrl":true }
+{"id":"39284", "title":"URL submission", "type":"url-submission", "validateUrl":true }
 Simple **submission** by url
 ```
 

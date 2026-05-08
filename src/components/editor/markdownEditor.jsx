@@ -847,14 +847,14 @@ Simple **essay** question
 
 const defaultFileInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"File submission", "type":"file-submission", "allowComment":true  }
+{"id":"", "title":"File submission", "type":"file-submission"  }
 Simple **submission** by file
 \`\`\`
 `;
 
 const defaultUrlInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"URL submission", "type":"url-submission", "allowComment":true, "validateUrl":true }
+{"id":"", "title":"URL submission", "type":"url-submission", "validateUrl":true }
 Simple **submission** by url
 \`\`\`
 `;

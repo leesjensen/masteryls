@@ -285,7 +285,7 @@ test('interaction submission file', async ({ page }) => {
   const interactionMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123451", "title":"File submission", "type":"file-submission", "allowComment":true }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123451", "title":"File submission", "type":"file-submission" }
 Simple **file submission** question
 \`\`\`
 `;
@@ -320,7 +320,7 @@ test('interaction submission url', async ({ page }) => {
   const interactionMarkdown = `
 # Quiz
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123457", "title":"URL submission", "type":"url-submission", "allowComment":true }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123457", "title":"URL submission", "type":"url-submission" }
 Simple **url submission** question
 \`\`\`
 `;
@@ -349,7 +349,7 @@ test('project submission posts grade via canvasgradebook', async ({ page }) => {
   const interactionMarkdown = `
 # Project Submission
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123470", "title":"URL submission", "type":"url-submission", "allowComment":true }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123470", "title":"URL submission", "type":"url-submission" }
 Submit your project URL.
 \`\`\`
 `;
@@ -476,7 +476,7 @@ test('project submission still succeeds when canvasgradebook denies request', as
   const interactionMarkdown = `
 # Project Submission
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123471", "title":"URL submission", "type":"url-submission", "allowComment":true }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123471", "title":"URL submission", "type":"url-submission" }
 Submit your project URL.
 \`\`\`
 `;
