@@ -862,7 +862,7 @@ Simple **submission** by file
 
 const defaultUrlInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"URL submission", "type":"url-submission", "validateUrl":true }
+{"id":"", "title":"URL submission", "type":"url-submission", "validateUrl":true, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
 Simple **submission** by url
 \`\`\`
 `;

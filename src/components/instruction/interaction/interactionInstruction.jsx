@@ -85,7 +85,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const progress = getInteractionProgress(meta.id);
     const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
     return (
-      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || meta.criteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'}>
+      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'}>
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         <div className="space-y-3">{controlJsx}</div>
         {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} />}
@@ -105,7 +105,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     } else if (meta.type === 'file-submission') {
       return <FileInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'url-submission') {
-      return <UrlInteraction id={meta.id} body={interactionBody} validateUrl={toBoolean(meta.validateUrl, false)} urlPrompt={meta.urlPrompt || ''} gradingCriteria={meta.gradingCriteria || meta.criteria || ''} />;
+      return <UrlInteraction id={meta.id} body={interactionBody} validateUrl={toBoolean(meta.validateUrl, false)} urlPrompt={meta.urlPrompt || ''} gradingCriteria={meta.gradingCriteria || ''} />;
     } else if (meta.type === 'teaching') {
       return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {
