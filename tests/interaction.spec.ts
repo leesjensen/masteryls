@@ -345,6 +345,46 @@ Simple **url submission** question
   await expect(page.getByText('Submission received.')).toBeVisible();
 });
 
+test('interaction submission url validates through urlvalidator when enabled', async ({ page }) => {
+  const interactionMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123458", "title":"URL submission", "type":"url-submission", "validateUrl":true }
+Simple **url submission** question
+\`\`\`
+`;
+
+  const validationCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/urlvalidator(?:\/)?(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    const body = await route.request().postDataJSON();
+    validationCalls.push(body);
+    await route.fulfill({ status: 200, json: { ok: true, status: 200 } });
+  });
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+  await expect(page.getByText('This URL will be validated when you submit.')).toBeVisible();
+
+  const urlInput = page.locator('input[type="url"]');
+  await urlInput.click();
+  await urlInput.clear();
+  await urlInput.fill('https://cow.com');
+  await expect(urlInput).toHaveValue('https://cow.com');
+
+  await page.getByRole('button', { name: 'Submit URL' }).click();
+
+  await expect.poll(() => validationCalls.length).toBe(1);
+  expect(validationCalls[0].url).toBe('https://cow.com/');
+  await expect(page.getByText('URL verified successfully.', { exact: false })).toBeVisible();
+});
+
 test('project submission posts grade via canvasgradebook', async ({ page }) => {
   const interactionMarkdown = `
 # Project Submission

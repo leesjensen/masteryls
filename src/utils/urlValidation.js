@@ -18,7 +18,7 @@ function feedbackForStatus(status) {
   return `URL validation returned status ${status}.`;
 }
 
-export async function validateSubmittedUrl({ url, validateUrl = false, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
+export async function validateSubmittedUrl({ url, validateUrl = false, validateWithServer = null, fetchImpl = globalThis.fetch, timeoutMs = 8000 }) {
   if (!url) {
     return { percentCorrect: 0, feedback: 'Please provide a URL before submitting.' };
   }
@@ -36,6 +36,35 @@ export async function validateSubmittedUrl({ url, validateUrl = false, fetchImpl
 
   if (!validateUrl) {
     return { percentCorrect: 100, feedback: 'Submission received. Thank you!' };
+  }
+
+  if (typeof validateWithServer === 'function') {
+    try {
+      const result = await validateWithServer({ url: parsed.toString(), timeoutMs });
+      const status = Number(result?.status);
+      const hasStatus = Number.isFinite(status) && status > 0;
+
+      if (result?.ok) {
+        const feedback = hasStatus ? feedbackForStatus(status) : 'URL verified successfully.';
+        return {
+          percentCorrect: 100,
+          feedback,
+          validationStatus: hasStatus ? status : undefined,
+        };
+      }
+
+      const fallbackFeedback = hasStatus ? feedbackForStatus(status) : 'Unable to validate URL from the server. Please verify the link and try again.';
+      return {
+        percentCorrect: hasStatus && status >= 400 ? 20 : 30,
+        feedback: result?.error || fallbackFeedback,
+        validationStatus: hasStatus ? status : undefined,
+      };
+    } catch (error) {
+      return {
+        percentCorrect: 30,
+        feedback: error?.message || 'Unable to validate URL from the server right now.',
+      };
+    }
   }
 
   if (typeof fetchImpl !== 'function') {

@@ -1088,6 +1088,10 @@ Requirements:
     return makeSimpleAiRequest(data, user);
   }
 
+  async function validateUrlFromServer({ url, timeoutMs = 8000 }) {
+    return service.makeUrlValidationRequest({ url, timeoutMs });
+  }
+
   async function getExamState() {
     if (learningSession?.enrollment && learningSession?.topic) {
       const progress = await service.getProgress({ types: ['exam'], topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
@@ -1599,6 +1603,7 @@ Requirements:
     getPromptResponse,
     getAiWebPageFeedback,
     getAiWebPageResponse,
+    validateUrlFromServer,
     addProgress,
     getProgress,
     getTopicProgress,

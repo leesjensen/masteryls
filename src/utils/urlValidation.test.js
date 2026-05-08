@@ -24,6 +24,27 @@ test('validateSubmittedUrl gives full score when fetch is successful', async () 
   assert.equal(result.validationStatus, 200);
 });
 
+test('validateSubmittedUrl uses server validator callback when provided', async () => {
+  const result = await validateSubmittedUrl({
+    url: 'https://example.com',
+    validateUrl: true,
+    validateWithServer: async () => ({ ok: true, status: 200 }),
+    fetchImpl: async () => ({ ok: false, status: 500 }),
+  });
+  assert.equal(result.percentCorrect, 100);
+  assert.equal(result.validationStatus, 200);
+});
+
+test('validateSubmittedUrl surfaces server validator error message', async () => {
+  const result = await validateSubmittedUrl({
+    url: 'https://example.com',
+    validateUrl: true,
+    validateWithServer: async () => ({ ok: false, error: 'URL could not be reached from server.' }),
+  });
+  assert.equal(result.percentCorrect, 30);
+  assert.match(result.feedback, /could not be reached/i);
+});
+
 test('validateSubmittedUrl gives partial score when fetch fails', async () => {
   const result = await validateSubmittedUrl({
     url: 'https://example.com/missing',

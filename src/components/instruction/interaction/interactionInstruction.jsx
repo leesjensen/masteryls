@@ -369,7 +369,18 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   async function onUrlInteraction({ id, title, type, body, url, validateUrl = false }) {
     if (!url) return 0;
-    const { percentCorrect, feedback, validationStatus } = await validateSubmittedUrl({ url, validateUrl });
+    const validateWithServer = validateUrl
+      ? ({ url: normalizedUrl, timeoutMs }) => {
+          if (typeof courseOps?.validateUrlFromServer === 'function') {
+            return courseOps.validateUrlFromServer({ url: normalizedUrl, timeoutMs });
+          }
+          if (typeof courseOps?.service?.makeUrlValidationRequest === 'function') {
+            return courseOps.service.makeUrlValidationRequest({ url: normalizedUrl, timeoutMs });
+          }
+          throw new Error('URL validation service is not configured.');
+        }
+      : null;
+    const { percentCorrect, feedback, validationStatus } = await validateSubmittedUrl({ url, validateUrl, validateWithServer });
     const details = { type, url, validateUrl, validationStatus, percentCorrect, feedback };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);

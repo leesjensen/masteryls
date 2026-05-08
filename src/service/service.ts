@@ -822,6 +822,21 @@ class Service {
   }
 
   /**
+   * Invokes the URL validation edge function to validate URL reachability server-side.
+   */
+  async makeUrlValidationRequest(params: { url: string; timeoutMs?: number }) {
+    const { data, error } = await this.supabase.functions.invoke('urlvalidator', {
+      body: params,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
+
+  /**
    * Invokes the Gemini AI API via a Supabase Edge Function.
    * @param body - The prompt and other parameters.
    * @returns The text content of the AI response.
