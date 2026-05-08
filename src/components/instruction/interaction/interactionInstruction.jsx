@@ -4,6 +4,7 @@ import EssayInteraction from './essayInteraction';
 import PromptInteraction from './promptInteraction';
 import MultipleChoiceInteraction from './multipleChoiceInteraction';
 import SurveyInteraction from './surveyInteraction';
+import LikertInteraction from './likertInteraction';
 import FileInteraction from './fileInteraction';
 import UrlInteraction from './urlInteraction';
 import TeachingInteraction from './teachingInteraction';
@@ -42,6 +43,7 @@ import { isSubmittableInteractionType, parseInteractionMeta } from '../../../uti
  * - multiple-choice: Single correct answer selection
  * - multiple-select: Multiple correct answers selection
  * - essay: Text-based essay responses
+ * - likert: Multi-question shared-scale survey responses
  * - file-submission: File upload submissions
  * - url-submission: URL link submissions
  * - teaching: AI-assisted teaching sessions
@@ -85,7 +87,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || meta.criteria || ''}>
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        {instructionState !== 'exam' && meta.type !== 'survey' && <InteractionFeedback quizId={meta.id} />}
+        {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} />}
       </div>
     );
   }
@@ -95,6 +97,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       return <MultipleChoiceInteraction id={meta.id} quizType={meta.type} body={interactionBody} />;
     } else if (meta.type === 'survey') {
       return <SurveyInteraction id={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
+    } else if (meta.type === 'likert') {
+      return <LikertInteraction id={meta.id} body={interactionBody} meta={meta} courseOps={courseOps} />;
     } else if (meta.type === 'essay') {
       return <EssayInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'file-submission') {
@@ -193,6 +197,19 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           selected.sort((a, b) => a - b);
 
           await onSurveyInteraction({ id, type, selected });
+        } else if (type === 'likert') {
+          displayGrade(interactionRoot, -1);
+          const selectedInputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-likert-question]:checked'));
+          const responses = {};
+          selectedInputs.forEach((inp) => {
+            const questionId = inp.getAttribute('data-plugin-masteryls-likert-question');
+            const value = Number(inp.getAttribute('data-plugin-masteryls-likert-value'));
+            if (questionId && Number.isFinite(value)) {
+              responses[questionId] = value;
+            }
+          });
+
+          await onLikertInteraction({ id, type, responses });
         } else if (type === 'essay') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
@@ -243,6 +260,13 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   async function onSurveyInteraction({ id, type, selected }) {
     const details = { type, selected };
+    updateInteractionProgress(id, details);
+    await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+    return true;
+  }
+
+  async function onLikertInteraction({ id, type, responses }) {
+    const details = { type, responses };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;

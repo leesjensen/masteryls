@@ -61,6 +61,43 @@ I found this instruction helpful?
 - [ ] 🙁 **Not** helpful
 ```
 
+### Likert
+
+```masteryls
+{"id":"9f6b1470-6384-45f8-a13a-045b9278f6a2", "title":"Lesson Reflection", "type":"likert", "showResults":"always"}
+Rate each statement on the same scale.
+
+Scale: 1=Strongly disagree | 2=Disagree | 3=Neutral | 4=Agree | 5=Strongly agree
+
+| qid | item |
+|-----|------|
+| prep | I came prepared for class. |
+| engage | I stayed engaged throughout the lesson. |
+| confidence | I feel confident using the new skill. |
+```
+
+```masteryls
+{"id":"ef1f9d20-99b5-4adc-ab98-3a6536234103", "title":"Team Pulse (Editor Results)", "type":"likert", "showResults":"editor", "required":"false"}
+Rate each statement.
+
+Scale: 1=Never | 2=Rarely | 3=Sometimes | 4=Often | 5=Always
+
+| id | statement |
+|----|-----------|
+| communication | My team communicated effectively this week. |
+| support | I felt supported when I got stuck. |
+| ownership | I took ownership of my assigned tasks. |
+```
+
+#### likert authoring notes
+
+- `type`: Must be `likert`.
+- `showResults`: Optional. `always` shows summaries to everyone, `editor` restricts summary visibility to editors/root users.
+- `required`: Optional. Defaults to `true`; set to `false` to allow partial responses.
+- Scale: Use one inline line like `Scale: 1=... | 2=... | ...`.
+- Questions: Use a markdown table with two columns (`qid`/`id` and `item`/`statement`/`question`).
+- Summary: Includes per-question distributions and averages, plus overall average/respondent count.
+
 ### File submission
 
 ```masteryls

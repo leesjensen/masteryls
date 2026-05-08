@@ -6,6 +6,7 @@ import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { extractInteractionMetas, isSubmittableInteractionType } from '../utils/interactionMeta';
 import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
+import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 
@@ -1218,6 +1219,29 @@ Requirements:
     return { voters: Object.keys(voters).length, votes };
   }
 
+  async function getLikertSummary(interactionId, { questions = [], scaleValues = [] } = {}) {
+    const progressItems = await getProgress({ interactionId, types: ['quizSubmit'], limit: 1000 });
+
+    // Only use each learner's latest submission.
+    const voters = progressItems.data.reduce((acc, item) => {
+      const userId = item.userId;
+      if (!acc[userId] || new Date(item.createdAt) > new Date(acc[userId].creationDate)) {
+        acc[userId] = item;
+      }
+      return acc;
+    }, {});
+
+    const latestResponsesByUser = Object.values(voters).map((item) => ({
+      responses: item?.details?.responses || {},
+    }));
+
+    return summarizeLikertResponses({
+      questions,
+      scaleValues,
+      latestResponsesByUser,
+    });
+  }
+
   async function renderCanvasTopicHtml(course, topic) {
     if (topic.type === 'video' || topic.type === 'embedded') {
       return `<iframe style="width: 1280px; height: 720px; max-width: 100%;" src="${topic.path}" title="${topic.title} YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />`;
@@ -1537,6 +1561,7 @@ Requirements:
     getProgress,
     getTopicProgress,
     getSurveySummary,
+    getLikertSummary,
     getExamState,
     repairCanvas,
     unlinkFromCanvas,

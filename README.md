@@ -92,13 +92,13 @@ A [detailed log](/progress) for everything a learner does is tracked of all cour
 
 ### Topic interactions
 
-| Group        | Types                                          | Grading                                                         | AI                                              |
-| ------------ | ---------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------- |
-| Choice-based | `multiple-choice`, `multiple-select`, `survey` | Auto-scored by choices; survey unscored                         | Feedback on multiple-choice and multiple-select |
-| Text-based   | `essay`, `prompt`                              | essay AI graded; prompt unscored                                | Yes - grading and response generation           |
-| AI-chat      | `teaching`                                     | AI scores understanding %                                       | Yes - conversational feedback                   |
-| Submission   | `file-submission`, `url-submission`            | Auto 100% on submit                                             | None                                            |
-| Web content  | `web-page`, `ai-web-page`                      | web-page display only; ai-web-page criteria-graded or auto 100% | ai-web-page generation optional (configurable)  |
+| Group        | Types                                                    | Grading                                                         | AI                                              |
+| ------------ | -------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------- |
+| Choice-based | `multiple-choice`, `multiple-select`, `survey`, `likert` | Auto-scored by choices; survey and likert are unscored          | Feedback on multiple-choice and multiple-select |
+| Text-based   | `essay`, `prompt`                                        | essay AI graded; prompt unscored                                | Yes - grading and response generation           |
+| AI-chat      | `teaching`                                               | AI scores understanding %                                       | Yes - conversational feedback                   |
+| Submission   | `file-submission`, `url-submission`                      | Auto 100% on submit                                             | None                                            |
+| Web content  | `web-page`, `ai-web-page`                                | web-page display only; ai-web-page criteria-graded or auto 100% | ai-web-page generation optional (configurable)  |
 
 Interaction examples:
 
