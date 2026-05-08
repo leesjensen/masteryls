@@ -347,11 +347,6 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
                   </button>
                   <span>{`Submission ${historyIndex + 1} of ${mergedHistoryItems.length}`}</span>
                   {selectedHistoryDate && <span className="text-gray-500">{selectedHistoryDate}</span>}
-                  {selectedHistoryScore != null && (
-                    <span className="inline-flex items-center rounded-full border border-blue-200 bg-white px-2 py-0.5">
-                      <ScoreStars percent={selectedHistoryScore} />
-                    </span>
-                  )}
                 </div>
 
                 <div className="h-[120px] overflow-y-auto space-y-1 pr-1">
@@ -368,7 +363,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
                     >
                       <span className="text-gray-700">{fmtDate(item.createdAt)}</span>
                       {item.details?.percentCorrect != null && (
-                        <span className="inline-flex items-center rounded-full border border-blue-200 bg-white px-2 py-0.5">
+                        <span className="inline-flex items-center">
                           <ScoreStars percent={item.details.percentCorrect} />
                         </span>
                       )}
