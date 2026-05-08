@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe, GraduationCap } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
@@ -760,6 +760,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={CircleDot} onClick={() => insertQuiz(defaultMultipleChoiceInteractionTemplate)} title="Multiple Choice Quiz" />
           <EditorButton icon={SquareX} onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" />
           <EditorButton icon={BookOpenCheck} onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" />
+          <EditorButton icon={GraduationCap} onClick={() => insertQuiz(defaultTeachingInteractionTemplate)} title="Teaching Interaction" />
           <EditorButton icon={FileUp} onClick={() => insertQuiz(defaultFileInteractionTemplate)} title="File Submission Quiz" />
           <EditorButton icon={CloudUpload} onClick={() => insertQuiz(defaultUrlInteractionTemplate)} title="URL Submission Quiz" />
           <EditorButton icon={Globe} onClick={() => insertQuiz(defaultWebPageInteractionTemplate)} title="Web Page Interaction" />
@@ -842,6 +843,13 @@ const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"Essay", "type":"essay" }
 Simple **essay** question
+\`\`\`
+`;
+
+const defaultTeachingInteractionTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"Teaching", "type":"teaching" }
+Help me understand the **Socratic method**.
 \`\`\`
 `;
 
