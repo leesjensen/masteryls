@@ -1114,39 +1114,26 @@ Requirements:
 
       const topic = learningSession?.topic;
       const course = learningSession?.course;
-      if (topic && course?.externalRefs?.canvasCourseId && (topic.type === 'exam' || topic.type === 'project')) {
-        const shouldSyncExam = topic.type === 'exam' && type === 'exam' && details?.state === 'completed';
-        const shouldSyncProject = topic.type === 'project' && type === 'quizSubmit';
+      if (topic && course?.externalRefs?.canvasCourseId && topic.type === 'exam') {
+        const shouldSyncExam = type === 'exam' && details?.state === 'completed';
 
-        if (shouldSyncExam || shouldSyncProject) {
-          let percentCorrect = Number.NaN;
-          if (shouldSyncExam) {
-            percentCorrect = Number(details?.results?.ai?.percentCorrect);
-          } else {
-            const submittedPercent = Number(details?.percentCorrect);
-            if (Number.isFinite(submittedPercent)) {
-              percentCorrect = submittedPercent;
-            } else if (details?.type === 'file-submission' || details?.type === 'url-submission') {
-              percentCorrect = 100;
-            }
-          }
+        if (shouldSyncExam) {
+          const percentCorrect = Number(details?.results?.ai?.percentCorrect);
+          const pointsPossible = Number(topic?.points ?? 200);
 
-          if (Number.isFinite(percentCorrect)) {
-            const pointsPossible = Number(topic?.points ?? (topic.type === 'exam' ? 200 : 100));
-            if (Number.isFinite(pointsPossible) && pointsPossible > 0) {
-              try {
-                await service.makeCanvasGradebookRequest({
-                  courseId: String(course.externalRefs.canvasCourseId),
-                  topicType: topic.type,
-                  percentCorrect,
-                  pointsPossible,
-                  canvasAssignmentId: topic.externalRefs?.canvasAssignmentId,
-                  canvasQuizId: topic.externalRefs?.canvasQuizId,
-                  learnerEmail: progressUser.email,
-                });
-              } catch (error) {
-                console.error(`Unable to sync Canvas grade for topic '${topic.title}': ${error.message}`);
-              }
+          if (Number.isFinite(percentCorrect) && Number.isFinite(pointsPossible) && pointsPossible > 0) {
+            try {
+              await service.makeCanvasGradebookRequest({
+                courseId: String(course.externalRefs.canvasCourseId),
+                topicType: 'exam',
+                percentCorrect,
+                pointsPossible,
+                canvasAssignmentId: topic.externalRefs?.canvasAssignmentId,
+                canvasQuizId: topic.externalRefs?.canvasQuizId,
+                learnerEmail: progressUser.email,
+              });
+            } catch (error) {
+              console.error(`Unable to sync Canvas grade for topic '${topic.title}': ${error.message}`);
             }
           }
         }
@@ -1154,6 +1141,53 @@ Requirements:
 
       return saved;
     }
+  }
+
+  async function syncProjectInteractionGrade(providedUser, interactionId, details = {}) {
+    const progressUser = providedUser || user;
+    const topic = learningSession?.topic;
+    const course = learningSession?.course;
+
+    if (!progressUser) {
+      throw new Error('Unable to sync grade without an authenticated learner.');
+    }
+
+    if (!topic || !course || topic.type !== 'project') {
+      throw new Error('Canvas grade sync is only supported for project topics.');
+    }
+
+    if (!course?.externalRefs?.canvasCourseId) {
+      throw new Error('This project is not linked to a Canvas course.');
+    }
+
+    if (!details?.syncGrade) {
+      throw new Error('This interaction is not configured for Canvas grade sync.');
+    }
+
+    const percentCorrect = Number(details?.percentCorrect);
+    if (!Number.isFinite(percentCorrect)) {
+      throw new Error('A numeric grade is required before syncing to Canvas.');
+    }
+
+    const pointsPossible = Number(topic?.points ?? 100);
+    if (!Number.isFinite(pointsPossible) || pointsPossible <= 0) {
+      throw new Error('Unable to determine valid points possible for this project.');
+    }
+
+    const learnerEmail = String(progressUser?.email || '').trim();
+    if (!learnerEmail) {
+      throw new Error('Unable to sync grade because learner email is missing.');
+    }
+
+    return service.makeCanvasGradebookRequest({
+      courseId: String(course.externalRefs.canvasCourseId),
+      topicType: 'project',
+      percentCorrect,
+      pointsPossible,
+      canvasAssignmentId: topic.externalRefs?.canvasAssignmentId,
+      canvasQuizId: topic.externalRefs?.canvasQuizId,
+      learnerEmail,
+    });
   }
 
   /*
@@ -1610,6 +1644,7 @@ Requirements:
     getAiWebPageResponse,
     validateUrlFromServer,
     addProgress,
+    syncProjectInteractionGrade,
     getProgress,
     getTopicProgress,
     getSurveySummary,

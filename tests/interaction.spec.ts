@@ -571,11 +571,11 @@ Simple **url submission** question
   await expect(page.getByText('Good progress. You included part of the expected deliverable checklist.')).toBeVisible();
 });
 
-test('project submission posts grade via canvasgradebook', async ({ page }) => {
+test('project submission requires manual sync button to post grade via canvasgradebook', async ({ page }) => {
   const interactionMarkdown = `
 # Project Submission
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123470", "title":"URL submission", "type":"url-submission" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123470", "title":"URL submission", "type":"url-submission", "syncGrade":true }
 Submit your project URL.
 \`\`\`
 `;
@@ -624,6 +624,11 @@ Submit your project URL.
   await page.getByRole('button', { name: 'Submit URL' }).click();
 
   await expect(page.getByText('Submission received.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit to Canvas' })).toBeVisible();
+  await expect.poll(() => gradebookCalls.length).toBe(0);
+
+  await page.getByRole('button', { name: 'Submit to Canvas' }).click();
+  await expect(page.getByText('Grade submitted to Canvas.')).toBeVisible();
   await expect.poll(() => gradebookCalls.length).toBe(1);
   const payload = gradebookCalls[0];
   expect(payload.courseId).toBe('12345');
@@ -631,6 +636,8 @@ Submit your project URL.
   expect(payload.percentCorrect).toBe(100);
   expect(payload.pointsPossible).toBe(100);
   expect(payload.canvasAssignmentId).toBe(999);
+  expect(typeof payload.learnerEmail).toBe('string');
+  expect(payload.learnerEmail.length).toBeGreaterThan(0);
 });
 
 test('exam completion posts grade via canvasgradebook', async ({ page }) => {
@@ -702,7 +709,7 @@ test('project submission still succeeds when canvasgradebook denies request', as
   const interactionMarkdown = `
 # Project Submission
 \`\`\`masteryls
-{"id":"a1b2c3d4-e5f6-7890-1234-567890123471", "title":"URL submission", "type":"url-submission" }
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123471", "title":"URL submission", "type":"url-submission", "syncGrade":true }
 Submit your project URL.
 \`\`\`
 `;
@@ -747,6 +754,64 @@ Submit your project URL.
   await page.getByRole('button', { name: 'Submit URL' }).click();
 
   await expect(page.getByText('Submission received.')).toBeVisible();
+  await page.getByRole('button', { name: 'Submit to Canvas' }).click();
+  await expect(page.getByText(/Unable to submit grade to Canvas/)).toBeVisible();
+});
+
+test('project submission without syncGrade does not show sync button or post canvas grade', async ({ page }) => {
+  const interactionMarkdown = `
+# Project Submission
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123473", "title":"URL submission", "type":"url-submission" }
+Submit your project URL.
+\`\`\`
+`;
+
+  const gradebookCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+
+    gradebookCalls.push(await route.request().postDataJSON());
+    await route.fulfill({ status: 200, json: { ok: true, postedGrade: 100 } });
+  });
+
+  await initBasicCourse({
+    page,
+    topicMarkdown: interactionMarkdown,
+    courseJsonOverride: {
+      externalRefs: {
+        canvasCourseId: '12345',
+      },
+      modules: [
+        {
+          title: 'Projects',
+          topics: [
+            {
+              id: 'project-topic-3',
+              title: 'Project Topic',
+              type: 'project',
+              points: 100,
+              path: 'something/more/topic1.md',
+              externalRefs: { canvasAssignmentId: 1002 },
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  await navigateToCourse(page);
+  await expect(page).toHaveURL(/\/topic\/project-topic-3/);
+
+  await page.locator('input[type="url"]').fill('https://example.com/no-sync-project');
+  await page.getByRole('button', { name: 'Submit URL' }).click();
+
+  await expect(page.getByText('Submission received.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit to Canvas' })).toHaveCount(0);
+  await expect.poll(() => gradebookCalls.length).toBe(0);
 });
 
 test('interaction essay', async ({ page }) => {
