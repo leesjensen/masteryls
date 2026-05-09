@@ -1,5 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
+import { TopicIcon } from '../../utils/Icons';
 
 function canAccessCourse(user, courseId) {
   if (!user || !courseId) {
@@ -9,12 +11,19 @@ function canAccessCourse(user, courseId) {
 }
 
 export default function GradebookView({ courseOps }) {
+  const navigate = useNavigate();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [search, setSearch] = React.useState('');
   const [page, setPage] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [overview, setOverview] = React.useState({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
+  const [selectedLearner, setSelectedLearner] = React.useState(null);
+  const [selectedCourse, setSelectedCourse] = React.useState(null);
+  const [expandedEnrollmentId, setExpandedEnrollmentId] = React.useState(null);
+  const [learnerDetailsLoading, setLearnerDetailsLoading] = React.useState(false);
+  const [learnerDetailsError, setLearnerDetailsError] = React.useState(null);
+  const [learnerProgressRows, setLearnerProgressRows] = React.useState([]);
 
   const user = courseOps?.user;
 
@@ -39,6 +48,34 @@ export default function GradebookView({ courseOps }) {
       setPage(1);
     }
   }, [availableCourses, selectedCourseId]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadSelectedCourse() {
+      if (!selectedCourseId) {
+        setSelectedCourse(null);
+        return;
+      }
+
+      try {
+        const course = await courseOps.getCourse(selectedCourseId);
+        if (!cancelled) {
+          setSelectedCourse(course || null);
+        }
+      } catch {
+        if (!cancelled) {
+          setSelectedCourse(null);
+        }
+      }
+    }
+
+    loadSelectedCourse();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseOps, selectedCourseId]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -89,7 +126,88 @@ export default function GradebookView({ courseOps }) {
   function onCourseChange(value) {
     setSelectedCourseId(value);
     setPage(1);
+    setExpandedEnrollmentId(null);
+    setSelectedLearner(null);
+    setLearnerProgressRows([]);
+    setLearnerDetailsError(null);
   }
+
+  async function toggleLearnerDetails(row) {
+    if (!selectedCourseId || !row?.enrollmentId) {
+      return;
+    }
+
+    if (expandedEnrollmentId === row.enrollmentId) {
+      setExpandedEnrollmentId(null);
+      setSelectedLearner(null);
+      setLearnerProgressRows([]);
+      setLearnerDetailsError(null);
+      return;
+    }
+
+    setExpandedEnrollmentId(row.enrollmentId);
+    setSelectedLearner(row);
+    setLearnerDetailsLoading(true);
+    setLearnerDetailsError(null);
+
+    try {
+      const result = await courseOps.getProgress({ courseId: selectedCourseId, enrollmentId: row.enrollmentId, page: 1, limit: 25 });
+      setLearnerProgressRows(Array.isArray(result?.data) ? result.data : []);
+    } catch (loadError) {
+      setLearnerDetailsError(loadError.message || String(loadError));
+      setLearnerProgressRows([]);
+    } finally {
+      setLearnerDetailsLoading(false);
+    }
+  }
+
+  const instructionTopicSummaries = React.useMemo(() => {
+    if (!selectedLearner || !selectedCourse) {
+      return [];
+    }
+
+    const topics = Array.isArray(selectedCourse.allTopics) ? selectedCourse.allTopics : [];
+    const instructionTopics = topics.filter((topic) => topic?.id && topic?.type !== 'embedded' && topic?.type !== 'schedule');
+
+    return instructionTopics.map((topic) => {
+      const topicRows = learnerProgressRows.filter((item) => String(item?.topicId || '') === String(topic.id));
+      const interactionRows = topicRows.filter((item) => String(item?.type || '') === 'quizSubmit');
+      const interactionIds = Array.isArray(topic?.interactions) ? topic.interactions.map((id) => String(id)) : [];
+      const completedInteractionIds = new Set(interactionRows.map((item) => String(item?.interactionId || '')).filter((interactionId) => interactionId && interactionIds.includes(interactionId)));
+      const totalInteractions = interactionIds.length;
+      const completedInteractions = completedInteractionIds.size;
+
+      const latestInteractionById = new Map();
+      interactionRows.forEach((item) => {
+        const interactionId = String(item?.interactionId || '');
+        if (!interactionId || !interactionIds.includes(interactionId)) {
+          return;
+        }
+        const existing = latestInteractionById.get(interactionId);
+        if (!existing || String(item?.createdAt || '') > String(existing?.createdAt || '')) {
+          latestInteractionById.set(interactionId, item);
+        }
+      });
+      const totalPercent = interactionIds.reduce((sum, interactionId) => {
+        const row = latestInteractionById.get(interactionId);
+        const value = Number(row?.details?.percentCorrect);
+        return sum + (Number.isFinite(value) ? value : 0);
+      }, 0);
+      const avgPercent = totalInteractions > 0 ? Math.round((totalPercent / totalInteractions) * 100) / 100 : null;
+      const latestInteraction = interactionRows.slice().sort((a, b) => String(b?.createdAt || '').localeCompare(String(a?.createdAt || '')))[0];
+
+      return {
+        topicId: topic.id,
+        topicType: topic.type,
+        topicTitle: topic.title || 'Untitled topic',
+        interactionCount: interactionRows.length,
+        totalInteractions,
+        completedInteractions,
+        avgPercent,
+        latestInteractionAt: latestInteraction?.createdAt || null,
+      };
+    });
+  }, [selectedCourse, selectedLearner, learnerProgressRows]);
 
   if (!user) {
     return (
@@ -164,17 +282,62 @@ export default function GradebookView({ courseOps }) {
               </tr>
             )}
             {!loading &&
-              overview.rows.map((row) => (
-                <tr key={row.enrollmentId} className="border-t border-gray-100">
-                  <td className="px-3 py-2">{row.learnerName || 'Unknown learner'}</td>
-                  <td className="px-3 py-2">{row.learnerEmail || '-'}</td>
-                  <td className="px-3 py-2">{Number.isFinite(Number(row.masteryPercent)) ? `${Math.round(Number(row.masteryPercent))}%` : '0%'}</td>
-                  <td className="px-3 py-2">{Number(row.completedTopics || 0)}</td>
-                  <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
-                  <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
-                  <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
-                </tr>
-              ))}
+              overview.rows.map((row) => {
+                const isExpanded = expandedEnrollmentId === row.enrollmentId;
+                return (
+                  <React.Fragment key={row.enrollmentId}>
+                    <tr className={`border-t border-gray-100 cursor-pointer ${isExpanded ? 'bg-amber-50/40' : 'hover:bg-gray-50'}`} onClick={() => toggleLearnerDetails(row)}>
+                      <td className="px-3 py-2">{row.learnerName || 'Unknown learner'}</td>
+                      <td className="px-3 py-2">{row.learnerEmail || '-'}</td>
+                      <td className="px-3 py-2">{Number.isFinite(Number(row.masteryPercent)) ? `${Math.round(Number(row.masteryPercent))}%` : '0%'}</td>
+                      <td className="px-3 py-2">{Number(row.completedTopics || 0)}</td>
+                      <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
+                      <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
+                      <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="border-t border-gray-100 bg-amber-50/20">
+                        <td colSpan={7} className="px-4 py-3">
+                          {learnerDetailsLoading && <div className="text-sm text-gray-500">Loading instruction details...</div>}
+                          {!learnerDetailsLoading && learnerDetailsError && <div className="text-sm text-red-700">{learnerDetailsError}</div>}
+                          {!learnerDetailsLoading && !learnerDetailsError && instructionTopicSummaries.length === 0 && <div className="text-sm text-gray-500">No instruction items found for this course.</div>}
+                          {!learnerDetailsLoading && !learnerDetailsError && instructionTopicSummaries.length > 0 && (
+                            <div className="overflow-auto border border-gray-200 rounded-md bg-white">
+                              <table className="min-w-full text-sm">
+                                <thead className="bg-gray-50 text-gray-700">
+                                  <tr>
+                                    <th className="text-left px-2 py-1 font-semibold">Instruction Item</th>
+                                    <th className="text-left px-2 py-1 font-semibold">Interactions Completed</th>
+                                    <th className="text-left px-2 py-1 font-semibold">Average %</th>
+                                    <th className="text-left px-2 py-1 font-semibold">Last Interaction</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {instructionTopicSummaries.map((summary) => (
+                                    <tr key={summary.topicId} className="border-t border-gray-100 text-gray-700">
+                                      <td className="px-2 py-1">
+                                        <button type="button" onClick={() => navigate(`/course/${selectedCourseId}/topic/${summary.topicId}`)} className="text-left text-blue-700 hover:text-blue-900 hover:underline inline-flex items-center gap-1">
+                                          <TopicIcon type={summary.topicType} />
+                                          {summary.topicTitle}
+                                        </button>
+                                      </td>
+                                      <td className="px-2 py-1">
+                                        {summary.completedInteractions}/{summary.totalInteractions}
+                                      </td>
+                                      <td className="px-2 py-1">{summary.avgPercent !== null ? `${summary.avgPercent}%` : '-'}</td>
+                                      <td className="px-2 py-1">{summary.latestInteractionAt ? new Date(summary.latestInteractionAt).toLocaleString() : '-'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
           </tbody>
         </table>
       </div>

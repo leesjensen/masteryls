@@ -51,4 +51,7 @@ test('gradebook view loads learner overview for accessible course', async ({ pag
 
   await page.getByLabel('Search learner').fill('bud');
   await expect(page.getByRole('cell', { name: 'Bud', exact: true })).toBeVisible();
+
+  await page.getByRole('cell', { name: 'Bud', exact: true }).click();
+  await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
 });
