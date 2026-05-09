@@ -172,21 +172,32 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
         return new Response(JSON.stringify({ error: 'Unable to resolve Canvas assignment id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
+      if (submissionUrl) {
+        await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions`, 'POST', {
+          submission: {
+            user_id: learner.id,
+            submission_type: 'online_url',
+            url: submissionUrl,
+          },
+        });
+      }
+
       const postedGrade = autoGrade ? Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100 : null;
       const textComment = buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade });
-      const submissionPayload = {
-        submission: {
-          ...(autoGrade ? { posted_grade: postedGrade } : {}),
-          ...(submissionUrl ? { submission_type: 'online_url', url: submissionUrl } : {}),
-        },
+      const updatePayload = {
+        ...(autoGrade
+          ? {
+              submission: {
+                posted_grade: postedGrade,
+              },
+            }
+          : {}),
         comment: {
           text_comment: textComment,
         },
       };
 
-      const submission = await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions/${learner.id}`, 'PUT', {
-        ...submissionPayload,
-      });
+      const submission = await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions/${learner.id}`, 'PUT', updatePayload);
 
       return new Response(JSON.stringify({ ok: true, postedGrade, autoGrade, learnerId: learner.id, assignmentId, submission }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

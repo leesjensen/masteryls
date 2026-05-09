@@ -40,6 +40,7 @@ function makeRequest(body, auth = 'Bearer token') {
 function buildFetchStub() {
   const calls = [];
   const fetchFn = async (url, init) => {
+    const method = String(init?.method || 'GET').toUpperCase();
     calls.push({ url, init });
     if (url.includes('/search_users?search_term=')) {
       return new Response(JSON.stringify([{ id: 77, email: 'learner@test.com', login_id: 'learner@test.com' }]), { status: 200 });
@@ -47,16 +48,28 @@ function buildFetchStub() {
     if (url.includes('/quizzes/')) {
       return new Response(JSON.stringify({ assignment_id: 555 }), { status: 200 });
     }
-    if (url.includes('/submissions/')) {
-      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    if (url.includes('/submissions') && method === 'POST') {
+      return new Response(JSON.stringify({ id: 321, submission_type: 'online_url' }), { status: 200 });
+    }
+    if (url.includes('/submissions') && method === 'PUT') {
+      return new Response(
+        JSON.stringify({
+          id: 654,
+          submission_type: 'online_url',
+          url: 'https://example.com/project',
+          submitted_at: '2026-05-09T12:34:56Z',
+          workflow_state: 'submitted',
+        }),
+        { status: 200 },
+      );
     }
     return new Response(JSON.stringify({ error: 'unexpected call' }), { status: 500 });
   };
   return { fetchFn, calls };
 }
 
-function getSubmissionRequest(calls) {
-  const call = calls.find((entry) => entry.url.includes('/submissions/'));
+function getSubmissionRequest(calls, method = 'PUT') {
+  const call = calls.find((entry) => entry.url.includes('/submissions') && String(entry.init?.method || '').toUpperCase() === method);
   assert.ok(call, 'expected a Canvas submissions API call');
   return JSON.parse(call.init.body || '{}');
 }
@@ -87,7 +100,7 @@ test('canvasgradebook allows root user', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(calls.length, 2);
-  const submissionRequest = getSubmissionRequest(calls);
+  const submissionRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(submissionRequest.submission.posted_grade, 90);
   assert.ok(typeof submissionRequest.comment?.text_comment === 'string');
   assert.ok(submissionRequest.comment.text_comment.includes('MasteryLS feedback'));
@@ -118,8 +131,14 @@ test('canvasgradebook allows learner self-match', async () => {
   );
 
   assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.submission.submission_type, 'online_url');
+  assert.equal(body.submission.url, 'https://example.com/project');
+  assert.ok(body.submission.submitted_at);
+  assert.notEqual(body.submission.workflow_state, 'unsubmitted');
   assert.equal(calls.length, 3);
-  const submissionRequest = getSubmissionRequest(calls);
+  const submissionRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(submissionRequest.submission.posted_grade, 160);
   assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 160/200 (80%)'));
 });
@@ -178,14 +197,17 @@ test('canvasgradebook can submit comment and url without posting grade when auto
   );
 
   assert.equal(response.status, 200);
-  assert.equal(calls.length, 2);
-  const submissionRequest = getSubmissionRequest(calls);
-  assert.equal(submissionRequest.submission.posted_grade, undefined);
-  assert.equal(submissionRequest.submission.submission_type, 'online_url');
-  assert.equal(submissionRequest.submission.url, 'https://example.com/project');
-  assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 75/100 (75%)'));
-  assert.ok(submissionRequest.comment.text_comment.includes('Feedback:'));
-  assert.ok(submissionRequest.comment.text_comment.includes('Strong progress.'));
+  assert.equal(calls.length, 3);
+
+  const submitAttemptRequest = getSubmissionRequest(calls, 'POST');
+  assert.equal(submitAttemptRequest.submission.submission_type, 'online_url');
+  assert.equal(submitAttemptRequest.submission.url, 'https://example.com/project');
+
+  const updateRequest = getSubmissionRequest(calls, 'PUT');
+  assert.equal(updateRequest.submission, undefined);
+  assert.ok(updateRequest.comment.text_comment.includes('Suggested grade: 75/100 (75%)'));
+  assert.ok(updateRequest.comment.text_comment.includes('Feedback:'));
+  assert.ok(updateRequest.comment.text_comment.includes('Strong progress.'));
 });
 
 test('canvasgradebook denies editor for a different course', async () => {
