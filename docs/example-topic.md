@@ -101,24 +101,29 @@ Scale: Never | Rarely | Sometimes | Often | Always
 ### File submission
 
 ```masteryls
-{"id":"39283", "title":"File submission", "type":"file-submission" }
+{"id":"39283", "title":"File submission", "type":"file-submission", "syncGrade":true, "autoGrade":false }
 Simple **submission** by file
 ```
+
+#### file-submission authoring notes
+
+- `syncGrade`: Optional boolean (`false` by default). When `true`, shows **Submit to Gradebook** after grading feedback is available.
+- `autoGrade`: Optional boolean (`false` by default). When `true`, Gradebook receives both a comment and a posted grade; when `false`, Gradebook receives a submission comment only.
 
 ### URL submission
 
 ```masteryls
-{"id":"39284", "title":"URL submission", "type":"url-submission", "validateUrl":true }
+{"id":"39284", "title":"URL submission", "type":"url-submission", "validateUrl":true, "syncGrade":true, "autoGrade":false }
 Simple **submission** by url
 ```
 
 ```masteryls
-{"id":"39287", "title":"URL submission (AI criteria + URL transform)", "type":"url-submission", "validateUrl":true, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
+{"id":"39287", "title":"URL submission (AI criteria + URL transform)", "type":"url-submission", "validateUrl":true, "syncGrade":true, "autoGrade":false, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
 Submit your repository URL.
 ```
 
 ```masteryls
-{"id":"39288", "title":"URL submission (AI criteria only)", "type":"url-submission", "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly" }
+{"id":"39288", "title":"URL submission (AI criteria only)", "type":"url-submission", "syncGrade":true, "autoGrade":true, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly" }
 Submit a direct URL to the page or document you want graded.
 ```
 
@@ -128,10 +133,15 @@ Submit a direct URL to the page or document you want graded.
 - `validateUrl`: Optional boolean (`false` by default). When `true`, URL format/accessibility is validated on submit.
 - `gradingCriteria`: Optional text rubric for AI scoring.
 - `urlPrompt`: Optional prompt used to transform the learner's submitted URL into a target URL before evaluation.
+- `syncGrade`: Optional boolean (`false` by default). When `true`, shows **Submit to Gradebook** after graded feedback is available.
+- `autoGrade`: Optional boolean (`false` by default). Applies when submitting to Gradebook.
+  - `true`: Submit URL + comment + posted grade.
+  - `false`: Submit URL + comment only (TA/instructor can review before posting grade).
 - Behavior modes:
   - No `gradingCriteria`: URL submissions receive standard submission handling (full credit behavior).
   - `gradingCriteria` only: AI evaluates the learner-submitted URL directly.
   - `gradingCriteria` + `urlPrompt`: AI first transforms the submitted URL, then fetches/evaluates against the transformed target.
+  - Gradebook submission always includes a comment with generated feedback and suggested grade.
 
 ### Teaching
 

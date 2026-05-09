@@ -1153,15 +1153,15 @@ Requirements:
     }
 
     if (!topic || !course || topic.type !== 'project') {
-      throw new Error('Canvas grade sync is only supported for project topics.');
+      throw new Error('Gradebook submission is only supported for project topics.');
     }
 
     if (!course?.externalRefs?.canvasCourseId) {
-      throw new Error('This project is not linked to a Canvas course.');
+      throw new Error('This project is not linked to a Gradebook course.');
     }
 
     if (!details?.syncGrade) {
-      throw new Error('This interaction is not configured for Canvas grade sync.');
+      throw new Error('This interaction is not configured for Gradebook submission.');
     }
 
     const percentCorrect = Number(details?.percentCorrect);
@@ -1176,8 +1176,12 @@ Requirements:
 
     const learnerEmail = String(progressUser?.email || '').trim();
     if (!learnerEmail) {
-      throw new Error('Unable to sync grade because learner email is missing.');
+      throw new Error('Unable to submit grade because learner email is missing.');
     }
+
+    const interactionFeedback = String(details?.feedback || '').trim();
+    const submissionUrl = typeof details?.url === 'string' ? details.url.trim() : '';
+    const autoGrade = details?.autoGrade === true;
 
     return service.makeCanvasGradebookRequest({
       courseId: String(course.externalRefs.canvasCourseId),
@@ -1187,6 +1191,9 @@ Requirements:
       canvasAssignmentId: topic.externalRefs?.canvasAssignmentId,
       canvasQuizId: topic.externalRefs?.canvasQuizId,
       learnerEmail,
+      autoGrade,
+      feedback: interactionFeedback,
+      submissionUrl: submissionUrl || undefined,
     });
   }
 

@@ -809,7 +809,7 @@ class Service {
   /**
    * Invokes the Canvas gradebook edge function for secure grade passback.
    */
-  async makeCanvasGradebookRequest(params: { courseId: string; topicType: 'exam' | 'project'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string }) {
+  async makeCanvasGradebookRequest(params: { courseId: string; topicType: 'exam' | 'project'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string; autoGrade?: boolean; feedback?: string; submissionUrl?: string }) {
     const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
       body: params,
     });

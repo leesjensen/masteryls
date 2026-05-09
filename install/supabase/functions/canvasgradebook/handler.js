@@ -11,6 +11,27 @@ function normalizePercent(percentCorrect) {
   return Math.max(0, Math.min(100, parsed));
 }
 
+function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }) {
+  const lines = [];
+  const suggestedGrade = Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100;
+  lines.push('MasteryLS feedback');
+  lines.push(`Suggested grade: ${suggestedGrade}/${normalizedPoints} (${normalizedPercent}%)`);
+  lines.push(`Auto grade: ${autoGrade ? 'enabled' : 'disabled'}`);
+  lines.push(`Submitted at: ${new Date().toISOString()}`);
+  if (typeof postedGrade === 'number') {
+    lines.push(`Posted grade: ${postedGrade}`);
+  }
+
+  const trimmedFeedback = String(feedback || '').trim();
+  if (trimmedFeedback) {
+    lines.push('');
+    lines.push('Feedback:');
+    lines.push(trimmedFeedback);
+  }
+
+  return lines.join('\n');
+}
+
 export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeader, getEnv, fetchFn = fetch }) {
   return async function handleCanvasGradebook(req) {
     if (req.method === 'OPTIONS') {
@@ -74,10 +95,18 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       return new Response(JSON.stringify({ error: 'User is not authorized to update this grade' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const autoGrade = payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
+    const feedback = String(payload.feedback || '');
+    const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
+
     const normalizedPercent = normalizePercent(percentCorrect);
     const normalizedPoints = Number(pointsPossible);
     if (normalizedPercent === null || !Number.isFinite(normalizedPoints) || normalizedPoints <= 0) {
       return new Response(JSON.stringify({ error: 'Invalid percentCorrect or pointsPossible' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (submissionUrl && !/^https?:\/\//i.test(submissionUrl)) {
+      return new Response(JSON.stringify({ error: 'submissionUrl must be an absolute http(s) URL' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const canvasApi = async (endpoint, method = 'GET', body) => {
@@ -143,14 +172,23 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
         return new Response(JSON.stringify({ error: 'Unable to resolve Canvas assignment id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      const postedGrade = Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100;
-      const submission = await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions/${learner.id}`, 'PUT', {
+      const postedGrade = autoGrade ? Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100 : null;
+      const textComment = buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade });
+      const submissionPayload = {
         submission: {
-          posted_grade: postedGrade,
+          ...(autoGrade ? { posted_grade: postedGrade } : {}),
+          ...(submissionUrl ? { submission_type: 'online_url', url: submissionUrl } : {}),
         },
+        comment: {
+          text_comment: textComment,
+        },
+      };
+
+      const submission = await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions/${learner.id}`, 'PUT', {
+        ...submissionPayload,
       });
 
-      return new Response(JSON.stringify({ ok: true, postedGrade, learnerId: learner.id, assignmentId, submission }), {
+      return new Response(JSON.stringify({ ok: true, postedGrade, autoGrade, learnerId: learner.id, assignmentId, submission }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } catch (error) {

@@ -25,7 +25,7 @@ export default function InteractionFeedback({ quizId, onSyncGrade = null }) {
       {canSyncGrade && (
         <div className="mt-3">
           <button type="button" className="px-3 py-1.5 rounded border border-blue-700 bg-blue-700 text-white text-sm hover:bg-blue-800 disabled:opacity-60" disabled={syncState === 'loading'} onClick={() => onSyncGrade(quizId)}>
-            {syncState === 'loading' ? 'Submitting...' : syncState === 'success' ? 'Submit again to Canvas' : 'Submit to Canvas'}
+            {syncState === 'loading' ? 'Submitting...' : syncState === 'success' ? 'Submit again to Gradebook' : 'Submit to Gradebook'}
           </button>
           {syncMessage && <div className={`mt-2 text-sm ${syncState === 'error' ? 'text-red-700' : 'text-blue-800'}`}>{syncMessage}</div>}
         </div>

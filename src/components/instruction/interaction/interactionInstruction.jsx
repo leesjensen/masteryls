@@ -85,7 +85,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const progress = getInteractionProgress(meta.id);
     const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
     return (
-      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'} data-plugin-masteryls-sync-grade={toBoolean(meta.syncGrade, false) ? 'true' : 'false'}>
+      <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'} data-plugin-masteryls-sync-grade={toBoolean(meta.syncGrade, false) ? 'true' : 'false'} data-plugin-masteryls-auto-grade={toBoolean(meta.autoGrade, false) ? 'true' : 'false'}>
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         <div className="space-y-3">{controlJsx}</div>
         {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={syncGradeToCanvas} />}
@@ -139,6 +139,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const title = interactionRoot.getAttribute('data-plugin-masteryls-title') || undefined;
     const gradingCriteria = interactionRoot.getAttribute('data-plugin-masteryls-grading-criteria') || '';
     const syncGrade = toBoolean(interactionRoot.getAttribute('data-plugin-masteryls-sync-grade'), false);
+    const autoGrade = toBoolean(interactionRoot.getAttribute('data-plugin-masteryls-auto-grade'), false);
     const bodyElem = interactionRoot.querySelector('[data-plugin-masteryls-body]');
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type) {
@@ -185,7 +186,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const matched = Math.max(0, correctSelections - incorrectSelections);
           const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
-          if (await onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, syncGrade })) {
+          if (await onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, syncGrade, autoGrade })) {
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'survey') {
@@ -198,7 +199,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           });
           selected.sort((a, b) => a - b);
 
-          await onSurveyInteraction({ id, type, selected, syncGrade });
+          await onSurveyInteraction({ id, type, selected, syncGrade, autoGrade });
         } else if (type === 'likert') {
           displayGrade(interactionRoot, -1);
           const selectedInputs = Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-likert-question]:checked'));
@@ -211,18 +212,18 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             }
           });
 
-          await onLikertInteraction({ id, type, responses, syncGrade });
+          await onLikertInteraction({ id, type, responses, syncGrade, autoGrade });
         } else if (type === 'essay') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const precedingContent = getPrecedingContent(interactionRoot);
-            const percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value, syncGrade });
+            const percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'file-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="file"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            const percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files, syncGrade });
+            const percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'url-submission') {
@@ -230,18 +231,18 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const validateUrl = toBoolean(interactionRoot.getAttribute('data-plugin-masteryls-validate-url'), false);
             const urlPrompt = interactionRoot.getAttribute('data-plugin-masteryls-url-prompt') || '';
-            const percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value, validateUrl, gradingCriteria, urlPrompt, syncGrade });
+            const percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value, validateUrl, gradingCriteria, urlPrompt, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'teaching') {
           const progress = getInteractionProgress(id);
           const messages = progress?.messages || [];
-          const percentCorrect = await onTeachingInteraction({ id, title, type, body, messages, syncGrade });
+          const percentCorrect = await onTeachingInteraction({ id, title, type, body, messages, syncGrade, autoGrade });
           displayGrade(interactionRoot, percentCorrect);
         } else if (type === 'prompt') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            const percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value, syncGrade });
+            const percentCorrect = await onPromptInteraction({ id, type, body, prompt: interactionElement.value, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'ai-web-page') {
@@ -250,7 +251,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const submitBaselineHtml = progress?.submittedHtml || (progress?.feedback ? progress?.html || '' : '');
           const hasChanges = Boolean(progress?.html) && progress.html !== submitBaselineHtml;
           if (progress?.html && hasChanges) {
-            const percentCorrect = await onAiWebPageSubmit({ id, type, body, gradingCriteria, prompt: promptElement?.value || progress?.prompt || '', html: progress.html, syncGrade });
+            const percentCorrect = await onAiWebPageSubmit({ id, type, body, gradingCriteria, prompt: promptElement?.value || progress?.prompt || '', html: progress.html, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           } else {
             displayGrade(interactionRoot, progress?.percentCorrect ?? -1);
@@ -271,7 +272,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     updateInteractionProgress(quizId, {
       ...current,
       canvasSyncState: 'loading',
-      canvasSyncMessage: 'Submitting grade to Canvas...',
+      canvasSyncMessage: 'Submitting grade to Gradebook...',
     });
 
     try {
@@ -280,33 +281,33 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       updateInteractionProgress(quizId, {
         ...latest,
         canvasSyncState: 'success',
-        canvasSyncMessage: 'Grade submitted to Canvas.',
+        canvasSyncMessage: 'Grade submitted to Gradebook.',
       });
     } catch (error) {
       const latest = getInteractionProgress(quizId) || current;
       updateInteractionProgress(quizId, {
         ...latest,
         canvasSyncState: 'error',
-        canvasSyncMessage: `Unable to submit grade to Canvas: ${error?.message || String(error)}`,
+        canvasSyncMessage: `Unable to submit grade to Gradebook: ${error?.message || String(error)}`,
       });
     }
   }
 
-  async function onSurveyInteraction({ id, type, selected, syncGrade = false }) {
-    const details = { type, selected, syncGrade };
+  async function onSurveyInteraction({ id, type, selected, syncGrade = false, autoGrade = false }) {
+    const details = { type, selected, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;
   }
 
-  async function onLikertInteraction({ id, type, responses, syncGrade = false }) {
-    const details = { type, responses, syncGrade };
+  async function onLikertInteraction({ id, type, responses, syncGrade = false, autoGrade = false }) {
+    const details = { type, responses, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;
   }
 
-  async function onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, syncGrade = false }) {
+  async function onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, syncGrade = false, autoGrade = false }) {
     if (selected.length === 0) return false;
     let feedback = '';
     try {
@@ -323,13 +324,13 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     } catch {
       feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
     }
-    const details = { type, selected, correct, percentCorrect, feedback, syncGrade };
+    const details = { type, selected, correct, percentCorrect, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;
   }
 
-  async function onEssayInteraction({ id, title, type, body, precedingContent, essay, syncGrade = false }) {
+  async function onEssayInteraction({ id, title, type, body, precedingContent, essay, syncGrade = false, autoGrade = false }) {
     if (!essay) return false;
     const data = {
       title,
@@ -339,16 +340,16 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       essay,
     };
     const { feedback, percentCorrect } = await courseOps.getEssayInteractionFeedback(data);
-    const details = { type, essay, percentCorrect, feedback, syncGrade };
+    const details = { type, essay, percentCorrect, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
   }
 
-  async function onPromptInteraction({ id, type, body, prompt, syncGrade = false }) {
+  async function onPromptInteraction({ id, type, body, prompt, syncGrade = false, autoGrade = false }) {
     if (!prompt) return false;
     const feedback = await courseOps.getPromptResponse(prompt);
-    const details = { type, prompt, feedback, syncGrade };
+    const details = { type, prompt, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return -1;
@@ -362,7 +363,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       .trim();
   }
 
-  async function onAiWebPageSubmit({ id, type, body, gradingCriteria, prompt, html, syncGrade = false }) {
+  async function onAiWebPageSubmit({ id, type, body, gradingCriteria, prompt, html, syncGrade = false, autoGrade = false }) {
     if (!html) return false;
     const normalizedCriteria = (gradingCriteria || '').trim();
     const shouldGradeWithAi = Boolean(normalizedCriteria);
@@ -382,24 +383,24 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
     const submittedAt = new Date().toISOString();
     const submissionKey = `${submittedAt}:${Math.random().toString(36).slice(2, 10)}`;
-    const details = { type, prompt, html, submittedHtml: html, percentCorrect, feedback, gradingCriteria: normalizedCriteria || undefined, submittedAt, submissionKey, syncGrade };
+    const details = { type, prompt, html, submittedHtml: html, percentCorrect, feedback, gradingCriteria: normalizedCriteria || undefined, submittedAt, submissionKey, syncGrade, autoGrade };
     const { submittedHtml, ...persistedDetails } = details;
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, persistedDetails);
     return percentCorrect;
   }
 
-  async function onFileInteraction({ id, title, type, body, files, syncGrade = false }) {
+  async function onFileInteraction({ id, title, type, body, files, syncGrade = false, autoGrade = false }) {
     if (files.length === 0) return 0;
     const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
     let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
-    const details = { type, files: progressFiles, feedback, syncGrade };
+    const details = { type, files: progressFiles, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;
   }
 
-  async function onUrlInteraction({ id, title, type, body, url, validateUrl = false, gradingCriteria = '', urlPrompt = '', syncGrade = false }) {
+  async function onUrlInteraction({ id, title, type, body, url, validateUrl = false, gradingCriteria = '', urlPrompt = '', syncGrade = false, autoGrade = false }) {
     if (!url) return 0;
 
     const normalizedCriteria = String(gradingCriteria || '').trim();
@@ -421,6 +422,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           percentCorrect,
           feedback,
           syncGrade,
+          autoGrade,
         };
         updateInteractionProgress(id, details);
         await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
@@ -436,6 +438,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           percentCorrect: 0,
           feedback,
           syncGrade,
+          autoGrade,
         };
         updateInteractionProgress(id, details);
         await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
@@ -455,18 +458,18 @@ export default function InteractionInstruction({ courseOps, learningSession, use
         }
       : null;
     const { percentCorrect, feedback, validationStatus } = await validateSubmittedUrl({ url, validateUrl, validateWithServer });
-    const details = { type, url, validateUrl, validationStatus, percentCorrect, feedback, syncGrade };
+    const details = { type, url, validateUrl, validationStatus, percentCorrect, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
   }
 
-  async function onTeachingInteraction({ id, title, type, body, messages, syncGrade = false }) {
+  async function onTeachingInteraction({ id, title, type, body, messages, syncGrade = false, autoGrade = false }) {
     if (messages.length === 0) return 0;
     const percentMatch = messages[messages.length - 1].content?.match(/Understanding Score:\s*(\d+)%/);
     const percentCorrect = percentMatch ? parseInt(percentMatch[1], 10) : 0;
     let feedback = 'Session submitted';
-    const details = { type, messages, percentCorrect, feedback, syncGrade };
+    const details = { type, messages, percentCorrect, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;

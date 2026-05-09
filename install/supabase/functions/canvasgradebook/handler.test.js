@@ -55,6 +55,12 @@ function buildFetchStub() {
   return { fetchFn, calls };
 }
 
+function getSubmissionRequest(calls) {
+  const call = calls.find((entry) => entry.url.includes('/submissions/'));
+  assert.ok(call, 'expected a Canvas submissions API call');
+  return JSON.parse(call.init.body || '{}');
+}
+
 test('canvasgradebook allows root user', async () => {
   const { fetchFn, calls } = buildFetchStub();
   const handler = createCanvasGradebookHandler({
@@ -75,11 +81,17 @@ test('canvasgradebook allows root user', async () => {
       pointsPossible: 100,
       learnerEmail: 'learner@test.com',
       canvasAssignmentId: 999,
+      autoGrade: true,
     }),
   );
 
   assert.equal(response.status, 200);
   assert.equal(calls.length, 2);
+  const submissionRequest = getSubmissionRequest(calls);
+  assert.equal(submissionRequest.submission.posted_grade, 90);
+  assert.ok(typeof submissionRequest.comment?.text_comment === 'string');
+  assert.ok(submissionRequest.comment.text_comment.includes('MasteryLS feedback'));
+  assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 90/100 (90%)'));
 });
 
 test('canvasgradebook allows learner self-match', async () => {
@@ -107,6 +119,9 @@ test('canvasgradebook allows learner self-match', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(calls.length, 3);
+  const submissionRequest = getSubmissionRequest(calls);
+  assert.equal(submissionRequest.submission.posted_grade, 160);
+  assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 160/200 (80%)'));
 });
 
 test('canvasgradebook denies learner mismatch', async () => {
@@ -134,6 +149,43 @@ test('canvasgradebook denies learner mismatch', async () => {
 
   assert.equal(response.status, 403);
   assert.equal(calls.length, 0);
+});
+
+test('canvasgradebook can submit comment and url without posting grade when autoGrade is false', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u5', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({
+      courseId: '12345',
+      topicType: 'project',
+      percentCorrect: 75,
+      pointsPossible: 100,
+      learnerEmail: 'learner@test.com',
+      canvasAssignmentId: 888,
+      autoGrade: false,
+      feedback: 'Strong progress. Please tighten your introduction section.',
+      submissionUrl: 'https://example.com/project',
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 2);
+  const submissionRequest = getSubmissionRequest(calls);
+  assert.equal(submissionRequest.submission.posted_grade, undefined);
+  assert.equal(submissionRequest.submission.submission_type, 'online_url');
+  assert.equal(submissionRequest.submission.url, 'https://example.com/project');
+  assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 75/100 (75%)'));
+  assert.ok(submissionRequest.comment.text_comment.includes('Feedback:'));
+  assert.ok(submissionRequest.comment.text_comment.includes('Strong progress.'));
 });
 
 test('canvasgradebook denies editor for a different course', async () => {
