@@ -47,12 +47,12 @@ function TopicItem({ course, topic, currentTopic, enrollment, dueDateLabel = '' 
         )}
         {progressMeter && (
           <span className="text-xs text-gray-400 flex items-center mr-1 shrink-0">
-            {progressMeter.completed === progressMeter.total ? (
+            {progressMeter.completed >= progressMeter.total ? (
               <span className="animate-fade-in text-blue-400" title="Studied">
                 <BadgeCheck size={14} />
               </span>
             ) : (
-              <div className="inline-block w-6 h-1.5 opacity-75 bg-blue-100 border-1 border-blue-400 rounded-sm overflow-hidden align-middle" title={`${progressMeter.completed}/${progressMeter.total}`}>
+              <div className="inline-block w-6 h-1.5 opacity-75 bg-blue-100 border-1 border-blue-400 overflow-hidden align-middle" title={`${progressMeter.completed}/${progressMeter.total}`}>
                 <div className="h-full bg-blue-400 transition-all duration-1000" style={{ width: `${(progressMeter.completed / progressMeter.total) * 100}%` }} />
               </div>
             )}
