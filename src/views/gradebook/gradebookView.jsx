@@ -322,7 +322,7 @@ export default function GradebookView({ courseOps }) {
                                   <tr>
                                     <th className="text-left px-2 py-1 font-semibold">Instruction Item</th>
                                     <th className="text-left px-2 py-1 font-semibold">Mastery</th>
-                                      <th className="text-left px-2 py-1 font-semibold">Interactions Completed</th>
+                                    <th className="text-left px-2 py-1 font-semibold">Interactions Completed</th>
                                     <th className="text-left px-2 py-1 font-semibold">Last Interaction</th>
                                   </tr>
                                 </thead>
@@ -335,10 +335,10 @@ export default function GradebookView({ courseOps }) {
                                           {summary.topicTitle}
                                         </button>
                                       </td>
+                                      <td className="px-2 py-1">{summary.avgPercent !== null ? `${summary.avgPercent}%` : '-'}</td>
                                       <td className="px-2 py-1">
-                                        {summary.avgPercent !== null ? `${summary.avgPercent}%` : '-'}
+                                        {summary.completedInteractions}/{summary.totalInteractions}
                                       </td>
-                                      <td className="px-2 py-1">{summary.completedInteractions}/{summary.totalInteractions}</td>
                                       <td className="px-2 py-1">{summary.latestInteractionAt ? new Date(summary.latestInteractionAt).toLocaleString() : '-'}</td>
                                     </tr>
                                   ))}
