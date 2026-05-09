@@ -6,6 +6,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   const [course, setCourse] = useState();
   const [selectedScheduleFileId, setSelectedScheduleFileId] = useState('');
   const [deleteExisting, setDeleteExisting] = useState(false);
+  const [onlyLinkAssignments, setOnlyLinkAssignments] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingTitle, setLoadingTitle] = useState('Linking Your Course');
   const [updateMessage, setUpdateMessage] = useState('Initializing');
@@ -31,7 +32,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     setIsLoading(true);
     try {
       setUpdateMessage('Linking course...');
-      await courseOps.linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId || null);
+      await courseOps.linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId || null, onlyLinkAssignments);
       showAlert({ message: `${course.title} linked successfully`, type: 'info' });
     } catch (error) {
       showAlert({ message: `Error linking course: ${error.message}`, type: 'error' });
@@ -161,6 +162,12 @@ export default function CourseLinkForm({ courseOps, onClose }) {
             <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
             <label htmlFor="delete-existing" className="text-sm text-gray-700">
               Delete existing pages, quizzes, assignments, and modules
+            </label>
+          </div>
+          <div className="mt-3 flex items-center space-x-2">
+            <input id="only-link-assignments" type="checkbox" checked={onlyLinkAssignments} onChange={(e) => setOnlyLinkAssignments(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
+            <label htmlFor="only-link-assignments" className="text-sm text-gray-700">
+              Only link assignments
             </label>
           </div>
         </div>

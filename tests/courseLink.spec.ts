@@ -151,6 +151,7 @@ test('course link form renders and validates required fields', async ({ page }) 
 
   await expect(page.getByLabel('Course', { exact: true })).toHaveValue('14602d77-0ff3-4267-b25e-4a7c3c47848b');
   await expect(page.getByLabel('Canvas course ID', { exact: true })).toHaveValue('12345');
+  await expect(page.getByLabel('Only link assignments', { exact: true })).toBeChecked();
 });
 
 test('course link performs successful link flow', async ({ page }) => {
@@ -222,6 +223,7 @@ test('course link maps topic types to page, quiz, and assignment endpoints', asy
   await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
   await page.waitForTimeout(300);
   await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await page.getByLabel('Only link assignments', { exact: true }).uncheck();
   await page.getByRole('button', { name: 'Link course', exact: true }).click();
 
   await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
@@ -232,6 +234,46 @@ test('course link maps topic types to page, quiz, and assignment endpoints', asy
   await expect.poll(() => requestLog.update.quizzes).toBe(1);
   await expect.poll(() => requestLog.update.assignments).toBe(1);
   await expect.poll(() => requestLog.moduleItems.Page).toBe(2);
+  await expect.poll(() => requestLog.moduleItems.Quiz).toBe(1);
+  await expect.poll(() => requestLog.moduleItems.Assignment).toBe(1);
+});
+
+test('course link only-link-assignments default links only quizzes and assignments', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'Type Coverage',
+          topics: [
+            { id: 'a1', title: 'Instruction Topic', type: 'instruction', path: 'instruction/instruction-topic/instruction-topic.md' },
+            { id: 'a2', title: 'Exam Topic', type: 'exam', path: 'instruction/exam-topic/exam-topic.md' },
+            { id: 'a3', title: 'Project Topic', type: 'project', path: 'instruction/project-topic/project-topic.md' },
+            { id: 'a4', title: 'Embedded Topic', type: 'embedded', path: 'https://www.youtube.com/embed/HXNx_Gp0jyM' },
+          ],
+        },
+      ],
+    },
+  });
+  const requestLog = await mockLinkRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseLinking(page);
+
+  await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
+  await page.waitForTimeout(300);
+  await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await expect(page.getByLabel('Only link assignments', { exact: true })).toBeChecked();
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
+
+  await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
+  await expect.poll(() => requestLog.create.pages).toBe(0);
+  await expect.poll(() => requestLog.create.quizzes).toBe(1);
+  await expect.poll(() => requestLog.create.assignments).toBe(1);
+  await expect.poll(() => requestLog.update.pages).toBe(0);
+  await expect.poll(() => requestLog.update.quizzes).toBe(1);
+  await expect.poll(() => requestLog.update.assignments).toBe(1);
+  await expect.poll(() => requestLog.moduleItems.Page).toBe(0);
   await expect.poll(() => requestLog.moduleItems.Quiz).toBe(1);
   await expect.poll(() => requestLog.moduleItems.Assignment).toBe(1);
 });

@@ -1507,7 +1507,7 @@ Requirements:
     await updateCourseStructure(updatedCourse, null, `unlinked from canvas`);
   }
 
-  async function linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId = null) {
+  async function linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId = null, onlyLinkAssignments = true) {
     await verifyCanvasAccess(course);
 
     const updatedCourse = Course.copy(course);
@@ -1534,6 +1534,7 @@ Requirements:
       canvasCourseId,
       setUpdateMessage,
       dueDatesByTopicId,
+      onlyLinkAssignments,
       onTopicUpdateError: (topic, error) => {
         console.error(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);
         setUpdateMessage(`Failed to link topic '${topic.title}' to Canvas: ${error.message}`);

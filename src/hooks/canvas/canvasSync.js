@@ -41,6 +41,27 @@ export function getCanvasTopicUrl(canvasCourseId, topic) {
 }
 
 export function createCanvasSync({ service, renderTopicHtml }) {
+  function buildMasteryLsLinkHtml(course, topic) {
+    return `<div style="font-family: helvetica, arial, sans-serif; font-size: 1.5em; padding: 1em; border: 3px solid #e58e00; border-radius: 4px; background-color: #fffaf0; color: #262626;">
+        View this content in <a style="color: #262626;" href="https://masteryls.com/course/${course.id}/topic/${topic.id}">MasteryLS</a>.
+      </div>`;
+  }
+
+  function shouldLinkTopic(topic, onlyLinkAssignments) {
+    if (!onlyLinkAssignments) {
+      return true;
+    }
+    return topic?.type === 'exam' || topic?.type === 'project';
+  }
+
+  function clearCanvasTopicRefs(topic) {
+    if (!topic?.externalRefs) {
+      return;
+    }
+    const { canvasPageId, canvasQuizId, canvasAssignmentId, ...remainingTopicRefs } = topic.externalRefs;
+    topic.externalRefs = Object.keys(remainingTopicRefs).length > 0 ? remainingTopicRefs : undefined;
+  }
+
   async function listAllCanvasItems(endpointBase) {
     let pagePos = 1;
     const desiredCount = 20;
@@ -175,8 +196,8 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     return canvasAssignment;
   }
 
-  async function updateCanvasTopic({ course, topic, canvasCourseId, dueDatesByTopicId = {} }) {
-    const html = await renderTopicHtml(course, topic);
+  async function updateCanvasTopic({ course, topic, canvasCourseId, dueDatesByTopicId = {}, useStaticHtml = false }) {
+    const html = useStaticHtml ? buildMasteryLsLinkHtml(course, topic) : await renderTopicHtml(course, topic);
     const dueAt = dueDatesByTopicId?.[topic.id] || null;
 
     if (topic.type === 'exam' && topic.externalRefs?.canvasQuizId) {
@@ -298,13 +319,25 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     }
   }
 
-  async function linkCourseResources({ updatedCourse, canvasCourseId, setUpdateMessage, dueDatesByTopicId = {}, onTopicUpdateError }) {
+  async function linkCourseResources({ updatedCourse, canvasCourseId, setUpdateMessage, dueDatesByTopicId = {}, onlyLinkAssignments = true, onTopicUpdateError }) {
     // create the modules and resources first
     for (const module of updatedCourse.modules) {
+      const topicsToLink = module.topics.filter((topic) => shouldLinkTopic(topic, onlyLinkAssignments));
+      const skippedTopics = module.topics.filter((topic) => !shouldLinkTopic(topic, onlyLinkAssignments));
+      skippedTopics.forEach(clearCanvasTopicRefs);
+
+      if (topicsToLink.length === 0) {
+        if (module.externalRefs?.canvasModuleId) {
+          const { canvasModuleId, ...remainingModuleRefs } = module.externalRefs;
+          module.externalRefs = Object.keys(remainingModuleRefs).length > 0 ? remainingModuleRefs : undefined;
+        }
+        continue;
+      }
+
       setUpdateMessage(`Creating module '${module.title}' in Canvas`);
       const canvasModule = await createCanvasModule(module, canvasCourseId);
       module.externalRefs = { ...module.externalRefs, canvasModuleId: canvasModule.id };
-      for (const topic of module.topics) {
+      for (const topic of topicsToLink) {
         const target = topicCanvasTarget(topic);
 
         if (target === 'quiz') {
@@ -325,11 +358,16 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
     // now update each resource with content
     for (const module of updatedCourse.modules) {
+      const topicsToLink = module.topics.filter((topic) => shouldLinkTopic(topic, onlyLinkAssignments));
+      if (topicsToLink.length === 0 || !module.externalRefs?.canvasModuleId) {
+        continue;
+      }
+
       await publishCanvasModule(module, canvasCourseId);
-      for (const topic of module.topics) {
+      for (const topic of topicsToLink) {
         try {
           setUpdateMessage(`Linking topic '${topic.title}' to Canvas`);
-          await updateCanvasTopic({ course: updatedCourse, topic, canvasCourseId, dueDatesByTopicId });
+          await updateCanvasTopic({ course: updatedCourse, topic, canvasCourseId, dueDatesByTopicId, useStaticHtml: true });
         } catch (error) {
           if (onTopicUpdateError) {
             onTopicUpdateError(topic, error);
