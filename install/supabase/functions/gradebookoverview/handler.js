@@ -73,7 +73,13 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
       isEditor = Array.isArray(editorRole) && editorRole.length > 0;
     }
 
+    let isEnrolledLearner = false;
     if (!isRoot && !isEditor) {
+      const { data: learnerEnrollment } = await supabase.from('enrollment').select('id').eq('catalogId', courseId).eq('learnerId', userId).limit(1);
+      isEnrolledLearner = Array.isArray(learnerEnrollment) && learnerEnrollment.length > 0;
+    }
+
+    if (!isRoot && !isEditor && !isEnrolledLearner) {
       return new Response(JSON.stringify({ error: 'User is not authorized to view this course gradebook' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -81,7 +87,12 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
     }
 
     try {
-      const { data: enrollments, error: enrollmentsError } = await supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId);
+      let enrollmentsQuery = supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId);
+      if (isEnrolledLearner && !isRoot && !isEditor) {
+        enrollmentsQuery = enrollmentsQuery.eq('learnerId', userId);
+      }
+
+      const { data: enrollments, error: enrollmentsError } = await enrollmentsQuery;
       if (enrollmentsError) {
         throw enrollmentsError;
       }

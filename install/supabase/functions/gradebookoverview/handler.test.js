@@ -190,6 +190,55 @@ test('gradebookoverview denies editor for other course', async () => {
   assert.equal(response.status, 403);
 });
 
+test('gradebookoverview allows enrolled learner and scopes to own row', async () => {
+  const handler = createGradebookOverviewHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'learner-user', email: 'learner@test.com' },
+        dataMap: {
+          role: [],
+          enrollment: [
+            { id: 'e1', learnerId: 'learner-user', catalogId: 'course-1', progress: { mastery: 42 } },
+            { id: 'e2', learnerId: 'other-learner', catalogId: 'course-1', progress: { mastery: 88 } },
+          ],
+          user: [
+            { id: 'learner-user', name: 'Current Learner', email: 'learner@test.com' },
+            { id: 'other-learner', name: 'Other Learner', email: 'other@test.com' },
+          ],
+          progress: [],
+        },
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  const response = await handler(makeRequest({ courseId: 'course-1' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.totalCount, 1);
+  assert.equal(body.rows.length, 1);
+  assert.equal(body.rows[0].learnerId, 'learner-user');
+  assert.equal(body.rows[0].learnerEmail, 'learner@test.com');
+});
+
+test('gradebookoverview denies learner not enrolled in requested course', async () => {
+  const handler = createGradebookOverviewHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'learner-user', email: 'learner@test.com' },
+        dataMap: {
+          role: [],
+          enrollment: [{ id: 'e2', learnerId: 'learner-user', catalogId: 'course-2', progress: { mastery: 88 } }],
+          user: [{ id: 'learner-user', name: 'Current Learner', email: 'learner@test.com' }],
+          progress: [],
+        },
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  const response = await handler(makeRequest({ courseId: 'course-1' }));
+  assert.equal(response.status, 403);
+});
+
 test('gradebookoverview applies learner search and pagination metadata', async () => {
   const handler = createGradebookOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>

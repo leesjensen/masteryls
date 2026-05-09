@@ -3,13 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 
-function canAccessCourse(user, courseId) {
-  if (!user || !courseId) {
-    return false;
-  }
-  return user.isRoot() || user.isEditor(courseId);
-}
-
 export default function GradebookView({ courseOps }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
@@ -25,6 +18,7 @@ export default function GradebookView({ courseOps }) {
   const [learnerDetailsLoading, setLearnerDetailsLoading] = React.useState(false);
   const [learnerDetailsError, setLearnerDetailsError] = React.useState(null);
   const [learnerProgressRows, setLearnerProgressRows] = React.useState([]);
+  const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
 
   const user = courseOps?.user;
   const canViewLearnerFilters = React.useMemo(() => {
@@ -45,12 +39,47 @@ export default function GradebookView({ courseOps }) {
     if (user.isRoot()) {
       return catalog;
     }
-    return catalog.filter((entry) => user.isEditor(entry.id));
-  }, [courseOps, user]);
+    return catalog.filter((entry) => user.isEditor(entry.id) || enrolledCourseIds.has(entry.id));
+  }, [courseOps, enrolledCourseIds, user]);
+
+  const hasCourseAccess = React.useMemo(() => {
+    if (!user || !selectedCourseId) {
+      return false;
+    }
+    return user.isRoot() || user.isEditor(selectedCourseId) || enrolledCourseIds.has(selectedCourseId);
+  }, [enrolledCourseIds, selectedCourseId, user]);
 
   React.useEffect(() => {
     updateAppBar({ title: 'Gradebook', tools: null });
   }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadEnrollments() {
+      if (!user || user.isRoot()) {
+        setEnrolledCourseIds(new Set());
+        return;
+      }
+
+      try {
+        const enrollmentMap = await courseOps.service.enrollments(user.id);
+        if (!cancelled) {
+          setEnrolledCourseIds(new Set(Array.from(enrollmentMap.keys())));
+        }
+      } catch {
+        if (!cancelled) {
+          setEnrolledCourseIds(new Set());
+        }
+      }
+    }
+
+    loadEnrollments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseOps?.service, user]);
 
   React.useEffect(() => {
     if (routeCourseId) {
@@ -99,7 +128,7 @@ export default function GradebookView({ courseOps }) {
     let cancelled = false;
 
     async function loadOverview() {
-      if (!selectedCourseId || !canAccessCourse(user, selectedCourseId)) {
+      if (!selectedCourseId || !hasCourseAccess) {
         setOverview({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
         return;
       }
@@ -134,7 +163,7 @@ export default function GradebookView({ courseOps }) {
     return () => {
       cancelled = true;
     };
-  }, [courseOps, selectedCourseId, search, page, user]);
+  }, [courseOps, hasCourseAccess, selectedCourseId, search, page, user]);
 
   function onSearchChange(value) {
     setSearch(value);
