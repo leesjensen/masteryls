@@ -13,7 +13,10 @@ export default function Settings({ courseOps, user, course }) {
   const [selectedEditors, setSelectedEditors] = useState([]);
   const [editorUsers, setEditorUsers] = useState([]);
   const [editorsDialogOpen, setEditorsDialogOpen] = useState(false);
+  const [selectedLearners, setSelectedLearners] = useState([]);
+  const [learnersDialogOpen, setLearnersDialogOpen] = useState(false);
   const ogSelectedEditorsRef = useRef([]);
+  const ogSelectedLearnersRef = useRef([]);
   const userCache = useRef(new Map());
   const [formData, setFormData] = useState({
     name: course.name || '',
@@ -51,22 +54,49 @@ export default function Settings({ courseOps, user, course }) {
     }
   };
 
-  useEffect(() => {
-    courseOps.service.allEnrollments(course.id).then((enrollments) => {
-      setEnrollmentCount(enrollments.length);
-    });
-  }, [course.id, courseOps.service]);
+  const fetchLearners = async () => {
+    try {
+      const fetchedLearners = await courseOps.service.getEnrolledUsersForCourse(course.id);
+      fetchedLearners.forEach((learner) => userCache.current.set(learner.id, learner));
+      const learnerIds = fetchedLearners.map((learner) => learner.id);
+      ogSelectedLearnersRef.current = learnerIds;
+      setSelectedLearners(learnerIds);
+      setEnrollmentCount(learnerIds.length);
+      return fetchedLearners;
+    } catch (error) {
+      showAlert({
+        type: 'error',
+        message: (
+          <div className="text-xs">
+            <div>{error.message || 'Failed to load enrolled learners'}</div>
+          </div>
+        ),
+      });
+      return [];
+    }
+  };
 
   useEffect(() => {
-    fetchEditors();
+    fetchLearners();
   }, [course.id, courseOps.service, showAlert]);
 
   useEffect(() => {
+    if (user?.isEditor(course.id)) {
+      fetchEditors();
+      return;
+    }
+    ogSelectedEditorsRef.current = [];
+    setSelectedEditors([]);
+    setEditorUsers([]);
+  }, [course.id, courseOps.service, showAlert, user]);
+
+  useEffect(() => {
     const [editorsChanged, ,] = compareEditors(selectedEditors);
+    const [learnersChanged, ,] = compareLearners(selectedLearners);
     const courseChanged = compareCourse(formData);
     const tokenChanged = compareGitHubToken(formData.gitHubToken);
-    setSettingsDirty(tokenChanged || courseChanged || editorsChanged);
-  }, [selectedEditors, formData]);
+    setSettingsDirty(tokenChanged || courseChanged || editorsChanged || learnersChanged);
+  }, [selectedEditors, selectedLearners, formData]);
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -86,12 +116,23 @@ export default function Settings({ courseOps, user, course }) {
     return data.name !== course.name || data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository || data.state !== course.settings.state || data.deleteProtected !== (course.settings?.deleteProtected || false);
   };
 
+  const compareLearners = (newSelected) => {
+    const currentLearners = new Set(ogSelectedLearnersRef.current);
+    const newLearners = new Set(newSelected);
+
+    const toAdd = newSelected.filter((id) => !currentLearners.has(id));
+    const toRemove = ogSelectedLearnersRef.current.filter((id) => !newLearners.has(id));
+
+    return [toAdd.length !== 0 || toRemove.length !== 0, toAdd, toRemove];
+  };
+
   const compareGitHubToken = (token) => {
     return token !== (user?.getSetting('gitHubToken', course.id) || '');
   };
 
   const handleSave = async () => {
     const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
+    const [learnersChanged, learnersToAdd, learnersToRemove] = compareLearners(selectedLearners);
     if (editorsChanged && selectedEditors.length === 0) {
       showAlert({
         type: 'error',
@@ -177,6 +218,42 @@ export default function Settings({ courseOps, user, course }) {
       await fetchEditors();
     }
 
+    if (learnersChanged) {
+      const enrollments = await courseOps.service.allEnrollments(course.id);
+      const enrollmentByLearner = new Map((enrollments || []).map((enrollment) => [enrollment.learnerId, enrollment]));
+
+      for (const userId of learnersToAdd) {
+        if (enrollmentByLearner.has(userId)) {
+          continue;
+        }
+        const learner = userCache.current.get(userId);
+        if (!learner) {
+          showAlert({
+            type: 'error',
+            message: (
+              <div className="text-xs">
+                <div>Unable to enroll a learner because user data is missing.</div>
+              </div>
+            ),
+          });
+          continue;
+        }
+        const enrollment = await courseOps.service.createEnrollment(learner.id, course, {});
+        enrollmentByLearner.set(userId, enrollment);
+      }
+
+      for (const userId of learnersToRemove) {
+        const enrollment = enrollmentByLearner.get(userId);
+        if (!enrollment) {
+          continue;
+        }
+        await courseOps.service.deleteEnrollment(enrollment);
+        enrollmentByLearner.delete(userId);
+      }
+
+      await fetchLearners();
+    }
+
     setSettingsDirty(false);
     showAlert({
       message: (
@@ -227,8 +304,11 @@ export default function Settings({ courseOps, user, course }) {
   }
 
   const editorVisible = user.isEditor(course.id);
+  const canManageEnrollments = user.isEditor(course.id) || user.isRoot();
   const editorsCount = selectedEditors.length;
+  const learnersCount = selectedLearners.length;
   const isOriginalEditor = (userId) => ogSelectedEditorsRef.current.includes(userId);
+  const isOriginalLearner = (userId) => ogSelectedLearnersRef.current.includes(userId);
 
   return (
     <div className="h-full overflow-auto p-4">
@@ -374,6 +454,31 @@ export default function Settings({ courseOps, user, course }) {
                 </div>
               </div>
             </div>
+          </>
+        )}
+
+        {canManageEnrollments && (
+          <>
+            <div className="bg-gray-50 rounded-lg p-4 mb-1">
+              <div>
+                <h2 className="text-lg font-semibold mb-3 text-gray-800">Learners</h2>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-700">
+                      {learnersCount} learner{learnersCount === 1 ? '' : 's'} enrolled
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setLearnersDialogOpen(true)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                    Manage learners
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {(editorVisible || canManageEnrollments) && (
+          <>
             <div>
               <div className="flex flex-col justify-end w-[200px]">
                 <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
@@ -416,6 +521,7 @@ export default function Settings({ courseOps, user, course }) {
         }
       />
       <UserSelectionDialog title="Manage editors" description="Add or remove editors. Changes are saved when you click Save changes." currentUsersLabel="Current editors" searchUsersLabel="Find users" selectedUserIds={selectedEditors} onSelectionChange={setSelectedEditors} searchUsers={(query) => courseOps.service.searchUsers(query, 25)} isOpen={editorsDialogOpen} onOpen={() => setEditorsDialogOpen(true)} onClose={() => setEditorsDialogOpen(false)} allowEmpty={false} isOriginalUser={isOriginalEditor} userCache={userCache.current} />
+      <UserSelectionDialog title="Manage learners" description="Enroll or remove learners for this course. Changes are saved when you click Save changes." currentUsersLabel="Enrolled learners" searchUsersLabel="Find users" selectedUserIds={selectedLearners} onSelectionChange={setSelectedLearners} searchUsers={(query) => courseOps.service.searchUsers(query, 25)} isOpen={learnersDialogOpen} onOpen={() => setLearnersDialogOpen(true)} onClose={() => setLearnersDialogOpen(false)} allowEmpty={true} isOriginalUser={isOriginalLearner} userCache={userCache.current} />
     </div>
   );
 }

@@ -98,8 +98,20 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   }
 
   async function getCourse(courseId) {
-    const courseEntry = courseCatalog().find((c) => c.id === courseId);
+    const courseEntry = service.catalogEntry(courseId);
     if (!courseEntry) {
+      return null;
+    }
+
+    const isPublished = courseEntry.settings?.state === 'published';
+    const canEditCourse = user?.isEditor(courseId);
+    let isEnrolledLearner = false;
+    if (user?.id) {
+      const enrollment = await service.enrollment(user.id, courseId);
+      isEnrolledLearner = !!enrollment;
+    }
+
+    if (!isPublished && !canEditCourse && !isEnrolledLearner) {
       return null;
     }
 

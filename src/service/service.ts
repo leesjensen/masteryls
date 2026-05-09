@@ -277,6 +277,30 @@ class Service {
   }
 
   /**
+   * Retrieves users currently enrolled in a specific course.
+   * @param courseId - The course ID to load enrolled users for.
+   * @returns An array of User objects for enrolled learners.
+   */
+  async getEnrolledUsersForCourse(courseId: string): Promise<User[]> {
+    const { data: enrollmentData, error: enrollmentError } = await this.supabase.from('enrollment').select('learnerId').eq('catalogId', courseId);
+    if (enrollmentError) {
+      throw new Error(enrollmentError.message);
+    }
+
+    if (!enrollmentData || enrollmentData.length === 0) {
+      return [];
+    }
+
+    const learnerIds = [...new Set(enrollmentData.map((entry: any) => entry.learnerId))];
+    const { data: userData, error: userError } = await this.supabase.from('user').select('id, name, email, settings').in('id', learnerIds);
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    return (userData || []).map((item: any) => new User({ ...item, roles: [] }));
+  }
+
+  /**
    * Searches users by name or email.
    * @param query - The text to search for.
    * @param limit - Maximum number of results to return.

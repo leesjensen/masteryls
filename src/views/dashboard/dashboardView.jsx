@@ -19,12 +19,7 @@ export default function DashboardView({ courseOps, service, user }) {
         updateAppBar({ title: `${user.name}'s Dashboard`, tools: null });
       }
       service.enrollments(user.id).then((learnerEnrollments) => {
-        const filteredEnrollments = new Map(
-          Array.from(learnerEnrollments.entries()).filter(([, entry]) => {
-            return entry.catalogEntry.settings?.state === 'published' || user.isEditor();
-          }),
-        );
-        setEnrollments(filteredEnrollments);
+        setEnrollments(learnerEnrollments);
       });
     }
   }, [user]);
