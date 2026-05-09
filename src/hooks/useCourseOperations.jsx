@@ -1275,6 +1275,10 @@ Requirements:
     return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
   }
 
+  async function getGradebookOverview({ courseId, page = 1, limit = 50, search = '' }) {
+    return service.makeGradebookOverviewRequest({ courseId, page, limit, search });
+  }
+
   async function getTopicProgress(types = ['quizSubmit']) {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
@@ -1654,6 +1658,7 @@ Requirements:
     addProgress,
     syncProjectInteractionGrade,
     getProgress,
+    getGradebookOverview,
     getTopicProgress,
     getSurveySummary,
     getLikertSummary,
