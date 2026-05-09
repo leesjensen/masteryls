@@ -40,6 +40,25 @@ function formatAverage(value) {
   return Number.isFinite(numeric) ? numeric.toFixed(2) : '0.00';
 }
 
+function normalizeResponsesByQuestions(responses, questions) {
+  const normalized = {};
+  questions.forEach((question) => {
+    const value = Number(responses?.[question.qid]);
+    if (Number.isFinite(value)) {
+      normalized[question.qid] = value;
+    }
+  });
+  return normalized;
+}
+
+function responsesChanged(currentResponses, savedResponses, questions) {
+  const current = normalizeResponsesByQuestions(currentResponses, questions);
+  const saved = normalizeResponsesByQuestions(savedResponses, questions);
+  const questionIds = questions.map((question) => question.qid);
+
+  return questionIds.some((qid) => current[qid] !== saved[qid]);
+}
+
 export default function LikertInteraction({ id, body, meta, courseOps }) {
   const progress = useInteractionProgressStore(id) || {};
   const { prompt, questions, scale } = parseLikertBody(body, meta);
@@ -56,6 +75,8 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
 
   const answeredCount = questions.filter((question) => Number.isFinite(Number(responses[question.qid]))).length;
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
+  const hasChanges = responsesChanged(responses, progress.responses || {}, questions);
+  const submitDisabled = (required && !allAnswered) || !hasChanges;
 
   function handleSelect(questionId, value) {
     setResponses((prev) => ({
@@ -100,9 +121,11 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
           </div>
         ))}
 
-        <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={required && !allAnswered}>
+        <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={submitDisabled}>
           Submit
         </button>
+
+        {progress.feedback && <div className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">{progress.feedback}</div>}
 
         {canViewResults && (
           <details className="mt-4 rounded-xl border border-blue-700 bg-gradient-to-br from-blue-50 to-slate-100 shadow-sm">

@@ -258,7 +258,9 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           }
         }
 
-        event.target.disabled = false;
+        if (type !== 'likert') {
+          event.target.disabled = false;
+        }
       }
     }
   }
@@ -301,7 +303,10 @@ export default function InteractionInstruction({ courseOps, learningSession, use
   }
 
   async function onLikertInteraction({ id, type, responses, syncGrade = false, autoGrade = false }) {
-    const details = { type, responses, syncGrade, autoGrade };
+    const submittedAt = new Date().toISOString();
+    const submittedAtLabel = new Date(submittedAt).toLocaleString();
+    const feedback = `Submission received on ${submittedAtLabel}.`;
+    const details = { type, responses, feedback, submittedAt, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;
