@@ -293,7 +293,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
                   language="html"
                   value={sourceValue}
                   onChange={(value) => setSourceValue(value || '')}
-                  theme="vs-dark"
+                  theme="vs-light"
                   options={{
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
