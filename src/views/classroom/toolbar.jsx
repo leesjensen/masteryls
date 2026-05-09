@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareChevronLeft, CalendarDays } from 'lucide-react';
+import { Menu, FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareChevronLeft, CalendarDays, ChartArea } from 'lucide-react';
 import { GitHub, Canvas } from '../../utils/Icons.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
@@ -24,6 +24,10 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     navigate(`/course/${learningSession.course.id}/schedule`);
   }
 
+  function navigateToGradebook() {
+    navigate(`/gradebook/course/${learningSession.course.id}`);
+  }
+
   async function linkCanvasTopic() {
     await courseOps.updateCanvasPage(learningSession.course, learningSession.topic, learningSession.course.externalRefs.canvasCourseId);
     showAlert({ message: `${learningSession.topic.title} linked successfully`, type: 'info' });
@@ -44,6 +48,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
         {user && user.isEditor(learningSession.course.id) && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
         {learningSession.course.links?.chat && <ToolBarButton title="Course chat server" onClick={() => window.open(learningSession.course.links.chat, '_blank')} icon={MessageCircleQuestionMark} />}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" onClick={navigateToSchedule} icon={CalendarDays} />}
+        {(user && (user.isRoot() || user.isEditor(learningSession.course.id))) && <ToolBarButton title="Gradebook" onClick={navigateToGradebook} icon={ChartArea} />}
         {learningSession.course.externalRefs?.canvasCourseId && canvasTopicUrl && <ToolBarButton title="Canvas course site" onClick={() => window.open(canvasTopicUrl, '_blank')} icon={Canvas} />}
         <ToolBarButton title="GitHub repository" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')} icon={GitHub} />
         <ToolBarButton title="Previous topic" onClick={() => navigateToTopic('prev')} icon={SquareChevronLeft} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 
@@ -12,6 +12,7 @@ function canAccessCourse(user, courseId) {
 
 export default function GradebookView({ courseOps }) {
   const navigate = useNavigate();
+  const { courseId: routeCourseId } = useParams();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [search, setSearch] = React.useState('');
   const [page, setPage] = React.useState(1);
@@ -43,11 +44,19 @@ export default function GradebookView({ courseOps }) {
   }, []);
 
   React.useEffect(() => {
-    if (!selectedCourseId && availableCourses.length > 0) {
+    if (routeCourseId) {
+      if (selectedCourseId !== routeCourseId) {
+        setSelectedCourseId(routeCourseId);
+        setPage(1);
+      }
+      return;
+    }
+
+    if ((!selectedCourseId || !availableCourses.some((course) => course.id === selectedCourseId)) && availableCourses.length > 0) {
       setSelectedCourseId(availableCourses[0].id);
       setPage(1);
     }
-  }, [availableCourses, selectedCourseId]);
+  }, [availableCourses, routeCourseId, selectedCourseId]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -125,6 +134,11 @@ export default function GradebookView({ courseOps }) {
 
   function onCourseChange(value) {
     setSelectedCourseId(value);
+    if (value) {
+      navigate(`/gradebook/course/${value}`);
+    } else {
+      navigate('/gradebook');
+    }
     setPage(1);
     setExpandedEnrollmentId(null);
     setSelectedLearner(null);
@@ -307,8 +321,8 @@ export default function GradebookView({ courseOps }) {
                                 <thead className="bg-gray-50 text-gray-700">
                                   <tr>
                                     <th className="text-left px-2 py-1 font-semibold">Instruction Item</th>
-                                    <th className="text-left px-2 py-1 font-semibold">Interactions Completed</th>
-                                    <th className="text-left px-2 py-1 font-semibold">Average %</th>
+                                    <th className="text-left px-2 py-1 font-semibold">Mastery</th>
+                                      <th className="text-left px-2 py-1 font-semibold">Interactions Completed</th>
                                     <th className="text-left px-2 py-1 font-semibold">Last Interaction</th>
                                   </tr>
                                 </thead>
@@ -322,9 +336,9 @@ export default function GradebookView({ courseOps }) {
                                         </button>
                                       </td>
                                       <td className="px-2 py-1">
-                                        {summary.completedInteractions}/{summary.totalInteractions}
+                                        {summary.avgPercent !== null ? `${summary.avgPercent}%` : '-'}
                                       </td>
-                                      <td className="px-2 py-1">{summary.avgPercent !== null ? `${summary.avgPercent}%` : '-'}</td>
+                                      <td className="px-2 py-1">{summary.completedInteractions}/{summary.totalInteractions}</td>
                                       <td className="px-2 py-1">{summary.latestInteractionAt ? new Date(summary.latestInteractionAt).toLocaleString() : '-'}</td>
                                     </tr>
                                   ))}
