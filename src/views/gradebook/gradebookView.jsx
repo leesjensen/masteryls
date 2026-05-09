@@ -27,6 +27,15 @@ export default function GradebookView({ courseOps }) {
   const [learnerProgressRows, setLearnerProgressRows] = React.useState([]);
 
   const user = courseOps?.user;
+  const canViewLearnerFilters = React.useMemo(() => {
+    if (!user) {
+      return false;
+    }
+    if (user.isRoot()) {
+      return true;
+    }
+    return selectedCourseId ? user.isEditor(selectedCourseId) : user.isEditor();
+  }, [user, selectedCourseId]);
 
   const availableCourses = React.useMemo(() => {
     const catalog = courseOps?.service?.courseCatalog?.() || [];
@@ -235,10 +244,9 @@ export default function GradebookView({ courseOps }) {
     <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
       <div>
         <h2 className="text-xl font-semibold text-gray-800">Course Gradebook</h2>
-        <p className="text-sm text-gray-500 mt-1">Concise learner progress and activity overview.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-3`}>
         <div>
           <label htmlFor="gradebook-course" className="block text-sm font-medium text-gray-700 mb-1">
             Course
@@ -253,16 +261,20 @@ export default function GradebookView({ courseOps }) {
           </select>
         </div>
 
-        <div>
-          <label htmlFor="gradebook-search" className="block text-sm font-medium text-gray-700 mb-1">
-            Search learner
-          </label>
-          <input id="gradebook-search" value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Name or email" className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
-        </div>
+        {canViewLearnerFilters && (
+          <div>
+            <label htmlFor="gradebook-search" className="block text-sm font-medium text-gray-700 mb-1">
+              Search learner
+            </label>
+            <input id="gradebook-search" value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Name or email" className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
+          </div>
+        )}
 
-        <div className="flex items-end text-sm text-gray-600">
-          <span>Total learners: {overview.totalCount}</span>
-        </div>
+        {canViewLearnerFilters && (
+          <div className="flex items-end text-sm text-gray-600">
+            <span>Total learners: {overview.totalCount}</span>
+          </div>
+        )}
       </div>
 
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
