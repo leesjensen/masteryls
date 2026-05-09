@@ -34,8 +34,12 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       // Throw away masteryls plugin blocks in static rendering
       if (!isInline && language === 'masteryls') {
         return (
-          <div>
-            This <a href={`https://masteryls.com/course/${course.id}/topic/${topic.id}`}>Mastery LS quiz</a> is not available in Canvas.
+          <div style={{ fontFamily: 'helvetica, arial, sans-serif', fontSize: '1.5em', padding: '1em', border: '3px solid #e58e00', borderRadius: '4px', backgroundColor: '#fffaf0', color: '#262626' }}>
+            View this content in{' '}
+            <a style={{ color: '#262626', textDecoration: 'underline' }} href={`https://masteryls.com/course/${course.id}/topic/${topic.id}`}>
+              MasteryLS
+            </a>
+            .
           </div>
         );
       }
@@ -111,15 +115,7 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
         return null;
       }
 
-      return (
-        <iframe
-          src={src}
-          loading={loading || 'lazy'}
-          referrerPolicy={referrerPolicy || referrerpolicy || 'strict-origin-when-cross-origin'}
-          sandbox={sandbox || 'allow-scripts allow-same-origin allow-presentation'}
-          {...props}
-        />
-      );
+      return <iframe src={src} loading={loading || 'lazy'} referrerPolicy={referrerPolicy || referrerpolicy || 'strict-origin-when-cross-origin'} sandbox={sandbox || 'allow-scripts allow-same-origin allow-presentation'} {...props} />;
     },
 
     source({ node, src, ...props }) {
@@ -171,11 +167,7 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
   const components = { ...customComponents, MermaidBlock };
 
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]}
-      rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSanitizeSchema], [rehypeMermaid, { mermaidConfig: { theme: 'default', securityLevel: 'strict' } }]]}
-      components={components}
-    >
+    <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSanitizeSchema], [rehypeMermaid, { mermaidConfig: { theme: 'default', securityLevel: 'strict' } }]]} components={components}>
       {content}
     </ReactMarkdown>
   );
