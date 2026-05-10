@@ -7,6 +7,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
   const [files, setFiles] = React.useState([]);
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [isDragOver, setIsDragOver] = React.useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
   const lastSelectedIndexRef = React.useRef(-1);
 
   function addFilesToPanelAndUpload(incomingFiles) {
@@ -60,6 +61,32 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
     courseOps.deleteTopicFiles(currentTopic, selectedFiles);
     setFiles((prev) => prev.filter((file) => !selectedFiles.includes(file.name)));
     setSelectedFiles([]);
+  };
+
+  const downloadSelected = async () => {
+    if (selectedFiles.length === 0 || isDownloading) {
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const downloadedFiles = (await courseOps.downloadTopicFiles?.(selectedFiles)) || [];
+
+      downloadedFiles.forEach((file) => {
+        const url = URL.createObjectURL(file.blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = file.name;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+      });
+    } catch (error) {
+      console.error('Failed to download selected files', error);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleItemClick = (e, index, file) => {
@@ -186,6 +213,9 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
         <div className="flex items-center">
           <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={() => onInsertFiles(selectedFiles)}>
             Insert
+          </button>
+          <button className="mx-1 px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0 || isDownloading} onClick={downloadSelected}>
+            {isDownloading ? 'Downloading...' : 'Download'}
           </button>
           <button className="mx-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={deleteSelected}>
             Delete

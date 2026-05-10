@@ -1018,6 +1018,41 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return [];
   }
 
+  async function downloadTopicFiles(fileNames) {
+    if (!learningSession?.course || !Array.isArray(fileNames) || fileNames.length === 0) {
+      return [];
+    }
+
+    const course = learningSession.course;
+    const token = user.getSetting('gitHubToken', course.id);
+    const contentPath = learningSession.topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
+    if (!contentPath) {
+      return [];
+    }
+
+    const downloadedFiles = [];
+    for (const fileName of fileNames) {
+      if (!fileName) {
+        continue;
+      }
+
+      const encodedName = encodeURIComponent(fileName);
+      const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}${encodedName}`;
+      const response = await service.makeGitHubApiRequest(token, gitHubUrl, 'GET', undefined, 'application/vnd.github.raw');
+
+      if (!response.ok) {
+        throw new Error(`Failed to download ${fileName}: ${response.status}`);
+      }
+
+      downloadedFiles.push({
+        name: fileName,
+        blob: await response.blob(),
+      });
+    }
+
+    return downloadedFiles;
+  }
+
   function _getTopicPath() {
     let topicPath = '';
     const match = learningSession.topic.path.match(/\/main\/(.+\/)[^\/]+\.md$/);
@@ -1660,6 +1695,7 @@ Requirements:
     addTopicFiles,
     deleteTopicFiles,
     getTopicFiles,
+    downloadTopicFiles,
     getEssayInteractionFeedback,
     getChoiceInteractionFeedback,
     getPromptResponse,
