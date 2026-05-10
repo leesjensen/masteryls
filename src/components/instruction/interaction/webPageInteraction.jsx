@@ -1,8 +1,8 @@
 import React from 'react';
 
-const DEFAULT_WEB_PAGE_HEIGHT = '70vh';
-const MIN_WEB_PAGE_HEIGHT = '240px';
-const MIN_WEB_PAGE_HEIGHT_PX = 240;
+const DEFAULT_WEB_PAGE_HEIGHT = '240px';
+const MIN_WEB_PAGE_HEIGHT = '50px';
+const MIN_WEB_PAGE_HEIGHT_PX = 50;
 
 function resolveWebPageUrl(file, topicPath) {
   if (!file || !topicPath) return null;
