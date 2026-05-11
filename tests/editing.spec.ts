@@ -82,9 +82,10 @@ test('settings editor management requires at least one editor', async ({ page })
   await expect(page.getByText('2 editors assigned')).toBeVisible();
   await page.getByRole('button', { name: 'Manage editors' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Manage editors' })).toBeVisible();
+  const manageEditorsDialog = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Manage editors' }) });
+  await expect(manageEditorsDialog.getByRole('heading', { name: 'Manage editors' })).toBeVisible();
 
-  const userSearch = page.getByPlaceholder('Search by name or email');
+  const userSearch = manageEditorsDialog.getByPlaceholder('Search by name or email');
 
   await userSearch.fill('bu');
   const addedButtons = page.getByRole('button', { name: 'Added' });
