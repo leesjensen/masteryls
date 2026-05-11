@@ -275,7 +275,7 @@ function remapScheduleDatesForStartDate(sourceModel, startDateIso) {
   };
 }
 
-function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileRepoPath, dueLinkedHrefs, coveredOrSlidesLinkedHrefs, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
+function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileRepoPath, dueLinkedHrefs, topicsCoveredLinkedHrefs, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
   const [editingItemKey, setEditingItemKey] = React.useState('');
 
@@ -304,13 +304,13 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
         {['dueItems', 'topicsCovered', 'slides'].map((field) => {
-          const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : coveredOrSlidesLinkedHrefs;
+          const blockedHrefs = field === 'dueItems' ? dueLinkedHrefs : field === 'topicsCovered' ? topicsCoveredLinkedHrefs : null;
           const availableTopics = (learningSession.course.allTopics || []).filter((topic) => {
             const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFileRepoPath, learningSession.course.id);
             if (!href) {
               return false;
             }
-            return !blockedHrefs.has(href);
+            return !blockedHrefs?.has(href);
           });
 
           return (
@@ -555,7 +555,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     const href = buildScheduleTopicHref(topic, learningSession.course.links.gitHub.rawUrl, selectedFile.repoPath, learningSession.course.id);
     if (!href) return;
 
-    const sectionGroup = field === 'dueItems' ? ['dueItems'] : ['topicsCovered', 'slides'];
+    const sectionGroup = field === 'dueItems' ? ['dueItems'] : field === 'topicsCovered' ? ['topicsCovered'] : [];
     const hrefAlreadyLinked = (model.weeks || []).some((row) => sectionGroup.some((section) => (row[section] || []).some((item) => item?.href === href)));
     if (hrefAlreadyLinked) {
       return;
@@ -740,15 +740,13 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     return hrefs;
   }, [model.weeks]);
 
-  const coveredOrSlidesLinkedHrefs = React.useMemo(() => {
+  const topicsCoveredLinkedHrefs = React.useMemo(() => {
     const hrefs = new Set();
     (model.weeks || []).forEach((row) => {
-      ['topicsCovered', 'slides'].forEach((field) => {
-        (row[field] || []).forEach((item) => {
-          if (item?.href) {
-            hrefs.add(item.href);
-          }
-        });
+      (row.topicsCovered || []).forEach((item) => {
+        if (item?.href) {
+          hrefs.add(item.href);
+        }
       });
     });
     return hrefs;
@@ -877,7 +875,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
                           <div className="space-y-3">
                             {group.sessions.map((row, sessionIndex) => (
-                              <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} selectedFileRepoPath={selectedFile?.repoPath || ''} dueLinkedHrefs={dueLinkedHrefs} coveredOrSlidesLinkedHrefs={coveredOrSlidesLinkedHrefs} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
+                              <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} selectedFileRepoPath={selectedFile?.repoPath || ''} dueLinkedHrefs={dueLinkedHrefs} topicsCoveredLinkedHrefs={topicsCoveredLinkedHrefs} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
                             ))}
                           </div>
 
