@@ -95,7 +95,6 @@ test('interaction web page renders relative html file', async ({ page }) => {
   await expect(frameContainer).toHaveCSS('border-top-width', '0px');
   await expect(frameContainer).toHaveCSS('resize', 'vertical');
   await expect(iframe).toHaveAttribute('data-src', 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/something/more/index.html');
-  await expect(iframe).toHaveAttribute('scrolling', 'no');
   await expect(page.frameLocator('iframe[title="Web page"]').getByRole('heading', { name: 'Embedded Web Page' })).toBeVisible();
 
   const iframeHandle = await iframe.elementHandle();
@@ -111,8 +110,8 @@ test('interaction web page renders relative html file', async ({ page }) => {
     innerWidth: window.innerWidth,
   }));
   expect(frameSizing.bodyMargin).toBe('0px');
-  expect(frameSizing.bodyOverflow).toBe('hidden');
-  expect(frameSizing.htmlOverflow).toBe('hidden');
+  expect(frameSizing.bodyOverflow).toBe('auto');
+  expect(frameSizing.htmlOverflow).toBe('auto');
   expect(Math.abs(frameSizing.innerHeight - frameSizing.clientHeight)).toBeLessThanOrEqual(1);
   expect(Math.abs(frameSizing.innerWidth - frameSizing.clientWidth)).toBeLessThanOrEqual(1);
 

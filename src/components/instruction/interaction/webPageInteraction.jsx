@@ -38,7 +38,7 @@ function escapeAttribute(value) {
 }
 
 function frameHeadContent(src) {
-  return `<base href="${escapeAttribute(src)}"><style data-masteryls-frame-sizing>html,body{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;overflow:hidden!important;}*,*::before,*::after{box-sizing:border-box;}</style>`;
+  return `<base href="${escapeAttribute(src)}"><style data-masteryls-frame-sizing>html,body{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;overflow:auto!important;}*,*::before,*::after{box-sizing:border-box;}</style>`;
 }
 
 function prepareFrameDocument(html, baseUrl) {
@@ -185,7 +185,7 @@ export default function WebPageInteraction({ title, file, html, height, topicPat
   return (
     <div data-plugin-masteryls-body={file || 'generated'}>
       <div ref={containerRef} className="relative w-full" data-plugin-masteryls-web-page style={{ height: currentHeight, minHeight: MIN_WEB_PAGE_HEIGHT, resize: 'vertical', overflow: 'hidden' }}>
-        {srcDoc ? <iframe className="block w-full h-full bg-white border-0" style={{ pointerEvents: isResizing ? 'none' : undefined }} srcDoc={srcDoc} data-src={src || 'generated'} data-plugin-masteryls-web-page-frame title={title || file || 'Generated web page'} loading="lazy" scrolling="no" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
+        {srcDoc ? <iframe className="block w-full h-full bg-white border-0" style={{ pointerEvents: isResizing ? 'none' : undefined }} srcDoc={srcDoc} data-src={src || 'generated'} data-plugin-masteryls-web-page-frame title={title || file || 'Generated web page'} loading="lazy" sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="strict-origin-when-cross-origin" /> : null}
         <div className="absolute bottom-0 left-0 right-0 w-full cursor-row-resize touch-none bg-transparent hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-blue-400" data-plugin-masteryls-web-page-resize-handle role="separator" aria-orientation="horizontal" aria-label="Resize web page" tabIndex={0} style={{ height: '10px' }} onPointerDown={startResize} onKeyDown={handleResizeKeyDown} />
       </div>
     </div>
