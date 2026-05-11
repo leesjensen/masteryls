@@ -1,5 +1,5 @@
 import React from 'react';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
+import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 import ScoreStars from './scoreStars';
 
@@ -21,7 +21,7 @@ export default function InteractionFeedback({ quizId, onSyncGrade = null, isCour
           <ScoreStars percent={details.percentCorrect} />
         </div>
       )}
-      <div>{inlineLiteMarkdown(details.feedback)}</div>
+      <div className="whitespace-normal">{renderLiteMarkdownBlocks(details.feedback)}</div>
       {canSyncGrade && (
         <div className="mt-3">
           <button type="button" className="px-3 py-1.5 rounded border border-blue-700 bg-blue-700 text-white text-sm hover:bg-blue-800 disabled:opacity-60" disabled={syncState === 'loading'} onClick={() => onSyncGrade(quizId)}>
