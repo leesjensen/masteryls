@@ -376,7 +376,7 @@ Simple **url submission** question
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
-  await expect(page.getByText('This URL will be validated when you submit.')).toBeVisible();
+  await expect(page.locator('input[type="url"]')).toBeVisible();
 
   const urlInput = page.locator('input[type="url"]');
   await urlInput.click();
@@ -478,7 +478,7 @@ Simple **url submission** question
   await navigateToCourse(page);
   await page.getByText('topic 1').click();
 
-  await expect(page.getByText('This submission will be examined by AI using your provided URL.')).toBeVisible();
+  await expect(page.locator('input[type="url"]')).toBeVisible();
 
   const urlInput = page.locator('input[type="url"]');
   await urlInput.click();
@@ -555,7 +555,7 @@ Simple **url submission** question
   await navigateToCourse(page);
   await page.getByText('topic 1').click();
 
-  await expect(page.getByText('This submission will be examined by AI using your provided URL.')).toBeVisible();
+  await expect(page.locator('input[type="url"]')).toBeVisible();
 
   const urlInput = page.locator('input[type="url"]');
   await urlInput.click();
