@@ -131,17 +131,12 @@ Submit a direct URL to the page or document you want graded.
 
 - `type`: Must be `url-submission`.
 - `validateUrl`: Optional boolean (`false` by default). When `true`, URL format/accessibility is validated on submit.
-- `gradingCriteria`: Optional text rubric for AI scoring.
 - `urlPrompt`: Optional prompt used to transform the learner's submitted URL into a target URL before evaluation.
-- `syncGrade`: Optional boolean (`false` by default). When `true`, shows **Submit to Gradebook** after graded feedback is available.
-- `autoGrade`: Optional boolean (`false` by default). Applies when submitting to Gradebook.
+- `gradingCriteria`: Optional text rubric for AI scoring. If no `gradingCriteria`: URL submissions receive standard submission handling (full credit behavior if URL is valid).
+- `syncGrade`: Optional boolean (`false` by default). When `true`, the ability to sync the grade to a linked gradebook is enabled and the **Submit to Gradebook** button is displayed. The grade is not synced until the user presses the button. Gradebook submission always includes a comment with generated feedback and suggested grade. If the course is not linked then the submission button is not displayed.
+- `autoGrade`: Optional boolean (`false` by default). If `syncGrade` is true then `autoGrade` controls how the grade is submitted to the linked gradebook.
   - `true`: Submit URL + comment + posted grade.
   - `false`: Submit URL + comment only (TA/instructor can review before posting grade).
-- Behavior modes:
-  - No `gradingCriteria`: URL submissions receive standard submission handling (full credit behavior).
-  - `gradingCriteria` only: AI evaluates the learner-submitted URL directly.
-  - `gradingCriteria` + `urlPrompt`: AI first transforms the submitted URL, then fetches/evaluates against the transformed target.
-  - Gradebook submission always includes a comment with generated feedback and suggested grade.
 
 ### Teaching
 
