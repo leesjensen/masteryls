@@ -38,7 +38,10 @@ function Login({ courseOps }) {
         courseOps.login(user);
       }
     } catch (error) {
-      showAlert({ message: `Login failed. Please try again. ${error.message}`, type: 'error' });
+      const rawMessage = error?.message || '';
+      const signupBlockedDuringLogin = !showSignup && rawMessage.toLowerCase().includes('signups not allowed for otp');
+      const message = signupBlockedDuringLogin ? 'Login failed. Unknown email. You may need to create an account first.' : `Login failed. Please try again. ${rawMessage}`;
+      showAlert({ message, type: 'error' });
     }
   };
 
