@@ -197,7 +197,8 @@ export function createCanvasSync({ service, renderTopicHtml }) {
   }
 
   async function updateCanvasTopic({ course, topic, canvasCourseId, dueDatesByTopicId = {}, useStaticHtml = false }) {
-    const html = useStaticHtml ? buildMasteryLsLinkHtml(course, topic) : await renderTopicHtml(course, topic);
+    const masteryLsHeaderHtml = buildMasteryLsLinkHtml(course, topic);
+    const html = useStaticHtml ? masteryLsHeaderHtml : `${masteryLsHeaderHtml}${await renderTopicHtml(course, topic)}`;
     const dueAt = dueDatesByTopicId?.[topic.id] || null;
 
     if (topic.type === 'exam' && topic.externalRefs?.canvasQuizId) {
@@ -368,14 +369,13 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       await publishCanvasModule(module, canvasCourseId);
       for (const topic of topicsToLink) {
         try {
-          const shouldRenderInstructionHtml = !topic?.type || topic.type === 'instruction';
           setUpdateMessage(`Linking topic '${topic.title}' to Canvas`);
           await updateCanvasTopic({
             course: updatedCourse,
             topic,
             canvasCourseId,
             dueDatesByTopicId,
-            useStaticHtml: !shouldRenderInstructionHtml,
+            useStaticHtml: false,
           });
         } catch (error) {
           if (onTopicUpdateError) {
