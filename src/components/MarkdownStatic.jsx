@@ -33,15 +33,16 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
 
       // Throw away masteryls plugin blocks in static rendering
       if (!isInline && language === 'masteryls') {
-        return (
-          <div style={{ fontFamily: 'helvetica, arial, sans-serif', fontSize: '1.5em', padding: '1em', border: '3px solid #e58e00', borderRadius: '4px', backgroundColor: '#fffaf0', color: '#262626' }}>
-            View this content in{' '}
-            <a style={{ color: '#262626', textDecoration: 'underline' }} href={`https://masteryls.com/course/${course.id}/topic/${topic.id}`}>
-              MasteryLS
-            </a>
-            .
-          </div>
-        );
+        return null;
+        // return (
+        //   <div style={{ fontFamily: 'helvetica, arial, sans-serif', fontSize: '1.5em', padding: '1em', border: '3px solid #e58e00', borderRadius: '4px', backgroundColor: '#fffaf0', color: '#262626' }}>
+        //     View this content in{' '}
+        //     <a style={{ color: '#262626', textDecoration: 'underline' }} href={`https://masteryls.com/course/${course.id}/topic/${topic.id}`}>
+        //       MasteryLS
+        //     </a>
+        //     .
+        //   </div>
+        // );
       }
 
       // Use SyntaxHighlighter for fenced code blocks with a language

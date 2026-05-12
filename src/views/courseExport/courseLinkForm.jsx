@@ -1,16 +1,30 @@
 import React, { useState } from 'react';
 import { useAlert } from '../../contexts/AlertContext.jsx';
+import { TopicIcon } from '../../utils/Icons.jsx';
 
 export default function CourseLinkForm({ courseOps, onClose }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
   const [course, setCourse] = useState();
   const [selectedScheduleFileId, setSelectedScheduleFileId] = useState('');
   const [deleteExisting, setDeleteExisting] = useState(false);
-  const [onlyLinkAssignments, setOnlyLinkAssignments] = useState(true);
+  const [selectedTopicIds, setSelectedTopicIds] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingTitle, setLoadingTitle] = useState('Linking Your Course');
   const [updateMessage, setUpdateMessage] = useState('Initializing');
   const { showAlert } = useAlert();
+
+  function topicsForCourse(candidateCourse) {
+    if (!candidateCourse?.modules) {
+      return [];
+    }
+    return candidateCourse.modules.flatMap((module) => module.topics || []);
+  }
+
+  function projectsAndExamsTopicIds(candidateCourse) {
+    return topicsForCourse(candidateCourse)
+      .filter((topic) => topic?.id && (topic.type === 'project' || topic.type === 'exam'))
+      .map((topic) => topic.id);
+  }
 
   async function selectCourse(courseId) {
     const course = await courseOps.getCourse(courseId);
@@ -25,6 +39,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     } else {
       setCanvasCourseId('');
     }
+    setSelectedTopicIds(projectsAndExamsTopicIds(course));
   }
 
   async function beginLink() {
@@ -32,7 +47,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     setIsLoading(true);
     try {
       setUpdateMessage('Linking course...');
-      await courseOps.linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId || null, onlyLinkAssignments);
+      await courseOps.linkToCanvas(course, canvasCourseId, deleteExisting, setUpdateMessage, selectedScheduleFileId || null, selectedTopicIds);
       showAlert({ message: `${course.title} linked successfully`, type: 'info' });
     } catch (error) {
       showAlert({ message: `Error linking course: ${error.message}`, type: 'error' });
@@ -104,6 +119,31 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   const scheduleFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files : [];
   const selectedSchedule = scheduleFiles.find((file) => file.id === selectedScheduleFileId) || scheduleFiles[0];
   const selectedScheduleTitle = selectedSchedule?.title || selectedSchedule?.path || 'No schedule selected';
+  const modules = Array.isArray(course?.modules) ? course.modules : [];
+  const topicCount = modules.reduce((count, module) => count + (Array.isArray(module?.topics) ? module.topics.length : 0), 0);
+
+  function setPresetSelectAll() {
+    setSelectedTopicIds(
+      topicsForCourse(course)
+        .map((topic) => topic.id)
+        .filter(Boolean),
+    );
+  }
+
+  function setPresetSelectNone() {
+    setSelectedTopicIds([]);
+  }
+
+  function setPresetProjectsAndExams() {
+    setSelectedTopicIds(projectsAndExamsTopicIds(course));
+  }
+
+  function toggleTopic(topicId) {
+    if (!topicId) {
+      return;
+    }
+    setSelectedTopicIds((current) => (current.includes(topicId) ? current.filter((id) => id !== topicId) : [...current, topicId]));
+  }
 
   return (
     <>
@@ -164,13 +204,47 @@ export default function CourseLinkForm({ courseOps, onClose }) {
               Delete existing pages, quizzes, assignments, and modules
             </label>
           </div>
-          <div className="mt-3 flex items-center space-x-2">
-            <input id="only-link-assignments" type="checkbox" checked={onlyLinkAssignments} onChange={(e) => setOnlyLinkAssignments(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
-            <label htmlFor="only-link-assignments" className="text-sm text-gray-700">
-              Only link assignments
-            </label>
-          </div>
         </div>
+
+        {course && (
+          <div>
+            <label className="block text-lg font-medium text-gray-700 mb-1">Topics to link with Canvas</label>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <button type="button" onClick={setPresetSelectAll} className="px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+                Select all
+              </button>
+              <button type="button" onClick={setPresetSelectNone} className="px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
+                Select none
+              </button>
+              <button type="button" onClick={setPresetProjectsAndExams} className="px-3 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200">
+                Select projects and exams
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-2">
+              {selectedTopicIds.length} of {topicCount} selected.
+            </p>
+            <div className="max-h-64 overflow-auto rounded-md border border-gray-200 p-3 space-y-3 bg-white">
+              {modules.map((module) => (
+                <div key={module.id || module.title}>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">{module.title}</p>
+                  <div className="space-y-1">
+                    {(module.topics || []).map((topic) => {
+                      const topicId = topic.id;
+                      const checked = !!topicId && selectedTopicIds.includes(topicId);
+                      return (
+                        <label key={topic.id || `${module.title}-${topic.title}`} className="flex items-center gap-2 text-sm text-gray-700">
+                          <input type="checkbox" checked={checked} onChange={() => toggleTopic(topicId)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
+                          <TopicIcon type={topic.type || 'instruction'} />
+                          <span>{topic.title}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {scheduleFiles.length > 0 && (
           <div>

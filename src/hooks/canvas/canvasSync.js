@@ -47,11 +47,11 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       </div>`;
   }
 
-  function shouldLinkTopic(topic, onlyLinkAssignments) {
-    if (!onlyLinkAssignments) {
+  function shouldLinkTopic(topic, selectedTopicIdSet) {
+    if (!selectedTopicIdSet) {
       return true;
     }
-    return topic?.type === 'exam' || topic?.type === 'project';
+    return !!topic?.id && selectedTopicIdSet.has(topic.id);
   }
 
   function clearCanvasTopicRefs(topic) {
@@ -319,11 +319,13 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     }
   }
 
-  async function linkCourseResources({ updatedCourse, canvasCourseId, setUpdateMessage, dueDatesByTopicId = {}, onlyLinkAssignments = true, onTopicUpdateError }) {
+  async function linkCourseResources({ updatedCourse, canvasCourseId, setUpdateMessage, dueDatesByTopicId = {}, selectedTopicIds = [], onTopicUpdateError }) {
+    const selectedTopicIdSet = new Set(Array.isArray(selectedTopicIds) ? selectedTopicIds : []);
+
     // create the modules and resources first
     for (const module of updatedCourse.modules) {
-      const topicsToLink = module.topics.filter((topic) => shouldLinkTopic(topic, onlyLinkAssignments));
-      const skippedTopics = module.topics.filter((topic) => !shouldLinkTopic(topic, onlyLinkAssignments));
+      const topicsToLink = module.topics.filter((topic) => shouldLinkTopic(topic, selectedTopicIdSet));
+      const skippedTopics = module.topics.filter((topic) => !shouldLinkTopic(topic, selectedTopicIdSet));
       skippedTopics.forEach(clearCanvasTopicRefs);
 
       if (topicsToLink.length === 0) {
@@ -358,7 +360,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
     // now update each resource with content
     for (const module of updatedCourse.modules) {
-      const topicsToLink = module.topics.filter((topic) => shouldLinkTopic(topic, onlyLinkAssignments));
+      const topicsToLink = module.topics.filter((topic) => shouldLinkTopic(topic, selectedTopicIdSet));
       if (topicsToLink.length === 0 || !module.externalRefs?.canvasModuleId) {
         continue;
       }
@@ -366,8 +368,15 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       await publishCanvasModule(module, canvasCourseId);
       for (const topic of topicsToLink) {
         try {
+          const shouldRenderInstructionHtml = !topic?.type || topic.type === 'instruction';
           setUpdateMessage(`Linking topic '${topic.title}' to Canvas`);
-          await updateCanvasTopic({ course: updatedCourse, topic, canvasCourseId, dueDatesByTopicId, useStaticHtml: true });
+          await updateCanvasTopic({
+            course: updatedCourse,
+            topic,
+            canvasCourseId,
+            dueDatesByTopicId,
+            useStaticHtml: !shouldRenderInstructionHtml,
+          });
         } catch (error) {
           if (onTopicUpdateError) {
             onTopicUpdateError(topic, error);
