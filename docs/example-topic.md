@@ -145,6 +145,36 @@ Submit a direct URL to the page or document you want graded.
 Help me understand the **Socratic method**.
 ```
 
+### Web Page
+
+```masteryls
+{"id":"39289", "title":"Web Page (Inline HTML)", "type":"web-page", "height":320}
+<body style="margin:0;display:grid;place-items:center;min-height:100vh;background:#0f172a;color:#e2e8f0;font-family:ui-monospace,monospace;">
+  <h1>Inline web page preview</h1>
+</body>
+```
+
+```masteryls
+{"id":"39290", "title":"Web Page (From File)", "type":"web-page", "file":"instruction/topic1/starter-page.html", "height":"40vh"}
+This body text is optional when using `file`.
+```
+
+#### web-page authoring notes
+
+- `type`: Must be `web-page`.
+- `id`: Optional but recommended unique interaction id.
+- `title`: Optional display title.
+- `file`: Optional path to an HTML file resolved from the topic path.
+  - The resolved URL must be HTTPS to load.
+- `height`: Optional initial frame height.
+  - Accepted values: number (treated as pixels), numeric string (pixels), or CSS unit values ending in `px`, `rem`, `em`, `vh`, `vw`, or `%`.
+  - Invalid or missing values default to `240px`.
+- Body HTML: Optional inline HTML in the interaction body.
+  - If both inline HTML and `file` are provided, inline HTML is used.
+- Runtime behavior:
+  - The frame is resizable by drag or keyboard arrows.
+  - Minimum frame height is `50px`.
+
 ### AI Web Page
 
 ```masteryls

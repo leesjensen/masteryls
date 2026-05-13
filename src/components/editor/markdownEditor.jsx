@@ -817,7 +817,7 @@ const defaultTableTemplate = `\n
 
 const defaultMultipleSelectQuizTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Multiple select", "type":"multiple-select", "syncGrade":true, "autoGrade":false }
+{"id":"", "title":"Multiple select", "type":"multiple-select" }
 A **multiple select** question can have multiple answers. Incorrect selections count against correct ones when calculating the correct percentage."
 
 - [ ] This is **not** the right answer
@@ -830,7 +830,7 @@ A **multiple select** question can have multiple answers. Incorrect selections c
 
 const defaultMultipleChoiceInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Multiple choice", "type":"multiple-choice", "syncGrade":true, "autoGrade":false }
+{"id":"", "title":"Multiple choice", "type":"multiple-choice" }
 Simple **multiple choice** question
 
 - [ ] This is **not** the right answer
@@ -841,21 +841,21 @@ Simple **multiple choice** question
 `;
 const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Essay", "type":"essay", "syncGrade":true, "autoGrade":false }
+{"id":"", "title":"Essay", "type":"essay" }
 Simple **essay** question
 \`\`\`
 `;
 
 const defaultTeachingInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Teaching", "type":"teaching", "syncGrade":true, "autoGrade":false }
+{"id":"", "title":"Teaching", "type":"teaching" }
 Help me understand the **Socratic method**.
 \`\`\`
 `;
 
 const defaultFileInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"File submission", "type":"file-submission", "syncGrade":true, "autoGrade":false  }
+{"id":"", "title":"File submission", "type":"file-submission"  }
 Simple **submission** by file
 \`\`\`
 `;
@@ -878,7 +878,7 @@ const defaultWebPageInteractionTemplate = `
 
 const defaultAiWebPageInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Web page development", "type":"ai-web-page", "allowAiPrompt":true, "syncGrade":true, "autoGrade":false, "gradingCriteria":"The word 'byu' must be included in the HTML.", "height":500 }
+{"id":"", "title":"Web page development", "type":"ai-web-page", "allowAiPrompt":true, "gradingCriteria":"The word 'byu' must be included in the HTML.", "height":500 }
 Interactively create an HTML page from your prompt.
 
 ~~~html
