@@ -147,6 +147,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     if (type) {
       if (event.target.tagName === 'BUTTON' && event.target.id === `generate-${id}`) {
         event.target.disabled = true;
+        visualizeGrading(interactionRoot);
         const interactionElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
         if (interactionElement && interactionElement.value) {
           const prompt = interactionElement.value;
@@ -157,7 +158,11 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             updateInteractionProgress(id, { ...(getInteractionProgress(id) || {}), type, prompt, html, generationState: 'success', generationFeedback: 'HTML generated. Review and edit before submitting.' });
           } catch {
             updateInteractionProgress(id, { ...(getInteractionProgress(id) || {}), type, prompt, generationState: 'error', generationFeedback: 'Unable to generate HTML right now. Please try again.' });
+          } finally {
+            displayGrade(interactionRoot, -1);
           }
+        } else {
+          displayGrade(interactionRoot, -1);
         }
         event.target.disabled = false;
         return;
