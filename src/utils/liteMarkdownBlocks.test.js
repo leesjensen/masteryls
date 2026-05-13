@@ -29,3 +29,15 @@ test('parseLiteMarkdownBlocks supports -, +, and * list markers', () => {
 
   assert.deepEqual(parseLiteMarkdownBlocks(input), [{ type: 'ul', items: ['One', 'Two', 'Three'] }]);
 });
+
+test('parseLiteMarkdownBlocks parses ordered lists', () => {
+  const input = ['1. First', '2. Second', '3. Third'].join('\n');
+
+  assert.deepEqual(parseLiteMarkdownBlocks(input), [{ type: 'ol', items: ['First', 'Second', 'Third'], start: 1 }]);
+});
+
+test('parseLiteMarkdownBlocks preserves ordered list start', () => {
+  const input = ['4. Fourth', '5. Fifth'].join('\n');
+
+  assert.deepEqual(parseLiteMarkdownBlocks(input), [{ type: 'ol', items: ['Fourth', 'Fifth'], start: 4 }]);
+});

@@ -96,6 +96,18 @@ export function renderLiteMarkdownBlocks(md) {
       );
     }
 
+    if (block.type === 'ol') {
+      return (
+        <ol key={`list-${index}`} className="list-decimal pl-6 my-2" start={block.start || 1}>
+          {block.items.map((item, itemIndex) => (
+            <li key={`list-item-${index}-${itemIndex}`} className="my-1">
+              {parseInline(item)}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+
     return (
       <p key={`p-${index}`} className="my-2">
         {parseInline(block.text)}
