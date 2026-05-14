@@ -386,6 +386,7 @@ test('editor can generate preview and insert an AI image', async ({ page }) => {
   let geminiPromptPayload = '';
   let uploadedImageContent = '';
   let imageUploaded = false;
+  let rawPreviewRequests = 0;
 
   await page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
     if (route.request().method() === 'OPTIONS') {
@@ -457,6 +458,11 @@ test('editor can generate preview and insert an AI image', async ({ page }) => {
     await route.fulfill({ status: 404, json: { message: 'Not Found' } });
   });
 
+  await page.context().route('https://raw.githubusercontent.com/**/ai-event-loop-queues.png*', async (route) => {
+    rawPreviewRequests += 1;
+    await route.fulfill({ status: 404, body: 'Not Found' });
+  });
+
   await page.locator('.absolute.left-0\\.5').click();
 
   await page.getByText('# Home').click();
@@ -481,8 +487,10 @@ test('editor can generate preview and insert an AI image', async ({ page }) => {
   });
 
   await expect.poll(getUpdatedMarkdown).toContain('![ai-event-loop-queues.png](ai-event-loop-queues.png)');
+  await expect(page.getByRole('img', { name: 'ai-event-loop-queues.png' })).toHaveAttribute('src', /^blob:/);
   const updatedMarkdown = await getUpdatedMarkdown();
   expect(updatedMarkdown).toContain('![ai-event-loop-queues.png](ai-event-loop-queues.png)');
+  expect(rawPreviewRequests).toBe(0);
 });
 
 test('editor commits can be shown with diff and apply actions', async ({ page }) => {

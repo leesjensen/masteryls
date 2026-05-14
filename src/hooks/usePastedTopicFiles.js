@@ -3,6 +3,36 @@ import React from 'react';
 export default function usePastedTopicFiles(courseOps) {
   const [externalAddedFiles, setExternalAddedFiles] = React.useState([]);
   const [pastingImageCommit, setPastingImageCommit] = React.useState(false);
+  const [previewFileUrls, setPreviewFileUrls] = React.useState({});
+  const previewFileUrlsRef = React.useRef({});
+
+  React.useEffect(() => {
+    return () => {
+      Object.values(previewFileUrlsRef.current).forEach((url) => URL.revokeObjectURL(url));
+      previewFileUrlsRef.current = {};
+    };
+  }, []);
+
+  const addPreviewFileUrls = React.useCallback((uploadDescriptors) => {
+    const nextUrls = {};
+    (Array.isArray(uploadDescriptors) ? uploadDescriptors : []).forEach((file) => {
+      if (!file?.name || !file?.props || typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') {
+        return;
+      }
+
+      if (previewFileUrlsRef.current[file.name]) {
+        URL.revokeObjectURL(previewFileUrlsRef.current[file.name]);
+      }
+
+      const url = URL.createObjectURL(file.props);
+      previewFileUrlsRef.current[file.name] = url;
+      nextUrls[file.name] = url;
+    });
+
+    if (Object.keys(nextUrls).length > 0) {
+      setPreviewFileUrls((current) => ({ ...current, ...nextUrls }));
+    }
+  }, []);
 
   const waitForFilesToExist = React.useCallback(
     async (fileNames, timeoutMs = 12000, intervalMs = 1000) => {
@@ -38,9 +68,10 @@ export default function usePastedTopicFiles(courseOps) {
       const names = uploadDescriptors.map((file) => file.name);
       await courseOps.addTopicFiles(uploadDescriptors);
       await waitForFilesToExist(names);
+      addPreviewFileUrls(uploadDescriptors);
       setExternalAddedFiles(uploadDescriptors);
     },
-    [courseOps, waitForFilesToExist],
+    [addPreviewFileUrls, courseOps, waitForFilesToExist],
   );
 
   const getExistingTopicFileNames = React.useCallback(async () => {
@@ -54,6 +85,7 @@ export default function usePastedTopicFiles(courseOps) {
 
   return {
     externalAddedFiles,
+    previewFileUrls,
     pastingImageCommit,
     setPastingImageCommit,
     handlePastedFiles,

@@ -2,7 +2,7 @@ import React from 'react';
 import InteractionInstruction from './interaction/interactionInstruction';
 import { getInteractionProgress } from './interaction/interactionProgressStore';
 
-export default function ExamInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
+export default function ExamInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', previewFileUrls = {} }) {
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } }); // possible states: notStarted, inProgress, completed
   const quizIds = React.useRef(new Set());
@@ -71,7 +71,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-blue-500">Preview</div>
         </div>
-        <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'preview'} />
+        <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'preview'} previewFileUrls={previewFileUrls} />
       </div>
     );
   } else if (examState.details.state === 'completed') {
@@ -99,7 +99,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         </div>
 
         <div className="relative pointer-events-none opacity-75 select-none">
-          <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'examReview'} />
+          <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'examReview'} previewFileUrls={previewFileUrls} />
         </div>
       </div>
     );
@@ -114,7 +114,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
           </button>
         </div>
 
-        <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'exam'} quizStateReporter={quizStateReporter} />
+        <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={'exam'} quizStateReporter={quizStateReporter} previewFileUrls={previewFileUrls} />
       </div>
     );
   } else {

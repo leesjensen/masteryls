@@ -54,7 +54,7 @@ import { validateSubmittedUrl } from '../../../utils/urlValidation';
  *
  * @returns {JSX.Element} The rendered interaction instruction component
  */
-export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null }) {
+export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null, previewFileUrls = {} }) {
   const isCourseLinkedToGradebook = Boolean(learningSession?.course?.externalRefs?.canvasCourseId);
 
   function toBoolean(value, fallback = false) {
@@ -517,6 +517,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       ]}
       content={content}
       instructionState={instructionState}
+      previewFileUrls={previewFileUrls}
     />
   );
 }

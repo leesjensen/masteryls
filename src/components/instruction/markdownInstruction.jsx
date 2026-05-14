@@ -9,7 +9,7 @@ import useMarkdownLocation from '../../hooks/useMarkdownLocation';
 
 import '../markdown.css';
 
-export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning' }) {
+export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning', previewFileUrls = {} }) {
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [noteMessages, setNoteMessages] = useState([]);
@@ -36,7 +36,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         });
       }
     }
-  }, [learningSession, content]);
+  }, [learningSession, content, instructionState, previewFileUrls]);
 
   useEffect(() => {
     if (!learningSession?.enrollment?.id) return;
@@ -94,13 +94,30 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
 
   function processRelativeImagePaths(md, baseUrl) {
     const basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/'));
-    const isAbsoluteUrl = (value) => /^https?:\/\//i.test(value);
-    md = md.replace(/!\[(.+)\]\(([^\)\s]+)\)/g, (match, p1, p2) => {
-      const prefixedPath = p2.startsWith('/') || isAbsoluteUrl(p2) ? p2 : `${basePath}/${p2}`;
+    const isAbsoluteUrl = (value) => /^[a-z][a-z\d+\-.]*:/i.test(value);
+    const getPreviewFileUrl = (resourcePath) => {
+      if (instructionState !== 'preview' || !resourcePath || resourcePath.startsWith('/') || isAbsoluteUrl(resourcePath)) {
+        return null;
+      }
+
+      const cleanPath = resourcePath.split('#')[0].split('?')[0].replace(/^\.\/+/, '');
+      const fileName = cleanPath.split('/').pop();
+      return previewFileUrls[cleanPath] || previewFileUrls[fileName] || null;
+    };
+    const resolveResourcePath = (resourcePath) => {
+      const previewFileUrl = getPreviewFileUrl(resourcePath);
+      if (previewFileUrl) {
+        return previewFileUrl;
+      }
+      return resourcePath.startsWith('/') || isAbsoluteUrl(resourcePath) ? resourcePath : `${basePath}/${resourcePath}`;
+    };
+
+    md = md.replace(/!\[(.*?)\]\(([^\)\s]+)\)/g, (match, p1, p2) => {
+      const prefixedPath = resolveResourcePath(p2);
       return `![${p1}](${prefixedPath})`;
     });
     md = md.replace(/ src="([^"]+)"/g, (match, p1) => {
-      const fullPath = p1.startsWith('/') || isAbsoluteUrl(p1) ? p1 : `${basePath}/${p1}`;
+      const fullPath = resolveResourcePath(p1);
       return ` src="${fullPath}"`;
     });
 

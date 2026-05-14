@@ -6,7 +6,7 @@ import ScheduleInstruction from './scheduleInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 import { addInteractionProgress } from './interaction/interactionProgressStore';
 
-export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
+export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', previewFileUrls = {} }) {
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
@@ -42,13 +42,13 @@ export default function Instruction({ courseOps, learningSession, user, content 
       instructionComponent = <EmbeddedInstruction learningSession={learningSession} />;
       break;
     case 'exam':
-      instructionComponent = <ExamInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
+      instructionComponent = <ExamInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} previewFileUrls={previewFileUrls} />;
       break;
     case 'schedule':
       instructionComponent = <ScheduleInstruction courseOps={courseOps} learningSession={learningSession} user={user} instructionState={instructionState} />;
       break;
     default:
-      instructionComponent = <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
+      instructionComponent = <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} previewFileUrls={previewFileUrls} />;
       break;
   }
 

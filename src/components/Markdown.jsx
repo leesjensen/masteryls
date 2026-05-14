@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearchResults } from '../hooks/useSearchResults';
 import { createHighlightedComponent, renderHighlightedCodeBlock } from './HighlightedText';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
@@ -14,6 +14,14 @@ import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
 import { StickyNote } from 'lucide-react';
 import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
+
+function markdownUrlTransform(value, key, node) {
+  if (key === 'src' && node?.tagName === 'img' && String(value || '').startsWith('blob:')) {
+    return value;
+  }
+
+  return defaultUrlTransform(value);
+}
 
 export default function Markdown({ learningSession, content, languagePlugins = [], noteMessages = [], onMakeHeadingActive = null }) {
   const { searchResults } = useSearchResults();
@@ -235,7 +243,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
   return (
     <div ref={containerRef}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSanitizeSchema], [rehypeMermaid, { mermaidConfig: { theme: 'default', securityLevel: 'strict' } }]]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]} rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSanitizeSchema], [rehypeMermaid, { mermaidConfig: { theme: 'default', securityLevel: 'strict' } }]]} components={components} urlTransform={markdownUrlTransform}>
         {content}
       </ReactMarkdown>
     </div>

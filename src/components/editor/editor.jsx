@@ -36,7 +36,7 @@ export default function Editor({ courseOps, user, learningSession }) {
     editorPanePercent,
   });
 
-  const { externalAddedFiles, pastingImageCommit, setPastingImageCommit, handlePastedFiles, getExistingTopicFileNames } = usePastedTopicFiles(courseOps);
+  const { externalAddedFiles, previewFileUrls, pastingImageCommit, setPastingImageCommit, handlePastedFiles, getExistingTopicFileNames } = usePastedTopicFiles(courseOps);
 
   function toggleShowCommits() {
     setShowCommits((v) => !v);
@@ -116,7 +116,7 @@ export default function Editor({ courseOps, user, learningSession }) {
               </div>
               <Splitter onMove={onEditorPaneMoved} onResized={onEditorPaneResized} minPosition={0} maxPosition={window.innerWidth} />
               <div ref={previewPaneRef} className="h-full flex-1 min-w-0 overflow-auto border-l border-gray-200 bg-white">
-                <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState="preview" />
+                <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState="preview" previewFileUrls={previewFileUrls} />
               </div>
             </div>
             <div className="flex-2/10 flex overflow-hidden">

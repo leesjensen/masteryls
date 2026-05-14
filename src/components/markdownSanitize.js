@@ -85,6 +85,6 @@ export const markdownSanitizeSchema = {
   protocols: {
     ...defaultSchema.protocols,
     href: mergeUnique(defaultSchema.protocols?.href, ['http', 'https', 'mailto', 'tel']),
-    src: mergeUnique(defaultSchema.protocols?.src, ['http', 'https']),
+    src: mergeUnique(defaultSchema.protocols?.src, ['http', 'https', 'blob']),
   },
 };
