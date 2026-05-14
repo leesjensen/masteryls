@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { initBasicCourse, navigateToMetrics } from './testInit';
+import { initBasicCourse, navigateToMetrics, register } from './testInit';
 
 test('metrics', async ({ page }) => {
   await initBasicCourse({ page });
@@ -45,4 +45,23 @@ test('metrics user filter search and clear', async ({ page }) => {
 
   await page.getByTitle('Clear user filter').click();
   await expect(userSearch).toHaveValue('');
+});
+
+test('metrics does not repeat enrollment lookups while enriching progress rows', async ({ page }) => {
+  await initBasicCourse({ page });
+  await register(page);
+
+  const enrollmentLookups: string[] = [];
+  page.on('request', (request) => {
+    const url = request.url();
+    if (url.includes('/rest/v1/enrollment?') && url.includes('learnerId=eq.') && url.includes('catalogId=eq.')) {
+      enrollmentLookups.push(url);
+    }
+  });
+
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'Metrics' }).click();
+
+  await expect(page.getByRole('main')).toContainText('Total Activities6');
+  expect(enrollmentLookups).toHaveLength(0);
 });

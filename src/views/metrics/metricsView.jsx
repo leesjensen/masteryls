@@ -573,12 +573,22 @@ export default function MetricsView({ courseOps }) {
 
   async function enhancedMetrics(progressData) {
     if (progressData) {
+      const uniqueCourseIds = [...new Set(progressData.filter((data) => data.catalogId && data.topicId).map((data) => data.catalogId))];
+      const courseEntries = await Promise.all(uniqueCourseIds.map(async (courseId) => [courseId, await courseOps.getCourse(courseId)]));
+      const coursesById = new Map(courseEntries);
+      const topicsByCourseId = new Map(
+        courseEntries.map(([courseId, course]) => [
+          courseId,
+          new Map((course?.allTopics || []).map((topic) => [topic.id.replace(/-/g, ''), topic])),
+        ])
+      );
+
       const enhancedData = [];
       for (const data of progressData) {
         if (data.catalogId && data.topicId) {
-          const course = await courseOps.getCourse(data.catalogId);
+          const course = coursesById.get(data.catalogId);
           if (!course) continue; // User might not have access to the course so don't show progress
-          const topic = course.allTopics.find((t) => t.id.replace(/-/g, '') === data.topicId.replace(/-/g, ''));
+          const topic = topicsByCourseId.get(data.catalogId)?.get(data.topicId.replace(/-/g, ''));
 
           enhancedData.push({
             ...data,

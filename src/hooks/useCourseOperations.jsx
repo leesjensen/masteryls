@@ -106,7 +106,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const isPublished = courseEntry.settings?.state === 'published';
     const canEditCourse = user?.isEditor(courseId);
     let isEnrolledLearner = false;
-    if (user?.id) {
+    if (!isPublished && !canEditCourse && user?.id) {
       const enrollment = await service.enrollment(user.id, courseId);
       isEnrolledLearner = !!enrollment;
     }
