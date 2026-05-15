@@ -11,4 +11,5 @@ supabase/.temp
 /blob-report/
 /playwright/.cache/
 .nyc_output
+.vscode
 coverage
