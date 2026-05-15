@@ -18,6 +18,7 @@ export default function GradebookView({ courseOps }) {
   const [learnerDetailsLoading, setLearnerDetailsLoading] = React.useState(false);
   const [learnerDetailsError, setLearnerDetailsError] = React.useState(null);
   const [learnerProgressRows, setLearnerProgressRows] = React.useState([]);
+  const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'asc' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
 
   const user = courseOps?.user;
@@ -261,6 +262,56 @@ export default function GradebookView({ courseOps }) {
     });
   }, [selectedCourse, selectedLearner, learnerProgressRows]);
 
+  const sortedInstructionTopicSummaries = React.useMemo(() => {
+    const direction = detailSort.direction === 'desc' ? -1 : 1;
+    const items = [...instructionTopicSummaries];
+
+    const compareDate = (left, right) => {
+      const leftValue = left ? new Date(left).getTime() : 0;
+      const rightValue = right ? new Date(right).getTime() : 0;
+      return (leftValue - rightValue) * direction;
+    };
+
+    items.sort((a, b) => {
+      switch (detailSort.key) {
+        case 'avgPercent': {
+          const left = Number.isFinite(Number(a.avgPercent)) ? Number(a.avgPercent) : -1;
+          const right = Number.isFinite(Number(b.avgPercent)) ? Number(b.avgPercent) : -1;
+          return (left - right) * direction;
+        }
+        case 'completedInteractions': {
+          if (a.completedInteractions !== b.completedInteractions) {
+            return (a.completedInteractions - b.completedInteractions) * direction;
+          }
+          return (a.totalInteractions - b.totalInteractions) * direction;
+        }
+        case 'latestInteractionAt':
+          return compareDate(a.latestInteractionAt, b.latestInteractionAt);
+        case 'topicTitle':
+        default:
+          return String(a.topicTitle || '').localeCompare(String(b.topicTitle || '')) * direction;
+      }
+    });
+
+    return items;
+  }, [detailSort.direction, detailSort.key, instructionTopicSummaries]);
+
+  function toggleDetailSort(key) {
+    setDetailSort((previous) => {
+      if (previous.key === key) {
+        return { key, direction: previous.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
+    });
+  }
+
+  function detailSortLabel(key, label) {
+    if (detailSort.key !== key) {
+      return label;
+    }
+    return `${label} ${detailSort.direction === 'asc' ? '↑' : '↓'}`;
+  }
+
   if (!user) {
     return (
       <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
@@ -361,14 +412,30 @@ export default function GradebookView({ courseOps }) {
                               <table className="min-w-full text-sm">
                                 <thead className="bg-gray-50 text-gray-700">
                                   <tr>
-                                    <th className="text-left px-2 py-1 font-semibold">Instruction Item</th>
-                                    <th className="text-left px-2 py-1 font-semibold">Mastery</th>
-                                    <th className="text-left px-2 py-1 font-semibold">Interactions Completed</th>
-                                    <th className="text-left px-2 py-1 font-semibold">Last Interaction</th>
+                                    <th className="text-left px-2 py-1 font-semibold">
+                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('topicTitle')} aria-label="Sort by instruction item">
+                                        {detailSortLabel('topicTitle', 'Instruction Item')}
+                                      </button>
+                                    </th>
+                                    <th className="text-left px-2 py-1 font-semibold">
+                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('avgPercent')} aria-label="Sort by mastery">
+                                        {detailSortLabel('avgPercent', 'Mastery')}
+                                      </button>
+                                    </th>
+                                    <th className="text-left px-2 py-1 font-semibold">
+                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('completedInteractions')} aria-label="Sort by interactions completed">
+                                        {detailSortLabel('completedInteractions', 'Interactions Completed')}
+                                      </button>
+                                    </th>
+                                    <th className="text-left px-2 py-1 font-semibold">
+                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('latestInteractionAt')} aria-label="Sort by last interaction">
+                                        {detailSortLabel('latestInteractionAt', 'Last Interaction')}
+                                      </button>
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {instructionTopicSummaries.map((summary) => (
+                                  {sortedInstructionTopicSummaries.map((summary) => (
                                     <tr key={summary.topicId} className="border-t border-gray-100 text-gray-700">
                                       <td className="px-2 py-1">
                                         <button type="button" onClick={() => navigate(`/course/${selectedCourseId}/topic/${summary.topicId}`)} className="text-left text-blue-700 hover:text-blue-900 hover:underline inline-flex items-center gap-1">
