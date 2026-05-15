@@ -6,6 +6,10 @@ import WebPageInteraction from './webPageInteraction';
 import CopyToClipboard from '../../CopyToClipboard';
 import ScoreStars from './scoreStars';
 
+const DEFAULT_SOURCE_EDITOR_HEIGHT = '18rem';
+const MIN_SOURCE_EDITOR_HEIGHT = '12rem';
+const MIN_SOURCE_EDITOR_HEIGHT_PX = 192;
+
 function fmtDate(d) {
   return new Date(d).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
@@ -78,6 +82,9 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   const [historyItems, setHistoryItems] = React.useState(null);
   const [localHistoryItems, setLocalHistoryItems] = React.useState([]);
   const [historyIndex, setHistoryIndex] = React.useState(-1);
+  const [sourceEditorHeight, setSourceEditorHeight] = React.useState(DEFAULT_SOURCE_EDITOR_HEIGHT);
+  const sourceEditorRef = React.useRef(null);
+  const sourceResizeCleanupRef = React.useRef(null);
 
   const mergedHistoryItems = React.useMemo(() => {
     const serverItems = historyItems || [];
@@ -143,6 +150,10 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   React.useEffect(() => {
     setCurrentPrompt(progress.prompt || '');
   }, [progress.prompt]);
+
+  React.useEffect(() => {
+    return () => sourceResizeCleanupRef.current?.();
+  }, []);
 
   React.useEffect(() => {
     if (!progress?.submissionKey || !progress?.html) return;
@@ -213,6 +224,67 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
       generationState: 'idle',
       generationFeedback: '',
     });
+  }
+
+  function resizeSourceEditorBy(delta) {
+    const current = sourceEditorRef.current?.getBoundingClientRect().height || MIN_SOURCE_EDITOR_HEIGHT_PX;
+    const nextHeight = Math.max(MIN_SOURCE_EDITOR_HEIGHT_PX, Math.round(current + delta));
+    setSourceEditorHeight(`${nextHeight}px`);
+  }
+
+  function startSourceEditorResize(event) {
+    if (!sourceEditorRef.current) return;
+
+    event.preventDefault();
+    sourceResizeCleanupRef.current?.();
+
+    const startY = event.clientY;
+    const startHeight = sourceEditorRef.current.getBoundingClientRect().height;
+    const handle = event.currentTarget;
+    const previousBodyCursor = document.body.style.cursor;
+    const previousBodyUserSelect = document.body.style.userSelect;
+
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    try {
+      handle.setPointerCapture?.(event.pointerId);
+    } catch {}
+
+    const handlePointerMove = (moveEvent) => {
+      const nextHeight = Math.max(MIN_SOURCE_EDITOR_HEIGHT_PX, Math.round(startHeight + moveEvent.clientY - startY));
+      setSourceEditorHeight(`${nextHeight}px`);
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', cleanup);
+      window.removeEventListener('pointercancel', cleanup);
+      window.removeEventListener('blur', cleanup);
+      document.body.style.cursor = previousBodyCursor;
+      document.body.style.userSelect = previousBodyUserSelect;
+      try {
+        if (handle.hasPointerCapture?.(event.pointerId)) {
+          handle.releasePointerCapture?.(event.pointerId);
+        }
+      } catch {}
+      sourceResizeCleanupRef.current = null;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', cleanup);
+    window.addEventListener('pointercancel', cleanup);
+    window.addEventListener('blur', cleanup);
+    sourceResizeCleanupRef.current = cleanup;
+  }
+
+  function handleSourceEditorResizeKeyDown(event) {
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      resizeSourceEditorBy(-24);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      resizeSourceEditorBy(24);
+    }
   }
 
   function loadHistoryByOffset(offset) {
@@ -287,9 +359,9 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
 
           {sourceOpen && (
             <div className="space-y-2 border border-blue-100 bg-white rounded-lg p-2">
-              <div className="border border-gray-200 rounded-lg overflow-hidden" data-plugin-masteryls-ai-web-page-source>
+              <div ref={sourceEditorRef} className="relative border border-gray-200 rounded-lg overflow-hidden" data-plugin-masteryls-ai-web-page-source style={{ height: sourceEditorHeight, minHeight: MIN_SOURCE_EDITOR_HEIGHT, resize: 'vertical' }}>
                 <Editor
-                  height="18rem"
+                  height="100%"
                   language="html"
                   value={sourceValue}
                   onChange={(value) => setSourceValue(value || '')}
@@ -305,6 +377,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
                     wordWrap: 'on',
                   }}
                 />
+                <div className="absolute bottom-0 left-0 right-0 w-full cursor-row-resize touch-none bg-transparent hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-blue-400" data-plugin-masteryls-ai-web-page-source-resize-handle role="separator" aria-orientation="horizontal" aria-label="Resize source editor" tabIndex={0} style={{ height: '10px' }} onPointerDown={startSourceEditorResize} onKeyDown={handleSourceEditorResizeKeyDown} />
               </div>
               <div className="flex items-center justify-between gap-2">
                 <button id={`save-source-${id}`} type="button" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={saveDisabled} onClick={applySource}>

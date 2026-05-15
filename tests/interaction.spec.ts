@@ -275,7 +275,23 @@ Create an HTML page from your prompt.
   await page.getByRole('button', { name: /Source code/ }).click();
   const sourceEditor = page.locator('[data-plugin-masteryls-ai-web-page-source]');
   await expect(sourceEditor).toBeVisible();
+  await expect(sourceEditor).toHaveCSS('resize', 'vertical');
   await expect(sourceEditor).toContainText('Generated AI Page');
+
+  const sourceResizeHandle = page.locator('[data-plugin-masteryls-ai-web-page-source-resize-handle]');
+  const sourceBox = await sourceEditor.boundingBox();
+  if (!sourceBox) throw new Error('Expected source editor to have a bounding box');
+  await sourceResizeHandle.hover();
+  await page.mouse.down();
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height + 80);
+  await page.mouse.up();
+
+  await expect
+    .poll(async () => {
+      const resizedBox = await sourceEditor.boundingBox();
+      return resizedBox?.height || 0;
+    })
+    .toBeGreaterThan(sourceBox.height + 50);
 
   const editedHtml = generatedHtml.replace('Generated AI Page', 'Edited AI Page');
   const sourceEditorInput = sourceEditor.getByRole('textbox', { name: 'Editor content' });
