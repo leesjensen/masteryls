@@ -8,6 +8,7 @@ export function parseLiteMarkdownBlocks(md) {
   const isUnorderedListLine = (line) => /^\s*[*+-]\s+/.test(line);
   const isOrderedListLine = (line) => /^\s*\d+\.\s+/.test(line);
   const isListLine = (line) => isUnorderedListLine(line) || isOrderedListLine(line);
+  const fencedCodeStart = (line) => line.match(/^\s*```([\w-]*)\s*$/);
 
   function listInfo(line) {
     if (isOrderedListLine(line)) {
@@ -20,6 +21,25 @@ export function parseLiteMarkdownBlocks(md) {
   while (i < lines.length) {
     if (!lines[i].trim()) {
       i += 1;
+      continue;
+    }
+
+    const codeFence = fencedCodeStart(lines[i]);
+    if (codeFence) {
+      const language = codeFence[1] || '';
+      const codeLines = [];
+      i += 1;
+
+      while (i < lines.length && !/^\s*```\s*$/.test(lines[i])) {
+        codeLines.push(lines[i]);
+        i += 1;
+      }
+
+      if (i < lines.length) {
+        i += 1;
+      }
+
+      blocks.push({ type: 'code', language, text: codeLines.join('\n') });
       continue;
     }
 

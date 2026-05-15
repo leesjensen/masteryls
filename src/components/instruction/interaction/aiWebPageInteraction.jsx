@@ -1,7 +1,7 @@
 import React from 'react';
 import Editor from '@monaco-editor/react';
 import { useInteractionProgressStore, updateInteractionProgress } from './interactionProgressStore';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
+import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import WebPageInteraction from './webPageInteraction';
 import CopyToClipboard from '../../CopyToClipboard';
 import ScoreStars from './scoreStars';
@@ -248,7 +248,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   return (
     <div>
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
-        {inlineLiteMarkdown(effectiveDirections)}
+        {renderLiteMarkdownBlocks(effectiveDirections)}
       </div>
 
       {loadingFileHtml && !currentHtml && <div className="text-sm text-gray-500">Loading starter HTML...</div>}
@@ -274,7 +274,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
         </div>
       )}
 
-      {generationState !== 'idle' && generationFeedback && <div className={generationClasses}>{inlineLiteMarkdown(generationFeedback)}</div>}
+      {generationState !== 'idle' && generationFeedback && <div className={generationClasses}>{renderLiteMarkdownBlocks(generationFeedback)}</div>}
 
       <div className="mt-4 space-y-3">
         <div className="border border-blue-200 bg-blue-50/40 rounded-lg p-3 space-y-2">

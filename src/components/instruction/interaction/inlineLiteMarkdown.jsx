@@ -9,13 +9,13 @@ function parseInline(text) {
   let keyCounter = 0;
 
   const patterns = [
-    // code blocks ```code```
+    // fenced code fallback for inline-only contexts
     {
       regex: /```(?:[a-z]*\n)?([^`]+)```/,
       render: (m, code, key) => (
-        <pre style={{ backgroundColor: '#eaeaea', padding: '8px', borderRadius: '4px' }} key={key}>
-          <code>{code}</code>
-        </pre>
+        <code style={{ backgroundColor: '#eaeaea', padding: '2px 4px', borderRadius: '4px', whiteSpace: 'pre-wrap' }} key={key}>
+          {code}
+        </code>
       ),
     },
     // inline code `code`
@@ -105,6 +105,14 @@ export function renderLiteMarkdownBlocks(md) {
             </li>
           ))}
         </ol>
+      );
+    }
+
+    if (block.type === 'code') {
+      return (
+        <pre key={`code-${index}`} className="my-2 overflow-auto rounded bg-gray-100 p-2 text-sm">
+          <code className={block.language ? `language-${block.language}` : undefined}>{block.text}</code>
+        </pre>
       );
     }
 

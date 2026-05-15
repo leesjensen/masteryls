@@ -41,3 +41,13 @@ test('parseLiteMarkdownBlocks preserves ordered list start', () => {
 
   assert.deepEqual(parseLiteMarkdownBlocks(input), [{ type: 'ol', items: ['Fourth', 'Fifth'], start: 4 }]);
 });
+
+test('parseLiteMarkdownBlocks parses fenced code as a block', () => {
+  const input = ['Intro', '', '```html', '<pre>code</pre>', '```', '', 'Outro'].join('\n');
+
+  assert.deepEqual(parseLiteMarkdownBlocks(input), [
+    { type: 'p', text: 'Intro' },
+    { type: 'code', language: 'html', text: '<pre>code</pre>' },
+    { type: 'p', text: 'Outro' },
+  ]);
+});

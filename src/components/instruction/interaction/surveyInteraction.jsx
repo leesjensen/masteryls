@@ -1,5 +1,5 @@
 import React from 'react';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
+import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 
 export default function SurveyInteraction({ id, body, multipleSelect, courseOps }) {
@@ -97,7 +97,7 @@ export default function SurveyInteraction({ id, body, multipleSelect, courseOps 
   return (
     <>
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
-        {inlineLiteMarkdown(prompt)}
+        {renderLiteMarkdownBlocks(prompt)}
       </div>
       <div>
         {choices.map((choice, i) => {

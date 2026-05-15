@@ -64,6 +64,35 @@ Simple **multiple select** question
   await expect(page.locator('pre')).toContainText('Fantastic job');
 });
 
+test('interaction prompt renders fenced code without invalid paragraph nesting', async ({ page }) => {
+  const consoleErrors: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+
+  const interactionMarkdown = `
+# Prompt
+\`\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123498", "title":"Prompt", "type":"prompt"}
+Explain this HTML:
+
+\`\`\`html
+<pre>code sample</pre>
+\`\`\`
+\`\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+
+  await expect(page.locator('[data-plugin-masteryls-body] pre code')).toContainText('<pre>code sample</pre>');
+  expect(consoleErrors.some((error) => error.includes('<pre> cannot be a descendant of <p>'))).toBe(false);
+});
+
 test('interaction web page renders relative html file', async ({ page }) => {
   const interactionMarkdown = `
 # Web Page

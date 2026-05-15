@@ -1,5 +1,5 @@
 import React from 'react';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
+import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 import { canViewLikertResults, parseLikertBody } from '../../../utils/likertInteraction';
 
@@ -101,7 +101,7 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
   return (
     <>
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
-        {inlineLiteMarkdown(prompt)}
+        {renderLiteMarkdownBlocks(prompt)}
       </div>
       <div className="space-y-3">
         {questions.map((question) => (

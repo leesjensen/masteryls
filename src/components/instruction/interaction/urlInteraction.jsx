@@ -1,5 +1,5 @@
 import React from 'react';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
+import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 
 export default function UrlInteraction({ id, body }) {
@@ -9,7 +9,7 @@ export default function UrlInteraction({ id, body }) {
   return (
     <div>
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
-        {inlineLiteMarkdown(body)}
+        {renderLiteMarkdownBlocks(body)}
       </div>
       <input type="url" name={`quiz-${id}`} className="w-full p-3 border bg-white border-gray-300 rounded-lg transition-colors duration-200 placeholder-gray-400" defaultValue={existingUrl} placeholder="Enter URL here..." />
       <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">

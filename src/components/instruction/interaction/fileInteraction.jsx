@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { FileUp } from 'lucide-react';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
+import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { formatFileSize } from '../../../utils/utils';
 
 export default function FileInteraction({ id, body }) {
@@ -67,7 +67,7 @@ export default function FileInteraction({ id, body }) {
   return (
     <div>
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
-        {inlineLiteMarkdown(body)}
+        {renderLiteMarkdownBlocks(body)}
       </div>
       <div id={`drop-zone-${id}`} className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 ${isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
         <input ref={fileInputRef} type="file" name={`quiz-${id}`} id={`file-input-${id}`} multiple hidden onChange={handleFileInputChange} />

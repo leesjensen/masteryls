@@ -1,6 +1,6 @@
 import React from 'react';
 import { useInteractionProgressStore } from './interactionProgressStore';
-import inlineLiteMarkdown from './inlineLiteMarkdown';
+import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 
 export default function EssayInteraction({ id, body }) {
   const progress = useInteractionProgressStore(id) || {};
@@ -10,7 +10,7 @@ export default function EssayInteraction({ id, body }) {
   return (
     <div>
       <div className="mb-3 break-words whitespace-pre-line" data-plugin-masteryls-body>
-        {inlineLiteMarkdown(body)}
+        {renderLiteMarkdownBlocks(body)}
       </div>
 
       <textarea name={`interaction-${id}`} className="w-full h-32 p-3 border bg-white border-gray-300 rounded-lg resize-y transition-colors duration-200 placeholder-gray-400" placeholder="Enter your answer here..." defaultValue={value} onChange={(e) => setCurrentValue(e.target.value)}></textarea>
