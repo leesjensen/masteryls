@@ -118,7 +118,7 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
 
       let progressRows = [];
       if (enrollmentIds.length > 0) {
-        const { data: progressData, error: progressError } = await supabase.from('progress').select('enrollmentId, type, details, createdAt').eq('catalogId', courseId).in('enrollmentId', enrollmentIds).order('createdAt', { ascending: false }).limit(10000);
+        const { data: progressData, error: progressError } = await supabase.from('progress').select('enrollmentId, type, details, interactionId, topicId, createdAt').eq('catalogId', courseId).in('enrollmentId', enrollmentIds).order('createdAt', { ascending: false }).limit(10000);
 
         if (progressError) {
           throw progressError;
@@ -144,7 +144,7 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
         const enrollmentProgressRows = progressByEnrollmentId.get(String(enrollment.id || '')) || [];
 
         let examCompletedCount = 0;
-        let projectSubmittedCount = 0;
+        const submittedProjects = new Set();
         let lastActivityAt = null;
 
         enrollmentProgressRows.forEach((item) => {
@@ -156,7 +156,12 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
           }
 
           if (type === 'quizSubmit' && details.syncGrade === true) {
-            projectSubmittedCount += 1;
+            const interactionKey = String(item?.interactionId || '').trim();
+            const topicKey = String(item?.topicId || '').trim();
+            const projectKey = interactionKey ? `interaction:${interactionKey}` : topicKey ? `topic:${topicKey}` : '';
+            if (projectKey) {
+              submittedProjects.add(projectKey);
+            }
           }
 
           if (item?.createdAt && (!lastActivityAt || item.createdAt > lastActivityAt)) {
@@ -172,7 +177,7 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
           masteryPercent: Number(enrollment?.progress?.mastery || 0),
           completedTopics: countCompletedTopics(enrollment?.progress),
           examCompletedCount,
-          projectSubmittedCount,
+          projectSubmittedCount: submittedProjects.size,
           lastActivityAt,
         };
       });

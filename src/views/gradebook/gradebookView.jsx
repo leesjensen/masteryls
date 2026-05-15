@@ -204,7 +204,7 @@ export default function GradebookView({ courseOps }) {
     setLearnerDetailsError(null);
 
     try {
-      const result = await courseOps.getProgress({ courseId: selectedCourseId, enrollmentId: row.enrollmentId, page: 1, limit: 25 });
+      const result = await courseOps.getProgress({ courseId: selectedCourseId, enrollmentId: row.enrollmentId, page: 1, limit: 10000 });
       setLearnerProgressRows(Array.isArray(result?.data) ? result.data : []);
     } catch (loadError) {
       setLearnerDetailsError(loadError.message || String(loadError));

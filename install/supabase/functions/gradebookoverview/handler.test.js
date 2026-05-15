@@ -129,7 +129,8 @@ test('gradebookoverview allows root and returns aggregated rows', async () => {
           user: [{ id: 'u1', name: 'Learner One', email: 'learner1@test.com' }],
           progress: [
             { enrollmentId: 'e1', catalogId: 'course-1', type: 'exam', details: { state: 'completed' }, createdAt: '2026-05-09T12:00:00Z' },
-            { enrollmentId: 'e1', catalogId: 'course-1', type: 'quizSubmit', details: { syncGrade: true }, createdAt: '2026-05-09T12:10:00Z' },
+            { enrollmentId: 'e1', catalogId: 'course-1', type: 'quizSubmit', interactionId: 'project-1', topicId: 'topic-1', details: { syncGrade: true }, createdAt: '2026-05-09T12:10:00Z' },
+            { enrollmentId: 'e1', catalogId: 'course-1', type: 'quizSubmit', interactionId: 'project-1', topicId: 'topic-1', details: { syncGrade: true }, createdAt: '2026-05-09T12:20:00Z' },
           ],
         },
       }),
@@ -147,7 +148,7 @@ test('gradebookoverview allows root and returns aggregated rows', async () => {
   assert.equal(body.rows[0].completedTopics, 2);
   assert.equal(body.rows[0].examCompletedCount, 1);
   assert.equal(body.rows[0].projectSubmittedCount, 1);
-  assert.equal(body.rows[0].lastActivityAt, '2026-05-09T12:10:00Z');
+  assert.equal(body.rows[0].lastActivityAt, '2026-05-09T12:20:00Z');
 });
 
 test('gradebookoverview allows editor for matching course', async () => {
