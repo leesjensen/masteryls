@@ -54,7 +54,7 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
     multiCursorModifier: 'ctrlCmd',
     occurrencesHighlight: false,
     selectionHighlight: true,
-    renderLineHighlight: 'all',
+    renderLineHighlight: 'gutter',
     guides: {
       indentation: false,
     },
