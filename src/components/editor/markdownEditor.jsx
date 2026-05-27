@@ -818,7 +818,7 @@ const defaultTableTemplate = `\n
 const defaultMultipleSelectQuizTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"Multiple select", "type":"multiple-select" }
-A **multiple select** question can have multiple answers. Incorrect selections count against correct ones when calculating the correct percentage."
+A **multiple select** question can have multiple answers. Incorrect selections count against correct ones when calculating the correct percentage.
 
 - [ ] This is **not** the right answer
 - [x] This is _the_ right answer
