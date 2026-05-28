@@ -320,11 +320,6 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
 
     setEditorLoaded(true);
 
-    // Save
-    textEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, async () => {
-      await commit();
-    });
-
     // Find and Replace
     textEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
       textEditor.getAction('actions.find').run();
