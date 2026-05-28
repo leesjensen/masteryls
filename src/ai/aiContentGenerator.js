@@ -355,6 +355,39 @@ Requirements:
 }
 
 /**
+ * Reviews and improves an entire topic markdown document.
+ *
+ * @async
+ * @param {string} topic - The instructional topic title/description for context.
+ * @param {string} markdown - The full markdown document to review.
+ * @returns {Promise<string>} The revised markdown document.
+ */
+export async function aiTopicReviewGenerator(topic, markdown) {
+  const fullPrompt = `You are an expert educational content editor.
+Review and improve this full topic markdown document.
+
+Instructional topic: ${topic}
+
+Topic markdown:
+<topic-markdown>
+${markdown}
+</topic-markdown>
+
+Requirements:
+- Correct spelling, grammar, punctuation, and wording issues
+- Improve clarity and instructional quality while preserving original meaning and scope
+- Preserve valid GitHub-flavored markdown
+- Preserve style, headings, section structure, links, image references, and code fences unless a correction is required
+- Preserve all MasteryLS interaction fences (\`\`\`masteryls), interaction JSON fields (including IDs), and their behavior
+- Do not add explanations, notes, summaries, or markdown fence wrappers around the full response
+- Return only the fully revised markdown document
+`;
+
+  const response = await makeSimpleAiRequest(fullPrompt);
+  return cleanSelectedMarkdownResponse(response);
+}
+
+/**
  * Generates an image from a text prompt.
  *
  * @async

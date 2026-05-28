@@ -1,7 +1,7 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe, GraduationCap } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe, GraduationCap, SpellCheck } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
-import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator } from '../../ai/aiContentGenerator';
+import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator, aiTopicReviewGenerator } from '../../ai/aiContentGenerator';
 import InputDialog from '../../hooks/inputDialog';
 import TopicLinkDialog from './topicLinkDialog';
 import ImageInsertDialog from './imageInsertDialog';
@@ -710,6 +710,47 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     }
   };
 
+  const reviewCurrentTopic = async () => {
+    const editor = editorRef.current;
+    const model = editor?.getModel?.();
+    const currentMarkdown = model?.getValue?.() ?? String(content || '');
+
+    if (!currentMarkdown.trim()) {
+      window.alert('Add markdown content before running topic review.');
+      editor?.focus();
+      return;
+    }
+
+    try {
+      setGeneratingContent(true);
+      const topic = currentTopic?.description || currentTopic?.title || 'Untitled topic';
+      const revisedMarkdown = await aiTopicReviewGenerator(topic, currentMarkdown);
+      if (!revisedMarkdown?.trim()) {
+        throw new Error('AI review returned empty content.');
+      }
+
+      if (!editor || !model) {
+        onChange(revisedMarkdown);
+        return;
+      }
+
+      editor.pushUndoStop?.();
+      editor.executeEdits('ai-topic-review', [
+        {
+          range: model.getFullModelRange(),
+          text: revisedMarkdown,
+          forceMoveMarkers: true,
+        },
+      ]);
+      editor.pushUndoStop?.();
+      editor.focus();
+    } catch (error) {
+      window.alert(`Failed to review topic: ${error.message}`);
+    } finally {
+      setGeneratingContent(false);
+    }
+  };
+
   const toggleWordWrap = () => {
     const nextWordWrap = editorOptions.wordWrap === 'off' ? 'on' : 'off';
     saveEditorOptions({ ...editorOptions, wordWrap: nextWordWrap });
@@ -771,6 +812,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={TextSelect} onClick={() => insertAiSection()} title="AI generated section" />
           <EditorButton icon={Bot} onClick={() => insertPromptContent()} title="AI prompt response" />
           <EditorButton icon={WandSparkles} onClick={() => modifySelectedMarkdown()} title="AI modify selected markdown" />
+          <EditorButton icon={SpellCheck} onClick={() => reviewCurrentTopic()} title="AI topic review (spelling, grammar, content)" />
           <EditorButton icon={ImagePlus} onClick={() => generateAndInsertAiImage()} title="AI generated image" />
         </div>
       )}
