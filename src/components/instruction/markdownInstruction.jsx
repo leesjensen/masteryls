@@ -167,9 +167,11 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
     <div className="flex h-full w-full min-h-0 overflow-hidden">
       <div ref={containerRef} data-editor-preview-scroll-container="true" className="relative flex-1 min-h-0 overflow-scroll">
         {!discussionOpen && canDiscuss && (
-          <button onClick={onOpenDiscussion} className="absolute top-4 right-6 z-20 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 flex items-center gap-2" title="Discuss this topic">
-            <MessageCircle size={18} /> Discuss
-          </button>
+          <div className="sticky top-4 z-20 flex justify-end pr-6 pointer-events-none">
+            <button onClick={onOpenDiscussion} className="pointer-events-auto px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 flex items-center gap-2" title="Discuss this topic">
+              <MessageCircle size={18} /> Discuss
+            </button>
+          </div>
         )}
         <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
       </div>
