@@ -297,7 +297,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       updateInteractionProgress(quizId, {
         ...latest,
         canvasSyncState: 'error',
-        canvasSyncMessage: `Unable to submit grade to Gradebook: ${error?.message || String(error)}`,
+        canvasSyncMessage: error?.message || 'Unable to submit grade to Gradebook.',
       });
     }
   }
