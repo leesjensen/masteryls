@@ -233,5 +233,5 @@ function ClassroomPage() {
     return null;
   }
 
-  return <ClassroomView courseOps={courseOps} user={user} learningSession={learningSession} settings={settings} onExitObserve={exitObserveSession} />;
+  return <ClassroomView courseOps={courseOps} user={user} learningSession={learningSession} settings={settings} onExitObserve={exitObserveSession} observedLearnerName={observeSession?.learnerName || ''} />;
 }

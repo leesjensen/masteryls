@@ -8,7 +8,7 @@ import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { useNavigate } from 'react-router-dom';
 import useHotkeys from '../../hooks/useHotKeys';
 
-export default function ClassroomView({ courseOps, user, learningSession, settings, onExitObserve = null }) {
+export default function ClassroomView({ courseOps, user, learningSession, settings, onExitObserve = null, observedLearnerName = '' }) {
   const [editorVisible, setEditorVisible] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(settings.sidebarWidth || 300);
   const navigate = useNavigate();
@@ -78,7 +78,9 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
       </nav>
       {learningSession?.observeMode && (
         <div className="px-4 py-2 text-sm bg-amber-50 text-amber-800 border-b border-amber-200 flex items-center justify-between gap-2">
-          <span>Observe mode is active for this course. Actions are read-only.</span>
+          <span>
+            Observe mode is active for <b>{observedLearnerName || 'this learner'}</b>. Actions are read-only.
+          </span>
           {typeof onExitObserve === 'function' && (
             <button type="button" onClick={onExitObserve} className="px-2 py-1 rounded border border-amber-400 bg-white text-amber-800 hover:bg-amber-100 text-xs">
               Exit observe
