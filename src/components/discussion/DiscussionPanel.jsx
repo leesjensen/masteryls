@@ -6,7 +6,7 @@ import usePersistentAIMessages from '../../hooks/usePersistentAIMessages';
 import Tabs from '../Tabs';
 import MessageBox from './MessageBox';
 
-export default function DiscussionPanel({ courseOps, learningSession, onClose, noteMessages, setNoteMessages, aiMessages, setAIMessages, discussionContext, setDiscussionContext }) {
+export default function DiscussionPanel({ courseOps, learningSession, onClose, noteMessages, setNoteMessages, aiMessages, setAIMessages, discussionContext, setDiscussionContext, allowAi = true, readOnlyNotes = false }) {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesContainerRef = useRef(null);
@@ -25,6 +25,12 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
 
   const modeMessages = discussionContext.mode === 'ai' ? aiMessages : noteMessages;
   const filteredMessages = discussionContext.section ? modeMessages.filter((message) => message.section === discussionContext.section) : modeMessages;
+
+  useEffect(() => {
+    if (!allowAi && discussionContext.mode === 'ai') {
+      setDiscussionContext((prev) => ({ ...prev, mode: 'notes' }));
+    }
+  }, [allowAi, discussionContext.mode, setDiscussionContext]);
 
   const handleUserNoteInput = (userMessage) => {
     const notePayload = {
@@ -85,6 +91,7 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userInput.trim() || isLoading) return;
+    if (discussionContext.mode === 'notes' && readOnlyNotes) return;
 
     const userMessage = userInput.trim();
     setUserInput('');
@@ -131,7 +138,7 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
   }[discussionContext.mode];
 
   const tabs = [
-    { id: 'ai', label: 'Discuss', icon: MessageCircle, visible: true },
+    { id: 'ai', label: 'Discuss', icon: MessageCircle, visible: allowAi },
     { id: 'notes', label: 'Notes', icon: StickyNote, visible: true },
   ];
 
@@ -182,42 +189,46 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
           </div>
         )}
       </div>
-      <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex space-x-2">
-          <textarea
-            id="discussion-input"
-            ref={inputRef}
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-            placeholder={modeConfig.placeholder}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            rows={1}
-            style={{ minHeight: '2.5rem', maxHeight: '7.5rem' }}
-            onInput={(e) => {
-              e.target.style.height = 'auto';
-              e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-            }}
-          />
-          <div className="relative">
-            <div className="flex">
-              <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${discussionContext.mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
-                {modeConfig.buttonText}
-              </button>
-              {discussionContext.mode === 'ai' && (
-                <button type="button" disabled={!aiMessages || aiMessages.length === 0} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={clearConversation} title="Clear discussion">
-                  <MessageCircleOff size={24} />
+      {readOnlyNotes && discussionContext.mode === 'notes' ? (
+        <div className="p-3 border-t border-gray-200 bg-gray-50 text-xs text-gray-600">Observe mode: notes are read-only.</div>
+      ) : (
+        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex space-x-2">
+            <textarea
+              id="discussion-input"
+              ref={inputRef}
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder={modeConfig.placeholder}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              rows={1}
+              style={{ minHeight: '2.5rem', maxHeight: '7.5rem' }}
+              onInput={(e) => {
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
+            />
+            <div className="relative">
+              <div className="flex">
+                <button type="submit" disabled={!userInput.trim() || isLoading} className={`px-4 py-2 ${discussionContext.mode === 'ai' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer`}>
+                  {modeConfig.buttonText}
                 </button>
-              )}
+                {discussionContext.mode === 'ai' && (
+                  <button type="button" disabled={!aiMessages || aiMessages.length === 0} className="p-1.5 rounded-sm bg-transparent border border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" onClick={clearConversation} title="Clear discussion">
+                    <MessageCircleOff size={24} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
+      )}
     </div>
   );
 }

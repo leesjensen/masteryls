@@ -10,17 +10,18 @@ import useMarkdownLocation from '../../hooks/useMarkdownLocation';
 import '../markdown.css';
 
 export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning', previewFileUrls = {} }) {
+  const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [noteMessages, setNoteMessages] = useState([]);
   const [aiMessages, setAIMessages] = useState([]);
   const [discussWidth, setDiscussWidth] = useState(375);
   const [discussionOpen, setDiscussionOpen] = useState(false);
-  const [discussionContext, setDiscussionContext] = useState({ topicTitle: learningSession.topic?.title || '', topicContent: content, section: null, mode: 'ai' });
+  const [discussionContext, setDiscussionContext] = useState({ topicTitle: learningSession.topic?.title || '', topicContent: content, section: null, mode: isObserveReadOnly ? 'notes' : 'ai' });
   const containerRef = React.useRef(null);
   const location = useLocation();
   const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
-  const canDiscuss = user && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule' && !learningSession?.observeMode;
+  const canDiscuss = user && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule';
 
   useEffect(() => {
     if (content) {
@@ -141,6 +142,9 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   }
 
   function onOpenDiscussion() {
+    if (isObserveReadOnly) {
+      setDiscussionContext((prev) => ({ ...prev, mode: 'notes' }));
+    }
     setDiscussionOpen(true);
   }
 
@@ -161,13 +165,12 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
 
   return (
     <div className="flex h-full w-full min-h-0 overflow-hidden">
-      {!discussionOpen && canDiscuss && (
-        <button onClick={onOpenDiscussion} className="fixed top-24 z-40 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 right-6 flex items-center gap-2" title="Discuss this topic">
-          <MessageCircle size={18} /> Discuss
-        </button>
-      )}
-
-      <div ref={containerRef} data-editor-preview-scroll-container="true" className="flex-1 min-h-0 overflow-scroll">
+      <div ref={containerRef} data-editor-preview-scroll-container="true" className="relative flex-1 min-h-0 overflow-scroll">
+        {!discussionOpen && canDiscuss && (
+          <button onClick={onOpenDiscussion} className="absolute top-4 right-6 z-20 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 flex items-center gap-2" title="Discuss this topic">
+            <MessageCircle size={18} /> Discuss
+          </button>
+        )}
         <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
       </div>
 
@@ -190,6 +193,8 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
               setAIMessages={setAIMessages}
               discussionContext={discussionContext}
               setDiscussionContext={setDiscussionContext}
+              allowAi={!isObserveReadOnly}
+              readOnlyNotes={isObserveReadOnly}
             />
           </div>
         </>
