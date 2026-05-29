@@ -15,6 +15,7 @@ import { updateInteractionProgress, getInteractionProgress } from './interaction
 import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 import { isSubmittableInteractionType, parseInteractionMeta } from '../../../utils/interactionMeta';
 import { validateSubmittedUrl } from '../../../utils/urlValidation';
+import { useCanvasGradebookEligibility } from '../../../hooks/canvas/useCanvasGradebookEligibility.jsx';
 
 /**
  * InteractionInstruction component that renders interactive quiz content within markdown instruction.
@@ -56,6 +57,7 @@ import { validateSubmittedUrl } from '../../../utils/urlValidation';
  */
 export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null, previewFileUrls = {} }) {
   const isCourseLinkedToGradebook = Boolean(learningSession?.course?.externalRefs?.canvasCourseId);
+  const canSubmitToCanvasGradebook = useCanvasGradebookEligibility({ courseOps, learningSession, user, isCourseLinkedToGradebook });
 
   function toBoolean(value, fallback = false) {
     if (typeof value === 'boolean') return value;
@@ -90,7 +92,14 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'} data-plugin-masteryls-sync-grade={toBoolean(meta.syncGrade, false) ? 'true' : 'false'} data-plugin-masteryls-auto-grade={toBoolean(meta.autoGrade, false) ? 'true' : 'false'}>
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         <div className="space-y-3">{controlJsx}</div>
-        {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={syncGradeToCanvas} isCourseLinkedToGradebook={isCourseLinkedToGradebook} />}
+        {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && (
+          <InteractionFeedback
+            quizId={meta.id}
+            onSyncGrade={syncGradeToCanvas}
+            isCourseLinkedToGradebook={isCourseLinkedToGradebook}
+            canSubmitToGradebook={canSubmitToCanvasGradebook}
+          />
+        )}
       </div>
     );
   }

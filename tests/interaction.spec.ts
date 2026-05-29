@@ -625,6 +625,16 @@ Submit your project URL.
 `;
 
   const gradebookCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvas(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      json: [{ id: 42, email: 'bud@cow.com', login_id: 'bud@cow.com' }],
+    });
+  });
   await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -698,6 +708,16 @@ Submit your project URL.
 `;
 
   const gradebookCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvas(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      json: [{ id: 42, email: 'bud@cow.com', login_id: 'bud@cow.com' }],
+    });
+  });
   await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -821,6 +841,16 @@ Submit your project URL.
 \`\`\`
 `;
 
+  await page.route(/.*supabase.co\/functions\/v1\/canvas(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      json: [{ id: 42, email: 'bud@cow.com', login_id: 'bud@cow.com' }],
+    });
+  });
   await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -862,7 +892,7 @@ Submit your project URL.
 
   await expect(page.getByText('Submission received.')).toBeVisible();
   await page.getByRole('button', { name: 'Submit to Gradebook' }).click();
-  await expect(page.getByText(/Unable to submit grade to Gradebook/)).toBeVisible();
+  await expect(page.getByText('User is not authorized to update this grade')).toBeVisible();
 });
 
 test('project submission without syncGrade does not show sync button or post canvas grade', async ({ page }) => {
@@ -875,6 +905,16 @@ Submit your project URL.
 `;
 
   const gradebookCalls: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvas(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      json: [{ id: 42, email: 'bud@cow.com', login_id: 'bud@cow.com' }],
+    });
+  });
   await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });

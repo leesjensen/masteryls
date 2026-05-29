@@ -3,14 +3,14 @@ import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 import ScoreStars from './scoreStars';
 
-export default function InteractionFeedback({ quizId, onSyncGrade = null, isCourseLinkedToGradebook = false }) {
+export default function InteractionFeedback({ quizId, onSyncGrade = null, isCourseLinkedToGradebook = false, canSubmitToGradebook = true }) {
   const details = useInteractionProgressStore(quizId);
   if (!details || !details.feedback) {
     return null;
   }
 
   const percentCorrect = Number(details?.percentCorrect);
-  const canSyncGrade = details?.syncGrade === true && isCourseLinkedToGradebook === true && Number.isFinite(percentCorrect) && typeof onSyncGrade === 'function';
+  const canSyncGrade = details?.syncGrade === true && isCourseLinkedToGradebook === true && canSubmitToGradebook === true && Number.isFinite(percentCorrect) && typeof onSyncGrade === 'function';
   const syncState = details?.canvasSyncState || 'idle';
   const syncMessage = details?.canvasSyncMessage || null;
 

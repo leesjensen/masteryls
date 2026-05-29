@@ -9,6 +9,7 @@ import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
+import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -26,6 +27,7 @@ import { createCanvasSync } from './canvas/canvasSync.js';
 function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings) {
   const courseCache = React.useRef(new Map());
   const discussionToggleHandler = React.useRef(null);
+  const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ makeCanvasApiRequest: (endpoint) => service.makeCanvasApiRequest(endpoint) }));
 
   function getWorkingCourse() {
     const courseId = learningSession?.course?.id;
@@ -1244,6 +1246,15 @@ Requirements:
     });
   }
 
+  async function isLearnerInCanvasCourse(providedUser = null, providedCourse = null) {
+    const progressUser = providedUser || user;
+    const course = providedCourse || learningSession?.course;
+    const canvasCourseId = String(course?.externalRefs?.canvasCourseId || '').trim();
+    const learnerEmail = String(progressUser?.email || '').trim();
+
+    return canvasMembershipChecker.current.isLearnerInCanvasCourse(canvasCourseId, learnerEmail);
+  }
+
   /*
    * Example enrollment.progress structure:
    * {
@@ -1705,6 +1716,7 @@ Requirements:
     validateUrlFromServer,
     addProgress,
     syncProjectInteractionGrade,
+    isLearnerInCanvasCourse,
     getProgress,
     getGradebookOverview,
     getTopicProgress,

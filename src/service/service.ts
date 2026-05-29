@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
 import { User, CatalogEntry, Enrollment, Role } from '../model';
+import { extractEdgeFunctionErrorMessage } from './edgeFunctionErrors';
 
 class Service {
   catalog: CatalogEntry[] = [];
@@ -839,69 +840,11 @@ class Service {
     });
 
     if (error) {
-      const edgeMessage = await this._extractEdgeFunctionErrorMessage(error, data);
+      const edgeMessage = await extractEdgeFunctionErrorMessage(error, data);
       throw new Error(edgeMessage || error.message);
     }
 
     return data;
-  }
-
-  async _extractEdgeFunctionErrorMessage(error: any, data: any): Promise<string | null> {
-    const directMessage = this._coerceEdgeErrorMessage(data);
-    if (directMessage) {
-      return this._toFriendlyCanvasGradebookError(directMessage);
-    }
-
-    const context = error?.context;
-    if (context && typeof context.text === 'function') {
-      try {
-        const text = await context.text();
-        if (text) {
-          let parsed: any = null;
-          try {
-            parsed = JSON.parse(text);
-          } catch {
-            parsed = { error: text };
-          }
-          const contextMessage = this._coerceEdgeErrorMessage(parsed);
-          if (contextMessage) {
-            return this._toFriendlyCanvasGradebookError(contextMessage);
-          }
-        }
-      } catch {
-        // Ignore parse failures and fall through to default message.
-      }
-    }
-
-    return null;
-  }
-
-  _coerceEdgeErrorMessage(payload: any): string {
-    if (!payload) {
-      return '';
-    }
-    if (typeof payload === 'string') {
-      return payload.trim();
-    }
-    if (typeof payload?.error === 'string') {
-      return payload.error.trim();
-    }
-    if (typeof payload?.message === 'string') {
-      return payload.message.trim();
-    }
-    return '';
-  }
-
-  _toFriendlyCanvasGradebookError(message: string): string {
-    if (!message) {
-      return message;
-    }
-
-    if (message.includes('Unable to find Canvas user for learner email') || message.includes('No exact Canvas user match for learner email')) {
-      return 'Unable to submit grade: this learner is not in the Canvas course roster. Verify the learner email in Canvas and try again.';
-    }
-
-    return message;
   }
 
   /**
