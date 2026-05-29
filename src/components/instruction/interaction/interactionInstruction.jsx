@@ -58,6 +58,7 @@ import { useCanvasGradebookEligibility } from '../../../hooks/canvas/useCanvasGr
 export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null, previewFileUrls = {} }) {
   const isCourseLinkedToGradebook = Boolean(learningSession?.course?.externalRefs?.canvasCourseId);
   const canSubmitToCanvasGradebook = useCanvasGradebookEligibility({ courseOps, learningSession, user, isCourseLinkedToGradebook });
+  const isObserveReadOnly = Boolean(learningSession?.observeMode);
 
   function toBoolean(value, fallback = false) {
     if (typeof value === 'boolean') return value;
@@ -91,13 +92,14 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return (
       <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'} data-plugin-masteryls-sync-grade={toBoolean(meta.syncGrade, false) ? 'true' : 'false'} data-plugin-masteryls-auto-grade={toBoolean(meta.autoGrade, false) ? 'true' : 'false'}>
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
+        {isObserveReadOnly && <div className="mb-2 text-xs text-amber-700">Observe mode is read-only. Submissions are disabled.</div>}
         <div className="space-y-3">{controlJsx}</div>
         {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && (
           <InteractionFeedback
             quizId={meta.id}
             onSyncGrade={syncGradeToCanvas}
             isCourseLinkedToGradebook={isCourseLinkedToGradebook}
-            canSubmitToGradebook={canSubmitToCanvasGradebook}
+            canSubmitToGradebook={canSubmitToCanvasGradebook && !isObserveReadOnly}
           />
         )}
       </div>
@@ -155,6 +157,9 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     const body = bodyElem ? bodyElem.textContent.trim() : undefined;
     if (type) {
       if (event.target.tagName === 'BUTTON' && event.target.id === `generate-${id}`) {
+        if (isObserveReadOnly) {
+          return;
+        }
         event.target.disabled = true;
         visualizeGrading(interactionRoot);
         const interactionElement = interactionRoot.querySelector(`textarea[name="interaction-${id}"]`);
@@ -178,6 +183,9 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       }
 
       if (event.target.tagName === 'BUTTON' && event.target.id === `submit-${id}`) {
+        if (isObserveReadOnly) {
+          return;
+        }
         event.target.disabled = true;
         visualizeGrading(interactionRoot);
 
@@ -282,6 +290,9 @@ export default function InteractionInstruction({ courseOps, learningSession, use
   }
 
   async function syncGradeToCanvas(quizId) {
+    if (isObserveReadOnly) {
+      return;
+    }
     const current = getInteractionProgress(quizId);
     if (!current) {
       return;

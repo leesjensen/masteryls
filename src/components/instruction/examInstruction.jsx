@@ -6,6 +6,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
   const [loading, setLoading] = React.useState(true);
   const [examState, setExamState] = React.useState({ details: { state: 'notStarted' } }); // possible states: notStarted, inProgress, completed
   const quizIds = React.useRef(new Set());
+  const isObserveReadOnly = Boolean(learningSession?.observeMode);
 
   React.useEffect(() => {
     async function fetchExamState() {
@@ -19,6 +20,9 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
   }, [learningSession?.enrollment]);
 
   const updateState = async (state) => {
+    if (isObserveReadOnly) {
+      return;
+    }
     const details = { state };
     if (state === 'completed') {
       details.results = { ai: calculateExamStats() };
@@ -109,7 +113,8 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         <div className="bg-amber-50 border-1 border-amber-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-amber-500">{learningSession?.topic.title}</div>
           <p className="my-4">Carefully review your answers before submitting.</p>
-          <button className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700" onClick={() => updateState('completed')}>
+          {isObserveReadOnly && <p className="text-sm text-amber-700 my-2">Observe mode is read-only. Exam submission is disabled.</p>}
+          <button disabled={isObserveReadOnly} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={() => updateState('completed')}>
             Submit exam
           </button>
         </div>
@@ -124,7 +129,8 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
         <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
           <div className="text-2xl font-bold text-blue-500">{learningSession?.topic.title}</div>
           <p className="my-4">{learningSession?.topic.description}</p>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => updateState('inProgress')}>
+          {isObserveReadOnly && <p className="text-sm text-amber-700 my-2">Observe mode is read-only. Exam actions are disabled.</p>}
+          <button disabled={isObserveReadOnly} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => updateState('inProgress')}>
             Start exam
           </button>
         </div>

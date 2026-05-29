@@ -24,7 +24,7 @@ import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.j
  * @param {Object} course - The current course object
  * @param {Function} setLearningSession - Function to update learning session state
  */
-function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings) {
+function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings, observeSession = null) {
   const courseCache = React.useRef(new Map());
   const discussionToggleHandler = React.useRef(null);
   const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ makeCanvasApiRequest: (endpoint) => service.makeCanvasApiRequest(endpoint) }));
@@ -1156,6 +1156,9 @@ Requirements:
   }
 
   async function addProgress(providedUser, interactionId, type, duration = 0, details = {}) {
+    if (observeSession?.active && learningSession?.observeMode) {
+      return null;
+    }
     const progressUser = providedUser || user;
     if (progressUser) {
       _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type);
@@ -1193,6 +1196,9 @@ Requirements:
   }
 
   async function syncProjectInteractionGrade(providedUser, interactionId, details = {}) {
+    if (observeSession?.active && learningSession?.observeMode) {
+      throw new Error('Gradebook sync is disabled while observing a learner.');
+    }
     const progressUser = providedUser || user;
     const topic = learningSession?.topic;
     const course = learningSession?.course;

@@ -3,6 +3,7 @@ import { createBrowserRouter, Outlet, useOutletContext, useNavigate, useLocation
 import { useParams } from 'react-router-dom';
 import { useSearchResults } from './hooks/useSearchResults';
 import useCourseOperations from './hooks/useCourseOperations';
+import useObserveSession, { getEffectiveLearnerId } from './hooks/useObserveSession.jsx';
 
 import Start from './start.jsx';
 import { AppBar } from './appBar.jsx';
@@ -52,6 +53,7 @@ function App({ initialUser }) {
   const [learningSession, setLearningSession] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { observeSession, startObserveSession, exitObserveSession, clearObserveSession } = useObserveSession(user);
 
   React.useEffect(() => {
     (async () => {
@@ -70,6 +72,9 @@ function App({ initialUser }) {
 
   function setUserInternal(user) {
     setUser(user);
+    if (!user) {
+      clearObserveSession();
+    }
     if (user) {
       navigate('/dashboard');
     } else {
@@ -77,7 +82,7 @@ function App({ initialUser }) {
     }
   }
 
-  const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setLearningSession, setSettings);
+  const courseOps = useCourseOperations(user, setUserInternal, service, learningSession, setLearningSession, setSettings, observeSession);
 
   // Pass all shared state through Outlet context
   const contextValue = {
@@ -87,6 +92,9 @@ function App({ initialUser }) {
     service,
     learningSession,
     setLearningSession,
+    observeSession,
+    startObserveSession,
+    exitObserveSession,
   };
 
   return (
@@ -140,8 +148,8 @@ function CourseLinkPage() {
 }
 
 function GradebookPage() {
-  const { courseOps } = useOutletContext();
-  return <GradebookView courseOps={courseOps} />;
+  const { courseOps, startObserveSession } = useOutletContext();
+  return <GradebookView courseOps={courseOps} startObserveSession={startObserveSession} />;
 }
 
 function ProgressPage() {
@@ -150,7 +158,7 @@ function ProgressPage() {
 }
 
 function ClassroomPage() {
-  const { courseOps, service, user, learningSession, setLearningSession, settings } = useOutletContext();
+  const { courseOps, service, user, learningSession, setLearningSession, settings, observeSession, exitObserveSession } = useOutletContext();
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -207,14 +215,15 @@ function ClassroomPage() {
 
           if (!course || !topic) throw new Error('Course or topic not found');
 
-          const enrollment = user?.id ? await service.enrollment(user.id, course.id) : null;
-          setLearningSession({ course, topic, enrollment });
+          const { observeForCourse, learnerId } = getEffectiveLearnerId({ userId: user?.id, courseId: course.id, observeSession });
+          const enrollment = learnerId ? await service.enrollment(learnerId, course.id) : null;
+          setLearningSession({ course, topic, enrollment, observeMode: observeForCourse });
         }
       } catch (error) {
         setErrorMsg(`Unable to load course: ${error.message}`);
       }
     })();
-  }, [courseId, topicId, user, location.pathname]);
+  }, [courseId, topicId, user, location.pathname, observeSession]);
 
   if (errorMsg) {
     throw new Error(errorMsg);
@@ -224,5 +233,5 @@ function ClassroomPage() {
     return null;
   }
 
-  return <ClassroomView courseOps={courseOps} user={user} learningSession={learningSession} settings={settings} />;
+  return <ClassroomView courseOps={courseOps} user={user} learningSession={learningSession} settings={settings} onExitObserve={exitObserveSession} />;
 }

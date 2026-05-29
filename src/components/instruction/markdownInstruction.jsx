@@ -20,7 +20,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const containerRef = React.useRef(null);
   const location = useLocation();
   const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
-  const canDiscuss = user && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule';
+  const canDiscuss = user && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule' && !learningSession?.observeMode;
 
   useEffect(() => {
     if (content) {

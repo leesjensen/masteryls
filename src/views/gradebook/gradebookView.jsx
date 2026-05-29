@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 
-export default function GradebookView({ courseOps }) {
+export default function GradebookView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
@@ -49,6 +49,7 @@ export default function GradebookView({ courseOps }) {
     }
     return user.isRoot() || user.isEditor(selectedCourseId) || enrolledCourseIds.has(selectedCourseId);
   }, [enrolledCourseIds, selectedCourseId, user]);
+  const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot() || user.isEditor(selectedCourseId))), [user, selectedCourseId]);
 
   React.useEffect(() => {
     updateAppBar({ title: 'Gradebook', tools: null });
@@ -214,6 +215,20 @@ export default function GradebookView({ courseOps }) {
     }
   }
 
+  function onObserveLearner(row, event) {
+    event?.stopPropagation?.();
+    if (!canObserveLearners || !selectedCourseId || typeof startObserveSession !== 'function') {
+      return;
+    }
+    startObserveSession({
+      courseId: selectedCourseId,
+      learnerId: row.learnerId,
+      learnerName: row.learnerName,
+      learnerEmail: row.learnerEmail,
+    });
+    navigate(`/course/${selectedCourseId}`);
+  }
+
   const instructionTopicSummaries = React.useMemo(() => {
     if (!selectedLearner || !selectedCourse) {
       return [];
@@ -370,19 +385,20 @@ export default function GradebookView({ courseOps }) {
               <th className="text-left px-3 py-2 font-semibold">Exams Completed</th>
               <th className="text-left px-3 py-2 font-semibold">Project Submits</th>
               <th className="text-left px-3 py-2 font-semibold">Last Activity</th>
+              {canObserveLearners && <th className="text-left px-3 py-2 font-semibold">Observe</th>}
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} className="px-3 py-4 text-gray-500">
+                <td colSpan={canObserveLearners ? 8 : 7} className="px-3 py-4 text-gray-500">
                   Loading Gradebook...
                 </td>
               </tr>
             )}
             {!loading && overview.rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-4 text-gray-500">
+                <td colSpan={canObserveLearners ? 8 : 7} className="px-3 py-4 text-gray-500">
                   No learners found for this filter.
                 </td>
               </tr>
@@ -400,10 +416,21 @@ export default function GradebookView({ courseOps }) {
                       <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
                       <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
                       <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
+                      {canObserveLearners && (
+                        <td className="px-3 py-2">
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
+                            onClick={(event) => onObserveLearner(row, event)}
+                          >
+                            Observe
+                          </button>
+                        </td>
+                      )}
                     </tr>
                     {isExpanded && (
                       <tr className="border-t border-gray-100 bg-amber-50/20">
-                        <td colSpan={7} className="px-4 py-3">
+                        <td colSpan={canObserveLearners ? 8 : 7} className="px-4 py-3">
                           {learnerDetailsLoading && <div className="text-sm text-gray-500">Loading instruction details...</div>}
                           {!learnerDetailsLoading && learnerDetailsError && <div className="text-sm text-red-700">{learnerDetailsError}</div>}
                           {!learnerDetailsLoading && !learnerDetailsError && instructionTopicSummaries.length === 0 && <div className="text-sm text-gray-500">No instruction items found for this course.</div>}
