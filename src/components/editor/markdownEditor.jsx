@@ -2,6 +2,7 @@ import React from 'react';
 import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe, GraduationCap, SpellCheck } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator, aiTopicReviewGenerator } from '../../ai/aiContentGenerator';
+import { normalizeInteractionIds } from '../../utils/interactionMeta';
 import InputDialog from '../../hooks/inputDialog';
 import TopicLinkDialog from './topicLinkDialog';
 import ImageInsertDialog from './imageInsertDialog';
@@ -551,7 +552,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
         const topic = currentTopic.description || currentTopic.title;
         const rawResponse = await aiQuizGenerator(topic, subject);
         const fencedResponse = ensureMasterylsFence(rawResponse);
-        const withId = fencedResponse.replace(/"id"\s*:\s*"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
+        const withId = normalizeInteractionIds(fencedResponse);
         insertText(`\n${withId}\n`);
       } finally {
         setGeneratingContent(false);

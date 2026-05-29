@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractInteractionMetas, isSubmittableInteractionType, parseInteractionMeta } from './interactionMeta.js';
+import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds, parseInteractionMeta } from './interactionMeta.js';
 
 test('parseInteractionMeta tolerates a missing comma before a key', () => {
   const { meta } = parseInteractionMeta('{"id":"a3b2a9f8-25e3-4ca4-8cca-42f3eb20537e", "title":"Web page", "type":"web-page" "file":"index.html"}');
@@ -24,4 +24,18 @@ test('ai web page interactions are submittable', () => {
 
 test('likert interactions are submittable', () => {
   assert.equal(isSubmittableInteractionType('likert'), true);
+});
+
+test('normalizeInteractionIds assigns UUID when id is non-uuid', () => {
+  const markdown = '```masteryls\n{"id":"modern-deployment-strategies","title":"Q","type":"multiple-choice"}\nQuestion\n```';
+  const normalized = normalizeInteractionIds(markdown, () => '11111111-2222-4333-8abc-999999999999');
+
+  assert.match(normalized, /"id":"11111111-2222-4333-8abc-999999999999"/);
+});
+
+test('normalizeInteractionIds preserves existing UUID id', () => {
+  const markdown = '```masteryls\n{"id":"a3b2a9f8-25e3-4ca4-8cca-42f3eb20537e","title":"Q","type":"multiple-choice"}\nQuestion\n```';
+  const normalized = normalizeInteractionIds(markdown, () => '11111111-2222-4333-8abc-999999999999');
+
+  assert.match(normalized, /"id":"a3b2a9f8-25e3-4ca4-8cca-42f3eb20537e"/);
 });

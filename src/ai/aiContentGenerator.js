@@ -1,4 +1,5 @@
 import service from '../service/service';
+import { normalizeInteractionIds } from '../utils/interactionMeta';
 
 const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
 const mermaidTheme = "%%{init: { 'theme': 'neutral', 'themeVariables': { 'lineColor': '#000000', 'primaryTextColor': '#000000', 'actorBorder': '#000000', 'participantBorder': '#000000', 'noteBorderColor': '#000000' } }}%%";
@@ -142,8 +143,7 @@ question body
 - prefer coding questions where applicable`;
 
   const response = await makeSimpleAiRequest(prompt);
-  response.replace(/"id":"[^"]*"/, `"id":"${crypto.randomUUID()}"`);
-  return response;
+  return normalizeInteractionIds(response);
 }
 
 /**

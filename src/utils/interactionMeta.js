@@ -1,5 +1,6 @@
 const DEFAULT_INTERACTION_META = { id: undefined, title: '', type: 'multiple-choice' };
 const SUBMITTABLE_INTERACTION_TYPES = new Set(['multiple-choice', 'multiple-select', 'survey', 'likert', 'essay', 'file-submission', 'url-submission', 'teaching', 'prompt', 'ai-web-page']);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function normalizeInteractionMetaJson(jsonText) {
   return jsonText.replace(/("(?:\\.|[^"\\])*"|-?\d+(?:\.\d+)?|true|false|null)\s+(?="[^"]+"\s*:)/g, '$1, ');
@@ -44,4 +45,31 @@ export function extractInteractionMetas(content) {
 
 export function isSubmittableInteractionType(type) {
   return SUBMITTABLE_INTERACTION_TYPES.has((type || '').toLowerCase().trim());
+}
+
+export function normalizeInteractionIds(markdown, generateId = () => crypto.randomUUID()) {
+  const source = String(markdown || '');
+  if (!source.trim()) {
+    return source;
+  }
+
+  return source.replace(/```masteryls\s*\n?([\s\S]*?)```/g, (fullMatch, fenceBody) => {
+    const parsed = parseInteractionMeta(fenceBody);
+    const meta = parsed.meta || {};
+    const hasValidUuid = typeof meta.id === 'string' && UUID_PATTERN.test(meta.id.trim());
+    if (hasValidUuid) {
+      return fullMatch;
+    }
+
+    const jsonMatch = String(fenceBody || '').match(/^\{[\s\S]*?\}(?:\n|$)/);
+    if (!jsonMatch) {
+      return fullMatch;
+    }
+
+    const newId = generateId();
+    const fixedMeta = { ...meta, id: newId };
+    const jsonReplacement = `${JSON.stringify(fixedMeta)}\n`;
+    const newFenceBody = String(fenceBody).replace(jsonMatch[0], jsonReplacement);
+    return `\`\`\`masteryls\n${newFenceBody}\`\`\``;
+  });
 }
