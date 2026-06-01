@@ -236,7 +236,14 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             }
           });
 
-          await onLikertInteraction({ id, type, responses, syncGrade, autoGrade });
+          const allQuestionIds = new Set(
+            Array.from(interactionRoot.querySelectorAll('input[data-plugin-masteryls-likert-question]'))
+              .map((inp) => inp.getAttribute('data-plugin-masteryls-likert-question'))
+              .filter(Boolean),
+          );
+          const percentCorrect = allQuestionIds.size > 0 ? Math.round((Object.keys(responses).length / allQuestionIds.size) * 100) : 0;
+
+          await onLikertInteraction({ id, type, responses, percentCorrect, syncGrade, autoGrade });
         } else if (type === 'essay') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
@@ -329,11 +336,11 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return true;
   }
 
-  async function onLikertInteraction({ id, type, responses, syncGrade = false, autoGrade = false }) {
+  async function onLikertInteraction({ id, type, responses, percentCorrect = 0, syncGrade = false, autoGrade = false }) {
     const submittedAt = new Date().toISOString();
     const submittedAtLabel = new Date(submittedAt).toLocaleString();
     const feedback = `Submission received on ${submittedAtLabel}.`;
-    const details = { type, responses, feedback, submittedAt, syncGrade, autoGrade };
+    const details = { type, responses, feedback, submittedAt, percentCorrect, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;
