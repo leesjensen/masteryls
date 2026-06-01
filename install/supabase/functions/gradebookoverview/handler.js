@@ -14,7 +14,7 @@ function countCompletedTopics(progress) {
     return 0;
   }
 
-  return Object.keys(progress).filter((key) => key !== 'mastery' && key !== 'lastActivityAt').length;
+  return Object.keys(progress).filter((key) => key !== 'mastery' && key !== 'lastActivityAt' && key !== 'totalTimeSpent').length;
 }
 
 // Decode the JWT payload without signature verification to extract the userId (sub claim).
@@ -170,6 +170,7 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
           examCompletedCount: topicValues.filter((v) => v.examCompleted === true).length,
           projectSubmittedCount: topicValues.filter((v) => v.projectSubmission === true).length,
           lastActivityAt: progress.lastActivityAt || null,
+          totalTimeSpent: typeof progress.totalTimeSpent === 'number' ? progress.totalTimeSpent : 0,
           progress,
         };
       });

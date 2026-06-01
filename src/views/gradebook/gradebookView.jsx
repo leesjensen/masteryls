@@ -3,6 +3,17 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 
+function formatDuration(seconds) {
+  const s = Number(seconds);
+  if (!Number.isFinite(s) || s <= 0) return '-';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return sec > 0 ? `${m}m ${sec}s` : `${m}m`;
+  return `${sec}s`;
+}
+
 export default function GradebookView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
@@ -243,6 +254,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
           completedInteractions,
           avgPercent,
           latestInteractionAt: topicProgress.lastInteractionAt || null,
+          timeSpent: typeof topicProgress.timeSpent === 'number' ? topicProgress.timeSpent : 0,
         };
       });
   }, [selectedCourse, selectedLearner]);
@@ -276,6 +288,8 @@ export default function GradebookView({ courseOps, startObserveSession = null })
         }
         case 'latestInteractionAt':
           return compareDate(a.latestInteractionAt, b.latestInteractionAt);
+        case 'timeSpent':
+          return ((a.timeSpent || 0) - (b.timeSpent || 0)) * direction;
         case 'topicTitle':
         default:
           return String(a.topicTitle || '').localeCompare(String(b.topicTitle || '')) * direction;
@@ -365,6 +379,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
               <th className="text-left px-3 py-2 font-semibold">Completed Topics</th>
               <th className="text-left px-3 py-2 font-semibold">Exams Completed</th>
               <th className="text-left px-3 py-2 font-semibold">Project Submits</th>
+              <th className="text-left px-3 py-2 font-semibold">Time Spent</th>
               <th className="text-left px-3 py-2 font-semibold">Last Activity</th>
               {canObserveLearners && <th className="text-left px-3 py-2 font-semibold">Observe</th>}
             </tr>
@@ -372,14 +387,14 @@ export default function GradebookView({ courseOps, startObserveSession = null })
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={canObserveLearners ? 8 : 7} className="px-3 py-4 text-gray-500">
+                <td colSpan={canObserveLearners ? 9 : 8} className="px-3 py-4 text-gray-500">
                   Loading Gradebook...
                 </td>
               </tr>
             )}
             {!loading && overview.rows.length === 0 && (
               <tr>
-                <td colSpan={canObserveLearners ? 8 : 7} className="px-3 py-4 text-gray-500">
+                <td colSpan={canObserveLearners ? 9 : 8} className="px-3 py-4 text-gray-500">
                   No learners found for this filter.
                 </td>
               </tr>
@@ -396,6 +411,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
                       <td className="px-3 py-2">{Number(row.completedTopics || 0)}</td>
                       <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
                       <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
+                      <td className="px-3 py-2">{formatDuration(row.totalTimeSpent || row.progress?.totalTimeSpent)}</td>
                       <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
                       {canObserveLearners && (
                         <td className="px-3 py-2">
@@ -411,7 +427,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
                     </tr>
                     {isExpanded && (
                       <tr className="border-t border-gray-100 bg-amber-50/20">
-                        <td colSpan={canObserveLearners ? 8 : 7} className="px-4 py-3">
+                        <td colSpan={canObserveLearners ? 9 : 8} className="px-4 py-3">
                           {instructionTopicSummaries.length === 0 && <div className="text-sm text-gray-500">No instruction items found for this course.</div>}
                           {instructionTopicSummaries.length > 0 && (
                             <div className="overflow-auto border border-gray-200 rounded-md bg-white">
@@ -434,6 +450,11 @@ export default function GradebookView({ courseOps, startObserveSession = null })
                                       </button>
                                     </th>
                                     <th className="text-left px-2 py-1 font-semibold">
+                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('timeSpent')} aria-label="Sort by time spent">
+                                        {detailSortLabel('timeSpent', 'Time Spent')}
+                                      </button>
+                                    </th>
+                                    <th className="text-left px-2 py-1 font-semibold">
                                       <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('latestInteractionAt')} aria-label="Sort by last interaction">
                                         {detailSortLabel('latestInteractionAt', 'Last Interaction')}
                                       </button>
@@ -453,6 +474,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
                                       <td className="px-2 py-1">
                                         {summary.completedInteractions}/{summary.totalInteractions}
                                       </td>
+                                      <td className="px-2 py-1">{formatDuration(summary.timeSpent)}</td>
                                       <td className="px-2 py-1">{summary.latestInteractionAt ? new Date(summary.latestInteractionAt).toLocaleString() : '-'}</td>
                                     </tr>
                                   ))}

@@ -1161,7 +1161,7 @@ Requirements:
     }
     const progressUser = providedUser || user;
     if (progressUser) {
-      _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type, details);
+      _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type, details, duration);
       const saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
 
       const topic = learningSession?.topic;
@@ -1284,12 +1284,17 @@ Requirements:
    *   }
    * }
    */
-  function _updateEnrollmentCachedInfo(enrollment, topic, interactionId, type, details = {}) {
+  function _updateEnrollmentCachedInfo(enrollment, topic, interactionId, type, details = {}, duration = 0) {
     if (!enrollment || !topic) return;
 
     var update = false;
     if (type === 'instructionView' || type === 'embeddedView' || type === 'quizSubmit') {
       update = _getEnrollmentProgress(enrollment, topic.id);
+
+      if (duration > 0) {
+        enrollment.progress[topic.id].timeSpent = (enrollment.progress[topic.id].timeSpent || 0) + duration;
+        update = true;
+      }
 
       if (type === 'quizSubmit' && interactionId && (!enrollment.progress[topic.id].interactions || !enrollment.progress[topic.id].interactions.includes(interactionId))) {
         enrollment.progress[topic.id].interactions = [...(enrollment.progress[topic.id].interactions || []), interactionId];
@@ -1321,6 +1326,12 @@ Requirements:
         enrollment.progress[topic.id].examCompleted = true;
         update = true;
       }
+    }
+
+    // Accumulate total time spent across all topics
+    if (duration > 0) {
+      enrollment.progress.totalTimeSpent = (enrollment.progress.totalTimeSpent || 0) + duration;
+      update = true;
     }
 
     // Always record last activity regardless of type
