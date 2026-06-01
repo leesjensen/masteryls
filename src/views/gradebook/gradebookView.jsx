@@ -15,7 +15,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   const [selectedLearner, setSelectedLearner] = React.useState(null);
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [expandedEnrollmentId, setExpandedEnrollmentId] = React.useState(null);
-  const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'asc' });
+  const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'course' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
 
   const courseOpsRef = React.useRef(courseOps);
@@ -242,6 +242,10 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   }, [selectedCourse, selectedLearner]);
 
   const sortedInstructionTopicSummaries = React.useMemo(() => {
+    if (detailSort.key === 'topicTitle' && detailSort.direction === 'course') {
+      return [...instructionTopicSummaries];
+    }
+
     const direction = detailSort.direction === 'desc' ? -1 : 1;
     const items = [...instructionTopicSummaries];
 
@@ -277,16 +281,23 @@ export default function GradebookView({ courseOps, startObserveSession = null })
 
   function toggleDetailSort(key) {
     setDetailSort((previous) => {
-      if (previous.key === key) {
-        return { key, direction: previous.direction === 'asc' ? 'desc' : 'asc' };
+      if (previous.key !== key) {
+        return { key, direction: key === 'topicTitle' ? 'course' : 'asc' };
       }
-      return { key, direction: 'asc' };
+      if (key === 'topicTitle') {
+        const next = { course: 'asc', asc: 'desc', desc: 'course' };
+        return { key, direction: next[previous.direction] || 'course' };
+      }
+      return { key, direction: previous.direction === 'asc' ? 'desc' : 'asc' };
     });
   }
 
   function detailSortLabel(key, label) {
     if (detailSort.key !== key) {
       return label;
+    }
+    if (key === 'topicTitle' && detailSort.direction === 'course') {
+      return `${label} ↕`;
     }
     return `${label} ${detailSort.direction === 'asc' ? '↑' : '↓'}`;
   }
