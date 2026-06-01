@@ -18,6 +18,9 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'asc' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
 
+  const courseOpsRef = React.useRef(courseOps);
+  courseOpsRef.current = courseOps;
+
   const user = courseOps?.user;
   const canViewLearnerFilters = React.useMemo(() => {
     if (!user) {
@@ -30,7 +33,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   }, [user, selectedCourseId]);
 
   const availableCourses = React.useMemo(() => {
-    const catalog = courseOps?.service?.courseCatalog?.() || [];
+    const catalog = courseOpsRef.current?.service?.courseCatalog?.() || [];
     if (!user) {
       return [];
     }
@@ -38,7 +41,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       return catalog;
     }
     return catalog.filter((entry) => user.isEditor(entry.id) || enrolledCourseIds.has(entry.id));
-  }, [courseOps, enrolledCourseIds, user]);
+  }, [enrolledCourseIds, user]);
 
   const hasCourseAccess = React.useMemo(() => {
     if (!user || !selectedCourseId) {
@@ -62,7 +65,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       }
 
       try {
-        const enrollmentMap = await courseOps.service.enrollments(user.id);
+        const enrollmentMap = await courseOpsRef.current.service.enrollments(user.id);
         if (!cancelled) {
           setEnrolledCourseIds(new Set(Array.from(enrollmentMap.keys())));
         }
@@ -78,7 +81,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     return () => {
       cancelled = true;
     };
-  }, [courseOps?.service, user]);
+  }, [user]);
 
   React.useEffect(() => {
     if (routeCourseId) {
@@ -105,7 +108,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       }
 
       try {
-        const course = await courseOps.getCourse(selectedCourseId);
+        const course = await courseOpsRef.current.getCourse(selectedCourseId);
         if (!cancelled) {
           setSelectedCourse(course || null);
         }
@@ -121,7 +124,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     return () => {
       cancelled = true;
     };
-  }, [courseOps, selectedCourseId]);
+  }, [selectedCourseId]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -135,7 +138,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOps.getGradebookOverview({ courseId: selectedCourseId, page, limit: 50, search });
+        const result = await courseOpsRef.current.getGradebookOverview({ courseId: selectedCourseId, page, limit: 50, search });
         if (!cancelled) {
           setOverview({
             rows: Array.isArray(result?.rows) ? result.rows : [],
@@ -162,7 +165,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     return () => {
       cancelled = true;
     };
-  }, [courseOps, hasCourseAccess, selectedCourseId, search, page, user]);
+  }, [hasCourseAccess, selectedCourseId, search, page]);
 
   function onSearchChange(value) {
     setSearch(value);
@@ -170,7 +173,6 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   }
 
   function onCourseChange(value) {
-    setSelectedCourseId(value);
     if (value) {
       navigate(`/gradebook/course/${value}`);
     } else {
