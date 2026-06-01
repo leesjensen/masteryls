@@ -64,20 +64,15 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
 
     const userId = authData.user.id;
 
-    const { data: rootRole } = await supabase.from('role').select('id').eq('user', userId).eq('right', 'root').limit(1);
+    const [{ data: rootRole }, { data: editorRole }, { data: learnerEnrollment }] = await Promise.all([
+      supabase.from('role').select('id').eq('user', userId).eq('right', 'root').limit(1),
+      supabase.from('role').select('id').eq('user', userId).eq('right', 'editor').eq('object', courseId).limit(1),
+      supabase.from('enrollment').select('id').eq('catalogId', courseId).eq('learnerId', userId).limit(1),
+    ]);
+
     const isRoot = Array.isArray(rootRole) && rootRole.length > 0;
-
-    let isEditor = false;
-    if (!isRoot) {
-      const { data: editorRole } = await supabase.from('role').select('id').eq('user', userId).eq('right', 'editor').eq('object', courseId).limit(1);
-      isEditor = Array.isArray(editorRole) && editorRole.length > 0;
-    }
-
-    let isEnrolledLearner = false;
-    if (!isRoot && !isEditor) {
-      const { data: learnerEnrollment } = await supabase.from('enrollment').select('id').eq('catalogId', courseId).eq('learnerId', userId).limit(1);
-      isEnrolledLearner = Array.isArray(learnerEnrollment) && learnerEnrollment.length > 0;
-    }
+    const isEditor = Array.isArray(editorRole) && editorRole.length > 0;
+    const isEnrolledLearner = Array.isArray(learnerEnrollment) && learnerEnrollment.length > 0;
 
     if (!isRoot && !isEditor && !isEnrolledLearner) {
       return new Response(JSON.stringify({ error: 'User is not authorized to view this course gradebook' }), {

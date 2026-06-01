@@ -85,6 +85,19 @@ create table if not exists public.progress (
 -- Full-text search GIN index
 create index if not exists "topicFtsIdx" on public.topic using gin (ftsContent);
 
+-- Auth checks in gradebookoverview edge function
+create index if not exists "roleUserRightObjectIdx" on public.role ("user", "right", object);
+
+-- Enrollment lookups by course, and learner auth check
+create index if not exists "enrollmentCatalogIdx" on public.enrollment ("catalogId");
+create index if not exists "enrollmentCatalogLearnerIdx" on public.enrollment ("catalogId", "learnerId");
+
+-- Progress queries: by enrollment+type (detail view, interaction history, notes, exam state)
+create index if not exists "progressEnrollmentTypeIdx" on public.progress ("enrollmentId", type);
+
+-- Progress queries: by catalog+topic+interaction (survey/Likert summaries)
+create index if not exists "progressCatalogTopicIdx" on public.progress ("catalogId", "topicId", "interactionId");
+
 
 ----------------------- Functions
 
