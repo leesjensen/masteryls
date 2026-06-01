@@ -1161,7 +1161,7 @@ Requirements:
     }
     const progressUser = providedUser || user;
     if (progressUser) {
-      _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type);
+      _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type, details);
       const saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
 
       const topic = learningSession?.topic;
@@ -1264,11 +1264,15 @@ Requirements:
   /*
    * Example enrollment.progress structure:
    * {
-   * "mastery": 99,
-   * "0a739177-92fd-4264-9629-19602dc70e96": {
-   *   "notes": true|false,
-   *   "interactions": ["interactionId1", "interactionId2"]
-   * },
+   *   "mastery": 99,
+   *   "lastActivityAt": "2026-06-01T10:00:00Z",
+   *   "0a739177-92fd-4264-9629-19602dc70e96": {
+   *     "notes": true|false,
+   *     "examCompleted": true|false,
+   *     "projectSubmission": true|false,
+   *     "interactions": ["interactionId1", "interactionId2"]
+   *   }
+   * }
    *
    * Note progress details:
    * {
@@ -1278,7 +1282,7 @@ Requirements:
    *   }
    * }
    */
-  function _updateEnrollmentCachedInfo(enrollment, topic, interactionId, type) {
+  function _updateEnrollmentCachedInfo(enrollment, topic, interactionId, type, details = {}) {
     if (!enrollment || !topic) return;
 
     var update = false;
@@ -1287,6 +1291,10 @@ Requirements:
 
       if (type === 'quizSubmit' && interactionId && (!enrollment.progress[topic.id].interactions || !enrollment.progress[topic.id].interactions.includes(interactionId))) {
         enrollment.progress[topic.id].interactions = [...(enrollment.progress[topic.id].interactions || []), interactionId];
+        update = true;
+      }
+      if (type === 'quizSubmit' && details?.syncGrade === true && !enrollment.progress[topic.id].projectSubmission) {
+        enrollment.progress[topic.id].projectSubmission = true;
         update = true;
       }
       if (update) {
@@ -1298,7 +1306,17 @@ Requirements:
         enrollment.progress[topic.id].notes = true;
         update = true;
       }
+    } else if (type === 'exam' && details?.state === 'completed') {
+      update = _getEnrollmentProgress(enrollment, topic.id);
+      if (!enrollment.progress[topic.id].examCompleted) {
+        enrollment.progress[topic.id].examCompleted = true;
+        update = true;
+      }
     }
+
+    // Always record last activity regardless of type
+    enrollment.progress.lastActivityAt = new Date().toISOString();
+    update = true;
 
     if (update) {
       service.saveEnrollment(enrollment);

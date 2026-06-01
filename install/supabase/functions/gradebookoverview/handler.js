@@ -14,7 +14,7 @@ function countCompletedTopics(progress) {
     return 0;
   }
 
-  return Object.keys(progress).filter((key) => key !== 'mastery').length;
+  return Object.keys(progress).filter((key) => key !== 'mastery' && key !== 'lastActivityAt').length;
 }
 
 export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHeader, getEnv }) {
@@ -105,7 +105,6 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
       }
 
       const learnerIds = [...new Set(safeEnrollments.map((entry) => entry.learnerId).filter(Boolean))];
-      const enrollmentIds = safeEnrollments.map((entry) => entry.id).filter(Boolean);
 
       let learners = [];
       if (learnerIds.length > 0) {
@@ -116,69 +115,23 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
         learners = Array.isArray(learnerRows) ? learnerRows : [];
       }
 
-      let progressRows = [];
-      if (enrollmentIds.length > 0) {
-        const { data: progressData, error: progressError } = await supabase.from('progress').select('enrollmentId, type, details, interactionId, topicId, createdAt').eq('catalogId', courseId).in('enrollmentId', enrollmentIds).order('createdAt', { ascending: false }).limit(10000);
-
-        if (progressError) {
-          throw progressError;
-        }
-        progressRows = Array.isArray(progressData) ? progressData : [];
-      }
-
       const learnersById = new Map(learners.map((entry) => [String(entry.id), entry]));
-      const progressByEnrollmentId = new Map();
-      progressRows.forEach((row) => {
-        const key = String(row.enrollmentId || '');
-        if (!key) {
-          return;
-        }
-        if (!progressByEnrollmentId.has(key)) {
-          progressByEnrollmentId.set(key, []);
-        }
-        progressByEnrollmentId.get(key).push(row);
-      });
 
       const rows = safeEnrollments.map((enrollment) => {
         const learner = learnersById.get(String(enrollment.learnerId || '')) || {};
-        const enrollmentProgressRows = progressByEnrollmentId.get(String(enrollment.id || '')) || [];
-
-        let examCompletedCount = 0;
-        const submittedProjects = new Set();
-        let lastActivityAt = null;
-
-        enrollmentProgressRows.forEach((item) => {
-          const type = String(item?.type || '');
-          const details = item?.details && typeof item.details === 'object' ? item.details : {};
-
-          if (type === 'exam' && details.state === 'completed') {
-            examCompletedCount += 1;
-          }
-
-          if (type === 'quizSubmit' && details.syncGrade === true) {
-            const interactionKey = String(item?.interactionId || '').trim();
-            const topicKey = String(item?.topicId || '').trim();
-            const projectKey = interactionKey ? `interaction:${interactionKey}` : topicKey ? `topic:${topicKey}` : '';
-            if (projectKey) {
-              submittedProjects.add(projectKey);
-            }
-          }
-
-          if (item?.createdAt && (!lastActivityAt || item.createdAt > lastActivityAt)) {
-            lastActivityAt = item.createdAt;
-          }
-        });
+        const progress = enrollment.progress || {};
+        const topicValues = Object.values(progress).filter((v) => v && typeof v === 'object');
 
         return {
           enrollmentId: enrollment.id,
           learnerId: enrollment.learnerId,
           learnerName: learner.name || null,
           learnerEmail: learner.email || null,
-          masteryPercent: Number(enrollment?.progress?.mastery || 0),
-          completedTopics: countCompletedTopics(enrollment?.progress),
-          examCompletedCount,
-          projectSubmittedCount: submittedProjects.size,
-          lastActivityAt,
+          masteryPercent: Number(progress.mastery || 0),
+          completedTopics: countCompletedTopics(progress),
+          examCompletedCount: topicValues.filter((v) => v.examCompleted === true).length,
+          projectSubmittedCount: topicValues.filter((v) => v.projectSubmission === true).length,
+          lastActivityAt: progress.lastActivityAt || null,
         };
       });
 
