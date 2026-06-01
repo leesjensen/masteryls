@@ -226,8 +226,14 @@ export default function GradebookView({ courseOps, startObserveSession = null })
         const completedInteractions = (topicProgress.interactions || []).filter((id) => interactionIds.includes(id)).length;
 
         const scores = topicProgress.scores || {};
-        const numericScores = interactionIds.map((id) => scores[id]).filter((s) => Number.isFinite(s));
-        const avgPercent = numericScores.length > 0 ? Math.round((numericScores.reduce((sum, s) => sum + s, 0) / numericScores.length) * 100) / 100 : null;
+        const completedSet = new Set(topicProgress.interactions || []);
+        const scoreSum = interactionIds.reduce((sum, id) => {
+          const score = scores[id];
+          if (Number.isFinite(score)) return sum + score;   // scored interaction
+          if (completedSet.has(id)) return sum + 100;       // completed but unscored (e.g. survey) → full credit
+          return sum;                                        // not yet completed → 0
+        }, 0);
+        const avgPercent = interactionIds.length > 0 ? Math.round((scoreSum / interactionIds.length) * 100) / 100 : null;
 
         return {
           topicId: topic.id,
