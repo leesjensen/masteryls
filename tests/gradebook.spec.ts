@@ -31,6 +31,7 @@ test('gradebook view loads learner overview for accessible course', async ({ pag
             examCompletedCount: 1,
             projectSubmittedCount: 2,
             lastActivityAt: '2026-05-09T12:00:00Z',
+            progress: {},
           },
         ],
         totalCount: 1,
