@@ -132,6 +132,7 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
           examCompletedCount: topicValues.filter((v) => v.examCompleted === true).length,
           projectSubmittedCount: topicValues.filter((v) => v.projectSubmission === true).length,
           lastActivityAt: progress.lastActivityAt || null,
+          progress,
         };
       });
 

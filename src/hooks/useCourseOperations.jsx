@@ -1262,15 +1262,17 @@ Requirements:
   }
 
   /*
-   * Example enrollment.progress structure:
+   * enrollment.progress structure:
    * {
-   *   "mastery": 99,
-   *   "lastActivityAt": "2026-06-01T10:00:00Z",
-   *   "0a739177-92fd-4264-9629-19602dc70e96": {
-   *     "notes": true|false,
-   *     "examCompleted": true|false,
-   *     "projectSubmission": true|false,
-   *     "interactions": ["interactionId1", "interactionId2"]
+   *   mastery: 99,
+   *   lastActivityAt: '2026-06-01T10:00:00Z',
+   *   [topicId]: {
+   *     interactions: ['interactionId1', 'interactionId2'],
+   *     scores: { 'interactionId1': 85, 'interactionId2': 92 },
+   *     lastInteractionAt: '2026-06-01T10:00:00Z',
+   *     notes: true,
+   *     examCompleted: true,
+   *     projectSubmission: true,
    *   }
    * }
    *
@@ -1293,6 +1295,13 @@ Requirements:
         enrollment.progress[topic.id].interactions = [...(enrollment.progress[topic.id].interactions || []), interactionId];
         update = true;
       }
+      if (type === 'quizSubmit' && interactionId) {
+        const score = Number.isFinite(Number(details?.percentCorrect)) ? Number(details.percentCorrect) : null;
+        enrollment.progress[topic.id].scores = { ...(enrollment.progress[topic.id].scores || {}), [interactionId]: score };
+        update = true;
+      }
+      enrollment.progress[topic.id].lastInteractionAt = new Date().toISOString();
+      update = true;
       if (type === 'quizSubmit' && details?.syncGrade === true && !enrollment.progress[topic.id].projectSubmission) {
         enrollment.progress[topic.id].projectSubmission = true;
         update = true;

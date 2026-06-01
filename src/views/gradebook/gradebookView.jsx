@@ -15,9 +15,6 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   const [selectedLearner, setSelectedLearner] = React.useState(null);
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [expandedEnrollmentId, setExpandedEnrollmentId] = React.useState(null);
-  const [learnerDetailsLoading, setLearnerDetailsLoading] = React.useState(false);
-  const [learnerDetailsError, setLearnerDetailsError] = React.useState(null);
-  const [learnerProgressRows, setLearnerProgressRows] = React.useState([]);
   const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'asc' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
 
@@ -182,11 +179,9 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     setPage(1);
     setExpandedEnrollmentId(null);
     setSelectedLearner(null);
-    setLearnerProgressRows([]);
-    setLearnerDetailsError(null);
   }
 
-  async function toggleLearnerDetails(row) {
+  function toggleLearnerDetails(row) {
     if (!selectedCourseId || !row?.enrollmentId) {
       return;
     }
@@ -194,25 +189,11 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     if (expandedEnrollmentId === row.enrollmentId) {
       setExpandedEnrollmentId(null);
       setSelectedLearner(null);
-      setLearnerProgressRows([]);
-      setLearnerDetailsError(null);
       return;
     }
 
     setExpandedEnrollmentId(row.enrollmentId);
     setSelectedLearner(row);
-    setLearnerDetailsLoading(true);
-    setLearnerDetailsError(null);
-
-    try {
-      const result = await courseOps.getProgress({ courseId: selectedCourseId, enrollmentId: row.enrollmentId, page: 1, limit: 10000 });
-      setLearnerProgressRows(Array.isArray(result?.data) ? result.data : []);
-    } catch (loadError) {
-      setLearnerDetailsError(loadError.message || String(loadError));
-      setLearnerProgressRows([]);
-    } finally {
-      setLearnerDetailsLoading(false);
-    }
   }
 
   function onObserveLearner(row, event) {
@@ -230,52 +211,33 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   }
 
   const instructionTopicSummaries = React.useMemo(() => {
-    if (!selectedLearner || !selectedCourse) {
+    if (!selectedCourse || !selectedLearner?.progress) {
       return [];
     }
 
     const topics = Array.isArray(selectedCourse.allTopics) ? selectedCourse.allTopics : [];
-    const instructionTopics = topics.filter((topic) => topic?.id && topic?.type !== 'embedded' && topic?.type !== 'schedule');
+    return topics
+      .filter((topic) => topic?.id && topic?.type !== 'embedded' && topic?.type !== 'schedule')
+      .map((topic) => {
+        const topicProgress = selectedLearner.progress[topic.id] || {};
+        const interactionIds = Array.isArray(topic.interactions) ? topic.interactions : [];
+        const completedInteractions = (topicProgress.interactions || []).filter((id) => interactionIds.includes(id)).length;
 
-    return instructionTopics.map((topic) => {
-      const topicRows = learnerProgressRows.filter((item) => String(item?.topicId || '') === String(topic.id));
-      const interactionRows = topicRows.filter((item) => String(item?.type || '') === 'quizSubmit');
-      const interactionIds = Array.isArray(topic?.interactions) ? topic.interactions.map((id) => String(id)) : [];
-      const completedInteractionIds = new Set(interactionRows.map((item) => String(item?.interactionId || '')).filter((interactionId) => interactionId && interactionIds.includes(interactionId)));
-      const totalInteractions = interactionIds.length;
-      const completedInteractions = completedInteractionIds.size;
+        const scores = topicProgress.scores || {};
+        const numericScores = interactionIds.map((id) => scores[id]).filter((s) => Number.isFinite(s));
+        const avgPercent = numericScores.length > 0 ? Math.round((numericScores.reduce((sum, s) => sum + s, 0) / numericScores.length) * 100) / 100 : null;
 
-      const latestInteractionById = new Map();
-      interactionRows.forEach((item) => {
-        const interactionId = String(item?.interactionId || '');
-        if (!interactionId || !interactionIds.includes(interactionId)) {
-          return;
-        }
-        const existing = latestInteractionById.get(interactionId);
-        if (!existing || String(item?.createdAt || '') > String(existing?.createdAt || '')) {
-          latestInteractionById.set(interactionId, item);
-        }
+        return {
+          topicId: topic.id,
+          topicType: topic.type,
+          topicTitle: topic.title || 'Untitled topic',
+          totalInteractions: interactionIds.length,
+          completedInteractions,
+          avgPercent,
+          latestInteractionAt: topicProgress.lastInteractionAt || null,
+        };
       });
-      const totalPercent = interactionIds.reduce((sum, interactionId) => {
-        const row = latestInteractionById.get(interactionId);
-        const value = Number(row?.details?.percentCorrect);
-        return sum + (Number.isFinite(value) ? value : 0);
-      }, 0);
-      const avgPercent = totalInteractions > 0 ? Math.round((totalPercent / totalInteractions) * 100) / 100 : null;
-      const latestInteraction = interactionRows.slice().sort((a, b) => String(b?.createdAt || '').localeCompare(String(a?.createdAt || '')))[0];
-
-      return {
-        topicId: topic.id,
-        topicType: topic.type,
-        topicTitle: topic.title || 'Untitled topic',
-        interactionCount: interactionRows.length,
-        totalInteractions,
-        completedInteractions,
-        avgPercent,
-        latestInteractionAt: latestInteraction?.createdAt || null,
-      };
-    });
-  }, [selectedCourse, selectedLearner, learnerProgressRows]);
+  }, [selectedCourse, selectedLearner]);
 
   const sortedInstructionTopicSummaries = React.useMemo(() => {
     const direction = detailSort.direction === 'desc' ? -1 : 1;
@@ -431,10 +393,8 @@ export default function GradebookView({ courseOps, startObserveSession = null })
                     {isExpanded && (
                       <tr className="border-t border-gray-100 bg-amber-50/20">
                         <td colSpan={canObserveLearners ? 8 : 7} className="px-4 py-3">
-                          {learnerDetailsLoading && <div className="text-sm text-gray-500">Loading instruction details...</div>}
-                          {!learnerDetailsLoading && learnerDetailsError && <div className="text-sm text-red-700">{learnerDetailsError}</div>}
-                          {!learnerDetailsLoading && !learnerDetailsError && instructionTopicSummaries.length === 0 && <div className="text-sm text-gray-500">No instruction items found for this course.</div>}
-                          {!learnerDetailsLoading && !learnerDetailsError && instructionTopicSummaries.length > 0 && (
+                          {instructionTopicSummaries.length === 0 && <div className="text-sm text-gray-500">No instruction items found for this course.</div>}
+                          {instructionTopicSummaries.length > 0 && (
                             <div className="overflow-auto border border-gray-200 rounded-md bg-white">
                               <table className="min-w-full text-sm">
                                 <thead className="bg-gray-50 text-gray-700">
