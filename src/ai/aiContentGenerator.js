@@ -400,7 +400,22 @@ export async function aiImageGenerator(prompt) {
       {
         parts: [
           {
-            text: `Create a high-quality instructional image for course content based on this prompt:\n\n${prompt}\n\nThe image should be a friendly and clean modern educational infographic in a vector illustration style. The image is professional looking and appropriate for a university audience. All graphical elements, including icons, flowcharts, thought bubbles, and UI screens, have clear black borders. The modern digital color palette is vibrant, using clean blues, greens, yellows, and reds, set against a clean plain background. It integrates clear, legible modern sans-serif typography for all text, including the title and modular section callouts. The structured, modular layout uses simple illustrative icons and flowcharts to explain complex concepts, presenting computer and phone interfaces clearly, connected by illustrative arrows.`,
+            text: `
+Create a high-quality instructional image for course content based on this prompt:
+
+${prompt}
+
+Requirements:
+- No main title.
+- White background.
+- Image width should be greater than height, ideally around a 16:9 aspect ratio, and at most 800 pixels wide
+- The image should be a friendly and clean modern educational infographic in a vector illustration style.
+- The image is professional looking and appropriate for a university audience.
+- All graphical elements, including icons, flowcharts, thought bubbles, and UI screens, have clear black borders.
+- Prefer a vibrant clean modern monochromatic palette that uses vibrant harmonious colors for highlights and callouts.
+- Integrate clear, legible modern sans-serif typography for all text, including modular section callouts.
+- Strong contrast between text and the background to increase legibility.
+- The structured, modular layout uses simple illustrative icons and flowcharts to explain complex concepts.`,
           },
         ],
       },
