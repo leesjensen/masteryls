@@ -17,6 +17,24 @@ function countCompletedTopics(progress) {
   return Object.keys(progress).filter((key) => key !== 'mastery' && key !== 'lastActivityAt').length;
 }
 
+// Decode the JWT payload without signature verification to extract the userId (sub claim).
+// Used only to fire auth queries in parallel with getUser(). The verified userId from
+// getUser() must match before any data is returned.
+function extractUserIdFromToken(authHeader) {
+  try {
+    const token = authHeader.replace(/^bearer\s+/i, '');
+    const payloadB64 = token.split('.')[1];
+    if (!payloadB64) return null;
+    const padded = payloadB64 + '='.repeat((4 - payloadB64.length % 4) % 4);
+    const payload = JSON.parse(atob(padded.replace(/-/g, '+').replace(/_/g, '/')));
+    const now = Math.floor(Date.now() / 1000);
+    if (typeof payload.sub !== 'string' || (payload.exp && payload.exp < now)) return null;
+    return payload.sub;
+  } catch {
+    return null;
+  }
+}
+
 export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHeader, getEnv }) {
   return async function handleGradebookOverview(req) {
     if (req.method === 'OPTIONS') {
@@ -40,15 +58,7 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
       });
     }
 
-    const supabase = createSupabaseClientFromAuthHeader(authHeader);
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData?.user) {
-      return new Response(JSON.stringify({ error: 'Invalid user token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    // Parse body first so courseId is available for parallel pre-fetch queries
     const payload = await req.json();
     const courseId = String(payload?.courseId || '').trim();
     const page = Math.max(1, Number(payload?.page || 1));
@@ -62,17 +72,50 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
       });
     }
 
-    const userId = authData.user.id;
+    const supabase = createSupabaseClientFromAuthHeader(authHeader);
 
-    const [{ data: rootRole }, { data: editorRole }, { data: learnerEnrollment }] = await Promise.all([
-      supabase.from('role').select('id').eq('user', userId).eq('right', 'root').limit(1),
-      supabase.from('role').select('id').eq('user', userId).eq('right', 'editor').eq('object', courseId).limit(1),
-      supabase.from('enrollment').select('id').eq('catalogId', courseId).eq('learnerId', userId).limit(1),
+    // Decode userId from JWT locally so auth and enrollment queries can fire
+    // in parallel with getUser(). Falls back to re-running auth after getUser()
+    // if the token can't be decoded or the userId doesn't match.
+    const candidateUserId = extractUserIdFromToken(authHeader);
+
+    // 3 parallel operations: getUser + combined role check + enrollment fetch
+    const [
+      { data: authData, error: authError },
+      { data: prefetchedRoles },
+      { data: allEnrollments, error: enrollmentsError },
+    ] = await Promise.all([
+      supabase.auth.getUser(),
+      candidateUserId
+        ? supabase.from('role').select('right, object').eq('user', candidateUserId).in('right', ['root', 'editor'])
+        : Promise.resolve({ data: null }),
+      supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId),
     ]);
 
-    const isRoot = Array.isArray(rootRole) && rootRole.length > 0;
-    const isEditor = Array.isArray(editorRole) && editorRole.length > 0;
-    const isEnrolledLearner = Array.isArray(learnerEnrollment) && learnerEnrollment.length > 0;
+    if (authError || !authData?.user) {
+      return new Response(JSON.stringify({ error: 'Invalid user token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userId = authData.user.id;
+
+    let userRoles = prefetchedRoles;
+
+    // If the JWT decode failed or userId didn't match the verified identity, re-run the
+    // role query with the correct userId. This is a fallback that doesn't occur normally.
+    if (candidateUserId !== userId) {
+      const { data: recheckRoles } = await supabase.from('role').select('right, object').eq('user', userId).in('right', ['root', 'editor']);
+      userRoles = recheckRoles;
+    }
+
+    const safeRoles = Array.isArray(userRoles) ? userRoles : [];
+    const safeAllEnrollments = Array.isArray(allEnrollments) ? allEnrollments : [];
+
+    const isRoot = safeRoles.some((r) => r.right === 'root');
+    const isEditor = safeRoles.some((r) => r.right === 'editor' && String(r.object) === courseId);
+    const isEnrolledLearner = safeAllEnrollments.some((e) => String(e.learnerId) === String(userId));
 
     if (!isRoot && !isEditor && !isEnrolledLearner) {
       return new Response(JSON.stringify({ error: 'User is not authorized to view this course gradebook' }), {
@@ -82,17 +125,17 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
     }
 
     try {
-      let enrollmentsQuery = supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId);
-      if (isEnrolledLearner && !isRoot && !isEditor) {
-        enrollmentsQuery = enrollmentsQuery.eq('learnerId', userId);
-      }
-
-      const { data: enrollments, error: enrollmentsError } = await enrollmentsQuery;
       if (enrollmentsError) {
         throw enrollmentsError;
       }
 
-      const safeEnrollments = Array.isArray(enrollments) ? enrollments : [];
+      let safeEnrollments = safeAllEnrollments;
+
+      // Enrolled learners who are not editors/roots can only see their own row
+      if (isEnrolledLearner && !isRoot && !isEditor) {
+        safeEnrollments = safeEnrollments.filter((e) => String(e.learnerId) === String(userId));
+      }
+
       if (safeEnrollments.length === 0) {
         return new Response(JSON.stringify({ rows: [], totalCount: 0, page, limit, hasMore: false }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
