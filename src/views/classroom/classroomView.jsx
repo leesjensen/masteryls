@@ -12,12 +12,15 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   const [editorVisible, setEditorVisible] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(settings.sidebarWidth || 300);
   const navigate = useNavigate();
+  const scheduleFiles = learningSession?.topic?.type === 'schedule' ? courseOps.getScheduleFiles(learningSession.topic) : [];
+  const selectedScheduleFile = learningSession?.topic?.type === 'schedule' ? courseOps.getSelectedScheduleFile(learningSession.topic, scheduleFiles) : null;
+  const appBarSubTitle = selectedScheduleFile?.title || learningSession?.topic?.title;
 
   React.useEffect(() => {
     if (learningSession.course) {
-      updateAppBar({ title: learningSession.course?.title, subTitle: learningSession?.topic?.title });
+      updateAppBar({ title: learningSession.course?.title, subTitle: appBarSubTitle });
     }
-  }, [learningSession]);
+  }, [learningSession, appBarSubTitle]);
 
   useHotkeys(
     {

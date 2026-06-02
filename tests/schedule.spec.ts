@@ -114,9 +114,12 @@ test('schedule read view lets learner switch files', async ({ page }) => {
   await page.getByText('Schedule').click();
 
   await expect(page.getByRole('heading', { name: 'Winter 2026 Schedule' })).toBeVisible();
+  await expect(page.locator('header h1')).toContainText('Rocket Science');
+  await expect(page.locator('header h1')).toContainText('Winter');
 
   await page.locator('select').first().selectOption('joe');
   await expect(page.getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
+  await expect(page.locator('header h1')).toContainText("Joe's schedule");
 });
 
 test('schedule form editor commits and can create additional schedule files', async ({ page }) => {
