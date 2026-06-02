@@ -14,21 +14,7 @@ function formatDuration(seconds) {
   return `${sec}s`;
 }
 
-function MasteryChart({ summaries }) {
-  const dateGroups = React.useMemo(() => {
-    const groups = {};
-    for (const s of summaries) {
-      if (!s.latestInteractionAt) continue;
-      const d = new Date(s.latestInteractionAt);
-      const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      if (!groups[day]) groups[day] = { day, count: 0, ts: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() };
-      groups[day].count++;
-    }
-    return Object.values(groups).sort((a, b) => a.ts - b.ts);
-  }, [summaries]);
-
-  if (dateGroups.length === 0) return null;
-
+function BarChartSvg({ dateGroups }) {
   const W = 800;
   const H = 220;
   const PAD = { top: 16, right: 24, bottom: 44, left: 44 };
@@ -51,44 +37,73 @@ function MasteryChart({ summaries }) {
   const labelStep = Math.max(1, Math.ceil(n / 12));
 
   return (
-    <div className="border border-gray-200 rounded-md p-3 bg-white">
-      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Activity Timeline</span>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '180px' }} aria-label="Activity timeline chart">
-        {yTicks.map((tick) => (
-          <line key={tick} x1={PAD.left} y1={yOf(tick)} x2={PAD.left + cw} y2={yOf(tick)} stroke="#f3f4f6" strokeWidth={1} />
-        ))}
-
-        <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
-        <line x1={PAD.left} y1={PAD.top + ch} x2={PAD.left + cw} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
-
-        {yTicks.map((tick) => (
-          <text key={tick} x={PAD.left - 6} y={yOf(tick) + 4} textAnchor="end" fontSize={10} fill="#9ca3af">{tick}</text>
-        ))}
-
-        <text x={12} y={PAD.top + ch / 2} textAnchor="middle" fontSize={10} fill="#9ca3af" transform={`rotate(-90 12 ${PAD.top + ch / 2})`}>
-          Topics
-        </text>
-
-        {dateGroups.map((group, i) => {
-          const x = xOf(i);
-          const bh = Math.max(1, (group.count / maxCount) * ch);
-          const y = PAD.top + ch - bh;
-          const label = new Date(group.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-          const showLabel = i % labelStep === 0 || i === n - 1;
-          return (
-            <g key={group.day}>
-              <rect x={x - barW / 2} y={y} width={barW} height={bh} fill="#3b82f6" rx={2} opacity={0.85}>
-                <title>{`${label}: ${group.count} topic${group.count !== 1 ? 's' : ''}`}</title>
-              </rect>
-              {showLabel && (
-                <text x={x} y={PAD.top + ch + 14} textAnchor="middle" fontSize={10} fill="#9ca3af">{label}</text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-    </div>
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '180px' }} aria-label="Activity chart">
+      {yTicks.map((tick) => (
+        <line key={tick} x1={PAD.left} y1={yOf(tick)} x2={PAD.left + cw} y2={yOf(tick)} stroke="#f3f4f6" strokeWidth={1} />
+      ))}
+      <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
+      <line x1={PAD.left} y1={PAD.top + ch} x2={PAD.left + cw} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
+      {yTicks.map((tick) => (
+        <text key={tick} x={PAD.left - 6} y={yOf(tick) + 4} textAnchor="end" fontSize={10} fill="#9ca3af">{tick}</text>
+      ))}
+      <text x={12} y={PAD.top + ch / 2} textAnchor="middle" fontSize={10} fill="#9ca3af" transform={`rotate(-90 12 ${PAD.top + ch / 2})`}>
+        Topics
+      </text>
+      {dateGroups.map((group, i) => {
+        const x = xOf(i);
+        const bh = Math.max(1, (group.count / maxCount) * ch);
+        const y = PAD.top + ch - bh;
+        const label = new Date(group.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const showLabel = i % labelStep === 0 || i === n - 1;
+        return (
+          <g key={group.day}>
+            <rect x={x - barW / 2} y={y} width={barW} height={bh} fill="#3b82f6" rx={2} opacity={0.85}>
+              <title>{`${label}: ${group.count} topic${group.count !== 1 ? 's' : ''}`}</title>
+            </rect>
+            {showLabel && (
+              <text x={x} y={PAD.top + ch + 14} textAnchor="middle" fontSize={10} fill="#9ca3af">{label}</text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
   );
+}
+
+function LastInteractionChart({ summaries }) {
+  const dateGroups = React.useMemo(() => {
+    const groups = {};
+    for (const s of summaries) {
+      if (!s.latestInteractionAt) continue;
+      const d = new Date(s.latestInteractionAt);
+      const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!groups[day]) groups[day] = { day, count: 0, ts: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() };
+      groups[day].count++;
+    }
+    return Object.values(groups).sort((a, b) => a.ts - b.ts);
+  }, [summaries]);
+
+  if (dateGroups.length === 0) return null;
+  return <BarChartSvg dateGroups={dateGroups} />;
+}
+
+function DailyActivityChart({ records }) {
+  const dateGroups = React.useMemo(() => {
+    const groups = {};
+    for (const r of records) {
+      if (!r.createdAt || !r.topicId) continue;
+      const d = new Date(r.createdAt);
+      const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!groups[day]) groups[day] = { day, topicIds: new Set(), ts: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() };
+      groups[day].topicIds.add(r.topicId);
+    }
+    return Object.values(groups)
+      .map((g) => ({ day: g.day, count: g.topicIds.size, ts: g.ts }))
+      .sort((a, b) => a.ts - b.ts);
+  }, [records]);
+
+  if (dateGroups.length === 0) return <div className="text-sm text-gray-500 py-4 text-center">No activity records found.</div>;
+  return <BarChartSvg dateGroups={dateGroups} />;
 }
 
 export default function LearnerMasteryView({ courseOps }) {
@@ -101,6 +116,10 @@ export default function LearnerMasteryView({ courseOps }) {
   const [error, setError] = React.useState(null);
   const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'course' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
+  const [chartMode, setChartMode] = React.useState('lastInteraction');
+  const [activityRecords, setActivityRecords] = React.useState([]);
+  const [activityLoading, setActivityLoading] = React.useState(false);
+  const [activityLoaded, setActivityLoaded] = React.useState(false);
 
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
@@ -227,6 +246,44 @@ export default function LearnerMasteryView({ courseOps }) {
       cancelled = true;
     };
   }, [selectedCourseId, routeLearnerId]);
+
+  React.useEffect(() => {
+    setActivityRecords([]);
+    setActivityLoaded(false);
+  }, [selectedCourseId, routeLearnerId]);
+
+  React.useEffect(() => {
+    if (chartMode !== 'dailyActivity' || !selectedCourseId || !routeLearnerId || activityLoaded) return;
+
+    let cancelled = false;
+
+    async function loadActivity() {
+      setActivityLoading(true);
+      try {
+        let allRecords = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore) {
+          const result = await courseOpsRef.current.getProgress({ courseId: selectedCourseId, userId: routeLearnerId, page, limit: 1000 });
+          allRecords = [...allRecords, ...result.data];
+          hasMore = result.hasMore;
+          page++;
+          if (cancelled) return;
+        }
+        if (!cancelled) {
+          setActivityRecords(allRecords);
+          setActivityLoaded(true);
+        }
+      } catch {
+        if (!cancelled) setActivityLoaded(true);
+      } finally {
+        if (!cancelled) setActivityLoading(false);
+      }
+    }
+
+    loadActivity();
+    return () => { cancelled = true; };
+  }, [chartMode, selectedCourseId, routeLearnerId, activityLoaded]);
 
   function onCourseChange(value) {
     if (value && routeLearnerId) {
@@ -406,7 +463,35 @@ export default function LearnerMasteryView({ courseOps }) {
       )}
 
       {!loading && instructionTopicSummaries.length > 0 && (
-        <MasteryChart summaries={instructionTopicSummaries} />
+        <div className="border border-gray-200 rounded-md p-3 bg-white">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              {chartMode === 'lastInteraction' ? 'Last Interaction Timeline' : 'Daily Activity'}
+            </span>
+            <div className="flex text-xs border border-gray-200 rounded-md overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setChartMode('lastInteraction')}
+                className={`px-3 py-1 transition-colors ${chartMode === 'lastInteraction' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                Last Interaction
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMode('dailyActivity')}
+                className={`px-3 py-1 transition-colors border-l border-gray-200 ${chartMode === 'dailyActivity' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                Daily Activity
+              </button>
+            </div>
+          </div>
+          {chartMode === 'lastInteraction' && <LastInteractionChart summaries={instructionTopicSummaries} />}
+          {chartMode === 'dailyActivity' && (
+            activityLoading
+              ? <div className="text-sm text-gray-500 py-4 text-center">Loading activity...</div>
+              : <DailyActivityChart records={activityRecords} />
+          )}
+        </div>
       )}
 
       {!loading && instructionTopicSummaries.length > 0 && (
