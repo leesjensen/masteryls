@@ -57,9 +57,15 @@ test('gradebook view loads learner overview for accessible course', async ({ pag
   await expect(page.getByText('bud@cow.com')).toBeVisible();
   await expect(page.getByText('85%')).toBeVisible();
 
-  await page.getByLabel('Search learner').fill('bud');
+  // Type in filter input — suggestion dropdown should appear
+  await page.getByLabel('Filter learner').fill('bud');
+  await expect(page.getByRole('button', { name: 'Bud' })).toBeVisible();
+
+  // Confirm selection — chip is added and table still shows Bud
+  await page.getByRole('button', { name: 'Bud' }).click();
   await expect(page.getByRole('cell', { name: 'Bud', exact: true })).toBeVisible();
 
+  // Navigate to learner gradebook
   await page.getByRole('cell', { name: 'Bud', exact: true }).click();
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
 });

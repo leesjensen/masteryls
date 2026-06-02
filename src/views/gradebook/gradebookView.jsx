@@ -17,12 +17,15 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
-  const [search, setSearch] = React.useState('');
   const [page, setPage] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [overview, setOverview] = React.useState({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
+  const [filterText, setFilterText] = React.useState('');
+  const [confirmedFilters, setConfirmedFilters] = React.useState([]);
+  const [showSuggestions, setShowSuggestions] = React.useState(false);
+  const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
 
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
@@ -56,6 +59,54 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     return user.isRoot() || user.isEditor(selectedCourseId) || enrolledCourseIds.has(selectedCourseId);
   }, [enrolledCourseIds, selectedCourseId, user]);
   const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot() || user.isEditor(selectedCourseId))), [user, selectedCourseId]);
+
+  const confirmedIds = React.useMemo(() => new Set(confirmedFilters.map((f) => f.learnerId)), [confirmedFilters]);
+
+  const suggestions = React.useMemo(() => {
+    if (!filterText) return [];
+    const lower = filterText.toLowerCase();
+    return overview.rows.filter(
+      (row) =>
+        !confirmedIds.has(row.learnerId) &&
+        ((row.learnerName || '').toLowerCase().includes(lower) || (row.learnerEmail || '').toLowerCase().includes(lower)),
+    );
+  }, [filterText, overview.rows, confirmedIds]);
+
+  const displayedRows = React.useMemo(() => {
+    const rows = confirmedFilters.length === 0 ? overview.rows : overview.rows.filter((row) => confirmedIds.has(row.learnerId));
+
+    if (!sort.key) return rows;
+
+    const dir = sort.direction === 'desc' ? -1 : 1;
+    return [...rows].sort((a, b) => {
+      switch (sort.key) {
+        case 'learnerName':
+          return String(a.learnerName || '').localeCompare(String(b.learnerName || '')) * dir;
+        case 'learnerEmail':
+          return String(a.learnerEmail || '').localeCompare(String(b.learnerEmail || '')) * dir;
+        case 'masteryPercent':
+          return (Number(a.masteryPercent || 0) - Number(b.masteryPercent || 0)) * dir;
+        case 'completedTopics':
+          return (Number(a.completedTopics || 0) - Number(b.completedTopics || 0)) * dir;
+        case 'examCompletedCount':
+          return (Number(a.examCompletedCount || 0) - Number(b.examCompletedCount || 0)) * dir;
+        case 'projectSubmittedCount':
+          return (Number(a.projectSubmittedCount || 0) - Number(b.projectSubmittedCount || 0)) * dir;
+        case 'totalTimeSpent': {
+          const at = Number(a.totalTimeSpent || a.progress?.totalTimeSpent || 0);
+          const bt = Number(b.totalTimeSpent || b.progress?.totalTimeSpent || 0);
+          return (at - bt) * dir;
+        }
+        case 'lastActivityAt': {
+          const ad = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+          const bd = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+          return (ad - bd) * dir;
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [confirmedFilters.length, confirmedIds, overview.rows, sort]);
 
   React.useEffect(() => {
     updateAppBar({ title: 'Gradebook', tools: null });
@@ -116,7 +167,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getGradebookOverview({ courseId: selectedCourseId, page, limit: 50, search });
+        const result = await courseOpsRef.current.getGradebookOverview({ courseId: selectedCourseId, page, limit: 50 });
         if (!cancelled) {
           setOverview({
             rows: Array.isArray(result?.rows) ? result.rows : [],
@@ -143,11 +194,15 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     return () => {
       cancelled = true;
     };
-  }, [hasCourseAccess, selectedCourseId, search, page]);
+  }, [hasCourseAccess, selectedCourseId, page]);
 
-  function onSearchChange(value) {
-    setSearch(value);
-    setPage(1);
+  function toggleSort(key) {
+    setSort((prev) => prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' });
+  }
+
+  function sortLabel(key, label) {
+    if (sort.key !== key) return `${label} ↕`;
+    return `${label} ${sort.direction === 'asc' ? '↑' : '↓'}`;
   }
 
   function onCourseChange(value) {
@@ -157,6 +212,20 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       navigate('/gradebook');
     }
     setPage(1);
+    setConfirmedFilters([]);
+    setFilterText('');
+    setSort({ key: null, direction: 'asc' });
+  }
+
+  function onConfirmFilter(row) {
+    if (confirmedIds.has(row.learnerId)) return;
+    setConfirmedFilters((prev) => [...prev, { learnerId: row.learnerId, learnerName: row.learnerName, learnerEmail: row.learnerEmail }]);
+    setFilterText('');
+    setShowSuggestions(false);
+  }
+
+  function onRemoveFilter(learnerId) {
+    setConfirmedFilters((prev) => prev.filter((f) => f.learnerId !== learnerId));
   }
 
   function onSelectLearner(row) {
@@ -186,6 +255,8 @@ export default function GradebookView({ courseOps, startObserveSession = null })
     );
   }
 
+  const colSpan = canObserveLearners ? 9 : 8;
+
   return (
     <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
       <div>
@@ -208,17 +279,57 @@ export default function GradebookView({ courseOps, startObserveSession = null })
         </div>
 
         {canViewLearnerFilters && (
-          <div>
-            <label htmlFor="gradebook-search" className="block text-sm font-medium text-gray-700 mb-1">
-              Search learner
+          <div className="relative">
+            <label htmlFor="gradebook-filter" className="block text-sm font-medium text-gray-700 mb-1">
+              Filter learner
             </label>
-            <input id="gradebook-search" value={search} onChange={(e) => onSearchChange(e.target.value)} placeholder="Name or email" className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" />
+            <input
+              id="gradebook-filter"
+              value={filterText}
+              onChange={(e) => {
+                setFilterText(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              placeholder="Name or email"
+              autoComplete="off"
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+              aria-label="Filter learner"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {suggestions.map((row) => (
+                  <button
+                    key={row.learnerId}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 flex flex-col"
+                    onMouseDown={() => onConfirmFilter(row)}
+                  >
+                    <span className="font-medium">{row.learnerName || 'Unknown'}</span>
+                    <span className="text-gray-500 text-xs">{row.learnerEmail}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {confirmedFilters.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {confirmedFilters.map((f) => (
+                  <span key={f.learnerId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs">
+                    {f.learnerName || f.learnerEmail}
+                    <button type="button" onClick={() => onRemoveFilter(f.learnerId)} className="hover:text-amber-900 font-bold leading-none" aria-label={`Remove ${f.learnerName || f.learnerEmail} filter`}>
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {canViewLearnerFilters && (
           <div className="flex items-end text-sm text-gray-600">
-            <span>Total learners: {overview.totalCount}</span>
+            <span>Total learners: {confirmedFilters.length > 0 ? displayedRows.length : overview.totalCount}</span>
           </div>
         )}
       </div>
@@ -229,34 +340,42 @@ export default function GradebookView({ courseOps, startObserveSession = null })
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr>
-              <th className="text-left px-3 py-2 font-semibold">Learner</th>
-              <th className="text-left px-3 py-2 font-semibold">Email</th>
-              <th className="text-left px-3 py-2 font-semibold">Mastery</th>
-              <th className="text-left px-3 py-2 font-semibold">Completed Topics</th>
-              <th className="text-left px-3 py-2 font-semibold">Exams Completed</th>
-              <th className="text-left px-3 py-2 font-semibold">Project Submits</th>
-              <th className="text-left px-3 py-2 font-semibold">Time Spent</th>
-              <th className="text-left px-3 py-2 font-semibold">Last Activity</th>
+              {[
+                ['learnerName', 'Learner'],
+                ['learnerEmail', 'Email'],
+                ['masteryPercent', 'Mastery'],
+                ['completedTopics', 'Completed Topics'],
+                ['examCompletedCount', 'Exams Completed'],
+                ['projectSubmittedCount', 'Project Submits'],
+                ['totalTimeSpent', 'Time Spent'],
+                ['lastActivityAt', 'Last Activity'],
+              ].map(([key, label]) => (
+                <th key={key} className="text-left px-3 py-2 font-semibold">
+                  <button type="button" className="hover:text-gray-900 whitespace-nowrap" onClick={() => toggleSort(key)}>
+                    {sortLabel(key, label)}
+                  </button>
+                </th>
+              ))}
               {canObserveLearners && <th className="text-left px-3 py-2 font-semibold">Observe</th>}
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={canObserveLearners ? 9 : 8} className="px-3 py-4 text-gray-500">
+                <td colSpan={colSpan} className="px-3 py-4 text-gray-500">
                   Loading Gradebook...
                 </td>
               </tr>
             )}
-            {!loading && overview.rows.length === 0 && (
+            {!loading && displayedRows.length === 0 && (
               <tr>
-                <td colSpan={canObserveLearners ? 9 : 8} className="px-3 py-4 text-gray-500">
+                <td colSpan={colSpan} className="px-3 py-4 text-gray-500">
                   No learners found for this filter.
                 </td>
               </tr>
             )}
             {!loading &&
-              overview.rows.map((row) => (
+              displayedRows.map((row) => (
                 <tr key={row.enrollmentId} className="border-t border-gray-100 cursor-pointer hover:bg-gray-50" onClick={() => onSelectLearner(row)}>
                   <td className="px-3 py-2">{row.learnerName || 'Unknown learner'}</td>
                   <td className="px-3 py-2">{row.learnerEmail || '-'}</td>
@@ -283,15 +402,17 @@ export default function GradebookView({ courseOps, startObserveSession = null })
         </table>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1 || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
-          Previous
-        </button>
-        <span className="text-sm text-gray-600">Page {overview.page || page}</span>
-        <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={!overview.hasMore || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
-          Next
-        </button>
-      </div>
+      {confirmedFilters.length === 0 && (
+        <div className="flex items-center justify-end gap-2">
+          <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1 || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
+            Previous
+          </button>
+          <span className="text-sm text-gray-600">Page {overview.page || page}</span>
+          <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={!overview.hasMore || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
