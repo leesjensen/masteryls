@@ -28,6 +28,22 @@ Use the user menu (`New course`) to create a course. You can:
 
 After creation, the course is added to catalog and you are set as an editor for that course.
 
+Once you have MasteryLS fully deployed you can now log into your installation of MasteryLS using the **root email** you provided to the MasterLS CLI for installation. This user has full root access to your installation.
+
+After logging in, you will see the root user's dashboard. Click on the user menu and select **New Course**.
+
+![Create Course](createCourseNav.png)
+
+Enter the information about the course. Don't generate the course from your description on your first course. You can experiment with that later.
+
+You need to provide your GitHub account name, repo, and personal access token (PAT) for the location where you want to create the course repository. Make sure that the PAT you provide has **Administration** and **Contents** read/write rights.
+
+![Provide course properties](courseParams.png)
+
+Congratulations! You have successfully installed MasteryLS and created your first course.
+
+![View your course](firstCourse.png)
+
 ### AI course generation
 
 When you choose AI generation during course creation, MasteryLS asks the model to produce a starter course structure (modules + topics + topic descriptions). This is designed to accelerate initial planning, not replace instructional review.
@@ -197,6 +213,11 @@ All interactions use a fenced `masteryls` block:
 {"id":"<uuid>", "title":"Interaction title", "type":"multiple-choice"}
 Body/instructions...
 ```
+
+Additional examples:
+
+- Full interaction examples: [example-topic.md](example-topic.md)
+- AI web page authoring examples: [example-topic.md#ai-web-page-authoring-notes](example-topic.md#ai-web-page-authoring-notes)
 
 ### Core JSON parameters (common)
 
