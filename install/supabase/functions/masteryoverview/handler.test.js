@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGradebookOverviewHandler } from './handler.js';
+import { createMasteryOverviewHandler } from './handler.js';
 
 function buildQuery(table, dataMap) {
   const filters = [];
@@ -112,7 +112,7 @@ function makeRequest(body, auth = 'Bearer token') {
 }
 
 test('gradebookoverview allows root and returns aggregated rows', async () => {
-  const handler = createGradebookOverviewHandler({
+  const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'root-user', email: 'root@test.com' },
@@ -152,7 +152,7 @@ test('gradebookoverview allows root and returns aggregated rows', async () => {
 });
 
 test('gradebookoverview allows editor for matching course', async () => {
-  const handler = createGradebookOverviewHandler({
+  const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'editor-user', email: 'editor@test.com' },
@@ -173,7 +173,7 @@ test('gradebookoverview allows editor for matching course', async () => {
 });
 
 test('gradebookoverview denies editor for other course', async () => {
-  const handler = createGradebookOverviewHandler({
+  const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'editor-user', email: 'editor@test.com' },
@@ -192,7 +192,7 @@ test('gradebookoverview denies editor for other course', async () => {
 });
 
 test('gradebookoverview allows enrolled learner and scopes to own row', async () => {
-  const handler = createGradebookOverviewHandler({
+  const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'learner-user', email: 'learner@test.com' },
@@ -222,7 +222,7 @@ test('gradebookoverview allows enrolled learner and scopes to own row', async ()
 });
 
 test('gradebookoverview denies learner not enrolled in requested course', async () => {
-  const handler = createGradebookOverviewHandler({
+  const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'learner-user', email: 'learner@test.com' },
@@ -241,7 +241,7 @@ test('gradebookoverview denies learner not enrolled in requested course', async 
 });
 
 test('gradebookoverview filters to single learner when learnerId is provided', async () => {
-  const handler = createGradebookOverviewHandler({
+  const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'root-user', email: 'root@test.com' },
@@ -270,7 +270,7 @@ test('gradebookoverview filters to single learner when learnerId is provided', a
 });
 
 test('gradebookoverview applies learner search and pagination metadata', async () => {
-  const handler = createGradebookOverviewHandler({
+  const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'root-user', email: 'root@test.com' },

@@ -13,7 +13,7 @@ function formatDuration(seconds) {
   return `${sec}s`;
 }
 
-export default function GradebookView({ courseOps, startObserveSession = null }) {
+export default function MasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
@@ -109,7 +109,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   }, [confirmedFilters.length, confirmedIds, overview.rows, sort]);
 
   React.useEffect(() => {
-    updateAppBar({ title: 'Gradebook', tools: null });
+    updateAppBar({ title: 'MasteryView', tools: null });
   }, []);
 
   React.useEffect(() => {
@@ -167,7 +167,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getGradebookOverview({ courseId: selectedCourseId, page, limit: 50 });
+        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, page, limit: 50 });
         if (!cancelled) {
           setOverview({
             rows: Array.isArray(result?.rows) ? result.rows : [],
@@ -207,9 +207,9 @@ export default function GradebookView({ courseOps, startObserveSession = null })
 
   function onCourseChange(value) {
     if (value) {
-      navigate(`/gradebook/course/${value}`);
+      navigate(`/masteryview/course/${value}`);
     } else {
-      navigate('/gradebook');
+      navigate('/masteryview');
     }
     setPage(1);
     setConfirmedFilters([]);
@@ -230,7 +230,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
 
   function onSelectLearner(row) {
     if (!selectedCourseId || !row?.learnerId) return;
-    navigate(`/gradebook/learner/${row.learnerId}/course/${selectedCourseId}`);
+    navigate(`/masteryview/learner/${row.learnerId}/course/${selectedCourseId}`);
   }
 
   function onObserveLearner(row, event) {
@@ -250,7 +250,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   if (!user) {
     return (
       <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
-        <p className="text-gray-700">Please log in to view the Gradebook.</p>
+        <p className="text-gray-700">Please log in to view MasteryView.</p>
       </div>
     );
   }
@@ -260,15 +260,15 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   return (
     <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
       <div>
-        <h2 className="text-xl font-semibold text-gray-800">Course Gradebook</h2>
+        <h2 className="text-xl font-semibold text-gray-800">Course MasteryView</h2>
       </div>
 
       <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-3`}>
         <div>
-          <label htmlFor="gradebook-course" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="masteryview-course" className="block text-sm font-medium text-gray-700 mb-1">
             Course
           </label>
-          <select id="gradebook-course" value={selectedCourseId} onChange={(e) => onCourseChange(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+          <select id="masteryview-course" value={selectedCourseId} onChange={(e) => onCourseChange(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
             {availableCourses.length === 0 && <option value="">No accessible courses</option>}
             {availableCourses.map((course) => (
               <option key={course.id} value={course.id}>
@@ -280,11 +280,11 @@ export default function GradebookView({ courseOps, startObserveSession = null })
 
         {canViewLearnerFilters && (
           <div className="relative">
-            <label htmlFor="gradebook-filter" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="masteryview-filter" className="block text-sm font-medium text-gray-700 mb-1">
               Filter learner
             </label>
             <input
-              id="gradebook-filter"
+              id="masteryview-filter"
               value={filterText}
               onChange={(e) => {
                 setFilterText(e.target.value);
@@ -363,7 +363,7 @@ export default function GradebookView({ courseOps, startObserveSession = null })
             {loading && (
               <tr>
                 <td colSpan={colSpan} className="px-3 py-4 text-gray-500">
-                  Loading Gradebook...
+                  Loading MasteryView...
                 </td>
               </tr>
             )}

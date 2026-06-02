@@ -14,7 +14,7 @@ function formatDuration(seconds) {
   return `${sec}s`;
 }
 
-export default function LearnerGradebookView({ courseOps }) {
+export default function LearnerMasteryView({ courseOps }) {
   const navigate = useNavigate();
   const { learnerId: routeLearnerId, courseId: routeCourseId } = useParams();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
@@ -38,7 +38,7 @@ export default function LearnerGradebookView({ courseOps }) {
   }, [enrolledCourseIds, user]);
 
   React.useEffect(() => {
-    updateAppBar({ title: 'Learner Gradebook', tools: null });
+    updateAppBar({ title: 'Learner MasteryView', tools: null });
   }, []);
 
   React.useEffect(() => {
@@ -122,7 +122,7 @@ export default function LearnerGradebookView({ courseOps }) {
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getGradebookOverview({
+        const result = await courseOpsRef.current.getMasteryOverview({
           courseId: selectedCourseId,
           learnerId: routeLearnerId,
           page: 1,
@@ -153,7 +153,7 @@ export default function LearnerGradebookView({ courseOps }) {
 
   function onCourseChange(value) {
     if (value && routeLearnerId) {
-      navigate(`/gradebook/learner/${routeLearnerId}/course/${value}`);
+      navigate(`/masteryview/learner/${routeLearnerId}/course/${value}`);
     }
   }
 
@@ -253,7 +253,7 @@ export default function LearnerGradebookView({ courseOps }) {
   if (!user) {
     return (
       <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
-        <p className="text-gray-700">Please log in to view the Gradebook.</p>
+        <p className="text-gray-700">Please log in to view MasteryView.</p>
       </div>
     );
   }
@@ -263,20 +263,20 @@ export default function LearnerGradebookView({ courseOps }) {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => navigate(`/gradebook/course/${selectedCourseId}`)}
+          onClick={() => navigate(`/masteryview/course/${selectedCourseId}`)}
           className="text-sm text-blue-700 hover:text-blue-900 hover:underline"
         >
-          ← Course Gradebook
+          ← Course MasteryView
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="learner-gradebook-course" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="learner-masteryview-course" className="block text-sm font-medium text-gray-700 mb-1">
             Course
           </label>
           <select
-            id="learner-gradebook-course"
+            id="learner-masteryview-course"
             value={selectedCourseId}
             onChange={(e) => onCourseChange(e.target.value)}
             className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"

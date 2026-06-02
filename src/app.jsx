@@ -12,8 +12,8 @@ import ClassroomView from './views/classroom/classroomView.jsx';
 import MetricsView from './views/metrics/metricsView.jsx';
 import CourseCreationView from './views/courseCreation/courseCreationView.jsx';
 import CourseLinkView from './views/courseExport/courseLinkView.jsx';
-import GradebookView from './views/gradebook/gradebookView.jsx';
-import LearnerGradebookView from './views/gradebook/learnerGradebookView.jsx';
+import MasteryView from './views/masteryView/masteryView.jsx';
+import LearnerMasteryView from './views/masteryView/learnerMasteryView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
 import AboutView from './views/about/aboutView.jsx';
 import DemoCoursesView from './views/demoCourses/demoCoursesView.jsx';
@@ -37,10 +37,10 @@ export function createAppRouter(user) {
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'courseCreation', element: <CourseCreationPage /> },
         { path: 'courseLink', element: <CourseLinkPage /> },
-        { path: 'gradebook', element: <GradebookPage /> },
-        { path: 'gradebook/course/:courseId', element: <GradebookPage /> },
-        { path: 'gradebook/learner/:learnerId', element: <LearnerGradebookPage /> },
-        { path: 'gradebook/learner/:learnerId/course/:courseId', element: <LearnerGradebookPage /> },
+        { path: 'masteryview', element: <MasteryViewPage /> },
+        { path: 'masteryview/course/:courseId', element: <MasteryViewPage /> },
+        { path: 'masteryview/learner/:learnerId', element: <LearnerMasteryViewPage /> },
+        { path: 'masteryview/learner/:learnerId/course/:courseId', element: <LearnerMasteryViewPage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: '*', element: <ErrorPage user={user} message="It seems we have gotten lost." /> },
       ],
@@ -150,14 +150,14 @@ function CourseLinkPage() {
   return <CourseLinkView courseOps={courseOps} />;
 }
 
-function GradebookPage() {
+function MasteryViewPage() {
   const { courseOps, startObserveSession } = useOutletContext();
-  return <GradebookView courseOps={courseOps} startObserveSession={startObserveSession} />;
+  return <MasteryView courseOps={courseOps} startObserveSession={startObserveSession} />;
 }
 
-function LearnerGradebookPage() {
+function LearnerMasteryViewPage() {
   const { courseOps } = useOutletContext();
-  return <LearnerGradebookView courseOps={courseOps} />;
+  return <LearnerMasteryView courseOps={courseOps} />;
 }
 
 function ProgressPage() {

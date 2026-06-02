@@ -35,7 +35,7 @@ function extractUserIdFromToken(authHeader) {
   }
 }
 
-export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHeader, getEnv }) {
+export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeader, getEnv }) {
   return async function handleGradebookOverview(req) {
     if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });

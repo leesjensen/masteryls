@@ -1,8 +1,8 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { createGradebookOverviewHandler } from './handler.js';
+import { createMasteryOverviewHandler } from './handler.js';
 
-const handler = createGradebookOverviewHandler({
+const handler = createMasteryOverviewHandler({
   createSupabaseClientFromAuthHeader: (authHeader: string) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';

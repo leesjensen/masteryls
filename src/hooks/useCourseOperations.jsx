@@ -1377,8 +1377,8 @@ Requirements:
     return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
   }
 
-  async function getGradebookOverview({ courseId, page = 1, limit = 50, search = '', learnerId = '' }) {
-    return service.makeGradebookOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}) });
+  async function getMasteryOverview({ courseId, page = 1, limit = 50, search = '', learnerId = '' }) {
+    return service.makeMasteryOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}) });
   }
 
   async function getTopicProgress(types = ['quizSubmit']) {
@@ -1762,7 +1762,7 @@ Requirements:
     syncProjectInteractionGrade,
     isLearnerInCanvasCourse,
     getProgress,
-    getGradebookOverview,
+    getMasteryOverview,
     getTopicProgress,
     getSurveySummary,
     getLikertSummary,

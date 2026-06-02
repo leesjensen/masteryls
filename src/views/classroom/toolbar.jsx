@@ -24,12 +24,12 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     navigate(`/course/${learningSession.course.id}/schedule`);
   }
 
-  function navigateToGradebook() {
+  function navigateToMasteryView() {
     const courseId = learningSession.course.id;
     if (user && !user.isRoot() && !user.isEditor(courseId)) {
-      navigate(`/gradebook/learner/${user.id}/course/${courseId}`);
+      navigate(`/masteryview/learner/${user.id}/course/${courseId}`);
     } else {
-      navigate(`/gradebook/course/${courseId}`);
+      navigate(`/masteryview/course/${courseId}`);
     }
   }
 
@@ -54,7 +54,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
         {learningSession.course.links?.chat && <ToolBarButton title="Course chat server" onClick={() => window.open(learningSession.course.links.chat, '_blank')} icon={MessageCircleQuestionMark} />}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" onClick={navigateToSchedule} icon={CalendarDays} />}
-        <ToolBarButton title="Gradebook" onClick={navigateToGradebook} icon={ChartArea} />
+        <ToolBarButton title="MasteryView" onClick={navigateToMasteryView} icon={ChartArea} />
         {learningSession.course.externalRefs?.canvasCourseId && canvasTopicUrl && <ToolBarButton title="Canvas course site" onClick={() => window.open(canvasTopicUrl, '_blank')} icon={Canvas} />}
         <ToolBarButton title="GitHub repository" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')} icon={GitHub} />
         <ToolBarButton title="Previous topic" onClick={() => navigateToTopic('prev')} icon={SquareChevronLeft} />
