@@ -138,10 +138,13 @@ function UserMenu({ user, courseOps }) {
             <AppBarMenuItem icon={ChartArea} onClick={() => handleMenuItemClick(() => navigate('/progress'))} title="Activity" />
             <AppBarMenuItem icon={Users} onClick={() => handleMenuItemClick(() => navigate(user && !user.isRoot() && !user.isEditor() ? `/masteryview/learner/${user.id}` : '/masteryview'))} title="MasteryView" />
 
-            <div className="border-t border-gray-200 my-1"></div>
-
-            <AppBarMenuItem icon={PackagePlus} onClick={() => handleMenuItemClick(() => navigate('/courseCreation'))} title="New course" />
-            <AppBarMenuItem icon={Link2} onClick={() => handleMenuItemClick(() => navigate('/courseLink'))} title="Link course" />
+            {(user.isRoot() || user.isEditor()) && (
+              <>
+                <div className="border-t border-gray-200 my-1"></div>
+                <AppBarMenuItem icon={PackagePlus} onClick={() => handleMenuItemClick(() => navigate('/courseCreation'))} title="New course" />
+                <AppBarMenuItem icon={Link2} onClick={() => handleMenuItemClick(() => navigate('/courseLink'))} title="Link course" />
+              </>
+            )}
 
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem
