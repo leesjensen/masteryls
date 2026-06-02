@@ -14,6 +14,83 @@ function formatDuration(seconds) {
   return `${sec}s`;
 }
 
+function MasteryChart({ summaries }) {
+  const dateGroups = React.useMemo(() => {
+    const groups = {};
+    for (const s of summaries) {
+      if (!s.latestInteractionAt) continue;
+      const d = new Date(s.latestInteractionAt);
+      const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (!groups[day]) groups[day] = { day, count: 0, ts: new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() };
+      groups[day].count++;
+    }
+    return Object.values(groups).sort((a, b) => a.ts - b.ts);
+  }, [summaries]);
+
+  if (dateGroups.length === 0) return null;
+
+  const W = 800;
+  const H = 220;
+  const PAD = { top: 16, right: 24, bottom: 44, left: 44 };
+  const cw = W - PAD.left - PAD.right;
+  const ch = H - PAD.top - PAD.bottom;
+  const n = dateGroups.length;
+
+  const maxCount = Math.max(...dateGroups.map((g) => g.count));
+  const slotW = cw / n;
+  const barW = Math.max(4, Math.min(slotW * 0.6, 60));
+
+  const xOf = (i) => PAD.left + i * slotW + slotW / 2;
+  const yOf = (count) => PAD.top + ch - (count / maxCount) * ch;
+
+  const yTicks =
+    maxCount <= 5
+      ? Array.from({ length: maxCount }, (_, i) => i + 1)
+      : [1, Math.round(maxCount / 2), maxCount];
+
+  const labelStep = Math.max(1, Math.ceil(n / 12));
+
+  return (
+    <div className="border border-gray-200 rounded-md p-3 bg-white">
+      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Activity Timeline</span>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '180px' }} aria-label="Activity timeline chart">
+        {yTicks.map((tick) => (
+          <line key={tick} x1={PAD.left} y1={yOf(tick)} x2={PAD.left + cw} y2={yOf(tick)} stroke="#f3f4f6" strokeWidth={1} />
+        ))}
+
+        <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
+        <line x1={PAD.left} y1={PAD.top + ch} x2={PAD.left + cw} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
+
+        {yTicks.map((tick) => (
+          <text key={tick} x={PAD.left - 6} y={yOf(tick) + 4} textAnchor="end" fontSize={10} fill="#9ca3af">{tick}</text>
+        ))}
+
+        <text x={12} y={PAD.top + ch / 2} textAnchor="middle" fontSize={10} fill="#9ca3af" transform={`rotate(-90 12 ${PAD.top + ch / 2})`}>
+          Topics
+        </text>
+
+        {dateGroups.map((group, i) => {
+          const x = xOf(i);
+          const bh = Math.max(1, (group.count / maxCount) * ch);
+          const y = PAD.top + ch - bh;
+          const label = new Date(group.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          const showLabel = i % labelStep === 0 || i === n - 1;
+          return (
+            <g key={group.day}>
+              <rect x={x - barW / 2} y={y} width={barW} height={bh} fill="#3b82f6" rx={2} opacity={0.85}>
+                <title>{`${label}: ${group.count} topic${group.count !== 1 ? 's' : ''}`}</title>
+              </rect>
+              {showLabel && (
+                <text x={x} y={PAD.top + ch + 14} textAnchor="middle" fontSize={10} fill="#9ca3af">{label}</text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 export default function LearnerMasteryView({ courseOps }) {
   const navigate = useNavigate();
   const { learnerId: routeLearnerId, courseId: routeCourseId } = useParams();
@@ -326,6 +403,10 @@ export default function LearnerMasteryView({ courseOps }) {
 
       {!loading && !selectedLearner && !error && selectedCourseId && (
         <div className="text-sm text-gray-500">No enrollment data found for this learner in this course.</div>
+      )}
+
+      {!loading && instructionTopicSummaries.length > 0 && (
+        <MasteryChart summaries={instructionTopicSummaries} />
       )}
 
       {!loading && instructionTopicSummaries.length > 0 && (
