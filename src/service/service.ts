@@ -850,7 +850,7 @@ class Service {
   /**
    * Invokes the Gradebook overview edge function for course-level learner summaries.
    */
-  async makeGradebookOverviewRequest(params: { courseId: string; page?: number; limit?: number; search?: string }) {
+  async makeGradebookOverviewRequest(params: { courseId: string; page?: number; limit?: number; search?: string; learnerId?: string }) {
     const { data, error } = await this.supabase.functions.invoke('gradebookoverview', {
       body: params,
     });

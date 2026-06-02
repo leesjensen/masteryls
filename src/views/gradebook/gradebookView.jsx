@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
-import { TopicIcon } from '../../utils/Icons';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -23,10 +22,6 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [overview, setOverview] = React.useState({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
-  const [selectedLearner, setSelectedLearner] = React.useState(null);
-  const [selectedCourse, setSelectedCourse] = React.useState(null);
-  const [expandedEnrollmentId, setExpandedEnrollmentId] = React.useState(null);
-  const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'course' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
 
   const courseOpsRef = React.useRef(courseOps);
@@ -112,34 +107,6 @@ export default function GradebookView({ courseOps, startObserveSession = null })
   React.useEffect(() => {
     let cancelled = false;
 
-    async function loadSelectedCourse() {
-      if (!selectedCourseId) {
-        setSelectedCourse(null);
-        return;
-      }
-
-      try {
-        const course = await courseOpsRef.current.getCourse(selectedCourseId);
-        if (!cancelled) {
-          setSelectedCourse(course || null);
-        }
-      } catch {
-        if (!cancelled) {
-          setSelectedCourse(null);
-        }
-      }
-    }
-
-    loadSelectedCourse();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedCourseId]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-
     async function loadOverview() {
       if (!selectedCourseId || !hasCourseAccess) {
         setOverview({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
@@ -190,23 +157,11 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       navigate('/gradebook');
     }
     setPage(1);
-    setExpandedEnrollmentId(null);
-    setSelectedLearner(null);
   }
 
-  function toggleLearnerDetails(row) {
-    if (!selectedCourseId || !row?.enrollmentId) {
-      return;
-    }
-
-    if (expandedEnrollmentId === row.enrollmentId) {
-      setExpandedEnrollmentId(null);
-      setSelectedLearner(null);
-      return;
-    }
-
-    setExpandedEnrollmentId(row.enrollmentId);
-    setSelectedLearner(row);
+  function onSelectLearner(row) {
+    if (!selectedCourseId || !row?.learnerId) return;
+    navigate(`/gradebook/learner/${row.learnerId}/course/${selectedCourseId}`);
   }
 
   function onObserveLearner(row, event) {
@@ -221,105 +176,6 @@ export default function GradebookView({ courseOps, startObserveSession = null })
       learnerEmail: row.learnerEmail,
     });
     navigate(`/course/${selectedCourseId}`);
-  }
-
-  const instructionTopicSummaries = React.useMemo(() => {
-    if (!selectedCourse || !selectedLearner?.progress) {
-      return [];
-    }
-
-    const topics = Array.isArray(selectedCourse.allTopics) ? selectedCourse.allTopics : [];
-    return topics
-      .filter((topic) => topic?.id && topic?.type !== 'embedded' && topic?.type !== 'schedule')
-      .map((topic) => {
-        const topicProgress = selectedLearner.progress[topic.id] || {};
-        const interactionIds = Array.isArray(topic.interactions) ? topic.interactions : [];
-        const completedInteractions = (topicProgress.interactions || []).filter((id) => interactionIds.includes(id)).length;
-
-        const scores = topicProgress.scores || {};
-        const completedSet = new Set(topicProgress.interactions || []);
-        const scoreSum = interactionIds.reduce((sum, id) => {
-          const score = scores[id];
-          if (Number.isFinite(score)) return sum + score;   // scored interaction
-          if (completedSet.has(id)) return sum + 100;       // completed but unscored (e.g. survey) → full credit
-          return sum;                                        // not yet completed → 0
-        }, 0);
-        const avgPercent = interactionIds.length > 0 ? Math.round((scoreSum / interactionIds.length) * 100) / 100 : null;
-
-        return {
-          topicId: topic.id,
-          topicType: topic.type,
-          topicTitle: topic.title || 'Untitled topic',
-          totalInteractions: interactionIds.length,
-          completedInteractions,
-          avgPercent,
-          latestInteractionAt: topicProgress.lastInteractionAt || null,
-          timeSpent: typeof topicProgress.timeSpent === 'number' ? topicProgress.timeSpent : 0,
-        };
-      });
-  }, [selectedCourse, selectedLearner]);
-
-  const sortedInstructionTopicSummaries = React.useMemo(() => {
-    if (detailSort.key === 'topicTitle' && detailSort.direction === 'course') {
-      return [...instructionTopicSummaries];
-    }
-
-    const direction = detailSort.direction === 'desc' ? -1 : 1;
-    const items = [...instructionTopicSummaries];
-
-    const compareDate = (left, right) => {
-      const leftValue = left ? new Date(left).getTime() : 0;
-      const rightValue = right ? new Date(right).getTime() : 0;
-      return (leftValue - rightValue) * direction;
-    };
-
-    items.sort((a, b) => {
-      switch (detailSort.key) {
-        case 'avgPercent': {
-          const left = Number.isFinite(Number(a.avgPercent)) ? Number(a.avgPercent) : -1;
-          const right = Number.isFinite(Number(b.avgPercent)) ? Number(b.avgPercent) : -1;
-          return (left - right) * direction;
-        }
-        case 'completedInteractions': {
-          if (a.completedInteractions !== b.completedInteractions) {
-            return (a.completedInteractions - b.completedInteractions) * direction;
-          }
-          return (a.totalInteractions - b.totalInteractions) * direction;
-        }
-        case 'latestInteractionAt':
-          return compareDate(a.latestInteractionAt, b.latestInteractionAt);
-        case 'timeSpent':
-          return ((a.timeSpent || 0) - (b.timeSpent || 0)) * direction;
-        case 'topicTitle':
-        default:
-          return String(a.topicTitle || '').localeCompare(String(b.topicTitle || '')) * direction;
-      }
-    });
-
-    return items;
-  }, [detailSort.direction, detailSort.key, instructionTopicSummaries]);
-
-  function toggleDetailSort(key) {
-    setDetailSort((previous) => {
-      if (previous.key !== key) {
-        return { key, direction: key === 'topicTitle' ? 'course' : 'asc' };
-      }
-      if (key === 'topicTitle') {
-        const next = { course: 'asc', asc: 'desc', desc: 'course' };
-        return { key, direction: next[previous.direction] || 'course' };
-      }
-      return { key, direction: previous.direction === 'asc' ? 'desc' : 'asc' };
-    });
-  }
-
-  function detailSortLabel(key, label) {
-    if (detailSort.key !== key) {
-      return label;
-    }
-    if (key === 'topicTitle' && detailSort.direction === 'course') {
-      return `${label} ↕`;
-    }
-    return `${label} ${detailSort.direction === 'asc' ? '↑' : '↓'}`;
   }
 
   if (!user) {
@@ -400,94 +256,29 @@ export default function GradebookView({ courseOps, startObserveSession = null })
               </tr>
             )}
             {!loading &&
-              overview.rows.map((row) => {
-                const isExpanded = expandedEnrollmentId === row.enrollmentId;
-                return (
-                  <React.Fragment key={row.enrollmentId}>
-                    <tr className={`border-t border-gray-100 cursor-pointer ${isExpanded ? 'bg-amber-50/40' : 'hover:bg-gray-50'}`} onClick={() => toggleLearnerDetails(row)}>
-                      <td className="px-3 py-2">{row.learnerName || 'Unknown learner'}</td>
-                      <td className="px-3 py-2">{row.learnerEmail || '-'}</td>
-                      <td className="px-3 py-2">{Number.isFinite(Number(row.masteryPercent)) ? `${Math.round(Number(row.masteryPercent))}%` : '0%'}</td>
-                      <td className="px-3 py-2">{Number(row.completedTopics || 0)}</td>
-                      <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
-                      <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
-                      <td className="px-3 py-2">{formatDuration(row.totalTimeSpent || row.progress?.totalTimeSpent)}</td>
-                      <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
-                      {canObserveLearners && (
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
-                            onClick={(event) => onObserveLearner(row, event)}
-                          >
-                            Observe
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                    {isExpanded && (
-                      <tr className="border-t border-gray-100 bg-amber-50/20">
-                        <td colSpan={canObserveLearners ? 9 : 8} className="px-4 py-3">
-                          {instructionTopicSummaries.length === 0 && <div className="text-sm text-gray-500">No instruction items found for this course.</div>}
-                          {instructionTopicSummaries.length > 0 && (
-                            <div className="overflow-auto border border-gray-200 rounded-md bg-white">
-                              <table className="min-w-full text-sm">
-                                <thead className="bg-gray-50 text-gray-700">
-                                  <tr>
-                                    <th className="text-left px-2 py-1 font-semibold">
-                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('topicTitle')} aria-label="Sort by instruction item">
-                                        {detailSortLabel('topicTitle', 'Instruction Item')}
-                                      </button>
-                                    </th>
-                                    <th className="text-left px-2 py-1 font-semibold">
-                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('avgPercent')} aria-label="Sort by mastery">
-                                        {detailSortLabel('avgPercent', 'Mastery')}
-                                      </button>
-                                    </th>
-                                    <th className="text-left px-2 py-1 font-semibold">
-                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('completedInteractions')} aria-label="Sort by interactions completed">
-                                        {detailSortLabel('completedInteractions', 'Interactions Completed')}
-                                      </button>
-                                    </th>
-                                    <th className="text-left px-2 py-1 font-semibold">
-                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('timeSpent')} aria-label="Sort by time spent">
-                                        {detailSortLabel('timeSpent', 'Time Spent')}
-                                      </button>
-                                    </th>
-                                    <th className="text-left px-2 py-1 font-semibold">
-                                      <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('latestInteractionAt')} aria-label="Sort by last interaction">
-                                        {detailSortLabel('latestInteractionAt', 'Last Interaction')}
-                                      </button>
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {sortedInstructionTopicSummaries.map((summary) => (
-                                    <tr key={summary.topicId} className="border-t border-gray-100 text-gray-700">
-                                      <td className="px-2 py-1">
-                                        <button type="button" onClick={() => navigate(`/course/${selectedCourseId}/topic/${summary.topicId}`)} className="text-left text-blue-700 hover:text-blue-900 hover:underline inline-flex items-center gap-1">
-                                          <TopicIcon type={summary.topicType} />
-                                          {summary.topicTitle}
-                                        </button>
-                                      </td>
-                                      <td className="px-2 py-1">{summary.avgPercent !== null ? `${summary.avgPercent}%` : '-'}</td>
-                                      <td className="px-2 py-1">
-                                        {summary.completedInteractions}/{summary.totalInteractions}
-                                      </td>
-                                      <td className="px-2 py-1">{formatDuration(summary.timeSpent)}</td>
-                                      <td className="px-2 py-1">{summary.latestInteractionAt ? new Date(summary.latestInteractionAt).toLocaleString() : '-'}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+              overview.rows.map((row) => (
+                <tr key={row.enrollmentId} className="border-t border-gray-100 cursor-pointer hover:bg-gray-50" onClick={() => onSelectLearner(row)}>
+                  <td className="px-3 py-2">{row.learnerName || 'Unknown learner'}</td>
+                  <td className="px-3 py-2">{row.learnerEmail || '-'}</td>
+                  <td className="px-3 py-2">{Number.isFinite(Number(row.masteryPercent)) ? `${Math.round(Number(row.masteryPercent))}%` : '0%'}</td>
+                  <td className="px-3 py-2">{Number(row.completedTopics || 0)}</td>
+                  <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
+                  <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
+                  <td className="px-3 py-2">{formatDuration(row.totalTimeSpent || row.progress?.totalTimeSpent)}</td>
+                  <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
+                  {canObserveLearners && (
+                    <td className="px-3 py-2">
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
+                        onClick={(event) => onObserveLearner(row, event)}
+                      >
+                        Observe
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

@@ -25,7 +25,12 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   }
 
   function navigateToGradebook() {
-    navigate(`/gradebook/course/${learningSession.course.id}`);
+    const courseId = learningSession.course.id;
+    if (user && !user.isRoot() && !user.isEditor(courseId)) {
+      navigate(`/gradebook/learner/${user.id}/course/${courseId}`);
+    } else {
+      navigate(`/gradebook/course/${courseId}`);
+    }
   }
 
   async function linkCanvasTopic() {

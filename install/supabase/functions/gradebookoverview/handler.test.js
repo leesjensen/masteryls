@@ -240,6 +240,35 @@ test('gradebookoverview denies learner not enrolled in requested course', async 
   assert.equal(response.status, 403);
 });
 
+test('gradebookoverview filters to single learner when learnerId is provided', async () => {
+  const handler = createGradebookOverviewHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'root-user', email: 'root@test.com' },
+        dataMap: {
+          role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
+          enrollment: [
+            { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 70 } },
+            { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 90 } },
+          ],
+          user: [
+            { id: 'u1', name: 'Alice', email: 'alice@test.com' },
+            { id: 'u2', name: 'Bob', email: 'bob@test.com' },
+          ],
+        },
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  const response = await handler(makeRequest({ courseId: 'course-1', learnerId: 'u1' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.rows.length, 1);
+  assert.equal(body.rows[0].learnerId, 'u1');
+  assert.equal(body.rows[0].learnerEmail, 'alice@test.com');
+  assert.equal(body.rows[0].masteryPercent, 70);
+});
+
 test('gradebookoverview applies learner search and pagination metadata', async () => {
   const handler = createGradebookOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>

@@ -61,6 +61,7 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
     // Parse body first so courseId is available for parallel pre-fetch queries
     const payload = await req.json();
     const courseId = String(payload?.courseId || '').trim();
+    const learnerId = String(payload?.learnerId || '').trim() || null;
     const page = Math.max(1, Number(payload?.page || 1));
     const limit = Math.max(1, Math.min(100, Number(payload?.limit || 50)));
     const search = toLower(payload?.search || '');
@@ -89,7 +90,9 @@ export function createGradebookOverviewHandler({ createSupabaseClientFromAuthHea
       candidateUserId
         ? supabase.from('role').select('right, object').eq('user', candidateUserId).in('right', ['root', 'editor'])
         : Promise.resolve({ data: null }),
-      supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId),
+      learnerId
+        ? supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId).eq('learnerId', learnerId)
+        : supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId),
     ]);
 
     if (authError || !authData?.user) {
