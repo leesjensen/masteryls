@@ -1,15 +1,15 @@
-<img src="public/masteryls-logo.png" alt="Mastery LS" width="150">
+<img src="public/masteryls-logo-horizontal.png" width="300" alt="Mastery LS">
 
-Taking online learning to the next level by boosting AI interaction, maintainable content creation, and focusing on learner mastery.
+Take online learning to the next level with boosting AI interaction, accelerated, maintainable content creation, and a mastery learning focus.
 
 ![Getting started](docs/demo.gif)
 
 ## Features
 
-- AI powered for content generation, learner feedback, quiz generation
-- Video and interactivity powered
+- AI powered for content generation, personalization, learner interaction and feedback
+- Rich media and textual interactivity
 - Project based mastery
-- Markdown for content creation sanity
+- Markdown based content for creation sanity and uniformity
 - Content management using GitHub for version control
 - Canvas gradebook integration
 
