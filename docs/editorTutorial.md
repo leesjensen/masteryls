@@ -15,7 +15,7 @@ If you are new to MasteryLS editing, use this checklist as a first-run path thro
 - [ ] Open course `Settings`, confirm metadata, and save changes.
 - [ ] If using Canvas, run `Link course` and verify external references.
 - [ ] Open `Metrics` and `Activity` once to verify progress/analytics visibility.
-- [ ] Open `Gradebook`, expand a learner row, and test `Observe` / `Exit observe`.
+- [ ] Open `MasteryView`, expand a learner row, and test `Observe` / `Exit observe`.
 
 ## 1) Course Creation and Getting to Edit Mode
 
