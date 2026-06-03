@@ -18,6 +18,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.catalog (
   id uuid primary key default gen_random_uuid(),
   "createdAt" timestamp with time zone default now(),
+  "createdBy" uuid references auth.users(id) on delete set null default auth.uid(),
   title text,
   description text,
   name text,
@@ -87,6 +88,9 @@ create index if not exists "topicFtsIdx" on public.topic using gin (ftsContent);
 
 -- Auth checks in gradebookoverview edge function
 create index if not exists "roleUserRightObjectIdx" on public.role ("user", "right", object);
+
+-- Course ownership bootstrap checks during editor course creation
+create index if not exists "catalogCreatedByIdx" on public.catalog ("createdBy");
 
 -- Enrollment lookups by course, and learner auth check
 create index if not exists "enrollmentCatalogIdx" on public.enrollment ("catalogId");
@@ -174,6 +178,26 @@ as $$
   );
 $$;
 
+-- Security helper: true when user can manage a specific course
+create or replace function public.auth_manages_course(uid uuid, catalog_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select (
+    public.auth_is_root(uid)
+    or exists (
+      select 1
+      from public.role
+      where "user" = uid
+        and "right" = 'editor'
+        and object = catalog_id
+    )
+  );
+$$;
+
 
 
 ----------------------- Trigger
@@ -195,6 +219,7 @@ execute procedure public."updateModifiedColumn"();
 -- Allow clients to execute role-check helper functions from policies
 grant execute on function public.auth_is_root(uuid) to authenticated;
 grant execute on function public.auth_is_editor(uuid) to authenticated;
+grant execute on function public.auth_manages_course(uuid, uuid) to authenticated;
 
 -- Define table grants by first revoking everything
 revoke all on table public.catalog from public, anon, authenticated;
@@ -241,11 +266,18 @@ alter table public.progress enable row level security;
 
 -- Clear all table policies so re-runs are deterministic
 drop policy if exists "World read all" on public.catalog;
+drop policy if exists "Editor creates catalog" on public.catalog;
+drop policy if exists "Course editor updates course" on public.catalog;
+drop policy if exists "Course editor deletes course" on public.catalog;
 drop policy if exists "Root manages all" on public.catalog;
 drop policy if exists "User manage self" on public."user";
 drop policy if exists "Editor reads all users" on public."user";
 drop policy if exists "Root manages all" on public."user";
 drop policy if exists "User read self" on public.role;
+drop policy if exists "Course editor reads course roles" on public.role;
+drop policy if exists "Course editor inserts course roles" on public.role;
+drop policy if exists "Course editor updates course roles" on public.role;
+drop policy if exists "Course editor deletes course roles" on public.role;
 drop policy if exists "Root manages all" on public.role;
 drop policy if exists "User manage self" on public.enrollment;
 drop policy if exists "Root manages all" on public.enrollment;
@@ -265,6 +297,28 @@ on public.catalog
 for select
 to public
 using (true);
+
+create policy "Editor creates catalog"
+on public.catalog
+for insert
+to authenticated
+with check (
+  public.auth_is_editor(auth.uid())
+  and "createdBy" = auth.uid()
+);
+
+create policy "Course editor updates course"
+on public.catalog
+for update
+to authenticated
+using (public.auth_manages_course(auth.uid(), id))
+with check (public.auth_manages_course(auth.uid(), id));
+
+create policy "Course editor deletes course"
+on public.catalog
+for delete
+to authenticated
+using (public.auth_manages_course(auth.uid(), id));
 
 create policy "Root manages all"
 on public.catalog
@@ -306,6 +360,62 @@ on public.role
 for select
 to authenticated
 using ("user" = auth.uid());
+
+create policy "Course editor reads course roles"
+on public.role
+for select
+to authenticated
+using (
+  "right" = 'editor'
+  and object is not null
+  and public.auth_manages_course(auth.uid(), object)
+);
+
+create policy "Course editor inserts course roles"
+on public.role
+for insert
+to authenticated
+with check (
+  "right" = 'editor'
+  and object is not null
+  and (
+    public.auth_manages_course(auth.uid(), object)
+    or (
+      "user" = auth.uid()
+      and exists (
+        select 1
+        from public.catalog c
+        where c.id = object
+          and c."createdBy" = auth.uid()
+      )
+    )
+  )
+);
+
+create policy "Course editor updates course roles"
+on public.role
+for update
+to authenticated
+using (
+  "right" = 'editor'
+  and object is not null
+  and public.auth_manages_course(auth.uid(), object)
+)
+with check (
+  "right" = 'editor'
+  and object is not null
+  and public.auth_manages_course(auth.uid(), object)
+);
+
+create policy "Course editor deletes course roles"
+on public.role
+for delete
+to authenticated
+using (
+  "right" = 'editor'
+  and object is not null
+  and public.auth_manages_course(auth.uid(), object)
+);
 
 create policy "Root manages all"
 on public.role
