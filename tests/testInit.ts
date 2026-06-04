@@ -103,19 +103,19 @@ const topicFiles = [
     },
   },
   {
-    name: 'byuLogo.png',
-    path: 'byuLogo.png',
+    name: 'testImage.png',
+    path: 'testImage.png',
     sha: 'e9d693e97087e22e0c4d4dde4123287d457e25e8',
     size: 16355,
-    url: 'https://api.github.com/repos/ghAccount/ghRepo/contents/byuLogo.png?ref=main',
-    html_url: 'https://github.com/ghAccount/ghRepo/blob/main/byuLogo.png',
+    url: 'https://api.github.com/repos/ghAccount/ghRepo/contents/testImage.png?ref=main',
+    html_url: 'https://github.com/ghAccount/ghRepo/blob/main/testImage.png',
     git_url: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/e9d693e97087e22e0c4d4dde4123287d457e25e8',
-    download_url: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/byuLogo.png',
+    download_url: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/testImage.png',
     type: 'file',
     _links: {
-      self: 'https://api.github.com/repos/ghAccount/ghRepo/contents/byuLogo.png?ref=main',
+      self: 'https://api.github.com/repos/ghAccount/ghRepo/contents/testImage.png?ref=main',
       git: 'https://api.github.com/repos/ghAccount/ghRepo/git/blobs/e9d693e97087e22e0c4d4dde4123287d457e25e8',
-      html: 'https://github.com/ghAccount/ghRepo/blob/main/byuLogo.png',
+      html: 'https://github.com/ghAccount/ghRepo/blob/main/testImage.png',
     },
   },
 ];
@@ -634,8 +634,8 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     }
   });
 
-  // GitHub - request for byuLogo.png file
-  await context.route('https://api.github.com/**/contents/byuLogo.png', async (route) => {
+  // GitHub - request for testImage.png file
+  await context.route('https://api.github.com/**/contents/testImage.png', async (route) => {
     switch (route.request().method()) {
       case 'GET':
         await route.fulfill({ json: topicFiles[1] });

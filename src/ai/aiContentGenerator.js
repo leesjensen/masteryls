@@ -175,7 +175,6 @@ ${modules.map((module) => `- ${module.title}: ${module.description}`).join('\n')
 Requirements:
 - The response must be valid GitHub-flavored markdown
 - Make the content upbeat and engaging
-- Include a Markdown formatted image at the top of the document ![BYU Logo](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/byulogo.png)
 - Include a level 1 heading using only the exact course title
 - After the level 1 heading include a Markdown formatted image ![Course Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg)
 - Prefer paragraph text where appropriate

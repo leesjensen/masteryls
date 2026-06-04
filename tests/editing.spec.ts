@@ -11,9 +11,9 @@ test('editor markdown', async ({ page }) => {
 
   await page.locator('.absolute.left-0\\.5').click();
   await expect(page.getByRole('code')).toContainText('# Home');
-  await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).not.toBeChecked();
-  await page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).click();
-  await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).getByRole('checkbox')).toBeChecked();
+  await expect(page.getByRole('button', { name: 'testImage.png image • 16.0 KB' }).getByRole('checkbox')).not.toBeChecked();
+  await page.getByRole('button', { name: 'testImage.png image • 16.0 KB' }).click();
+  await expect(page.getByRole('button', { name: 'testImage.png image • 16.0 KB' }).getByRole('checkbox')).toBeChecked();
 });
 
 test('editor commit', async ({ page }) => {
@@ -117,12 +117,12 @@ test('editor toolbar and files panel actions', async ({ page }) => {
 
   await page.locator('.absolute.left-0\\.5').click();
 
-  await page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' }).click();
+  await page.getByRole('button', { name: 'testImage.png image • 16.0 KB' }).click();
   await page.getByRole('button', { name: 'Insert' }).click();
   await expect(page.getByRole('button', { name: 'Insert' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'byuLogo.png image • 16.0 KB' })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'testImage.png image • 16.0 KB' })).not.toBeVisible();
 
   await page.getByRole('button', { name: 'Table' }).click();
   await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeEnabled();
@@ -352,12 +352,13 @@ test('editor can modify selected markdown with AI', async ({ page }) => {
   await page.getByPlaceholder('e.g., make this clearer and add one concise example').fill('make the selected sentence clearer');
   await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
-  const getUpdatedMarkdown = async () => page.evaluate(() => {
-    const monaco = (window as any).monaco;
-    const models = monaco?.editor?.getModels?.() || [];
-    const matchingModel = models.find((model: any) => String(model.getValue()).includes('Improved markdown!'));
-    return matchingModel ? String(matchingModel.getValue()) : '';
-  });
+  const getUpdatedMarkdown = async () =>
+    page.evaluate(() => {
+      const monaco = (window as any).monaco;
+      const models = monaco?.editor?.getModels?.() || [];
+      const matchingModel = models.find((model: any) => String(model.getValue()).includes('Improved markdown!'));
+      return matchingModel ? String(matchingModel.getValue()) : '';
+    });
 
   await expect.poll(getUpdatedMarkdown).toContain('Improved markdown!');
   const updatedMarkdown = await getUpdatedMarkdown();
@@ -401,10 +402,7 @@ test('editor can generate preview and insert an AI image', async ({ page }) => {
           candidates: [
             {
               content: {
-                parts: [
-                  { text: 'Generated image ready.' },
-                  { inlineData: { mimeType: 'image/png', data: transparentPng1x1 } },
-                ],
+                parts: [{ text: 'Generated image ready.' }, { inlineData: { mimeType: 'image/png', data: transparentPng1x1 } }],
                 role: 'model',
               },
               finishReason: 'STOP',
@@ -479,12 +477,13 @@ test('editor can generate preview and insert an AI image', async ({ page }) => {
   expect(geminiPromptPayload).toContain('Event loop queues');
   expect(uploadedImageContent).toBe(transparentPng1x1);
 
-  const getUpdatedMarkdown = async () => page.evaluate(() => {
-    const monaco = (window as any).monaco;
-    const models = monaco?.editor?.getModels?.() || [];
-    const matchingModel = models.find((model: any) => String(model.getValue()).includes('![ai-event-loop-queues.png](ai-event-loop-queues.png)'));
-    return matchingModel ? String(matchingModel.getValue()) : '';
-  });
+  const getUpdatedMarkdown = async () =>
+    page.evaluate(() => {
+      const monaco = (window as any).monaco;
+      const models = monaco?.editor?.getModels?.() || [];
+      const matchingModel = models.find((model: any) => String(model.getValue()).includes('![ai-event-loop-queues.png](ai-event-loop-queues.png)'));
+      return matchingModel ? String(matchingModel.getValue()) : '';
+    });
 
   await expect.poll(getUpdatedMarkdown).toContain('![ai-event-loop-queues.png](ai-event-loop-queues.png)');
   await expect(page.getByRole('img', { name: 'ai-event-loop-queues.png' })).toHaveAttribute('src', /^blob:/);
