@@ -19,6 +19,10 @@ If you are new to MasteryLS editing, use this checklist as a first-run path thro
 
 ## 1) Course Creation and Getting to Edit Mode
 
+> [!NOTE]
+>
+> You must be a MasteryLS editor in order to create courses
+
 ### Create a course
 
 Use the user menu (`New course`) to create a course. You can:
@@ -53,28 +57,31 @@ Recommended workflow:
 1. Provide a specific course title and description.
 2. Review module sequence for a clear learning progression.
 3. Refine generated topic titles/descriptions before drafting content.
-4. Regenerate if the structure is too broad or misaligned.
 
 Best practices:
 
 - Be explicit about audience level and scope in the description.
 - Keep capstone/project expectations clear in the prompt.
-- Treat generated structure as a draft blueprint.
+- Treat generated structure as a **draft blueprint**. You will need to enhance, add, remove, and curate the list of generated topics.
 
 ### Link an existing course to Canvas
 
-Use `Link course` from the user menu to connect MasteryLS content to a Canvas course. This supports:
+If you want to use Canvas as the gradebook for the course then use `Link course` from the user menu to connect MasteryLS content to a Canvas course. This supports:
 
 - Linking pages/quizzes/assignments
 - Selecting schedule file for due-date syncing
 - Restricting topic subset to link
 - Repair/re-link/unlink workflows
 
+<img src="linkToCanvas.png" width="600" />
+
 ### Enable editing mode
 
 1. Open a course topic.
 2. In classroom toolbar, use the `Edit/View` slider to switch to edit.
-3. The center pane switches to Monaco markdown editor.
+3. The center pane switches to markdown editor.
+
+<img src="editMode.png" width="600" />
 
 Notes:
 
@@ -91,9 +98,13 @@ In `Topics` sidebar (edit mode):
 - Generate all stubbed topics with AI (`state: stub` + description).
 - Create/delete schedule topic and schedule files.
 
+<img src="editingContents.png" width="200" />
+
 ### AI topic generation
 
 AI topic generation turns stub topics into first-draft lesson markdown. It uses topic descriptions (and module/course context) to generate prose and structure quickly.
+
+<img src="generateTopic.png" width="200" />
 
 Recommended workflow:
 
@@ -114,17 +125,27 @@ Published learner behavior:
 - Unpublished topics are filtered from learner-facing TOC.
 - Due date labels can appear on topics when schedule due-items map to topic links/titles.
 
-## 3) Using the Monaco Editor and Toolbar (All Buttons)
+## 3) Using the Editor and Toolbar
 
-The editor supports standard Monaco behaviors: selection editing, multi-cursor, undo/redo, search/replace, keyboard shortcuts, and line-level precision editing.
+The editor supports standard behaviors: selection editing, multi-cursor, undo/redo, search/replace, keyboard shortcuts, and line-level precision editing.
 
-### Editor toggle group
+- Draft section headings first (`##`, `###`), then fill content.
+- Insert interactions from templates, then tune JSON options.
+- Frequently switch to View mode to validate rendering and UX.
+- Use changed-line markers before commit.
+- **Do not copy interactions**. The generated ID must be unique for each interaction. Use the toolbar button to first create the masteryls code fence and then copy the body of the interaction if desired.
+
+### Tool categories
+
+<img src="editorToolbar.png" width="600" />
+
+#### Editor toggle group
 
 - `Word Wrap`: Toggle long-line wrapping.
 - `Line Numbers`: Toggle gutter numbers.
 - `Changed Lines`: Toggle changed-line markers against committed content.
 
-### Format group
+#### Format group
 
 - **Bold**: wrap selection in `**...**`
 - **Italic**: wrap selection in `*...*`
@@ -132,14 +153,14 @@ The editor supports standard Monaco behaviors: selection editing, multi-cursor, 
 - **Heading 2**: prefix line with `## `
 - **Heading 3**: prefix line with `### `
 
-### Content group
+#### Content group
 
 - **Table**: inserts markdown table template.
 - **Bullet List**: prefixes list item with `- `.
 - **Link**: opens topic-link selector and inserts internal topic link markdown.
 - **Image**: inserts image markdown placeholder.
 
-### Quiz/Interaction template group
+#### Quiz/Interaction template group
 
 - **Multiple Choice**: inserts a single-answer graded question (`multiple-choice`) where one option is correct.
 - **Multiple Select**: inserts a multi-answer graded question (`multiple-select`) where multiple options can be correct.
@@ -152,7 +173,7 @@ The editor supports standard Monaco behaviors: selection editing, multi-cursor, 
 
 Each template inserts a `masteryls` interaction fence with starter JSON/body.
 
-### AI group
+#### AI group
 
 - **AI generated quiz**: creates a quiz fence and normalizes interaction IDs.
 - **AI generated section**: adds topic section markdown.
@@ -160,13 +181,6 @@ Each template inserts a `masteryls` interaction fence with starter JSON/body.
 - **AI modify selected markdown**: rewrites only selected range.
 - **AI topic review**: spelling/grammar/content review.
 - **AI generated image**: generates image asset and inserts markdown.
-
-### Practical editing workflow
-
-- Draft section headings first (`##`, `###`), then fill content.
-- Insert interactions from templates, then tune JSON options.
-- Frequently switch to View mode to validate rendering and UX.
-- Use changed-line markers before commit.
 
 ## 4) Managing Files and Pasting Images
 
@@ -177,12 +191,16 @@ Each template inserts a `masteryls` interaction fence with starter JSON/body.
 
 ### Pasted images
 
+<img src="pastedImage.png" width="600" />
+
 - Paste image directly into editor.
 - MasteryLS creates topic asset files and inserts markdown references.
 - Duplicate names get unique suffixes automatically.
 - Image resize flow can be used before insertion.
 
 ## 5) View Commits and Apply History
+
+<img src="commitHistory.png" width="500" />
 
 In edit mode commit/history tools:
 
@@ -193,6 +211,8 @@ In edit mode commit/history tools:
 Use this to recover from mistakes, compare revisions, and audit changes.
 
 ## 6) Create and Manage Schedules
+
+<img src="schedule.png" width="700" />
 
 Schedule operations support:
 
@@ -209,10 +229,12 @@ Schedule data drives due-date context in TOC and can be used during Canvas linki
 
 All interactions use a fenced `masteryls` block:
 
+````
 ```masteryls
 {"id":"<uuid>", "title":"Interaction title", "type":"multiple-choice"}
 Body/instructions...
 ```
+````
 
 Additional examples:
 
@@ -229,6 +251,9 @@ Additional examples:
 
 What it does: Presents a single-answer objective question and awards score based on the selected option versus the defined correct option.
 
+<img src="mcInteraction.png" width="600" />
+
+````
 ```masteryls
 {"id":"39280", "title":"Multiple choice", "type":"multiple-choice" }
 Simple **multiple choice** question
@@ -237,6 +262,7 @@ Simple **multiple choice** question
 - [x] This is _the_ right answer
 - [ ] This one has a [link](https://cow.com)
 ```
+````
 
 Parameters:
 
@@ -245,8 +271,11 @@ Parameters:
 
 ### 7.2 Multiple select
 
+<img src="mcInteraction.png" width="600" />
+
 What it does: Presents a multi-answer objective question where learners can choose multiple options; scoring accounts for both correct and incorrect selections.
 
+````
 ```masteryls
 {"id":"39281", "title":"Multiple select", "type":"multiple-select" }
 A **multiple select** question can have multiple answers.
@@ -255,6 +284,7 @@ A **multiple select** question can have multiple answers.
 - [x] Correct
 - [x] Also correct
 ```
+````
 
 Parameters:
 
@@ -263,12 +293,16 @@ Parameters:
 
 ### 7.3 Essay
 
+<img src="essayInteraction.png" width="600" />
+
 What it does: Collects a free-form written response for qualitative evaluation and feedback.
 
+````
 ```masteryls
 {"id":"39282", "title":"Essay", "type":"essay" }
 Simple **essay** question
 ```
+````
 
 Parameters:
 
@@ -277,8 +311,11 @@ Parameters:
 
 ### 7.4 Survey
 
+<img src="surveyInteraction.png" width="600" />
+
 What it does: Collects non-graded learner preference/feedback responses as either single-select or multi-select choices.
 
+````
 ```masteryls
 {"id":"40824056-92f3-48e6-8f68-f0f63d67071f", "title":"Multiple select survey", "type":"survey",  "multipleSelect": "true" }
 What would you have as a pet?
@@ -286,6 +323,7 @@ What would you have as a pet?
 - [ ] Cat
 - [ ] Dog
 ```
+````
 
 Parameters:
 
@@ -294,8 +332,11 @@ Parameters:
 
 ### 7.5 Likert
 
+<img src="likertInteraction.png" width="600" />
+
 What it does: Collects scaled sentiment across multiple statements and supports aggregated results reporting.
 
+````
 ```masteryls
 {"id":"9f6b1470-6384-45f8-a13a-045b9278f6a2", "title":"Lesson Reflection", "type":"likert", "showResults":"always"}
 Rate each statement on the same scale.
@@ -307,6 +348,7 @@ Scale: Strongly disagree | Disagree | Neutral | Agree | Strongly agree
 | prep | I came prepared for class. |
 | engage | I stayed engaged throughout the lesson. |
 ```
+````
 
 Parameters:
 
@@ -318,12 +360,16 @@ Parameters:
 
 ### 7.6 File submission
 
+<img src="fileInteraction.png" width="600" />
+
 What it does: Collects one or more uploaded files as learner deliverables for project evidence and optional gradebook workflows.
 
+````
 ```masteryls
 {"id":"39283", "title":"File submission", "type":"file-submission", "syncGrade":true, "autoGrade":false }
 Simple **submission** by file
 ```
+````
 
 Parameters:
 
@@ -333,12 +379,16 @@ Parameters:
 
 ### 7.7 URL submission
 
+<img src="urlInteraction.png" width="600" />
+
 What it does: Collects a learner URL submission, optionally validates/rewrites the URL, optionally grades with criteria, and can sync results to gradebook.
 
+````
 ```masteryls
 {"id":"39287", "title":"URL submission (AI criteria + URL transform)", "type":"url-submission", "validateUrl":true, "syncGrade":true, "autoGrade":false, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
 Submit your repository URL.
 ```
+````
 
 Parameters:
 
@@ -351,12 +401,16 @@ Parameters:
 
 ### 7.8 Teaching
 
+<img src="teachingInteraction.png" width="600" />
+
 What it does: Runs an AI-assisted teaching dialogue where learner messages are evaluated and submitted as an instructional interaction outcome.
 
+````
 ```masteryls
 {"id":"b1de730b-9331-4e2f-8c7b-b8ff66a51a03", "title":"Teaching", "type":"teaching" }
 Help me understand the **Socratic method**.
 ```
+````
 
 Parameters:
 
@@ -365,12 +419,16 @@ Parameters:
 
 ### 7.9 Prompt
 
+<img src="promptInteraction.png" width="600" />
+
 What it does: Captures and evaluates learner-authored prompts as a prompt-engineering style interaction.
 
+````
 ```masteryls
-{"id":"my-prompt-id", "title":"Prompt", "type":"prompt" }
+{"id":"b1de730b-9331-4e2f-8c7b-b8ff66a51a03", "title":"Prompt", "type":"prompt" }
 Ask the learner to craft a prompt.
 ```
+````
 
 Parameters:
 
@@ -379,12 +437,16 @@ Parameters:
 
 ### 7.10 Web page
 
+<img src="simpleWebPageInteraction.png" width="600" />
+
 What it does: Renders embedded HTML content (inline or file-based) inside the lesson so learners can view or interact with a page artifact.
 
+````
 ```masteryls
-{"id":"39290", "title":"Web Page (From File)", "type":"web-page", "file":"instruction/topic1/starter-page.html", "height":"40vh"}
+{"id":"b1de730b-9331-4e2f-8c7b-b8ff66a51a03", "title":"Web Page", "type":"web-page", "file":"instruction/topic1/starter-page.html", "height":"100px"}
 This body text is optional when using `file`.
 ```
+````
 
 Parameters:
 
@@ -393,14 +455,37 @@ Parameters:
 - `height`: initial frame height (number px or CSS unit string).
 - Inline HTML body may be used; if both inline HTML and `file` exist, inline HTML takes precedence.
 
+You can use the Web Page interaction to create interactive demos in your content. The following shows an interaction that demonstrates Hick's Law.
+
+<img src="hicksLawInteraction.png" width="600" />
+
 ### 7.11 AI web page
+
+<img src="aiWebPageInteraction.png" width="600" />
 
 What it does: Provides an AI-assisted workflow to generate/edit HTML, then submit for rubric-based evaluation.
 
+#### Reference to topic file
+
+````
 ```masteryls
-{"id":"39286", "title":"AI Web Page (Manual Only)", "type":"ai-web-page", "allowAiPrompt":false, "file":"instruction/topic1/starter-page.html"}
+{"id":"b1de730b-9331-4e2f-8c7b-b8ff66a51a03", "title":"AI Web Page", "type":"ai-web-page", "allowAiPrompt":false, "file":"instruction/topic1/starter-page.html"}
 Revise the starter HTML manually, then submit.
 ```
+````
+
+#### Reference to embedded HTML
+
+````
+```masteryls
+{"id":"b1de730b-9331-4e2f-8c7b-b8ff66a51a03", "title":"AI Web Page", "type":"ai-web-page", "allowAiPrompt":false}
+Revise the starter HTML manually, then submit.
+
+~~~html
+<h1>hello</h1>
+~~~
+```
+````
 
 Parameters:
 
@@ -413,6 +498,8 @@ Parameters:
 ## 8) Course Settings (Detailed, including Repair tools)
 
 Open: sidebar `Settings`.
+
+<img src="settings.png" width="300" />
 
 ### Information section
 
@@ -454,6 +541,8 @@ Open: sidebar `Settings`.
 
 Open from user menu `Metrics`.
 
+<img src="metrics.png" width="600" />
+
 Metrics supports:
 
 - Course filter (`All Courses` or specific course)
@@ -465,6 +554,8 @@ Metrics supports:
 Use it to identify engagement drop-offs, outlier activity, and timing patterns.
 
 ## 10) Activity (Progress View)
+
+<img src="activity.png" width="600" />
 
 Open from user menu `Activity`.
 
@@ -478,9 +569,11 @@ Features:
 
 Use it for user-level audit trails and behavior debugging.
 
-## 11) Gradebook
+## 11) Mastery View
 
 Open from user menu or classroom toolbar.
+
+<img src="masteryView.png" width="600" />
 
 Features:
 
@@ -494,12 +587,16 @@ Features:
 
 ## 12) Observe Mode (Root/Editor as Learner)
 
-Start from gradebook:
+Start from Mastery View:
+
+<img src="observeMode.png" width="600" />
 
 1. Click `Observe` on learner row.
 2. App routes to course as that learner.
 3. Banner shows observed learner and read-only state.
 4. Use `Exit observe` in banner to leave mode.
+
+<img src="observing.png" width="600" />
 
 Behavior:
 
@@ -508,23 +605,7 @@ Behavior:
 - Notes are visible as read-only in discussion.
 - Observe session persists across refresh until exited.
 
-## 13) Course Linking (Canvas)
-
-Use `Link course` from user menu to configure:
-
-- Canvas course ID
-- Topic subset to link
-- Schedule file used for due date mapping
-- Re-linking existing mappings
-- Repairing broken mappings
-- Unlinking (with optional cleanup)
-
-Classroom-level linked-topic utilities:
-
-- Link current topic page to Canvas
-- Open Canvas course/topic URLs
-
-## 14) How Content Is Stored in GitHub
+## 13) How Content Is Stored in GitHub
 
 MasteryLS course content is GitHub-backed:
 
@@ -534,13 +615,15 @@ MasteryLS course content is GitHub-backed:
 - Added assets (images/files) are stored in repo and referenced by relative markdown paths.
 - Editor commits update files in GitHub and commit history is visible from the editor.
 
+<img src="gitHubRepo.png" width="600" />
+
 Practical implications:
 
 - Git history is your long-term content audit.
 - File paths in topic metadata matter for rendering and linking.
 - Keep interaction IDs stable once learners start submitting against them.
 
-## 15) How Data Is Stored in Supabase
+## 14) How Data Is Stored in Supabase
 
 Supabase stores operational data and app state, including:
 
@@ -551,13 +634,9 @@ Supabase stores operational data and app state, including:
 - **topic search index**: searchable topic content index data.
 - **edge function workflows**: secure Canvas sync, URL validation, gradebook overview aggregation.
 
+<img src="supabaseDb.png" width="600" />
+
 Storage split model:
 
 - **GitHub** = canonical course content/files.
 - **Supabase** = users, permissions, enrollments, analytics, submissions, sync metadata.
-
----
-
-## Reference
-
-- Interaction examples and option patterns: `docs/example-topic.md`
