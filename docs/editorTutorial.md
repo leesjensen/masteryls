@@ -1,4 +1,6 @@
-# MasteryLS Editor Tutorial
+<img src="../public/masteryls-logo-horizontal.png" width="300" />
+
+# Editor Tutorial
 
 This tutorial explains the full authoring and course-operations workflow in MasteryLS, from course creation to editing, interactions, settings, analytics, gradebook, and observe mode.
 
