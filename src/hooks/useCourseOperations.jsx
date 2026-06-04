@@ -365,6 +365,15 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         }
       });
     });
+
+    if (Array.isArray(updatedCourse.schedule?.files)) {
+      updatedCourse.schedule.files.forEach((file) => {
+        if (file?.commit) {
+          delete file.commit;
+        }
+      });
+    }
+
     await updateCourseStructure(updatedCourse, null, `unpin(all) ${course.title} commits`, false);
   }
 
