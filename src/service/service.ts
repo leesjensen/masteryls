@@ -6,6 +6,7 @@ import { extractEdgeFunctionErrorMessage } from './edgeFunctionErrors';
 class Service {
   catalog: CatalogEntry[] = [];
   supabase;
+  currentUserDisplayName: string | null = null;
 
   constructor(catalog: CatalogEntry[], supabase: any) {
     this.catalog = catalog;
@@ -413,6 +414,7 @@ class Service {
    * Logs out the current user.
    */
   async logout() {
+    this.currentUserDisplayName = null;
     localStorage.clear();
     await this.supabase.auth.signOut();
   }
@@ -713,8 +715,10 @@ class Service {
       throw new Error('Invalid content type');
     }
 
+    const finalCommitMessage = await this._formatGitHubCommitMessage(commitMessage);
+
     const body: any = {
-      message: commitMessage,
+      message: finalCommitMessage,
       content: contentBase64,
     };
 
@@ -738,8 +742,9 @@ class Service {
   async deleteGitHubFile(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
     const commitSha = await this._getGitHubFileSha(gitHubUrl, token);
     if (commitSha) {
+      const finalCommitMessage = await this._formatGitHubCommitMessage(commitMessage);
       const body = {
-        message: commitMessage,
+        message: finalCommitMessage,
         sha: commitSha,
       };
 
@@ -757,6 +762,7 @@ class Service {
    * @param commitMessage - Message for the commits.
    */
   async deleteGitHubFolder(gitHubUrl: string, token: string, commitMessage: string): Promise<void> {
+    const finalCommitMessage = await this._formatGitHubCommitMessage(commitMessage);
     const getFilesRes = await this.makeGitHubApiRequest(token, gitHubUrl);
     if (!getFilesRes.ok) {
       if (getFilesRes.status === 404) {
@@ -769,7 +775,7 @@ class Service {
       for (const item of getData) {
         if (item.type === 'file') {
           const deleteBody = {
-            message: commitMessage,
+            message: finalCommitMessage,
             sha: item.sha,
           };
           const deleteRes = await this.makeGitHubApiRequest(token, item.url, 'DELETE', deleteBody);
@@ -777,7 +783,7 @@ class Service {
             throw new Error(`Failed to delete file: ${deleteRes.status} ${deleteRes.statusText}`);
           }
         } else if (item.type === 'dir') {
-          await this.deleteGitHubFolder(item.url, token, commitMessage);
+          await this.deleteGitHubFolder(item.url, token, finalCommitMessage);
         }
       }
     }
@@ -954,6 +960,11 @@ class Service {
     }
   }
 
+  private async _formatGitHubCommitMessage(commitMessage: string): Promise<string> {
+    const userName = String(this.currentUserDisplayName || '').trim();
+    return `${userName} - ${commitMessage}`;
+  }
+
   async _loadUser({ id }: { id: string }) {
     const { data, error } = await this.supabase.from('user').select('id, name, email, settings').eq('id', id).single();
 
@@ -962,6 +973,7 @@ class Service {
     }
 
     const user = new User({ ...data, roles: await this._loadUserRoles({ id: data.id }) });
+    this.currentUserDisplayName = String(data?.name || '').trim() || String(data?.email || '').trim() || null;
 
     return user;
   }

@@ -145,7 +145,7 @@ test('adding a plain instruction topic creates the topic file and course entry',
   await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
 
   expect(topicFilePuts[0].url).toContain('/instruction/fresh-instruction-topic/fresh-instruction-topic.md');
-  expect(topicFilePuts[0].body.message).toBe('add(topic) Fresh Instruction Topic');
+  expect(topicFilePuts[0].body.message).toBe('Bud - add(topic) Fresh Instruction Topic');
   expect(topicFilePuts[0].content).toContain('# Fresh Instruction Topic');
   expect(topicFilePuts[0].content).toContain('overview content placeholder');
 
@@ -252,7 +252,7 @@ test('adding an instruction topic with a description uses AI generated content',
   expect(geminiPromptPayload).toContain('Teach orbital staging with a short worked example.');
 
   expect(topicFilePuts[0].url).toContain('/instruction/ai-generated-topic/ai-generated-topic.md');
-  expect(topicFilePuts[0].body.message).toBe('add(topic) AI Generated Topic');
+  expect(topicFilePuts[0].body.message).toBe('Bud - add(topic) AI Generated Topic');
   expect(topicFilePuts[0].content).toContain('This body came from the mocked AI topic generator.');
   expect(topicFilePuts[0].content).toContain('## Worked Example');
   expect(topicFilePuts[0].content).not.toContain('overview content placeholder');
