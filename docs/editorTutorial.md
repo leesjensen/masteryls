@@ -253,7 +253,7 @@ Additional examples:
 
 What it does: Presents a single-answer objective question and awards score based on the selected option versus the defined correct option.
 
-<img src="mcInteraction.png" width="600" />
+<img src="mcInteraction.png" width="400" />
 
 ````
 ```masteryls
@@ -273,7 +273,7 @@ Parameters:
 
 ### 7.2 Multiple select
 
-<img src="mcInteraction.png" width="600" />
+<img src="mcInteraction.png" width="400" />
 
 What it does: Presents a multi-answer objective question where learners can choose multiple options; scoring accounts for both correct and incorrect selections.
 
@@ -295,7 +295,7 @@ Parameters:
 
 ### 7.3 Essay
 
-<img src="essayInteraction.png" width="600" />
+<img src="essayInteraction.png" width="400" />
 
 What it does: Collects a free-form written response for qualitative evaluation and feedback.
 
@@ -313,7 +313,7 @@ Parameters:
 
 ### 7.4 Survey
 
-<img src="surveyInteraction.png" width="600" />
+<img src="surveyInteraction.png" width="40" />
 
 What it does: Collects non-graded learner preference/feedback responses as either single-select or multi-select choices.
 
@@ -334,7 +334,7 @@ Parameters:
 
 ### 7.5 Likert
 
-<img src="likertInteraction.png" width="600" />
+<img src="likertInteraction.png" width="400" />
 
 What it does: Collects scaled sentiment across multiple statements and supports aggregated results reporting.
 
@@ -362,7 +362,7 @@ Parameters:
 
 ### 7.6 File submission
 
-<img src="fileInteraction.png" width="600" />
+<img src="fileInteraction.png" width="400" />
 
 What it does: Collects one or more uploaded files as learner deliverables for project evidence and optional gradebook workflows.
 
@@ -381,7 +381,7 @@ Parameters:
 
 ### 7.7 URL submission
 
-<img src="urlInteraction.png" width="600" />
+<img src="urlInteraction.png" width="400" />
 
 What it does: Collects a learner URL submission, optionally validates/rewrites the URL, optionally grades with criteria, and can sync results to gradebook.
 
@@ -403,7 +403,7 @@ Parameters:
 
 ### 7.8 Teaching
 
-<img src="teachingInteraction.png" width="600" />
+<img src="teachingInteraction.png" width="400" />
 
 What it does: Runs an AI-assisted teaching dialogue where learner messages are evaluated and submitted as an instructional interaction outcome.
 
@@ -421,7 +421,7 @@ Parameters:
 
 ### 7.9 Prompt
 
-<img src="promptInteraction.png" width="600" />
+<img src="promptInteraction.png" width="400" />
 
 What it does: Captures and evaluates learner-authored prompts as a prompt-engineering style interaction.
 
@@ -439,7 +439,7 @@ Parameters:
 
 ### 7.10 Web page
 
-<img src="simpleWebPageInteraction.png" width="600" />
+<img src="simpleWebPageInteraction.png" width="400" />
 
 What it does: Renders embedded HTML content (inline or file-based) inside the lesson so learners can view or interact with a page artifact.
 
@@ -463,7 +463,7 @@ You can use the Web Page interaction to create interactive demos in your content
 
 ### 7.11 AI web page
 
-<img src="aiWebPageInteraction.png" width="600" />
+<img src="aiWebPageInteraction.png" width="400" />
 
 What it does: Provides an AI-assisted workflow to generate/edit HTML, then submit for rubric-based evaluation.
 
