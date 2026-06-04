@@ -1,9 +1,10 @@
 import { generateId } from './utils/utils.js';
+import { resolveSnapshotRawUrl } from './utils/githubRawSnapshot.js';
 
 export default class Course {
-  static async load(catalogEntry) {
+  static async load(catalogEntry, options = {}) {
     try {
-      const courseDefinition = await loadFromDefinition(catalogEntry);
+      const courseDefinition = await loadFromDefinition(catalogEntry, options);
       return new Course(courseDefinition);
     } catch (error) {
       return null;
@@ -105,17 +106,14 @@ export default class Course {
   }
 }
 
-async function loadFromDefinition(catalogEntry) {
+async function loadFromDefinition(catalogEntry, options = {}) {
   const gitHubLinks = {
     url: `https://github.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/blob/main`,
     apiUrl: `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents`,
     rawUrl: `https://raw.githubusercontent.com/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/main`,
   };
 
-  let courseDefinitionUrl = `${gitHubLinks.rawUrl}/course.json`;
-  if (catalogEntry.gitHub.commit) {
-    courseDefinitionUrl = courseDefinitionUrl.replace('main', catalogEntry.gitHub.commit);
-  }
+  const courseDefinitionUrl = await resolveSnapshotRawUrl(`${gitHubLinks.rawUrl}/course.json`, undefined, options?.snapshotRefResolver);
 
   const response = await fetch(courseDefinitionUrl);
   if (!response.ok) {

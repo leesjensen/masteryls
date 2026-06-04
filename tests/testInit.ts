@@ -516,6 +516,23 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
+  // Supabase - GitHub snapshot resolver function access
+  await context.route(/.*supabase.co\/functions\/v1\/githubsnapshot(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'OPTIONS':
+        await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+        return;
+      case 'POST':
+        await route.fulfill({
+          status: 200,
+          json: { sha: '0123456789abcdef0123456789abcdef01234567' },
+        });
+        return;
+    }
+
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
   // Supabase - Refresh token
   await context.route(/.*supabase.co\/auth\/v1\/token(\?.+)?/, async (route) => {
     if (route.request().method() === 'POST') {
@@ -611,6 +628,20 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
         json: resolvedSearchTopicsResults,
       });
       return;
+    }
+
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
+  // Supabase - topic table (indexing)
+  await context.route(/.*supabase.co\/rest\/v1\/topic(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'POST':
+        await route.fulfill({
+          status: 201,
+          json: [],
+        });
+        return;
     }
 
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);

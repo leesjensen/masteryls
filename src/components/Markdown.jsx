@@ -59,6 +59,22 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     );
   };
 
+  const resolveTopicUrl = React.useCallback(
+    (rawPath) => {
+      const topicBase = learningSession?.topic?.snapshotPath || learningSession?.topic?.path;
+      if (!rawPath || !topicBase) {
+        return rawPath;
+      }
+
+      try {
+        return new URL(rawPath, topicBase).toString();
+      } catch {
+        return rawPath;
+      }
+    },
+    [learningSession?.topic?.path, learningSession?.topic?.snapshotPath],
+  );
+
   const customComponents = {
     pre({ node, children, ...props }) {
       return (
@@ -120,6 +136,16 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       return <iframe src={src} loading={loading || 'lazy'} referrerPolicy={referrerPolicy || referrerpolicy || 'strict-origin-when-cross-origin'} sandbox={sandbox || 'allow-scripts allow-same-origin allow-presentation'} {...props} />;
     },
 
+    source({ node, src, ...props }) {
+      const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
+      return <source src={resolvedSrc} {...props} />;
+    },
+
+    img({ node, src, ...props }) {
+      const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
+      return <img src={resolvedSrc} {...props} />;
+    },
+
     // Custom link handler for internal navigation
     // Absolute URL: open in new tab.
     //     https://cow.com
@@ -149,8 +175,9 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               if (!hrefPath && hrefAnchor) {
                 scrollToAnchor(hrefAnchor, containerRef);
               } else if (hrefPath) {
-                const resolvedUrl = new URL(hrefPath, learningSession.topic.path).toString();
-                const targetTopic = learningSession.course.topicFromPath(resolvedUrl, false);
+                const canonicalResolvedUrl = new URL(hrefPath, learningSession.topic.path).toString();
+                const resolvedUrl = resolveTopicUrl(hrefPath);
+                const targetTopic = learningSession.course.topicFromPath(canonicalResolvedUrl, false);
                 if (targetTopic) {
                   const anchor = hrefAnchor ? `#${hrefAnchor}` : '';
                   navigate(`/course/${learningSession.course.id}/topic/${targetTopic.id}${anchor}`);

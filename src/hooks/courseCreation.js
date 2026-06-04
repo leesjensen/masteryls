@@ -72,8 +72,7 @@ async function commitCourseDefinition(service, catalogEntry, courseDefinition, g
   const commitMessage = 'update(course) definition';
   const commitCourseDefinitionUrl = `https://api.github.com/repos/${catalogEntry.gitHub.account}/${catalogEntry.gitHub.repository}/contents/course.json`;
   const courseJson = JSON.stringify(courseDefinition, null, 2);
-  const commit = await commitCommand(commitCourseDefinitionUrl, courseJson, gitHubToken, commitMessage);
-  await service.saveCatalogEntry({ id: catalogEntry.id, gitHub: { ...catalogEntry.gitHub, commit } });
+  await commitCommand(commitCourseDefinitionUrl, courseJson, gitHubToken, commitMessage);
 }
 
 async function getModulesMarkdown(catalogEntry) {

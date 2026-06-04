@@ -16,6 +16,8 @@ import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize'
  * Static version of Markdown component for server-side rendering (no router hooks)
  */
 export default function MarkdownStatic({ course, topic, content, languagePlugins = [] }) {
+  const topicBasePath = topic?.snapshotPath || topic?.path;
+
   const customComponents = {
     pre({ node, children, ...props }) {
       return (
@@ -85,8 +87,9 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
         const hrefPath = match?.[1];
         const hrefAnchor = match?.[2] || '';
 
-        const resolvedUrl = new URL(hrefPath, topic.path).toString();
-        const targetTopic = course.topicFromPath(resolvedUrl, false);
+        const canonicalResolvedUrl = new URL(hrefPath, topic.path).toString();
+        const resolvedUrl = new URL(hrefPath, topicBasePath).toString();
+        const targetTopic = course.topicFromPath(canonicalResolvedUrl, false);
         if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
           src = `/courses/${course.externalRefs.canvasCourseId}/pages/${targetTopic.externalRefs.canvasPageId}${hrefAnchor}`;
         } else {
@@ -121,14 +124,14 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
 
     source({ node, src, ...props }) {
       if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/')) {
-        src = new URL(src, topic.path).href;
+        src = new URL(src, topicBasePath).href;
       }
       return <source src={src} {...props} />;
     },
 
     img({ node, src, ...props }) {
       if (src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/')) {
-        src = new URL(src, topic.path).href;
+        src = new URL(src, topicBasePath).href;
       }
       return <img src={src} {...props} />;
     },

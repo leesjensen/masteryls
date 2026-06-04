@@ -26,7 +26,15 @@ class Service {
       throw new Error(error.message);
     }
 
-    return new Service(data, supabase);
+    const sanitizedData = (data || []).map((entry: any) => {
+      if (entry?.gitHub && typeof entry.gitHub === 'object' && 'commit' in entry.gitHub) {
+        const { commit, ...gitHubWithoutCommit } = entry.gitHub;
+        return { ...entry, gitHub: gitHubWithoutCommit };
+      }
+      return entry;
+    });
+
+    return new Service(sanitizedData, supabase);
   }
 
   /**
@@ -144,6 +152,12 @@ class Service {
    */
   async saveCatalogEntry(catalogEntry: CatalogEntry): Promise<void> {
     delete catalogEntry.links;
+
+    if (catalogEntry.gitHub && typeof catalogEntry.gitHub === 'object' && 'commit' in catalogEntry.gitHub) {
+      const { commit, ...gitHubWithoutCommit } = catalogEntry.gitHub as any;
+      catalogEntry.gitHub = gitHubWithoutCommit;
+    }
+
     const { data, error } = await this.supabase.from('catalog').upsert(catalogEntry).select('id').single();
     if (error) {
       throw new Error(error.message);
@@ -881,6 +895,19 @@ class Service {
     }
 
     return data;
+  }
+
+  async resolveGitHubSnapshotRef(params: { owner: string; repository: string; ref: string }): Promise<string | null> {
+    const { data, error } = await this.supabase.functions.invoke('githubsnapshot', {
+      body: params,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const sha = String(data?.sha || '').trim();
+    return sha || null;
   }
 
   /**

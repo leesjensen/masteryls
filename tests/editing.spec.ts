@@ -6,6 +6,44 @@ async function initAndOpenBasicCourse({ page }: { page: any }) {
   await navigateToCourse(page);
 }
 
+test('snapshot ref lookup is reused across initial topic reads', async ({ page }) => {
+  await initBasicCourse({ page });
+
+  let snapshotPostCalls = 0;
+
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && /supabase\.co\/functions\/v1\/githubsnapshot(\?.+)?$/.test(request.url())) {
+      snapshotPostCalls += 1;
+    }
+  });
+
+  await navigateToCourse(page);
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
+
+  await page.getByRole('link', { name: 'topic 1' }).click();
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
+
+  // Course JSON and topic markdown should share a single snapshot ref lookup.
+  expect(snapshotPostCalls).toBe(1);
+});
+
+test('topic markdown is fetched from a snapshot SHA URL', async ({ page }) => {
+  await initBasicCourse({ page });
+
+  const markdownRequests: string[] = [];
+  page.on('request', (request) => {
+    const url = request.url();
+    if (request.method() === 'GET' && /raw\.githubusercontent\.com\/.*\.md(\?.*)?$/i.test(url)) {
+      markdownRequests.push(url);
+    }
+  });
+
+  await navigateToCourse(page);
+
+  await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible();
+  expect(markdownRequests.some((url) => /\/ghAccount\/ghRepo\/[a-f0-9]{40}\/README\.md$/i.test(url))).toBeTruthy();
+});
+
 test('editor markdown', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 

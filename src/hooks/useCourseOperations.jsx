@@ -4,6 +4,7 @@ import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteract
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
+import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType } from '../utils/interactionMeta';
 import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
@@ -118,7 +119,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     if (!courseCache.current.has(courseId)) {
-      const course = await Course.load(courseEntry);
+      const course = await Course.load(courseEntry, {
+        snapshotRefResolver: async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }),
+      });
       if (course) {
         courseCache.current.set(courseId, course);
       }
@@ -238,10 +241,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function updateCourseStructure(course, updatedTopic, commitMessage = 'update course structure', updateCourseCommit = true) {
+  async function updateCourseStructure(course, updatedTopic, commitMessage = 'update course structure') {
     const token = user.getSetting('gitHubToken', course.id);
     if (user.isEditor(course.id) && token) {
-      const updatedCourse = await _updateCourseStructure(token, course, commitMessage, updateCourseCommit);
+      const updatedCourse = await _updateCourseStructure(token, course, commitMessage);
       const topic = updatedTopic || learningSession?.topic;
       if (topic) {
         setLearningSession({ ...learningSession, course: updatedCourse, topic });
@@ -249,7 +252,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
   }
 
-  async function _updateCourseStructure(token, course, commitMessage = 'update course structure', updateCourseCommit = true) {
+  async function _updateCourseStructure(token, course, commitMessage = 'update course structure') {
     const schedule = course.schedule
       ? {
           id: course.schedule.id || generateId(),
@@ -260,7 +263,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
                 path: String(file.path || '').replace(`${course.links.gitHub.rawUrl}/`, ''),
                 default: Boolean(file.default),
                 state: file.state,
-                commit: file.commit,
               }))
             : [],
         }
@@ -283,7 +285,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
           state: topic.state,
           interactions: topic.interactions,
           description: topic.description,
-          commit: topic.commit,
           externalRefs: topic.externalRefs,
         })),
       })),
@@ -292,8 +293,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const courseJson = JSON.stringify(courseData, null, 2);
     const gitHubUrl = `${course.links.gitHub.apiUrl}/course.json`;
 
-    const commit = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
-    await service.saveCatalogEntry({ id: course.id, gitHub: { ...course.gitHub, commit: updateCourseCommit ? commit : undefined } });
+    const commitSha = await service.updateGitHubFile(gitHubUrl, courseJson, token, commitMessage);
+    await service.saveCatalogEntry({ id: course.id, gitHub: { ...course.gitHub } });
+    invalidateCourseReadCache(course, commitSha);
     courseCache.current.set(course.id, course);
 
     return course;
@@ -374,7 +376,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       });
     }
 
-    await updateCourseStructure(updatedCourse, null, `unpin(all) ${course.title} commits`, false);
+    await updateCourseStructure(updatedCourse, null, `unpin(all) ${course.title} commits`);
   }
 
   async function generateTopic(topicId, prompt) {
@@ -476,14 +478,15 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function getTopic(topic, commit = null) {
     if (!topic || topic?.type === 'video' || topic?.type === 'embedded') return '';
 
-    if (!commit && topic.commit) {
-      commit = topic.commit;
-    }
-
     let url = topic.path;
     if (commit) {
       url = topic.path.replace(/(\/main\/)/, `/${commit}/`);
+    } else {
+      const token = user?.getSetting?.('gitHubToken', learningSession?.course?.id);
+      url = await resolveSnapshotRawUrl(topic.path, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
     }
+
+    topic.snapshotPath = url;
 
     if (learningSession?.course && learningSession.course.markdownCache.has(url)) {
       return learningSession.course.markdownCache.get(url);
@@ -511,20 +514,35 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     let updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
+    let structureChanged = false;
 
     if (updatedTopic.type === 'video' || updatedTopic.type === 'embedded') {
-      updatedTopic.path = content;
+      const nextPath = String(content || '').trim();
+      if (updatedTopic.path !== nextPath) {
+        updatedTopic.path = nextPath;
+        structureChanged = true;
+      }
     } else {
-      updatedTopic.interactions = _extractInteractionIds(content);
+      const nextInteractions = _extractInteractionIds(content);
+      const previousInteractions = Array.isArray(updatedTopic.interactions) ? updatedTopic.interactions : [];
+      updatedTopic.interactions = nextInteractions;
+      structureChanged = !_areStringArraysEqual(previousInteractions, nextInteractions);
 
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
-      const commit = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
-      updatedTopic.commit = commit;
+      const commitSha = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
+      invalidateCourseReadCache(course, commitSha);
       course.markdownCache.set(topic.path, content);
     }
 
-    updatedCourse = await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+    if (structureChanged) {
+      updatedCourse = await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
+      setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
+      return;
+    }
+
+    if (learningSession?.topic?.id === topic.id) {
+      setLearningSession({ ...learningSession, topic: { ...learningSession.topic, interactions: updatedTopic.interactions } });
+    }
   }
 
   async function renameTopic(moduleIdx, topicIdx, newTitle, newDescription, newType, newPoints) {
@@ -593,7 +611,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       type: 'schedule',
       path: defaultFile.path,
       state: defaultFile.state || 'published',
-      commit: defaultFile.commit,
     };
   }
 
@@ -616,7 +633,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         if (!file.id) {
           file.id = generateId();
         }
-        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default), file.commit);
+        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default));
       });
   }
 
@@ -724,7 +741,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     updatedSchedule.files = [...existingSchedules, newSchedule];
 
     const scheduleTopic = getScheduleTopic(updatedCourse);
-    const resolved = resolveScheduleFile(scheduleTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default, newSchedule.commit);
+    const resolved = resolveScheduleFile(scheduleTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default);
     const initialMarkdown = createInitialScheduleMarkdown(title);
 
     await service.commitGitHubFile(resolved.apiUrl, initialMarkdown, token, `add(schedule) ${title}`);
@@ -772,7 +789,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     const scheduleTopic = getScheduleTopic(updatedCourse);
-    const resolved = resolveScheduleFile(scheduleTopic, removing.path, removing.id, removing.title, Boolean(removing.default), removing.commit);
+    const resolved = resolveScheduleFile(scheduleTopic, removing.path, removing.id, removing.title, Boolean(removing.default));
     await service.deleteGitHubFile(resolved.apiUrl, token, `remove(schedule) ${removing.title || removing.path}`);
 
     updatedCourse.markdownCache.delete(resolved.rawUrl);
@@ -887,7 +904,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return match ? match[1].trim() : '';
   }
 
-  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false, commit = null) {
+  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false) {
     const course = learningSession?.course;
     const rawRoot = course.links.gitHub.rawUrl;
     const apiRoot = course.links.gitHub.apiUrl;
@@ -897,7 +914,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (configuredPath.startsWith('http://') || configuredPath.startsWith('https://')) {
       const repoPath = configuredPath.replace(`${rawRoot}/`, '');
       const apiUrl = configuredPath.startsWith(rawRoot) ? `${apiRoot}/${repoPath}` : null;
-      return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault, commit };
+      return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault };
     }
 
     let relativePath = '';
@@ -921,7 +938,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       apiUrl: `${apiRoot}/${normalizedRepoPath}`,
       repoPath: normalizedRepoPath,
       default: isDefault,
-      commit,
     };
   }
 
@@ -932,7 +948,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files) || files[0];
     if (!selectedFile) return '';
 
-    const fetchUrl = selectedFile.commit ? selectedFile.rawUrl.replace(/(\/main\/)/, `/${selectedFile.commit}/`) : selectedFile.rawUrl;
+    const token = user?.getSetting?.('gitHubToken', learningSession?.course?.id);
+    const fetchUrl = await resolveSnapshotRawUrl(selectedFile.rawUrl, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
 
     if (!forceRefresh && learningSession?.course?.markdownCache.has(fetchUrl)) {
       return learningSession.course.markdownCache.get(fetchUrl);
@@ -955,22 +972,28 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (!selectedFile) return;
 
     const token = user.getSetting('gitHubToken', course.id);
-    const commit = await service.updateGitHubFile(selectedFile.apiUrl, content, token, commitMessage);
+    const commitSha = await service.updateGitHubFile(selectedFile.apiUrl, content, token, commitMessage);
+    invalidateCourseReadCache(course, commitSha);
 
     const updatedCourse = Course.copy(course);
     const updatedScheduleTopic = getScheduleTopic(updatedCourse);
-    if (Array.isArray(updatedCourse.schedule.files)) {
-      updatedCourse.schedule.files = updatedCourse.schedule.files.map((entry) => (entry?.id === selectedFile.id ? { ...entry, commit } : entry));
-    }
+    let structureChanged = false;
 
     const nextTitle = extractScheduleTitleFromMarkdown(content);
     if (nextTitle && Array.isArray(updatedCourse.schedule.files)) {
-      updatedCourse.schedule.files = updatedCourse.schedule.files.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry));
+      const existingEntry = updatedCourse.schedule.files.find((entry) => entry?.id === selectedFile.id);
+      const existingTitle = String(existingEntry?.title || '').trim();
+      if (existingTitle !== nextTitle) {
+        updatedCourse.schedule.files = updatedCourse.schedule.files.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry));
+        structureChanged = true;
+      }
     }
 
     updatedCourse.markdownCache.set(selectedFile.rawUrl, content);
-    await _updateCourseStructure(token, updatedCourse, `update(course) schedule ${topic.title}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedScheduleTopic });
+    if (structureChanged) {
+      await _updateCourseStructure(token, updatedCourse, `update(course) schedule ${topic.title}`);
+      setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedScheduleTopic });
+    }
     setSelectedScheduleFile(updatedScheduleTopic, selectedFile.id);
   }
 
@@ -985,6 +1008,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}${file}`;
       await service.deleteGitHubFile(gitHubUrl, token, `remove(topic) file ${file}`);
     }
+
+    invalidateCourseReadCache(course);
   }
 
   function readFileAsUint8Array(file) {
@@ -1004,11 +1029,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const contentPath = learningSession.topic.path.match(/\/main\/((?:.+\/)?)[^\/]+\.md$/);
     if (!contentPath) return;
 
+    let latestCommitSha = null;
     for (const file of files) {
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}${file.name}`;
       const content = await readFileAsUint8Array(file.props);
-      await service.commitGitHubFile(gitHubUrl, content, token, commitMessage);
+      latestCommitSha = await service.commitGitHubFile(gitHubUrl, content, token, commitMessage);
     }
+
+    invalidateCourseReadCache(course, latestCommitSha);
   }
 
   async function getTopicFiles() {
@@ -1718,6 +1746,45 @@ Requirements:
     return extractInteractionMetas(content)
       .filter((meta) => meta.id && isSubmittableInteractionType(meta.type))
       .map((meta) => meta.id);
+  }
+
+  function invalidateCourseReadCache(course = learningSession?.course, nextSnapshotSha = null) {
+    const rawRoot = course?.links?.gitHub?.rawUrl;
+    if (!rawRoot) {
+      return;
+    }
+
+    if (nextSnapshotSha) {
+      setRawGitHubSnapshot(rawRoot, nextSnapshotSha);
+    } else {
+      invalidateRawGitHubSnapshot(rawRoot);
+    }
+
+    if (course?.markdownCache?.clear) {
+      course.markdownCache.clear();
+    }
+  }
+
+  function _areStringArraysEqual(left, right) {
+    if (left === right) {
+      return true;
+    }
+
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+      return false;
+    }
+
+    if (left.length !== right.length) {
+      return false;
+    }
+
+    for (let i = 0; i < left.length; i += 1) {
+      if (left[i] !== right[i]) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   return {
