@@ -141,6 +141,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
     const topics = [];
     for (const topic of course.allTopics) {
+      if (topic?.state === 'stub') {
+        continue;
+      }
       let content = await getTopic(topic);
       content = cleanMarkdownForIndexing(content);
       if (content && content.length > 0) {
@@ -489,7 +492,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
     const token = user.getSetting('gitHubToken', learningSession.course.id);
     await _updateTopic(token, learningSession.course, topic, content, commitMessage);
-    service.indexCourse(learningSession.course.id, [{ id: topic.id, content }]);
+    if (topic?.state !== 'stub') {
+      service.indexCourse(learningSession.course.id, [{ id: topic.id, content }]);
+    }
   }
 
   async function _updateTopic(token, course, topic, content, commitMessage = `update(${topic.title})`) {
