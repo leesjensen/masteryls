@@ -265,6 +265,7 @@ Requirements:
 - Avoid using "All of the above" or "None of the above" as answer choices
 - Ensure that the quiz is educational and reinforces key concepts from the topic
 - The quiz should be challenging but fair, suitable for learners who have studied the topic
+- The answer choices must be in a random order
 `;
 
   return makeSimpleAiRequest(prompt);
