@@ -593,6 +593,7 @@ Requirements:
 }
 
 export async function aiEssayInteractionFeedbackGenerator(data, user) {
+  const hasGradingCriteria = Boolean(String(data?.gradingCriteria || '').trim());
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's essay response.
 Focus on clear explanations, encouragement, and guidance for improvement.
@@ -603,6 +604,7 @@ ${Object.entries(data)
 
 Requirements:
 - Start the response with json that indicates the percentage correct in the format: {"percentCorrect": XX}
+- Score the response using the essay prompt and question context${hasGradingCriteria ? ', and apply the provided gradingCriteria as required scoring criteria' : ''}
 - Address the student directly
 - The feedback to be part of a larger conversation that is already occurring
 - Acknowledge any correct aspects of the student's answer

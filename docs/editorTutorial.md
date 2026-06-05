@@ -301,7 +301,7 @@ What it does: Collects a free-form written response for qualitative evaluation a
 
 ````
 ```masteryls
-{"id":"39282", "title":"Essay", "type":"essay" }
+{"id":"b1de730b-9331-4e2f-8c7b-b8ff66a51a03", "title":"Your thoughts?", "type":"essay", "gradingCriteria":"- Answers both parts of the prompt\n- Uses evidence from the lesson\n- Explains reasoning clearly" }
 Simple **essay** question
 ```
 ````
@@ -309,6 +309,7 @@ Simple **essay** question
 Parameters:
 
 - `type: "essay"`
+- `gradingCriteria` (string, optional): Additional grading criteria used by AI when scoring and generating feedback. The additional grading criteria is applied together with the essay prompt and surrounding content. This gives you the opportunity to add criteria that is not specifically displayed to the learner.
 - Body is prompt/context.
 
 ### 7.4 Survey

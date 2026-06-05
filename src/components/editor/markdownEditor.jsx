@@ -879,7 +879,7 @@ Simple **multiple choice** question
 `;
 const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Essay", "type":"essay" }
+{"id":"", "title":"Essay", "type":"essay", "gradingCriteria":"- Addresses the prompt directly\n- Uses at least one concrete example\n- Demonstrates accurate understanding of key concepts" }
 Simple **essay** question
 \`\`\`
 `;

@@ -94,14 +94,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
         <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
         {isObserveReadOnly && <div className="mb-2 text-xs text-amber-700">Observe mode is read-only. Submissions are disabled.</div>}
         <div className="space-y-3">{controlJsx}</div>
-        {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && (
-          <InteractionFeedback
-            quizId={meta.id}
-            onSyncGrade={syncGradeToCanvas}
-            isCourseLinkedToGradebook={isCourseLinkedToGradebook}
-            canSubmitToGradebook={canSubmitToCanvasGradebook && !isObserveReadOnly}
-          />
-        )}
+        {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={syncGradeToCanvas} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToGradebook={canSubmitToCanvasGradebook && !isObserveReadOnly} />}
       </div>
     );
   }
@@ -248,7 +241,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
             const precedingContent = getPrecedingContent(interactionRoot);
-            const percentCorrect = await onEssayInteraction({ id, title, type, body, precedingContent, essay: interactionElement.value, syncGrade, autoGrade });
+            const percentCorrect = await onEssayInteraction({ id, title, type, body, gradingCriteria, precedingContent, essay: interactionElement.value, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'file-submission') {
@@ -369,17 +362,19 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return true;
   }
 
-  async function onEssayInteraction({ id, title, type, body, precedingContent, essay, syncGrade = false, autoGrade = false }) {
+  async function onEssayInteraction({ id, title, type, body, gradingCriteria = '', precedingContent, essay, syncGrade = false, autoGrade = false }) {
     if (!essay) return false;
+    const normalizedCriteria = String(gradingCriteria || '').trim();
     const data = {
       title,
       type,
       question: body,
       'question context': precedingContent,
       essay,
+      ...(normalizedCriteria ? { gradingCriteria: normalizedCriteria } : {}),
     };
     const { feedback, percentCorrect } = await courseOps.getEssayInteractionFeedback(data);
-    const details = { type, essay, percentCorrect, feedback, syncGrade, autoGrade };
+    const details = { type, essay, percentCorrect, feedback, gradingCriteria: normalizedCriteria || undefined, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
