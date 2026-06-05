@@ -6,7 +6,16 @@ import { formatFileSize } from '../../../utils/utils';
 export default function FileInteraction({ id, body }) {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isInputValid, setIsInputValid] = useState(false);
   const fileInputRef = useRef(null);
+
+  const syncInputValidity = useCallback(() => {
+    if (fileInputRef.current) {
+      setIsInputValid(fileInputRef.current.checkValidity());
+    } else {
+      setIsInputValid(false);
+    }
+  }, []);
 
   const handleFileSelect = useCallback((files) => {
     const fileArray = Array.from(files);
@@ -17,6 +26,7 @@ export default function FileInteraction({ id, body }) {
     (event) => {
       if (event.target.files) {
         handleFileSelect(event.target.files);
+        setIsInputValid(event.target.checkValidity());
       }
     },
     [handleFileSelect],
@@ -50,19 +60,21 @@ export default function FileInteraction({ id, body }) {
             [...existingFiles, ...newFiles].forEach((file) => dt.items.add(file));
             fileInputRef.current.files = dt.files;
             handleFileSelect(dt.files);
+            syncInputValidity();
           }
         }
       }
     },
-    [handleFileSelect],
+    [handleFileSelect, syncInputValidity],
   );
 
   const removeFile = useCallback((indexToRemove) => {
     setSelectedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+      syncInputValidity();
     }
-  }, []);
+  }, [syncInputValidity]);
 
   return (
     <div>
@@ -70,7 +82,7 @@ export default function FileInteraction({ id, body }) {
         {renderLiteMarkdownBlocks(body)}
       </div>
       <div id={`drop-zone-${id}`} className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 ${isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-        <input ref={fileInputRef} type="file" name={`quiz-${id}`} id={`file-input-${id}`} multiple hidden onChange={handleFileInputChange} />
+        <input ref={fileInputRef} type="file" name={`quiz-${id}`} id={`file-input-${id}`} multiple required hidden onChange={handleFileInputChange} />
         <label htmlFor={`file-input-${id}`} className="cursor-pointer">
           <div className="text-gray-500">
             <FileUp size={48} className="mx-auto h-12 w-12 text-gray-400" />
@@ -100,7 +112,7 @@ export default function FileInteraction({ id, body }) {
           </div>
         )}
       </div>
-      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={!isInputValid}>
         Submit files
       </button>
     </div>
