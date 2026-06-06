@@ -257,7 +257,7 @@ What it does: Presents a single-answer objective question and awards score based
 
 ````
 ```masteryls
-{"id":"39280", "title":"Multiple choice", "type":"multiple-choice" }
+{"id":"39280", "title":"Multiple choice", "type":"multiple-choice", "syncGrade":true, "autoGrade":false }
 Simple **multiple choice** question
 
 - [ ] This is **not** the right answer
@@ -270,6 +270,8 @@ Parameters:
 
 - `type: "multiple-choice"`
 - Exactly one intended correct choice marked with `[x]`.
+- `syncGrade` (bool): enables manual "Submit to Gradebook" button after submission feedback.
+- `autoGrade` (bool): controls posted-grade vs comment-only behavior in linked gradebook.
 
 ### 7.2 Multiple select
 
@@ -279,7 +281,7 @@ What it does: Presents a multi-answer objective question where learners can choo
 
 ````
 ```masteryls
-{"id":"39281", "title":"Multiple select", "type":"multiple-select" }
+{"id":"39281", "title":"Multiple select", "type":"multiple-select", "syncGrade":true, "autoGrade":false }
 A **multiple select** question can have multiple answers.
 
 - [ ] Wrong
@@ -292,6 +294,8 @@ Parameters:
 
 - `type: "multiple-select"`
 - Multiple `[x]` answers allowed.
+- `syncGrade` (bool): enables manual "Submit to Gradebook" button after submission feedback.
+- `autoGrade` (bool): controls posted-grade vs comment-only behavior in linked gradebook.
 
 ### 7.3 Essay
 
