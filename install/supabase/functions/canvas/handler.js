@@ -41,7 +41,18 @@ export function createCanvasFunctionHandler({ createSupabaseClientFromAuthHeader
       return new Response(JSON.stringify({ error: 'Endpoint course does not match courseId' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const allowedPatterns = [/^\/courses\/\d+\/modules(?:\?.*)?$/, /^\/courses\/\d+\/modules\/\d+(?:\?.*)?$/, /^\/courses\/\d+\/modules\/\d+\/items(?:\?.*)?$/, /^\/courses\/\d+\/pages(?:\?.*)?$/, /^\/courses\/\d+\/pages\/[^/?]+(?:\?.*)?$/, /^\/courses\/\d+\/quizzes(?:\?.*)?$/, /^\/courses\/\d+\/quizzes\/\d+(?:\?.*)?$/, /^\/courses\/\d+\/assignments(?:\?.*)?$/, /^\/courses\/\d+\/assignments\/\d+(?:\?.*)?$/];
+    const allowedPatterns = [
+      /^\/courses\/\d+\/modules(?:\?.*)?$/,
+      /^\/courses\/\d+\/modules\/\d+(?:\?.*)?$/,
+      /^\/courses\/\d+\/modules\/\d+\/items(?:\?.*)?$/,
+      /^\/courses\/\d+\/pages(?:\?.*)?$/,
+      /^\/courses\/\d+\/pages\/[^/?]+(?:\?.*)?$/,
+      /^\/courses\/\d+\/quizzes(?:\?.*)?$/,
+      /^\/courses\/\d+\/quizzes\/\d+(?:\?.*)?$/,
+      /^\/courses\/\d+\/assignments(?:\?.*)?$/,
+      /^\/courses\/\d+\/assignments\/\d+(?:\?.*)?$/,
+      /^\/courses\/\d+\/search_users(?:\?.*)?$/,
+    ];
     if (!allowedPatterns.some((pattern) => pattern.test(endpoint))) {
       return new Response(JSON.stringify({ error: 'Endpoint is not allowed by canvas function policy' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }

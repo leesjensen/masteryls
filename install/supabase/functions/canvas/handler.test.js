@@ -77,6 +77,26 @@ test('canvas handler allows editor with matching course', async () => {
   assert.equal(fetchCalls.length, 1);
 });
 
+test('canvas handler allows search_users membership lookup', async () => {
+  const fetchCalls = [];
+  const handler = createCanvasFunctionHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u2', email: 'editor@test.com' },
+        roles: [{ user: 'u2', right: 'editor', object: '12345' }],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn: async (url, init) => {
+      fetchCalls.push({ url, init });
+      return new Response(JSON.stringify([{ id: 1, email: 'student@test.com' }]), { status: 200 });
+    },
+  });
+
+  const response = await handler(makeRequest({ courseId: '12345', endpoint: '/courses/12345/search_users?search_term=student%40test.com', method: 'GET', body: null }));
+  assert.equal(response.status, 200);
+  assert.equal(fetchCalls.length, 1);
+});
+
 test('canvas handler denies editor for different course', async () => {
   const fetchCalls = [];
   const handler = createCanvasFunctionHandler({
