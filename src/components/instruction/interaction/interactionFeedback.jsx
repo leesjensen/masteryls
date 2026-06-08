@@ -1,5 +1,8 @@
 import React from 'react';
-import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkEmoji from 'remark-emoji';
+import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import { useInteractionProgressStore } from './interactionProgressStore';
 import ScoreStars from './scoreStars';
 
@@ -15,13 +18,15 @@ export default function InteractionFeedback({ quizId, onSyncGrade = null, isCour
   const syncMessage = details?.canvasSyncMessage || null;
 
   return (
-    <div className="mt-4 p-3 border rounded bg-blue-50 text-blue-900 relative">
+    <div className="mt-4 p-3 border rounded bg-white text-blue-900 relative">
       {details.percentCorrect !== undefined && (
         <div className="absolute bottom-1 right-2 ">
           <ScoreStars percent={details.percentCorrect} />
         </div>
       )}
-      <div className="whitespace-normal">{renderLiteMarkdownBlocks(details.feedback)}</div>
+      <div className="markdown-body whitespace-normal">
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]}>{details.feedback}</ReactMarkdown>
+      </div>
       {canSyncGrade && (
         <div className="mt-3">
           <button type="button" className="px-3 py-1.5 rounded border border-blue-700 bg-blue-700 text-white text-sm hover:bg-blue-800 disabled:opacity-60" disabled={syncState === 'loading'} onClick={() => onSyncGrade(quizId)}>

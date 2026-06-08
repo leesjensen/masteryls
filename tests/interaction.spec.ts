@@ -485,7 +485,7 @@ Simple **url submission** question
             content: {
               parts: [
                 {
-                  text: '{"percentCorrect": 88}\nGreat work. You covered the HTML Deliverable section and most rubric items clearly.',
+                  text: '{"percentCorrect": 88}\n## Summary\nGreat work. You covered the HTML Deliverable section and most rubric items clearly.',
                 },
               ],
               role: 'model',
@@ -535,6 +535,7 @@ Simple **url submission** question
   await expect.poll(() => geminiCalls.length).toBe(2);
   await expect.poll(() => urlValidatorCalls.length).toBe(1);
   expect(urlValidatorCalls[0].url).toBe('https://raw.githubusercontent.com/byucsstudent/startup/main/README.md');
+  await expect(page.getByRole('heading', { level: 2, name: 'Summary' })).toBeVisible();
   await expect(page.getByText('Great work. You covered the HTML Deliverable section and most rubric items clearly.')).toBeVisible();
 });
 
