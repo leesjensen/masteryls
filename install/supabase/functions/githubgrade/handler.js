@@ -3,24 +3,12 @@ export const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ALLOWED_EXTENSIONS = new Set([
-  'md', 'markdown',
-  'js', 'jsx', 'mjs', 'cjs',
-  'ts', 'tsx',
-  'py', 'rb', 'go', 'rs',
-  'java', 'kt', 'scala',
-  'c', 'cc', 'cpp', 'h', 'hpp',
-  'cs', 'swift',
-  'html', 'htm', 'css', 'scss',
-  'json', 'yml', 'yaml', 'toml', 'xml',
-  'txt', 'sh', 'bash', 'zsh',
-  'sql', 'env', 'dockerfile',
-]);
+const ALLOWED_EXTENSIONS = new Set(['md', 'markdown', 'js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx', 'py', 'rb', 'go', 'rs', 'java', 'kt', 'scala', 'c', 'cc', 'cpp', 'h', 'hpp', 'cs', 'swift', 'html', 'htm', 'css', 'scss', 'json', 'yml', 'yaml', 'toml', 'xml', 'txt', 'sh', 'bash', 'zsh', 'sql', 'env', 'dockerfile']);
 
 const EXCLUDED_PATH_FRAGMENTS = ['node_modules/', 'dist/', 'build/', '.git/', '.next/', 'coverage/', '.cache/', 'vendor/'];
 
-const MAX_FILE_BYTES = 100 * 1024;
-const MAX_TOTAL_BYTES = 200 * 1024;
+const MAX_FILE_BYTES = 500 * 1024;
+const MAX_TOTAL_BYTES = 1200 * 1024;
 const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 function jsonResponse(body, status = 200) {
@@ -62,9 +50,7 @@ function isAllowedPath(path, size) {
 }
 
 function buildGeminiPrompt({ title, body, gradingCriteria, owner, repo, branch, files, filesSkipped }) {
-  const fileSection = files
-    .map((f) => `## ${f.path}\n${f.content}`)
-    .join('\n\n');
+  const fileSection = files.map((f) => `## ${f.path}\n${f.content}`).join('\n\n');
 
   return `You are grading a student's GitHub repository submission. Be a constructive, specific code reviewer.
 
@@ -86,17 +72,17 @@ Grade the submission against the criteria and write feedback that the student ca
 
 Your feedback MUST be markdown-formatted with these sections, in order:
 
-## Summary
+#### Summary
 One short paragraph (2-3 sentences) of overall assessment tied to the grading criteria.
 
-## Strengths
-A bulleted list of 2-4 specific things the student did well. For each bullet:
+### Strengths
+Level 4 heading sections (####) for 1-2 specific things from the application code files, not markdown files, that the student did well. For each section:
 - Reference a real file path from the included files (e.g. \`src/app.js\`).
 - Include a fenced code snippet (≤ 10 lines) quoting the actual code that demonstrates the strength. Use a language hint matching the file extension.
 - Briefly explain why it satisfies the criteria.
 
-## Areas to improve
-A bulleted list of 2-4 concrete, prioritized recommendations. For each bullet:
+### Areas to improve
+Level 4 heading sections (####) for 4-5 concrete, prioritized recommendations. For each section:
 - Reference a real file path from the included files.
 - Quote a short snippet (≤ 10 lines) of the code that needs work, OR describe a missing element with the file where it should go.
 - Suggest a concrete change. Prefer a one-line recommendation over a full rewrite.
@@ -117,7 +103,10 @@ function parseGeminiJson(text) {
   if (!raw) return { ok: false, reason: 'empty_response', raw };
 
   const candidates = [];
-  const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  const stripped = raw
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
   candidates.push(stripped);
   const firstBrace = stripped.indexOf('{');
   const lastBrace = stripped.lastIndexOf('}');
@@ -204,9 +193,7 @@ export function createGithubGradeHandler({ createSupabaseClientFromAuthHeader, g
     const treeData = await treeResp.json();
     const entries = Array.isArray(treeData?.tree) ? treeData.tree : [];
 
-    const candidates = entries
-      .filter((e) => e?.type === 'blob' && typeof e?.path === 'string' && isAllowedPath(e.path, e.size))
-      .sort((a, b) => a.size - b.size);
+    const candidates = entries.filter((e) => e?.type === 'blob' && typeof e?.path === 'string' && isAllowedPath(e.path, e.size)).sort((a, b) => a.size - b.size);
 
     const totalCandidates = entries.filter((e) => e?.type === 'blob').length;
     const selected = [];
@@ -244,10 +231,10 @@ export function createGithubGradeHandler({ createSupabaseClientFromAuthHeader, g
     const geminiBody = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.2,
+        temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 4096,
+        //        maxOutputTokens: 4096,
         responseMimeType: 'application/json',
       },
       safetySettings: [
@@ -298,12 +285,7 @@ export function createGithubGradeHandler({ createSupabaseClientFromAuthHeader, g
         ...(promptFeedback ? { promptFeedback } : {}),
       };
 
-      const friendly =
-        finishReason === 'MAX_TOKENS'
-          ? 'AI grading was truncated before completing. Please retry; the prompt may be too long.'
-          : finishReason === 'SAFETY'
-            ? 'AI grading was blocked by safety filters. Please review the submission contents.'
-            : 'Could not parse AI grading response. Please retry or contact your instructor.';
+      const friendly = finishReason === 'MAX_TOKENS' ? 'AI grading was truncated before completing. Please retry; the prompt may be too long.' : finishReason === 'SAFETY' ? 'AI grading was blocked by safety filters. Please review the submission contents.' : 'Could not parse AI grading response. Please retry or contact your instructor.';
 
       return jsonResponse({
         ok: true,
