@@ -47,17 +47,22 @@ export function isSubmittableInteractionType(type) {
   return SUBMITTABLE_INTERACTION_TYPES.has((type || '').toLowerCase().trim());
 }
 
-export function normalizeInteractionIds(markdown, generateId = () => crypto.randomUUID()) {
+export function normalizeInteractionIds(markdown, generateId = () => crypto.randomUUID(), existingIds = new Set()) {
   const source = String(markdown || '');
   if (!source.trim()) {
     return source;
   }
 
+  const seenIds = new Set(existingIds);
+
   return source.replace(/```masteryls\s*\n?([\s\S]*?)```/g, (fullMatch, fenceBody) => {
     const parsed = parseInteractionMeta(fenceBody);
     const meta = parsed.meta || {};
-    const hasValidUuid = typeof meta.id === 'string' && UUID_PATTERN.test(meta.id.trim());
-    if (hasValidUuid) {
+    const id = typeof meta.id === 'string' ? meta.id.trim() : '';
+    const isValidAndUnique = UUID_PATTERN.test(id) && !seenIds.has(id);
+
+    if (isValidAndUnique) {
+      seenIds.add(id);
       return fullMatch;
     }
 
@@ -67,6 +72,7 @@ export function normalizeInteractionIds(markdown, generateId = () => crypto.rand
     }
 
     const newId = generateId();
+    seenIds.add(newId);
     const fixedMeta = { ...meta, id: newId };
     const jsonReplacement = `${JSON.stringify(fixedMeta)}\n`;
     const newFenceBody = String(fenceBody).replace(jsonMatch[0], jsonReplacement);

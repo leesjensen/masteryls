@@ -5,7 +5,7 @@ import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
-import { extractInteractionMetas, isSubmittableInteractionType } from '../utils/interactionMeta';
+import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
 import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { createCourseInternal } from './courseCreation.js';
@@ -523,15 +523,21 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         structureChanged = true;
       }
     } else {
-      const nextInteractions = _extractInteractionIds(content);
+      const existingIds = new Set(
+        (updatedCourse.modules || []).flatMap((m) =>
+          (m.topics || []).filter((t) => t.id !== topic.id).flatMap((t) => (Array.isArray(t.interactions) ? t.interactions : []))
+        )
+      );
+      const normalizedContent = normalizeInteractionIds(content, undefined, existingIds);
+      const nextInteractions = _extractInteractionIds(normalizedContent);
       const previousInteractions = Array.isArray(updatedTopic.interactions) ? updatedTopic.interactions : [];
       updatedTopic.interactions = nextInteractions;
       structureChanged = !_areStringArraysEqual(previousInteractions, nextInteractions);
 
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
-      const commitSha = await service.updateGitHubFile(gitHubUrl, content, token, commitMessage);
+      const commitSha = await service.updateGitHubFile(gitHubUrl, normalizedContent, token, commitMessage);
       invalidateCourseReadCache(course, commitSha);
-      course.markdownCache.set(topic.path, content);
+      course.markdownCache.set(topic.path, normalizedContent);
     }
 
     if (structureChanged) {
