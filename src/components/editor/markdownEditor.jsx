@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe, GraduationCap, SpellCheck } from 'lucide-react';
+import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe, GraduationCap, SpellCheck, BarChart3 } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator, aiTopicReviewGenerator } from '../../ai/aiContentGenerator';
 import { normalizeInteractionIds } from '../../utils/interactionMeta';
@@ -797,6 +797,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={CircleDot} onClick={() => insertQuiz(defaultMultipleChoiceInteractionTemplate)} title="Multiple Choice Quiz" />
           <EditorButton icon={SquareX} onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" />
           <EditorButton icon={BookOpenCheck} onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" />
+          <EditorButton icon={BarChart3} onClick={() => insertQuiz(defaultLikertInteractionTemplate)} title="Likert Interaction" />
           <EditorButton icon={GraduationCap} onClick={() => insertQuiz(defaultTeachingInteractionTemplate)} title="Teaching Interaction" />
           <EditorButton icon={FileUp} onClick={() => insertQuiz(defaultFileInteractionTemplate)} title="File Submission Quiz" />
           <EditorButton icon={CloudUpload} onClick={() => insertQuiz(defaultUrlInteractionTemplate)} title="URL Submission Quiz" />
@@ -881,6 +882,21 @@ const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
 {"id":"", "title":"Essay", "type":"essay", "gradingCriteria":"- Addresses the prompt directly\n- Uses at least one concrete example\n- Demonstrates accurate understanding of key concepts" }
 Simple **essay** question
+\`\`\`
+`;
+
+const defaultLikertInteractionTemplate = `
+\`\`\`masteryls
+{"id":"", "title":"Likert survey", "type":"likert", "showResults":"editor" }
+Please rate each statement.
+
+Scale: Strongly disagree | Disagree | Neutral | Agree | Strongly agree
+
+| qid | item |
+|-----|------|
+| prep | I came prepared for class. |
+| engage | I stayed engaged during activities. |
+| clarity | The lesson objectives were clear. |
 \`\`\`
 `;
 

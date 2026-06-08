@@ -329,6 +329,24 @@ test('editor can insert AI generated quiz markdown', async ({ page }) => {
   expect(/```masteryls[\s\S]*```/.test(insertedMarkdown)).toBeTruthy();
 });
 
+test('editor can insert likert interaction markdown', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByTitle('Likert Interaction').click();
+
+  const insertedMarkdown = await page.evaluate(() => {
+    const monaco = (window as any).monaco;
+    const models = monaco?.editor?.getModels?.() || [];
+    const matchingModel = models.find((model: any) => String(model.getValue()).includes('"type":"likert"'));
+    return matchingModel ? String(matchingModel.getValue()) : '';
+  });
+
+  expect(insertedMarkdown).toContain('"type":"likert"');
+  expect(insertedMarkdown).toContain('Scale: Strongly disagree | Disagree | Neutral | Agree | Strongly agree');
+  expect(insertedMarkdown).toContain('| qid | item |');
+});
+
 test('editor can modify selected markdown with AI', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
