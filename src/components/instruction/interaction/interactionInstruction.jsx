@@ -7,6 +7,7 @@ import SurveyInteraction from './surveyInteraction';
 import LikertInteraction from './likertInteraction';
 import FileInteraction from './fileInteraction';
 import UrlInteraction from './urlInteraction';
+import GithubInteraction from './githubInteraction';
 import TeachingInteraction from './teachingInteraction';
 import WebPageInteraction from './webPageInteraction';
 import AiWebPageInteraction from './aiWebPageInteraction';
@@ -112,6 +113,8 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       return <FileInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'url-submission') {
       return <UrlInteraction id={meta.id} body={interactionBody} validateUrl={toBoolean(meta.validateUrl, false)} urlPrompt={meta.urlPrompt || ''} gradingCriteria={meta.gradingCriteria || ''} />;
+    } else if (meta.type === 'github-submission') {
+      return <GithubInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'teaching') {
       return <TeachingInteraction id={meta.id} topicTitle={meta.title} body={interactionBody} />;
     } else if (meta.type === 'prompt') {
@@ -256,6 +259,12 @@ export default function InteractionInstruction({ courseOps, learningSession, use
             const validateUrl = toBoolean(interactionRoot.getAttribute('data-plugin-masteryls-validate-url'), false);
             const urlPrompt = interactionRoot.getAttribute('data-plugin-masteryls-url-prompt') || '';
             const percentCorrect = await onUrlInteraction({ id, title, type, body, url: interactionElement.value, validateUrl, gradingCriteria, urlPrompt, syncGrade, autoGrade });
+            displayGrade(interactionRoot, percentCorrect);
+          }
+        } else if (type === 'github-submission') {
+          const interactionElement = interactionRoot.querySelector('input[type="url"]');
+          if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
+            const percentCorrect = await onGithubInteraction({ id, title, type, body, url: interactionElement.value, gradingCriteria, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'teaching') {
@@ -496,6 +505,46 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return percentCorrect;
+  }
+
+  async function onGithubInteraction({ id, title, type, body, url, gradingCriteria = '', syncGrade = false, autoGrade = false }) {
+    if (!url) return 0;
+    const normalizedCriteria = String(gradingCriteria || '').trim();
+
+    if (!normalizedCriteria) {
+      const feedback = 'No grading criteria configured for this submission.';
+      const details = { type, url, percentCorrect: 0, feedback, syncGrade, autoGrade };
+      updateInteractionProgress(id, details);
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+      return 0;
+    }
+
+    try {
+      const result = await courseOps.getGithubInteractionFeedback({ title, type, body, url }, normalizedCriteria);
+      const percentCorrect = Number(result?.percentCorrect ?? 0);
+      const feedback = result?.feedback || 'Submission received.';
+      const details = {
+        type,
+        url,
+        gradingCriteria: normalizedCriteria,
+        filesIncluded: result?.filesIncluded,
+        filesSkipped: result?.filesSkipped,
+        branch: result?.branch,
+        percentCorrect,
+        feedback,
+        syncGrade,
+        autoGrade,
+      };
+      updateInteractionProgress(id, details);
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+      return percentCorrect;
+    } catch (error) {
+      const feedback = `Unable to grade GitHub submission: ${error?.message || String(error)}`;
+      const details = { type, url, gradingCriteria: normalizedCriteria, percentCorrect: 0, feedback, syncGrade, autoGrade };
+      updateInteractionProgress(id, details);
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+      return 0;
+    }
   }
 
   async function onTeachingInteraction({ id, title, type, body, messages, syncGrade = false, autoGrade = false }) {

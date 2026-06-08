@@ -1,5 +1,5 @@
 const DEFAULT_INTERACTION_META = { id: undefined, title: '', type: 'multiple-choice' };
-const SUBMITTABLE_INTERACTION_TYPES = new Set(['multiple-choice', 'multiple-select', 'survey', 'likert', 'essay', 'file-submission', 'url-submission', 'teaching', 'prompt', 'ai-web-page']);
+const SUBMITTABLE_INTERACTION_TYPES = new Set(['multiple-choice', 'multiple-select', 'survey', 'likert', 'essay', 'file-submission', 'url-submission', 'github-submission', 'teaching', 'prompt', 'ai-web-page']);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function normalizeInteractionMetaJson(jsonText) {

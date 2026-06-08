@@ -897,6 +897,20 @@ class Service {
     return data;
   }
 
+  async makeGithubGradeRequest(params: { url: string; title?: string; body?: string; gradingCriteria: string }) {
+    const { data, error } = await this.supabase.functions.invoke('githubgrade', {
+      body: params,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (data?.ok === false) {
+      throw new Error(data.error || 'GitHub grading failed.');
+    }
+    return data;
+  }
+
   async resolveGitHubSnapshotRef(params: { owner: string; repository: string; ref: string }): Promise<string | null> {
     const { data, error } = await this.supabase.functions.invoke('githubsnapshot', {
       body: params,

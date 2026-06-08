@@ -1171,6 +1171,15 @@ ${topicDescription || 'overview content placeholder'}`;
     return aiUrlFeedbackGenerator(data, gradingCriteria, urlPrompt, user);
   }
 
+  async function getGithubInteractionFeedback(data, gradingCriteria) {
+    return service.makeGithubGradeRequest({
+      url: data.url,
+      title: data.title,
+      body: data.body,
+      gradingCriteria,
+    });
+  }
+
   async function getAiWebPageResponse({ prompt }) {
     const data = `Create a complete, standalone HTML web page for a learner submission.
 
@@ -1843,6 +1852,7 @@ Requirements:
     getPromptResponse,
     getAiWebPageFeedback,
     getCriteriaTargetFeedback,
+    getGithubInteractionFeedback,
     getAiWebPageResponse,
     validateUrlFromServer,
     addProgress,
