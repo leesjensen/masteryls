@@ -66,7 +66,7 @@ function buildGeminiPrompt({ title, body, gradingCriteria, owner, repo, branch, 
     .map((f) => `## ${f.path}\n${f.content}`)
     .join('\n\n');
 
-  return `You are grading a student's GitHub repository submission.
+  return `You are grading a student's GitHub repository submission. Be a constructive, specific code reviewer.
 
 Title: ${title || '(no title)'}
 Instructions to learner:
@@ -82,25 +82,67 @@ Files included: ${files.length} (skipped ${filesSkipped} for size or type).
 ${fileSection}
 --- END FILES ---
 
-Respond ONLY with a single JSON object on one line, no markdown fences, in this exact shape:
-{ "percentCorrect": <integer 0-100>, "feedback": "<2-4 sentences of feedback grounded in the criteria>" }`;
+Grade the submission against the criteria and write feedback that the student can act on.
+
+Your feedback MUST be markdown-formatted with these sections, in order:
+
+## Summary
+One short paragraph (2-3 sentences) of overall assessment tied to the grading criteria.
+
+## Strengths
+A bulleted list of 2-4 specific things the student did well. For each bullet:
+- Reference a real file path from the included files (e.g. \`src/app.js\`).
+- Include a fenced code snippet (≤ 10 lines) quoting the actual code that demonstrates the strength. Use a language hint matching the file extension.
+- Briefly explain why it satisfies the criteria.
+
+## Areas to improve
+A bulleted list of 2-4 concrete, prioritized recommendations. For each bullet:
+- Reference a real file path from the included files.
+- Quote a short snippet (≤ 10 lines) of the code that needs work, OR describe a missing element with the file where it should go.
+- Suggest a concrete change. Prefer a one-line recommendation over a full rewrite.
+
+Rules:
+- Stay strictly grounded in the provided files. Do NOT invent paths, snippets, or behavior that wasn't shown.
+- If a strength or weakness can't be supported by a real snippet, omit that bullet rather than fabricate.
+- Total length: 300-700 words.
+
+Respond ONLY with a single JSON object, no markdown fences around the JSON object itself, in this exact shape:
+{ "percentCorrect": <integer 0-100>, "feedback": "<the full markdown feedback string>" }
+
+Escape newlines, quotes, and backslashes inside the feedback string so the response is valid JSON.`;
 }
 
 function parseGeminiJson(text) {
-  const cleaned = String(text || '')
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
-  try {
-    const obj = JSON.parse(cleaned);
-    const percent = Math.max(0, Math.min(100, Math.round(Number(obj?.percentCorrect))));
-    const feedback = String(obj?.feedback || '').trim();
-    if (!Number.isFinite(percent) || !feedback) return null;
-    return { percentCorrect: percent, feedback };
-  } catch {
-    return null;
+  const raw = String(text || '').trim();
+  if (!raw) return { ok: false, reason: 'empty_response', raw };
+
+  const candidates = [];
+  const stripped = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  candidates.push(stripped);
+  const firstBrace = stripped.indexOf('{');
+  const lastBrace = stripped.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    candidates.push(stripped.slice(firstBrace, lastBrace + 1));
   }
+
+  for (const candidate of candidates) {
+    try {
+      const obj = JSON.parse(candidate);
+      const percentNumber = Number(obj?.percentCorrect);
+      if (!Number.isFinite(percentNumber)) {
+        return { ok: false, reason: 'percent_not_finite', raw, parsed: obj };
+      }
+      const percent = Math.max(0, Math.min(100, Math.round(percentNumber)));
+      const feedback = String(obj?.feedback || '').trim();
+      if (!feedback) return { ok: false, reason: 'feedback_empty', raw, parsed: obj };
+      return { ok: true, percentCorrect: percent, feedback };
+    } catch (error) {
+      // try next candidate
+      continue;
+    }
+  }
+
+  return { ok: false, reason: 'json_parse_failed', raw };
 }
 
 export function createGithubGradeHandler({ createSupabaseClientFromAuthHeader, getEnv, fetchFn = fetch }) {
@@ -201,7 +243,13 @@ export function createGithubGradeHandler({ createSupabaseClientFromAuthHeader, g
 
     const geminiBody = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, topK: 40, topP: 0.95 },
+      generationConfig: {
+        temperature: 0.2,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 4096,
+        responseMimeType: 'application/json',
+      },
       safetySettings: [
         { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
         { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -226,17 +274,45 @@ export function createGithubGradeHandler({ createSupabaseClientFromAuthHeader, g
     }
 
     const geminiData = await geminiResp.json();
-    const candidateText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = geminiData?.candidates?.[0];
+    const candidateText = candidate?.content?.parts?.map((p) => p?.text || '').join('') || '';
+    const finishReason = candidate?.finishReason || 'unknown';
+    const promptFeedback = geminiData?.promptFeedback;
+
     const grade = parseGeminiJson(candidateText);
 
-    if (!grade) {
+    if (!grade.ok) {
+      console.error('githubgrade: AI response parse failure', {
+        reason: grade.reason,
+        finishReason,
+        promptFeedback,
+        rawTextSnippet: String(candidateText).slice(0, 500),
+        textLength: candidateText.length,
+      });
+
+      const debug = {
+        parseFailureReason: grade.reason,
+        finishReason,
+        rawTextSnippet: String(candidateText).slice(0, 800),
+        textLength: candidateText.length,
+        ...(promptFeedback ? { promptFeedback } : {}),
+      };
+
+      const friendly =
+        finishReason === 'MAX_TOKENS'
+          ? 'AI grading was truncated before completing. Please retry; the prompt may be too long.'
+          : finishReason === 'SAFETY'
+            ? 'AI grading was blocked by safety filters. Please review the submission contents.'
+            : 'Could not parse AI grading response. Please retry or contact your instructor.';
+
       return jsonResponse({
         ok: true,
         percentCorrect: 0,
-        feedback: 'Could not parse AI grading response. Please retry or contact your instructor.',
+        feedback: friendly,
         filesIncluded: fetchedFiles.length,
         filesSkipped,
         branch,
+        debug,
       });
     }
 

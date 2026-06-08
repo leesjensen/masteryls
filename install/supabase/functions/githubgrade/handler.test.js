@@ -168,6 +168,52 @@ test('githubgrade honors total size cap and reports filesSkipped', async () => {
   assert.equal(body.filesSkipped, 1, 'one of the 90KB files is skipped');
 });
 
+test('githubgrade parses multi-line markdown feedback with fenced code blocks', async () => {
+  const tree = [{ type: 'blob', path: 'README.md', size: 100 }];
+
+  const detailedFeedback = [
+    '## Summary',
+    'The repository meets most criteria but lacks tests.',
+    '',
+    '## Strengths',
+    '- Clear README structure in `README.md`:',
+    '```md',
+    '# Project',
+    '## Setup',
+    '```',
+    '- Good docs intent.',
+    '',
+    '## Areas to improve',
+    '- Add a test file (none present).',
+    '- Document install steps in `README.md`.',
+  ].join('\n');
+
+  const geminiPayload = { percentCorrect: 78, feedback: detailedFeedback };
+
+  const { fetchFn } = makeFetchRouter([
+    [/api\.github\.com\/repos\/u\/r$/, jsonResponse({ default_branch: 'main' })],
+    [/api\.github\.com\/repos\/u\/r\/git\/trees\/main/, jsonResponse({ tree })],
+    [/raw\.githubusercontent\.com\/.+/, textResponse('# Project\n## Setup')],
+    [/generativelanguage\.googleapis\.com/, jsonResponse({
+      candidates: [{ content: { parts: [{ text: JSON.stringify(geminiPayload) }] } }],
+    })],
+  ]);
+
+  const handler = createGithubGradeHandler({
+    createSupabaseClientFromAuthHeader: () => createMockSupabase({ user: { id: 'u1' } }),
+    getEnv: defaultEnv,
+    fetchFn,
+  });
+
+  const response = await handler(makeRequest({ url: 'https://github.com/u/r', gradingCriteria: 'Has README' }));
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.percentCorrect, 78);
+  assert.match(body.feedback, /## Strengths/);
+  assert.match(body.feedback, /## Areas to improve/);
+  assert.match(body.feedback, /```md\n# Project/);
+});
+
 test('githubgrade falls back to zero when AI response is unparseable', async () => {
   const tree = [{ type: 'blob', path: 'README.md', size: 50 }];
 
