@@ -1,12 +1,12 @@
 import { generateId } from '../utils/utils';
 import { aiCourseGenerator, aiCourseOverviewGenerator } from '../ai/aiContentGenerator';
+import { LONG_RUNNING_TASK_MESSAGES } from '../utils/loadingMessages.js';
 
 export async function createCourseInternal(service, user, generateWithAi, sourceAccount, sourceRepo, catalogEntry, gitHubToken, setUpdateMessage) {
   if (generateWithAi) {
     setUpdateMessage('Using AI to create course');
-    const messages = ['The gerbil is digging', 'The hamster is running', 'The beaver is building', 'The squirrel is gathering nuts', 'The spider is spinning a web'];
     const messageInterval = setInterval(() => {
-      setUpdateMessage(messages[Math.floor(Math.random() * messages.length)]);
+      setUpdateMessage(LONG_RUNNING_TASK_MESSAGES[Math.floor(Math.random() * LONG_RUNNING_TASK_MESSAGES.length)]);
     }, 3000);
     const courseJson = await aiCourseGenerator(catalogEntry.title, catalogEntry.description);
     clearInterval(messageInterval);

@@ -67,6 +67,7 @@ function resolveWebPageUrl(file, topicPath) {
 
 export default function AiWebPageInteraction({ id, title, body, height, topicPath, file, allowAiPrompt = true, getSubmissionHistory }) {
   const progress = useInteractionProgressStore(id) || {};
+  const isEvaluating = progress.evaluationState === 'loading';
   const { directions, html: htmlFromBody } = React.useMemo(() => parseBody(body), [body]);
 
   const [fileHtml, setFileHtml] = React.useState('');
@@ -302,7 +303,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   const starterHtmlBaseline = htmlFromBody || fileHtml || '';
   const submitBaselineHtml = progress.submittedHtml || (progress.feedback ? progress.html || '' : starterHtmlBaseline);
   const hasSourceChangesForSubmit = currentHtml !== submitBaselineHtml;
-  const submitDisabled = !currentHtml.trim() || generationState === 'loading' || !hasSourceChangesForSubmit;
+  const submitDisabled = isEvaluating || !currentHtml.trim() || generationState === 'loading' || !hasSourceChangesForSubmit;
   const saveDisabled = !canApplySource || generationState === 'loading';
 
   const loadingHistory = historyOpen && historyItems === null && Boolean(getSubmissionHistory);
@@ -393,7 +394,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
 
         <div className="flex flex-wrap items-center gap-2">
           <button id={`submit-${id}`} type="submit" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={submitDisabled}>
-            Submit
+            {isEvaluating ? 'Evaluating...' : 'Submit'}
           </button>
         </div>
 

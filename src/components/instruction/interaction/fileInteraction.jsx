@@ -1,9 +1,12 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { FileUp } from 'lucide-react';
 import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
+import { useInteractionProgressStore } from './interactionProgressStore';
 import { formatFileSize } from '../../../utils/utils';
 
 export default function FileInteraction({ id, body }) {
+  const progress = useInteractionProgressStore(id) || {};
+  const isEvaluating = progress.evaluationState === 'loading';
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isInputValid, setIsInputValid] = useState(false);
@@ -112,8 +115,8 @@ export default function FileInteraction({ id, body }) {
           </div>
         )}
       </div>
-      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={!isInputValid}>
-        Submit files
+      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={isEvaluating || !isInputValid}>
+        {isEvaluating ? 'Evaluating...' : 'Submit files'}
       </button>
     </div>
   );
