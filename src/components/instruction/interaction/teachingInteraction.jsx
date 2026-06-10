@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { aiTeachingResponseGenerator } from '../../../ai/aiContentGenerator';
 import Markdown from '../../Markdown';
 import { updateInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
+import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 import ScoreStars from './scoreStars';
 
 export default function TeachingInteraction({ id, topicTitle, body }) {
   const progress = useInteractionProgressStore(id) || {};
   const initialQuestion = progress.messages || (body ? [{ type: 'model', content: body, timestamp: Date.now() }] : []);
-  const isEvaluating = progress.evaluationState === 'loading';
   const [messages, setMessages] = useState(initialQuestion);
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -124,14 +124,11 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
           </button>
         </form>
       </div>
-      <div className="flex gap-2 mt-4">
-        <button id={`submit-${id}`} score="30" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600" disabled={isEvaluating || responseCount < 1}>
-          {isEvaluating ? 'Evaluating...' : 'Submit session'}
-        </button>
+      <InteractionSubmitRow id={id} details={progress} label="Submit session" disabled={responseCount < 1} buttonClassName="px-4 py-2 rounded-md" className="mt-4">
         <button onClick={handleClear} type="button" className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 disabled:bg-gray-600 disabled:text-gray-50" disabled={responseCount < 1}>
           Clear
         </button>
-      </div>
+      </InteractionSubmitRow>
     </div>
   );
 }

@@ -2,11 +2,11 @@ import React, { useState, useRef, useCallback } from 'react';
 import { FileUp } from 'lucide-react';
 import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
+import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 import { formatFileSize } from '../../../utils/utils';
 
 export default function FileInteraction({ id, body }) {
   const progress = useInteractionProgressStore(id) || {};
-  const isEvaluating = progress.evaluationState === 'loading';
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isInputValid, setIsInputValid] = useState(false);
@@ -71,13 +71,16 @@ export default function FileInteraction({ id, body }) {
     [handleFileSelect, syncInputValidity],
   );
 
-  const removeFile = useCallback((indexToRemove) => {
-    setSelectedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-      syncInputValidity();
-    }
-  }, [syncInputValidity]);
+  const removeFile = useCallback(
+    (indexToRemove) => {
+      setSelectedFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+        syncInputValidity();
+      }
+    },
+    [syncInputValidity],
+  );
 
   return (
     <div>
@@ -115,9 +118,7 @@ export default function FileInteraction({ id, body }) {
           </div>
         )}
       </div>
-      <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={isEvaluating || !isInputValid}>
-        {isEvaluating ? 'Evaluating...' : 'Submit files'}
-      </button>
+      <InteractionSubmitRow id={id} details={progress} label="Submit files" disabled={!isInputValid} />
     </div>
   );
 }

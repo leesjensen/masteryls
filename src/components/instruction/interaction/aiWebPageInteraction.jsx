@@ -2,6 +2,7 @@ import React from 'react';
 import Editor from '@monaco-editor/react';
 import { useInteractionProgressStore, updateInteractionProgress } from './interactionProgressStore';
 import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
+import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 import WebPageInteraction from './webPageInteraction';
 import CopyToClipboard from '../../CopyToClipboard';
 import ScoreStars from './scoreStars';
@@ -67,7 +68,6 @@ function resolveWebPageUrl(file, topicPath) {
 
 export default function AiWebPageInteraction({ id, title, body, height, topicPath, file, allowAiPrompt = true, getSubmissionHistory }) {
   const progress = useInteractionProgressStore(id) || {};
-  const isEvaluating = progress.evaluationState === 'loading';
   const { directions, html: htmlFromBody } = React.useMemo(() => parseBody(body), [body]);
 
   const [fileHtml, setFileHtml] = React.useState('');
@@ -303,7 +303,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
   const starterHtmlBaseline = htmlFromBody || fileHtml || '';
   const submitBaselineHtml = progress.submittedHtml || (progress.feedback ? progress.html || '' : starterHtmlBaseline);
   const hasSourceChangesForSubmit = currentHtml !== submitBaselineHtml;
-  const submitDisabled = isEvaluating || !currentHtml.trim() || generationState === 'loading' || !hasSourceChangesForSubmit;
+  const submitDisabled = !currentHtml.trim() || generationState === 'loading' || !hasSourceChangesForSubmit;
   const saveDisabled = !canApplySource || generationState === 'loading';
 
   const loadingHistory = historyOpen && historyItems === null && Boolean(getSubmissionHistory);
@@ -392,11 +392,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
 
         {currentHtml ? <WebPageInteraction title={title || 'AI web page'} html={currentHtml} height={height} topicPath={topicPath} /> : <div className="text-sm text-gray-500 border border-dashed border-gray-300 rounded-lg p-3">No HTML available yet. Add HTML in the editor or generate it from a prompt.</div>}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button id={`submit-${id}`} type="submit" className="px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={submitDisabled}>
-            {isEvaluating ? 'Evaluating...' : 'Submit'}
-          </button>
-        </div>
+        <InteractionSubmitRow id={id} details={progress} disabled={submitDisabled} buttonClassName="px-4 py-1" />
 
         {getSubmissionHistory && (
           <div className="border border-blue-200 bg-blue-50/40 rounded-lg p-3 space-y-2">

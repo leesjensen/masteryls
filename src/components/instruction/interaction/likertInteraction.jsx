@@ -1,6 +1,7 @@
 import React from 'react';
 import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
+import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 import { canViewLikertResults, parseLikertBody } from '../../../utils/likertInteraction';
 
 function parseVisibilityMode(showResults) {
@@ -61,7 +62,6 @@ function responsesChanged(currentResponses, savedResponses, questions) {
 
 export default function LikertInteraction({ id, body, meta, courseOps }) {
   const progress = useInteractionProgressStore(id) || {};
-  const isEvaluating = progress.evaluationState === 'loading';
   const { prompt, questions, scale } = parseLikertBody(body, meta);
   const visibilityMode = parseVisibilityMode(meta?.showResults || meta?.resultsVisibility);
   const canViewResults = canViewLikertResults(visibilityMode, courseOps?.user);
@@ -77,7 +77,7 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
   const answeredCount = questions.filter((question) => Number.isFinite(Number(responses[question.qid]))).length;
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
   const hasChanges = responsesChanged(responses, progress.responses || {}, questions);
-  const submitDisabled = isEvaluating || (required && !allAnswered) || !hasChanges;
+  const submitDisabled = (required && !allAnswered) || !hasChanges;
 
   function handleSelect(questionId, value) {
     setResponses((prev) => ({
@@ -122,9 +122,7 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
           </div>
         ))}
 
-        <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={submitDisabled}>
-          {isEvaluating ? 'Evaluating...' : 'Submit'}
-        </button>
+        <InteractionSubmitRow id={id} details={progress} disabled={submitDisabled} />
 
         {progress.feedback && <div className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">{progress.feedback}</div>}
 

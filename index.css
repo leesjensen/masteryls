@@ -1,6 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Quicksand:wght@400;700&display=swap');
 @import 'tailwindcss';
 
+@property --interaction-rotate {
+  syntax: '<angle>';
+  initial-value: 132deg;
+  inherits: false;
+}
+
 body {
   font-family: 'Quicksand', sans-serif;
 }
@@ -35,5 +41,45 @@ body {
 
   .animate-fade-in {
     animation: fade-in 1.5s ease-in;
+  }
+
+  @keyframes interaction-border-travel {
+    from {
+      --interaction-rotate: 0deg;
+    }
+    to {
+      --interaction-rotate: 360deg;
+    }
+  }
+
+  .interaction-active-border {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: rgb(249 250 251);
+  }
+
+  .interaction-active-border::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 8px;
+    background-image: linear-gradient(var(--interaction-rotate), rgba(253, 253, 253, 0.72), rgba(255, 255, 255, 0.92) 80%, var(--color-blue-400));
+    animation: interaction-border-travel 2s linear infinite;
+    pointer-events: none;
+  }
+
+  .interaction-active-border::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    background: rgb(249 250 251);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  .interaction-active-border > * {
+    position: relative;
+    z-index: 1;
   }
 }

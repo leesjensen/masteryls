@@ -1,10 +1,10 @@
 import React from 'react';
 import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
+import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 
 export default function MultipleChoiceInteraction({ id, quizType, body }) {
   const progress = useInteractionProgressStore(id) || {};
-  const isEvaluating = progress.evaluationState === 'loading';
 
   const lines = body.split('\n');
   const firstChoiceIndex = lines.findIndex((l) => l.startsWith('- ['));
@@ -59,9 +59,7 @@ export default function MultipleChoiceInteraction({ id, quizType, body }) {
             </div>
           );
         })}
-        <button id={`submit-${id}`} type="submit" className="mt-3 px-6 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 transition-colors duration-200" disabled={isEvaluating || (useRadioButtons && currentSelections.size === 0)}>
-          {isEvaluating ? 'Evaluating...' : 'Submit'}
-        </button>
+        <InteractionSubmitRow id={id} details={progress} disabled={useRadioButtons && currentSelections.size === 0} />
       </div>
     </>
   );

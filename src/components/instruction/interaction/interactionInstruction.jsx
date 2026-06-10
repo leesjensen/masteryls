@@ -17,45 +17,17 @@ import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 import { isSubmittableInteractionType, parseInteractionMeta } from '../../../utils/interactionMeta';
 import { validateSubmittedUrl } from '../../../utils/urlValidation';
 import { useCanvasGradebookEligibility } from '../../../hooks/canvas/useCanvasGradebookEligibility.jsx';
-import { LONG_RUNNING_TASK_MESSAGES } from '../../../utils/loadingMessages.js';
-
-function InteractionLoadingNotice({ details }) {
-  const isLoading = details?.evaluationState === 'loading';
-  const [messageIndex, setMessageIndex] = React.useState(0);
-
-  React.useEffect(() => {
-    setMessageIndex(0);
-    if (!isLoading) return;
-
-    const timer = window.setInterval(() => {
-      setMessageIndex((current) => (current + 1) % LONG_RUNNING_TASK_MESSAGES.length);
-    }, 3000);
-
-    return () => window.clearInterval(timer);
-  }, [isLoading, details?.evaluationStartedAt]);
-
-  if (!isLoading) {
-    return null;
-  }
-
-  return (
-    <div className="mt-3 mb-3 flex items-start gap-3 rounded border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900" role="status" aria-live="polite">
-      <div className="mt-0.5 h-4 w-4 animate-spin rounded-full border-2 border-blue-300 border-t-blue-700" aria-hidden="true"></div>
-      <div className="font-medium">{`Evaluating your submission ... ${LONG_RUNNING_TASK_MESSAGES[messageIndex].toLowerCase()}`}</div>
-    </div>
-  );
-}
 
 function InteractionCard({ meta, controlJsx, isObserveReadOnly, instructionState, isCourseLinkedToGradebook, canSubmitToCanvasGradebook, onSyncGrade, toBoolean }) {
   const progress = useInteractionProgressStore(meta.id) || {};
-  const s = progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
+  const isEvaluating = progress?.evaluationState === 'loading';
+  const s = isEvaluating ? 'interaction-active-border border-transparent bg-gray-50' : progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
 
   return (
-    <div className={`px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'} data-plugin-masteryls-sync-grade={toBoolean(meta.syncGrade, false) ? 'true' : 'false'} data-plugin-masteryls-auto-grade={toBoolean(meta.autoGrade, false) ? 'true' : 'false'}>
+    <div className={`rounded-lg px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'} data-plugin-masteryls-sync-grade={toBoolean(meta.syncGrade, false) ? 'true' : 'false'} data-plugin-masteryls-auto-grade={toBoolean(meta.autoGrade, false) ? 'true' : 'false'}>
       <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
       {isObserveReadOnly && <div className="mb-2 text-xs text-amber-700">Observe mode is read-only. Submissions are disabled.</div>}
       <div className="space-y-3">{controlJsx}</div>
-      <InteractionLoadingNotice details={progress} />
       {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={onSyncGrade} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToGradebook={canSubmitToCanvasGradebook && !isObserveReadOnly} />}
     </div>
   );
@@ -608,6 +580,15 @@ export default function InteractionInstruction({ courseOps, learningSession, use
   }
 
   function displayGrade(quizRoot, percentCorrect) {
+    const interactionId = quizRoot.getAttribute('data-plugin-masteryls-id');
+    if (interactionId) {
+      const current = getInteractionProgress(interactionId) || {};
+      updateInteractionProgress(interactionId, {
+        ...current,
+        evaluationState: 'idle',
+      });
+    }
+
     let ringClass = 'ring-blue-400';
     if (instructionState !== 'exam' && percentCorrect >= 0) {
       if (percentCorrect === 100) ringClass = 'ring-green-500';
