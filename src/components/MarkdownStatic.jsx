@@ -21,7 +21,7 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
   const customComponents = {
     pre({ node, children, ...props }) {
       return (
-        <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }} {...props}>
+        <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent', fontSize: '15px', lineHeight: 1.5 }} {...props}>
           {children}
         </pre>
       );
@@ -51,14 +51,20 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       if (!isInline && language) {
         const codeText = String(children).replace(/\n$/, '');
         return (
-          <SyntaxHighlighter language={language} style={ghcolors} PreTag="div">
+          <SyntaxHighlighter
+            language={language}
+            style={ghcolors}
+            PreTag="div"
+            customStyle={{ fontSize: '15px', lineHeight: 1.5, padding: '12px', borderRadius: '4px' }}
+            codeTagProps={{ style: { fontSize: '15px', lineHeight: 1.5, fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", monospace' } }}
+          >
             {codeText}
           </SyntaxHighlighter>
         );
       }
 
       return (
-        <code className={className} {...props}>
+        <code className={className} style={{ fontSize: '0.95em' }} {...props}>
           {children}
         </code>
       );
