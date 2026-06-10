@@ -856,7 +856,7 @@ const defaultTableTemplate = `\n
 
 const defaultMultipleSelectQuizTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Multiple select", "type":"multiple-select", "syncGrade":true, "autoGrade":false }
+{"id":"", "title":"Multiple select", "type":"multiple-select", "syncGrade":false, "autoGrade":false }
 A **multiple select** question can have multiple answers. Incorrect selections count against correct ones when calculating the correct percentage.
 
 - [ ] This is **not** the right answer
@@ -869,7 +869,7 @@ A **multiple select** question can have multiple answers. Incorrect selections c
 
 const defaultMultipleChoiceInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Multiple choice", "type":"multiple-choice", "syncGrade":true, "autoGrade":false }
+{"id":"", "title":"Multiple choice", "type":"multiple-choice", "syncGrade":false, "autoGrade":false }
 Simple **multiple choice** question
 
 - [ ] This is **not** the right answer
@@ -880,7 +880,7 @@ Simple **multiple choice** question
 `;
 const defaultEssayInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"Essay", "type":"essay", "gradingCriteria":"- Addresses the prompt directly\n- Uses at least one concrete example\n- Demonstrates accurate understanding of key concepts" }
+{"id":"", "title":"Essay", "type":"essay", "gradingCriteria":"- Addresses the prompt directly\\n- Uses at least one concrete example\\n- Demonstrates accurate understanding of key concepts" }
 Simple **essay** question
 \`\`\`
 `;
@@ -916,7 +916,7 @@ Simple **submission** by file
 
 const defaultUrlInteractionTemplate = `
 \`\`\`masteryls
-{"id":"", "title":"URL submission", "type":"url-submission", "syncGrade":true, "autoGrade":false, "validateUrl":true, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
+{"id":"", "title":"URL submission", "type":"url-submission", "syncGrade":false, "autoGrade":false, "validateUrl":true, "gradingCriteria":"- Include a section named HTML Deliverable\\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
 Simple **submission** by url
 \`\`\`
 `;
