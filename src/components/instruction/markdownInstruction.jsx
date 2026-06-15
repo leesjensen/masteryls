@@ -18,10 +18,21 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const [discussWidth, setDiscussWidth] = useState(375);
   const [discussionOpen, setDiscussionOpen] = useState(false);
   const [discussionContext, setDiscussionContext] = useState({ topicTitle: learningSession.topic?.title || '', topicContent: content, section: null, mode: isObserveReadOnly ? 'notes' : 'ai' });
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false));
   const containerRef = React.useRef(null);
   const location = useLocation();
   const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
   const canDiscuss = user && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (event) => setIsMobile(event.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const discussionFullScreen = canDiscuss && discussionOpen && isMobile;
 
   useEffect(() => {
     if (content) {
@@ -165,21 +176,23 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
 
   return (
     <div className="flex h-full w-full min-h-0 overflow-hidden">
-      <div ref={containerRef} data-editor-preview-scroll-container="true" className="relative flex-1 min-h-0 overflow-scroll">
-        {!discussionOpen && canDiscuss && (
-          <div className="sticky top-4 z-20 flex justify-end pr-6 pointer-events-none">
-            <button onClick={onOpenDiscussion} className="pointer-events-auto px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 flex items-center gap-2" title="Discuss this topic">
-              <MessageCircle size={18} /> Discuss
-            </button>
-          </div>
-        )}
-        <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
-      </div>
+      {!discussionFullScreen && (
+        <div ref={containerRef} data-editor-preview-scroll-container="true" className="relative flex-1 min-h-0 overflow-scroll">
+          {!discussionOpen && canDiscuss && (
+            <div className="sticky top-4 z-20 flex justify-end pr-6 pointer-events-none">
+              <button onClick={onOpenDiscussion} className="pointer-events-auto px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-md shadow-lg transition-all duration-200 flex items-center gap-2" title="Discuss this topic">
+                <MessageCircle size={18} /> Discuss
+              </button>
+            </div>
+          )}
+          <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
+        </div>
+      )}
 
       {canDiscuss && discussionOpen && (
         <>
-          <Splitter onMove={discussMoved} onResized={discussResized} minPosition={150} maxPosition={window.innerWidth - 150} />
-          <div style={{ width: discussWidth }}>
+          {!discussionFullScreen && <Splitter onMove={discussMoved} onResized={discussResized} minPosition={150} maxPosition={window.innerWidth - 150} />}
+          <div style={discussionFullScreen ? { width: '100%' } : { width: discussWidth }}>
             <DiscussionPanel
               style={{ width: discussWidth }}
               courseOps={courseOps}
