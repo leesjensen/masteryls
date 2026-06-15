@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 
@@ -379,9 +380,23 @@ export default function LearnerMasteryView({ courseOps }) {
   }
 
   function detailSortLabel(key, label) {
-    if (detailSort.key !== key) return label;
-    if (key === 'topicTitle' && detailSort.direction === 'course') return `${label} ↕`;
-    return `${label} ${detailSort.direction === 'asc' ? '↑' : '↓'}`;
+    if (detailSort.key !== key) {
+      return label;
+    }
+    let indicator;
+    if (key === 'topicTitle' && detailSort.direction === 'course') {
+      indicator = <ArrowUpDown data-testid="sort-none" size={12} className="ml-1 inline opacity-40" aria-label="Course order" />;
+    } else if (detailSort.direction === 'asc') {
+      indicator = <ArrowUp data-testid="sort-asc" size={12} className="ml-1 inline" aria-label="Sorted ascending" />;
+    } else {
+      indicator = <ArrowDown data-testid="sort-desc" size={12} className="ml-1 inline" aria-label="Sorted descending" />;
+    }
+    return (
+      <>
+        {label}
+        {indicator}
+      </>
+    );
   }
 
   if (!user) {

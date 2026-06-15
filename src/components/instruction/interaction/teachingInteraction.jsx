@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Send } from 'lucide-react';
 import { aiTeachingResponseGenerator } from '../../../ai/aiContentGenerator';
 import Markdown from '../../Markdown';
 import { updateInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
@@ -119,8 +120,9 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
 
         <form onSubmit={respondToLearner} className="border-t border-gray-200 px-4 py-3 flex gap-2">
           <input ref={inputRef} type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder={responseCount ? '' : 'As a teacher, respond to the learner ...'} className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" disabled={isLoading} />
-          <button type="submit" disabled={!userInput.trim() || isLoading} className="px-4 py-2 bg-white border-1 border-gray-400 text-gray-800 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed">
-            ▶ Respond
+          <button type="submit" disabled={!userInput.trim() || isLoading} className="inline-flex items-center gap-1 px-4 py-2 bg-white border-1 border-gray-400 text-gray-800 rounded-md hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed">
+            <Send size={14} aria-hidden="true" />
+            Respond
           </button>
         </form>
       </div>

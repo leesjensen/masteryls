@@ -989,7 +989,7 @@ Help the learner understand testing.
 
   await page.getByText('topic 1').click();
 
-  const respondButton = page.getByRole('button', { name: '▶ Respond' });
+  const respondButton = page.getByRole('button', { name: 'Respond' });
   const submitSession = page.getByRole('button', { name: 'Submit session' });
   const clearButton = page.getByRole('button', { name: 'Clear' });
   const input = page.getByPlaceholder('As a teacher, respond to the learner ...');
@@ -1025,7 +1025,7 @@ Help the learner understand testing.
 
   await page.getByText('topic 1').click();
   const input = page.getByPlaceholder('As a teacher, respond to the learner ...');
-  const respondButton = page.getByRole('button', { name: '▶ Respond' });
+  const respondButton = page.getByRole('button', { name: 'Respond' });
   await input.click();
   await input.type('A response that will fail.');
   await expect(respondButton).toBeEnabled();

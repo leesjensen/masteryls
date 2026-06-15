@@ -8,7 +8,7 @@ test('progress', async ({ page }) => {
   await expect(page.locator('tbody')).toContainText('12/5/2025, 10:13:00 AM');
   await expect(page.locator('tbody tr')).toHaveCount(5);
 
-  await page.getByRole('button', { name: '▶' }).click();
+  await page.getByRole('button', { name: 'Expand events' }).click();
   await expect(page.locator('tbody tr')).toHaveCount(7);
 });
 
@@ -36,10 +36,10 @@ test('progress sorting and topic navigation', async ({ page }) => {
   await navigateToProgress(page);
 
   await page.getByRole('columnheader', { name: /Activity Type/ }).click();
-  await expect(page.getByRole('columnheader', { name: /Activity Type/ })).toContainText('↑');
+  await expect(page.getByRole('columnheader', { name: /Activity Type/ }).locator('[data-testid="sort-asc"]')).toBeVisible();
 
   await page.getByRole('columnheader', { name: /Activity Type/ }).click();
-  await expect(page.getByRole('columnheader', { name: /Activity Type/ })).toContainText('↓');
+  await expect(page.getByRole('columnheader', { name: /Activity Type/ }).locator('[data-testid="sort-desc"]')).toBeVisible();
 
   await page.getByRole('button', { name: 'Go to Topic' }).first().click();
   await expect(page).toHaveURL(/\/course\/14602d77-0ff3-4267-b25e-4a7c3c47848b\/topic\//);

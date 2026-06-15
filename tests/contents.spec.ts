@@ -7,9 +7,9 @@ test('toc toggling', async ({ page }) => {
 
   await expect(page.getByText('topic 1')).toBeVisible();
   await expect(page.getByText('topic 2')).not.toBeVisible();
-  await page.getByRole('button', { name: '▶ Module 2' }).click();
+  await page.getByRole('button', { name: 'Module 2' }).click();
   await expect(page.getByText('topic 2')).toBeVisible();
-  await page.getByRole('button', { name: '▼ Module 1' }).click();
+  await page.getByRole('button', { name: 'Module 1' }).click();
   await expect(page.getByText('topic 1')).not.toBeVisible();
 });
 
@@ -48,7 +48,7 @@ test('toc hides unpublished topics for learners', async ({ page }) => {
   });
   await navigateToCourseNoLogin(page);
 
-  await page.getByRole('button', { name: '▶ Module 2' }).click();
+  await page.getByRole('button', { name: 'Module 2' }).click();
   await expect(page.getByText('topic 2')).not.toBeVisible();
   await expect(page.getByText('topic 3')).toBeVisible();
 });
@@ -365,7 +365,7 @@ test('sidebar annotates topics with due dates from selected schedule', async ({ 
 
   await navigateToCourseNoLogin(page);
 
-  await expect(page.getByRole('button', { name: '▼ Module 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Module 1' })).toBeVisible();
   await expect(page.getByText('Topic 1')).toBeVisible();
   await expect(page.getByText('Apr 4')).toBeVisible();
 });

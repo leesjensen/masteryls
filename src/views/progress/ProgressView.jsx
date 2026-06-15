@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 
 export default function ProgressView({ courseOps, service, user }) {
@@ -429,18 +430,18 @@ export default function ProgressView({ courseOps, service, user }) {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expand</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('createdAt')}>
                             Date & Time Range
-                            {sortConfig.key === 'createdAt' && <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>}
+                            {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? <ArrowUp data-testid="sort-asc" size={12} className="ml-1 inline" aria-label="Sorted ascending" /> : <ArrowDown data-testid="sort-desc" size={12} className="ml-1 inline" aria-label="Sorted descending" />)}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('type')}>
                             Activity Type
-                            {sortConfig.key === 'type' && <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>}
+                            {sortConfig.key === 'type' && (sortConfig.direction === 'asc' ? <ArrowUp data-testid="sort-asc" size={12} className="ml-1 inline" aria-label="Sorted ascending" /> : <ArrowDown data-testid="sort-desc" size={12} className="ml-1 inline" aria-label="Sorted descending" />)}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Events</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onClick={() => handleSort('duration')}>
                             Total Duration
-                            {sortConfig.key === 'duration' && <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>}
+                            {sortConfig.key === 'duration' && (sortConfig.direction === 'asc' ? <ArrowUp data-testid="sort-asc" size={12} className="ml-1 inline" aria-label="Sorted ascending" /> : <ArrowDown data-testid="sort-desc" size={12} className="ml-1 inline" aria-label="Sorted descending" />)}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Navigate</th>
                         </tr>
@@ -452,8 +453,8 @@ export default function ProgressView({ courseOps, service, user }) {
                             <tr className={`hover:bg-gray-50 ${group.eventCount > 1 ? 'bg-blue-50' : ''}`}>
                               <td className="px-6 py-2 whitespace-nowrap">
                                 {group.eventCount > 1 ? (
-                                  <button onClick={() => toggleGroupExpansion(group.id)} className="text-blue-600 hover:text-blue-800 focus:outline-none">
-                                    {expandedGroups.has(group.id) ? '▼' : '▶'}
+                                  <button onClick={() => toggleGroupExpansion(group.id)} className="text-blue-600 hover:text-blue-800 focus:outline-none" aria-label={expandedGroups.has(group.id) ? 'Collapse events' : 'Expand events'}>
+                                    {expandedGroups.has(group.id) ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
                                   </button>
                                 ) : (
                                   <span className="text-gray-400 text-2xl">•</span>

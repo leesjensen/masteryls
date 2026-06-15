@@ -15,7 +15,7 @@ test('load from course.json', async ({ page }) => {
   await expect(page.getByRole('banner')).toContainText('Rocket Science');
 
   await page.getByRole('button', { name: 'Topics' }).click();
-  await expect(page.getByRole('button', { name: '▼ Module 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Module 1' })).toBeVisible();
   await expect(page.getByText('markdown!')).toBeVisible();
 });
 
@@ -25,7 +25,7 @@ test('instruction types all', async ({ page }) => {
 
   await expect(page.getByRole('banner')).toContainText('Rocket Science');
   await page.getByRole('button', { name: 'Topics' }).click();
-  await expect(page.getByRole('button', { name: '▼ Module 1' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Module 1' })).toBeVisible();
 
   await expect(page.getByText('markdown!')).toBeVisible();
 
@@ -54,7 +54,7 @@ test('embedded', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourseNoLogin(page);
 
-  await page.getByRole('button', { name: '▶ Module 2' }).click();
+  await page.getByRole('button', { name: 'Module 2' }).click();
   await page.getByText('topic 3').click();
 
   await expect(page.locator('iframe[title="Embedded content"]')).toBeVisible();

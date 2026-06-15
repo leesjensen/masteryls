@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareChevronLeft, CalendarDays, ChartArea } from 'lucide-react';
+import { Menu, FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareChevronLeft, CalendarDays, ChartArea, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GitHub, Canvas } from '../../utils/Icons.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
@@ -44,9 +44,9 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
       <div className="flex flex-row justify-start">
-        <button className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium  hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.toggleSidebar()}>
+        <button className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium items-center hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.toggleSidebar()} aria-label={settings.sidebarVisible !== 'start' ? 'Collapse sidebar' : 'Expand sidebar'}>
           <Menu size={16} />
-          {settings.sidebarVisible !== 'start' ? '◀' : '▶'}
+          {settings.sidebarVisible !== 'start' ? <ChevronLeft size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />}
         </button>
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">

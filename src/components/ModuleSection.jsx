@@ -1,5 +1,5 @@
 import React from 'react';
-import { SquarePen, X } from 'lucide-react';
+import { SquarePen, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { EditableTopicItem } from './EditableTopicItem';
 import { useNavigate } from 'react-router-dom';
 import TopicItem from './TopicItem';
@@ -60,7 +60,7 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
       <li className="mb-1">
         <div className="flex items-center justify-between gap-1 min-w-0">
           <button onClick={() => onToggle(moduleIndex)} className="no-underline text-gray-500 font-semibold bg-transparent border-none cursor-pointer p-0 flex flex-1 min-w-0 whitespace-nowrap overflow-hidden items-center" aria-expanded={isOpen} title={module.title}>
-            <span className="mr-2 shrink-0">{isOpen ? '▼' : '▶'}</span>
+            <span className="mr-2 shrink-0" aria-hidden="true">{isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
             <span className="truncate min-w-0">{module.title}</span>
           </button>
           {editorVisible && (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 
 function formatDuration(seconds) {
@@ -201,8 +202,20 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }
 
   function sortLabel(key, label) {
-    if (sort.key !== key) return `${label} ↕`;
-    return `${label} ${sort.direction === 'asc' ? '↑' : '↓'}`;
+    let indicator;
+    if (sort.key !== key) {
+      indicator = <ArrowUpDown data-testid="sort-none" size={12} className="ml-1 inline opacity-40" aria-label="Not sorted" />;
+    } else if (sort.direction === 'asc') {
+      indicator = <ArrowUp data-testid="sort-asc" size={12} className="ml-1 inline" aria-label="Sorted ascending" />;
+    } else {
+      indicator = <ArrowDown data-testid="sort-desc" size={12} className="ml-1 inline" aria-label="Sorted descending" />;
+    }
+    return (
+      <>
+        {label}
+        {indicator}
+      </>
+    );
   }
 
   function onCourseChange(value) {
