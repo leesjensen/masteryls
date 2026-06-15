@@ -18,7 +18,7 @@ import { isSubmittableInteractionType, parseInteractionMeta } from '../../../uti
 import { validateSubmittedUrl } from '../../../utils/urlValidation';
 import { useCanvasGradebookEligibility } from '../../../hooks/canvas/useCanvasGradebookEligibility.jsx';
 
-function InteractionCard({ meta, controlJsx, isObserveReadOnly, instructionState, isCourseLinkedToGradebook, canSubmitToCanvasGradebook, onSyncGrade, toBoolean }) {
+function InteractionCard({ meta, controlJsx, isObserveReadOnly, instructionState, isCourseLinkedToGradebook, canSubmitToCanvasGradebook, onSyncGrade, getSubmissionFileUrl, toBoolean }) {
   const progress = useInteractionProgressStore(meta.id) || {};
   const isEvaluating = progress?.evaluationState === 'loading';
   const s = isEvaluating ? 'interaction-active-border border-transparent bg-gray-50' : progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
@@ -28,7 +28,7 @@ function InteractionCard({ meta, controlJsx, isObserveReadOnly, instructionState
       <fieldset>{meta.title && <legend className="font-semibold mb-3 break-words whitespace-pre-line">{meta.title}</legend>}</fieldset>
       {isObserveReadOnly && <div className="mb-2 text-xs text-amber-700">Observe mode is read-only. Submissions are disabled.</div>}
       <div className="space-y-3">{controlJsx}</div>
-      {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={onSyncGrade} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToGradebook={canSubmitToCanvasGradebook && !isObserveReadOnly} />}
+      {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={onSyncGrade} getSubmissionFileUrl={getSubmissionFileUrl} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToGradebook={canSubmitToCanvasGradebook && !isObserveReadOnly} />}
     </div>
   );
 }
@@ -103,7 +103,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       return controlJsx;
     }
 
-    return <InteractionCard meta={meta} controlJsx={controlJsx} isObserveReadOnly={isObserveReadOnly} instructionState={instructionState} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToCanvasGradebook={canSubmitToCanvasGradebook} onSyncGrade={syncGradeToCanvas} toBoolean={toBoolean} />;
+    return <InteractionCard meta={meta} controlJsx={controlJsx} isObserveReadOnly={isObserveReadOnly} instructionState={instructionState} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToCanvasGradebook={canSubmitToCanvasGradebook} onSyncGrade={syncGradeToCanvas} getSubmissionFileUrl={courseOps.getSubmissionFileUrl} toBoolean={toBoolean} />;
   }
 
   function generateInteractionComponent(meta, interactionBody) {
@@ -441,9 +441,42 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
   async function onFileInteraction({ id, title, type, body, files, syncGrade = false, autoGrade = false }) {
     if (files.length === 0) return 0;
-    const progressFiles = Array.from(files).map((file) => ({ name: file.name, size: file.size, type: file.type, date: file.lastModifiedDate }));
-    let feedback = `Submission received. Total files: ${progressFiles.length}. Total size: ${formatFileSize(progressFiles.reduce((total, file) => total + file.size, 0))}. Thank you!`;
-    const details = { type, files: progressFiles, feedback, syncGrade, autoGrade };
+
+    try {
+      await courseOps.clearSubmissionFolder({ interactionId: id });
+    } catch {
+      // best-effort cleanup; proceed even if a stray prior file can't be removed
+    }
+
+    const uploaded = [];
+    const failures = [];
+    for (const file of Array.from(files)) {
+      try {
+        const result = await courseOps.uploadSubmissionFile({ interactionId: id, file });
+        uploaded.push({
+          name: file.name,
+          size: result.size,
+          type: result.type,
+          storagePath: result.storagePath,
+          uploadedAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        failures.push(`${file.name}: ${error?.message || String(error)}`);
+      }
+    }
+
+    if (uploaded.length === 0) {
+      const feedback = `Submission failed. ${failures.join(' ')}`.trim();
+      const details = { type, files: [], feedback, syncGrade, autoGrade };
+      updateInteractionProgress(id, details);
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+      return 0;
+    }
+
+    const totalSize = uploaded.reduce((sum, f) => sum + f.size, 0);
+    const baseFeedback = `Submission received. ${uploaded.length} file${uploaded.length === 1 ? '' : 's'}, ${formatFileSize(totalSize)}.`;
+    const feedback = failures.length > 0 ? `${baseFeedback} Some files were rejected: ${failures.join(' ')}` : baseFeedback;
+    const details = { type, files: uploaded, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return 100;

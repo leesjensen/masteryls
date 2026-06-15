@@ -1212,6 +1212,25 @@ Requirements:
     return { details: { state: 'notStarted' } };
   }
 
+  async function uploadSubmissionFile({ interactionId, file }) {
+    const enrollmentId = learningSession?.enrollment?.id;
+    if (!enrollmentId) throw new Error('Not enrolled in this course.');
+    return service.uploadSubmissionFile(enrollmentId, interactionId, file);
+  }
+
+  async function clearSubmissionFolder({ interactionId }) {
+    const enrollmentId = learningSession?.enrollment?.id;
+    if (!enrollmentId) return;
+    const paths = await service.listSubmissionFolder(enrollmentId, interactionId);
+    if (paths.length > 0) {
+      await service.removeSubmissionFiles(paths);
+    }
+  }
+
+  async function getSubmissionFileUrl(storagePath) {
+    return service.getSubmissionFileUrl(storagePath);
+  }
+
   async function addProgress(providedUser, interactionId, type, duration = 0, details = {}) {
     if (observeSession?.active && learningSession?.observeMode) {
       return null;
@@ -1856,6 +1875,9 @@ Requirements:
     getAiWebPageResponse,
     validateUrlFromServer,
     addProgress,
+    uploadSubmissionFile,
+    clearSubmissionFolder,
+    getSubmissionFileUrl,
     syncProjectInteractionGrade,
     isLearnerInCanvasCourse,
     getProgress,

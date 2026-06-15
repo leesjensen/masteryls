@@ -575,6 +575,30 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
+  // Supabase - Storage (submissions bucket)
+  await context.route(/.*supabase\.co\/storage\/v1\/.*/, async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    const pathname = url.pathname;
+    if (pathname.includes('/object/list/')) {
+      await route.fulfill({ status: 200, json: [] });
+      return;
+    }
+    if (pathname.includes('/object/sign/')) {
+      await route.fulfill({ status: 200, json: { signedURL: 'https://example.invalid/signed-url' } });
+      return;
+    }
+    if (method === 'DELETE' && pathname.includes('/object/')) {
+      await route.fulfill({ status: 200, json: [] });
+      return;
+    }
+    if (method === 'POST' && pathname.includes('/object/')) {
+      await route.fulfill({ status: 200, json: { Key: 'ok' } });
+      return;
+    }
+    await route.fulfill({ status: 200, json: {} });
+  });
+
   // Supabase - Progress
   await context.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
     switch (route.request().method()) {

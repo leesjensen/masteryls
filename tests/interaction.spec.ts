@@ -353,17 +353,17 @@ Simple **file submission** question
   await page.getByText('Click to upload').click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles({
-    name: 'test.txt',
-    mimeType: 'text/plain',
+    name: 'test.pdf',
+    mimeType: 'application/pdf',
     buffer: Buffer.from('test file content'),
   });
 
   // Wait for the file to be processed and displayed in the UI
   await expect(page.locator('text=Selected files')).toBeVisible();
-  await expect(page.locator('text=test.txt')).toBeVisible();
+  await expect(page.locator('text=test.pdf')).toBeVisible();
 
   await page.getByRole('button', { name: 'Submit files' }).click();
-  await expect(page.locator('pre')).toContainText('Submission received. Total files: 1. Total size: 17 Bytes.');
+  await expect(page.locator('pre')).toContainText('Submission received. 1 file, 17 Bytes.');
 });
 
 test('interaction submission url', async ({ page }) => {

@@ -637,6 +637,36 @@ class Service {
     }
   }
 
+  async uploadSubmissionFile(enrollmentId: string, interactionId: string, file: File): Promise<{ storagePath: string; size: number; type: string }> {
+    const safeName = String(file.name || 'file').replace(/[^\w.\-]+/g, '_').slice(0, 80) || 'file';
+    const storagePath = `enrollments/${enrollmentId}/interactions/${interactionId}/${crypto.randomUUID()}_${safeName}`;
+    const { error } = await this.supabase.storage.from('submissions').upload(storagePath, file, {
+      contentType: file.type,
+      upsert: false,
+    });
+    if (error) throw new Error(error.message);
+    return { storagePath, size: file.size, type: file.type };
+  }
+
+  async listSubmissionFolder(enrollmentId: string, interactionId: string): Promise<string[]> {
+    const prefix = `enrollments/${enrollmentId}/interactions/${interactionId}`;
+    const { data, error } = await this.supabase.storage.from('submissions').list(prefix, { limit: 100 });
+    if (error) throw new Error(error.message);
+    return (data || []).map((entry: { name: string }) => `${prefix}/${entry.name}`);
+  }
+
+  async removeSubmissionFiles(paths: string[]): Promise<void> {
+    if (!paths || paths.length === 0) return;
+    const { error } = await this.supabase.storage.from('submissions').remove(paths);
+    if (error) throw new Error(error.message);
+  }
+
+  async getSubmissionFileUrl(storagePath: string): Promise<string> {
+    const { data, error } = await this.supabase.storage.from('submissions').createSignedUrl(storagePath, 3600);
+    if (error) throw new Error(error.message);
+    return data?.signedUrl || '';
+  }
+
   /**
    * Retrieves progress records based on filters.
    * @param params - Object containing filter parameters (type, courseId, etc.) and pagination options.

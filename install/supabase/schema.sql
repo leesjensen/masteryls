@@ -488,4 +488,77 @@ to authenticated
 using (public.auth_is_root(auth.uid()))
 with check (public.auth_is_root(auth.uid()));
 
+-- =====================================================================
+-- File submission storage bucket + RLS
+-- =====================================================================
+
+-- Private bucket, 100KB per-object cap, MIME allowlist enforced by Storage.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'submissions',
+  'submissions',
+  false,
+  102400,
+  array['image/png','image/jpeg','image/webp','application/pdf','application/zip','application/x-zip-compressed']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- Helper: pull the enrollment id out of an object name shaped like
+-- "enrollments/{enrollmentId}/interactions/{interactionId}/{uuid}_{name}".
+create or replace function public.submission_enrollment_id(object_name text)
+returns uuid
+language sql
+stable
+as $$
+  select case
+    when split_part(object_name, '/', 1) = 'enrollments'
+      then nullif(split_part(object_name, '/', 2), '')::uuid
+    else null
+  end;
+$$;
+
+grant execute on function public.submission_enrollment_id(text) to authenticated;
+
+-- Learner can write into their own enrollment folder.
+create policy "submissions: learner inserts own"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'submissions'
+  and exists (
+    select 1 from public.enrollment e
+    where e.id = public.submission_enrollment_id(name)
+      and e."learnerId" = auth.uid()
+  )
+);
+
+-- Learner reads own; course manager (editor/root) reads anyone enrolled in courses they manage.
+create policy "submissions: learner or course manager reads"
+on storage.objects for select
+to authenticated
+using (
+  bucket_id = 'submissions'
+  and exists (
+    select 1 from public.enrollment e
+    where e.id = public.submission_enrollment_id(name)
+      and (e."learnerId" = auth.uid() or public.auth_manages_course(auth.uid(), e."catalogId"))
+  )
+);
+
+-- Learner deletes own (for replace-on-resubmit); course manager can also delete.
+create policy "submissions: learner or course manager deletes"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'submissions'
+  and exists (
+    select 1 from public.enrollment e
+    where e.id = public.submission_enrollment_id(name)
+      and (e."learnerId" = auth.uid() or public.auth_manages_course(auth.uid(), e."catalogId"))
+  )
+);
+
 
