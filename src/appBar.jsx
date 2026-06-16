@@ -75,7 +75,7 @@ export function AppBarButton({ icon: Icon, onClick, title = undefined, size = 18
 
 function AppBarMenuItem({ icon: Icon, onClick, title }) {
   return (
-    <button onClick={onClick} className="w-full text-left px-4 py-1 text-sm text-gray-700  hover:text-amber-600 flex items-center gap-2">
+    <button type="button" onClick={onClick} className="w-full text-left px-4 py-1 text-sm text-gray-700 hover:text-amber-600 flex items-center gap-2 touch-manipulation">
       <Icon size={16} />
       {title}
     </button>
@@ -105,16 +105,16 @@ function UserMenu({ user, courseOps }) {
   }
 
   useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setIsMenuOpen(false);
       }
     }
 
-    if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [isMenuOpen]);
 
   const handleMenuItemClick = (action) => {
@@ -127,7 +127,7 @@ function UserMenu({ user, courseOps }) {
 
     return (
       <div className="relative" ref={menuRef}>
-        <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-7 h-7 bg-white rounded-full border-1 border-gray-600 hover:border-amber-600 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200 ease-in-out flex items-center justify-center" title="User Menu" aria-label="User Menu">
+        <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-7 h-7 bg-white rounded-full border-1 border-gray-600 hover:border-amber-600 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200 ease-in-out flex items-center justify-center touch-manipulation" title="User Menu" aria-label="User Menu">
           <span className="text-xs font-medium leading-none select-none">{initials}</span>
         </button>
 
