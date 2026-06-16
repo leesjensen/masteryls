@@ -19,7 +19,7 @@ test('clicking a topic on mobile collapses a full-screen sidebar', async ({ page
   await navigateToCourseNoLogin(page);
 
   await expect(page.locator('#content')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Collapse sidebar' })).toBeVisible();
+  await expect(page.getByLabel('Collapse sidebar')).toBeVisible();
 
   await page.getByRole('link', { name: 'topic 1' }).click();
 
