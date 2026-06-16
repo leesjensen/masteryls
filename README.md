@@ -2,7 +2,7 @@
 
 Take online learning to the next level with boosting AI interaction, accelerated, maintainable content creation, and a mastery learning focus.
 
-![Getting started](docs/demo.gif)
+<img alt="Getting started" width="500" src="docs/demo.gif" />
 
 ## Features
 
@@ -19,7 +19,8 @@ Learn more about MasteryLS:
 
 - [Introductory Video](https://youtu.be/HXNx_Gp0jyM)
 - [MasteryLS application features](docs/features/features.md)
-- [Editing course content](docs/editorTutorial.md)
+- [Learner tutorial](docs/learnerTutorial.md)
+- [Editor tutorial](docs/editorTutorial.md)
 - [Deploying your own instance of MasteryLS](docs/deploying.md)
 - [MasteryLS software architecture](docs/architecture.md)
 
