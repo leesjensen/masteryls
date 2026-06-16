@@ -662,6 +662,61 @@ Requirements:
   return { feedback, percentCorrect: feedbackData.percentCorrect ?? 100 };
 }
 
+const GEMINI_INLINE_SUPPORTED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']);
+
+export async function aiFileInteractionFeedbackGenerator(data, user) {
+  const files = Array.isArray(data?.files) ? data.files : [];
+  const inlineParts = [];
+  const inlineFileNames = [];
+  const skipped = [];
+
+  for (const file of files) {
+    if (file && typeof file.base64 === 'string' && GEMINI_INLINE_SUPPORTED_MIME.has(file.type)) {
+      inlineParts.push({ inlineData: { mimeType: file.type, data: file.base64 } });
+      inlineFileNames.push(file.name);
+    } else if (file?.name) {
+      skipped.push(`${file.name} (${file.type || 'unknown type'})`);
+    }
+  }
+
+  const promptText = `You are an expert educational reviewer.
+Evaluate a learner's file submission against the provided grading criteria. Ground every observation in what you can see in the attached files.
+
+- title: ${data?.title || '(no title)'}
+- instructions to learner: ${data?.body || '(none)'}
+- gradingCriteria: ${data?.gradingCriteria || ''}
+- filesProvided: ${files.length}
+${inlineFileNames.length > 0 ? `- filesAnalyzed: ${inlineFileNames.join(', ')}` : ''}
+${skipped.length > 0 ? `- filesNotIntrospectable: ${skipped.join(', ')}` : ''}
+
+Requirements:
+- Start the response with json that indicates the score in the format: {"percentCorrect": XX}
+- Score 0–100 based on how well the submission satisfies the grading criteria
+- Address the student directly
+- Acknowledge what the submission does well
+- Note any gaps or issues clearly but constructively
+- Reference the specific file(s) you are commenting on by name when relevant
+- Keep the tone encouraging
+- Limit feedback to 200 words
+`;
+
+  const parts = [{ text: promptText }, ...inlineParts];
+  const responseText = await makeAiRequest(null, [{ role: 'user', parts }], user);
+
+  let feedbackData = { percentCorrect: undefined };
+  let feedback = responseText;
+  const jsonMatch = feedback.match(/^\s*(?:`+json\s*)?(\{[\s\S]*?\})(?:\s*`+)?/);
+  if (jsonMatch) {
+    try {
+      feedbackData = JSON.parse(jsonMatch[1]);
+      feedback = feedback.slice(jsonMatch.index + jsonMatch[0].length).trim();
+    } catch (error) {
+      console.error('Failed to parse AI feedback JSON:', error);
+    }
+  }
+  return { feedback, percentCorrect: feedbackData.percentCorrect };
+}
+
 function extractFirstHttpUrl(text) {
   const match = String(text || '').match(/https?:\/\/[^\s)\]"'<>]+/i);
   return match ? match[0] : '';

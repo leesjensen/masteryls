@@ -256,7 +256,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
         } else if (type === 'file-submission') {
           const interactionElement = interactionRoot.querySelector('input[type="file"]');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            const percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files, syncGrade, autoGrade });
+            const percentCorrect = await onFileInteraction({ id, title, type, body, files: interactionElement.files, gradingCriteria, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'url-submission') {
@@ -439,8 +439,10 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return percentCorrect;
   }
 
-  async function onFileInteraction({ id, title, type, body, files, syncGrade = false, autoGrade = false }) {
+  async function onFileInteraction({ id, title, type, body, files, gradingCriteria = '', syncGrade = false, autoGrade = false }) {
     if (files.length === 0) return 0;
+
+    const filesArray = Array.from(files);
 
     try {
       await courseOps.clearSubmissionFolder({ interactionId: id });
@@ -450,7 +452,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
     const uploaded = [];
     const failures = [];
-    for (const file of Array.from(files)) {
+    for (const file of filesArray) {
       try {
         const result = await courseOps.uploadSubmissionFile({ interactionId: id, file });
         uploaded.push({
@@ -474,12 +476,72 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     }
 
     const totalSize = uploaded.reduce((sum, f) => sum + f.size, 0);
-    const baseFeedback = `Submission received. ${uploaded.length} file${uploaded.length === 1 ? '' : 's'}, ${formatFileSize(totalSize)}.`;
-    const feedback = failures.length > 0 ? `${baseFeedback} Some files were rejected: ${failures.join(' ')}` : baseFeedback;
-    const details = { type, files: uploaded, feedback, syncGrade, autoGrade };
+    const ackFeedback = `Submission received. ${uploaded.length} file${uploaded.length === 1 ? '' : 's'}, ${formatFileSize(totalSize)}.`;
+    const rejectionNote = failures.length > 0 ? `Some files were rejected: ${failures.join(' ')}` : '';
+
+    const normalizedCriteria = String(gradingCriteria || '').trim();
+    if (!normalizedCriteria) {
+      const feedback = rejectionNote ? `${ackFeedback} ${rejectionNote}` : ackFeedback;
+      const details = { type, files: uploaded, feedback, syncGrade, autoGrade };
+      updateInteractionProgress(id, details);
+      await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
+      return 100;
+    }
+
+    const successfullyUploadedFiles = filesArray.filter((file) => uploaded.some((u) => u.name === file.name && u.size === file.size));
+    let aiFeedback = '';
+    let percentCorrect = 100;
+    let aiError = null;
+    try {
+      const filesForGrading = await Promise.all(
+        successfullyUploadedFiles.map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          base64: await readFileAsBase64(file),
+        })),
+      );
+      const result = await courseOps.getFileInteractionFeedback({ title, type, body, files: filesForGrading }, normalizedCriteria);
+      aiFeedback = result?.feedback || '';
+      const parsedPercent = Number(result?.percentCorrect);
+      if (Number.isFinite(parsedPercent)) {
+        percentCorrect = parsedPercent;
+      }
+    } catch (error) {
+      aiError = error?.message || String(error);
+      percentCorrect = 0;
+    }
+
+    const parts = [ackFeedback];
+    if (rejectionNote) parts.push(rejectionNote);
+    if (aiError) parts.push(`Unable to complete criteria-based grading: ${aiError}`);
+    else if (aiFeedback) parts.push(aiFeedback);
+    const feedback = parts.join('\n\n');
+
+    const details = {
+      type,
+      files: uploaded,
+      gradingCriteria: normalizedCriteria,
+      percentCorrect,
+      feedback,
+      syncGrade,
+      autoGrade,
+    };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
-    return 100;
+    return percentCorrect;
+  }
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error('Unable to read file'));
+      reader.onload = () => {
+        const result = String(reader.result || '');
+        const commaIndex = result.indexOf(',');
+        resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   async function onUrlInteraction({ id, title, type, body, url, validateUrl = false, gradingCriteria = '', urlPrompt = '', syncGrade = false, autoGrade = false }) {

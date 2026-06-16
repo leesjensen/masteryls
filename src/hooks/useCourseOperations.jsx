@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -1180,6 +1180,10 @@ ${topicDescription || 'overview content placeholder'}`;
     });
   }
 
+  async function getFileInteractionFeedback(data, gradingCriteria) {
+    return aiFileInteractionFeedbackGenerator({ ...data, gradingCriteria }, user);
+  }
+
   async function getAiWebPageResponse({ prompt }) {
     const data = `Create a complete, standalone HTML web page for a learner submission.
 
@@ -1872,6 +1876,7 @@ Requirements:
     getAiWebPageFeedback,
     getCriteriaTargetFeedback,
     getGithubInteractionFeedback,
+    getFileInteractionFeedback,
     getAiWebPageResponse,
     validateUrlFromServer,
     addProgress,
