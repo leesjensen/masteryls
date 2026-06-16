@@ -52,7 +52,7 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
     if (editorVisible) {
       return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} course={learningSession.course} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} dueDateLabel={dueDateLabel} />;
     }
-    return <TopicItem key={topic.id} course={learningSession.course} topic={topic} currentTopic={currentTopic} enrollment={learningSession.enrollment} dueDateLabel={dueDateLabel} />;
+    return <TopicItem key={topic.id} course={learningSession.course} topic={topic} currentTopic={currentTopic} enrollment={learningSession.enrollment} courseOps={courseOps} dueDateLabel={dueDateLabel} />;
   }
 
   return (

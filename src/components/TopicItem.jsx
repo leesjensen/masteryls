@@ -4,7 +4,7 @@ import { BadgeCheck, StickyNote } from 'lucide-react';
 import { TopicIcon } from '../utils/Icons';
 import { useNavigate } from 'react-router-dom';
 
-function TopicItem({ course, topic, currentTopic, enrollment, dueDateLabel = '' }) {
+function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDateLabel = '' }) {
   const navigate = useNavigate();
   const [progressMeter, setProgressMeter] = React.useState(null);
 
@@ -22,6 +22,13 @@ function TopicItem({ course, topic, currentTopic, enrollment, dueDateLabel = '' 
   function navigateToTopic(e, anchor) {
     if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
       e.preventDefault();
+      if (courseOps?.getEnrollmentUiSettings && courseOps?.saveEnrollmentUiSettings) {
+        const settings = courseOps.getEnrollmentUiSettings(course.id);
+        const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+        if ((isMobileViewport && settings?.sidebarVisible !== 'start') || settings?.sidebarVisible === 'end') {
+          courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'start' });
+        }
+      }
       navigate(`/course/${course.id}/topic/${topic.id}${anchor ? `#${anchor}` : ''}`);
     }
   }

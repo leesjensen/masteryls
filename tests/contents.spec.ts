@@ -13,6 +13,20 @@ test('toc toggling', async ({ page }) => {
   await expect(page.getByText('topic 1')).not.toBeVisible();
 });
 
+test('clicking a topic on mobile collapses a full-screen sidebar', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await initBasicCourse({ page });
+  await navigateToCourseNoLogin(page);
+
+  await expect(page.locator('#content')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Collapse sidebar' })).toBeVisible();
+
+  await page.getByRole('link', { name: 'topic 1' }).click();
+
+  await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f$/);
+  await expect(page.locator('#content')).toBeVisible();
+});
+
 test('editor contents actions are visible', async ({ page }) => {
   await initBasicCourse({ page });
   await navigateToCourse(page);

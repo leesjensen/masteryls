@@ -62,7 +62,7 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
       <div className="flex items-start justify-between gap-1 w-full min-w-0">
         <div className="flex flex-row flex-1 items-center min-w-0">
           <div className="flex flex-col min-w-0 w-full">
-            <TopicItem course={course} topic={topic} currentTopic={currentTopic} dueDateLabel={dueDateLabel} />
+            <TopicItem course={course} topic={topic} currentTopic={currentTopic} courseOps={courseOps} dueDateLabel={dueDateLabel} />
             {showEditForm && (
               <div ref={editorRef}>
                 <TopicForm topic={topic} onSubmit={handleSubmitForm} onCancel={() => setShowEditForm(false)} isLoading={isLoading} />
