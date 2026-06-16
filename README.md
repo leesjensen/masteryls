@@ -22,8 +22,10 @@ MasteryLS seamlessly bridges advanced content operations with an optimized learn
 
 Learn more about MasteryLS:
 
+- [MasteryLS.com](https://masteryls.com/)
 - [Introductory Video](https://youtu.be/HXNx_Gp0jyM)
 - [MasteryLS application features](docs/features/features.md)
+- [Demonstration course](https://masteryls.com/course/51a72d23-50ab-4147-a1db-27a062aed771) - _Register to access AI features_
 - [Learner tutorial](docs/learnerTutorial.md)
 - [Editor tutorial](docs/editorTutorial.md)
 - [Deploying your own instance of MasteryLS](docs/deploying.md)
