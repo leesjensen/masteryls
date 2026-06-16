@@ -102,7 +102,7 @@ function App({ initialUser }) {
   };
 
   return (
-    <div className="app flex min-h-dvh flex-col bg-white">
+    <div className="app flex h-dvh flex-col bg-white">
       <div className="flex-[0_0_42px]">
         <AppBar user={user} courseOps={courseOps} />
       </div>
