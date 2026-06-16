@@ -18,6 +18,7 @@ import ProgressView from './views/progress/ProgressView.jsx';
 import AboutView from './views/about/aboutView.jsx';
 import DemoCoursesView from './views/demoCourses/demoCoursesView.jsx';
 import ErrorPage from './components/errorPage.jsx';
+import { PwaStatusToasts } from './components/PwaInstallControls.jsx';
 import service from './service/service.js';
 
 export function createAppRouter(user) {
@@ -101,13 +102,14 @@ function App({ initialUser }) {
   };
 
   return (
-    <div className="app flex flex-col h-screen">
+    <div className="app flex min-h-dvh flex-col bg-white">
       <div className="flex-[0_0_42px]">
         <AppBar user={user} courseOps={courseOps} />
       </div>
       <div className="flex-1 flex flex-col overflow-auto">
         <Outlet context={contextValue} />
       </div>
+      <PwaStatusToasts />
     </div>
   );
 }
@@ -234,6 +236,9 @@ function ClassroomPage() {
   }, [courseId, topicId, user, location.pathname, observeSession]);
 
   if (errorMsg) {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('You are offline. Reconnect to load course content, submissions, and AI features.');
+    }
     throw new Error(errorMsg);
   }
 

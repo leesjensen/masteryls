@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut } from 'lucide-react';
+import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 
 export function AppBar({ user, courseOps }) {
   const { title, subTitle, tools } = useAppBarState();
@@ -56,6 +57,7 @@ export function AppBar({ user, courseOps }) {
         <span className="hidden sm:inline-flex items-center justify-center bg-white border border-gray-300 rounded-full w-[32px] h-[32px] ml-1 mr-2">{navigateHome()}</span> <span className="overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0">{renderTitle(title, subTitle)}</span>
       </h1>
       <div className="flex items-center gap-2">
+        <PwaInstallButton />
         <div className="whitespace-nowrap ml-2">{tools}</div>
         <UserMenu user={user} courseOps={courseOps} />
       </div>
