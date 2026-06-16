@@ -18,6 +18,14 @@ Beautiful, consistent, content layout containing rich images, video, audio, slid
 
 ![content example](content.png)
 
+## Use anywhere
+
+MasteryLS uses installable web application technology (PWA) to create an outstanding experience no matter what device you use. You can skip the app store and install the MasteryLS on your phone by simply opening the website and adding it to your home screen. From then on it works like any other native device application.
+
+| Install                                  | Learn                                |
+| ---------------------------------------- | ------------------------------------ |
+| <img src="moblieHome.png" width="300" /> | <img src="mobile.png" width="300" /> |
+
 ## AI interaction
 
 Automatic AI feedback for all interactions. Content tailored AI chat functionality for any course topic.
