@@ -2,7 +2,7 @@
 
 ---
 
-Elevate your online learning ecosystem with MasteryLS—where AI-driven interaction, accelerated and maintainable Markdown workflows, and a relentless focus on project-based mastery converge to transform education.
+Elevate your online learning ecosystem with MasteryLS, where AI-driven interaction, accelerated and maintainable Markdown workflows, and a relentless focus on project-based mastery converge to transform education.
 
 MasteryLS seamlessly bridges advanced content operations with an optimized learner experience. By anchoring your curriculum in Markdown-based creation and managing it through GitHub version control, the system ensures complete formatting sanity and collaboration stability before any content ever reaches the learner. At the core of the MasteryLS ecosystem lies an AI-powered LMS engine that personalizes delivery, generates contextual materials, provides feedback, and handles real-time learner interactions. This engine drives rich media engagement and project-based mastery pathways, ultimately closing the loop by automatically synchronizing comprehensive performance data with the Canvas Gradebook.
 
