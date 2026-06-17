@@ -34,6 +34,23 @@ test('search result click collapses a full-screen mobile sidebar', async ({ page
   await expect(page.locator('#content')).toBeVisible();
 });
 
+test('mobile sidebar remembers the last selected tab when re-expanded', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await initBasicCourse({ page });
+  await navigateToCourse(page);
+
+  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByPlaceholder('Search...').fill('topic');
+  await page.locator('form button[type="submit"]').click();
+  await expect(page.getByPlaceholder('Search...')).toBeVisible();
+
+  await page.getByText('Result for topic').click();
+  await expect(page.locator('#content')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Expand sidebar' }).click();
+  await expect(page.getByPlaceholder('Search...')).toBeVisible();
+});
+
 test('search shows no-results and clear flow', async ({ page }) => {
   await initBasicCourse({ page, searchTopicsResults: [] });
   await navigateToCourse(page);
