@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut } from 'lucide-react';
+import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info } from 'lucide-react';
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 
 export function AppBar({ user, courseOps }) {
@@ -147,6 +147,9 @@ function UserMenu({ user, courseOps }) {
                 <AppBarMenuItem icon={Link2} onClick={() => handleMenuItemClick(() => navigate('/courseLink'))} title="Link course" />
               </>
             )}
+
+            <div className="border-t border-gray-200 my-1"></div>
+            <AppBarMenuItem icon={Info} onClick={() => handleMenuItemClick(() => window.open('https://github.com/leesjensen/masteryls/blob/main/README.md', '_blank', 'noopener,noreferrer'))} title="About" />
 
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem
