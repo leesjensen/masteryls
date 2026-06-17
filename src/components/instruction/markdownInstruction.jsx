@@ -89,7 +89,9 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
             scrollToAnchor(anchor, containerRef);
           }
         } else if (location.state?.searchHeadline) {
-          const scrolled = scrollToTextFragment(location.state.searchHeadline, containerRef);
+          const scrolled = scrollToTextFragment(location.state.searchHeadline, containerRef, {
+            preferredIndex: location.state?.searchHeadlineIndex || 0,
+          });
           if (!scrolled && containerRef.current) {
             containerRef.current.scrollTo({ top: 0, left: 0, behavior: 'auto' });
           }
@@ -101,7 +103,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         }
       }
     }
-  }, [markdown, location.hash]);
+  }, [markdown, location.hash, location.key, location.state?.searchHeadline, location.state?.searchHeadlineIndex, location.state?.searchNavigationKey]);
 
   function load(content, path) {
     const md = processRelativeImagePaths(content, path);

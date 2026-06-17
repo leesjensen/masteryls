@@ -51,6 +51,40 @@ This paragraph contains the exact search target phrase learners want to jump to.
   await expect(page.getByText('This paragraph contains the exact search target phrase learners want to jump to.')).toBeInViewport();
 });
 
+test('search hit click scrolls to the clicked hit when the topic is already active', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    topicMarkdown: `
+# Home
+
+${Array.from({ length: 20 }, (_, index) => `Paragraph ${index + 1}. filler text.`).join('\n\n')}
+
+First matched section with a unique alpha target phrase.
+
+${Array.from({ length: 20 }, (_, index) => `Paragraph ${index + 21}. filler text.`).join('\n\n')}
+
+Second matched section with a unique beta target phrase.
+`,
+    searchTopicsResults: [
+      {
+        id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+        headline: 'First matched section with a unique <mark>alpha</mark> target phrase. ... Second matched section with a unique <mark>beta</mark> target phrase.',
+      },
+    ],
+  });
+  await navigateToCourse(page);
+
+  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByPlaceholder('Search...').fill('alpha beta');
+  await page.locator('form button[type="submit"]').click();
+
+  await expect(page.locator('.border-l-2')).toHaveCount(2);
+  await page.locator('.border-l-2').nth(1).click();
+
+  await expect(page).toHaveURL(/\/topic\/2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e$/);
+  await expect(page.locator('#content').getByText('Second matched section with a unique beta target phrase.')).toBeInViewport();
+});
+
 test('search terms highlight inside topic headings with note affordances', async ({ page }) => {
   await initBasicCourse({
     page,

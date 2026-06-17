@@ -36,14 +36,17 @@ export function stripHtmlTags(value) {
     .trim();
 }
 
-export function scrollToTextFragment(text, containerRef) {
+export function scrollToTextFragment(text, containerRef, { preferredIndex = 0 } = {}) {
   if (!containerRef.current || !text) return false;
 
   const normalizedTarget = stripHtmlTags(text).toLowerCase();
   if (!normalizedTarget) return false;
 
-  const candidates = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, td, th, pre, code');
-  const targetElement = Array.from(candidates).find((element) => stripHtmlTags(element.textContent || '').toLowerCase().includes(normalizedTarget));
+  const candidates = Array.from(containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, td, th, pre, code, label, legend, [data-plugin-masteryls-body]')).filter(
+    (element) => stripHtmlTags(element.textContent || '').length > 0,
+  );
+  const matchingCandidates = candidates.filter((element) => stripHtmlTags(element.textContent || '').toLowerCase().includes(normalizedTarget));
+  const targetElement = matchingCandidates.length > 0 ? matchingCandidates[Math.min(preferredIndex, matchingCandidates.length - 1)] : null;
 
   if (targetElement) {
     targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });

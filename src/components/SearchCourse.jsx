@@ -33,7 +33,7 @@ export default function SearchCourse({ courseOps, learningSession }) {
     }
   }
 
-  function viewResult(result, headline = '') {
+  function viewResult(result, headline = '', headlineIndex = 0) {
     if (courseOps?.getEnrollmentUiSettings && courseOps?.saveEnrollmentUiSettings) {
       const settings = courseOps.getEnrollmentUiSettings(learningSession.course.id);
       const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
@@ -44,6 +44,8 @@ export default function SearchCourse({ courseOps, learningSession }) {
     navigate(`/course/${learningSession.course.id}/topic/${result.topic.id}`, {
       state: {
         searchHeadline: stripHtmlTags(headline),
+        searchHeadlineIndex: headlineIndex,
+        searchNavigationKey: crypto.randomUUID(),
       },
     });
   }
@@ -92,7 +94,7 @@ export default function SearchCourse({ courseOps, learningSession }) {
                   {result.headlines && result.headlines.length > 0 && (
                     <div className="space-y-1 mt-1">
                       {result.headlines.map((headline, mid) => (
-                        <div key={mid} className="border-l-2 cursor-pointer border-blue-300 p-2 text-xs text-gray-700 px-1.5" onClick={() => viewResult(result, headline)}>
+                        <div key={mid} className="border-l-2 cursor-pointer border-blue-300 p-2 text-xs text-gray-700 px-1.5" onClick={() => viewResult(result, headline, mid)}>
                           {highlightMatch(headline)}
                         </div>
                       ))}
