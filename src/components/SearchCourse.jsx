@@ -33,6 +33,13 @@ export default function SearchCourse({ courseOps, learningSession }) {
   }
 
   function viewResult(result) {
+    if (courseOps?.getEnrollmentUiSettings && courseOps?.saveEnrollmentUiSettings) {
+      const settings = courseOps.getEnrollmentUiSettings(learningSession.course.id);
+      const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+      if ((isMobileViewport && settings?.sidebarVisible !== 'start') || settings?.sidebarVisible === 'end') {
+        courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'start' });
+      }
+    }
     navigate(`/course/${learningSession.course.id}/topic/${result.topic.id}`);
   }
 

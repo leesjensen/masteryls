@@ -16,6 +16,24 @@ test('search returns results and can open a topic', async ({ page }) => {
   await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f$/);
 });
 
+test('search result click collapses a full-screen mobile sidebar', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await initBasicCourse({ page });
+  await navigateToCourse(page);
+
+  await expect(page.locator('#content')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByPlaceholder('Search...').fill('topic');
+  await page.locator('form button[type="submit"]').click();
+
+  await expect(page.getByText('matching topic')).toBeVisible();
+  await page.getByText('Result for topic').click();
+
+  await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f$/);
+  await expect(page.locator('#content')).toBeVisible();
+});
+
 test('search shows no-results and clear flow', async ({ page }) => {
   await initBasicCourse({ page, searchTopicsResults: [] });
   await navigateToCourse(page);
