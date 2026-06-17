@@ -51,6 +51,69 @@ This paragraph contains the exact search target phrase learners want to jump to.
   await expect(page.getByText('This paragraph contains the exact search target phrase learners want to jump to.')).toBeInViewport();
 });
 
+test('search terms highlight inside topic headings with note affordances', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    topicMarkdown: `
+# Home
+
+## Cutting your AWS bill
+
+Some supporting text.
+`,
+    searchTopicsResults: [
+      {
+        id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+        headline: 'Search result: <mark>Cutting</mark> your AWS bill',
+      },
+    ],
+  });
+  await navigateToCourse(page);
+
+  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByPlaceholder('Search...').fill('cutting');
+  await page.locator('form button[type="submit"]').click();
+  await expect(page.locator('.border-l-2')).toHaveCount(1);
+  await page.locator('.border-l-2').first().click();
+
+  await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f$/);
+  await expect(page.locator('h2 mark')).toContainText('Cutting');
+});
+
+test('search terms highlight inside interaction text', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    topicMarkdown: `
+# Home
+
+\`\`\`masteryls
+{"id":"39283", "title":"Multiple choice", "type":"multiple-choice"}
+Pick the best cutting strategy.
+
+- [x] Cutting spend is the right goal
+- [ ] Ignore the bill
+\`\`\`
+`,
+    searchTopicsResults: [
+      {
+        id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
+        headline: 'Search result: Pick the best <mark>cutting</mark> strategy.',
+      },
+    ],
+  });
+  await navigateToCourse(page);
+
+  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByPlaceholder('Search...').fill('cutting');
+  await page.locator('form button[type="submit"]').click();
+  await expect(page.locator('.border-l-2')).toHaveCount(1);
+  await page.locator('.border-l-2').first().click();
+
+  await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f$/);
+  await expect(page.locator('[data-plugin-masteryls-body] mark')).toContainText('cutting');
+  await expect(page.locator('label mark')).toContainText('Cutting');
+});
+
 test('search result click collapses a full-screen mobile sidebar', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await initBasicCourse({ page });

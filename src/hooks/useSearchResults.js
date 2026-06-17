@@ -3,6 +3,17 @@ import { useState } from 'react';
 let globalSearchResults = null;
 let globalSearchResultsSetters = [];
 
+export function getCurrentSearchTerms() {
+  if (!globalSearchResults || !globalSearchResults.matches || globalSearchResults.matches.length === 0) {
+    return [];
+  }
+
+  return String(globalSearchResults.query || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
 export function useSearchResults() {
   const [searchResults, setSearchResults] = useState(null);
 

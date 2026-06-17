@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearchResults } from '../hooks/useSearchResults';
-import { createHighlightedComponent, renderHighlightedCodeBlock } from './HighlightedText';
+import { createHighlightedComponent, HighlightedText, renderHighlightedCodeBlock } from './HighlightedText';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkEmoji from 'remark-emoji';
@@ -226,12 +226,37 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     },
   };
 
+  function extractPlainText(children) {
+    return React.Children.toArray(children)
+      .map((child) => {
+        if (typeof child === 'string') return child;
+        if (typeof child === 'number') return String(child);
+        if (React.isValidElement(child)) return extractPlainText(child.props.children);
+        return '';
+      })
+      .join('')
+      .trim();
+  }
+
+  function renderHighlightedChildren(children) {
+    return React.Children.map(children, (child, index) => {
+      if (typeof child === 'string') {
+        return (
+          <HighlightedText key={`heading-text-${index}`} searchTerms={searchTerms}>
+            {child}
+          </HighlightedText>
+        );
+      }
+      return child;
+    });
+  }
+
   if (onMakeHeadingActive !== null) {
     // Modify heading components to include StickyNote icon and heading ID
     const headingComponents = ['h2', 'h3', 'h4'].reduce((acc, tag) => {
       acc[tag] = ({ node, children, className, ...props }) => {
         const HeadingTag = tag;
-        const headingText = typeof children === 'string' ? children : String(children);
+        const headingText = extractPlainText(children);
         const headingId = headingText
           .toLowerCase()
           .replace(/\s+/g, '-')
@@ -248,7 +273,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               navigate(`/course/${learningSession.course.id}/topic/${learningSession.topic.id}#${headingId}`);
             }}
           >
-            {children}
+            {renderHighlightedChildren(children)}
             <span title={`${existingNote ? 'View' : 'Add'} notes for this section`}>
               <StickyNote
                 size={12}
