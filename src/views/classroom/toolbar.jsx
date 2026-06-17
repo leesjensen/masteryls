@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileDown, MessageCircleQuestionMark, SquareChevronRight, SquareChevronLeft, CalendarDays, ChartArea, ArrowLeftFromLine, ArrowRightFromLine } from 'lucide-react';
+import { FileDown, SquareChevronRight, SquareChevronLeft, CalendarDays, ChartArea, ArrowLeftFromLine, ArrowRightFromLine } from 'lucide-react';
 import { GitHub, Canvas } from '../../utils/Icons.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
@@ -43,18 +43,15 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
 
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
-      <div className="flex flex-row justify-start">
-        <button className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium items-center hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.toggleSidebar()} aria-label={settings.sidebarVisible !== 'start' ? 'Collapse sidebar' : 'Expand sidebar'}>
-          {settings.sidebarVisible !== 'start' ? <ToolBarButton icon={ArrowLeftFromLine} title="Collapse sidebar" size={16} aria-hidden="true" /> : <ToolBarButton icon={ArrowRightFromLine} title="Expand sidebar" size={16} aria-hidden="true" />}
-        </button>
+      <div className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium items-center hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.toggleSidebar()}>
+        {settings.sidebarVisible !== 'start' ? <ToolBarButton icon={ArrowLeftFromLine} title="Collapse sidebar" size={16} aria-hidden="true" /> : <ToolBarButton icon={ArrowRightFromLine} title="Expand sidebar" size={16} aria-hidden="true" />}
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && <EditorToggleSlider editing={editing} onToggle={toggleEditor} />}
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
-        {learningSession.course.links?.chat && <ToolBarButton title="Course chat server" onClick={() => window.open(learningSession.course.links.chat, '_blank')} icon={MessageCircleQuestionMark} />}
+        {learningSession.course.externalRefs?.canvasCourseId && canvasTopicUrl && <ToolBarButton title="Canvas course site" onClick={() => window.open(canvasTopicUrl, '_blank')} icon={Canvas} />}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" onClick={navigateToSchedule} icon={CalendarDays} />}
         <ToolBarButton title="MasteryView" onClick={navigateToMasteryView} icon={ChartArea} />
-        {learningSession.course.externalRefs?.canvasCourseId && canvasTopicUrl && <ToolBarButton title="Canvas course site" onClick={() => window.open(canvasTopicUrl, '_blank')} icon={Canvas} />}
         <ToolBarButton title="GitHub repository" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')} icon={GitHub} />
         <ToolBarButton title="Previous topic" onClick={() => navigateToTopic('prev')} icon={SquareChevronLeft} />
         <ToolBarButton title="Next topic" onClick={() => navigateToTopic('next')} icon={SquareChevronRight} />
