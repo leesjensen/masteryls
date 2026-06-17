@@ -29,6 +29,30 @@ export function scrollToAnchor(anchor, containerRef) {
   }
 }
 
+export function stripHtmlTags(value) {
+  return String(value || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function scrollToTextFragment(text, containerRef) {
+  if (!containerRef.current || !text) return false;
+
+  const normalizedTarget = stripHtmlTags(text).toLowerCase();
+  if (!normalizedTarget) return false;
+
+  const candidates = containerRef.current.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, blockquote, td, th, pre, code');
+  const targetElement = Array.from(candidates).find((element) => stripHtmlTags(element.textContent || '').toLowerCase().includes(normalizedTarget));
+
+  if (targetElement) {
+    targetElement.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
+    return true;
+  }
+
+  return false;
+}
+
 export function scrollToBottom(container) {
   if (!container) return false;
   let attempts = 0;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader, Search, X } from 'lucide-react';
 import { useSearchResults } from '../hooks/useSearchResults';
+import { stripHtmlTags } from '../utils/utils';
 
 export default function SearchCourse({ courseOps, learningSession }) {
   const { searchResults, setSearchResults } = useSearchResults();
@@ -32,7 +33,7 @@ export default function SearchCourse({ courseOps, learningSession }) {
     }
   }
 
-  function viewResult(result) {
+  function viewResult(result, headline = '') {
     if (courseOps?.getEnrollmentUiSettings && courseOps?.saveEnrollmentUiSettings) {
       const settings = courseOps.getEnrollmentUiSettings(learningSession.course.id);
       const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
@@ -40,7 +41,11 @@ export default function SearchCourse({ courseOps, learningSession }) {
         courseOps.saveEnrollmentUiSettings(learningSession.course.id, { sidebarVisible: 'start' });
       }
     }
-    navigate(`/course/${learningSession.course.id}/topic/${result.topic.id}`);
+    navigate(`/course/${learningSession.course.id}/topic/${result.topic.id}`, {
+      state: {
+        searchHeadline: stripHtmlTags(headline),
+      },
+    });
   }
 
   function highlightMatch(text) {
@@ -87,7 +92,7 @@ export default function SearchCourse({ courseOps, learningSession }) {
                   {result.headlines && result.headlines.length > 0 && (
                     <div className="space-y-1 mt-1">
                       {result.headlines.map((headline, mid) => (
-                        <div key={mid} className="border-l-2 cursor-pointer border-blue-300 p-2 text-xs text-gray-700 px-1.5" onClick={() => viewResult(result)}>
+                        <div key={mid} className="border-l-2 cursor-pointer border-blue-300 p-2 text-xs text-gray-700 px-1.5" onClick={() => viewResult(result, headline)}>
                           {highlightMatch(headline)}
                         </div>
                       ))}

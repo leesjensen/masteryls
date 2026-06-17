@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import DiscussionPanel from '../discussion/DiscussionPanel.jsx';
 import Markdown from '../../components/Markdown';
-import { scrollToAnchor } from '../../utils/utils';
+import { scrollToAnchor, scrollToTextFragment } from '../../utils/utils';
 import Splitter from '../../components/Splitter.jsx';
 import useMarkdownLocation from '../../hooks/useMarkdownLocation';
 
@@ -87,6 +87,11 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
             setDiscussionOpen(true);
           } else {
             scrollToAnchor(anchor, containerRef);
+          }
+        } else if (location.state?.searchHeadline) {
+          const scrolled = scrollToTextFragment(location.state.searchHeadline, containerRef);
+          if (!scrolled && containerRef.current) {
+            containerRef.current.scrollTo({ top: 0, left: 0, behavior: 'auto' });
           }
         } else {
           const wasRestored = restoreScrollPosition(learningSession.topic.id);

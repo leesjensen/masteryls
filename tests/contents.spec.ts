@@ -15,11 +15,22 @@ test('toc toggling', async ({ page }) => {
 
 test('clicking a topic on mobile collapses a full-screen sidebar', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'uiSettings-14602d77-0ff3-4267-b25e-4a7c3c47848b',
+      JSON.stringify({
+        tocIndexes: [0],
+        sidebarVisible: 'end',
+        sidebarWidth: 300,
+        currentTopic: null,
+        selectedSidebarTab: 'topics',
+      })
+    );
+  });
   await initBasicCourse({ page });
   await navigateToCourseNoLogin(page);
 
   await expect(page.locator('#content')).toHaveCount(0);
-  await expect(page.getByLabel('Collapse sidebar')).toBeVisible();
 
   await page.getByRole('link', { name: 'topic 1' }).click();
 

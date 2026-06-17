@@ -16,6 +16,41 @@ test('search returns results and can open a topic', async ({ page }) => {
   await expect(page).toHaveURL(/\/topic\/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f$/);
 });
 
+test('search hit click scrolls the topic page to the matched content', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    topicMarkdown: `
+# Home
+
+Intro text.
+
+${Array.from({ length: 20 }, (_, index) => `Paragraph ${index + 1}.`).join('\n\n')}
+
+## Deep section
+
+This paragraph contains the exact search target phrase learners want to jump to.
+`,
+    searchTopicsResults: [
+      {
+        topic: {
+          id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
+          title: 'Home',
+        },
+        headlines: ['This paragraph contains the exact <mark>search target phrase</mark> learners want to jump to.'],
+      },
+    ],
+  });
+  await navigateToCourse(page);
+
+  await page.getByRole('button', { name: 'Search' }).click();
+  await page.getByPlaceholder('Search...').fill('search target phrase');
+  await page.locator('form button[type="submit"]').click();
+  await page.getByText('This paragraph contains the exact').click();
+
+  await expect(page).toHaveURL(/\/topic\/2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e$/);
+  await expect(page.getByText('This paragraph contains the exact search target phrase learners want to jump to.')).toBeInViewport();
+});
+
 test('search result click collapses a full-screen mobile sidebar', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await initBasicCourse({ page });
