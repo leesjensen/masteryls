@@ -67,7 +67,8 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         .filter((p) => p.details)
         .map((p) => {
           const details = { ...p.details };
-          details.timestamp = new Date(p.createdAt);
+          details.id = p.id;
+          details.timestamp = new Date(p.createdAt).getTime();
           return details;
         })
         .sort((a, b) => a.timestamp - b.timestamp);

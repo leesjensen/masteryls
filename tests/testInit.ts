@@ -275,7 +275,7 @@ const progress = [
     id: '8373eef7-eb64-4eed-bf4d-cc600df9148c',
     createdAt: '2025-12-05T10:13:00',
     userId: '158e4c68-732a-4e8c-ae3e-bf06ee1cec6f',
-    enrollmentId: 'bea019b9-46b4-4593-9dcd-0db2e87cbb90',
+    enrollmentId: '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5',
     interactionId: null,
     duration: 0,
     type: 'note',
@@ -359,6 +359,7 @@ async function blockExternalProviders(page: any) {
 async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, courseJsonOverride, searchTopicsResults, searchTopicsError = false }: { page: any; topicMarkdown?: string; courseJsonOverride?: any; searchTopicsResults?: any[]; searchTopicsError?: boolean }) {
   const context = page.context();
   const resolvedCourseJson = courseJsonOverride ? { ...courseJson, ...courseJsonOverride } : courseJson;
+  const progressData = progress.map((entry) => ({ ...entry, details: entry.details ? { ...entry.details } : entry.details }));
   const resolvedSearchTopicsResults = searchTopicsResults || [
     {
       id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
@@ -603,34 +604,61 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
   await context.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
-        await route.fulfill({
-          status: 200,
-          json: progress[0],
-        });
+        {
+          const postData = route.request().postDataJSON();
+          const inserted = Array.isArray(postData) ? postData[0] : postData;
+          const saved = {
+            id: `progress-${progressData.length + 1}`,
+            createdAt: new Date().toISOString(),
+            ...inserted,
+          };
+          progressData.push(saved);
+          await route.fulfill({
+            status: 200,
+            json: saved,
+          });
+        }
         return;
       case 'GET':
-        let json: any = progress;
-        const requestUrl = new URL(route.request().url());
-        const typeFilter = requestUrl.searchParams.get('type');
+        {
+          let json: any = progressData;
+          const requestUrl = new URL(route.request().url());
+          const typeFilter = requestUrl.searchParams.get('type');
+          const topicFilter = requestUrl.searchParams.get('topicId');
+          const enrollmentFilter = requestUrl.searchParams.get('enrollmentId');
 
-        const eqMatch = typeFilter?.match(/^eq\.(.+)$/);
-        const inMatch = typeFilter?.match(/^in\.\((.+)\)$/);
+          const eqMatch = typeFilter?.match(/^eq\.(.+)$/);
+          const inMatch = typeFilter?.match(/^in\.\((.+)\)$/);
 
-        if (eqMatch) {
-          const viewType = eqMatch[1];
-          json = progress.filter((p) => p.type === viewType);
-        } else if (inMatch) {
-          const viewTypes = inMatch[1]
-            .split(',')
-            .map((t) => t.trim().replace(/^"|"$/g, ''))
-            .filter(Boolean);
-          json = progress.filter((p) => viewTypes.includes(p.type));
+          if (eqMatch) {
+            const viewType = eqMatch[1];
+            json = json.filter((p) => p.type === viewType);
+          } else if (inMatch) {
+            const viewTypes = inMatch[1]
+              .split(',')
+              .map((t) => t.trim().replace(/^"|"$/g, ''))
+              .filter(Boolean);
+            json = json.filter((p) => viewTypes.includes(p.type));
+          }
+
+          const topicMatch = topicFilter?.match(/^eq\.(.+)$/);
+          if (topicMatch) {
+            json = json.filter((p) => p.topicId === decodeURIComponent(topicMatch[1]));
+          }
+
+          const enrollmentMatch = enrollmentFilter?.match(/^eq\.(.+)$/);
+          if (enrollmentMatch) {
+            json = json.filter((p) => p.enrollmentId === decodeURIComponent(enrollmentMatch[1]));
+          }
+
+          await route.fulfill({
+            status: 200,
+            json,
+            headers: {
+              'content-range': `0-${Math.max(json.length - 1, 0)}/${json.length}`,
+            },
+          });
         }
-
-        await route.fulfill({
-          status: 200,
-          json,
-        });
         return;
     }
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);

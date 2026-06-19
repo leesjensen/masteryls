@@ -1,9 +1,10 @@
 import React from 'react';
-import { StickyNote, MessageCircle } from 'lucide-react';
+import { StickyNote, MessageCircle, Copy, Check } from 'lucide-react';
 import Markdown from '../Markdown';
 
 export default function MessageBox({ message, handleSaveAsNote, setDiscussionContext }) {
   const { type, content } = message;
+  const [copied, setCopied] = React.useState(false);
 
   let msgTitle, color, Icon, justify, styles, formatAsMarkdown;
   switch (type) {
@@ -51,12 +52,30 @@ export default function MessageBox({ message, handleSaveAsNote, setDiscussionCon
     </div>
   ) : null;
 
+  const handleCopyNote = async () => {
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className={`flex ${justify}`}>
-      <div className={`rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
+      <div className={`relative rounded-lg px-3 py-2 ${styles} overflow-auto break-words`}>
+        {type === 'note' && (
+          <div className="absolute top-2 right-2 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCopyNote}
+              className="p-1.5 rounded-sm text-amber-700 hover:bg-amber-100 transition-colors cursor-pointer"
+              title={copied ? 'Copied' : 'Copy markdown'}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+            </button>
+          </div>
+        )}
         <div className={formatAsMarkdown ? 'markdown-body' : ''}>
           {msgTitle && (
-            <div className={`text-xs text-${color}-600 font-medium mb-1 flex items-center gap-1`}>
+            <div className={`text-xs text-${color}-600 font-medium mb-1 flex items-center gap-1 pr-16`}>
               <Icon size={12} /> {msgTitle} {heading}
             </div>
           )}

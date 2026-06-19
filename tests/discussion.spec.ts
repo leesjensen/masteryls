@@ -27,6 +27,20 @@ test('discussion panel opens, supports notes, and closes', async ({ page }) => {
   await expect(page.getByTitle('Discuss this topic')).toBeVisible();
 });
 
+test('discussion notes can be copied', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await openDiscussionPanel(page);
+
+  await page.getByRole('button', { name: 'Notes' }).click();
+  await expect(page.getByText('there should be a note that appears on the TOC')).toBeVisible();
+
+  await page.getByTitle('Copy markdown').click();
+
+  await expect(page.getByTitle('Copied')).toBeVisible();
+  const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
+  expect(clipboardText).toBe('there should be a note that appears on the TOC');
+});
+
 test('discussion panel supports AI discussion and clearing conversation', async ({ page }) => {
   await openDiscussionPanel(page);
 

@@ -32,14 +32,13 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
     }
   }, [allowAi, discussionContext.mode, setDiscussionContext]);
 
-  const handleUserNoteInput = (userMessage) => {
+  const handleUserNoteInput = async (userMessage) => {
     const notePayload = {
       type: 'note',
       section: discussionContext.section,
       content: userMessage,
       timestamp: Date.now(),
     };
-    setNoteMessages((prev) => [...prev, notePayload]);
 
     // Add a progress record for this note
     const dataToSave = {
@@ -47,7 +46,15 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
       section: discussionContext.section,
       content: userMessage,
     };
-    courseOps.addProgress(null, null, 'note', 0, dataToSave);
+    const savedProgress = await courseOps.addProgress(null, null, 'note', 0, dataToSave);
+    setNoteMessages((prev) => [
+      ...prev,
+      {
+        ...notePayload,
+        id: savedProgress?.id,
+        timestamp: savedProgress?.createdAt ? new Date(savedProgress.createdAt).getTime() : notePayload.timestamp,
+      },
+    ]);
   };
 
   const handleAIQueryInput = async (userMessage) => {
@@ -77,7 +84,7 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
     }
   };
 
-  const handleSaveAsNote = (messageIndex) => {
+  const handleSaveAsNote = async (messageIndex) => {
     let messageToSave = filteredMessages[messageIndex];
     messageToSave.state = 'saved';
     if (filteredMessages.length >= 2) {
@@ -85,7 +92,7 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
       messageToSave = `**Your Question:**\n\n${previousMessage.content}\n\n---\n\n**AI Response:**\n\n${messageToSave.content}`;
     }
 
-    handleUserNoteInput(messageToSave);
+    await handleUserNoteInput(messageToSave);
   };
 
   const handleSubmit = async (e) => {
@@ -102,9 +109,9 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
     }
 
     if (discussionContext.mode === 'notes') {
-      handleUserNoteInput(userMessage);
+      await handleUserNoteInput(userMessage);
     } else if (discussionContext.mode === 'ai') {
-      handleAIQueryInput(userMessage);
+      await handleAIQueryInput(userMessage);
     }
   };
 
@@ -174,7 +181,7 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
         )}
 
         {filteredMessages.map((message, i) => (
-          <MessageBox key={message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} setDiscussionContext={setDiscussionContext} />
+          <MessageBox key={message.id || message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} setDiscussionContext={setDiscussionContext} />
         ))}
 
         {isLoading && (
