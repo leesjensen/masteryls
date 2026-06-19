@@ -415,6 +415,7 @@ Requirements:
 - Prefer a vibrant clean modern monochromatic palette that uses vibrant harmonious colors for highlights and callouts.
 - Integrate clear, legible modern sans-serif typography for all text, including modular section callouts.
 - Strong contrast between text and the background to increase legibility.
+- Text must be large enough to be easily readable when the image is viewed at typical screen sizes.
 - The structured, modular layout uses simple illustrative icons and flowcharts to explain complex concepts.`,
           },
         ],
