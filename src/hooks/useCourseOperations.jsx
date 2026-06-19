@@ -523,11 +523,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         structureChanged = true;
       }
     } else {
-      const existingIds = new Set(
-        (updatedCourse.modules || []).flatMap((m) =>
-          (m.topics || []).filter((t) => t.id !== topic.id).flatMap((t) => (Array.isArray(t.interactions) ? t.interactions : []))
-        )
-      );
+      const existingIds = new Set((updatedCourse.modules || []).flatMap((m) => (m.topics || []).filter((t) => t.id !== topic.id).flatMap((t) => (Array.isArray(t.interactions) ? t.interactions : []))));
       const normalizedContent = normalizeInteractionIds(content, undefined, existingIds);
       const nextInteractions = _extractInteractionIds(normalizedContent);
       const previousInteractions = Array.isArray(updatedTopic.interactions) ? updatedTopic.interactions : [];
@@ -1116,7 +1112,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     let basicContent = `
 # ${topic.title}
 
-![Topic Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg)
+![Topic Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/coursecover.jpg)
 
 ${topicDescription || 'overview content placeholder'}`;
 

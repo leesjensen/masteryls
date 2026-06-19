@@ -176,7 +176,7 @@ Requirements:
 - The response must be valid GitHub-flavored markdown
 - Make the content upbeat and engaging
 - Include a level 1 heading using only the exact course title
-- After the level 1 heading include a Markdown formatted image ![Course Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/cover.jpg)
+- After the level 1 heading include a Markdown formatted image ![Course Cover](https://raw.githubusercontent.com/csinstructiontemplate/emptycourse/refs/heads/main/coursecover.jpg)
 - Prefer paragraph text where appropriate
 - Include introductory paragraphs that provide an overview of the entire course but do not label it as "Overview"
 - Include a level 2 section containing a bulleted list of course outcomes
