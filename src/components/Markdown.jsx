@@ -15,6 +15,8 @@ import { scrollToAnchor } from '../utils/utils';
 import { StickyNote } from 'lucide-react';
 import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
 
+const BlockCodeContext = React.createContext(false);
+
 function markdownUrlTransform(value, key, node) {
   if (key === 'src' && node?.tagName === 'img' && String(value || '').startsWith('blob:')) {
     return value;
@@ -79,11 +81,12 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     pre({ node, children, ...props }) {
       return (
         <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }} {...props}>
-          {React.Children.map(children, (child) => (React.isValidElement(child) ? React.cloneElement(child, { isBlock: true }) : child))}
+          <BlockCodeContext.Provider value={true}>{children}</BlockCodeContext.Provider>
         </pre>
       );
     },
-    code({ node, className, children, isBlock, ...props }) {
+    code({ node, className, children, ...props }) {
+      const isBlock = React.useContext(BlockCodeContext);
       const match = /language-(\w+)/.exec(className || '');
       const language = match?.[1];
 
