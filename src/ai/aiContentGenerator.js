@@ -2,7 +2,7 @@ import service from '../service/service';
 import { normalizeInteractionIds } from '../utils/interactionMeta';
 
 const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
-const mermaidTheme = "%%{init: { 'theme': 'neutral', 'themeVariables': { 'lineColor': '#000000', 'primaryTextColor': '#000000', 'actorBorder': '#000000', 'participantBorder': '#000000', 'noteBorderColor': '#000000' } }}%%";
+const mermaidTheme = "%%{init: { 'theme': 'neutral', 'themeVariables': { 'mainBkg': '#ffffff', 'lineColor': '#000000', 'primaryTextColor': '#000000', 'actorBorder': '#000000', 'participantBorder': '#000000', 'noteBorderColor': '#000000' } }}%%";
 
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
@@ -408,14 +408,14 @@ ${prompt}
 Requirements:
 - No main title.
 - White background.
-- Image width should be greater than height, ideally around a 16:9 aspect ratio, and at most 800 pixels wide
+- Image width should be greater than height, ideally around a 16:9 aspect ratio, and at most 800 pixels wide.
 - The image should be a friendly and clean modern educational infographic in a vector illustration style.
 - The image is professional looking and appropriate for a university audience.
 - All graphical elements, including icons, flowcharts, thought bubbles, and UI screens, have clear black borders.
 - Prefer a vibrant clean modern monochromatic palette that uses vibrant harmonious colors for highlights and callouts.
-- Integrate clear, legible modern sans-serif typography for all text, including modular section callouts.
+- Integrate clear, legible modern sans-serif typography for all text, including modular section callouts if used.
 - Strong contrast between text and the background to increase legibility.
-- Text must be large enough to be easily readable when the image is viewed at typical screen sizes.
+- Text must be large enough to be easily readable when the image is viewed on a mobile device.
 - The structured, modular layout uses simple illustrative icons and flowcharts to explain complex concepts.`,
           },
         ],
