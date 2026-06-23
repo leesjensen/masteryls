@@ -62,14 +62,14 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     topic.externalRefs = Object.keys(remainingTopicRefs).length > 0 ? remainingTopicRefs : undefined;
   }
 
-  async function listAllCanvasItems(endpointBase) {
+  async function listAllCanvasItems(endpointBase, catalogId) {
     let pagePos = 1;
     const desiredCount = 20;
     let count = desiredCount;
     const items = [];
 
     while (count == desiredCount) {
-      const pageItems = await service.makeCanvasApiRequest(`${endpointBase}?page=${pagePos}&per_page=${desiredCount}`, 'GET');
+      const pageItems = await service.makeCanvasApiRequest(`${endpointBase}?page=${pagePos}&per_page=${desiredCount}`, 'GET', undefined, catalogId);
       items.push(...pageItems);
       count = pageItems.length;
       pagePos++;
@@ -78,7 +78,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     return items;
   }
 
-  async function createCanvasModule(module, canvasCourseId) {
+  async function createCanvasModule(module, canvasCourseId, catalogId) {
     const body = {
       module: {
         name: module.title,
@@ -86,20 +86,20 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules`, 'POST', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules`, 'POST', body, catalogId);
   }
 
-  async function publishCanvasModule(module, canvasCourseId) {
+  async function publishCanvasModule(module, canvasCourseId, catalogId) {
     const body = {
       module: {
         published: true,
       },
     };
 
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.externalRefs.canvasModuleId}`, 'PUT', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.externalRefs.canvasModuleId}`, 'PUT', body, catalogId);
   }
 
-  async function addPageToModule(canvasModule, canvasPage, canvasCourseId) {
+  async function addPageToModule(canvasModule, canvasPage, canvasCourseId, catalogId) {
     const body = {
       module_item: {
         type: 'Page',
@@ -109,10 +109,10 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body, catalogId);
   }
 
-  async function addQuizToModule(canvasModule, canvasQuiz, canvasCourseId) {
+  async function addQuizToModule(canvasModule, canvasQuiz, canvasCourseId, catalogId) {
     const body = {
       module_item: {
         type: 'Quiz',
@@ -122,10 +122,10 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body, catalogId);
   }
 
-  async function addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId) {
+  async function addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId, catalogId) {
     const body = {
       module_item: {
         type: 'Assignment',
@@ -135,10 +135,10 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${canvasModule.id}/items`, 'POST', body, catalogId);
   }
 
-  async function createCanvasPage(topic, canvasCourseId, canvasModule = null) {
+  async function createCanvasPage(topic, canvasCourseId, catalogId, canvasModule = null) {
     const body = {
       wiki_page: {
         title: topic.title,
@@ -148,15 +148,15 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    const canvasPage = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages`, 'POST', body);
+    const canvasPage = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages`, 'POST', body, catalogId);
 
     if (canvasModule) {
-      await addPageToModule(canvasModule, canvasPage, canvasCourseId);
+      await addPageToModule(canvasModule, canvasPage, canvasCourseId, catalogId);
     }
     return canvasPage;
   }
 
-  async function createCanvasQuiz(topic, canvasCourseId, canvasModule = null, dueAt = null) {
+  async function createCanvasQuiz(topic, canvasCourseId, catalogId, canvasModule = null, dueAt = null) {
     const body = {
       quiz: {
         title: topic.title,
@@ -167,15 +167,15 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    const canvasQuiz = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes`, 'POST', body);
+    const canvasQuiz = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes`, 'POST', body, catalogId);
 
     if (canvasModule) {
-      await addQuizToModule(canvasModule, canvasQuiz, canvasCourseId);
+      await addQuizToModule(canvasModule, canvasQuiz, canvasCourseId, catalogId);
     }
     return canvasQuiz;
   }
 
-  async function createCanvasAssignment(topic, canvasCourseId, canvasModule = null, dueAt = null) {
+  async function createCanvasAssignment(topic, canvasCourseId, catalogId, canvasModule = null, dueAt = null) {
     const body = {
       assignment: {
         name: topic.title,
@@ -188,10 +188,10 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    const canvasAssignment = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments`, 'POST', body);
+    const canvasAssignment = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments`, 'POST', body, catalogId);
 
     if (canvasModule) {
-      await addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId);
+      await addAssignmentToModule(canvasModule, canvasAssignment, canvasCourseId, catalogId);
     }
     return canvasAssignment;
   }
@@ -200,6 +200,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     const masteryLsHeaderHtml = buildMasteryLsLinkHtml(course, topic);
     const html = useStaticHtml ? masteryLsHeaderHtml : `${masteryLsHeaderHtml}${await renderTopicHtml(course, topic)}`;
     const dueAt = dueDatesByTopicId?.[topic.id] || null;
+    const catalogId = course?.id;
 
     if (topic.type === 'exam' && topic.externalRefs?.canvasQuizId) {
       const quizBody = {
@@ -212,7 +213,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         },
       };
 
-      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${topic.externalRefs.canvasQuizId}`, 'PUT', quizBody);
+      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${topic.externalRefs.canvasQuizId}`, 'PUT', quizBody, catalogId);
     }
 
     if (topic.type === 'project' && topic.externalRefs?.canvasAssignmentId) {
@@ -228,7 +229,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         },
       };
 
-      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${topic.externalRefs.canvasAssignmentId}`, 'PUT', assignmentBody);
+      return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${topic.externalRefs.canvasAssignmentId}`, 'PUT', assignmentBody, catalogId);
     }
 
     const body = {
@@ -239,39 +240,40 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       },
     };
 
-    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${topic.externalRefs.canvasPageId}`, 'PUT', body);
+    return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${topic.externalRefs.canvasPageId}`, 'PUT', body, catalogId);
   }
 
-  async function cleanCanvasCourse({ canvasCourseId, setUpdateMessage }) {
-    const pages = await listAllCanvasItems(`/courses/${canvasCourseId}/pages`);
+  async function cleanCanvasCourse({ canvasCourseId, catalogId, setUpdateMessage }) {
+    const pages = await listAllCanvasItems(`/courses/${canvasCourseId}/pages`, catalogId);
     for (const page of pages) {
       setUpdateMessage(`Deleting Canvas page '${page.title}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${page.page_id}`, 'DELETE');
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/pages/${page.page_id}`, 'DELETE', undefined, catalogId);
     }
 
-    const quizzes = await listAllCanvasItems(`/courses/${canvasCourseId}/quizzes`);
+    const quizzes = await listAllCanvasItems(`/courses/${canvasCourseId}/quizzes`, catalogId);
     for (const quiz of quizzes) {
       setUpdateMessage(`Deleting Canvas quiz '${quiz.title || quiz.name || quiz.id}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${quiz.id}`, 'DELETE');
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${quiz.id}`, 'DELETE', undefined, catalogId);
     }
 
-    const assignments = await listAllCanvasItems(`/courses/${canvasCourseId}/assignments`);
+    const assignments = await listAllCanvasItems(`/courses/${canvasCourseId}/assignments`, catalogId);
     for (const assignment of assignments) {
       setUpdateMessage(`Deleting Canvas assignment '${assignment.name || assignment.id}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${assignment.id}`, 'DELETE');
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments/${assignment.id}`, 'DELETE', undefined, catalogId);
     }
 
-    const modules = await listAllCanvasItems(`/courses/${canvasCourseId}/modules`);
+    const modules = await listAllCanvasItems(`/courses/${canvasCourseId}/modules`, catalogId);
     for (const module of modules) {
       setUpdateMessage(`Deleting Canvas module '${module.name}'`);
-      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.id}`, 'DELETE');
+      await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/modules/${module.id}`, 'DELETE', undefined, catalogId);
     }
   }
 
   async function repairCanvasReferences({ updatedCourse, canvasCourseId, setUpdateMessage }) {
     updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasCourseId };
+    const catalogId = updatedCourse?.id;
 
-    const pages = await listAllCanvasItems(`/courses/${canvasCourseId}/pages`);
+    const pages = await listAllCanvasItems(`/courses/${canvasCourseId}/pages`, catalogId);
     for (const page of pages) {
       setUpdateMessage(`Updating Canvas page reference for '${page.title}'`);
       const topic = updatedCourse.allTopics.find((item) => item.title === page.title);
@@ -280,7 +282,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       }
     }
 
-    const quizzes = await listAllCanvasItems(`/courses/${canvasCourseId}/quizzes`);
+    const quizzes = await listAllCanvasItems(`/courses/${canvasCourseId}/quizzes`, catalogId);
     for (const quiz of quizzes) {
       setUpdateMessage(`Updating Canvas quiz reference for '${quiz.title}'`);
       const topic = updatedCourse.allTopics.find((item) => item.title === quiz.title);
@@ -289,7 +291,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       }
     }
 
-    const assignments = await listAllCanvasItems(`/courses/${canvasCourseId}/assignments`);
+    const assignments = await listAllCanvasItems(`/courses/${canvasCourseId}/assignments`, catalogId);
     for (const assignment of assignments) {
       setUpdateMessage(`Updating Canvas assignment reference for '${assignment.name}'`);
       const topic = updatedCourse.allTopics.find((item) => item.title === assignment.name);
@@ -322,6 +324,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
   async function linkCourseResources({ updatedCourse, canvasCourseId, setUpdateMessage, dueDatesByTopicId = {}, selectedTopicIds = [], onTopicUpdateError }) {
     const selectedTopicIdSet = new Set(Array.isArray(selectedTopicIds) ? selectedTopicIds : []);
+    const catalogId = updatedCourse?.id;
 
     // create the modules and resources first
     for (const module of updatedCourse.modules) {
@@ -338,22 +341,22 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       }
 
       setUpdateMessage(`Creating module '${module.title}' in Canvas`);
-      const canvasModule = await createCanvasModule(module, canvasCourseId);
+      const canvasModule = await createCanvasModule(module, canvasCourseId, catalogId);
       module.externalRefs = { ...module.externalRefs, canvasModuleId: canvasModule.id };
       for (const topic of topicsToLink) {
         const target = topicCanvasTarget(topic);
 
         if (target === 'quiz') {
           setUpdateMessage(`Creating quiz '${topic.title}' in Canvas`);
-          const canvasQuiz = await createCanvasQuiz(topic, canvasCourseId, canvasModule, dueDatesByTopicId?.[topic.id] || null);
+          const canvasQuiz = await createCanvasQuiz(topic, canvasCourseId, catalogId, canvasModule, dueDatesByTopicId?.[topic.id] || null);
           topic.externalRefs = { ...topic.externalRefs, canvasQuizId: canvasQuiz.id };
         } else if (target === 'assignment') {
           setUpdateMessage(`Creating assignment '${topic.title}' in Canvas`);
-          const canvasAssignment = await createCanvasAssignment(topic, canvasCourseId, canvasModule, dueDatesByTopicId?.[topic.id] || null);
+          const canvasAssignment = await createCanvasAssignment(topic, canvasCourseId, catalogId, canvasModule, dueDatesByTopicId?.[topic.id] || null);
           topic.externalRefs = { ...topic.externalRefs, canvasAssignmentId: canvasAssignment.id };
         } else {
           setUpdateMessage(`Creating topic '${topic.title}' in Canvas`);
-          const canvasPage = await createCanvasPage(topic, canvasCourseId, canvasModule);
+          const canvasPage = await createCanvasPage(topic, canvasCourseId, catalogId, canvasModule);
           topic.externalRefs = { ...topic.externalRefs, canvasPageId: canvasPage.page_id };
         }
       }
@@ -366,7 +369,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         continue;
       }
 
-      await publishCanvasModule(module, canvasCourseId);
+      await publishCanvasModule(module, canvasCourseId, catalogId);
       for (const topic of topicsToLink) {
         try {
           setUpdateMessage(`Linking topic '${topic.title}' to Canvas`);

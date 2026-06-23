@@ -643,6 +643,10 @@ Submit your project URL.
     }
 
     const body = await route.request().postDataJSON();
+    if (body?.mode === 'check') {
+      await route.fulfill({ status: 200, json: { ok: true, eligible: true } });
+      return;
+    }
     gradebookCalls.push(body);
     await route.fulfill({ status: 200, json: { ok: true, postedGrade: 100 } });
   });
@@ -726,6 +730,10 @@ Submit your project URL.
     }
 
     const body = await route.request().postDataJSON();
+    if (body?.mode === 'check') {
+      await route.fulfill({ status: 200, json: { ok: true, eligible: true } });
+      return;
+    }
     gradebookCalls.push(body);
     await route.fulfill({ status: 200, json: { ok: true, postedGrade: 100 } });
   });
@@ -857,6 +865,11 @@ Submit your project URL.
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
       return;
     }
+    const body = await route.request().postDataJSON();
+    if (body?.mode === 'check') {
+      await route.fulfill({ status: 200, json: { ok: true, eligible: true } });
+      return;
+    }
     await route.fulfill({ status: 403, json: { error: 'User is not authorized to update this grade' } });
   });
 
@@ -922,7 +935,12 @@ Submit your project URL.
       return;
     }
 
-    gradebookCalls.push(await route.request().postDataJSON());
+    const body = await route.request().postDataJSON();
+    if (body?.mode === 'check') {
+      await route.fulfill({ status: 200, json: { ok: true, eligible: true } });
+      return;
+    }
+    gradebookCalls.push(body);
     await route.fulfill({ status: 200, json: { ok: true, postedGrade: 100 } });
   });
 

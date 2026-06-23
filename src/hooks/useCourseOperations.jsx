@@ -28,7 +28,7 @@ import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.j
 function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings, observeSession = null) {
   const courseCache = React.useRef(new Map());
   const discussionToggleHandler = React.useRef(null);
-  const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ makeCanvasApiRequest: (endpoint) => service.makeCanvasApiRequest(endpoint) }));
+  const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ checkLearnerEligibility: (params) => service.checkCanvasGradebookEligibility(params) }));
 
   function getWorkingCourse() {
     const courseId = learningSession?.course?.id;
@@ -1253,6 +1253,7 @@ Requirements:
             try {
               await service.makeCanvasGradebookRequest({
                 courseId: String(course.externalRefs.canvasCourseId),
+                catalogId: course.id,
                 topicType: 'exam',
                 percentCorrect,
                 pointsPossible,
@@ -1316,6 +1317,7 @@ Requirements:
 
     return service.makeCanvasGradebookRequest({
       courseId: String(course.externalRefs.canvasCourseId),
+      catalogId: course.id,
       topicType: 'project',
       percentCorrect,
       pointsPossible,
@@ -1334,7 +1336,7 @@ Requirements:
     const canvasCourseId = String(course?.externalRefs?.canvasCourseId || '').trim();
     const learnerEmail = String(progressUser?.email || '').trim();
 
-    return canvasMembershipChecker.current.isLearnerInCanvasCourse(canvasCourseId, learnerEmail);
+    return canvasMembershipChecker.current.isLearnerInCanvasCourse(canvasCourseId, learnerEmail, course?.id);
   }
 
   /*
@@ -1679,7 +1681,7 @@ Requirements:
 
     if (deleteExisting && updatedCourse.externalRefs?.canvasCourseId) {
       setUpdateMessage(`Cleaning up existing Canvas course content`);
-      await canvasSync.cleanCanvasCourse({ canvasCourseId: updatedCourse.externalRefs.canvasCourseId, setUpdateMessage });
+      await canvasSync.cleanCanvasCourse({ canvasCourseId: updatedCourse.externalRefs.canvasCourseId, catalogId: updatedCourse.id, setUpdateMessage });
     }
 
     setUpdateMessage(`Removing Canvas references`);
@@ -1707,7 +1709,7 @@ Requirements:
 
     if (deleteExisting) {
       setUpdateMessage(`Cleaning up existing Canvas course content`);
-      await canvasSync.cleanCanvasCourse({ canvasCourseId, setUpdateMessage });
+      await canvasSync.cleanCanvasCourse({ canvasCourseId, catalogId: updatedCourse.id, setUpdateMessage });
     }
 
     const dueDatesByTopicId = await getScheduleDueDatesByTopicId(updatedCourse, selectedSchedule?.id || null);

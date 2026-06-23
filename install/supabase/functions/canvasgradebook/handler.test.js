@@ -216,7 +216,7 @@ test('canvasgradebook denies editor for a different course', async () => {
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'u4', email: 'editor@test.com' },
-        roles: [{ user: 'u4', right: 'editor', object: '99999' }],
+        roles: [{ user: 'u4', right: 'editor', object: 'catalog-uuid-other' }],
       }),
     getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
     fetchFn,
@@ -225,6 +225,7 @@ test('canvasgradebook denies editor for a different course', async () => {
   const response = await handler(
     makeRequest({
       courseId: '12345',
+      catalogId: 'catalog-uuid-this-course',
       topicType: 'project',
       percentCorrect: 100,
       pointsPossible: 100,
@@ -235,4 +236,40 @@ test('canvasgradebook denies editor for a different course', async () => {
 
   assert.equal(response.status, 403);
   assert.equal(calls.length, 0);
+});
+
+test('canvasgradebook allows editor when catalogId matches role object', async () => {
+  const fetchSequence = [
+    new Response(JSON.stringify([{ id: 7, email: 'learner@test.com', login_id: 'learner@test.com' }]), { status: 200 }),
+    new Response(JSON.stringify({ id: 99, grade: 'A' }), { status: 200 }),
+  ];
+  const calls = [];
+  const fetchFn = async (url, init) => {
+    calls.push({ url, init });
+    return fetchSequence.shift() || new Response(JSON.stringify({}), { status: 200 });
+  };
+
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u5', email: 'editor@test.com' },
+        roles: [{ user: 'u5', right: 'editor', object: 'catalog-uuid-this-course' }],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({
+      mode: 'check',
+      courseId: '12345',
+      catalogId: 'catalog-uuid-this-course',
+      learnerEmail: 'learner@test.com',
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.eligible, true);
 });

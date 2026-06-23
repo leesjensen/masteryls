@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info } from 'lucide-react';
+import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info, UserCog } from 'lucide-react';
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 
 export function AppBar({ user, courseOps }) {
@@ -145,6 +145,28 @@ function UserMenu({ user, courseOps }) {
                 <div className="border-t border-gray-200 my-1"></div>
                 <AppBarMenuItem icon={PackagePlus} onClick={() => handleMenuItemClick(() => navigate('/courseCreation'))} title="New course" />
                 <AppBarMenuItem icon={Link2} onClick={() => handleMenuItemClick(() => navigate('/courseLink'))} title="Link course" />
+              </>
+            )}
+
+            {user.isRole(['root']) && (
+              <>
+                <div className="border-t border-gray-200 my-1"></div>
+                <AppBarMenuItem
+                  icon={UserCog}
+                  onClick={() =>
+                    handleMenuItemClick(async () => {
+                      const email = window.prompt('Email of user to log in as:');
+                      if (!email || !email.trim()) return;
+                      try {
+                        await courseOps.service.impersonateLogin(email.trim());
+                        window.location.assign('/');
+                      } catch (error) {
+                        window.alert(`Impersonation failed: ${error?.message || error}`);
+                      }
+                    })
+                  }
+                  title="Login as user (debug)"
+                />
               </>
             )}
 

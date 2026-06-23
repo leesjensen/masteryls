@@ -424,6 +424,19 @@ class Service {
     return this._loadUser({ id: data.user.id });
   }
 
+  // TEMPORARY debug backdoor — paired with the `loginas` edge function and the
+  // "Login as user (debug)" item in the AppBar user menu. Delete all three when done.
+  async impersonateLogin(targetEmail: string): Promise<User | null> {
+    const { data, error } = await this.supabase.functions.invoke('loginas', { body: { email: targetEmail } });
+    if (error) {
+      throw new Error(extractEdgeFunctionErrorMessage(error) || error.message);
+    }
+    if (!data?.token || !data?.email) {
+      throw new Error(data?.error || 'Impersonation failed: no token returned.');
+    }
+    return this.verifyOtp(data.email, data.token);
+  }
+
   /**
    * Logs out the current user.
    */
@@ -865,14 +878,14 @@ class Service {
    * @param body - Request body.
    * @returns The response data.
    */
-  async makeCanvasApiRequest(endpoint: string, method: string = 'GET', body?: object) {
+  async makeCanvasApiRequest(endpoint: string, method: string = 'GET', body?: object, catalogId?: string) {
     const courseMatch = endpoint.match(/^\/courses\/(\d+)(?:\/|\?|$)/);
     if (!courseMatch?.[1]) {
       throw new Error('Canvas endpoint must include a course id prefix like /courses/{courseId}/...');
     }
 
     const { data, error } = await this.supabase.functions.invoke('canvas', {
-      body: { courseId: courseMatch[1], endpoint, method, body },
+      body: { courseId: courseMatch[1], catalogId, endpoint, method, body },
     });
 
     if (error) {
@@ -885,7 +898,7 @@ class Service {
   /**
    * Invokes the Canvas gradebook edge function for secure grade passback.
    */
-  async makeCanvasGradebookRequest(params: { courseId: string; topicType: 'exam' | 'project'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string; autoGrade?: boolean; feedback?: string; submissionUrl?: string }) {
+  async makeCanvasGradebookRequest(params: { courseId: string; catalogId?: string; topicType: 'exam' | 'project'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string; autoGrade?: boolean; feedback?: string; submissionUrl?: string }) {
     const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
       body: params,
     });
@@ -896,6 +909,24 @@ class Service {
     }
 
     return data;
+  }
+
+  /**
+   * Asks the canvasgradebook edge function whether a learner is enrolled in the Canvas course
+   * for a given course id. Used by the client to gate the "Submit to Gradebook" affordance
+   * without granting learners access to the broader Canvas proxy.
+   */
+  async checkCanvasGradebookEligibility(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ eligible: boolean; error?: string }> {
+    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+      body: { mode: 'check', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
+    });
+
+    if (error) {
+      const edgeMessage = await extractEdgeFunctionErrorMessage(error, data);
+      throw new Error(edgeMessage || error.message);
+    }
+
+    return { eligible: Boolean(data?.eligible), error: data?.error };
   }
 
   /**

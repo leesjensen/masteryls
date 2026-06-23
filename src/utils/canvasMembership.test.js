@@ -5,9 +5,9 @@ import { createCanvasCourseMembershipChecker } from '../hooks/canvas/canvasMembe
 test('canvas membership checker caches by course and learner', async () => {
   const calls = [];
   const checker = createCanvasCourseMembershipChecker({
-    makeCanvasApiRequest: async (endpoint) => {
-      calls.push(endpoint);
-      return [{ id: 1, email: 'bud@cow.com', login_id: 'bud@cow.com' }];
+    checkLearnerEligibility: async (params) => {
+      calls.push(params);
+      return { eligible: true };
     },
   });
 
@@ -17,15 +17,17 @@ test('canvas membership checker caches by course and learner', async () => {
   assert.equal(first, true);
   assert.equal(second, true);
   assert.equal(calls.length, 1);
+  assert.equal(calls[0].courseId, '12345');
+  assert.equal(calls[0].learnerEmail, 'bud@cow.com');
 });
 
 test('canvas membership checker dedupes in-flight requests', async () => {
   const calls = [];
   const checker = createCanvasCourseMembershipChecker({
-    makeCanvasApiRequest: async (endpoint) => {
-      calls.push(endpoint);
+    checkLearnerEligibility: async (params) => {
+      calls.push(params);
       await new Promise((resolve) => setTimeout(resolve, 10));
-      return [{ id: 1, email: 'bud@cow.com', login_id: 'bud@cow.com' }];
+      return { eligible: true };
     },
   });
 
@@ -34,4 +36,13 @@ test('canvas membership checker dedupes in-flight requests', async () => {
   assert.equal(first, true);
   assert.equal(second, true);
   assert.equal(calls.length, 1);
+});
+
+test('canvas membership checker returns false when eligibility lookup says not eligible', async () => {
+  const checker = createCanvasCourseMembershipChecker({
+    checkLearnerEligibility: async () => ({ eligible: false }),
+  });
+
+  const result = await checker.isLearnerInCanvasCourse('12345', 'bud@cow.com');
+  assert.equal(result, false);
 });

@@ -1,11 +1,12 @@
-export function createCanvasCourseMembershipChecker({ makeCanvasApiRequest }) {
+export function createCanvasCourseMembershipChecker({ checkLearnerEligibility }) {
   const cache = new Map();
 
-  async function isLearnerInCanvasCourse(canvasCourseId, learnerEmail) {
+  async function isLearnerInCanvasCourse(canvasCourseId, learnerEmail, catalogId) {
     const normalizedCourseId = String(canvasCourseId || '').trim();
     const normalizedLearnerEmail = String(learnerEmail || '')
       .trim()
       .toLowerCase();
+    const normalizedCatalogId = String(catalogId || '').trim();
 
     if (!normalizedCourseId || !normalizedLearnerEmail) {
       return false;
@@ -19,21 +20,10 @@ export function createCanvasCourseMembershipChecker({ makeCanvasApiRequest }) {
 
     const requestPromise = (async () => {
       try {
-        const users = await makeCanvasApiRequest(`/courses/${normalizedCourseId}/search_users?search_term=${encodeURIComponent(normalizedLearnerEmail)}`);
-        if (!Array.isArray(users) || users.length === 0) {
-          return false;
-        }
-
-        return users.some((entry) => {
-          const email = String(entry?.email || '')
-            .trim()
-            .toLowerCase();
-          const login = String(entry?.login_id || '')
-            .trim()
-            .toLowerCase();
-          return email === normalizedLearnerEmail || login === normalizedLearnerEmail;
-        });
-      } catch {
+        const result = await checkLearnerEligibility({ courseId: normalizedCourseId, learnerEmail: normalizedLearnerEmail, catalogId: normalizedCatalogId || undefined });
+        return Boolean(result?.eligible);
+      } catch (ex) {
+        console.error('Error occurred while checking Canvas course membership:', ex);
         return false;
       }
     })();

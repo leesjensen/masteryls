@@ -57,17 +57,10 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     }
 
     const payload = await req.json();
-    const { courseId, topicType, percentCorrect, pointsPossible, canvasAssignmentId, canvasQuizId } = payload;
-
-    if (!courseId || !topicType || percentCorrect === undefined || pointsPossible === undefined) {
-      return new Response(JSON.stringify({ error: 'courseId, topicType, percentCorrect, and pointsPossible are required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (topicType !== 'exam' && topicType !== 'project') {
-      return new Response(JSON.stringify({ error: 'topicType must be exam or project' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const mode = typeof payload?.mode === 'string' ? payload.mode : 'grade';
+    const { courseId } = payload;
+    if (!courseId) {
+      return new Response(JSON.stringify({ error: 'courseId is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const userId = authData.user.id;
@@ -85,28 +78,14 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     const isRoot = Array.isArray(rootRole) && rootRole.length > 0;
 
     let isEditor = false;
-    if (!isRoot) {
-      const { data: editorRole } = await supabase.from('role').select('id').eq('user', userId).eq('right', 'editor').eq('object', courseId).limit(1);
+    if (!isRoot && payload.catalogId) {
+      const { data: editorRole } = await supabase.from('role').select('id').eq('user', userId).eq('right', 'editor').eq('object', payload.catalogId).limit(1);
       isEditor = Array.isArray(editorRole) && editorRole.length > 0;
     }
 
     const isLearnerSelf = authEmail !== '' && authEmail === requestedLearnerEmail;
     if (!isRoot && !isEditor && !isLearnerSelf) {
-      return new Response(JSON.stringify({ error: 'User is not authorized to update this grade' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    const autoGrade = payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
-    const feedback = String(payload.feedback || '');
-    const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
-
-    const normalizedPercent = normalizePercent(percentCorrect);
-    const normalizedPoints = Number(pointsPossible);
-    if (normalizedPercent === null || !Number.isFinite(normalizedPoints) || normalizedPoints <= 0) {
-      return new Response(JSON.stringify({ error: 'Invalid percentCorrect or pointsPossible' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    if (submissionUrl && !/^https?:\/\//i.test(submissionUrl)) {
-      return new Response(JSON.stringify({ error: 'submissionUrl must be an absolute http(s) URL' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const canvasApi = async (endpoint, method = 'GET', body) => {
@@ -135,6 +114,59 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
 
       return json;
     };
+
+    // Eligibility-check mode: look up the learner in the Canvas course and return whether
+    // they exist there. Used by the client to decide whether to show "Submit to Gradebook".
+    if (mode === 'check') {
+      try {
+        const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}`);
+        const eligible =
+          Array.isArray(users) &&
+          users.some((entry) => {
+            const email = String(entry?.email || '')
+              .trim()
+              .toLowerCase();
+            const login = String(entry?.login_id || '')
+              .trim()
+              .toLowerCase();
+            return email === requestedLearnerEmail || login === requestedLearnerEmail;
+          });
+        return new Response(JSON.stringify({ ok: true, eligible }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (error) {
+        // Treat Canvas lookup failures as "not eligible" so the UI hides the button; surface the
+        // reason so the client can log it.
+        return new Response(JSON.stringify({ ok: true, eligible: false, error: error?.message || String(error) }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Grade-submission mode (default): validate the grade fields and post to Canvas.
+    const { topicType, percentCorrect, pointsPossible, canvasAssignmentId, canvasQuizId } = payload;
+    if (!topicType || percentCorrect === undefined || pointsPossible === undefined) {
+      return new Response(JSON.stringify({ error: 'topicType, percentCorrect, and pointsPossible are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (topicType !== 'exam' && topicType !== 'project') {
+      return new Response(JSON.stringify({ error: 'topicType must be exam or project' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const autoGrade = payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
+    const feedback = String(payload.feedback || '');
+    const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
+
+    const normalizedPercent = normalizePercent(percentCorrect);
+    const normalizedPoints = Number(pointsPossible);
+    if (normalizedPercent === null || !Number.isFinite(normalizedPoints) || normalizedPoints <= 0) {
+      return new Response(JSON.stringify({ error: 'Invalid percentCorrect or pointsPossible' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (submissionUrl && !/^https?:\/\//i.test(submissionUrl)) {
+      return new Response(JSON.stringify({ error: 'submissionUrl must be an absolute http(s) URL' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     try {
       const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}`);

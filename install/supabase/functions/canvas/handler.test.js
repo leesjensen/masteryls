@@ -63,7 +63,7 @@ test('canvas handler allows editor with matching course', async () => {
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'u2', email: 'editor@test.com' },
-        roles: [{ user: 'u2', right: 'editor', object: '12345' }],
+        roles: [{ user: 'u2', right: 'editor', object: 'catalog-uuid-1' }],
       }),
     getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
     fetchFn: async (url, init) => {
@@ -72,7 +72,7 @@ test('canvas handler allows editor with matching course', async () => {
     },
   });
 
-  const response = await handler(makeRequest({ courseId: '12345', endpoint: '/courses/12345/pages', method: 'POST', body: { wiki_page: { title: 'T' } } }));
+  const response = await handler(makeRequest({ courseId: '12345', catalogId: 'catalog-uuid-1', endpoint: '/courses/12345/pages', method: 'POST', body: { wiki_page: { title: 'T' } } }));
   assert.equal(response.status, 200);
   assert.equal(fetchCalls.length, 1);
 });
@@ -83,7 +83,7 @@ test('canvas handler allows search_users membership lookup', async () => {
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'u2', email: 'editor@test.com' },
-        roles: [{ user: 'u2', right: 'editor', object: '12345' }],
+        roles: [{ user: 'u2', right: 'editor', object: 'catalog-uuid-1' }],
       }),
     getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
     fetchFn: async (url, init) => {
@@ -92,7 +92,7 @@ test('canvas handler allows search_users membership lookup', async () => {
     },
   });
 
-  const response = await handler(makeRequest({ courseId: '12345', endpoint: '/courses/12345/search_users?search_term=student%40test.com', method: 'GET', body: null }));
+  const response = await handler(makeRequest({ courseId: '12345', catalogId: 'catalog-uuid-1', endpoint: '/courses/12345/search_users?search_term=student%40test.com', method: 'GET', body: null }));
   assert.equal(response.status, 200);
   assert.equal(fetchCalls.length, 1);
 });

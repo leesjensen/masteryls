@@ -26,7 +26,7 @@ export function createCanvasFunctionHandler({ createSupabaseClientFromAuthHeader
       return new Response(JSON.stringify({ error: 'Invalid user token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { courseId, endpoint, method, body } = await req.json();
+    const { courseId, catalogId, endpoint, method, body } = await req.json();
     if (!courseId || !endpoint || !method) {
       return new Response(JSON.stringify({ error: 'courseId, endpoint, and method are required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -65,8 +65,8 @@ export function createCanvasFunctionHandler({ createSupabaseClientFromAuthHeader
     const isRoot = Array.isArray(rootRole) && rootRole.length > 0;
 
     let isEditor = false;
-    if (!isRoot) {
-      const { data: editorRole, error: editorError } = await supabase.from('role').select('id').eq('user', userId).eq('right', 'editor').eq('object', courseId).limit(1);
+    if (!isRoot && catalogId) {
+      const { data: editorRole, error: editorError } = await supabase.from('role').select('id').eq('user', userId).eq('right', 'editor').eq('object', catalogId).limit(1);
       if (editorError) {
         return new Response(JSON.stringify({ error: 'Unable to validate editor rights' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
