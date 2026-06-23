@@ -12,6 +12,8 @@ import Splitter from '../Splitter.jsx';
 import CommitOverlay from './commitOverlay.jsx';
 import ScheduleEditor from './scheduleEditor.jsx';
 
+const PREVIEW_DEBOUNCE_MS = 400;
+
 export default function Editor({ courseOps, user, learningSession }) {
   const [showCommits, setShowCommits] = React.useState(false);
   const [diffContent, setDiffContent] = React.useState(null);
@@ -30,9 +32,23 @@ export default function Editor({ courseOps, user, learningSession }) {
     onTopicLoaded: () => setDiffContent(null),
   });
 
+  const topicId = learningSession.topic?.id;
+  const [previewContent, setPreviewContent] = React.useState(content);
+  const previewTopicIdRef = React.useRef(topicId);
+
+  React.useEffect(() => {
+    if (previewTopicIdRef.current !== topicId) {
+      previewTopicIdRef.current = topicId;
+      setPreviewContent(content);
+      return undefined;
+    }
+    const timer = setTimeout(() => setPreviewContent(content), PREVIEW_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [content, topicId]);
+
   const { previewPaneRef, handleEditorReady } = useEditorPreviewSync({
-    topicId: learningSession.topic?.id,
-    content,
+    topicId,
+    content: previewContent,
     editorPanePercent,
   });
 
@@ -116,7 +132,7 @@ export default function Editor({ courseOps, user, learningSession }) {
               </div>
               <Splitter onMove={onEditorPaneMoved} onResized={onEditorPaneResized} minPosition={0} maxPosition={window.innerWidth} />
               <div ref={previewPaneRef} className="h-full flex-1 min-w-0 overflow-auto border-l border-gray-200 bg-white">
-                <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState="preview" previewFileUrls={previewFileUrls} />
+                <Instruction courseOps={courseOps} learningSession={learningSession} user={user} content={previewContent} instructionState="preview" previewFileUrls={previewFileUrls} />
               </div>
             </div>
             <div className="flex-2/10 flex overflow-hidden">
