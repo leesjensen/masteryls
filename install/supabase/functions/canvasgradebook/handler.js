@@ -119,7 +119,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     // they exist there. Used by the client to decide whether to show "Submit to Gradebook".
     if (mode === 'check') {
       try {
-        const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}`);
+        const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}&enrollment_type[]=student`);
         const eligible =
           Array.isArray(users) &&
           users.some((entry) => {
@@ -169,7 +169,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     }
 
     try {
-      const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}`);
+      const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}&enrollment_type[]=student`);
       if (!Array.isArray(users) || users.length === 0) {
         return new Response(JSON.stringify({ error: 'Unable to find Canvas user for learner email' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }

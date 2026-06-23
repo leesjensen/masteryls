@@ -273,3 +273,46 @@ test('canvasgradebook allows editor when catalogId matches role object', async (
   assert.equal(body.ok, true);
   assert.equal(body.eligible, true);
 });
+
+test('canvasgradebook search_users only matches students (TAs/teachers excluded)', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u6', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  // Grade-mode call
+  const gradeResponse = await handler(
+    makeRequest({
+      courseId: '12345',
+      topicType: 'project',
+      percentCorrect: 80,
+      pointsPossible: 100,
+      learnerEmail: 'learner@test.com',
+      canvasAssignmentId: 999,
+    }),
+  );
+  assert.equal(gradeResponse.status, 200);
+  const gradeSearchCall = calls.find((c) => c.url.includes('/search_users?search_term='));
+  assert.ok(gradeSearchCall, 'expected a search_users call');
+  assert.ok(gradeSearchCall.url.includes('enrollment_type[]=student'), 'search_users should filter to students only');
+
+  // Check-mode call (separate handler invocation; reset calls list)
+  calls.length = 0;
+  const checkResponse = await handler(
+    makeRequest({
+      mode: 'check',
+      courseId: '12345',
+      learnerEmail: 'learner@test.com',
+    }),
+  );
+  assert.equal(checkResponse.status, 200);
+  const checkSearchCall = calls.find((c) => c.url.includes('/search_users?search_term='));
+  assert.ok(checkSearchCall, 'expected a search_users call in check mode');
+  assert.ok(checkSearchCall.url.includes('enrollment_type[]=student'), 'check mode search_users should filter to students only');
+});
