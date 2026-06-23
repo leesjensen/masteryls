@@ -214,7 +214,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
           <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={() => onInsertFiles(selectedFiles)}>
             Insert
           </button>
-          <button className="mx-1 px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0 || isDownloading} onClick={downloadSelected}>
+          <button className="mx-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0 || isDownloading} onClick={downloadSelected}>
             {isDownloading ? 'Downloading...' : 'Download'}
           </button>
           <button className="mx-1 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 disabled:hover:bg-gray-400 text-xs" disabled={selectedFiles.length === 0} onClick={deleteSelected}>
