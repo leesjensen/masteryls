@@ -83,6 +83,11 @@ async function mockCourseCreationExternalRequests(
       return;
     }
 
+    if (/\/contents\/README\.md$/.test(path) && method === 'GET') {
+      await route.fulfill({ status: 404, json: { message: 'Not Found' } });
+      return;
+    }
+
     if (/\/contents\/(course\.json|README\.md)$/.test(path) && method === 'PUT') {
       await route.fulfill({ status: 201, json: { commit: { sha: 'fakecommitsha123' } } });
       return;

@@ -6,10 +6,10 @@ test('progress', async ({ page }) => {
   await navigateToProgress(page);
 
   await expect(page.locator('tbody')).toContainText('12/5/2025, 10:13:00 AM');
-  await expect(page.locator('tbody tr')).toHaveCount(5);
+  await expect(page.locator('tbody tr')).toHaveCount(6);
 
   await page.getByRole('button', { name: 'Expand events' }).click();
-  await expect(page.locator('tbody tr')).toHaveCount(7);
+  await expect(page.locator('tbody tr')).toHaveCount(8);
 });
 
 test('progress filters apply and clear', async ({ page }) => {
@@ -17,7 +17,7 @@ test('progress filters apply and clear', async ({ page }) => {
   await navigateToProgress(page);
 
   const tableRows = page.locator('tbody tr');
-  await expect(tableRows).toHaveCount(5);
+  await expect(tableRows).toHaveCount(6);
 
   await page.getByRole('combobox').selectOption('["note"]');
   await page.getByRole('button', { name: 'Apply' }).click();
@@ -28,7 +28,7 @@ test('progress filters apply and clear', async ({ page }) => {
   await page.getByRole('button', { name: 'Clear' }).click();
   await page.getByRole('combobox').selectOption('[]');
   await page.getByRole('button', { name: 'Apply' }).click();
-  await expect(tableRows).toHaveCount(5);
+  await expect(tableRows).toHaveCount(6);
 });
 
 test('progress sorting and topic navigation', async ({ page }) => {
