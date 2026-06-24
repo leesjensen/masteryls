@@ -210,6 +210,29 @@ before update on public.topic
 for each row
 execute procedure public."updateModifiedColumn"();
 
+-- Mirror auth.users.email changes into public.user.email so the app sees the
+-- new email immediately after the user confirms an email change, without
+-- waiting for the next sign-in to run _ensureUserRecord. security definer is
+-- required because public.user RLS otherwise blocks cross-row updates.
+create or replace function public.sync_public_user_email()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.user set email = NEW.email where id = NEW.id;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists "syncPublicUserEmail" on auth.users;
+create trigger "syncPublicUserEmail"
+after update of email on auth.users
+for each row
+when (OLD.email is distinct from NEW.email)
+execute function public.sync_public_user_email();
+
 
 
 
