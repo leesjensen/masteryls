@@ -424,6 +424,47 @@ class Service {
     return this._loadUser({ id: data.user.id });
   }
 
+  /**
+   * Updates the signed-in user's profile.
+   * - `name` is written to both Supabase Auth user_metadata and the public.user row.
+   * - `email` is sent to Supabase Auth via updateUser(); Supabase emails a confirmation
+   *   link to the new address and only swaps auth.users.email after the user clicks it.
+   *   public.user.email is left alone and will sync on the next login via _ensureUserRecord.
+   */
+  async updateUserProfile({ name, email }: { name?: string; email?: string }): Promise<{ user: User | null; emailConfirmationPending: boolean }> {
+    const trimmedName = typeof name === 'string' ? name.trim() : undefined;
+    const trimmedEmail = typeof email === 'string' ? email.trim() : undefined;
+
+    const { data: sessionData, error: sessionError } = await this.supabase.auth.getUser();
+    if (sessionError || !sessionData?.user) {
+      throw new Error(sessionError?.message || 'Not signed in.');
+    }
+    const userId = sessionData.user.id;
+    const currentEmail = String(sessionData.user.email || '').toLowerCase();
+
+    let emailConfirmationPending = false;
+
+    if (trimmedName) {
+      const { error: metaError } = await this.supabase.auth.updateUser({ data: { name: trimmedName } });
+      if (metaError) throw new Error(metaError.message);
+
+      const { error: publicError } = await this.supabase.from('user').update({ name: trimmedName }).eq('id', userId);
+      if (publicError) throw new Error(publicError.message);
+    }
+
+    if (trimmedEmail && trimmedEmail.toLowerCase() !== currentEmail) {
+      const { error: emailError } = await this.supabase.auth.updateUser({ email: trimmedEmail });
+      if (emailError) throw new Error(emailError.message);
+      emailConfirmationPending = true;
+    }
+
+    const refreshed = await this._loadUser({ id: userId });
+    if (refreshed && trimmedName) {
+      refreshed.name = trimmedName;
+    }
+    return { user: refreshed, emailConfirmationPending };
+  }
+
   // TEMPORARY debug backdoor — paired with the `loginas` edge function and the
   // "Login as user (debug)" item in the AppBar user menu. Delete all three when done.
   async impersonateLogin(targetEmail: string): Promise<User | null> {

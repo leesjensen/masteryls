@@ -3,6 +3,7 @@ import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info, UserCog } from 'lucide-react';
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
+import UserProfileDialog from './components/UserProfileDialog.jsx';
 
 export function AppBar({ user, courseOps }) {
   const { title, subTitle, tools } = useAppBarState();
@@ -85,6 +86,7 @@ function AppBarMenuItem({ icon: Icon, onClick, title }) {
 function UserMenu({ user, courseOps }) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const menuRef = useRef(null);
 
   function getUserInitials(value) {
@@ -131,9 +133,18 @@ function UserMenu({ user, courseOps }) {
           <span className="text-xs font-medium leading-none select-none">{initials}</span>
         </button>
 
+        <UserProfileDialog user={user} courseOps={courseOps} isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+
         {isMenuOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-            <div className="flex items-center gap-2 w-full text-left px-4 py-2 text-md font-medium text-amber-600">{user.name}</div>
+            <button
+              type="button"
+              onClick={() => handleMenuItemClick(() => setIsProfileOpen(true))}
+              className="flex items-center gap-2 w-full text-left px-4 py-2 text-md font-medium text-amber-600 hover:bg-amber-50 touch-manipulation"
+              title="Edit profile"
+            >
+              {user.name}
+            </button>
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem icon={SquareStar} onClick={() => handleMenuItemClick(() => navigate('/dashboard'))} title="Dashboard" />
             <AppBarMenuItem icon={Columns3Cog} onClick={() => handleMenuItemClick(() => navigate('/metrics'))} title="Metrics" />

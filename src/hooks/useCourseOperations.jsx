@@ -48,6 +48,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     service.logout();
   }
 
+  async function updateUserProfile({ name, email }) {
+    const result = await service.updateUserProfile({ name, email });
+    if (result?.user) {
+      setUser(result.user);
+    }
+    return result;
+  }
+
   function getEnrollmentUiSettings(courseId) {
     return service.getEnrollmentUiSettings(courseId);
   }
@@ -1826,6 +1834,7 @@ Requirements:
   return {
     login,
     logout,
+    updateUserProfile,
     user,
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
