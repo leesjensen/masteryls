@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures';
-import { initBasicCourse, navigateToCourse } from './testInit';
+import { initBasicCourse, navigateToCourse, navigateToCourseNoLogin } from './testInit';
 
 test('interaction multiple choice', async ({ page }) => {
   const interactionMarkdown = `
@@ -31,6 +31,29 @@ Simple **multiple choice** question
   await page.getByRole('button', { name: 'Submit' }).click();
 
   await expect(page.locator('pre')).toContainText('Fantastic job');
+});
+
+test('interaction multiple choice is disabled when not logged in', async ({ page }) => {
+  const interactionMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123401", "title":"Multiple choice", "type":"multiple-choice" }
+Simple **multiple choice** question
+
+- [ ] This is **not** the right answer
+- [x] This is _the_ right answer
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourseNoLogin(page);
+
+  await page.getByText('topic 1').click();
+
+  await expect(page.getByText('This interaction is disabled.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeDisabled();
 });
 
 test('interaction multiple select', async ({ page }) => {

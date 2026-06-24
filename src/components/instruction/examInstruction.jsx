@@ -13,8 +13,8 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
       if (learningSession?.enrollment) {
         const state = await courseOps.getExamState();
         setExamState(state);
-        setLoading(false);
       }
+      setLoading(false);
     }
     fetchExamState();
   }, [learningSession?.enrollment]);
@@ -63,9 +63,21 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
     return <div />;
   } else if (!user) {
     return (
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-4">{learningSession?.topic.title}</h2>
-        <p className="mb-6">You must be a registered user to take an exam.</p>
+      <div className="p-6 w-full">
+        <div className="bg-blue-50 border-1 border-blue-200 p-4 flex flex-col items-start">
+          <div className="text-2xl font-bold text-blue-500">{learningSession?.topic.title}</div>
+          <p className="my-4">{learningSession?.topic.description}</p>
+          <p className="text-base text-amber-700 my-2">
+            This interaction is disabled.{' '}
+            <a href="/" className="font-semibold underline underline-offset-2 hover:text-amber-800">
+              Login
+            </a>{' '}
+            to enable all functionality.
+          </p>
+          <button disabled className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
+            Start exam
+          </button>
+        </div>
       </div>
     );
   }

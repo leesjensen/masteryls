@@ -103,7 +103,7 @@ Simple **multiple choice** question
   await initBasicCourse({ page, topicMarkdown: quizMarkdown });
   await navigateToCourse(page);
 
-  await page.getByText('exam').click();
+  await page.getByRole('link', { name: 'exam' }).click();
   await page.getByRole('button', { name: 'Start exam' }).click();
   await expect(page.getByRole('main')).toContainText('Carefully review your answers before submitting.');
   await expect(page.getByRole('radio', { name: 'This is the right answer' })).toBeVisible();
@@ -120,6 +120,17 @@ Simple **multiple choice** question
   await expect(page.getByRole('main')).toContainText('Submitted');
   await expect(page.getByRole('main')).toContainText('1/1 questions submitted');
   await expect(page.locator('pre')).toContainText('Fantastic job');
+});
+
+test('exam is disabled when not logged in', async ({ page }) => {
+  await initBasicCourse({ page, topicMarkdown: '# Exam\n' });
+  await navigateToCourseNoLogin(page);
+
+  await page.getByRole('link', { name: 'exam' }).click();
+
+  await expect(page.getByText('This interaction is disabled.')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start exam' })).toBeDisabled();
 });
 
 test('markdown heading note icon opens filtered notes discussion', async ({ page }) => {
