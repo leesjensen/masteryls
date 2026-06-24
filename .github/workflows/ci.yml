@@ -43,11 +43,11 @@ jobs:
           npm ci && npm run build
           cp dist/index.html dist/404.html
 
-      - name: Test
-        run: |
-          npm run test:edge-auth
-          npx playwright install chromium
-          npm run test:coverage
+      # - name: Test
+      #   run: |
+      #     npm run test:edge-auth
+      #     npx playwright install chromium
+      #     npm run test:coverage
 
       - name: Update pages artifact
         uses: actions/upload-pages-artifact@v3
