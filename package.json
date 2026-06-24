@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "test": "playwright test",
-    "test:unit": "node --test src/utils/*.test.js",
-    "test:edge-auth": "node --test install/supabase/functions/canvas/handler.test.js install/supabase/functions/canvasgradebook/handler.test.js install/supabase/functions/urlvalidator/handler.test.js install/supabase/functions/gradebookoverview/handler.test.js",
+    "test:unit": "node --test --test-reporter=spec src/utils/*.test.js",
+    "test:edge-auth": "node --test --test-reporter=spec install/supabase/functions/canvas/handler.test.js install/supabase/functions/canvasgradebook/handler.test.js install/supabase/functions/urlvalidator/handler.test.js install/supabase/functions/gradebookoverview/handler.test.js",
     "test:coverage": "COVERAGE=true nyc --reporter=json-summary --reporter=text playwright test"
   },
   "repository": {
