@@ -10,13 +10,15 @@ MasteryLS seamlessly bridges advanced content operations with an optimized learn
 
 ## Features
 
-<img src="docs/features.png" width=800 />
+MasteryLS is packed with features that power mastery based learning. This includes features for content learners and creators.
 
 - **Content Creation & Management**: The process begins with Markdown-based content creation for consistency, which is then managed and versioned through GitHub to maintain a complete history of the curriculum.
 - **AI-Powered LMS Engine**: This central hub utilizes AI to analyze content, generate new materials (like quizzes and drafts), personalize learning paths, and provide automated interaction and feedback to students.
 - **Learner Experience & Interactivity**: Students engage with rich media and textual content through a modern interface, benefiting from customized curriculum delivery and interactive features like chatbots.
 - **Project-Based Mastery**: Learners apply their skills to real-world projects to build core competencies. Their progress is evaluated through mastery assessments designed to ensure proficiency before advancement.
 - **Assessment & Grades Integration**: Finally, grades are finalized based on mastery results and seamlessly synchronized with the Canvas Gradebook, completing the learning cycle.
+
+<img src="docs/features.png" width=800 />
 
 ## Learning more
 
