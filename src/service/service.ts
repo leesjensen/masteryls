@@ -453,7 +453,8 @@ class Service {
     }
 
     if (trimmedEmail && trimmedEmail.toLowerCase() !== currentEmail) {
-      const { error: emailError } = await this.supabase.auth.updateUser({ email: trimmedEmail });
+      const emailRedirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const { error: emailError } = await this.supabase.auth.updateUser({ email: trimmedEmail }, emailRedirectTo ? { emailRedirectTo } : undefined);
       if (emailError) throw new Error(emailError.message);
       emailConfirmationPending = true;
     }
