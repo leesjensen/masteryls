@@ -34,44 +34,17 @@ export default function usePastedTopicFiles(courseOps) {
     }
   }, []);
 
-  const waitForFilesToExist = React.useCallback(
-    async (fileNames, timeoutMs = 12000, intervalMs = 1000) => {
-      const target = new Set((Array.isArray(fileNames) ? fileNames : []).filter(Boolean));
-      if (target.size === 0) {
-        return true;
-      }
-
-      const start = Date.now();
-      while (Date.now() - start < timeoutMs) {
-        const files = await courseOps.getTopicFiles();
-        const existing = new Set((Array.isArray(files) ? files : []).map((file) => file?.name).filter(Boolean));
-
-        const allFound = Array.from(target).every((name) => existing.has(name));
-        if (allFound) {
-          return true;
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-      }
-
-      return false;
-    },
-    [courseOps],
-  );
-
   const handlePastedFiles = React.useCallback(
     async (uploadDescriptors) => {
       if (!Array.isArray(uploadDescriptors) || uploadDescriptors.length === 0) {
         return;
       }
 
-      const names = uploadDescriptors.map((file) => file.name);
-      await courseOps.addTopicFiles(uploadDescriptors);
-      await waitForFilesToExist(names);
       addPreviewFileUrls(uploadDescriptors);
       setExternalAddedFiles(uploadDescriptors);
+      await courseOps.addTopicFiles(uploadDescriptors);
     },
-    [addPreviewFileUrls, courseOps, waitForFilesToExist],
+    [addPreviewFileUrls, courseOps],
   );
 
   const getExistingTopicFileNames = React.useCallback(async () => {
