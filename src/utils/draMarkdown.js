@@ -1,10 +1,13 @@
 // Disciplinary Reasoning Assessment (DRA) backing-file format.
 //
-// The DRA definition will grow into deeply-nested data (stakeholders, resources,
-// inflection points, rubric). To stay robust as the model grows, the source of truth
-// is a JSON object in a fenced ```json block under an "Assessment Definition" heading.
-// A human-readable Markdown body is regenerated on every serialize so the file still
-// renders on GitHub and never drifts from the JSON.
+// The backing file stores only the author's generation parameters (discipline,
+// problem type, difficulty, mode, instability, learning outcomes). The scenario,
+// stakeholders, and resources are generated per-learner at runtime and live in the
+// learner's progress record, not here.
+//
+// The source of truth is a JSON object in a fenced ```json block under an
+// "Assessment Definition" heading. A human-readable Markdown body is regenerated on
+// every serialize so the file still renders on GitHub and never drifts from the JSON.
 
 const DRA_DEFINITION_HEADING = 'Assessment Definition';
 const DRA_FENCE_RE = /```json\s*\n([\s\S]*?)```/g;
@@ -19,8 +22,7 @@ export function createEmptyDraModel(title = '') {
     difficulty: 3,
     mode: 'practice',
     instability: false,
-    scenarioTitle: '',
-    scenarioGoal: '',
+    learningOutcomes: '',
   };
 }
 
@@ -37,8 +39,7 @@ function normalizeModel(raw, title = '') {
 
   model.mode = DRA_MODES.includes(model.mode) ? model.mode : 'practice';
   model.instability = Boolean(model.instability);
-  model.scenarioTitle = typeof model.scenarioTitle === 'string' ? model.scenarioTitle : '';
-  model.scenarioGoal = typeof model.scenarioGoal === 'string' ? model.scenarioGoal : '';
+  model.learningOutcomes = typeof model.learningOutcomes === 'string' ? model.learningOutcomes : '';
 
   return model;
 }
@@ -47,7 +48,7 @@ export function parseDraMarkdown(markdown = '') {
   const fences = [...String(markdown || '').matchAll(DRA_FENCE_RE)];
 
   // The definition fence is appended last; prefer the last fence that parses so a
-  // ```json block inside the scenario text can't shadow it.
+  // ```json block inside the learning outcomes text can't shadow it.
   for (let i = fences.length - 1; i >= 0; i -= 1) {
     try {
       return normalizeModel(JSON.parse(fences[i][1].trim()));
@@ -71,13 +72,9 @@ export function serializeDraMarkdown(model) {
   lines.push(`**Mode:** ${m.mode === 'final' ? 'Final' : 'Practice'}`);
   lines.push(`**Instability:** ${m.instability ? 'On' : 'Off'}`);
   lines.push('');
-  lines.push('## Scenario');
+  lines.push('## Learning Outcomes');
   lines.push('');
-  if (m.scenarioTitle) {
-    lines.push(`### ${m.scenarioTitle}`);
-    lines.push('');
-  }
-  lines.push(m.scenarioGoal || '_Scenario goal to be defined._');
+  lines.push(m.learningOutcomes || '_Learning outcomes to be defined._');
   lines.push('');
   lines.push(`## ${DRA_DEFINITION_HEADING}`);
   lines.push('');

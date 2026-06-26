@@ -11,8 +11,7 @@ test('serialize/parse round-trips a populated model', () => {
     difficulty: 4,
     mode: 'final',
     instability: true,
-    scenarioTitle: 'State Department of Revenue',
-    scenarioGoal: 'Design an architecture and implementation strategy for a 14M record system.',
+    learningOutcomes: 'Demonstrate systems thinking and evidence-based architectural decision-making.',
   };
 
   const parsed = parseDraMarkdown(serializeDraMarkdown(model));

@@ -46,9 +46,15 @@ export default function DraInstruction({ courseOps, learningSession, content = n
           ))}
         </div>
 
-        <h2>Scenario</h2>
-        {model.scenarioTitle && <h3>{model.scenarioTitle}</h3>}
-        <Markdown learningSession={learningSession} content={model.scenarioGoal || '_Scenario goal to be defined._'} />
+        <h2>Learning Outcomes</h2>
+        <Markdown learningSession={learningSession} content={model.learningOutcomes || '_Learning outcomes to be defined._'} />
+
+        <div className="not-prose mt-6 rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+          When you begin, a scenario will be generated from these parameters.
+          {model.mode === 'final'
+            ? ' This is a final assessment — once you confirm the start, the scenario is locked and must be completed.'
+            : ' In practice mode you can cancel and generate a new scenario before settling on one.'}
+        </div>
       </div>
     </div>
   );

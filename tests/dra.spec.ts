@@ -11,12 +11,11 @@ function draMarkdown(overrides: Record<string, unknown> = {}) {
     difficulty: 4,
     mode: 'final',
     instability: true,
-    scenarioTitle: 'State Department of Revenue',
-    scenarioGoal: 'Design an architecture and implementation strategy.',
+    learningOutcomes: 'Demonstrate systems thinking and evidence-based decisions.',
     ...overrides,
   };
 
-  return `# ${model.title}\n\n**Discipline:** ${model.discipline}\n**Problem type:** ${model.problemType}\n**Difficulty:** ${model.difficulty} / 5\n**Mode:** ${model.mode === 'final' ? 'Final' : 'Practice'}\n**Instability:** ${model.instability ? 'On' : 'Off'}\n\n## Scenario\n\n### ${model.scenarioTitle}\n\n${model.scenarioGoal}\n\n## Assessment Definition\n\n\`\`\`json\n${JSON.stringify(model, null, 2)}\n\`\`\`\n`;
+  return `# ${model.title}\n\n**Discipline:** ${model.discipline}\n**Problem type:** ${model.problemType}\n**Difficulty:** ${model.difficulty} / 5\n**Mode:** ${model.mode === 'final' ? 'Final' : 'Practice'}\n**Instability:** ${model.instability ? 'On' : 'Off'}\n\n## Learning Outcomes\n\n${model.learningOutcomes}\n\n## Assessment Definition\n\n\`\`\`json\n${JSON.stringify(model, null, 2)}\n\`\`\`\n`;
 }
 
 function draCourseOverride() {
@@ -79,7 +78,7 @@ function installDraRoutes(page: any, initialMarkdown: string) {
   return { draPuts };
 }
 
-test('dra learner view renders the scenario from the backing markdown', async ({ page }) => {
+test('dra learner view renders the published parameters and learning outcomes', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
   installDraRoutes(page, draMarkdown());
 
@@ -88,8 +87,9 @@ test('dra learner view renders the scenario from the backing markdown', async ({
 
   await expect(page.getByRole('heading', { name: 'Reasoning Lab', exact: true })).toBeVisible();
   await expect(page.getByText('Software Engineering')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'State Department of Revenue', exact: true })).toBeVisible();
-  await expect(page.getByText('Design an architecture and implementation strategy.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Learning Outcomes', exact: true })).toBeVisible();
+  await expect(page.getByText('Demonstrate systems thinking and evidence-based decisions.')).toBeVisible();
+  await expect(page.getByText('a scenario will be generated', { exact: false })).toBeVisible();
 });
 
 test('dra graphical editor edits a field and commits updated markdown', async ({ page }) => {
