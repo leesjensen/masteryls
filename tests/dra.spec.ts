@@ -139,7 +139,7 @@ function installScenarioGemini(page: any, scenario: any = SCENARIO, chatReply: s
   });
 }
 
-test('dra learner view renders the published parameters and learning outcomes', async ({ page }) => {
+test('dra learner view renders the title and learning outcomes without authoring details', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
   installDraRoutes(page, draMarkdown());
 
@@ -147,9 +147,10 @@ test('dra learner view renders the published parameters and learning outcomes', 
   await page.getByText('Reasoning Lab').click();
 
   await expect(page.getByRole('heading', { name: 'Reasoning Lab', exact: true })).toBeVisible();
-  await expect(page.getByText('Software Engineering')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Learning Outcomes', exact: true })).toBeVisible();
   await expect(page.getByText('Demonstrate systems thinking and evidence-based decisions.')).toBeVisible();
+  // Authoring parameters (discipline, problem type, difficulty, ...) are not shown to the learner.
+  await expect(page.getByText('Software Engineering')).toHaveCount(0);
 });
 
 test('dra easiest difficulty reveals full description, stakeholders, and resources', async ({ page }) => {

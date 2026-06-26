@@ -14,25 +14,11 @@ import DraCoach from './draCoach';
 //   notStarted -> (practice: generate / cancel / regenerate | final: confirm -> lock)
 //              -> inProgress -> completed
 function ParameterHeader({ params, learningSession }) {
-  const metadata = [
-    { label: 'Discipline', value: params.discipline || 'Unspecified' },
-    { label: 'Problem type', value: params.problemType || 'Unspecified' },
-    { label: 'Difficulty', value: `${params.difficulty} / 5` },
-    { label: 'Modes', value: [params.practiceMode && 'Practice', params.finalMode && 'Final'].filter(Boolean).join(', ') || 'Practice' },
-    { label: 'Instability', value: params.instability ? 'On' : 'Off' },
-  ];
-
+  // Intentionally no parameter chips (discipline, problem type, difficulty, ...): those
+  // are authoring details the learner should not see.
   return (
     <>
       <h1>{params.title || 'Disciplinary Reasoning Assessment'}</h1>
-      <div className="not-prose flex flex-wrap gap-2 my-3">
-        {metadata.map((item) => (
-          <span key={item.label} className="inline-flex items-center gap-1 rounded border border-gray-300 bg-gray-50 px-2 py-1 text-xs text-gray-700">
-            <span className="font-semibold">{item.label}:</span>
-            <span>{item.value}</span>
-          </span>
-        ))}
-      </div>
       <h2>Learning Outcomes</h2>
       <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
     </>
