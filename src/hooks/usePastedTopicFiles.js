@@ -2,6 +2,7 @@ import React from 'react';
 
 export default function usePastedTopicFiles(courseOps) {
   const [externalAddedFiles, setExternalAddedFiles] = React.useState([]);
+  const [freshTopicFiles, setFreshTopicFiles] = React.useState(null);
   const [pastingImageCommit, setPastingImageCommit] = React.useState(false);
   const [previewFileUrls, setPreviewFileUrls] = React.useState({});
   const previewFileUrlsRef = React.useRef({});
@@ -42,7 +43,8 @@ export default function usePastedTopicFiles(courseOps) {
 
       addPreviewFileUrls(uploadDescriptors);
       setExternalAddedFiles(uploadDescriptors);
-      await courseOps.addTopicFiles(uploadDescriptors);
+      const files = await courseOps.addTopicFiles(uploadDescriptors);
+      if (Array.isArray(files)) setFreshTopicFiles(files);
     },
     [addPreviewFileUrls, courseOps],
   );
@@ -58,6 +60,7 @@ export default function usePastedTopicFiles(courseOps) {
 
   return {
     externalAddedFiles,
+    freshTopicFiles,
     previewFileUrls,
     pastingImageCommit,
     setPastingImageCommit,

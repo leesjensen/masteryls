@@ -52,7 +52,7 @@ export default function Editor({ courseOps, user, learningSession }) {
     editorPanePercent,
   });
 
-  const { externalAddedFiles, previewFileUrls, pastingImageCommit, setPastingImageCommit, handlePastedFiles, getExistingTopicFileNames } = usePastedTopicFiles(courseOps);
+  const { externalAddedFiles, freshTopicFiles, previewFileUrls, pastingImageCommit, setPastingImageCommit, handlePastedFiles, getExistingTopicFileNames } = usePastedTopicFiles(courseOps);
 
   function toggleShowCommits() {
     setShowCommits((v) => !v);
@@ -136,7 +136,7 @@ export default function Editor({ courseOps, user, learningSession }) {
               </div>
             </div>
             <div className="flex-2/10 flex overflow-hidden">
-              <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} externalAddedFiles={externalAddedFiles} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
+              <EditorFiles courseOps={courseOps} course={learningSession.course} currentTopic={learningSession.topic} externalAddedFiles={externalAddedFiles} freshTopicFiles={freshTopicFiles} onInsertFiles={(files) => markdownEditorRef.current.insertFiles(files)} />
             </div>
             {(committing || pastingImageCommit) && <CommitOverlay message="Committing changes..." />}
           </div>

@@ -1047,13 +1047,15 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     invalidateCourseReadCache(course, latestCommitSha);
+    return await getTopicFiles(latestCommitSha);
   }
 
-  async function getTopicFiles() {
+  async function getTopicFiles(ref) {
     if (!learningSession?.course) return;
     const course = learningSession.course;
     let fetchUrl = learningSession.topic.path.substring(0, learningSession.topic.path.lastIndexOf('/'));
     fetchUrl = fetchUrl.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+    if (ref) fetchUrl += `?ref=${ref}`;
     const token = user.getSetting('gitHubToken', course.id);
     const res = await service.makeGitHubApiRequest(token, fetchUrl);
 

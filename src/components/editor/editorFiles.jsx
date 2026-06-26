@@ -3,7 +3,7 @@ import { createUploadDescriptors } from './fileUploadUtils';
 
 const PASTE_HANDLED_FLAG = '__masterylsPasteHandled';
 
-export default function EditorFiles({ courseOps, course, currentTopic, onInsertFiles, externalAddedFiles = [] }) {
+export default function EditorFiles({ courseOps, course, currentTopic, onInsertFiles, externalAddedFiles = [], freshTopicFiles = null }) {
   const [files, setFiles] = React.useState([]);
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [isDragOver, setIsDragOver] = React.useState(false);
@@ -164,16 +164,13 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
   };
 
   React.useEffect(() => {
-    if (!Array.isArray(externalAddedFiles) || externalAddedFiles.length === 0) {
-      return;
-    }
+    if (!Array.isArray(freshTopicFiles)) return;
+    const filtered = freshTopicFiles.filter((file) => !currentTopic?.path.endsWith(file.name));
+    setFiles(filtered);
+  }, [freshTopicFiles, currentTopic]);
 
-    setFiles((prevFiles) => {
-      const existingNames = new Set((prevFiles || []).map((f) => f.name));
-      const uniqueNewFiles = externalAddedFiles.filter((f) => f?.name && !existingNames.has(f.name));
-      return [...(prevFiles || []), ...uniqueNewFiles];
-    });
-
+  React.useEffect(() => {
+    if (!Array.isArray(externalAddedFiles) || externalAddedFiles.length === 0) return;
     setSelectedFiles((prevSelected) => {
       const merged = [...(prevSelected || []), ...externalAddedFiles.map((file) => file.name)];
       return Array.from(new Set(merged));
