@@ -1,0 +1,166 @@
+# Disciplinary Assessment Interview
+
+In order to demonstrate mastery of a disciplinary topic, we build a tool that mimics a real-world scenario and then has the learner walk through different stages of addressing the scenario. At each stage of the assessment, the learner interacts with different stakeholders. The conversations with the stakeholders become the basis for feedback and evaluation. At the conclusion of each phase, the feedback is summarized and an overall evaluation is compiled.
+
+The goal is to develop a universal tool that can be used across disciplines and task scope.
+
+The platform provides:
+
+1. The workflow
+2. AI coaching
+3. Feedback
+4. Progress visualization
+
+The tool can be used in two different modes:
+
+- **Practice** – Feedback and evaluation are exposed continuously.
+- **Final** – Feedback is withheld until completion.
+
+# General Framework
+
+## Definition
+
+The assessment author provides:
+
+1. What discipline is the assessment targeting?
+2. What type of problem should the learner be presented with?
+
+From this, the framework generates:
+
+1. Scenario
+2. Inflection points (beta testing, customer trials, production release, IPO, ...)
+3. Standards of evidence (annual earning report, network latency, ...)
+4. Expected stakeholders (patient, salesperson, government official ...)
+5. Expected resources (cleanroom, data center, microscope, ...)
+
+The learner's goal is to develop, justify, and iteratively refine a response to an authentic disciplinary scenario.
+
+- Demonstrates understanding
+- Identification
+  - stakeholders
+  - resources
+  - inflection points
+- Proposes direction
+- Establishes supporting evidence for evaluation
+
+# Scenario
+
+From the application definition, the AI generates a discipline-specific scenario that the learner must address. The scenario identifies major stakeholders that will participate in the interview.
+
+### Example Scenario
+
+```
+The State Department of Revenue wants to replace their aging tax processing system.
+
+**Current system**
+
+- 14 million records
+- COBOL backend
+- Downtime costs \$150k/hour
+- Multiple government agencies depend on it
+
+Your team has been hired.
+
+**Goal**
+
+Design an architecture and implementation strategy.
+```
+
+# Evaluation Parameters
+
+The goal of evaluation is **not** to assess an artifact, but to evaluate reasoning.
+
+Evaluation dimensions:
+
+- Problem understanding
+- Stakeholder identification
+- Constraint identification
+- Solution design
+- Implementation plan
+- Strategy evaluation
+- Tradeoff evaluation
+- Curiosity
+- Ownership
+
+# Evaluation Visualization
+
+A radar chart shows the learner's progress in four quadrants:
+
+- Understanding
+- Indentification
+- Direction
+- Evaluation
+
+For each evaluation parameter:
+
+- A confidence measure is calculated.
+- Snippets of supporting evidence are collected from the investigation discussions.
+
+Confidence levels:
+
+- Formulating
+- Developing
+- Emerging
+- Strong
+
+# Investigation Stages
+
+The assessment uses six universal stages that apply across disciplines:
+
+1. Frame the situation
+2. Research
+3. Model
+4. Act
+5. Validate
+6. Reflect
+
+The AI generates discipline-specific definitions for each stage.
+
+| Universal Move          | Software Engineering                 | Biology                        | History                       | Accounting                            |
+| ----------------------- | ------------------------------------ | ------------------------------ | ----------------------------- | ------------------------------------- |
+| **Frame the situation** | Clarify stakeholders and constraints | Define the biological question | Define the historical problem | Clarify the financial issue           |
+| **Research**            | Gather requirements                  | Collect observations           | Examine primary sources       | Collect financial records             |
+| **Model**               | Design architecture                  | Develop hypotheses/models      | Construct interpretations     | Build financial models                |
+| **Act**                 | Implement software                   | Conduct experiments            | Write historical argument     | Prepare statements or recommendations |
+| **Validate**            | Test behavior                        | Analyze results                | Evaluate evidence             | Audit and reconcile                   |
+| **Reflect**             | Evaluate tradeoffs                   | Consider limitations           | Reconsider interpretation     | Assess risks and implications         |
+
+Throughout the assessment, the learner may engage with any of the disciplinary stages. Although the assessment encourages a natural progression, learners may revisit earlier stages as new information emerges.
+
+# Investigations
+
+At any time during the investigation, the learner can identify a stakeholder or resource.
+
+Each stakeholder is automatically assigned a role within the scenario based upon the situation they represent. Once identified, the stakeholder becomes available for interviewing.
+
+Each interview stage follows this pattern:
+
+1. The learner selects one or more stakeholders and conducts conversations.
+2. After each conversation, the learner records reflections.
+3. Evidence of performance is collected.
+4. Feedback and assessment are generated.
+5. In **Practice Mode**, evidence, feedback, and assessment are displayed dynamically throughout the assessment.
+
+# Reasoning Record
+
+The framework provides an area where the learner can records their thoughts under the folllowing areas:
+
+- Current Understanding
+- Assumptions
+- Unknowns
+- Hypotheses
+- Decisions
+- Evidence
+- Confidence
+
+# Portfolio
+
+As the learner participates in multiple scenarios, the results are stored and can be published externally.
+
+A cumulative summary of progress is automatically generated, presenting a trajectory of learning rather than isolated grades.
+
+| Scenario              | Confidence | Summary         |
+| --------------------- | ---------- | --------------- |
+| Website creation      | Strong     | Lorem Ipsum ... |
+| Tax management system | Developing | Lorem Ipsum ... |
+| Distributed database  | Emerging   | Lorem Ipsum ... |
