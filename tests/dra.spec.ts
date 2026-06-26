@@ -91,14 +91,19 @@ const SCENARIO = {
   constraints: [{ name: 'Budget', description: 'capped at $2.5M' }],
 };
 
-function installScenarioGemini(page: any, scenario: any = SCENARIO) {
+const STAKEHOLDER_REPLY = 'Downtime is our biggest concern.';
+
+function installScenarioGemini(page: any, scenario: any = SCENARIO, chatReply: string = STAKEHOLDER_REPLY) {
   page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
       return;
     }
+    // Scenario generation has no system_instruction; the stakeholder chat agent does.
+    const hasSystemInstruction = Boolean(route.request().postDataJSON()?.body?.system_instruction);
+    const text = hasSystemInstruction ? chatReply : JSON.stringify(scenario);
     await route.fulfill({
-      json: { candidates: [{ content: { parts: [{ text: JSON.stringify(scenario) }], role: 'model' }, finishReason: 'STOP' }] },
+      json: { candidates: [{ content: { parts: [{ text }], role: 'model' }, finishReason: 'STOP' }] },
     });
   });
 }
@@ -129,8 +134,10 @@ test('dra easiest difficulty reveals full description, stakeholders, and resourc
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
   await expect(page.getByText('aging COBOL tax system handling 14 million records', { exact: false })).toBeVisible();
   await expect(page.getByText('capped at $2.5M', { exact: false })).toBeVisible();
-  await expect(page.getByText('Dana Cole')).toBeVisible();
-  await expect(page.getByText('Legacy COBOL system')).toBeVisible();
+  // Stakeholders and resources are listed in the scenario (objectives text is unique to that list).
+  await expect(page.getByRole('heading', { name: 'Stakeholders' })).toBeVisible();
+  await expect(page.getByText('minimize downtime', { exact: false })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Resources' })).toBeVisible();
 
   // Practice mode is not locked: cancel returns to the start so a new scenario can be generated.
   await expect(page.getByRole('button', { name: 'Generate new scenario' })).toHaveCount(0);
@@ -221,6 +228,33 @@ test('dra with both modes lets the learner practice then enter the final assessm
 
   await expect(page.getByText('the scenario is locked', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
+});
+
+test('dra investigation lets the learner interview a stakeholder and record reasoning', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false, difficulty: 1 }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Investigation', exact: true })).toBeVisible();
+
+  // The first revealed target (a stakeholder) is auto-selected; ask it a question.
+  const chatInput = page.getByPlaceholder('Ask Dana Cole...');
+  await expect(chatInput).toBeVisible();
+  await chatInput.fill('What worries you most?');
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+
+  await expect(page.getByText('What worries you most?')).toBeVisible();
+  await expect(page.getByText('Downtime is our biggest concern.')).toBeVisible();
+
+  // The reasoning record captures and retains the learner's input.
+  const understanding = page.getByLabel('Current understanding');
+  await understanding.fill('The agency fears downtime during migration.');
+  await understanding.blur();
+  await expect(understanding).toHaveValue('The agency fears downtime during migration.');
 });
 
 test('dra graphical editor edits a field and commits updated markdown', async ({ page }) => {

@@ -121,6 +121,26 @@ Design an architecture and implementation strategy.
 
 The assessment may optionally introduce unexpected changes into the scenario at random points. These events intentionally measure the learner's ability to adapt as new information and constraints emerge.
 
+### Difficulty
+
+The difficulty of the scenario controls how much is exposed to the learner at the beginning and how complex the scenario is.
+
+**Revealed constraints**
+
+```
+┌────────────┬─────────────┬─────────────┬──────────────┬───────────┐
+│ Difficulty │ Description │ Constraints │ Stakeholders │ Resources │
+├────────────┼─────────────┼─────────────┼──────────────┼───────────┤
+│ 1          │ full        │ ✓           │ ✓            │ ✓         │
+├────────────┼─────────────┼─────────────┼──────────────┼───────────┤
+│ 2          │ full        │ ✓           │ ✓            │ —         │
+├────────────┼─────────────┼─────────────┼──────────────┼───────────┤
+│ 3          │ full        │ ✓           │ —            │ —         │
+├────────────┼─────────────┼─────────────┼──────────────┼───────────┤
+│ 4–5        │ summary     │ —           │ —            │ —         │
+└────────────┴─────────────┴─────────────┴──────────────┴───────────┘
+```
+
 ## Evaluation
 
 The goal of the evaluation is **not** to assess an artifact, but rather to evaluate reasoning and competency. Each dimension is measured and supported with evidence collected throughout the assessment.
@@ -195,6 +215,8 @@ Each investigation follows this pattern:
 4. Evidence of performance is collected.
 5. Feedback and assessment are generated.
 6. In **Practice Mode**, evidence, feedback, and assessment are displayed continuously throughout the assessment.
+
+> Implementation status: the learner can interview the difficulty-revealed stakeholders and consult revealed resources through an in-character AI agent, and records their thinking in the reasoning record. Both the conversations and the reasoning record persist to the progress record for save/resume. Discovering withheld stakeholders/resources, AI-generated stage interpretations, and the evidence/evaluation engine are upcoming phases.
 
 ### Stages
 
@@ -574,8 +596,9 @@ Progress is stored in the learner's progress record in Supabase, following the s
 - `difficulty` — captured when the scenario is generated so disclosure stays stable for the run
 - `state` — e.g. `notStarted`, `inProgress`, `completed` (and, for Final, whether the start has been confirmed and the scenario locked)
 - `scenario` — the generated (and, in Final mode, locked) scenario, constraints, stakeholders, and resources
+- `conversations` — the learner's interview/consultation transcripts, keyed by stakeholder/resource
 - `investigations` — the learner's interactions and captured evidence
-- `reasoningRecord` — the learner's recorded reasoning
+- `reasoningRecord` — the learner's recorded reasoning (understanding, assumptions, unknowns, hypotheses, decisions, evidence, confidence)
 - `evaluation` — accumulated process, competency, and disposition results
 
 Because the complete state lives in the progress record, the learner can save and resume an assessment exactly where they left off. The author's published parameters (discipline, problem type, difficulty, enabled modes, instability, learning outcomes) remain in the backing Markdown topic file; only learner-specific runtime state lives in the progress record.

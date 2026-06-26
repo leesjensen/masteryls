@@ -194,6 +194,47 @@ Requirements:
   return parseJsonResponse(response);
 }
 
+/**
+ * Generates an in-character response from a scenario stakeholder or resource during a
+ * Disciplinary Reasoning Assessment investigation. The agent role-plays the target and
+ * reveals information only in response to relevant questions.
+ *
+ * @async
+ * @param {{title?: string, summary?: string, description?: string}} scenario - The generated scenario context.
+ * @param {{name?: string, role?: string, personality?: string, objectives?: string, type?: string, description?: string}} target - The stakeholder or resource being interviewed/consulted.
+ * @param {Array<{role: 'user'|'model', text: string}>} messages - The conversation so far.
+ * @returns {Promise<string>} The in-character reply as GitHub-flavored markdown.
+ */
+export async function aiDraStakeholderResponseGenerator(scenario, target, messages) {
+  const isStakeholder = Boolean(target?.role) || (target?.type || 'stakeholder') === 'stakeholder';
+  const persona = isStakeholder
+    ? `You are ${target?.name || 'a stakeholder'}, ${target?.role || 'a stakeholder'} in this scenario.
+Personality: ${target?.personality || 'professional and direct'}.
+Your objectives: ${target?.objectives || 'represent your interests honestly'}.`
+    : `You represent "${target?.name || 'a resource'}" (${target?.type || 'resource'}), an information resource in this scenario.
+What it offers: ${target?.description || 'relevant information for the investigation'}.`;
+
+  const instructionText = `You are a role-play partner in a disciplinary reasoning assessment.
+
+SCENARIO: ${scenario?.title || ''}
+${scenario?.description || scenario?.summary || ''}
+
+${persona}
+
+Guidelines:
+- Stay fully in character and respond as ${target?.name || 'this target'} would.
+- Reveal information only in response to relevant questions; do not volunteer the whole picture at once.
+- Be concise (under 150 words) and use plain GitHub-flavored markdown.
+- Do not evaluate the learner, give away the "answer", or break character.`;
+
+  const instructions = { parts: [{ text: instructionText }] };
+  const contents = (messages || [])
+    .filter((msg) => msg.role === 'user' || msg.role === 'model')
+    .map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] }));
+
+  return makeAiRequest(instructions, contents);
+}
+
 function parseJsonResponse(response) {
   const text = String(response || '').trim();
   try {

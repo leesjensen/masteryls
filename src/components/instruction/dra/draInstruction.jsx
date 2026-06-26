@@ -1,6 +1,7 @@
 import React from 'react';
 import Markdown from '../../Markdown';
 import { parseDraMarkdown } from '../../../utils/draMarkdown';
+import DraInvestigation from './draInvestigation';
 
 // Learner experience for a Disciplinary Reasoning Assessment. The scenario is
 // generated at runtime from the author's published parameters and the full state is
@@ -146,9 +147,42 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const params = React.useMemo(() => parseDraMarkdown(markdown), [markdown]);
   const details = draState.details || { state: 'notStarted' };
 
+  // Local-only update (no server write) for in-flight edits like typing in the
+  // reasoning record; persist() writes the full state to the progress record.
+  function setLocalDetails(nextDetails) {
+    setDraState({ details: nextDetails });
+  }
+
   async function persist(nextDetails) {
     setDraState({ details: nextDetails });
     await courseOps.addProgress(null, null, 'dra', 0, nextDetails);
+  }
+
+  async function sendInvestigationMessage(target, text) {
+    const key = target.key;
+    const conversations = details.conversations || {};
+    const withUser = [...(conversations[key] || []), { role: 'user', text }];
+    setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
+
+    try {
+      const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser);
+      await persist({ ...details, conversations: { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] } });
+    } catch {
+      // Keep the learner's question saved even if the agent fails to respond.
+      await persist({ ...details, conversations: { ...conversations, [key]: withUser } });
+      alert('The interview partner could not respond. Please try again.');
+    }
+  }
+
+  function updateReasoning(field, value) {
+    setLocalDetails({ ...details, reasoningRecord: { ...(details.reasoningRecord || {}), [field]: value } });
+  }
+
+  async function saveReasoning() {
+    if (isObserveReadOnly) {
+      return;
+    }
+    await persist(details);
   }
 
   async function generateScenario(runMode = 'practice') {
@@ -213,6 +247,28 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const canPractice = params.practiceMode;
     const canFinal = params.finalMode;
 
+    // Only difficulty-revealed stakeholders/resources are available to interview;
+    // the rest become discoverable during the investigation (a later phase).
+    const disclosure = scenarioDisclosure(details.difficulty ?? params.difficulty);
+    const targets = [
+      ...(disclosure.showStakeholders ? (details.stakeholders || []).map((s, i) => ({ key: `stakeholder:${i}`, type: 'stakeholder', ...s })) : []),
+      ...(disclosure.showResources ? (details.resources || []).map((r, i) => ({ key: `resource:${i}`, type: 'resource', ...r })) : []),
+    ];
+
+    const investigation = (readOnly) => (
+      <DraInvestigation
+        scenario={details.scenario}
+        targets={targets}
+        conversations={details.conversations || {}}
+        reasoningRecord={details.reasoningRecord || {}}
+        onSendMessage={sendInvestigationMessage}
+        onReasoningChange={updateReasoning}
+        onReasoningBlur={saveReasoning}
+        readOnly={readOnly}
+        learningSession={learningSession}
+      />
+    );
+
     if (details.state === 'completed') {
       // A completed final run is terminal. After practice the learner may practice
       // again or, if final is enabled, move on to the final assessment.
@@ -238,6 +294,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             </div>
           )}
           <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
+          {investigation(true)}
         </>
       );
     }
@@ -266,6 +323,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             </button>
           </div>
           <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
+          {investigation(isObserveReadOnly)}
         </>
       );
     }

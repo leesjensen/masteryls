@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -1240,6 +1240,10 @@ Requirements:
     return aiDraScenarioGenerator(params || {});
   }
 
+  async function getDraStakeholderResponse(scenario, target, messages) {
+    return aiDraStakeholderResponseGenerator(scenario, target, messages);
+  }
+
   async function uploadSubmissionFile({ interactionId, file }) {
     const enrollmentId = learningSession?.enrollment?.id;
     if (!enrollmentId) throw new Error('Not enrolled in this course.');
@@ -1920,6 +1924,7 @@ Requirements:
     getExamState,
     getDraState,
     generateDraScenario,
+    getDraStakeholderResponse,
     repairCanvas,
     unlinkFromCanvas,
     linkToCanvas,
