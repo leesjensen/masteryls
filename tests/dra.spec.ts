@@ -9,13 +9,15 @@ function draMarkdown(overrides: Record<string, unknown> = {}) {
     discipline: 'Software Engineering',
     problemType: 'System modernization',
     difficulty: 4,
-    mode: 'final',
+    practiceMode: true,
+    finalMode: false,
     instability: true,
     learningOutcomes: 'Demonstrate systems thinking and evidence-based decisions.',
     ...overrides,
   };
 
-  return `# ${model.title}\n\n**Discipline:** ${model.discipline}\n**Problem type:** ${model.problemType}\n**Difficulty:** ${model.difficulty} / 5\n**Mode:** ${model.mode === 'final' ? 'Final' : 'Practice'}\n**Instability:** ${model.instability ? 'On' : 'Off'}\n\n## Learning Outcomes\n\n${model.learningOutcomes}\n\n## Assessment Definition\n\n\`\`\`json\n${JSON.stringify(model, null, 2)}\n\`\`\`\n`;
+  const modes = [model.practiceMode && 'Practice', model.finalMode && 'Final'].filter(Boolean).join(', ') || 'Practice';
+  return `# ${model.title}\n\n**Discipline:** ${model.discipline}\n**Problem type:** ${model.problemType}\n**Difficulty:** ${model.difficulty} / 5\n**Modes:** ${modes}\n**Instability:** ${model.instability ? 'On' : 'Off'}\n\n## Learning Outcomes\n\n${model.learningOutcomes}\n\n## Assessment Definition\n\n\`\`\`json\n${JSON.stringify(model, null, 2)}\n\`\`\`\n`;
 }
 
 function draCourseOverride() {
@@ -116,7 +118,7 @@ test('dra learner view renders the published parameters and learning outcomes', 
 
 test('dra easiest difficulty reveals full description, stakeholders, and resources', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
-  installDraRoutes(page, draMarkdown({ mode: 'practice', difficulty: 1 }));
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false, difficulty: 1 }));
   installScenarioGemini(page);
 
   await navigateToCourse(page);
@@ -138,7 +140,7 @@ test('dra easiest difficulty reveals full description, stakeholders, and resourc
 
 test('dra hardest difficulty reveals only the high-level summary', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
-  installDraRoutes(page, draMarkdown({ mode: 'practice', difficulty: 5 }));
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false, difficulty: 5 }));
   installScenarioGemini(page);
 
   await navigateToCourse(page);
@@ -159,7 +161,7 @@ test('dra hardest difficulty reveals only the high-level summary', async ({ page
 
 test('dra practice mode can start a new scenario after completing', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
-  installDraRoutes(page, draMarkdown({ mode: 'practice' }));
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false }));
   installScenarioGemini(page);
 
   await navigateToCourse(page);
@@ -178,7 +180,7 @@ test('dra practice mode can start a new scenario after completing', async ({ pag
 
 test('dra final mode confirms start and locks the scenario', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
-  installDraRoutes(page, draMarkdown({ mode: 'final' }));
+  installDraRoutes(page, draMarkdown({ practiceMode: false, finalMode: true }));
   installScenarioGemini(page);
 
   await navigateToCourse(page);
@@ -193,6 +195,32 @@ test('dra final mode confirms start and locks the scenario', async ({ page }) =>
   await expect(page.getByText('the scenario is locked', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Generate new scenario' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+});
+
+test('dra with both modes lets the learner practice then enter the final assessment', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: true, difficulty: 1 }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  // Both entry points are available at the start.
+  await expect(page.getByRole('button', { name: 'Generate scenario' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start final assessment' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+  await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
+
+  // While practicing, the learner can cancel or choose to enter the final assessment.
+  await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+  await page.getByRole('button', { name: 'Start final assessment' }).click();
+
+  await expect(page.getByText('the scenario is locked', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
 });
 
 test('dra graphical editor edits a field and commits updated markdown', async ({ page }) => {

@@ -15,7 +15,7 @@ function ParameterHeader({ params, learningSession }) {
     { label: 'Discipline', value: params.discipline || 'Unspecified' },
     { label: 'Problem type', value: params.problemType || 'Unspecified' },
     { label: 'Difficulty', value: `${params.difficulty} / 5` },
-    { label: 'Mode', value: params.mode === 'final' ? 'Final' : 'Practice' },
+    { label: 'Modes', value: [params.practiceMode && 'Practice', params.finalMode && 'Final'].filter(Boolean).join(', ') || 'Practice' },
     { label: 'Instability', value: params.instability ? 'On' : 'Off' },
   ];
 
@@ -151,7 +151,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     await courseOps.addProgress(null, null, 'dra', 0, nextDetails);
   }
 
-  async function generateScenario() {
+  async function generateScenario(runMode = 'practice') {
     if (isObserveReadOnly || busy) {
       return;
     }
@@ -160,7 +160,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       const generated = await courseOps.generateDraScenario(params);
       await persist({
         state: 'inProgress',
-        mode: params.mode,
+        mode: runMode,
         difficulty: params.difficulty,
         scenario: generated?.scenario || {},
         constraints: generated?.constraints || [],
@@ -181,14 +181,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (!window.confirm('Start the final assessment? Once it begins the scenario is locked and must be completed.')) {
       return;
     }
-    await generateScenario();
+    await generateScenario('final');
   }
 
   async function cancelScenario() {
     if (isObserveReadOnly || busy) {
       return;
     }
-    await persist({ state: 'notStarted', mode: params.mode });
+    await persist({ state: 'notStarted' });
   }
 
   async function completeAssessment() {
@@ -210,19 +210,31 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       );
     }
 
+    const canPractice = params.practiceMode;
+    const canFinal = params.finalMode;
+
     if (details.state === 'completed') {
-      const canStartNew = details.mode !== 'final';
+      // A completed final run is terminal. After practice the learner may practice
+      // again or, if final is enabled, move on to the final assessment.
+      const wasFinal = details.mode === 'final';
       return (
         <>
           <div className="not-prose mt-6 rounded border border-blue-200 bg-blue-50 p-4">
             <div className="text-lg font-bold text-blue-600">Assessment complete</div>
             {details.completedAt && <div className="text-sm text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
           </div>
-          {canStartNew && (
-            <div className="not-prose mt-4">
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={generateScenario}>
-                {generatingLabel || 'Start new scenario'}
-              </button>
+          {!wasFinal && (
+            <div className="not-prose mt-4 flex flex-wrap gap-2">
+              {canPractice && (
+                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                  {generatingLabel || 'Start new scenario'}
+                </button>
+              )}
+              {canFinal && (
+                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                  {generatingLabel || 'Start final assessment'}
+                </button>
+              )}
             </div>
           )}
           <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
@@ -235,12 +247,20 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       return (
         <>
           <div className="not-prose mt-6 flex flex-wrap items-center gap-2">
-            {!locked && (
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
-                Cancel
-              </button>
+            {locked ? (
+              <span className="text-sm text-amber-700">Final assessment — the scenario is locked and must be completed.</span>
+            ) : (
+              <>
+                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
+                  Cancel
+                </button>
+                {canFinal && (
+                  <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                    Start final assessment
+                  </button>
+                )}
+              </>
             )}
-            {locked && <span className="text-sm text-amber-700">Final assessment — the scenario is locked and must be completed.</span>}
             <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
               Complete assessment
             </button>
@@ -251,16 +271,24 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
 
     // notStarted
-    const isFinal = params.mode === 'final';
     return (
       <div className="not-prose mt-6 flex flex-col items-start gap-2">
         <p className="text-sm text-gray-600">
-          {isFinal ? 'When you start, a scenario is generated and locked until you complete the assessment.' : 'Generate a scenario to begin. In practice mode you can cancel and generate a new one until you are ready.'}
+          {canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}
         </p>
         {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
-        <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={isFinal ? startFinal : generateScenario}>
-          {generatingLabel || (isFinal ? 'Start final assessment' : 'Generate scenario')}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {canPractice && (
+            <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+              {generatingLabel || 'Generate scenario'}
+            </button>
+          )}
+          {canFinal && (
+            <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+              {generatingLabel || 'Start final assessment'}
+            </button>
+          )}
+        </div>
       </div>
     );
   }

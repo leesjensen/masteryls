@@ -26,6 +26,14 @@ export default function DraEditor({ courseOps, learningSession }) {
     setDirty(true);
   }
 
+  function setMode(which, checked) {
+    const next = { practiceMode: model.practiceMode, finalMode: model.finalMode, [which]: checked };
+    if (!next.practiceMode && !next.finalMode) {
+      return; // at least one mode must remain enabled
+    }
+    updateModel({ [which]: checked });
+  }
+
   async function commit() {
     if (!dirty || committing) {
       return;
@@ -88,14 +96,15 @@ export default function DraEditor({ courseOps, learningSession }) {
               </section>
 
               <section className="space-y-2">
-                <h2 className="text-sm font-semibold text-gray-700">Mode</h2>
+                <h2 className="text-sm font-semibold text-gray-700">Modes</h2>
+                <p className="text-xs text-gray-500">Enable practice, final, or both. At least one is required. With both enabled the learner can practice and then choose to enter the final assessment.</p>
                 <div className="flex items-center gap-4 text-sm text-gray-700">
                   <label className="flex items-center gap-1">
-                    <input type="radio" name="dra-mode" value="practice" checked={model.mode === 'practice'} onChange={() => updateModel({ mode: 'practice' })} />
+                    <input type="checkbox" checked={model.practiceMode} onChange={(e) => setMode('practiceMode', e.target.checked)} />
                     Practice
                   </label>
                   <label className="flex items-center gap-1">
-                    <input type="radio" name="dra-mode" value="final" checked={model.mode === 'final'} onChange={() => updateModel({ mode: 'final' })} />
+                    <input type="checkbox" checked={model.finalMode} onChange={(e) => setMode('finalMode', e.target.checked)} />
                     Final
                   </label>
                 </div>

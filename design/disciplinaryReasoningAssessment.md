@@ -17,6 +17,12 @@ The assessment supports two modes:
 - **Practice** – Feedback and evaluation are displayed continuously throughout the assessment. The learner may generate a scenario, cancel the assessment, and generate a new scenario as many times as they wish before committing to work through one.
 - **Final** – Feedback is withheld until the assessment is complete. The learner explicitly agrees to begin a final assessment; once initiated the scenario is fixed and cannot be regenerated. That scenario must be continued until it is completed.
 
+The author enables practice, final, or both (at least one is required):
+
+- **Practice only** – the learner can practice freely but there is no final assessment.
+- **Final only** – the learner goes straight to the final assessment with no practice.
+- **Both** – the learner can practice as much as they want and, when ready, choose to enter the final assessment (from the start, while practicing, or after completing a practice run).
+
 In both modes the scenario is generated at runtime when the learner begins (not by the author), and the learner may save the current state of the scenario interaction to a progress record and resume it later — the same way an exam interaction is saved and resumed.
 
 ## General Framework
@@ -54,7 +60,7 @@ The assessment author does **not** author a specific scenario. The author specif
 1. The target discipline
 2. The type of problem to present to the learner
 3. The difficulty
-4. The mode (Practice or Final)
+4. The enabled modes — practice, final, or both (at least one)
 5. Whether instability events are enabled
 6. The intended learning outcomes
 
@@ -430,7 +436,7 @@ A[Instructor Definition]
 A --> B[Discipline]
 A --> C[Problem Type]
 A --> D[Difficulty]
-A --> E[Practice or Final]
+A --> E[Enabled Modes: Practice and/or Final]
 A --> F[Optional Instability]
 A --> G[Learning Outcomes]
 
@@ -519,7 +525,7 @@ stateDiagram-v2
 │ Discipline        [____________________]                                     │
 │ Problem Type      [____________________]                                     │
 │ Difficulty        [easy (1) to hard (5)]                                     │
-│ Mode              ( Practice ) ( Final )                                     │
+│ Modes             [x] Practice  [ ] Final   (at least one)                   │
 │ Instability       [ ] Enabled                                                │
 │                                                                              │
 │ Step 2: Learning Intent                                                      │
@@ -564,11 +570,12 @@ Disciplinary Reasoning Assessments are stored in markdown format and committed t
 
 Progress is stored in the learner's progress record in Supabase, following the same persistence model exams use. A single progress record per learner per assessment captures the full resumable state:
 
-- `mode` — Practice or Final
+- `mode` — the active run's mode (`practice` or `final`); the learner chooses which to run from the modes the author enabled
+- `difficulty` — captured when the scenario is generated so disclosure stays stable for the run
 - `state` — e.g. `notStarted`, `inProgress`, `completed` (and, for Final, whether the start has been confirmed and the scenario locked)
-- `scenario` — the generated (and, in Final mode, locked) scenario, stakeholders, and resources
+- `scenario` — the generated (and, in Final mode, locked) scenario, constraints, stakeholders, and resources
 - `investigations` — the learner's interactions and captured evidence
 - `reasoningRecord` — the learner's recorded reasoning
 - `evaluation` — accumulated process, competency, and disposition results
 
-Because the complete state lives in the progress record, the learner can save and resume an assessment exactly where they left off. The author's published parameters (discipline, problem type, difficulty, mode, instability, learning outcomes) remain in the backing Markdown topic file; only learner-specific runtime state lives in the progress record.
+Because the complete state lives in the progress record, the learner can save and resume an assessment exactly where they left off. The author's published parameters (discipline, problem type, difficulty, enabled modes, instability, learning outcomes) remain in the backing Markdown topic file; only learner-specific runtime state lives in the progress record.

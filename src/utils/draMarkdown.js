@@ -12,15 +12,14 @@
 const DRA_DEFINITION_HEADING = 'Assessment Definition';
 const DRA_FENCE_RE = /```json\s*\n([\s\S]*?)```/g;
 
-export const DRA_MODES = ['practice', 'final'];
-
 export function createEmptyDraModel(title = '') {
   return {
     title: title || '',
     discipline: '',
     problemType: '',
     difficulty: 3,
-    mode: 'practice',
+    practiceMode: true,
+    finalMode: false,
     instability: false,
     learningOutcomes: '',
   };
@@ -28,7 +27,8 @@ export function createEmptyDraModel(title = '') {
 
 function normalizeModel(raw, title = '') {
   const defaults = createEmptyDraModel(title);
-  const model = { ...defaults, ...(raw && typeof raw === 'object' ? raw : {}) };
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const model = { ...defaults, ...source };
 
   model.title = typeof model.title === 'string' ? model.title : defaults.title;
   model.discipline = typeof model.discipline === 'string' ? model.discipline : '';
@@ -37,7 +37,18 @@ function normalizeModel(raw, title = '') {
   const difficulty = Number(model.difficulty);
   model.difficulty = Number.isFinite(difficulty) ? Math.min(5, Math.max(1, Math.round(difficulty))) : defaults.difficulty;
 
-  model.mode = DRA_MODES.includes(model.mode) ? model.mode : 'practice';
+  // Migrate the legacy single `mode` ('practice' | 'final') to independent booleans.
+  if (typeof source.practiceMode !== 'boolean' && typeof source.finalMode !== 'boolean' && typeof source.mode === 'string') {
+    model.practiceMode = source.mode !== 'final';
+    model.finalMode = source.mode === 'final';
+  }
+  model.practiceMode = Boolean(model.practiceMode);
+  model.finalMode = Boolean(model.finalMode);
+  if (!model.practiceMode && !model.finalMode) {
+    model.practiceMode = true; // at least one mode must be enabled
+  }
+  delete model.mode;
+
   model.instability = Boolean(model.instability);
   model.learningOutcomes = typeof model.learningOutcomes === 'string' ? model.learningOutcomes : '';
 
@@ -69,7 +80,7 @@ export function serializeDraMarkdown(model) {
   lines.push(`**Discipline:** ${m.discipline || '_unspecified_'}`);
   lines.push(`**Problem type:** ${m.problemType || '_unspecified_'}`);
   lines.push(`**Difficulty:** ${m.difficulty} / 5`);
-  lines.push(`**Mode:** ${m.mode === 'final' ? 'Final' : 'Practice'}`);
+  lines.push(`**Modes:** ${[m.practiceMode && 'Practice', m.finalMode && 'Final'].filter(Boolean).join(', ') || 'Practice'}`);
   lines.push(`**Instability:** ${m.instability ? 'On' : 'Off'}`);
   lines.push('');
   lines.push('## Learning Outcomes');
