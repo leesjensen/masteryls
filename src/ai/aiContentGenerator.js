@@ -147,6 +147,67 @@ question body
 }
 
 /**
+ * Generates a Disciplinary Reasoning Assessment scenario from the author's published
+ * parameters. Generation happens at learner runtime, not at authoring time.
+ *
+ * @async
+ * @param {Object} params - The author's published assessment parameters.
+ * @param {string} params.discipline - The target discipline.
+ * @param {string} params.problemType - The type of problem to present.
+ * @param {number} params.difficulty - Difficulty from 1 (easy) to 5 (hard).
+ * @param {boolean} params.instability - Whether instability events are enabled.
+ * @param {string} params.learningOutcomes - The intended learning outcomes.
+ * @returns {Promise<{scenario: {title: string, summary: string, description: string}, stakeholders: Array<{name: string, role: string, personality: string, objectives: string}>, resources: Array<{name: string, type: string, description: string}>, constraints: Array<{name: string, description: string}>}>}
+ */
+export async function aiDraScenarioGenerator({ discipline, problemType, difficulty, instability, learningOutcomes }) {
+  const prompt = `You are designing an authentic, real-world scenario for a disciplinary reasoning assessment.
+The learner will demonstrate mastery by investigating the scenario, interviewing stakeholders, and consulting resources.
+
+Generate a scenario for:
+- Discipline: ${discipline || 'general'}
+- Problem type: ${problemType || 'open-ended problem'}
+- Difficulty (1 easy to 5 hard): ${difficulty ?? 3}
+- Intended learning outcomes: ${learningOutcomes || 'develop, justify, and refine a response to an authentic problem'}
+${instability ? '- The scenario should be amenable to unexpected changes (instability events) introduced later.' : ''}
+
+Return a raw JSON object (no markdown code fence) with exactly this shape:
+{
+  "scenario": {
+    "title": "short scenario name",
+    "summary": "1-2 sentence high-level description of the situation and goal, with NO technical details, numbers, stakeholders, or resources named",
+    "description": "2-4 paragraph detailed scenario including concrete constraints, technical details, and a clear goal"
+  },
+  "stakeholders": [ { "name": "person or role name", "role": "their role in the scenario", "personality": "how they communicate", "objectives": "what they want" } ],
+  "resources": [ { "name": "artifact, system, or place", "type": "person | artifact | system | data | environment", "description": "what it offers the investigation" } ],
+  "constraints": [ { "name": "constraint name, e.g. Budget, Target completion date, Regulatory restrictions", "description": "the specific limit or requirement it imposes" } ]
+}
+
+Requirements:
+- Provide 3 to 5 stakeholders, 2 to 4 resources, and 2 to 4 constraints
+- Constraints are the boundaries the response must respect (budget, deadlines, regulatory or technical restrictions, staffing limits, ...)
+- The summary must remain high-level so it can be shown even when details are withheld; the description carries the full detail
+- Make the scenario specific and grounded in the named discipline
+- Calibrate complexity to the difficulty level
+- Return only the JSON object`;
+
+  const response = await makeSimpleAiRequest(prompt);
+  return parseJsonResponse(response);
+}
+
+function parseJsonResponse(response) {
+  const text = String(response || '').trim();
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      return JSON.parse(match[0]);
+    }
+    throw new Error('AI response was not valid JSON.');
+  }
+}
+
+/**
  * Generates markdown content for a course overview using AI.
  *
  * @async

@@ -25,7 +25,7 @@ In both modes the scenario is generated at runtime when the learner begins (not 
 Scenario Generation (AI-generated at learner runtime from the author's parameters)
         │
         ▼
-Resource Identification (People, Artifacts, Systems)
+Resource & Constraint Identification (People, Artifacts, Systems, Limits)
         │
         ▼
 Learner Investigations (Iterative movement through stages using AI interactions)
@@ -68,6 +68,7 @@ When a learner begins the assessment, the framework uses the author's parameters
    2. Standards of evidence (annual earnings report, network latency, ...)
    3. Stakeholders (patient, salesperson, government official, ...)
    4. Resources (cleanroom, data center, microscope, ...)
+   5. Constraints (target completion date, regulatory restrictions, budget, ...)
 
 The learner's goal is to develop, justify, and iteratively refine a response to an authentic disciplinary scenario.
 
@@ -77,6 +78,7 @@ The learner demonstrates the ability to:
 - Identify:
   - Stakeholders
   - Resources
+  - Constraints
   - Inflection points
 
 - Propose a direction
@@ -292,6 +294,7 @@ Evidence consists of observable learner behaviors, including:
 - Observations made
 - Stakeholders identified
 - Resources consulted
+- Constraints identified
 - Assumptions documented
 - Decisions justified
 - Revisions made
@@ -327,9 +330,12 @@ Assessment
 
 Scenario
 
+- title
+- summary
 - description
 - stakeholders[]
 - resources[]
+- constraints[]
 - inflectionPoints[]
 - standardsOfEvidence[]
 
@@ -346,6 +352,11 @@ Resource
 - name
 - type
 - contents
+
+Constraint
+
+- name
+- description
 
 Investigation
 
@@ -378,6 +389,7 @@ Scenario Generator
 - Creates scenarios
 - Creates stakeholders
 - Creates resources
+- Creates constraints
 - Creates inflection points
 
 Stakeholder Agent

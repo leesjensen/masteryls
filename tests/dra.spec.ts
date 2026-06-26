@@ -78,6 +78,29 @@ function installDraRoutes(page: any, initialMarkdown: string) {
   return { draPuts };
 }
 
+const SCENARIO = {
+  scenario: {
+    title: 'Tax System Modernization',
+    summary: 'A government agency must modernize a critical legacy system.',
+    description: 'The State Department of Revenue must replace its aging COBOL tax system handling 14 million records.',
+  },
+  stakeholders: [{ name: 'Dana Cole', role: 'CIO', personality: 'cautious', objectives: 'minimize downtime' }],
+  resources: [{ name: 'Legacy COBOL system', type: 'system', description: '14 million records' }],
+  constraints: [{ name: 'Budget', description: 'capped at $2.5M' }],
+};
+
+function installScenarioGemini(page: any, scenario: any = SCENARIO) {
+  page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    await route.fulfill({
+      json: { candidates: [{ content: { parts: [{ text: JSON.stringify(scenario) }], role: 'model' }, finishReason: 'STOP' }] },
+    });
+  });
+}
+
 test('dra learner view renders the published parameters and learning outcomes', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
   installDraRoutes(page, draMarkdown());
@@ -89,7 +112,87 @@ test('dra learner view renders the published parameters and learning outcomes', 
   await expect(page.getByText('Software Engineering')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Learning Outcomes', exact: true })).toBeVisible();
   await expect(page.getByText('Demonstrate systems thinking and evidence-based decisions.')).toBeVisible();
-  await expect(page.getByText('a scenario will be generated', { exact: false })).toBeVisible();
+});
+
+test('dra easiest difficulty reveals full description, stakeholders, and resources', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ mode: 'practice', difficulty: 1 }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
+  await expect(page.getByText('aging COBOL tax system handling 14 million records', { exact: false })).toBeVisible();
+  await expect(page.getByText('capped at $2.5M', { exact: false })).toBeVisible();
+  await expect(page.getByText('Dana Cole')).toBeVisible();
+  await expect(page.getByText('Legacy COBOL system')).toBeVisible();
+
+  // Practice mode is not locked: cancel returns to the start so a new scenario can be generated.
+  await expect(page.getByRole('button', { name: 'Generate new scenario' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('button', { name: 'Generate scenario' })).toBeVisible();
+});
+
+test('dra hardest difficulty reveals only the high-level summary', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ mode: 'practice', difficulty: 5 }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
+  await expect(page.getByText('A government agency must modernize a critical legacy system.')).toBeVisible();
+  // Full description, constraints, stakeholders, and resources are withheld at the hardest level.
+  await expect(page.getByText('14 million records', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('capped at $2.5M', { exact: false })).toHaveCount(0);
+  await expect(page.getByText('Dana Cole')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Constraints' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Stakeholders' })).toHaveCount(0);
+  await expect(page.getByText('emerge as you investigate', { exact: false })).toBeVisible();
+});
+
+test('dra practice mode can start a new scenario after completing', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ mode: 'practice' }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+  await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await expect(page.getByText('Assessment complete')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Start new scenario' }).click();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+  await expect(page.getByText('Assessment complete')).toHaveCount(0);
+});
+
+test('dra final mode confirms start and locks the scenario', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ mode: 'final' }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+  await page.getByRole('button', { name: 'Start final assessment' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
+  await expect(page.getByText('the scenario is locked', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Generate new scenario' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
 });
 
 test('dra graphical editor edits a field and commits updated markdown', async ({ page }) => {

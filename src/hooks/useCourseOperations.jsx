@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -1226,6 +1226,20 @@ Requirements:
     return { details: { state: 'notStarted' } };
   }
 
+  async function getDraState() {
+    if (learningSession?.enrollment && learningSession?.topic) {
+      const progress = await service.getProgress({ types: ['dra'], topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
+      if (progress && progress.data.length > 0) {
+        return progress.data[0];
+      }
+    }
+    return { details: { state: 'notStarted' } };
+  }
+
+  async function generateDraScenario(params) {
+    return aiDraScenarioGenerator(params || {});
+  }
+
   async function uploadSubmissionFile({ interactionId, file }) {
     const enrollmentId = learningSession?.enrollment?.id;
     if (!enrollmentId) throw new Error('Not enrolled in this course.');
@@ -1904,6 +1918,8 @@ Requirements:
     getSurveySummary,
     getLikertSummary,
     getExamState,
+    getDraState,
+    generateDraScenario,
     repairCanvas,
     unlinkFromCanvas,
     linkToCanvas,
