@@ -17,7 +17,7 @@ const REASONING_FIELDS = [
 // through an in-character AI agent, and records their reasoning. All state is owned by
 // the parent (persisted to the progress record); this component is presentational plus
 // local chat-input/selection state.
-export default function DraInvestigation({ scenario, targets, conversations, reasoningRecord, onSendMessage, onReasoningChange, onReasoningBlur, readOnly, learningSession }) {
+export default function DraInvestigation({ scenario, targets, stages = [], activeStage = '', onSelectStage, conversations, reasoningRecord, onSendMessage, onReasoningChange, onReasoningBlur, readOnly, learningSession }) {
   const [selectedKey, setSelectedKey] = React.useState('');
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -30,6 +30,7 @@ export default function DraInvestigation({ scenario, targets, conversations, rea
 
   const selectedTarget = targets.find((t) => t.key === selectedKey) || null;
   const messages = conversations[selectedKey] || [];
+  const activeStageInterpretation = stages.find((s) => s.stage === activeStage)?.interpretation || '';
 
   async function handleSend() {
     const text = input.trim();
@@ -47,6 +48,20 @@ export default function DraInvestigation({ scenario, targets, conversations, rea
 
   return (
     <div className="mt-8">
+      {stages.length > 0 && (
+        <div className="not-prose mb-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-2">Stages</h2>
+          <div className="flex flex-wrap gap-1">
+            {stages.map((s) => (
+              <button key={s.stage} onClick={() => onSelectStage(s.stage)} disabled={readOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
+                {s.stage}
+              </button>
+            ))}
+          </div>
+          {activeStageInterpretation && <p className="mt-2 text-sm text-gray-600">{activeStageInterpretation}</p>}
+        </div>
+      )}
+
       <h2>Investigation</h2>
       {targets.length === 0 ? (
         <p className="text-sm text-gray-500 italic">No stakeholders or resources are revealed yet. Work through the scenario to uncover them.</p>

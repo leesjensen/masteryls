@@ -158,10 +158,19 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     await courseOps.addProgress(null, null, 'dra', 0, nextDetails);
   }
 
+  async function selectStage(stage) {
+    if (isObserveReadOnly || details.activeStage === stage) {
+      return;
+    }
+    await persist({ ...details, activeStage: stage });
+  }
+
   async function sendInvestigationMessage(target, text) {
     const key = target.key;
     const conversations = details.conversations || {};
-    const withUser = [...(conversations[key] || []), { role: 'user', text }];
+    // Tag the learner's message with the active stage so evidence can later be
+    // attributed to a disciplinary stage.
+    const withUser = [...(conversations[key] || []), { role: 'user', text, stage: details.activeStage || '' }];
     setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
 
     try {
@@ -192,6 +201,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setBusy(true);
     try {
       const generated = await courseOps.generateDraScenario(params);
+      const stages = generated?.stages || [];
       await persist({
         state: 'inProgress',
         mode: runMode,
@@ -200,6 +210,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         constraints: generated?.constraints || [],
         stakeholders: generated?.stakeholders || [],
         resources: generated?.resources || [],
+        stages,
+        activeStage: stages[0]?.stage || '',
       });
     } catch {
       alert('Unable to generate a scenario. Please try again.');
@@ -259,6 +271,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       <DraInvestigation
         scenario={details.scenario}
         targets={targets}
+        stages={details.stages || []}
+        activeStage={details.activeStage || ''}
+        onSelectStage={selectStage}
         conversations={details.conversations || {}}
         reasoningRecord={details.reasoningRecord || {}}
         onSendMessage={sendInvestigationMessage}

@@ -157,7 +157,7 @@ question body
  * @param {number} params.difficulty - Difficulty from 1 (easy) to 5 (hard).
  * @param {boolean} params.instability - Whether instability events are enabled.
  * @param {string} params.learningOutcomes - The intended learning outcomes.
- * @returns {Promise<{scenario: {title: string, summary: string, description: string}, stakeholders: Array<{name: string, role: string, personality: string, objectives: string}>, resources: Array<{name: string, type: string, description: string}>, constraints: Array<{name: string, description: string}>}>}
+ * @returns {Promise<{scenario: {title: string, summary: string, description: string}, stakeholders: Array<{name: string, role: string, personality: string, objectives: string}>, resources: Array<{name: string, type: string, description: string}>, constraints: Array<{name: string, description: string}>, stages: Array<{stage: string, interpretation: string}>}>}
  */
 export async function aiDraScenarioGenerator({ discipline, problemType, difficulty, instability, learningOutcomes }) {
   const prompt = `You are designing an authentic, real-world scenario for a disciplinary reasoning assessment.
@@ -179,12 +179,14 @@ Return a raw JSON object (no markdown code fence) with exactly this shape:
   },
   "stakeholders": [ { "name": "person or role name", "role": "their role in the scenario", "personality": "how they communicate", "objectives": "what they want" } ],
   "resources": [ { "name": "artifact, system, or place", "type": "person | artifact | system | data | environment", "description": "what it offers the investigation" } ],
-  "constraints": [ { "name": "constraint name, e.g. Budget, Target completion date, Regulatory restrictions", "description": "the specific limit or requirement it imposes" } ]
+  "constraints": [ { "name": "constraint name, e.g. Budget, Target completion date, Regulatory restrictions", "description": "the specific limit or requirement it imposes" } ],
+  "stages": [ { "stage": "Frame", "interpretation": "what this stage means for this specific scenario and discipline" } ]
 }
 
 Requirements:
 - Provide 3 to 5 stakeholders, 2 to 4 resources, and 2 to 4 constraints
 - Constraints are the boundaries the response must respect (budget, deadlines, regulatory or technical restrictions, staffing limits, ...)
+- Provide exactly these six stages in this order: Frame, Research, Model, Act, Validate, Reflect — each with a discipline-specific interpretation grounded in this scenario
 - The summary must remain high-level so it can be shown even when details are withheld; the description carries the full detail
 - Make the scenario specific and grounded in the named discipline
 - Calibrate complexity to the difficulty level

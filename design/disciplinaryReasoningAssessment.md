@@ -216,7 +216,7 @@ Each investigation follows this pattern:
 5. Feedback and assessment are generated.
 6. In **Practice Mode**, evidence, feedback, and assessment are displayed continuously throughout the assessment.
 
-> Implementation status: the learner can interview the difficulty-revealed stakeholders and consult revealed resources through an in-character AI agent, and records their thinking in the reasoning record. Both the conversations and the reasoning record persist to the progress record for save/resume. Discovering withheld stakeholders/resources, AI-generated stage interpretations, and the evidence/evaluation engine are upcoming phases.
+> Implementation status: the six universal stages are generated with discipline-specific interpretations and the learner selects the active stage (which tags their messages). The learner interviews the difficulty-revealed stakeholders and consults revealed resources through an in-character AI agent, and records their thinking in the reasoning record. Stages, conversations, the active stage, and the reasoning record persist to the progress record for save/resume. Discovering withheld stakeholders/resources and the evidence/evaluation engine are upcoming phases.
 
 ### Stages
 
@@ -596,7 +596,8 @@ Progress is stored in the learner's progress record in Supabase, following the s
 - `difficulty` — captured when the scenario is generated so disclosure stays stable for the run
 - `state` — e.g. `notStarted`, `inProgress`, `completed` (and, for Final, whether the start has been confirmed and the scenario locked)
 - `scenario` — the generated (and, in Final mode, locked) scenario, constraints, stakeholders, and resources
-- `conversations` — the learner's interview/consultation transcripts, keyed by stakeholder/resource
+- `stages` — the six universal stages with discipline-specific interpretations, plus `activeStage` (the stage the learner is currently working in)
+- `conversations` — the learner's interview/consultation transcripts, keyed by stakeholder/resource (each message tagged with the active stage)
 - `investigations` — the learner's interactions and captured evidence
 - `reasoningRecord` — the learner's recorded reasoning (understanding, assumptions, unknowns, hypotheses, decisions, evidence, confidence)
 - `evaluation` — accumulated process, competency, and disposition results

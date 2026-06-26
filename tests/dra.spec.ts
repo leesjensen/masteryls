@@ -89,6 +89,14 @@ const SCENARIO = {
   stakeholders: [{ name: 'Dana Cole', role: 'CIO', personality: 'cautious', objectives: 'minimize downtime' }],
   resources: [{ name: 'Legacy COBOL system', type: 'system', description: '14 million records' }],
   constraints: [{ name: 'Budget', description: 'capped at $2.5M' }],
+  stages: [
+    { stage: 'Frame', interpretation: 'Clarify the stakeholders and constraints.' },
+    { stage: 'Research', interpretation: 'Gather the system requirements.' },
+    { stage: 'Model', interpretation: 'Design a target architecture.' },
+    { stage: 'Act', interpretation: 'Plan the migration.' },
+    { stage: 'Validate', interpretation: 'Test the cutover.' },
+    { stage: 'Reflect', interpretation: 'Evaluate the tradeoffs.' },
+  ],
 };
 
 const STAKEHOLDER_REPLY = 'Downtime is our biggest concern.';
@@ -240,6 +248,12 @@ test('dra investigation lets the learner interview a stakeholder and record reas
   await page.getByRole('button', { name: 'Generate scenario' }).click();
 
   await expect(page.getByRole('heading', { name: 'Investigation', exact: true })).toBeVisible();
+
+  // Stages structure the investigation; the first stage's interpretation shows by default.
+  await expect(page.getByRole('heading', { name: 'Stages', exact: true })).toBeVisible();
+  await expect(page.getByText('Clarify the stakeholders and constraints.')).toBeVisible();
+  await page.getByRole('button', { name: 'Research', exact: true }).click();
+  await expect(page.getByText('Gather the system requirements.')).toBeVisible();
 
   // The first revealed target (a stakeholder) is auto-selected; ask it a question.
   const chatInput = page.getByPlaceholder('Ask Dana Cole...');
