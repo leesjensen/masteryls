@@ -3,6 +3,7 @@ import Markdown from '../../Markdown';
 import { parseDraMarkdown } from '../../../utils/draMarkdown';
 import DraInvestigation from './draInvestigation';
 import DraEvaluation from './draEvaluation';
+import DraCoach from './draCoach';
 
 // Learner experience for a Disciplinary Reasoning Assessment. The scenario is
 // generated at runtime from the author's published parameters and the full state is
@@ -121,6 +122,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [evaluating, setEvaluating] = React.useState(false);
+  const [coaching, setCoaching] = React.useState(false);
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const isPreview = instructionState === 'preview';
 
@@ -249,6 +251,21 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   async function computeEvaluation(source) {
     return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.reasoningRecord || {});
+  }
+
+  async function requestCoaching() {
+    if (isObserveReadOnly || coaching) {
+      return;
+    }
+    setCoaching(true);
+    try {
+      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.reasoningRecord || {}, details.activeStage || '');
+      await persist({ ...details, coaching: result });
+    } catch {
+      alert('Unable to get coaching right now. Please try again.');
+    } finally {
+      setCoaching(false);
+    }
   }
 
   async function refreshEvaluation() {
@@ -380,6 +397,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           </div>
           <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
           {investigation(isObserveReadOnly)}
+          {!locked && <DraCoach coaching={details.coaching} onRequest={requestCoaching} busy={coaching} readOnly={isObserveReadOnly} />}
           {!locked && (
             <div className="not-prose mt-8">
               <button onClick={refreshEvaluation} disabled={isObserveReadOnly || evaluating} className="px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">

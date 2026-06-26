@@ -440,6 +440,8 @@ Coach
 - Provides feedback
 - Suggests investigations
 
+> Implementation status: the coach is available on demand during practice runs (it is withheld in final runs, consistent with final-mode feedback rules). It returns formative feedback, hints, and suggested next investigations from the scenario, transcripts, and reasoning record without revealing the solution, and the latest coaching persists to the progress record.
+
 Assessment Agent
 
 - Iteratively summarizes observations for visualization
@@ -603,5 +605,6 @@ Progress is stored in the learner's progress record in Supabase, following the s
 - `investigations` — the learner's interactions and captured evidence
 - `reasoningRecord` — the learner's recorded reasoning (understanding, assumptions, unknowns, hypotheses, decisions, evidence, confidence)
 - `evaluation` — Process, Competency, and Disposition results, each with an overall confidence level plus per-attribute confidence/summary/evidence
+- `coaching` — the latest practice-mode coaching (feedback, hints, suggested investigations)
 
 Because the complete state lives in the progress record, the learner can save and resume an assessment exactly where they left off. The author's published parameters (discipline, problem type, difficulty, enabled modes, instability, learning outcomes) remain in the backing Markdown topic file; only learner-specific runtime state lives in the progress record.

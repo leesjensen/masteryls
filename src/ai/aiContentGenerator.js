@@ -296,6 +296,67 @@ Rules:
   return parseJsonResponse(response);
 }
 
+/**
+ * Coaching agent for a Disciplinary Reasoning Assessment. Provides encouraging,
+ * formative guidance (feedback, hints, suggested next investigations) without giving
+ * away the solution. Intended for practice runs only.
+ *
+ * @async
+ * @param {{title?: string, description?: string, summary?: string}} scenario - The scenario context.
+ * @param {Array<{name?: string, role?: string, messages: Array<{role: 'user'|'model', text: string}>}>} transcripts - Interview/consultation transcripts.
+ * @param {object} reasoningRecord - The learner's recorded reasoning fields.
+ * @param {string} [activeStage] - The disciplinary stage the learner is currently working in.
+ * @returns {Promise<{feedback: string, hints: string[], suggestions: string[]}>}
+ */
+export async function aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage) {
+  const transcriptText = (transcripts || [])
+    .filter((t) => (t.messages || []).length > 0)
+    .map((t) => {
+      const lines = t.messages.map((m) => `${m.role === 'user' ? 'Learner' : t.name || 'Target'}: ${m.text}`).join('\n');
+      return `### ${t.name || 'Target'}\n${lines}`;
+    })
+    .join('\n\n');
+
+  const reasoningText = Object.entries(reasoningRecord || {})
+    .filter(([, v]) => String(v || '').trim())
+    .map(([k, v]) => `- ${k}: ${v}`)
+    .join('\n');
+
+  const prompt = `You are an encouraging coach for a disciplinary reasoning assessment.
+Help the learner improve their reasoning process WITHOUT giving away the solution or doing the thinking for them.
+
+SCENARIO: ${scenario?.title || ''}
+${scenario?.description || scenario?.summary || ''}
+
+CURRENT STAGE: ${activeStage || 'unspecified'}
+
+INVESTIGATION TRANSCRIPTS:
+${transcriptText || '(no interviews conducted yet)'}
+
+REASONING RECORD:
+${reasoningText || '(empty)'}
+
+Provide brief coaching as a raw JSON object (no markdown code fence) with exactly this shape:
+{
+  "feedback": "1-2 sentences on how the investigation is going",
+  "hints": ["1-3 short, actionable hints that nudge the learner's thinking"],
+  "suggestions": ["1-3 specific next investigations (stakeholders to interview, resources to consult, or reasoning to record)"]
+}
+
+Rules:
+- Encourage good reasoning habits and point to gaps without revealing the answer
+- Keep each item concise
+- Return only the JSON object`;
+
+  const response = await makeSimpleAiRequest(prompt);
+  const parsed = parseJsonResponse(response);
+  return {
+    feedback: parsed?.feedback || '',
+    hints: Array.isArray(parsed?.hints) ? parsed.hints : [],
+    suggestions: Array.isArray(parsed?.suggestions) ? parsed.suggestions : [],
+  };
+}
+
 function parseJsonResponse(response) {
   const text = String(response || '').trim();
   try {

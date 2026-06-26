@@ -107,21 +107,29 @@ const EVALUATION = {
   disposition: { confidence: 'Developing', summary: 'Curious and engaged.', attributes: [{ name: 'Curiosity', confidence: 'Developing', summary: 'Probed for root concerns.', evidence: [] }] },
 };
 
-function installScenarioGemini(page: any, scenario: any = SCENARIO, chatReply: string = STAKEHOLDER_REPLY, evaluation: any = EVALUATION) {
+const COACHING = {
+  feedback: 'Good start clarifying constraints.',
+  hints: ['Quantify the downtime tolerance.'],
+  suggestions: ['Interview the operations lead about cutover windows.'],
+};
+
+function installScenarioGemini(page: any, scenario: any = SCENARIO, chatReply: string = STAKEHOLDER_REPLY, evaluation: any = EVALUATION, coaching: any = COACHING) {
   page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
       return;
     }
     const body = route.request().postDataJSON()?.body;
-    // The chat agent uses a system_instruction; scenario generation and evaluation do
-    // not, so distinguish those two by their prompt text.
+    // The chat agent uses a system_instruction; scenario generation, evaluation, and
+    // coaching do not, so distinguish those by their prompt text.
     const promptText = body?.contents?.[0]?.parts?.[0]?.text || '';
     let text: string;
     if (body?.system_instruction) {
       text = chatReply;
     } else if (/observation and assessment agent/i.test(promptText)) {
       text = JSON.stringify(evaluation);
+    } else if (/encouraging coach/i.test(promptText)) {
+      text = JSON.stringify(coaching);
     } else {
       text = JSON.stringify(scenario);
     }
@@ -307,6 +315,40 @@ test('dra practice mode evaluates progress across the three dimensions with dril
 
   // After evaluating once, the control becomes an update action.
   await expect(page.getByRole('button', { name: 'Update evaluation' })).toBeVisible();
+});
+
+test('dra practice mode provides coaching with hints and suggestions', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false, difficulty: 1 }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+
+  await page.getByRole('button', { name: 'Get coaching' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Coaching', exact: true })).toBeVisible();
+  await expect(page.getByText('Good start clarifying constraints.')).toBeVisible();
+  await expect(page.getByText('Quantify the downtime tolerance.')).toBeVisible();
+  await expect(page.getByText('Interview the operations lead about cutover windows.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Get new coaching' })).toBeVisible();
+});
+
+test('dra final mode does not offer coaching during the run', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ practiceMode: false, finalMode: true, difficulty: 1 }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+  await page.getByRole('button', { name: 'Start final assessment' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Investigation', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Get coaching' })).toHaveCount(0);
 });
 
 test('dra graphical editor edits a field and commits updated markdown', async ({ page }) => {
