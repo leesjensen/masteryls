@@ -237,6 +237,65 @@ Guidelines:
   return makeAiRequest(instructions, contents);
 }
 
+/**
+ * Observation/assessment agent for a Disciplinary Reasoning Assessment. Evaluates the
+ * learner's reasoning and competency (not their artifact) from the investigation so far,
+ * across Process, Competency, and Disposition dimensions.
+ *
+ * @async
+ * @param {{title?: string, description?: string, summary?: string}} scenario - The scenario context.
+ * @param {Array<{name?: string, role?: string, messages: Array<{role: 'user'|'model', text: string, stage?: string}>}>} transcripts - Interview/consultation transcripts.
+ * @param {object} reasoningRecord - The learner's recorded reasoning fields.
+ * @returns {Promise<object>} The evaluation: { process, competency, disposition } each with confidence/summary/attributes[].
+ */
+export async function aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord) {
+  const transcriptText = (transcripts || [])
+    .filter((t) => (t.messages || []).length > 0)
+    .map((t) => {
+      const lines = t.messages.map((m) => `${m.role === 'user' ? 'Learner' : t.name || 'Target'}: ${m.text}`).join('\n');
+      return `### ${t.name || 'Target'}${t.role ? ` (${t.role})` : ''}\n${lines}`;
+    })
+    .join('\n\n');
+
+  const reasoningText = Object.entries(reasoningRecord || {})
+    .filter(([, v]) => String(v || '').trim())
+    .map(([k, v]) => `- ${k}: ${v}`)
+    .join('\n');
+
+  const prompt = `You are the observation and assessment agent for a disciplinary reasoning assessment.
+Evaluate the learner's reasoning and competency (NOT any final artifact) based only on the evidence below.
+
+SCENARIO: ${scenario?.title || ''}
+${scenario?.description || scenario?.summary || ''}
+
+INVESTIGATION TRANSCRIPTS:
+${transcriptText || '(no interviews conducted yet)'}
+
+REASONING RECORD:
+${reasoningText || '(empty)'}
+
+Assess three dimensions. For each overall dimension and each of its attributes, give a confidence level (exactly one of: Beginning, Emerging, Developing, Proficient, Exemplary), a one-sentence summary, and supporting evidence drawn from the learner's actual behavior.
+
+- Process attributes: Framing, Research, Modeling, Action, Validation, Reflection
+- Competency attributes: Systems thinking, Communication, Design reasoning, Evidence-based reasoning, Decision-making
+- Disposition attributes: Curiosity, Ownership, Integrity, Persistence, Empathy, Accountability
+
+Return a raw JSON object (no markdown code fence) with exactly this shape:
+{
+  "process": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Framing", "confidence": "<level>", "summary": "<one sentence>", "evidence": ["..."] } ] },
+  "competency": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
+  "disposition": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ ... ] }
+}
+
+Rules:
+- Base every judgment only on observed evidence; when evidence is sparse, use lower confidence levels (Beginning/Emerging)
+- Include every attribute listed for each dimension
+- Return only the JSON object`;
+
+  const response = await makeSimpleAiRequest(prompt);
+  return parseJsonResponse(response);
+}
+
 function parseJsonResponse(response) {
   const text = String(response || '').trim();
   try {

@@ -197,6 +197,8 @@ A table for each Evaluation metric is displayed with the ability to drill into t
 
 When in Practice mode the visualization is always displayed. In Final mode it is only displayed when the final artifact is presented.
 
+> Implementation status: an AI observation/assessment agent scores Process, Competency, and Disposition (each with per-attribute confidence levels, summaries, and supporting evidence) from the investigation transcripts and reasoning record. A radar chart over the three dimensions plus per-dimension attribute tables with drill-down evidence are shown. In Practice mode the learner can refresh the evaluation on demand and it is always visible; in Final mode it is computed and revealed at completion. Continuous automatic recalculation after every interaction and the coaching agent are upcoming refinements.
+
 ## Investigation
 
 The investigation is the core interactive experience of the assessment. It involves the process of the learner exploring the scenario through the process of chat conversations with AI, the recording of reasoning, and the tracking of evaluation metrics.
@@ -600,6 +602,6 @@ Progress is stored in the learner's progress record in Supabase, following the s
 - `conversations` — the learner's interview/consultation transcripts, keyed by stakeholder/resource (each message tagged with the active stage)
 - `investigations` — the learner's interactions and captured evidence
 - `reasoningRecord` — the learner's recorded reasoning (understanding, assumptions, unknowns, hypotheses, decisions, evidence, confidence)
-- `evaluation` — accumulated process, competency, and disposition results
+- `evaluation` — Process, Competency, and Disposition results, each with an overall confidence level plus per-attribute confidence/summary/evidence
 
 Because the complete state lives in the progress record, the learner can save and resume an assessment exactly where they left off. The author's published parameters (discipline, problem type, difficulty, enabled modes, instability, learning outcomes) remain in the backing Markdown topic file; only learner-specific runtime state lives in the progress record.

@@ -2,6 +2,7 @@ import React from 'react';
 import Markdown from '../../Markdown';
 import { parseDraMarkdown } from '../../../utils/draMarkdown';
 import DraInvestigation from './draInvestigation';
+import DraEvaluation from './draEvaluation';
 
 // Learner experience for a Disciplinary Reasoning Assessment. The scenario is
 // generated at runtime from the author's published parameters and the full state is
@@ -119,6 +120,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [draState, setDraState] = React.useState({ details: { state: 'notStarted' } });
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
+  const [evaluating, setEvaluating] = React.useState(false);
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const isPreview = instructionState === 'preview';
 
@@ -237,11 +239,49 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     await persist({ state: 'notStarted' });
   }
 
+  function buildTranscripts(source) {
+    return Object.entries(source.conversations || {}).map(([key, messages]) => {
+      const [type, idx] = key.split(':');
+      const target = (type === 'stakeholder' ? source.stakeholders : source.resources)?.[Number(idx)];
+      return { name: target?.name || key, role: target?.role || target?.type || '', messages };
+    });
+  }
+
+  async function computeEvaluation(source) {
+    return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.reasoningRecord || {});
+  }
+
+  async function refreshEvaluation() {
+    if (isObserveReadOnly || evaluating) {
+      return;
+    }
+    setEvaluating(true);
+    try {
+      const evaluation = await computeEvaluation(details);
+      await persist({ ...details, evaluation });
+    } catch {
+      alert('Unable to evaluate progress right now. Please try again.');
+    } finally {
+      setEvaluating(false);
+    }
+  }
+
   async function completeAssessment() {
     if (isObserveReadOnly || busy) {
       return;
     }
-    await persist({ ...details, state: 'completed', completedAt: new Date().toISOString() });
+    setBusy(true);
+    try {
+      let evaluation = details.evaluation;
+      try {
+        evaluation = await computeEvaluation(details);
+      } catch {
+        // Fall back to the most recent evaluation if the final scoring call fails.
+      }
+      await persist({ ...details, evaluation, state: 'completed', completedAt: new Date().toISOString() });
+    } finally {
+      setBusy(false);
+    }
   }
 
   const generatingLabel = busy ? 'Generating...' : null;
@@ -310,6 +350,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           )}
           <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
           {investigation(true)}
+          {details.evaluation && <DraEvaluation evaluation={details.evaluation} />}
         </>
       );
     }
@@ -339,6 +380,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           </div>
           <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
           {investigation(isObserveReadOnly)}
+          {!locked && (
+            <div className="not-prose mt-8">
+              <button onClick={refreshEvaluation} disabled={isObserveReadOnly || evaluating} className="px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
+                {evaluating ? 'Evaluating...' : details.evaluation ? 'Update evaluation' : 'Evaluate my progress'}
+              </button>
+            </div>
+          )}
+          {!locked && details.evaluation && <DraEvaluation evaluation={details.evaluation} />}
         </>
       );
     }

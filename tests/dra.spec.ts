@@ -101,15 +101,30 @@ const SCENARIO = {
 
 const STAKEHOLDER_REPLY = 'Downtime is our biggest concern.';
 
-function installScenarioGemini(page: any, scenario: any = SCENARIO, chatReply: string = STAKEHOLDER_REPLY) {
+const EVALUATION = {
+  process: { confidence: 'Developing', summary: 'Solid framing of the problem.', attributes: [{ name: 'Framing', confidence: 'Proficient', summary: 'Clarified the core constraints.', evidence: ['Asked the CIO about downtime'] }] },
+  competency: { confidence: 'Emerging', summary: 'Beginning to reason about the system.', attributes: [{ name: 'Systems thinking', confidence: 'Emerging', summary: 'Considered downstream agencies.', evidence: [] }] },
+  disposition: { confidence: 'Developing', summary: 'Curious and engaged.', attributes: [{ name: 'Curiosity', confidence: 'Developing', summary: 'Probed for root concerns.', evidence: [] }] },
+};
+
+function installScenarioGemini(page: any, scenario: any = SCENARIO, chatReply: string = STAKEHOLDER_REPLY, evaluation: any = EVALUATION) {
   page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
       return;
     }
-    // Scenario generation has no system_instruction; the stakeholder chat agent does.
-    const hasSystemInstruction = Boolean(route.request().postDataJSON()?.body?.system_instruction);
-    const text = hasSystemInstruction ? chatReply : JSON.stringify(scenario);
+    const body = route.request().postDataJSON()?.body;
+    // The chat agent uses a system_instruction; scenario generation and evaluation do
+    // not, so distinguish those two by their prompt text.
+    const promptText = body?.contents?.[0]?.parts?.[0]?.text || '';
+    let text: string;
+    if (body?.system_instruction) {
+      text = chatReply;
+    } else if (/observation and assessment agent/i.test(promptText)) {
+      text = JSON.stringify(evaluation);
+    } else {
+      text = JSON.stringify(scenario);
+    }
     await route.fulfill({
       json: { candidates: [{ content: { parts: [{ text }], role: 'model' }, finishReason: 'STOP' }] },
     });
@@ -269,6 +284,29 @@ test('dra investigation lets the learner interview a stakeholder and record reas
   await understanding.fill('The agency fears downtime during migration.');
   await understanding.blur();
   await expect(understanding).toHaveValue('The agency fears downtime during migration.');
+});
+
+test('dra practice mode evaluates progress across the three dimensions with drill-down', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false, difficulty: 1 }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+
+  await page.getByRole('button', { name: 'Evaluate my progress' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Evaluation', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Process', exact: true })).toBeVisible();
+  await expect(page.getByText('Solid framing of the problem.')).toBeVisible();
+
+  // Drill into a Process attribute to reveal its supporting evidence.
+  await page.getByRole('button', { name: /Framing/ }).click();
+  await expect(page.getByText('Asked the CIO about downtime')).toBeVisible();
+
+  // After evaluating once, the control becomes an update action.
+  await expect(page.getByRole('button', { name: 'Update evaluation' })).toBeVisible();
 });
 
 test('dra graphical editor edits a field and commits updated markdown', async ({ page }) => {
