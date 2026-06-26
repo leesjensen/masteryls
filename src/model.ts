@@ -59,7 +59,7 @@ export type Topic = {
   id: string;
   title: string;
   path: string;
-  type: 'instruction' | 'exam' | 'project' | 'embedded';
+  type: 'instruction' | 'exam' | 'project' | 'embedded' | 'dra';
   points?: number;
 };
 

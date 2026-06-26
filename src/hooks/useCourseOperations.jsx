@@ -7,6 +7,7 @@ import { generateId } from '../utils/utils';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
 import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
+import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
@@ -1132,6 +1133,9 @@ ${topicDescription || 'overview content placeholder'}`;
         return null;
       case 'schedule':
         basicContent = createInitialScheduleMarkdown(topic.title || 'Schedule');
+        break;
+      case 'dra':
+        basicContent = createInitialDraMarkdown(topic.title || 'Disciplinary Reasoning Assessment');
         break;
       case 'exam':
         if (topicDescription && topicDescription.trim().length > 0) {

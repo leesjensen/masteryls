@@ -36,6 +36,7 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
           <option value="embedded">Embedded</option>
           <option value="exam">Exam</option>
           <option value="project">Project</option>
+          <option value="dra">Disciplinary Reasoning</option>
         </select>
         {(newType === 'exam' || newType === 'project') && (
           <input

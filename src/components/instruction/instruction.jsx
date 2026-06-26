@@ -3,6 +3,7 @@ import EmbeddedInstruction from './embeddedInstruction';
 import ExamInstruction from './examInstruction';
 import InteractionInstruction from './interaction/interactionInstruction';
 import ScheduleInstruction from './scheduleInstruction';
+import DraInstruction from './dra/draInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 import { addInteractionProgress } from './interaction/interactionProgressStore';
 
@@ -46,6 +47,9 @@ export default function Instruction({ courseOps, learningSession, user, content 
       break;
     case 'schedule':
       instructionComponent = <ScheduleInstruction courseOps={courseOps} learningSession={learningSession} user={user} instructionState={instructionState} />;
+      break;
+    case 'dra':
+      instructionComponent = <DraInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;
       break;
     default:
       instructionComponent = <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} previewFileUrls={previewFileUrls} />;
