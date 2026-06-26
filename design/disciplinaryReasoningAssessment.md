@@ -237,6 +237,14 @@ Any portfolio scenario is exportable to PDF format.
 
 # Application Design
 
+## Integration with MasteryLS
+
+The Disciplinary Reasoning Assessment in actualized in MasteryLS as a new instruction type parallel to Exam, Project, and Instruction.
+
+Similar to the schedule editing interface it has its own editor that graphically defines the backing Markdown file without directly editing it.
+
+The topic is stored in GitHub in the same way that other instruction topics are currently. This allows for the same creation, modification, and deletion affordance.
+
 ## User stories
 
 As an instructor
