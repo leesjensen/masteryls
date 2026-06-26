@@ -1,6 +1,6 @@
 import React from 'react';
-import { DndContext, closestCenter } from '@dnd-kit/core';
-import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy, rectSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, GripVertical, X } from 'lucide-react';
 import Markdown from '../../components/Markdown';
@@ -275,9 +275,59 @@ function remapScheduleDatesForStartDate(sourceModel, startDateIso) {
   };
 }
 
-function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileRepoPath, dueLinkedHrefs, topicsCoveredLinkedHrefs, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, getLinkedTopic }) {
+function SortableTopicItem({ item, field, row, learningSession, getLinkedTopic, editingItemKey, setEditingItemKey, updateItem, removeItem }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const linkedTopic = getLinkedTopic(item.href);
+  const itemKey = `${field}:${item.id}`;
+  const isEditing = editingItemKey === itemKey;
+
+  if (linkedTopic) {
+    return (
+      <div ref={setNodeRef} style={style} className={`inline-flex items-center min-w-0 max-w-full border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-1 ${isDragging ? 'invisible' : ''}`}>
+        <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center text-blue-300 hover:text-blue-500 cursor-grab shrink-0" title="Drag to reorder" aria-label="Drag to reorder">
+          <GripVertical size={10} />
+        </button>
+        <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
+          {linkedTopic.title}
+        </a>
+        <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item" aria-label="Remove item">
+          <X size={12} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <React.Fragment>
+      <div ref={setNodeRef} style={style} className={`inline-flex items-center min-w-0 max-w-full border border-gray-300 bg-white rounded px-2 py-1 gap-1 ${isDragging ? 'invisible' : ''}`}>
+        <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center text-gray-300 hover:text-gray-500 cursor-grab shrink-0" title="Drag to reorder" aria-label="Drag to reorder">
+          <GripVertical size={10} />
+        </button>
+        <button type="button" className="min-w-0 text-xs text-gray-700 truncate whitespace-nowrap" onClick={() => setEditingItemKey(isEditing ? '' : itemKey)} title="Edit item">
+          {(item.text || '').trim() || 'Custom item'}
+        </button>
+        <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item" aria-label="Remove item">
+          <X size={12} />
+        </button>
+      </div>
+      {isEditing && (
+        <div className="w-full grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_24px] gap-2 items-center border border-gray-200 rounded p-2 bg-white/70">
+          <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="min-w-0 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+          <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="min-w-0 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
+          <button type="button" className="w-6 h-6 inline-flex items-center justify-center text-blue-700 hover:text-green-700 transition-colors" onClick={() => setEditingItemKey('')} title="Apply changes" aria-label="Apply changes">
+            <Check size={12} />
+          </button>
+        </div>
+      )}
+    </React.Fragment>
+  );
+}
+
+function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileRepoPath, dueLinkedHrefs, topicsCoveredLinkedHrefs, updateWeek, removeSession, addTopicLink, addItem, updateItem, removeItem, moveItem, getLinkedTopic }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: row.id });
   const [editingItemKey, setEditingItemKey] = React.useState('');
+  const [activeDrag, setActiveDrag] = React.useState(null);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -317,49 +367,40 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
             <div key={field} className="border border-gray-200 rounded p-2 min-w-0">
               <div className="text-xs font-semibold text-gray-700 mb-1">{field === 'dueItems' ? 'Due' : field === 'topicsCovered' ? 'Topics' : 'Slides'}</div>
 
-              <div className="flex flex-wrap gap-1">
-                {row[field].map((item) =>
-                  (() => {
-                    const linkedTopic = getLinkedTopic(item.href);
-                    const itemKey = `${field}:${item.id}`;
-                    if (linkedTopic) {
-                      return (
-                        <div key={item.id} className="inline-flex items-center min-w-0 max-w-full border border-blue-300 bg-blue-50 rounded px-2 py-1 gap-2">
-                          <a href={`/course/${learningSession.course.id}/topic/${linkedTopic.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 text-xs text-blue-700 hover:underline truncate whitespace-nowrap" title={`${linkedTopic.title} (open topic in new tab)`}>
-                            {linkedTopic.title}
-                          </a>
-                          <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item" aria-label="Remove item">
-                            <X size={12} />
-                          </button>
-                        </div>
-                      );
-                    }
-
-                    const isEditing = editingItemKey === itemKey;
-                    return (
-                      <React.Fragment key={item.id}>
-                        <div className="inline-flex items-center min-w-0 max-w-full border border-gray-300 bg-white rounded px-2 py-1 gap-2">
-                          <button type="button" className="min-w-0 text-xs text-gray-700 truncate whitespace-nowrap" onClick={() => setEditingItemKey(isEditing ? '' : itemKey)} title="Edit item">
-                            {(item.text || '').trim() || 'Custom item'}
-                          </button>
-                          <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors shrink-0" onClick={() => removeItem(row.id, field, item.id)} title="Remove item" aria-label="Remove item">
-                            <X size={12} />
-                          </button>
-                        </div>
-                        {isEditing && (
-                          <div className="w-full grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_24px] gap-2 items-center border border-gray-200 rounded p-2 bg-white/70">
-                            <input value={item.text || ''} onChange={(e) => updateItem(row.id, field, item.id, { text: e.target.value })} placeholder="Text" className="min-w-0 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                            <input value={item.href || ''} onChange={(e) => updateItem(row.id, field, item.id, { href: e.target.value })} placeholder="Link (optional)" className="min-w-0 border border-gray-300 bg-white rounded px-2 py-1 text-xs" />
-                            <button type="button" className="w-6 h-6 inline-flex items-center justify-center text-blue-700 hover:text-green-700 transition-colors" onClick={() => setEditingItemKey('')} title="Apply changes" aria-label="Apply changes">
-                              <Check size={12} />
-                            </button>
-                          </div>
-                        )}
-                      </React.Fragment>
-                    );
-                  })(),
-                )}
-                <select
+              <DndContext
+                collisionDetection={closestCenter}
+                onDragStart={({ active }) => {
+                  const item = row[field].find((i) => i.id === active.id);
+                  if (item) setActiveDrag({ field, item });
+                }}
+                onDragEnd={(event) => {
+                  setActiveDrag(null);
+                  const { active, over } = event;
+                  if (!over || active.id === over.id) return;
+                  const items = row[field];
+                  const oldIdx = items.findIndex((i) => i.id === active.id);
+                  const newIdx = items.findIndex((i) => i.id === over.id);
+                  if (oldIdx !== -1 && newIdx !== -1) moveItem(row.id, field, oldIdx, newIdx);
+                }}
+                onDragCancel={() => setActiveDrag(null)}
+              >
+                <SortableContext items={row[field].map((i) => i.id)} strategy={rectSortingStrategy}>
+                  <div className="flex flex-wrap gap-1">
+                    {row[field].map((item) => (
+                      <SortableTopicItem
+                        key={item.id}
+                        item={item}
+                        field={field}
+                        row={row}
+                        learningSession={learningSession}
+                        getLinkedTopic={getLinkedTopic}
+                        editingItemKey={editingItemKey}
+                        setEditingItemKey={setEditingItemKey}
+                        updateItem={updateItem}
+                        removeItem={removeItem}
+                      />
+                    ))}
+                    <select
                   className="w-8 h-7 text-sm font-semibold text-blue-700 border border-blue-300 rounded bg-white text-center px-0"
                   defaultValue={ADD_ITEM_MENU_OPTION}
                   onChange={(e) => {
@@ -386,7 +427,22 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
                     </option>
                   ))}
                 </select>
-              </div>
+                  </div>
+                </SortableContext>
+                <DragOverlay>
+                  {activeDrag?.field === field && (() => {
+                    const linkedTopic = getLinkedTopic(activeDrag.item.href);
+                    return (
+                      <div className="inline-flex items-center border border-blue-400 bg-blue-100 rounded px-2 py-1 gap-1 shadow-md cursor-grabbing">
+                        <GripVertical size={10} className="text-blue-400 shrink-0" />
+                        <span className="text-xs text-blue-700 whitespace-nowrap">
+                          {linkedTopic?.title || (activeDrag.item.text || '').trim() || 'Custom item'}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </DragOverlay>
+              </DndContext>
             </div>
           );
         })}
@@ -513,6 +569,14 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     const next = [...model.specialDays];
     next[index] = { ...next[index], ...patch };
     updateModel({ ...model, specialDays: next });
+  }
+
+  function moveItem(rowId, field, oldIndex, newIndex) {
+    const nextWeeks = model.weeks.map((row) => {
+      if (row.id !== rowId) return row;
+      return { ...row, [field]: arrayMove(row[field], oldIndex, newIndex) };
+    });
+    updateModel({ ...model, weeks: nextWeeks });
   }
 
   function addItem(rowId, field, item) {
@@ -875,7 +939,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
                           <div className="space-y-3">
                             {group.sessions.map((row, sessionIndex) => (
-                              <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} selectedFileRepoPath={selectedFile?.repoPath || ''} dueLinkedHrefs={dueLinkedHrefs} topicsCoveredLinkedHrefs={topicsCoveredLinkedHrefs} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} getLinkedTopic={getLinkedTopic} />
+                              <SortableSessionCard key={row.id} row={row} sessionIndex={sessionIndex} learningSession={learningSession} selectedFileRepoPath={selectedFile?.repoPath || ''} dueLinkedHrefs={dueLinkedHrefs} topicsCoveredLinkedHrefs={topicsCoveredLinkedHrefs} updateWeek={updateWeek} removeSession={removeSession} addTopicLink={addTopicLink} addItem={addItem} updateItem={updateItem} removeItem={removeItem} moveItem={moveItem} getLinkedTopic={getLinkedTopic} />
                             ))}
                           </div>
 
