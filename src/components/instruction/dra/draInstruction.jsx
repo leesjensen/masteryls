@@ -4,6 +4,18 @@ import { parseDraMarkdown } from '../../../utils/draMarkdown';
 import DraInvestigation from './draInvestigation';
 import DraEvaluation from './draEvaluation';
 import DraCoach from './draCoach';
+import Splitter from '../../Splitter';
+import useSplitPaneState from '../../../hooks/useSplitPaneState';
+
+const ASSESSMENT_FIELDS = [
+  ['understanding', 'Current understanding'],
+  ['assumptions', 'Assumptions'],
+  ['unknowns', 'Unknowns'],
+  ['hypotheses', 'Hypotheses'],
+  ['decisions', 'Decisions'],
+  ['evidence', 'Evidence'],
+  ['confidence', 'Confidence'],
+];
 
 function DraTabBar({ tabs, active, onChange }) {
   return (
@@ -107,6 +119,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [evaluating, setEvaluating] = React.useState(false);
   const [coaching, setCoaching] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('overview');
+  const { panePercent: investigationPanePercent, splitContainerRef: investigationSplitRef, onPaneMoved: onInvestigationPaneMoved, onPaneResized: onInvestigationPaneResized } = useSplitPaneState(55);
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const isPreview = instructionState === 'preview';
 
@@ -418,23 +431,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
           </div>
         );
-      case 'investigation':
-        return (
-          <DraInvestigation
-            scenario={details.scenario}
-            targets={targets}
-            stages={details.stages || []}
-            activeStage={details.activeStage || ''}
-            onSelectStage={selectStage}
-            conversations={details.conversations || {}}
-            reasoningRecord={details.reasoningRecord || {}}
-            onSendMessage={sendInvestigationMessage}
-            onReasoningChange={updateReasoning}
-            onReasoningBlur={saveReasoning}
-            readOnly={details.state === 'completed' || isObserveReadOnly}
-            learningSession={learningSession}
-          />
-        );
       case 'coaching':
         return (
           <div className="mt-4">
@@ -459,14 +455,58 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
+  const investigationReadOnly = details.state === 'completed' || isObserveReadOnly;
+
   return (
-    <div className="h-full w-full min-h-0 min-w-0 overflow-auto">
-      <div className="markdown-body p-4 max-w-3xl mx-auto">
+    <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
+      <div className="markdown-body px-4 pt-4 shrink-0">
         <h1>{params.title || 'Disciplinary Reasoning Assessment'}</h1>
         {renderActionButtons()}
         {tabs.length > 1 && <DraTabBar tabs={tabs} active={safeActiveTab} onChange={setActiveTab} />}
-        {renderTabContent()}
       </div>
+
+      {safeActiveTab === 'investigation' ? (
+        <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
+          <div className="min-w-0 overflow-auto p-4" style={{ width: `${investigationPanePercent}%` }}>
+            <DraInvestigation
+              targets={targets}
+              stages={details.stages || []}
+              activeStage={details.activeStage || ''}
+              onSelectStage={selectStage}
+              conversations={details.conversations || {}}
+              onSendMessage={sendInvestigationMessage}
+              readOnly={investigationReadOnly}
+              learningSession={learningSession}
+            />
+          </div>
+          <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
+          <div className="flex-1 min-w-0 overflow-auto p-4">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Assessment</div>
+            <div className="grid grid-cols-1 gap-3">
+              {ASSESSMENT_FIELDS.map(([key, label]) => (
+                <div key={key} className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600">{label}</label>
+                  <textarea
+                    aria-label={label}
+                    value={details.reasoningRecord?.[key] || ''}
+                    onChange={(e) => updateReasoning(key, e.target.value)}
+                    onBlur={saveReasoning}
+                    readOnly={investigationReadOnly}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm read-only:bg-gray-50"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-auto">
+          <div className="markdown-body px-4 pb-4">
+            {renderTabContent()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

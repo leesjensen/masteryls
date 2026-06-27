@@ -1,23 +1,7 @@
 import React from 'react';
 import Markdown from '../../Markdown';
 
-// The reasoning record fields the learner maintains throughout the investigation
-// (see the design doc's Reasoning Record section).
-const REASONING_FIELDS = [
-  ['understanding', 'Current understanding'],
-  ['assumptions', 'Assumptions'],
-  ['unknowns', 'Unknowns'],
-  ['hypotheses', 'Hypotheses'],
-  ['decisions', 'Decisions'],
-  ['evidence', 'Evidence'],
-  ['confidence', 'Confidence'],
-];
-
-// Core interactive experience: the learner interviews stakeholders / consults resources
-// through an in-character AI agent, and records their reasoning. All state is owned by
-// the parent (persisted to the progress record); this component is presentational plus
-// local chat-input/selection state.
-export default function DraInvestigation({ scenario, targets, stages = [], activeStage = '', onSelectStage, conversations, reasoningRecord, onSendMessage, onReasoningChange, onReasoningBlur, readOnly, learningSession }) {
+export default function DraInvestigation({ targets, stages = [], activeStage = '', onSelectStage, conversations, onSendMessage, readOnly, learningSession }) {
   const [selectedKey, setSelectedKey] = React.useState('');
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -39,9 +23,7 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
 
   async function handleSend() {
     const text = input.trim();
-    if (!text || sending || readOnly || !selectedTarget) {
-      return;
-    }
+    if (!text || sending || readOnly || !selectedTarget) return;
     setSending(true);
     setInput('');
     try {
@@ -120,16 +102,6 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
           </div>
         </div>
       )}
-
-      <div className="not-prose mt-6 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reasoning Record</div>
-      <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {REASONING_FIELDS.map(([key, label]) => (
-          <div key={key} className="space-y-1">
-            <label className="text-xs font-semibold text-gray-600">{label}</label>
-            <textarea aria-label={label} value={reasoningRecord[key] || ''} onChange={(e) => onReasoningChange(key, e.target.value)} onBlur={onReasoningBlur} readOnly={readOnly} rows={3} className="w-full border border-gray-300 rounded px-2 py-1 text-sm read-only:bg-gray-50" />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
