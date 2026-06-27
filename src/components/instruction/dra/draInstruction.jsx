@@ -111,6 +111,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [evaluating, setEvaluating] = React.useState(false);
   const [coaching, setCoaching] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('overview');
+  const [activeStage, setActiveStage] = React.useState('');
+  const courseId = learningSession?.course?.id;
+  const topicId = learningSession?.topic?.id;
   const { panePercent: investigationPanePercent, splitContainerRef: investigationSplitRef, onPaneMoved: onInvestigationPaneMoved, onPaneResized: onInvestigationPaneResized } = useSplitPaneState(55);
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const isPreview = instructionState === 'preview';
@@ -128,7 +131,24 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   React.useEffect(() => {
     async function loadState() {
       if (!isPreview && user && learningSession?.enrollment) {
-        setDraState(await courseOps.getDraState());
+        const state = await courseOps.getDraState();
+        const ds = state.details || {};
+        // Prevent the state-change effect below from overriding our tab restoration.
+        prevStateRef.current = ds.state;
+        setDraState(state);
+
+        const uiSettings = courseId && topicId ? courseOps.getEnrollmentUiSettings(courseId) : null;
+
+        const savedStage = uiSettings?.[`draActiveStage_${topicId}`];
+        const stages = ds.stages || [];
+        if (savedStage && stages.some((s) => s.stage === savedStage)) {
+          setActiveStage(savedStage);
+        } else {
+          setActiveStage(stages[0]?.stage || '');
+        }
+
+        const savedTab = uiSettings?.[`draActiveTab_${topicId}`];
+        if (savedTab) setActiveTab(savedTab);
       }
       setLoading(false);
     }
@@ -138,14 +158,21 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const params = React.useMemo(() => parseDraMarkdown(markdown), [markdown]);
   const details = draState.details || { state: 'notStarted' };
 
-  // Switch to relevant tab when assessment state changes.
-  const prevStateRef = React.useRef(details.state);
+  function selectTab(tab) {
+    setActiveTab(tab);
+    if (courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveTab_${topicId}`]: tab });
+    }
+  }
+
+  // Switch to relevant tab when assessment state changes (not on initial load — see loadState).
+  const prevStateRef = React.useRef('notStarted');
   React.useEffect(() => {
     if (prevStateRef.current !== details.state) {
       prevStateRef.current = details.state;
-      if (details.state === 'inProgress') setActiveTab('scenario');
-      if (details.state === 'completed') setActiveTab('evaluation');
-      if (details.state === 'notStarted') setActiveTab('overview');
+      if (details.state === 'inProgress') selectTab('scenario');
+      if (details.state === 'completed') selectTab('evaluation');
+      if (details.state === 'notStarted') selectTab('overview');
     }
   }, [details.state]);
 
@@ -158,9 +185,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     await courseOps.addProgress(null, null, 'dra', 0, nextDetails);
   }
 
-  async function selectStage(stage) {
-    if (isObserveReadOnly || details.activeStage === stage) return;
-    await persist({ ...details, activeStage: stage });
+  function selectStage(stage) {
+    if (isObserveReadOnly || activeStage === stage) return;
+    setActiveStage(stage);
+    if (courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: stage });
+    }
   }
 
   // Scan a reply for hidden stakeholders/resources by exact name match. The AI prompt
@@ -193,7 +223,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   async function sendInvestigationMessage(target, text) {
     const key = target.key;
     const conversations = details.conversations || {};
-    const withUser = [...(conversations[key] || []), { role: 'user', text, stage: details.activeStage || '' }];
+    const withUser = [...(conversations[key] || []), { role: 'user', text, stage: activeStage }];
     setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
 
     try {
@@ -227,6 +257,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       const generated = await courseOps.generateDraScenario(params);
       const stages = generated?.stages || [];
       const primaryStakeholder = generated?.stakeholders?.[0];
+      const stageNotes = Object.fromEntries(stages.map((s) => [s.stage, `# ${s.stage}\n\n`]));
+      const firstStage = stages[0]?.stage || '';
+      setActiveStage(firstStage);
+      if (courseId && topicId && firstStage) {
+        courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: firstStage });
+      }
       await persist({
         state: 'inProgress',
         mode: runMode,
@@ -236,7 +272,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         stakeholders: generated?.stakeholders || [],
         resources: generated?.resources || [],
         stages,
-        activeStage: stages[0]?.stage || '',
+        stageNotes,
         identified: primaryStakeholder ? [{ ...primaryStakeholder, kind: 'stakeholder' }] : [],
       });
     } catch {
@@ -278,7 +314,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (isObserveReadOnly || coaching) return;
     setCoaching(true);
     try {
-      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, details.activeStage || '');
+      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage);
       await persist({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');
@@ -489,18 +525,18 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       <div className="markdown-body px-4 pt-4 shrink-0">
         <h1>{params.title || 'Disciplinary Reasoning Assessment'}</h1>
         {renderActionButtons()}
-        {tabs.length > 1 && <DraTabBar tabs={tabs} active={safeActiveTab} onChange={setActiveTab} />}
+        {tabs.length > 1 && <DraTabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
       </div>
 
       {safeActiveTab === 'investigation' ? (
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {(details.stages || []).length > 0 && (() => {
-            const activeStageInterpretation = (details.stages || []).find((s) => s.stage === (details.activeStage || ''))?.interpretation || '';
+            const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
             return (
               <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100 flex flex-col gap-2">
                 <div className="flex flex-wrap gap-1">
                   {(details.stages || []).map((s) => (
-                    <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={investigationReadOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === (details.activeStage || '') ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
+                    <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={investigationReadOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
                       {s.stage}
                     </button>
                   ))}
@@ -521,16 +557,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           </div>
           <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
           <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0 flex items-baseline gap-2 px-3 pt-3 pb-1">
-              Assessment
-              {details.activeStage && <span className="text-xs font-normal text-gray-400 normal-case tracking-normal">— {details.activeStage}</span>}
-            </div>
             <DraAssessment
-              value={details.stageNotes?.[details.activeStage || ''] || ''}
-              onChange={(val) => updateStageNote(details.activeStage || '', val)}
+              value={details.stageNotes?.[activeStage] || ''}
+              onChange={(val) => updateStageNote(activeStage, val)}
               onBlur={saveStageNote}
               readOnly={investigationReadOnly}
-              activeStage={details.activeStage || ''}
+              activeStage={activeStage}
             />
           </div>
           </div>
