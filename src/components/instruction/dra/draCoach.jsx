@@ -7,9 +7,8 @@ export default function DraCoach({ coaching, onRequest, busy, readOnly }) {
   const suggestions = coaching?.suggestions || [];
 
   return (
-    <div className="not-prose mt-8">
+    <div className="not-prose">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <h2 className="text-lg font-bold text-gray-800">Coaching</h2>
         <button onClick={onRequest} disabled={readOnly || busy} className="px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
           {busy ? 'Coaching...' : coaching ? 'Get new coaching' : 'Get coaching'}
         </button>

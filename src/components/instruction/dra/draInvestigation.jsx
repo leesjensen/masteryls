@@ -52,10 +52,9 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
   }
 
   return (
-    <div className="mt-8">
+    <div className="mt-4">
       {stages.length > 0 && (
-        <div className="not-prose mb-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-2">Stages</h2>
+        <div className="not-prose mb-4">
           <div className="flex flex-wrap gap-1">
             {stages.map((s) => (
               <button key={s.stage} onClick={() => onSelectStage(s.stage)} disabled={readOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
@@ -67,7 +66,6 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
         </div>
       )}
 
-      <h2>Investigation</h2>
       {targets.length === 0 ? (
         <p className="text-sm text-gray-500 italic">No stakeholders or resources are revealed yet. Work through the scenario to uncover them.</p>
       ) : (
@@ -123,7 +121,7 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
         </div>
       )}
 
-      <h2 className="mt-8">Reasoning Record</h2>
+      <div className="not-prose mt-6 mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reasoning Record</div>
       <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-3">
         {REASONING_FIELDS.map(([key, label]) => (
           <div key={key} className="space-y-1">

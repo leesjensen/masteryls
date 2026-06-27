@@ -5,23 +5,21 @@ import DraInvestigation from './draInvestigation';
 import DraEvaluation from './draEvaluation';
 import DraCoach from './draCoach';
 
-// Learner experience for a Disciplinary Reasoning Assessment. The scenario is
-// generated at runtime from the author's published parameters and the full state is
-// persisted to the learner's progress record (type 'dra'), mirroring how exams save
-// and resume. The interactive investigation (stakeholder chat, reasoning record,
-// evaluation) is a later phase — this slice covers the scenario lifecycle:
-//
-//   notStarted -> (practice: generate / cancel / regenerate | final: confirm -> lock)
-//              -> inProgress -> completed
-function ParameterHeader({ params, learningSession }) {
-  // Intentionally no parameter chips (discipline, problem type, difficulty, ...): those
-  // are authoring details the learner should not see.
+function DraTabBar({ tabs, active, onChange }) {
   return (
-    <>
-      <h1>{params.title || 'Disciplinary Reasoning Assessment'}</h1>
-      <h2>Learning Outcomes</h2>
-      <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
-    </>
+    <div className="not-prose flex border-b border-gray-200 mt-4">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
+            active === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -48,8 +46,7 @@ function ScenarioView({ details, difficulty, learningSession }) {
   const somethingWithheld = disclosure.detail !== 'full' || !disclosure.showConstraints || !disclosure.showStakeholders || !disclosure.showResources;
 
   return (
-    <div className="mt-6">
-      <h2>Scenario</h2>
+    <>
       {details.scenario?.title && <h3>{details.scenario.title}</h3>}
       <Markdown learningSession={learningSession} content={body || ''} />
 
@@ -98,7 +95,7 @@ function ScenarioView({ details, difficulty, learningSession }) {
       )}
 
       {somethingWithheld && <p className="not-prose mt-3 text-sm text-gray-500 italic">Further details, constraints, stakeholders, and resources emerge as you investigate.</p>}
-    </div>
+    </>
   );
 }
 
@@ -109,6 +106,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [busy, setBusy] = React.useState(false);
   const [evaluating, setEvaluating] = React.useState(false);
   const [coaching, setCoaching] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState('overview');
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const isPreview = instructionState === 'preview';
 
@@ -118,9 +116,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       return;
     }
     const topic = learningSession?.topic;
-    if (!topic || topic.type !== 'dra') {
-      return;
-    }
+    if (!topic || topic.type !== 'dra') return;
     courseOps.getTopic(topic).then((md) => setMarkdown(md || ''));
   }, [content, learningSession?.topic]);
 
@@ -137,8 +133,17 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const params = React.useMemo(() => parseDraMarkdown(markdown), [markdown]);
   const details = draState.details || { state: 'notStarted' };
 
-  // Local-only update (no server write) for in-flight edits like typing in the
-  // reasoning record; persist() writes the full state to the progress record.
+  // Switch to relevant tab when assessment state changes.
+  const prevStateRef = React.useRef(details.state);
+  React.useEffect(() => {
+    if (prevStateRef.current !== details.state) {
+      prevStateRef.current = details.state;
+      if (details.state === 'inProgress') setActiveTab('scenario');
+      if (details.state === 'completed') setActiveTab('evaluation');
+      if (details.state === 'notStarted') setActiveTab('overview');
+    }
+  }, [details.state]);
+
   function setLocalDetails(nextDetails) {
     setDraState({ details: nextDetails });
   }
@@ -149,17 +154,13 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function selectStage(stage) {
-    if (isObserveReadOnly || details.activeStage === stage) {
-      return;
-    }
+    if (isObserveReadOnly || details.activeStage === stage) return;
     await persist({ ...details, activeStage: stage });
   }
 
   async function sendInvestigationMessage(target, text) {
     const key = target.key;
     const conversations = details.conversations || {};
-    // Tag the learner's message with the active stage so evidence can later be
-    // attributed to a disciplinary stage.
     const withUser = [...(conversations[key] || []), { role: 'user', text, stage: details.activeStage || '' }];
     setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
 
@@ -167,7 +168,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser);
       await persist({ ...details, conversations: { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] } });
     } catch {
-      // Keep the learner's question saved even if the agent fails to respond.
       await persist({ ...details, conversations: { ...conversations, [key]: withUser } });
       alert('The interview partner could not respond. Please try again.');
     }
@@ -178,16 +178,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function saveReasoning() {
-    if (isObserveReadOnly) {
-      return;
-    }
+    if (isObserveReadOnly) return;
     await persist(details);
   }
 
   async function generateScenario(runMode = 'practice') {
-    if (isObserveReadOnly || busy) {
-      return;
-    }
+    if (isObserveReadOnly || busy) return;
     setBusy(true);
     try {
       const generated = await courseOps.generateDraScenario(params);
@@ -211,19 +207,13 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function startFinal() {
-    if (isObserveReadOnly || busy) {
-      return;
-    }
-    if (!window.confirm('Start the final assessment? Once it begins the scenario is locked and must be completed.')) {
-      return;
-    }
+    if (isObserveReadOnly || busy) return;
+    if (!window.confirm('Start the final assessment? Once it begins the scenario is locked and must be completed.')) return;
     await generateScenario('final');
   }
 
   async function cancelScenario() {
-    if (isObserveReadOnly || busy) {
-      return;
-    }
+    if (isObserveReadOnly || busy) return;
     await persist({ state: 'notStarted' });
   }
 
@@ -245,9 +235,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function requestCoaching() {
-    if (isObserveReadOnly || coaching) {
-      return;
-    }
+    if (isObserveReadOnly || coaching) return;
     setCoaching(true);
     try {
       const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.reasoningRecord || {}, details.activeStage || '');
@@ -260,9 +248,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function refreshEvaluation() {
-    if (isObserveReadOnly || evaluating) {
-      return;
-    }
+    if (isObserveReadOnly || evaluating) return;
     setEvaluating(true);
     try {
       const evaluation = await computeEvaluation(details);
@@ -275,9 +261,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function completeAssessment() {
-    if (isObserveReadOnly || busy) {
-      return;
-    }
+    if (isObserveReadOnly || busy) return;
     setBusy(true);
     try {
       let evaluation = details.evaluation;
@@ -292,72 +276,109 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
-  const generatingLabel = busy ? 'Generating...' : null;
+  if (loading) return <div />;
 
-  function renderBody() {
-    if (isPreview || !user) {
+  const generatingLabel = busy ? 'Generating...' : null;
+  const canPractice = params.practiceMode;
+  const canFinal = params.finalMode;
+  const locked = details.mode === 'final';
+  const hasScenario = details.state === 'inProgress' || details.state === 'completed';
+  const showCoaching = details.state === 'inProgress' && !locked;
+  const showEvaluation = (details.state === 'inProgress' && !locked) || details.state === 'completed';
+
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    ...(hasScenario ? [{ id: 'scenario', label: 'Scenario' }] : []),
+    ...(hasScenario ? [{ id: 'investigation', label: 'Investigation' }] : []),
+    ...(showCoaching ? [{ id: 'coaching', label: 'Coaching' }] : []),
+    ...(showEvaluation ? [{ id: 'evaluation', label: 'Evaluation' }] : []),
+  ];
+
+  const safeActiveTab = tabs.some((t) => t.id === activeTab) ? activeTab : 'overview';
+
+  const disclosure = scenarioDisclosure(details.difficulty ?? params.difficulty);
+  const revealedTargets = [
+    ...(disclosure.showStakeholders ? (details.stakeholders || []).map((s, i) => ({ key: `stakeholder:${i}`, type: 'stakeholder', ...s })) : []),
+    ...(disclosure.showResources ? (details.resources || []).map((r, i) => ({ key: `resource:${i}`, type: 'resource', ...r })) : []),
+  ];
+
+  // The primary stakeholder (index 0) is always available regardless of difficulty —
+  // they are the person who engaged the learner in the scenario.
+  const primaryStakeholder = (details.stakeholders || [])[0];
+  if (primaryStakeholder && !revealedTargets.some((t) => t.key === 'stakeholder:0')) {
+    revealedTargets.unshift({ key: 'stakeholder:0', type: 'stakeholder', ...primaryStakeholder });
+  }
+
+  const revealedNames = new Set(revealedTargets.map((t) => t.name));
+  const identifiedTargets = (details.identified || [])
+    .map((item, i) => ({ key: `identified:${i}`, type: item.kind || 'stakeholder', ...item }))
+    .filter((t) => !revealedNames.has(t.name));
+  const targets = [...revealedTargets, ...identifiedTargets];
+
+  function renderActionButtons() {
+    if (isPreview || !user) return null;
+
+    if (details.state === 'notStarted') {
       return (
-        <div className="not-prose mt-6 rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
-          When a learner begins, a scenario is generated from these parameters.
-          {!user && ' Login to take this assessment.'}
+        <div className="not-prose mt-4 flex flex-col items-start gap-2">
+          <p className="text-sm text-gray-600">
+            {canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}
+          </p>
+          {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
+          <div className="flex flex-wrap gap-2">
+            {canPractice && (
+              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                {generatingLabel || 'Generate scenario'}
+              </button>
+            )}
+            {canFinal && (
+              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                {generatingLabel || 'Start final assessment'}
+              </button>
+            )}
+          </div>
         </div>
       );
     }
 
-    const canPractice = params.practiceMode;
-    const canFinal = params.finalMode;
-
-    // Difficulty-revealed stakeholders/resources are always available. Stakeholders and
-    // resources the learner has explicitly identified during the investigation are added
-    // on top, deduped by name so nothing appears twice.
-    const disclosure = scenarioDisclosure(details.difficulty ?? params.difficulty);
-    const revealedTargets = [
-      ...(disclosure.showStakeholders ? (details.stakeholders || []).map((s, i) => ({ key: `stakeholder:${i}`, type: 'stakeholder', ...s })) : []),
-      ...(disclosure.showResources ? (details.resources || []).map((r, i) => ({ key: `resource:${i}`, type: 'resource', ...r })) : []),
-    ];
-
-    // The primary stakeholder (index 0) is always available regardless of difficulty —
-    // they are the person who engaged the learner in the scenario.
-    const primaryStakeholder = (details.stakeholders || [])[0];
-    if (primaryStakeholder && !revealedTargets.some((t) => t.key === 'stakeholder:0')) {
-      revealedTargets.unshift({ key: 'stakeholder:0', type: 'stakeholder', ...primaryStakeholder });
+    if (details.state === 'inProgress') {
+      return (
+        <div className="not-prose mt-4 flex flex-wrap items-center gap-2">
+          {locked ? (
+            <span className="text-sm text-amber-700">Final assessment — the scenario is locked and must be completed.</span>
+          ) : (
+            <>
+              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
+                Cancel
+              </button>
+              {canFinal && (
+                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                  Start final assessment
+                </button>
+              )}
+            </>
+          )}
+          <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+            Complete assessment
+          </button>
+        </div>
+      );
     }
 
-    const revealedNames = new Set(revealedTargets.map((t) => t.name));
-    const identifiedTargets = (details.identified || [])
-      .map((item, i) => ({ key: `identified:${i}`, type: item.kind || 'stakeholder', ...item }))
-      .filter((t) => !revealedNames.has(t.name));
-    const targets = [...revealedTargets, ...identifiedTargets];
-
-    const investigation = (readOnly) => (
-      <DraInvestigation
-        scenario={details.scenario}
-        targets={targets}
-        stages={details.stages || []}
-        activeStage={details.activeStage || ''}
-        onSelectStage={selectStage}
-        conversations={details.conversations || {}}
-        reasoningRecord={details.reasoningRecord || {}}
-        onSendMessage={sendInvestigationMessage}
-        onReasoningChange={updateReasoning}
-        onReasoningBlur={saveReasoning}
-        readOnly={readOnly}
-        learningSession={learningSession}
-      />
-    );
-
     if (details.state === 'completed') {
-      // A completed final run is terminal. After practice the learner may practice
-      // again or, if final is enabled, move on to the final assessment.
       const wasFinal = details.mode === 'final';
       return (
-        <>
-          <div className="not-prose mt-6 rounded border border-blue-200 bg-blue-50 p-4">
-            <div className="text-lg font-bold text-blue-600">Assessment complete</div>
-            {details.completedAt && <div className="text-sm text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
+        <div className="not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3 flex flex-wrap items-center gap-4">
+          <div>
+            <div className="text-sm font-bold text-blue-600">Assessment complete</div>
+            {details.completedAt && (
+              <div className="text-xs text-blue-400">
+                Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
           </div>
           {!wasFinal && (
-            <div className="not-prose mt-4 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {canPractice && (
                 <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
                   {generatingLabel || 'Start new scenario'}
@@ -370,83 +391,81 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
               )}
             </div>
           )}
-          <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
-          {investigation(true)}
-          {details.evaluation && <DraEvaluation evaluation={details.evaluation} />}
-        </>
-      );
-    }
-
-    if (details.state === 'inProgress') {
-      const locked = details.mode === 'final';
-      return (
-        <>
-          <div className="not-prose mt-6 flex flex-wrap items-center gap-2">
-            {locked ? (
-              <span className="text-sm text-amber-700">Final assessment — the scenario is locked and must be completed.</span>
-            ) : (
-              <>
-                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
-                  Cancel
-                </button>
-                {canFinal && (
-                  <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-                    Start final assessment
-                  </button>
-                )}
-              </>
-            )}
-            <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
-              Complete assessment
-            </button>
-          </div>
-          <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
-          {investigation(isObserveReadOnly)}
-          {!locked && <DraCoach coaching={details.coaching} onRequest={requestCoaching} busy={coaching} readOnly={isObserveReadOnly} />}
-          {!locked && (
-            <div className="not-prose mt-8">
-              <button onClick={refreshEvaluation} disabled={isObserveReadOnly || evaluating} className="px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
-                {evaluating ? 'Evaluating...' : details.evaluation ? 'Update evaluation' : 'Evaluate my progress'}
-              </button>
-            </div>
-          )}
-          {!locked && details.evaluation && <DraEvaluation evaluation={details.evaluation} />}
-        </>
-      );
-    }
-
-    // notStarted
-    return (
-      <div className="not-prose mt-6 flex flex-col items-start gap-2">
-        <p className="text-sm text-gray-600">
-          {canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}
-        </p>
-        {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
-        <div className="flex flex-wrap gap-2">
-          {canPractice && (
-            <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
-              {generatingLabel || 'Generate scenario'}
-            </button>
-          )}
-          {canFinal && (
-            <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-              {generatingLabel || 'Start final assessment'}
-            </button>
-          )}
         </div>
-      </div>
-    );
+      );
+    }
+
+    return null;
   }
 
-  if (loading) {
-    return <div />;
+  function renderTabContent() {
+    switch (safeActiveTab) {
+      case 'overview':
+        return (
+          <div className="mt-4">
+            <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
+            {(isPreview || !user) && (
+              <div className="not-prose mt-4 rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
+                When a learner begins, a scenario is generated from these parameters.
+                {!user && ' Login to take this assessment.'}
+              </div>
+            )}
+          </div>
+        );
+      case 'scenario':
+        return (
+          <div className="mt-4">
+            <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
+          </div>
+        );
+      case 'investigation':
+        return (
+          <DraInvestigation
+            scenario={details.scenario}
+            targets={targets}
+            stages={details.stages || []}
+            activeStage={details.activeStage || ''}
+            onSelectStage={selectStage}
+            conversations={details.conversations || {}}
+            reasoningRecord={details.reasoningRecord || {}}
+            onSendMessage={sendInvestigationMessage}
+            onReasoningChange={updateReasoning}
+            onReasoningBlur={saveReasoning}
+            readOnly={details.state === 'completed' || isObserveReadOnly}
+            learningSession={learningSession}
+          />
+        );
+      case 'coaching':
+        return (
+          <div className="mt-4">
+            <DraCoach coaching={details.coaching} onRequest={requestCoaching} busy={coaching} readOnly={isObserveReadOnly} />
+          </div>
+        );
+      case 'evaluation':
+        return (
+          <div className="mt-4">
+            {details.state === 'inProgress' && !locked && (
+              <div className="not-prose mb-4">
+                <button onClick={refreshEvaluation} disabled={isObserveReadOnly || evaluating} className="px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
+                  {evaluating ? 'Evaluating...' : details.evaluation ? 'Update evaluation' : 'Evaluate my progress'}
+                </button>
+              </div>
+            )}
+            <DraEvaluation evaluation={details.evaluation} />
+          </div>
+        );
+      default:
+        return null;
+    }
   }
 
   return (
     <div className="h-full w-full min-h-0 min-w-0 overflow-auto">
       <div className="markdown-body p-4 max-w-3xl mx-auto">
-        <ParameterHeader params={params} learningSession={learningSession} />
-        {renderBody()}
+        <h1>{params.title || 'Disciplinary Reasoning Assessment'}</h1>
+        {renderActionButtons()}
+        {tabs.length > 1 && <DraTabBar tabs={tabs} active={safeActiveTab} onChange={setActiveTab} />}
+        {renderTabContent()}
       </div>
     </div>
   );

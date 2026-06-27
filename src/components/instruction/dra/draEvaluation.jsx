@@ -88,8 +88,7 @@ export default function DraEvaluation({ evaluation }) {
   };
 
   return (
-    <div className="mt-8">
-      <h2>Evaluation</h2>
+    <div>
       <div className="not-prose">
         <div className="max-w-md mx-auto">
           <Radar data={data} options={options} />
