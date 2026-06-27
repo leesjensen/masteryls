@@ -466,13 +466,26 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       </div>
 
       {safeActiveTab === 'investigation' ? (
-        <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {(details.stages || []).length > 0 && (() => {
+            const activeStageInterpretation = (details.stages || []).find((s) => s.stage === (details.activeStage || ''))?.interpretation || '';
+            return (
+              <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100 flex flex-col gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {(details.stages || []).map((s) => (
+                    <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={investigationReadOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === (details.activeStage || '') ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
+                      {s.stage}
+                    </button>
+                  ))}
+                </div>
+                {activeStageInterpretation && <p className="text-sm text-gray-600">{activeStageInterpretation}</p>}
+              </div>
+            );
+          })()}
+          <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
           <div className="min-w-0 overflow-auto p-4" style={{ width: `${investigationPanePercent}%` }}>
             <DraInvestigation
               targets={targets}
-              stages={details.stages || []}
-              activeStage={details.activeStage || ''}
-              onSelectStage={selectStage}
               conversations={details.conversations || {}}
               onSendMessage={sendInvestigationMessage}
               readOnly={investigationReadOnly}
@@ -498,6 +511,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 </div>
               ))}
             </div>
+          </div>
           </div>
         </div>
       ) : (

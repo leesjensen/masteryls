@@ -1,7 +1,7 @@
 import React from 'react';
 import Markdown from '../../Markdown';
 
-export default function DraInvestigation({ targets, stages = [], activeStage = '', onSelectStage, conversations, onSendMessage, readOnly, learningSession }) {
+export default function DraInvestigation({ targets, conversations, onSendMessage, readOnly, learningSession }) {
   const [selectedKey, setSelectedKey] = React.useState('');
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
@@ -15,7 +15,6 @@ export default function DraInvestigation({ targets, stages = [], activeStage = '
 
   const selectedTarget = targets.find((t) => t.key === selectedKey) || null;
   const messages = conversations[selectedKey] || [];
-  const activeStageInterpretation = stages.find((s) => s.stage === activeStage)?.interpretation || '';
 
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,19 +34,6 @@ export default function DraInvestigation({ targets, stages = [], activeStage = '
 
   return (
     <div className="mt-4">
-      {stages.length > 0 && (
-        <div className="not-prose mb-4">
-          <div className="flex flex-wrap gap-1">
-            {stages.map((s) => (
-              <button key={s.stage} onClick={() => onSelectStage(s.stage)} disabled={readOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
-                {s.stage}
-              </button>
-            ))}
-          </div>
-          {activeStageInterpretation && <p className="mt-2 text-sm text-gray-600">{activeStageInterpretation}</p>}
-        </div>
-      )}
-
       {targets.length === 0 ? (
         <p className="text-sm text-gray-500 italic">No stakeholders or resources are revealed yet. Work through the scenario to uncover them.</p>
       ) : (
