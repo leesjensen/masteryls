@@ -6,6 +6,7 @@ import DraEvaluation from './draEvaluation';
 import DraCoach from './draCoach';
 import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
+import DraAssessment from './DraAssessment';
 
 
 function DraTabBar({ tabs, active, onChange }) {
@@ -519,17 +520,17 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             />
           </div>
           <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
-          <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 shrink-0 flex items-baseline gap-2">
+          <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0 flex items-baseline gap-2 px-3 pt-3 pb-1">
               Assessment
               {details.activeStage && <span className="text-xs font-normal text-gray-400 normal-case tracking-normal">— {details.activeStage}</span>}
             </div>
-            <textarea
+            <DraAssessment
               value={details.stageNotes?.[details.activeStage || ''] || ''}
-              onChange={(e) => updateStageNote(details.activeStage || '', e.target.value)}
+              onChange={(val) => updateStageNote(details.activeStage || '', val)}
               onBlur={saveStageNote}
               readOnly={investigationReadOnly}
-              className="flex-1 w-full resize-none border border-gray-300 rounded px-2 py-1 text-sm read-only:bg-gray-50"
+              activeStage={details.activeStage || ''}
             />
           </div>
           </div>
