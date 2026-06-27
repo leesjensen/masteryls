@@ -207,7 +207,7 @@ Requirements:
  * @param {Array<{role: 'user'|'model', text: string}>} messages - The conversation so far.
  * @returns {Promise<string>} The in-character reply as GitHub-flavored markdown.
  */
-export async function aiDraStakeholderResponseGenerator(scenario, target, messages) {
+export async function aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders = [], resources = []) {
   const isStakeholder = Boolean(target?.role) || (target?.type || 'stakeholder') === 'stakeholder';
   const persona = isStakeholder
     ? `You are ${target?.name || 'a stakeholder'}, ${target?.role || 'a stakeholder'} in this scenario.
@@ -216,6 +216,11 @@ Your objectives: ${target?.objectives || 'represent your interests honestly'}.`
     : `You represent "${target?.name || 'a resource'}" (${target?.type || 'resource'}), an information resource in this scenario.
 What it offers: ${target?.description || 'relevant information for the investigation'}.`;
 
+  const knownPeople = [
+    ...stakeholders.map((s) => `- ${s.name} (${s.role})`),
+    ...resources.map((r) => `- ${r.name} (${r.type || 'resource'})`),
+  ].join('\n');
+
   const instructionText = `You are a role-play partner in a disciplinary reasoning assessment.
 
 SCENARIO: ${scenario?.title || ''}
@@ -223,11 +228,15 @@ ${scenario?.description || scenario?.summary || ''}
 
 ${persona}
 
+Known people and resources in this scenario:
+${knownPeople || '(none listed)'}
+
 Guidelines:
 - Stay fully in character and respond as ${target?.name || 'this target'} would.
 - Reveal information only in response to relevant questions; do not volunteer the whole picture at once.
 - Be concise (under 150 words) and use plain GitHub-flavored markdown.
-- Do not evaluate the learner, give away the "answer", or break character.`;
+- Do not evaluate the learner, give away the "answer", or break character.
+- When referring to other people or resources, use only the exact names listed above. Do not invent names.`;
 
   const instructions = { parts: [{ text: instructionText }] };
   const contents = (messages || [])

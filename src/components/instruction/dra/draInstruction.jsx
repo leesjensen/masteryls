@@ -162,6 +162,33 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     await persist({ ...details, activeStage: stage });
   }
 
+  // Scan a reply for hidden stakeholders/resources by exact name match. The AI prompt
+  // now instructs the model to use only predefined names, so exact matching is reliable.
+  function detectNewTargets(replyText, currentDetails) {
+    const disclosure = scenarioDisclosure(currentDetails.difficulty ?? params.difficulty);
+    const lowerReply = replyText.toLowerCase();
+
+    const knownNames = new Set([
+      (currentDetails.stakeholders || [])[0]?.name,
+      ...(disclosure.showStakeholders ? (currentDetails.stakeholders || []).map((s) => s.name) : []),
+      ...(disclosure.showResources ? (currentDetails.resources || []).map((r) => r.name) : []),
+      ...(currentDetails.identified || []).map((t) => t.name),
+    ].filter(Boolean));
+
+    const found = [];
+    for (const s of currentDetails.stakeholders || []) {
+      if (!knownNames.has(s.name) && lowerReply.includes(s.name.toLowerCase())) {
+        found.push({ ...s, kind: 'stakeholder' });
+      }
+    }
+    for (const r of currentDetails.resources || []) {
+      if (!knownNames.has(r.name) && lowerReply.includes(r.name.toLowerCase())) {
+        found.push({ ...r, kind: 'resource' });
+      }
+    }
+    return found;
+  }
+
   async function sendInvestigationMessage(target, text) {
     const key = target.key;
     const conversations = details.conversations || {};
@@ -169,8 +196,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
 
     try {
-      const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser);
-      await persist({ ...details, conversations: { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] } });
+      const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser, details.stakeholders || [], details.resources || []);
+      const nextConversations = { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] };
+      const newTargets = detectNewTargets(reply, details);
+      await persist({
+        ...details,
+        conversations: nextConversations,
+        ...(newTargets.length > 0 && { identified: [...(details.identified || []), ...newTargets] }),
+      });
     } catch {
       await persist({ ...details, conversations: { ...conversations, [key]: withUser } });
       alert('The interview partner could not respond. Please try again.');
@@ -192,6 +225,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     try {
       const generated = await courseOps.generateDraScenario(params);
       const stages = generated?.stages || [];
+      const primaryStakeholder = generated?.stakeholders?.[0];
       await persist({
         state: 'inProgress',
         mode: runMode,
@@ -202,6 +236,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         resources: generated?.resources || [],
         stages,
         activeStage: stages[0]?.stage || '',
+        identified: primaryStakeholder ? [{ ...primaryStakeholder, kind: 'stakeholder' }] : [],
       });
     } catch {
       alert('Unable to generate a scenario. Please try again.');

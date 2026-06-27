@@ -2,144 +2,52 @@
   "mode": "practice",
   "state": "inProgress",
   "stages": [
-    {
-      "stage": "Frame",
-      "interpretation": "Identify the core user stories for Donors, Volunteers, and Staff, and define the technical requirements for a Minimum Viable Product (MVP) that balances stakeholder needs with the 10-week deadline."
-    },
-    {
-      "stage": "Research",
-      "interpretation": "Interview Marcus and Sarah to map the inventory lifecycle and volunteer workflows, and audit the legacy spreadsheet to determine the schema requirements for the new relational database."
-    },
-    {
-      "stage": "Model",
-      "interpretation": "Design the system architecture, including the ERD (Entity Relationship Diagram) for the database, the RESTful API endpoints for inventory management, and the state management logic for the frontend."
-    },
-    {
-      "stage": "Act",
-      "interpretation": "Implement the full-stack solution using a modern framework (e.g., React/Node.js or similar), focusing on secure authentication (JWT/OAuth), responsive UI components, and integrated API logic."
-    },
-    {
-      "stage": "Validate",
-      "interpretation": "Conduct unit and integration testing on the API, perform accessibility audits using automated tools and manual checks, and run a pilot test with Sarah to ensure the volunteer sign-up flow is intuitive."
-    },
-    {
-      "stage": "Reflect",
-      "interpretation": "Analyze the performance of the application on the cloud sandbox, document the deployment pipeline, and evaluate how the design decisions impact the organization's long-term ability to scale and maintain the site."
-    }
+    { "stage": "Frame", "interpretation": "Identify the core user stories for Donors, Volunteers, and Staff, and define the technical requirements for a Minimum Viable Product (MVP) that balances stakeholder needs with the 10-week deadline." },
+    { "stage": "Research", "interpretation": "Interview Marcus and Sarah to map the inventory lifecycle and volunteer workflows, and audit the legacy spreadsheet to determine the schema requirements for the new relational database." },
+    { "stage": "Model", "interpretation": "Design the system architecture, including the ERD (Entity Relationship Diagram) for the database, the RESTful API endpoints for inventory management, and the state management logic for the frontend." },
+    { "stage": "Act", "interpretation": "Implement the full-stack solution using a modern framework (e.g., React/Node.js or similar), focusing on secure authentication (JWT/OAuth), responsive UI components, and integrated API logic." },
+    { "stage": "Validate", "interpretation": "Conduct unit and integration testing on the API, perform accessibility audits using automated tools and manual checks, and run a pilot test with Sarah to ensure the volunteer sign-up flow is intuitive." },
+    { "stage": "Reflect", "interpretation": "Analyze the performance of the application on the cloud sandbox, document the deployment pipeline, and evaluate how the design decisions impact the organization's long-term ability to scale and maintain the site." }
   ],
-  "coaching": {
-    "hints": ["Identify the primary pain points for each of the three user groups mentioned in the scenario.", "Consider what 'success' looks like for the food bank—is it just a working app, or something more specific?", "Look for the non-functional requirements like security and scalability that will dictate your architecture."],
-    "feedback": "You're at the starting line of this project, which is the perfect time to define your scope. Focusing on the 'Frame' stage will help you avoid technical debt and scope creep later on.",
-    "suggestions": ["Interview a Staff member to prioritize the most critical inventory and reporting features.", "Record an initial 'Problem Statement' in your Reasoning Record to anchor your design decisions.", "Draft a list of technical constraints based on the cloud deployment and security requirements."]
-  },
-  "scenario": {
-    "title": "Community Harvest Hub",
-    "summary": "A regional non-profit organization needs a centralized digital platform to coordinate community contributions and manage internal distribution logistics efficiently.",
-    "description": "The Community Harvest food bank has outgrown its current system of manual spreadsheets and paper forms, leading to inventory discrepancies and volunteer scheduling conflicts. You are tasked with designing and building a full-stack web application that serves three distinct user groups: Donors, who need to schedule drop-offs; Volunteers, who need to sign up for shifts; and Staff, who must manage inventory and generate reports. The system requires a secure backend to protect donor information, a responsive frontend for mobile users, and a robust API to handle real-time inventory updates. You must ensure the application is accessible, secure against common web vulnerabilities, and deployed on a cloud environment that can handle spikes in traffic during holiday donation drives."
-  },
+  "coaching": { "hints": ["Identify the primary pain points for each of the three user groups mentioned in the scenario.", "Consider what 'success' looks like for the food bank—is it just a working app, or something more specific?", "Look for the non-functional requirements like security and scalability that will dictate your architecture."], "feedback": "You're at the starting line of this project, which is the perfect time to define your scope. Focusing on the 'Frame' stage will help you avoid technical debt and scope creep later on.", "suggestions": ["Interview a Staff member to prioritize the most critical inventory and reporting features.", "Record an initial 'Problem Statement' in your Reasoning Record to anchor your design decisions.", "Draft a list of technical constraints based on the cloud deployment and security requirements."] },
+  "scenario": { "title": "Community Harvest Hub", "summary": "A regional non-profit organization needs a centralized digital platform to coordinate community contributions and manage internal distribution logistics efficiently.", "description": "The Community Harvest food bank has outgrown its current system of manual spreadsheets and paper forms, leading to inventory discrepancies and volunteer scheduling conflicts. You are tasked with designing and building a full-stack web application that serves three distinct user groups: Donors, who need to schedule drop-offs; Volunteers, who need to sign up for shifts; and Staff, who must manage inventory and generate reports. The system requires a secure backend to protect donor information, a responsive frontend for mobile users, and a robust API to handle real-time inventory updates. You must ensure the application is accessible, secure against common web vulnerabilities, and deployed on a cloud environment that can handle spikes in traffic during holiday donation drives." },
   "resources": [
-    {
-      "name": "Legacy Inventory Spreadsheet",
-      "type": "data",
-      "description": "A complex, multi-tab Excel file containing historical donation data and current stock levels that must be migrated to the new database."
-    },
-    {
-      "name": "Brand Identity Guidelines",
-      "type": "artifact",
-      "description": "A document outlining the organization's color palette, typography, and logo usage to ensure a consistent user interface."
-    },
-    {
-      "name": "Volunteer Feedback Survey Results",
-      "type": "data",
-      "description": "A collection of comments from 50+ volunteers detailing their frustrations with the current manual sign-up process and their mobile device preferences."
-    },
-    {
-      "name": "Cloud Hosting Sandbox",
-      "type": "system",
-      "description": "A pre-configured AWS or Azure environment where the application can be staged and tested before going live."
-    }
+    { "name": "Legacy Inventory Spreadsheet", "type": "data", "description": "A complex, multi-tab Excel file containing historical donation data and current stock levels that must be migrated to the new database." },
+    { "name": "Brand Identity Guidelines", "type": "artifact", "description": "A document outlining the organization's color palette, typography, and logo usage to ensure a consistent user interface." },
+    { "name": "Volunteer Feedback Survey Results", "type": "data", "description": "A collection of comments from 50+ volunteers detailing their frustrations with the current manual sign-up process and their mobile device preferences." },
+    { "name": "Cloud Hosting Sandbox", "type": "system", "description": "A pre-configured AWS or Azure environment where the application can be staged and tested before going live." }
   ],
   "difficulty": 3,
-  "stageNotes": {
-    "Frame": "I am framing!",
-    "Model": "fish",
-    "Research": "cows",
-    "Validate": "Validate"
-  },
+  "stageNotes": { "Frame": "I am framing!", "Model": "fish", "Research": "cows", "Validate": "Validate" },
   "activeStage": "Reflect",
   "constraints": [
-    {
-      "name": "Data Privacy Compliance",
-      "description": "The system must strictly adhere to PII protection standards for donor contact and financial information."
-    },
-    {
-      "name": "Fixed Launch Deadline",
-      "description": "The application must be fully deployed and tested within 10 weeks, ahead of the annual 'Holiday Giving' campaign."
-    },
-    {
-      "name": "Web Accessibility (WCAG 2.1 AA)",
-      "description": "The interface must be usable by diverse community members, including those using screen readers or keyboard-only navigation."
-    },
-    {
-      "name": "Zero-Downtime Migration",
-      "description": "The transition from the spreadsheet-based system to the web app must occur without interrupting daily food distribution operations."
-    }
+    { "name": "Data Privacy Compliance", "description": "The system must strictly adhere to PII protection standards for donor contact and financial information." },
+    { "name": "Fixed Launch Deadline", "description": "The application must be fully deployed and tested within 10 weeks, ahead of the annual 'Holiday Giving' campaign." },
+    { "name": "Web Accessibility (WCAG 2.1 AA)", "description": "The interface must be usable by diverse community members, including those using screen readers or keyboard-only navigation." },
+    { "name": "Zero-Downtime Migration", "description": "The transition from the spreadsheet-based system to the web app must occur without interrupting daily food distribution operations." }
   ],
   "stakeholders": [
-    {
-      "name": "Elena Rodriguez",
-      "role": "Executive Director",
-      "objectives": "Wants a professional-looking site that increases donor engagement and proves the organization's transparency to grant-makers.",
-      "personality": "Visionary and high-level; focuses on community impact and budget adherence rather than technical implementation details."
-    },
-    {
-      "name": "Marcus Chen",
-      "role": "Operations Manager",
-      "objectives": "Needs a reliable way to track inventory levels in real-time to prevent food waste and ensure distribution centers are stocked.",
-      "personality": "Pragmatic and detail-oriented; values efficiency and data accuracy above all else."
-    },
-    {
-      "name": "Sarah Jenkins",
-      "role": "Volunteer Coordinator",
-      "objectives": "Wants to reduce the administrative burden of manual scheduling and ensure volunteers find the sign-up process frictionless.",
-      "personality": "Empathetic and social; communicates frequently and cares deeply about the user experience for non-technical volunteers."
-    },
-    {
-      "name": "David Miller",
-      "role": "IT Consultant & Board Member",
-      "objectives": "Ensures the system follows industry best practices, is secure against SQL injection and XSS, and won't be a burden to maintain after the initial launch.",
-      "personality": "Technical and skeptical; asks pointed questions about security, data persistence, and long-term maintenance."
-    }
+    { "name": "Elena Rodriguez", "role": "Executive Director", "objectives": "Wants a professional-looking site that increases donor engagement and proves the organization's transparency to grant-makers.", "personality": "Visionary and high-level; focuses on community impact and budget adherence rather than technical implementation details." },
+    { "name": "Marcus Chen", "role": "Operations Manager", "objectives": "Needs a reliable way to track inventory levels in real-time to prevent food waste and ensure distribution centers are stocked.", "personality": "Pragmatic and detail-oriented; values efficiency and data accuracy above all else." },
+    { "name": "Sarah Jenkins", "role": "Volunteer Coordinator", "objectives": "Wants to reduce the administrative burden of manual scheduling and ensure volunteers find the sign-up process frictionless.", "personality": "Empathetic and social; communicates frequently and cares deeply about the user experience for non-technical volunteers." },
+    { "name": "David Miller", "role": "IT Consultant & Board Member", "objectives": "Ensures the system follows industry best practices, is secure against SQL injection and XSS, and won't be a burden to maintain after the initial launch.", "personality": "Technical and skeptical; asks pointed questions about security, data persistence, and long-term maintenance." }
   ],
   "conversations": {
     "stakeholder:0": [
-      {
-        "role": "user",
-        "text": "who are marcus and sarah?",
-        "stage": "Research"
-      },
-      {
-        "role": "model",
-        "text": "They are the heart of our daily operations here at Community Harvest.\n\n**Marcus** is our Volunteer Coordinator. He's the one currently drowning in paper sign-up sheets and frantic phone calls. He needs this system to streamline shift scheduling so he can spend more time in the community and less time fixing calendar overlaps.\n\n**Sarah** is our Operations Lead. She oversees the warehouse and inventory. Right now, she’s struggling with discrepancies between what’s on our spreadsheets and what’s actually on the shelves. She needs those real-time updates and reporting tools to ensure we can provide accurate data to our grant-makers and show exactly how we’re serving the neighborhood.\n\nThey’ll be your primary points of contact for the \"Staff\" side of the application."
-      },
-      {
-        "role": "user",
-        "text": "can you introduce me to them?",
-        "stage": "Research"
-      },
-      {
-        "role": "model",
-        "text": "I’d be happy to. I’ve told them both that you’re here to help us modernize.\n\n**Marcus** is usually in the volunteer lounge. He’s eager to show you how the current scheduling chaos is affecting our ability to staff the mobile pantry. He’s looking for a professional interface that makes our volunteers feel like they’re part of a top-tier organization.\n\n**Sarah** is down in the warehouse. She’s my right hand when it comes to accountability. For her, this project is about integrity—she needs to know that when a donor asks where their contribution went, we have the data to show them immediately.\n\nThey are both available for a brief walkthrough of their current workflows. Would you like to start with Marcus to discuss the volunteer experience, or head to the warehouse to see Sarah’s inventory challenges?"
-      },
-      {
-        "role": "user",
-        "text": "are there other people I should meet?",
-        "stage": "Reflect"
-      },
-      {
-        "role": "model",
-        "text": "While Marcus and Sarah handle the internal side, you should definitely keep our **Donors** in mind. I’d suggest speaking with **Mrs. Gable**; she’s been a loyal contributor for years and represents the community members we rely on. If the new system makes it difficult for someone like her to schedule a drop-off, our intake will suffer.\n\nAlso, remember that I answer to our **Board of Directors** and our **Grant-makers**. While you won't meet them daily, the \"professionalism\" of the site and the accuracy of the reports are for them. They need to see that we are a modern, transparent operation worthy of continued funding. \n\nWould you like to focus on the public-facing donor portal first, or stick with the internal staff requirements for now?"
-      }
+      { "role": "user", "text": "who are marcus and sarah?", "stage": "Research" },
+      { "role": "model", "text": "They are the heart of our daily operations here at Community Harvest.\n\n**Marcus** is our Volunteer Coordinator. He's the one currently drowning in paper sign-up sheets and frantic phone calls. He needs this system to streamline shift scheduling so he can spend more time in the community and less time fixing calendar overlaps.\n\n**Sarah** is our Operations Lead. She oversees the warehouse and inventory. Right now, she’s struggling with discrepancies between what’s on our spreadsheets and what’s actually on the shelves. She needs those real-time updates and reporting tools to ensure we can provide accurate data to our grant-makers and show exactly how we’re serving the neighborhood.\n\nThey’ll be your primary points of contact for the \"Staff\" side of the application." },
+      { "role": "user", "text": "can you introduce me to them?", "stage": "Research" },
+      { "role": "model", "text": "I’d be happy to. I’ve told them both that you’re here to help us modernize.\n\n**Marcus** is usually in the volunteer lounge. He’s eager to show you how the current scheduling chaos is affecting our ability to staff the mobile pantry. He’s looking for a professional interface that makes our volunteers feel like they’re part of a top-tier organization.\n\n**Sarah** is down in the warehouse. She’s my right hand when it comes to accountability. For her, this project is about integrity—she needs to know that when a donor asks where their contribution went, we have the data to show them immediately.\n\nThey are both available for a brief walkthrough of their current workflows. Would you like to start with Marcus to discuss the volunteer experience, or head to the warehouse to see Sarah’s inventory challenges?" },
+      { "role": "user", "text": "are there other people I should meet?", "stage": "Reflect" },
+      { "role": "model", "text": "While Marcus and Sarah handle the internal side, you should definitely keep our **Donors** in mind. I’d suggest speaking with **Mrs. Gable**; she’s been a loyal contributor for years and represents the community members we rely on. If the new system makes it difficult for someone like her to schedule a drop-off, our intake will suffer.\n\nAlso, remember that I answer to our **Board of Directors** and our **Grant-makers**. While you won't meet them daily, the \"professionalism\" of the site and the accuracy of the reports are for them. They need to see that we are a modern, transparent operation worthy of continued funding. \n\nWould you like to focus on the public-facing donor portal first, or stick with the internal staff requirements for now?" },
+      { "role": "user", "text": "what is sarah's full name and job title?", "stage": "Reflect" },
+      { "role": "model", "text": "That would be **Sarah Jenkins**, our **Operations Lead**. \n\nShe is the one responsible for the physical integrity of our stock. If a pallet of canned goods comes in or a crate of produce goes out to a local pantry, Sarah is the one who ensures it’s accounted for. \n\nFor me, Sarah’s role is critical because she provides the data I need to prove our impact to the Board. If the system you build doesn't work for her, we lose the transparency that keeps our doors open. She’s waiting for you in the warehouse office if you’re ready to discuss the inventory side of things." },
+      { "role": "user", "text": "An marcus?", "stage": "Reflect" },
+      { "role": "model", "text": "That would be **Marcus Thorne**, our **Volunteer Coordinator**.\n\nHe is the primary point of contact for the hundreds of neighbors who give their time to us. For Marcus, this project is about more than just a calendar; it’s about the \"brand\" of Community Harvest. He wants a system that feels modern and welcoming so our volunteers feel valued rather than frustrated by tech issues.\n\nIf our site looks amateur, people might doubt our professionalism. Marcus will be looking to you to ensure the user experience reflects the high standards of our mission. He’s currently at the front desk if you’d like to see the manual logs he’s hoping to replace." },
+      { "role": "user", "text": "what resources should I consider that are important for this project?", "stage": "Reflect" },
+      { "role": "model", "text": "From my perspective, your most vital resources are the **historical data** currently locked in Sarah’s spreadsheets and the **trust** of our community. We are operating under a specific technology grant, so budget adherence is essential.\n\nKey areas to prioritize:\n*   **Data Security:** Our donor records are sensitive. Protecting this information is a non-negotiable requirement for our legal compliance and reputation.\n*   **Mobile Accessibility:** Most of our volunteers coordinate their lives through their phones. If the site isn't mobile-friendly, they won't use it.\n*   **Scalability:** We need a cloud solution that won't buckle during the holiday season when donations triple.\n\nI can provide our **brand guidelines** to ensure the site looks professional for our donors. Beyond that, Marcus and Sarah are your best resources for understanding the daily workflows that need digitizing." },
+      { "role": "user", "text": "Tell me who manages your volunteers", "stage": "Reflect" },
+      { "role": "model", "text": "That would be **Marcus Thorne**, our Volunteer Coordinator. \n\nHe is the main point of contact for everyone who walks through our doors to give their time. Currently, he’s managing everything through a messy combination of paper sign-up sheets and endless phone calls. \n\nFor me, Marcus’s success is tied directly to our community engagement. If he’s bogged down in administrative chaos, he can’t focus on building relationships. He needs a professional, easy-to-use interface that makes our volunteers feel like they are part of a well-run, modern organization. If the sign-up process is frustrating, we lose people—and we can't afford that." }
     ]
   }
 }
