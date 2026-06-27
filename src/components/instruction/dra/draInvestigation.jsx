@@ -21,6 +21,7 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
   const [selectedKey, setSelectedKey] = React.useState('');
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
+  const messagesEndRef = React.useRef(null);
 
   React.useEffect(() => {
     if ((!selectedKey || !targets.some((t) => t.key === selectedKey)) && targets[0]) {
@@ -31,6 +32,10 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
   const selectedTarget = targets.find((t) => t.key === selectedKey) || null;
   const messages = conversations[selectedKey] || [];
   const activeStageInterpretation = stages.find((s) => s.stage === activeStage)?.interpretation || '';
+
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, sending]);
 
   async function handleSend() {
     const text = input.trim();
@@ -91,6 +96,7 @@ export default function DraInvestigation({ scenario, targets, stages = [], activ
                   <div className="inline-block rounded px-3 py-2 text-sm bg-gray-100 text-gray-500">…</div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {!readOnly && (

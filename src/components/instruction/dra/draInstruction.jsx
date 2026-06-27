@@ -230,7 +230,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   function buildTranscripts(source) {
     return Object.entries(source.conversations || {}).map(([key, messages]) => {
       const [type, idx] = key.split(':');
-      const target = (type === 'stakeholder' ? source.stakeholders : source.resources)?.[Number(idx)];
+      let target;
+      if (type === 'identified') {
+        target = (source.identified || [])[Number(idx)];
+      } else {
+        target = (type === 'stakeholder' ? source.stakeholders : source.resources)?.[Number(idx)];
+      }
       return { name: target?.name || key, role: target?.role || target?.type || '', messages };
     });
   }
@@ -302,13 +307,27 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const canPractice = params.practiceMode;
     const canFinal = params.finalMode;
 
-    // Only difficulty-revealed stakeholders/resources are available to interview;
-    // the rest become discoverable during the investigation (a later phase).
+    // Difficulty-revealed stakeholders/resources are always available. Stakeholders and
+    // resources the learner has explicitly identified during the investigation are added
+    // on top, deduped by name so nothing appears twice.
     const disclosure = scenarioDisclosure(details.difficulty ?? params.difficulty);
-    const targets = [
+    const revealedTargets = [
       ...(disclosure.showStakeholders ? (details.stakeholders || []).map((s, i) => ({ key: `stakeholder:${i}`, type: 'stakeholder', ...s })) : []),
       ...(disclosure.showResources ? (details.resources || []).map((r, i) => ({ key: `resource:${i}`, type: 'resource', ...r })) : []),
     ];
+
+    // The primary stakeholder (index 0) is always available regardless of difficulty —
+    // they are the person who engaged the learner in the scenario.
+    const primaryStakeholder = (details.stakeholders || [])[0];
+    if (primaryStakeholder && !revealedTargets.some((t) => t.key === 'stakeholder:0')) {
+      revealedTargets.unshift({ key: 'stakeholder:0', type: 'stakeholder', ...primaryStakeholder });
+    }
+
+    const revealedNames = new Set(revealedTargets.map((t) => t.name));
+    const identifiedTargets = (details.identified || [])
+      .map((item, i) => ({ key: `identified:${i}`, type: item.kind || 'stakeholder', ...item }))
+      .filter((t) => !revealedNames.has(t.name));
+    const targets = [...revealedTargets, ...identifiedTargets];
 
     const investigation = (readOnly) => (
       <DraInvestigation
