@@ -7,15 +7,6 @@ import DraCoach from './draCoach';
 import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 
-const ASSESSMENT_FIELDS = [
-  ['understanding', 'Current understanding'],
-  ['assumptions', 'Assumptions'],
-  ['unknowns', 'Unknowns'],
-  ['hypotheses', 'Hypotheses'],
-  ['decisions', 'Decisions'],
-  ['evidence', 'Evidence'],
-  ['confidence', 'Confidence'],
-];
 
 function DraTabBar({ tabs, active, onChange }) {
   return (
@@ -186,11 +177,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
-  function updateReasoning(field, value) {
-    setLocalDetails({ ...details, reasoningRecord: { ...(details.reasoningRecord || {}), [field]: value } });
+  function updateStageNote(stage, value) {
+    setLocalDetails({ ...details, stageNotes: { ...(details.stageNotes || {}), [stage]: value } });
   }
 
-  async function saveReasoning() {
+  async function saveStageNote() {
     if (isObserveReadOnly) return;
     await persist(details);
   }
@@ -244,14 +235,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function computeEvaluation(source) {
-    return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.reasoningRecord || {});
+    return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.stageNotes || {});
   }
 
   async function requestCoaching() {
     if (isObserveReadOnly || coaching) return;
     setCoaching(true);
     try {
-      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.reasoningRecord || {}, details.activeStage || '');
+      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, details.activeStage || '');
       await persist({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');
@@ -493,24 +484,18 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             />
           </div>
           <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
-          <div className="flex-1 min-w-0 overflow-auto p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Assessment</div>
-            <div className="grid grid-cols-1 gap-3">
-              {ASSESSMENT_FIELDS.map(([key, label]) => (
-                <div key={key} className="space-y-1">
-                  <label className="text-xs font-semibold text-gray-600">{label}</label>
-                  <textarea
-                    aria-label={label}
-                    value={details.reasoningRecord?.[key] || ''}
-                    onChange={(e) => updateReasoning(key, e.target.value)}
-                    onBlur={saveReasoning}
-                    readOnly={investigationReadOnly}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm read-only:bg-gray-50"
-                  />
-                </div>
-              ))}
+          <div className="flex-1 min-w-0 flex flex-col overflow-hidden p-4">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 shrink-0 flex items-baseline gap-2">
+              Assessment
+              {details.activeStage && <span className="text-xs font-normal text-gray-400 normal-case tracking-normal">— {details.activeStage}</span>}
             </div>
+            <textarea
+              value={details.stageNotes?.[details.activeStage || ''] || ''}
+              onChange={(e) => updateStageNote(details.activeStage || '', e.target.value)}
+              onBlur={saveStageNote}
+              readOnly={investigationReadOnly}
+              className="flex-1 w-full resize-none border border-gray-300 rounded px-2 py-1 text-sm read-only:bg-gray-50"
+            />
           </div>
           </div>
         </div>
