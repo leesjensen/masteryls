@@ -474,7 +474,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             );
           })()}
           <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
-          <div className="min-w-0 overflow-auto p-4" style={{ width: `${investigationPanePercent}%` }}>
+          <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
             <DraInvestigation
               targets={targets}
               conversations={details.conversations || {}}

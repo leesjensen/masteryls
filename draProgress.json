@@ -2,120 +2,144 @@
   "mode": "practice",
   "state": "inProgress",
   "stages": [
-    { "stage": "Frame", "interpretation": "Identify the core functional requirements for volunteers and admins, and define the non-functional requirements regarding security, accessibility, and mobile responsiveness." },
-    { "stage": "Research", "interpretation": "Analyze the legacy data for inconsistencies, evaluate full-stack frameworks (e.g., React/Node.js or Next.js), and investigate secure authentication patterns." },
-    { "stage": "Model", "interpretation": "Design the relational database schema, map out the API endpoints, and create UI wireframes that prioritize the volunteer sign-up flow." },
-    { "stage": "Act", "interpretation": "Develop the application, implementing the front-end components, back-end logic, and database integration while following secure coding practices." },
-    { "stage": "Validate", "interpretation": "Perform unit and integration testing, conduct an accessibility audit using screen readers, and run user acceptance tests with Mark and David." },
-    { "stage": "Reflect", "interpretation": "Review the deployment process, evaluate how well the system meets the initial community goals, and document technical debt for future maintenance." }
+    {
+      "stage": "Frame",
+      "interpretation": "Identify the core user stories for Donors, Volunteers, and Staff, and define the technical requirements for a Minimum Viable Product (MVP) that balances stakeholder needs with the 10-week deadline."
+    },
+    {
+      "stage": "Research",
+      "interpretation": "Interview Marcus and Sarah to map the inventory lifecycle and volunteer workflows, and audit the legacy spreadsheet to determine the schema requirements for the new relational database."
+    },
+    {
+      "stage": "Model",
+      "interpretation": "Design the system architecture, including the ERD (Entity Relationship Diagram) for the database, the RESTful API endpoints for inventory management, and the state management logic for the frontend."
+    },
+    {
+      "stage": "Act",
+      "interpretation": "Implement the full-stack solution using a modern framework (e.g., React/Node.js or similar), focusing on secure authentication (JWT/OAuth), responsive UI components, and integrated API logic."
+    },
+    {
+      "stage": "Validate",
+      "interpretation": "Conduct unit and integration testing on the API, perform accessibility audits using automated tools and manual checks, and run a pilot test with Sarah to ensure the volunteer sign-up flow is intuitive."
+    },
+    {
+      "stage": "Reflect",
+      "interpretation": "Analyze the performance of the application on the cloud sandbox, document the deployment pipeline, and evaluate how the design decisions impact the organization's long-term ability to scale and maintain the site."
+    }
   ],
-  "coaching": { "hints": ["Look back at the scenario requirements like 'mobile-first' and 'accessibility'—which specific stakeholders hold the most weight in defining these?", "Consider the tension between 'ease of use' for volunteers and 'strict security' for legal compliance; how will you balance these?", "The 'Frame' stage is about defining the problem's boundaries—use your Reasoning Record to synthesize what you've learned about the project's scope."], "feedback": "You have done an excellent job identifying a comprehensive list of stakeholders across all levels of the organization. Now, you need to transition from knowing 'who' they are to understanding their specific requirements and the technical constraints they represent.", "suggestions": ["Interview Marcus Thorne to uncover the specific pain points of the current spreadsheet system and the exact data needed for reports.", "Speak with Sarah Jenkins to define the technical standards required for the 'mobile-first' and 'accessible' volunteer experience.", "Consult with Kevin Park to understand the existing IT infrastructure and any constraints on hosting or technology stack."] },
-  "scenario": { "title": "CommunityConnect Volunteer Portal", "summary": "Design and build a centralized digital platform to manage community engagement and service opportunities while ensuring data security and inclusive access.", "description": "The Green Valley Community Center currently manages over 500 volunteers using a fragmented system of spreadsheets and email chains, leading to missed shifts and data privacy concerns. You are tasked with building 'CommunityConnect,' a full-stack web application that serves two primary user groups: volunteers and administrators. Volunteers need to create profiles, browse upcoming service events, sign up for shifts, and log their hours. Administrators require a dashboard to create events, approve hours, and export reports for grant funding. The system must handle sensitive information, including background check statuses and emergency contact details. Technical requirements include a responsive design for mobile-first volunteers, a secure authentication system, and a persistent database. Furthermore, the application must be accessible to users with disabilities and performant enough to handle traffic spikes during major local events." },
+  "coaching": {
+    "hints": ["Identify the primary pain points for each of the three user groups mentioned in the scenario.", "Consider what 'success' looks like for the food bank—is it just a working app, or something more specific?", "Look for the non-functional requirements like security and scalability that will dictate your architecture."],
+    "feedback": "You're at the starting line of this project, which is the perfect time to define your scope. Focusing on the 'Frame' stage will help you avoid technical debt and scope creep later on.",
+    "suggestions": ["Interview a Staff member to prioritize the most critical inventory and reporting features.", "Record an initial 'Problem Statement' in your Reasoning Record to anchor your design decisions.", "Draft a list of technical constraints based on the cloud deployment and security requirements."]
+  },
+  "scenario": {
+    "title": "Community Harvest Hub",
+    "summary": "A regional non-profit organization needs a centralized digital platform to coordinate community contributions and manage internal distribution logistics efficiently.",
+    "description": "The Community Harvest food bank has outgrown its current system of manual spreadsheets and paper forms, leading to inventory discrepancies and volunteer scheduling conflicts. You are tasked with designing and building a full-stack web application that serves three distinct user groups: Donors, who need to schedule drop-offs; Volunteers, who need to sign up for shifts; and Staff, who must manage inventory and generate reports. The system requires a secure backend to protect donor information, a responsive frontend for mobile users, and a robust API to handle real-time inventory updates. You must ensure the application is accessible, secure against common web vulnerabilities, and deployed on a cloud environment that can handle spikes in traffic during holiday donation drives."
+  },
   "resources": [
-    { "name": "Legacy Volunteer Spreadsheet", "type": "data", "description": "A collection of CSV files containing historical volunteer data, shift history, and contact information that needs to be migrated." },
-    { "name": "WCAG 2.1 Compliance Checklist", "type": "artifact", "description": "A technical document outlining the requirements for web accessibility to ensure the site is usable by everyone." },
-    { "name": "Cloud Service Provider Console", "type": "system", "description": "The deployment environment where the application will be hosted, including database instances and SSL certificate management." }
+    {
+      "name": "Legacy Inventory Spreadsheet",
+      "type": "data",
+      "description": "A complex, multi-tab Excel file containing historical donation data and current stock levels that must be migrated to the new database."
+    },
+    {
+      "name": "Brand Identity Guidelines",
+      "type": "artifact",
+      "description": "A document outlining the organization's color palette, typography, and logo usage to ensure a consistent user interface."
+    },
+    {
+      "name": "Volunteer Feedback Survey Results",
+      "type": "data",
+      "description": "A collection of comments from 50+ volunteers detailing their frustrations with the current manual sign-up process and their mobile device preferences."
+    },
+    {
+      "name": "Cloud Hosting Sandbox",
+      "type": "system",
+      "description": "A pre-configured AWS or Azure environment where the application can be staged and tested before going live."
+    }
   ],
   "difficulty": 3,
-  "evaluation": {
-    "process": {
-      "summary": "The learner demonstrates a systematic and thorough approach to stakeholder identification, ensuring all facets of the organizational ecosystem are mapped.",
-      "attributes": [
-        { "name": "Framing", "summary": "Correctly identifies the initial phase of the project as stakeholder discovery to understand requirements.", "evidence": ["Initial question: 'who are the major stakeholders that I should be aware of?'"], "confidence": "Proficient" },
-        { "name": "Research", "summary": "Uses iterative questioning to move from broad groups to specific representative names and roles.", "evidence": ["Follows up on specific groups: 'who represents the administrative staff?', 'who represents the grant funders?'"], "confidence": "Proficient" },
-        { "name": "Modeling", "summary": "Constructs a comprehensive map of the project's social and technical environment.", "evidence": ["Connects the need to speak with the Director of Programs to understand the impact on Community Beneficiaries."], "confidence": "Developing" },
-        { "name": "Action", "summary": "The learner is currently in the information-gathering stage and has not yet moved toward technical execution.", "evidence": ["The transcript is limited to stakeholder identification."], "confidence": "Beginning" },
-        { "name": "Validation", "summary": "Actively seeks to confirm the completeness of their research before moving forward.", "evidence": ["Explicitly asks: 'I think I have identified all of the stakeholders, but I want to make sure I didn't miss anyone'"], "confidence": "Proficient" },
-        { "name": "Reflection", "summary": "Shows some ability to pivot based on new information provided by the interviewee.", "evidence": ["Pivots to asking about Community Beneficiaries after Elena mentions their safety as a priority."], "confidence": "Emerging" }
-      ],
-      "confidence": "Proficient"
-    },
-    "competency": {
-      "summary": "The learner exhibits strong communication and organizational inquiry skills, though technical and design reasoning are less visible in this phase.",
-      "attributes": [
-        { "name": "Systems thinking", "summary": "Recognizes that the system involves not just users, but auditors, legal counsel, and beneficiaries.", "evidence": ["Asks about external auditors to understand the broader regulatory context."], "confidence": "Developing" },
-        { "name": "Communication", "summary": "Uses clear, targeted questions to elicit specific names and responsibilities.", "evidence": ["Direct questions like 'who represents the grant funders?' and 'who is that?' regarding legal counsel."], "confidence": "Proficient" },
-        { "name": "Design reasoning", "summary": "Attempts to gather data for user personas, though slightly misses the mark on data privacy protocols initially.", "evidence": ["Asks for the name of a specific volunteer, which Elena identifies as a privacy concern."], "confidence": "Emerging" },
-        { "name": "Evidence-based reasoning", "summary": "Uses the details provided in Elena's responses to identify and pursue hidden stakeholders.", "evidence": ["Follows up on the mention of 'external auditors' to identify Grant & Associates and the State Department of Social Services."], "confidence": "Proficient" },
-        { "name": "Decision-making", "summary": "The learner has not yet reached a stage where significant design or technical decisions are made.", "evidence": ["Focus is entirely on stakeholder discovery."], "confidence": "Beginning" }
-      ],
-      "confidence": "Developing"
-    },
-    "disposition": {
-      "summary": "The learner shows a high degree of curiosity and thoroughness, ensuring no person or group involved is overlooked.",
-      "attributes": [
-        { "name": "Curiosity", "summary": "Demonstrates a persistent drive to uncover every possible stakeholder, including indirect ones.", "evidence": ["Repeatedly asks 'who else' and follows up on every role mentioned (Legal, IT, Beneficiaries, Auditors)."], "confidence": "Exemplary" },
-        { "name": "Ownership", "summary": "Takes responsibility for identifying the full scope of the project's human requirements.", "evidence": ["States their intent to ensure they haven't missed anyone."], "confidence": "Developing" },
-        { "name": "Integrity", "summary": "Accepts the privacy constraints provided by the stakeholder without argument.", "evidence": ["Moves on immediately after Elena explains why specific volunteer names cannot be shared."], "confidence": "Developing" },
-        { "name": "Persistence", "summary": "Does not settle for a surface-level list of stakeholders and digs into the specifics of each role.", "evidence": ["Asks for the specific name of the legal counsel and the specific auditing firm."], "confidence": "Proficient" },
-        { "name": "Empathy", "summary": "Shows concern for the people impacted by the software, not just the people using it.", "evidence": ["Specifically asks who to talk to regarding the 'Community Beneficiaries'."], "confidence": "Developing" },
-        { "name": "Accountability", "summary": "Shows a desire to be thorough to avoid future project gaps.", "evidence": ["The 'make sure I didn't miss anyone' check indicates a sense of accountability to the project's success."], "confidence": "Emerging" }
-      ],
-      "confidence": "Proficient"
-    }
+  "stageNotes": {
+    "Frame": "I am framing!",
+    "Model": "fish",
+    "Research": "cows",
+    "Validate": "Validate"
   },
-  "identified": [
-    { "kind": "stakeholder", "name": "Elena Rodriguez", "role": "Executive Director", "objectives": "To ensure data security, improve organizational efficiency, and generate accurate reports for grant funding.", "personality": "Professional, strategic, and concise. She focuses on the 'big picture' and how the application supports the center's mission and legal compliance." },
-    { "kind": "stakeholder", "name": "Sarah Chen", "role": "IT Consultant / Mentor", "objectives": "Ensure the application is scalable, secure, and follows industry standards while mentoring the development process.", "personality": "Precise, encouraging, and focused on best practices; she communicates with technical clarity but simplifies concepts for the non-technical staff." },
-    { "kind": "stakeholder", "name": "Marcus Thorne", "role": "Data Privacy and Security Compliance Officer", "objectives": "To ensure that the 'CommunityConnect' portal complies with local data protection regulations, specifically regarding the storage and handling of sensitive background check statuses and emergency contact information.", "personality": "Detail-oriented, cautious, and formal; he communicates primarily through risk assessment reports and regulatory requirements." },
-    { "kind": "stakeholder", "name": "Sarah Jenkins", "role": "Data Privacy Officer", "objectives": "To ensure that the storage of background check statuses and emergency contact info complies with data protection laws and to mitigate risks of data breaches.", "personality": "Methodical, precise, and risk-averse. She communicates using clear, authoritative language regarding legal and security standards." },
-    { "kind": "stakeholder", "name": "David Chen", "role": "Security & Compliance Officer", "objectives": "Ensure the system securely handles sensitive background check data and emergency contact information in compliance with privacy regulations.", "personality": "Analytical, meticulous, and focused on risk mitigation and data protection standards." },
-    { "kind": "stakeholder", "name": "Linda Wu", "role": "Development Director", "objectives": "To ensure the new system generates comprehensive, audit-ready reports on volunteer impact to satisfy donor requirements and secure future funding.", "personality": "Analytical and results-driven; she values precision and is often under pressure to meet grant deadlines." },
-    { "kind": "stakeholder", "name": "Anita Desai", "role": "Grant Writer / Development Officer", "objectives": "Ensuring the new system captures specific demographic and impact metrics required by donors; streamlining the extraction of data for annual impact reports to secure future funding for the center.", "personality": "Highly analytical and detail-oriented, Anita communicates with precision and expects data-driven answers. She is often under pressure to meet submission deadlines for municipal and private grants." },
-    { "kind": "stakeholder", "name": "Kevin Park", "role": "Grant Manager", "objectives": "To ensure the platform generates accurate, audit-ready reports that prove the center's impact to donors and grant-making organizations.", "personality": "Analytical and precise; he values data integrity and is focused on the long-term financial sustainability of the center." },
-    { "kind": "stakeholder", "name": "Grant & Associates", "role": "External Funding & Compliance Auditor", "objectives": "To verify the accuracy of volunteer hour logs and ensure the Community Center meets the strict reporting requirements necessary for continued grant disbursement.", "personality": "Formal, data-driven, and exacting; they communicate primarily through official audit requests and standardized reporting templates." },
-    { "kind": "stakeholder", "name": "State Department of Social Services", "role": "Regulatory & Compliance Body", "objectives": "To ensure that the management of sensitive volunteer data, specifically background checks and emergency contacts, adheres to state privacy laws and security standards.", "personality": "Formal, authoritative, and detail-oriented; communicates through official mandates and compliance guidelines." }
-  ],
-  "activeStage": "Frame",
+  "activeStage": "Reflect",
   "constraints": [
-    { "name": "Data Privacy Regulations", "description": "The system must comply with local data protection laws regarding the storage of personally identifiable information (PII) and background check results." },
-    { "name": "Limited Operational Budget", "description": "Monthly hosting and third-party API costs (like Auth or Email services) must not exceed $40 USD." },
-    { "name": "Fixed Launch Deadline", "description": "The MVP (Minimum Viable Product) must be fully deployed and tested before the Annual Fall Festival, which is exactly 8 weeks away." }
+    {
+      "name": "Data Privacy Compliance",
+      "description": "The system must strictly adhere to PII protection standards for donor contact and financial information."
+    },
+    {
+      "name": "Fixed Launch Deadline",
+      "description": "The application must be fully deployed and tested within 10 weeks, ahead of the annual 'Holiday Giving' campaign."
+    },
+    {
+      "name": "Web Accessibility (WCAG 2.1 AA)",
+      "description": "The interface must be usable by diverse community members, including those using screen readers or keyboard-only navigation."
+    },
+    {
+      "name": "Zero-Downtime Migration",
+      "description": "The transition from the spreadsheet-based system to the web app must occur without interrupting daily food distribution operations."
+    }
   ],
   "stakeholders": [
-    { "name": "Elena Rodriguez", "role": "Executive Director", "objectives": "Wants a professional system that improves the center's image and provides accurate data for annual reports.", "personality": "Visionary but budget-conscious; speaks in terms of community impact and long-term sustainability." },
-    { "name": "Mark Thompson", "role": "Volunteer Coordinator", "objectives": "Needs to reduce the time spent on manual data entry and communication by at least 50%.", "personality": "Overwhelmed and pragmatic; values efficiency and ease of use over complex features." },
-    { "name": "Sarah Chen", "role": "IT Consultant / Mentor", "objectives": "Ensures the system is built to modern standards and won't become a 'legacy nightmare' for the next developer.", "personality": "Technical and rigorous; asks tough questions about security, scalability, and code maintainability." },
-    { "name": "David Miller", "role": "Frequent Volunteer", "objectives": "Wants to sign up for shifts in under 30 seconds and be confident his personal data is safe.", "personality": "Tech-savvy but impatient; uses a five-year-old smartphone as his primary device." }
+    {
+      "name": "Elena Rodriguez",
+      "role": "Executive Director",
+      "objectives": "Wants a professional-looking site that increases donor engagement and proves the organization's transparency to grant-makers.",
+      "personality": "Visionary and high-level; focuses on community impact and budget adherence rather than technical implementation details."
+    },
+    {
+      "name": "Marcus Chen",
+      "role": "Operations Manager",
+      "objectives": "Needs a reliable way to track inventory levels in real-time to prevent food waste and ensure distribution centers are stocked.",
+      "personality": "Pragmatic and detail-oriented; values efficiency and data accuracy above all else."
+    },
+    {
+      "name": "Sarah Jenkins",
+      "role": "Volunteer Coordinator",
+      "objectives": "Wants to reduce the administrative burden of manual scheduling and ensure volunteers find the sign-up process frictionless.",
+      "personality": "Empathetic and social; communicates frequently and cares deeply about the user experience for non-technical volunteers."
+    },
+    {
+      "name": "David Miller",
+      "role": "IT Consultant & Board Member",
+      "objectives": "Ensures the system follows industry best practices, is secure against SQL injection and XSS, and won't be a burden to maintain after the initial launch.",
+      "personality": "Technical and skeptical; asks pointed questions about security, data persistence, and long-term maintenance."
+    }
   ],
   "conversations": {
-    "identified:0": [
-      { "role": "user", "text": "who are the major stakeholders that I should be aware of?", "stage": "Frame" },
-      { "role": "model", "text": "From my perspective as Executive Director, we have three critical groups to satisfy:\n\n1.  **Our Volunteers:** They are the lifeblood of this center. They need a seamless, accessible experience to engage with our mission.\n2.  **Administrative Staff:** They require a centralized system to eliminate the current spreadsheet chaos and improve operational efficiency.\n3.  **Grant Funders:** Our financial stability depends on providing them with precise, verifiable data regarding our community impact.\n\nBeyond these, we must consider the **community members** we serve; their safety and the center's reputation depend on our ability to securely manage sensitive data like background checks and emergency protocols." },
-      { "role": "user", "text": "great. Can you share the name of one of the volunteers?", "stage": "Frame" },
-      { "role": "model", "text": "I cannot share specific volunteer names at this stage. Protecting the privacy and personal data of our 500+ volunteers is a top priority for the center and a key requirement for this project. For your development and testing phases, you should utilize anonymized personas.\n\nWhat is critical from my perspective is how the system handles this sensitive information. How do you plan to ensure that fields like background check statuses and emergency contact details are restricted only to authorized administrators while remaining invisible to other volunteers?" },
-      { "role": "user", "text": "who represents the administrative staff?", "stage": "Frame" },
-      { "role": "model", "text": "You will primarily be coordinating with **Marcus Thorne**, our Volunteer Coordinator. He manages the day-to-day logistics and is currently the person most burdened by our fragmented spreadsheet system.\n\nMarcus represents the operational heart of the project. He needs the dashboard to be intuitive enough for quick approvals and robust enough to generate the complex impact reports our funders demand. From a strategic standpoint, if Marcus cannot pull accurate data in minutes rather than days, our funding—and by extension, our mission—is at risk." },
-      { "role": "user", "text": "who is the stakeholder that represents the volunteers?", "stage": "Frame" },
-      { "role": "model", "text": "You should consult with **Sarah Jenkins**, the Chair of our Volunteer Advisory Committee. Sarah has been with the center for six years and represents the diverse needs and technical abilities of our volunteer base.\n\nFrom a strategic standpoint, Sarah’s feedback is vital for ensuring high adoption rates. If the interface isn't intuitive or fails our accessibility standards, volunteers will revert to manual communication, which undermines our goal of a centralized, secure system. She is particularly focused on the mobile experience, as most of our volunteers sign up for shifts while on the go. Ensuring she is satisfied is key to the project's success." },
-      { "role": "user", "text": "And who represents the grant funders?", "stage": "Frame" },
-      { "role": "model", "text": "I serve as the primary liaison for our funding partners, but **David Chen**, our Board Treasurer, represents their interests regarding financial accountability and data integrity.\n\nDavid is particularly concerned with the \"audit trail.\" For our grant reporting, it isn’t enough to just show the total hours; we must be able to prove that those hours were verified and approved by staff. Any discrepancy in our reports could jeopardize our current funding and future eligibility. From a strategic perspective, the application must generate exportable, high-fidelity reports that meet strict regulatory and audit standards." },
-      { "role": "user", "text": "are there any other stakeholders I should be aware of?", "stage": "Frame" },
-      { "role": "model", "text": "Lastly, we have our **Legal and Compliance Liaison**. They define the protocols for handling sensitive data, specifically the background check statuses.\n\nFrom my perspective, we must also consider the **Community Beneficiaries**. While they don't use the portal directly, the integrity of our vetting process—facilitated by your software—directly impacts their safety. If the system fails to manage background check statuses accurately, it places our most vulnerable community members at risk. My priority is ensuring that the 'CommunityConnect' platform serves as a shield for those we help, not just a tool for those who work here." },
-      { "role": "user", "text": "great who is that?", "stage": "Frame" },
-      { "role": "model", "text": "That would be **Linda Wu**, our Legal Counsel. She oversees our risk management and ensures that our data handling practices—specifically regarding background check results and PII (Personally Identifiable Information)—align with state regulations and privacy laws.\n\nFrom a strategic standpoint, Linda is the gatekeeper for our liability. If the system doesn't meet her standards for data encryption and role-based access controls, we cannot move to production. She will be reviewing your security architecture to ensure we are protected against data breaches that could compromise our volunteers' privacy and the center's legal standing." },
-      { "role": "user", "text": "That is really helpful. Who can I talk to in order to consider the Community Beneficiaries?", "stage": "Frame" },
-      { "role": "model", "text": "You should speak with **Anita Desai**, our Director of Programs. She oversees the various initiatives—from the food pantry to the after-school tutoring—where our volunteers are deployed.\n\nAnita's primary concern is the quality and safety of the services provided to our neighbors. From a strategic perspective, she needs the system to ensure that only volunteers with the correct certifications and cleared background checks are assigned to sensitive roles. Her insights will help you understand the real-world impact of the software; if the system fails to match the right volunteer to the right need, our community beneficiaries are the ones who feel the consequences." },
-      { "role": "user", "text": "I think I have identified all of the stakeholders, but I want to make sure I didn't miss anyone", "stage": "Frame" },
-      { "role": "model", "text": "You have identified the core leadership and user representatives. However, you should also consult with **Kevin Park**, our IT Systems Administrator.\n\nWhile I focus on the mission, Kevin focuses on **sustainability**. He manages our existing infrastructure and will be responsible for the long-term hosting and maintenance of 'CommunityConnect' once your work is complete. From a strategic standpoint, the application must align with our technical capacity to ensure it remains operational without requiring constant, expensive external support.\n\nBeyond Kevin, keep the **External Auditors** in mind. While they are not daily users, the \"audit trail\" features David Chen requested must meet their specific standards for data veracity during our annual reviews. If the system cannot produce a clean, verifiable history of our operations, we risk our standing with the state." },
-      { "role": "user", "text": "who are the external auditors?", "stage": "Frame" },
-      { "role": "model", "text": "We typically work with **Grant & Associates**, the firm contracted for our annual independent financial and operational audits. Additionally, we are subject to oversight by the **State Department of Social Services** because we receive public funding for our youth and senior programs.\n\nFrom a strategic perspective, these auditors are the ultimate judges of the system's data integrity. While they won't use the portal daily, they will scrutinize the reports and logs it generates. If the system lacks a clear, immutable audit trail—showing exactly when a background check was verified or who approved a volunteer's hours—we risk our accreditation and our funding. Your architecture must ensure that data is not just secure, but also verifiable and transparent for these external reviews." },
-      { "role": "user", "text": "do we have any constraints besides the PPI concern, monthly budget of $40, and the launch 8 weeks away?", "stage": "Frame" },
-      { "role": "model", "text": "Besides the timeline and budget, you must prioritize **accessibility (WCAG compliance)**. Many of our volunteers and beneficiaries use assistive technologies; if the portal isn't accessible, we are failing our mission and potentially violating the law. \n\nAdditionally, the system must be **mobile-first**. Our volunteers are often in the field and won't have access to desktops. Finally, you must account for **performance scalability**. During major local events, like our annual \"Green Valley Clean-Up,\" traffic to the portal spikes significantly. The system cannot crash when we need it most. \n\nFrom my perspective, these aren't just features—they are requirements for maintaining our community's trust and our operational reliability. Does your technical plan account for these performance and inclusivity standards?" },
-      { "role": "user", "text": "OK. That is good to know. How many concurrent users are you planning on having?", "stage": "Frame" },
-      { "role": "model", "text": "On a typical day, we expect low volume—perhaps 20 to 30 volunteers logging hours or checking schedules intermittently. However, our strategic concern is the **surge capacity**.\n\nDuring major mobilization efforts like the \"Green Valley Clean-Up,\" we need the system to handle upwards of **150 to 200 concurrent users** without performance degradation. If the application lags or crashes when 200 volunteers are trying to check their shift locations simultaneously, it creates an operational bottleneck that compromises the event's success. \n\nFrom my perspective, the system must be resilient enough to handle these spikes while remaining cost-effective. Kevin Park will be looking closely at how your architecture manages these peak loads within our $40 monthly hosting budget." },
-      { "role": "user", "text": "Honestly I think $40 for that type of load is not achiveable.", "stage": "Frame" },
-      { "role": "model", "text": "I appreciate your honesty. This budget was established by David Chen, our Board Treasurer, based on our current operational overhead and grant limitations. \n\nFrom a strategic perspective, we cannot compromise on reliability during peak events, but we must also remain fiscally responsible. If $40 is truly insufficient for a peak load of 200 concurrent users, I need a clear, technical justification to present to the board. \n\nAre there specific architectural strategies—such as serverless components or optimized database queries—that could help us stay within this limit? If you believe an increase is unavoidable, what is the minimum viable budget required to ensure the system doesn't fail during a community crisis? My priority is a stable platform that doesn't drain resources away from our core programs." }
-    ],
-    "identified:1": [
-      { "role": "user", "text": "Sarah, good to meet you. Elena told me that we have a budget of $40/month. I don't see how we can stay in that budget without sacrificing data resilience. A single MsSQL DB on AWS costs at least $200 a month if you want to have a redundant pair", "stage": "Frame" },
-      { "role": "model", "text": "It’s good to meet you. You’re right to be concerned—budget constraints often dictate our architectural choices. However, leaning on a traditional MsSQL setup on AWS RDS might be overkill for our current scale and budget. \n\nFor a community-driven project like this, we should look into **PostgreSQL** or even **Serverless database** options. Many managed providers offer \"Hobby\" or \"Pro\" tiers that include automated backups and point-in-time recovery for under $20 or even within a free tier, provided our data volume stays within reasonable limits.\n\nBefore we commit to a provider, let’s talk about our data model. What is our projected volume for the first six months? If we right-size our infrastructure, we can maintain high availability without breaking the bank. What are your thoughts on using an open-source engine instead of MsSQL?" },
-      { "role": "user", "text": "I guess if we are ok with data loss due to a critical failure of a single resource we might be able to work with that budget.", "stage": "Frame" },
-      { "role": "model", "text": "Data loss is a non-starter for CommunityConnect, especially given the sensitive nature of the volunteer data we're handling. We need to distinguish between **High Availability** (uptime) and **Durability** (data safety).\n\nWhile a multi-region, hot-standby setup is expensive, we can achieve high durability on a budget. Many managed PostgreSQL providers offer automated daily snapshots and Write-Ahead Logging (WAL) archived to durable storage like S3. If a single resource fails, we might face a short period of downtime to restore, but the data itself remains protected.\n\nBefore we compromise on resilience, let's look at managed options that include automated backups in their entry-level tiers. Are you wedded to the Microsoft ecosystem, or are you open to exploring PostgreSQL? It might give us more breathing room in the budget for those essential security features." }
-    ],
-    "identified:4": [
-      { "role": "user", "text": "Tell me what you are concerned about with the Portal project?", "stage": "Frame" },
-      { "role": "model", "text": "My primary concern is the transition of **Personally Identifiable Information (PII)** from fragmented spreadsheets to a centralized database. We are handling sensitive background check statuses and emergency contact details; any leak would be a catastrophic breach of trust and a significant legal liability.\n\nSpecifically, I am looking at three critical areas:\n1.  **Data Encryption:** How are we protecting this data both at rest and in transit, especially given the \"mobile-first\" requirement where volunteers might use unsecured public Wi-Fi?\n2.  **Access Control:** We need a strict Role-Based Access Control (RBAC) model. Administrators should only access the minimum data necessary for their specific tasks.\n3.  **Regulatory Compliance:** We must ensure our storage and retention policies align with data privacy laws regarding sensitive personal history.\n\nWe can't afford to treat security as an afterthought in the development lifecycle." }
+    "stakeholder:0": [
+      {
+        "role": "user",
+        "text": "who are marcus and sarah?",
+        "stage": "Research"
+      },
+      {
+        "role": "model",
+        "text": "They are the heart of our daily operations here at Community Harvest.\n\n**Marcus** is our Volunteer Coordinator. He's the one currently drowning in paper sign-up sheets and frantic phone calls. He needs this system to streamline shift scheduling so he can spend more time in the community and less time fixing calendar overlaps.\n\n**Sarah** is our Operations Lead. She oversees the warehouse and inventory. Right now, she’s struggling with discrepancies between what’s on our spreadsheets and what’s actually on the shelves. She needs those real-time updates and reporting tools to ensure we can provide accurate data to our grant-makers and show exactly how we’re serving the neighborhood.\n\nThey’ll be your primary points of contact for the \"Staff\" side of the application."
+      },
+      {
+        "role": "user",
+        "text": "can you introduce me to them?",
+        "stage": "Research"
+      },
+      {
+        "role": "model",
+        "text": "I’d be happy to. I’ve told them both that you’re here to help us modernize.\n\n**Marcus** is usually in the volunteer lounge. He’s eager to show you how the current scheduling chaos is affecting our ability to staff the mobile pantry. He’s looking for a professional interface that makes our volunteers feel like they’re part of a top-tier organization.\n\n**Sarah** is down in the warehouse. She’s my right hand when it comes to accountability. For her, this project is about integrity—she needs to know that when a donor asks where their contribution went, we have the data to show them immediately.\n\nThey are both available for a brief walkthrough of their current workflows. Would you like to start with Marcus to discuss the volunteer experience, or head to the warehouse to see Sarah’s inventory challenges?"
+      },
+      {
+        "role": "user",
+        "text": "are there other people I should meet?",
+        "stage": "Reflect"
+      },
+      {
+        "role": "model",
+        "text": "While Marcus and Sarah handle the internal side, you should definitely keep our **Donors** in mind. I’d suggest speaking with **Mrs. Gable**; she’s been a loyal contributor for years and represents the community members we rely on. If the new system makes it difficult for someone like her to schedule a drop-off, our intake will suffer.\n\nAlso, remember that I answer to our **Board of Directors** and our **Grant-makers**. While you won't meet them daily, the \"professionalism\" of the site and the accuracy of the reports are for them. They need to see that we are a modern, transparent operation worthy of continued funding. \n\nWould you like to focus on the public-facing donor portal first, or stick with the internal staff requirements for now?"
+      }
     ]
   }
 }
