@@ -57,13 +57,9 @@ export default function DraInvestigation({ targets, conversations, onSendMessage
           {messages.map((m, i) => (
             <div key={i} ref={i === messages.length - 1 ? lastMessageRef : null} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`rounded-lg px-3 py-2 max-w-[80%] break-words ${m.role === 'user' ? 'border-2 border-blue-500 text-gray-800' : 'border-2 border-gray-400'}`}>
-                {m.role === 'user' ? (
-                  <p className="text-sm">{m.text}</p>
-                ) : (
-                  <div className="markdown-body text-sm">
-                    <Markdown learningSession={learningSession} content={m.text} />
-                  </div>
-                )}
+                <div className="markdown-body text-sm">
+                  <Markdown learningSession={learningSession} content={m.text} />
+                </div>
               </div>
             </div>
           ))}
