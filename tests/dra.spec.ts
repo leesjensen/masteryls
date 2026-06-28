@@ -139,6 +139,33 @@ function installScenarioGemini(page: any, scenario: any = SCENARIO, chatReply: s
   });
 }
 
+function installScenarioSequenceGemini(page: any, scenarios: any[], chatReply: string = STAKEHOLDER_REPLY, evaluation: any = EVALUATION, coaching: any = COACHING) {
+  let scenarioIndex = 0;
+  page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    const body = route.request().postDataJSON()?.body;
+    const promptText = body?.contents?.[0]?.parts?.[0]?.text || '';
+    let text: string;
+    if (body?.system_instruction) {
+      text = chatReply;
+    } else if (/observation and assessment agent/i.test(promptText)) {
+      text = JSON.stringify(evaluation);
+    } else if (/encouraging coach/i.test(promptText)) {
+      text = JSON.stringify(coaching);
+    } else {
+      const nextScenario = scenarios[Math.min(scenarioIndex, scenarios.length - 1)];
+      scenarioIndex += 1;
+      text = JSON.stringify(nextScenario);
+    }
+    await route.fulfill({
+      json: { candidates: [{ content: { parts: [{ text }], role: 'model' }, finishReason: 'STOP' }] },
+    });
+  });
+}
+
 test('dra learner view renders the title and learning outcomes without authoring details', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
   installDraRoutes(page, draMarkdown());
@@ -147,7 +174,6 @@ test('dra learner view renders the title and learning outcomes without authoring
   await page.getByText('Reasoning Lab').click();
 
   await expect(page.getByRole('heading', { name: 'Reasoning Lab', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Learning Outcomes', exact: true })).toBeVisible();
   await expect(page.getByText('Demonstrate systems thinking and evidence-based decisions.')).toBeVisible();
   // Authoring parameters (discipline, problem type, difficulty, ...) are not shown to the learner.
   await expect(page.getByText('Software Engineering')).toHaveCount(0);
@@ -201,7 +227,18 @@ test('dra hardest difficulty reveals only the high-level summary', async ({ page
 test('dra practice mode can start a new scenario after completing', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
   installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false }));
-  installScenarioGemini(page);
+  installScenarioSequenceGemini(page, [
+    SCENARIO,
+    {
+      ...SCENARIO,
+      scenario: {
+        ...SCENARIO.scenario,
+        title: 'Benefits Enrollment Recovery',
+        summary: 'A city needs to recover a failing benefits enrollment launch.',
+        description: 'The city must stabilize a new benefits enrollment portal after widespread errors blocked applications.',
+      },
+    },
+  ]);
 
   await navigateToCourse(page);
   await page.getByText('Reasoning Lab').click();
@@ -215,6 +252,13 @@ test('dra practice mode can start a new scenario after completing', async ({ pag
   await page.getByRole('button', { name: 'Start new scenario' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
   await expect(page.getByText('Assessment complete')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Benefits Enrollment Recovery', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Tax System Modernization (Completed)' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Tax System Modernization (Completed)' }).click();
+  await expect(page.getByText('Assessment complete')).toBeVisible();
+  await page.getByRole('button', { name: 'Scenario', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
 });
 
 test('dra final mode confirms start and locks the scenario', async ({ page }) => {
@@ -251,15 +295,9 @@ test('dra with both modes lets the learner practice then enter the final assessm
   await page.getByRole('button', { name: 'Generate scenario' }).click();
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
 
-  // While practicing, the learner can cancel or choose to enter the final assessment.
+  // Once a practice scenario is active, the learner must finish or cancel it before starting final.
   await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
-  page.once('dialog', async (dialog) => {
-    await dialog.accept();
-  });
-  await page.getByRole('button', { name: 'Start final assessment' }).click();
-
-  await expect(page.getByText('the scenario is locked', { exact: false })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start final assessment' })).toHaveCount(0);
 });
 
 test('dra investigation lets the learner interview a stakeholder and record reasoning', async ({ page }) => {
@@ -271,28 +309,27 @@ test('dra investigation lets the learner interview a stakeholder and record reas
   await page.getByText('Reasoning Lab').click();
   await page.getByRole('button', { name: 'Generate scenario' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Investigation', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Investigation' }).click();
+  await expect(page.getByRole('button', { name: 'Investigation' })).toBeVisible();
 
   // Stages structure the investigation; the first stage's interpretation shows by default.
-  await expect(page.getByRole('heading', { name: 'Stages', exact: true })).toBeVisible();
   await expect(page.getByText('Clarify the stakeholders and constraints.')).toBeVisible();
   await page.getByRole('button', { name: 'Research', exact: true }).click();
   await expect(page.getByText('Gather the system requirements.')).toBeVisible();
 
   // The first revealed target (a stakeholder) is auto-selected; ask it a question.
-  const chatInput = page.getByPlaceholder('Ask Dana Cole...');
+  const chatInput = page.getByPlaceholder('Ask Dana Cole…');
   await expect(chatInput).toBeVisible();
   await chatInput.fill('What worries you most?');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
 
-  await expect(page.getByText('What worries you most?')).toBeVisible();
-  await expect(page.getByText('Downtime is our biggest concern.')).toBeVisible();
+  await expect(page.getByRole('main')).toContainText('What worries you most?');
+  await expect(page.getByRole('main')).toContainText('Downtime is our biggest concern.');
 
   // The reasoning record captures and retains the learner's input.
-  const understanding = page.getByLabel('Current understanding');
+  const understanding = page.locator('.ProseMirror').last();
   await understanding.fill('The agency fears downtime during migration.');
-  await understanding.blur();
-  await expect(understanding).toHaveValue('The agency fears downtime during migration.');
+  await expect(understanding).toContainText('The agency fears downtime during migration.');
 });
 
 test('dra practice mode evaluates progress across the three dimensions with drill-down', async ({ page }) => {
@@ -304,9 +341,9 @@ test('dra practice mode evaluates progress across the three dimensions with dril
   await page.getByText('Reasoning Lab').click();
   await page.getByRole('button', { name: 'Generate scenario' }).click();
 
+  await page.getByRole('button', { name: 'Evaluation' }).click();
   await page.getByRole('button', { name: 'Evaluate my progress' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Evaluation', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Process', exact: true })).toBeVisible();
   await expect(page.getByText('Solid framing of the problem.')).toBeVisible();
 
@@ -327,9 +364,9 @@ test('dra practice mode provides coaching with hints and suggestions', async ({ 
   await page.getByText('Reasoning Lab').click();
   await page.getByRole('button', { name: 'Generate scenario' }).click();
 
+  await page.getByRole('button', { name: 'Coaching', exact: true }).click();
   await page.getByRole('button', { name: 'Get coaching' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Coaching', exact: true })).toBeVisible();
   await expect(page.getByText('Good start clarifying constraints.')).toBeVisible();
   await expect(page.getByText('Quantify the downtime tolerance.')).toBeVisible();
   await expect(page.getByText('Interview the operations lead about cutover windows.')).toBeVisible();
@@ -348,7 +385,7 @@ test('dra final mode does not offer coaching during the run', async ({ page }) =
   });
   await page.getByRole('button', { name: 'Start final assessment' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Investigation', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Investigation', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Get coaching' })).toHaveCount(0);
 });
 

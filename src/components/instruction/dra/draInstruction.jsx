@@ -97,11 +97,49 @@ function ScenarioView({ details, difficulty, learningSession }) {
   );
 }
 
+function createEmptyDraState() {
+  return {
+    details: { state: 'notStarted' },
+    practiceScenarios: [],
+    selectedPracticeScenarioId: null,
+  };
+}
+
+function normalizeDraState(state) {
+  const base = createEmptyDraState();
+  if (!state || typeof state !== 'object') {
+    return base;
+  }
+
+  const details = state.details && typeof state.details === 'object' ? state.details : base.details;
+  const practiceScenarios = Array.isArray(state.practiceScenarios)
+    ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId)
+    : [];
+  const selectedPracticeScenarioId =
+    typeof state.selectedPracticeScenarioId === 'string' && practiceScenarios.some((item) => item.scenarioRunId === state.selectedPracticeScenarioId) ? state.selectedPracticeScenarioId : null;
+
+  return {
+    details,
+    practiceScenarios,
+    selectedPracticeScenarioId,
+  };
+}
+
+function formatScenarioLabel(details, index) {
+  const title = details?.scenario?.title || `Practice scenario ${index + 1}`;
+  const status = details?.state === 'completed' ? 'Completed' : details?.state === 'inProgress' ? 'In progress' : 'Draft';
+  return `${title} (${status})`;
+}
+
+function findInProgressPracticeScenario(practiceScenarios) {
+  return (practiceScenarios || []).find((scenario) => scenario?.mode === 'practice' && scenario?.state === 'inProgress') || null;
+}
+
 export default function DraInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const [markdown, setMarkdown] = React.useState(content || '');
-  const [draState, setDraState] = React.useState({ details: { state: 'notStarted' } });
+  const [draState, setDraState] = React.useState(createEmptyDraState());
   const [loading, setLoading] = React.useState(true);
-  const [busy, setBusy] = React.useState(false);
+  const [busyAction, setBusyAction] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
   const [isDirty, setIsDirty] = React.useState(false);
   const [evaluating, setEvaluating] = React.useState(false);
@@ -129,10 +167,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       try {
         if (!isPreview && user && learningSession?.enrollment) {
           const state = await courseOps.getDraState();
-          const ds = state.details || {};
+          const normalizedState = normalizeDraState(state);
+          const ds = normalizedState.details || {};
           // Prevent the state-change effect below from overriding our tab restoration.
           prevStateRef.current = ds.state;
-          setDraState(state);
+          setDraState(normalizedState);
 
           const uiSettings = courseId && topicId ? courseOps.getEnrollmentUiSettings(courseId) : null;
 
@@ -158,6 +197,13 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   const params = React.useMemo(() => parseDraMarkdown(markdown), [markdown]);
   const details = draState.details || { state: 'notStarted' };
+  const practiceScenarios = draState.practiceScenarios || [];
+  const selectedPracticeScenarioId = draState.selectedPracticeScenarioId || null;
+  const busy = busyAction !== null;
+  const inProgressPracticeScenario = findInProgressPracticeScenario(practiceScenarios);
+  const hasScenarioInProgress = Boolean(inProgressPracticeScenario);
+  const viewingPreviousScenario = Boolean(inProgressPracticeScenario?.scenarioRunId && details?.scenarioRunId && details.scenarioRunId !== inProgressPracticeScenario.scenarioRunId);
+  const draReadOnly = isObserveReadOnly || viewingPreviousScenario;
 
   function selectTab(tab) {
     setActiveTab(tab);
@@ -172,30 +218,85 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (prevStateRef.current !== details.state) {
       prevStateRef.current = details.state;
       if (details.state === 'inProgress') selectTab('scenario');
-      if (details.state === 'completed') selectTab('evaluation');
       if (details.state === 'notStarted') selectTab('overview');
     }
   }, [details.state]);
 
-  function setLocalDetails(nextDetails) {
-    setDraState({ details: nextDetails });
+  function applyStateUpdate(nextDetails, options = {}) {
+    const {
+      selectPracticeScenarioId = nextDetails?.mode === 'practice' ? nextDetails?.scenarioRunId || null : null,
+      preserveSelection = false,
+    } = options;
+
+    setDraState((prev) => {
+      const current = normalizeDraState(prev);
+      let nextPracticeScenarios = current.practiceScenarios;
+      let nextSelectedPracticeScenarioId = preserveSelection ? current.selectedPracticeScenarioId : current.selectedPracticeScenarioId;
+
+      if (nextDetails?.mode === 'practice' && nextDetails?.scenarioRunId) {
+        const existingIndex = current.practiceScenarios.findIndex((item) => item.scenarioRunId === nextDetails.scenarioRunId);
+        if (existingIndex === -1) {
+          nextPracticeScenarios = [...current.practiceScenarios, nextDetails];
+        } else {
+          nextPracticeScenarios = current.practiceScenarios.map((item, index) => (index === existingIndex ? nextDetails : item));
+        }
+        nextSelectedPracticeScenarioId = selectPracticeScenarioId ?? nextDetails.scenarioRunId;
+      } else if (!preserveSelection && nextDetails?.mode !== 'practice') {
+        nextSelectedPracticeScenarioId = current.selectedPracticeScenarioId;
+      }
+
+      if (preserveSelection && current.selectedPracticeScenarioId) {
+        nextSelectedPracticeScenarioId = current.selectedPracticeScenarioId;
+      }
+
+      return {
+        details: nextDetails,
+        practiceScenarios: nextPracticeScenarios,
+        selectedPracticeScenarioId: nextSelectedPracticeScenarioId,
+      };
+    });
     setIsDirty(true);
   }
 
   // Auto-saves without marking dirty — used for definitive actions (generate, cancel, complete).
-  async function autoSave(nextDetails) {
-    setDraState({ details: nextDetails });
+  async function autoSaveState(nextState) {
+    const normalizedState = normalizeDraState(nextState);
+    setDraState(normalizedState);
     setIsDirty(false);
-    if (!isObserveReadOnly) {
-      await courseOps.saveDraState(nextDetails);
+    if (!draReadOnly) {
+      await courseOps.saveDraState(normalizedState);
     }
   }
 
+  async function autoSaveDetails(nextDetails, options = {}) {
+    const current = normalizeDraState(draState);
+    let nextPracticeScenarios = current.practiceScenarios;
+    let nextSelectedPracticeScenarioId = current.selectedPracticeScenarioId;
+
+    if (nextDetails?.mode === 'practice' && nextDetails?.scenarioRunId) {
+      const existingIndex = current.practiceScenarios.findIndex((item) => item.scenarioRunId === nextDetails.scenarioRunId);
+      if (existingIndex === -1) {
+        nextPracticeScenarios = [...current.practiceScenarios, nextDetails];
+      } else {
+        nextPracticeScenarios = current.practiceScenarios.map((item, index) => (index === existingIndex ? nextDetails : item));
+      }
+      nextSelectedPracticeScenarioId = options.selectPracticeScenarioId ?? nextDetails.scenarioRunId;
+    } else if (options.clearSelectedPracticeScenarioId) {
+      nextSelectedPracticeScenarioId = null;
+    }
+
+    await autoSaveState({
+      details: nextDetails,
+      practiceScenarios: nextPracticeScenarios,
+      selectedPracticeScenarioId: nextSelectedPracticeScenarioId,
+    });
+  }
+
   async function handleSave() {
-    if (!isDirty || saving || isObserveReadOnly) return;
+    if (!isDirty || saving || draReadOnly) return;
     setSaving(true);
     try {
-      await courseOps.saveDraState(details);
+      await courseOps.saveDraState(draState);
       setIsDirty(false);
     } catch {
       alert('Unable to save. Please try again.');
@@ -216,7 +317,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [isDirty]);
 
   function selectStage(stage) {
-    if (isObserveReadOnly || activeStage === stage) return;
+    if (draReadOnly || activeStage === stage) return;
     setActiveStage(stage);
     if (courseId && topicId) {
       courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: stage });
@@ -249,19 +350,19 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const key = target.key;
     const conversations = details.conversations || {};
     const withUser = [...(conversations[key] || []), { role: 'user', text, stage: activeStage }];
-    setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
+    applyStateUpdate({ ...details, conversations: { ...conversations, [key]: withUser } });
 
     try {
       const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser, details.stakeholders || [], details.resources || []);
       const nextConversations = { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] };
       const newTargets = detectNewTargets(reply, details);
-      setLocalDetails({
+      applyStateUpdate({
         ...details,
         conversations: nextConversations,
         ...(newTargets.length > 0 && { identified: [...(details.identified || []), ...newTargets] }),
       });
     } catch {
-      setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
+      applyStateUpdate({ ...details, conversations: { ...conversations, [key]: withUser } });
       alert('The interview partner could not respond. Please try again.');
     }
   }
@@ -269,18 +370,19 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   function updateStageNote(stage, value) {
     const current = details.stageNotes?.[stage] || '';
     if (value.trim() === current.trim()) return;
-    setLocalDetails({ ...details, stageNotes: { ...(details.stageNotes || {}), [stage]: value } });
+    applyStateUpdate({ ...details, stageNotes: { ...(details.stageNotes || {}), [stage]: value } });
   }
 
   async function generateScenario(runMode = 'practice') {
-    if (isObserveReadOnly || busy) return;
-    setBusy(true);
+    if (draReadOnly || busy) return;
+    setBusyAction(runMode === 'practice' ? 'generatePractice' : 'startFinal');
     try {
       const generated = await courseOps.generateDraScenario(params);
       const stages = generated?.stages || [];
       const primaryStakeholder = generated?.stakeholders?.[0];
       const stageNotes = Object.fromEntries(stages.map((s) => [s.stage, `# ${s.stage}\n\n`]));
       const firstStage = stages[0]?.stage || '';
+      const scenarioRunId = crypto.randomUUID();
       setActiveStage(firstStage);
       if (courseId && topicId && firstStage) {
         courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: firstStage });
@@ -288,6 +390,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       const nextDetails = {
         state: 'inProgress',
         mode: runMode,
+        scenarioRunId,
+        createdAt: new Date().toISOString(),
         difficulty: params.difficulty,
         scenario: generated?.scenario || {},
         constraints: generated?.constraints || [],
@@ -297,24 +401,28 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         stageNotes,
         identified: primaryStakeholder ? [{ ...primaryStakeholder, kind: 'stakeholder' }] : [],
       };
-      await autoSave(nextDetails);
+      await autoSaveDetails(nextDetails, { selectPracticeScenarioId: runMode === 'practice' ? scenarioRunId : selectedPracticeScenarioId });
       await courseOps.addProgress(null, null, 'dra', 0, { state: 'inProgress', mode: runMode });
     } catch {
       alert('Unable to generate a scenario. Please try again.');
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
   async function startFinal() {
-    if (isObserveReadOnly || busy) return;
+    if (draReadOnly || busy) return;
     if (!window.confirm('Start the final assessment? Once it begins the scenario is locked and must be completed.')) return;
     await generateScenario('final');
   }
 
   async function cancelScenario() {
-    if (isObserveReadOnly || busy) return;
-    await autoSave({ state: 'notStarted' });
+    if (draReadOnly || busy) return;
+    await autoSaveState({
+      details: { state: 'notStarted' },
+      practiceScenarios,
+      selectedPracticeScenarioId: null,
+    });
   }
 
   function buildTranscripts(source) {
@@ -335,11 +443,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function requestCoaching() {
-    if (isObserveReadOnly || coaching) return;
+    if (draReadOnly || coaching) return;
     setCoaching(true);
     try {
       const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage);
-      await autoSave({ ...details, coaching: result });
+      await autoSaveDetails({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');
     } finally {
@@ -348,11 +456,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function refreshEvaluation() {
-    if (isObserveReadOnly || evaluating) return;
+    if (draReadOnly || evaluating) return;
     setEvaluating(true);
     try {
       const evaluation = await computeEvaluation(details);
-      await autoSave({ ...details, evaluation });
+      await autoSaveDetails({ ...details, evaluation });
     } catch {
       alert('Unable to evaluate progress right now. Please try again.');
     } finally {
@@ -361,8 +469,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function completeAssessment() {
-    if (isObserveReadOnly || busy) return;
-    setBusy(true);
+    if (draReadOnly || busy) return;
+    setBusyAction('completeAssessment');
     try {
       let evaluation = details.evaluation;
       try {
@@ -371,10 +479,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         // Fall back to the most recent evaluation if the final scoring call fails.
       }
       const completedDetails = { ...details, evaluation, state: 'completed', completedAt: new Date().toISOString() };
-      await autoSave(completedDetails);
+      await autoSaveDetails(completedDetails);
+      selectTab('evaluation');
       await courseOps.addProgress(null, null, 'dra', 0, { state: 'completed', mode: details.mode, completedAt: completedDetails.completedAt });
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
@@ -387,6 +496,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const hasScenario = details.state === 'inProgress' || details.state === 'completed';
   const showCoaching = details.state === 'inProgress' && !locked;
   const showEvaluation = (details.state === 'inProgress' && !locked) || details.state === 'completed';
+  const showPracticeScenarioPicker = params.practiceMode && practiceScenarios.length > 0;
 
   const tabs = [{ id: 'overview', label: 'Overview' }, ...(hasScenario ? [{ id: 'scenario', label: 'Scenario' }] : []), ...(hasScenario ? [{ id: 'investigation', label: 'Investigation' }] : []), ...(showCoaching ? [{ id: 'coaching', label: 'Coaching' }] : []), ...(showEvaluation ? [{ id: 'evaluation', label: 'Evaluation' }] : [])];
 
@@ -406,25 +516,58 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const identifiedTargets = (details.identified || []).map((item, i) => ({ key: `identified:${i}`, type: item.kind || 'stakeholder', ...item })).filter((t) => !revealedNames.has(t.name));
   const targets = [...revealedTargets, ...identifiedTargets];
 
+  function openPracticeScenario(scenarioRunId) {
+    const scenario = practiceScenarios.find((item) => item.scenarioRunId === scenarioRunId);
+    if (!scenario) return;
+    setDraState((prev) => ({
+      ...normalizeDraState(prev),
+      details: scenario,
+      selectedPracticeScenarioId: scenarioRunId,
+    }));
+    setActiveStage(scenario.stages?.[0]?.stage || '');
+    if (scenario.stages?.[0]?.stage && courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: scenario.stages[0].stage });
+    }
+    selectTab('scenario');
+  }
+
   function renderActionButtons() {
     if (isPreview || !user) return null;
+    const actionBannerClass = 'not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3 flex flex-col gap-3 min-h-[5.5rem]';
 
     if (details.state === 'notStarted') {
       return (
         <div className="not-prose mt-4 flex flex-col items-start gap-2">
           <p className="text-sm text-gray-600">{canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}</p>
           {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
+          {showPracticeScenarioPicker && (
+            <div className="w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3">
+              <div className="text-sm font-semibold text-blue-700 mb-2">Saved practice scenarios</div>
+              <div className="flex flex-wrap gap-2">
+                {practiceScenarios.map((scenario, index) => (
+                  <button
+                    key={scenario.scenarioRunId}
+                    type="button"
+                    onClick={() => openPracticeScenario(scenario.scenarioRunId)}
+                    className={`px-3 py-2 rounded border text-sm ${selectedPracticeScenarioId === scenario.scenarioRunId ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}
+                  >
+                    {formatScenarioLabel(scenario, index)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             {canPractice && (
-              <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
-                {busy && <Spinner />}
-                {busy ? 'Generating…' : 'Generate scenario'}
+              <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                {busyAction === 'generatePractice' && <Spinner />}
+                {busyAction === 'generatePractice' ? 'Generating…' : 'Generate scenario'}
               </button>
             )}
             {canFinal && (
-              <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-                {busy && <Spinner />}
-                {busy ? 'Generating…' : 'Start final assessment'}
+              <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                {busyAction === 'startFinal' && <Spinner />}
+                {busyAction === 'startFinal' ? 'Generating…' : 'Start final assessment'}
               </button>
             )}
           </div>
@@ -434,32 +577,32 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
     if (details.state === 'inProgress') {
       return (
-        <div className="not-prose mt-4 flex flex-wrap items-center gap-2">
-          {locked ? (
-            <span className="text-sm text-amber-700">Final assessment — the scenario is locked and must be completed.</span>
-          ) : (
-            <>
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
+        <div className={actionBannerClass}>
+          <div>
+            <div className="text-sm font-bold text-blue-600">Assessment in progress</div>
+            {locked ? (
+              <div className="text-xs text-blue-400">Final assessment — the scenario is locked and must be completed.</div>
+            ) : (
+              <div className="text-xs text-blue-400">You can complete the assessment or save your current work.</div>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {!locked && (
+              <button disabled={draReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
                 Cancel
               </button>
-              {canFinal && (
-                <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-                  {busy && <Spinner />}
-                  {busy ? 'Generating…' : 'Start final assessment'}
-                </button>
-              )}
-            </>
-          )}
-          <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
-            {busy && <Spinner />}
-            Complete assessment
-          </button>
-          {!isObserveReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
-              {saving && <Spinner />}
-              {saving ? 'Saving…' : 'Save'}
+            )}
+            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+              {busyAction === 'completeAssessment' && <Spinner />}
+              Complete assessment
             </button>
-          )}
+            {!draReadOnly && (
+              <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+                {saving && <Spinner />}
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            )}
+          </div>
         </div>
       );
     }
@@ -472,24 +615,24 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             <div className="text-sm font-bold text-blue-600">Assessment complete</div>
             {details.completedAt && <div className="text-xs text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
           </div>
-          {!isObserveReadOnly && (
+          {!draReadOnly && (
             <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
               {saving && <Spinner />}
               {saving ? 'Saving…' : 'Save'}
             </button>
           )}
-          {!wasFinal && (
+          {!wasFinal && !hasScenarioInProgress && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
-                <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
-                  {busy && <Spinner />}
-                  {busy ? 'Generating…' : 'Start new scenario'}
+                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                  {busyAction === 'generatePractice' && <Spinner />}
+                  {busyAction === 'generatePractice' ? 'Generating…' : 'Start new scenario'}
                 </button>
               )}
               {canFinal && (
-                <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-                  {busy && <Spinner />}
-                  {busy ? 'Generating…' : 'Start final assessment'}
+                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                  {busyAction === 'startFinal' && <Spinner />}
+                  {busyAction === 'startFinal' ? 'Generating…' : 'Start final assessment'}
                 </button>
               )}
             </div>
@@ -518,13 +661,30 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       case 'scenario':
         return (
           <div className="mt-4">
+            {showPracticeScenarioPicker && (
+              <div className="not-prose mb-4 rounded border border-blue-200 bg-blue-50 p-3">
+                <div className="text-sm font-semibold text-blue-700 mb-2">Practice scenarios</div>
+                <div className="flex flex-wrap gap-2">
+                  {practiceScenarios.map((scenario, index) => (
+                    <button
+                      key={scenario.scenarioRunId}
+                      type="button"
+                      onClick={() => openPracticeScenario(scenario.scenarioRunId)}
+                      className={`px-3 py-2 rounded border text-sm ${selectedPracticeScenarioId === scenario.scenarioRunId ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}
+                    >
+                      {formatScenarioLabel(scenario, index)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
           </div>
         );
       case 'coaching':
         return (
           <div className="mt-4">
-            <DraCoach coaching={details.coaching} onRequest={requestCoaching} busy={coaching} readOnly={isObserveReadOnly} />
+            <DraCoach coaching={details.coaching} onRequest={requestCoaching} busy={coaching} readOnly={draReadOnly} />
           </div>
         );
       case 'evaluation':
@@ -532,7 +692,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <div className="mt-4">
             {details.state === 'inProgress' && !locked && (
               <div className="not-prose mb-4">
-                <button onClick={refreshEvaluation} disabled={isObserveReadOnly || evaluating} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
+                <button onClick={refreshEvaluation} disabled={draReadOnly || evaluating} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
                   {evaluating && <Spinner className="border-blue-200 border-t-blue-700" />}
                   {evaluating ? 'Evaluating…' : details.evaluation ? 'Update evaluation' : 'Evaluate my progress'}
                 </button>
@@ -546,7 +706,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
-  const investigationReadOnly = details.state === 'completed' || isObserveReadOnly;
+  const investigationReadOnly = details.state === 'completed' || draReadOnly;
 
   return (
     <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">

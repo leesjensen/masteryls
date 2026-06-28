@@ -1237,10 +1237,10 @@ Requirements:
     return { details: { state: 'notStarted' } };
   }
 
-  async function saveDraState(details) {
+  async function saveDraState(state) {
     if (observeSession?.active && learningSession?.observeMode) return;
     if (learningSession?.enrollment && learningSession?.topic) {
-      await service.saveDraState(learningSession.enrollment.id, learningSession.topic.id, { details });
+      await service.saveDraState(learningSession.enrollment.id, learningSession.topic.id, state);
     }
   }
 
