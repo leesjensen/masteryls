@@ -533,7 +533,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   function renderActionButtons() {
     if (isPreview || !user) return null;
-    const actionBannerClass = 'not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3 flex flex-col gap-3 min-h-[5.5rem]';
+    const actionBannerClass = 'not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3';
 
     if (details.state === 'notStarted') {
       return (
@@ -578,30 +578,28 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (details.state === 'inProgress') {
       return (
         <div className={actionBannerClass}>
-          <div>
-            <div className="text-sm font-bold text-blue-600">Assessment in progress</div>
-            {locked ? (
-              <div className="text-xs text-blue-400">Final assessment — the scenario is locked and must be completed.</div>
-            ) : (
-              <div className="text-xs text-blue-400">You can complete the assessment or save your current work.</div>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {!locked && (
-              <button disabled={draReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
-                Cancel
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="text-sm font-bold text-blue-600">Assessment in progress</div>
+              {locked && <div className="text-xs text-blue-400">Final assessment — the scenario is locked and must be completed.</div>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {!locked && (
+                <button disabled={draReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
+                  Cancel
+                </button>
+              )}
+              <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+                {busyAction === 'completeAssessment' && <Spinner />}
+                Complete assessment
               </button>
-            )}
-            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
-              {busyAction === 'completeAssessment' && <Spinner />}
-              Complete assessment
-            </button>
-            {!draReadOnly && (
-              <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
-                {saving && <Spinner />}
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-            )}
+              {!draReadOnly && (
+                <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+                  {saving && <Spinner />}
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       );
