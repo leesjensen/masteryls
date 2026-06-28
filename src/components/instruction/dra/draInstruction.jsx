@@ -131,6 +131,17 @@ function formatScenarioLabel(details, index) {
   return `${title} (${status})`;
 }
 
+function formatScenarioDate(value, fallback) {
+  if (!value) return fallback;
+  return new Date(value).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function findInProgressPracticeScenario(practiceScenarios) {
   return (practiceScenarios || []).find((scenario) => scenario?.mode === 'practice' && scenario?.state === 'inProgress') || null;
 }
@@ -531,6 +542,38 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     selectTab('scenario');
   }
 
+  function renderPracticeScenarioList(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3', headingClassName = 'text-sm font-semibold text-blue-700 mb-2') {
+    if (!showPracticeScenarioPicker) return null;
+
+    return (
+      <div className={containerClassName}>
+        <div className={headingClassName}>Practice scenarios</div>
+        <div className="space-y-2">
+          {practiceScenarios.map((scenario, index) => {
+            const isSelected = selectedPracticeScenarioId === scenario.scenarioRunId;
+            return (
+              <button
+                key={scenario.scenarioRunId}
+                type="button"
+                onClick={() => openPracticeScenario(scenario.scenarioRunId)}
+                className={`w-full rounded border px-3 py-2 text-left transition-colors ${
+                  isSelected ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'
+                }`}
+              >
+                <div className="text-sm font-medium">{formatScenarioLabel(scenario, index)}</div>
+                <div className={`mt-1 text-xs ${isSelected ? 'text-blue-100' : 'text-gray-500'}`}>
+                  Started {formatScenarioDate(scenario.createdAt, 'Start date unavailable')}
+                  {' · '}
+                  Completed {scenario.completedAt ? formatScenarioDate(scenario.completedAt, 'Completion date unavailable') : 'In progress'}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderActionButtons() {
     if (isPreview || !user) return null;
     const actionBannerClass = 'not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3';
@@ -540,23 +583,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         <div className="not-prose mt-4 flex flex-col items-start gap-2">
           <p className="text-sm text-gray-600">{canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}</p>
           {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
-          {showPracticeScenarioPicker && (
-            <div className="w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3">
-              <div className="text-sm font-semibold text-blue-700 mb-2">Saved practice scenarios</div>
-              <div className="flex flex-wrap gap-2">
-                {practiceScenarios.map((scenario, index) => (
-                  <button
-                    key={scenario.scenarioRunId}
-                    type="button"
-                    onClick={() => openPracticeScenario(scenario.scenarioRunId)}
-                    className={`px-3 py-2 rounded border text-sm ${selectedPracticeScenarioId === scenario.scenarioRunId ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}
-                  >
-                    {formatScenarioLabel(scenario, index)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {renderPracticeScenarioList('w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3', 'text-sm font-semibold text-blue-700 mb-2')}
           <div className="flex flex-wrap gap-2">
             {canPractice && (
               <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
@@ -659,23 +686,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       case 'scenario':
         return (
           <div className="mt-4">
-            {showPracticeScenarioPicker && (
-              <div className="not-prose mb-4 rounded border border-blue-200 bg-blue-50 p-3">
-                <div className="text-sm font-semibold text-blue-700 mb-2">Practice scenarios</div>
-                <div className="flex flex-wrap gap-2">
-                  {practiceScenarios.map((scenario, index) => (
-                    <button
-                      key={scenario.scenarioRunId}
-                      type="button"
-                      onClick={() => openPracticeScenario(scenario.scenarioRunId)}
-                      className={`px-3 py-2 rounded border text-sm ${selectedPracticeScenarioId === scenario.scenarioRunId ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}
-                    >
-                      {formatScenarioLabel(scenario, index)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {renderPracticeScenarioList('not-prose mb-4 rounded border border-blue-200 bg-blue-50 p-3', 'text-sm font-semibold text-blue-700 mb-2')}
             <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
           </div>
         );
