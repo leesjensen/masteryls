@@ -322,7 +322,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [isDirty]);
 
   function selectStage(stage) {
-    if (draReadOnly || activeStage === stage) return;
+    if (activeStage === stage) return;
     setActiveStage(stage);
     if (courseId && topicId) {
       courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: stage });
@@ -702,6 +702,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   const investigationReadOnly = details.state === 'completed' || draReadOnly;
+  const stageNavigationDisabled = false;
   const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
 
   return (
@@ -720,7 +721,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100">
                   <div className="flex flex-wrap gap-1">
                     {(details.stages || []).map((s) => (
-                      <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={investigationReadOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
+                      <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={stageNavigationDisabled} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
                         {s.stage}
                       </button>
                     ))}
