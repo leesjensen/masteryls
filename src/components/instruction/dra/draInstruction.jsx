@@ -112,11 +112,8 @@ function normalizeDraState(state) {
   }
 
   const details = state.details && typeof state.details === 'object' ? state.details : base.details;
-  const practiceScenarios = Array.isArray(state.practiceScenarios)
-    ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId)
-    : [];
-  const selectedPracticeScenarioId =
-    typeof state.selectedPracticeScenarioId === 'string' && practiceScenarios.some((item) => item.scenarioRunId === state.selectedPracticeScenarioId) ? state.selectedPracticeScenarioId : null;
+  const practiceScenarios = Array.isArray(state.practiceScenarios) ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId) : [];
+  const selectedPracticeScenarioId = typeof state.selectedPracticeScenarioId === 'string' && practiceScenarios.some((item) => item.scenarioRunId === state.selectedPracticeScenarioId) ? state.selectedPracticeScenarioId : null;
 
   return {
     details,
@@ -234,10 +231,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [details.state]);
 
   function applyStateUpdate(nextDetails, options = {}) {
-    const {
-      selectPracticeScenarioId = nextDetails?.mode === 'practice' ? nextDetails?.scenarioRunId || null : null,
-      preserveSelection = false,
-    } = options;
+    const { selectPracticeScenarioId = nextDetails?.mode === 'practice' ? nextDetails?.scenarioRunId || null : null, preserveSelection = false } = options;
 
     setDraState((prev) => {
       const current = normalizeDraState(prev);
@@ -500,7 +494,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   if (loading) return <div />;
 
-
   const canPractice = params.practiceMode;
   const canFinal = params.finalMode;
   const locked = details.mode === 'final';
@@ -552,14 +545,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           {practiceScenarios.map((scenario, index) => {
             const isSelected = selectedPracticeScenarioId === scenario.scenarioRunId;
             return (
-              <button
-                key={scenario.scenarioRunId}
-                type="button"
-                onClick={() => openPracticeScenario(scenario.scenarioRunId)}
-                className={`w-full rounded border px-3 py-2 text-left transition-colors ${
-                  isSelected ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'
-                }`}
-              >
+              <button key={scenario.scenarioRunId} type="button" onClick={() => openPracticeScenario(scenario.scenarioRunId)} className={`w-full rounded border px-3 py-2 text-left transition-colors ${isSelected ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}>
                 <div className="text-sm font-medium">{formatScenarioLabel(scenario, index)}</div>
                 <div className={`mt-1 text-xs ${isSelected ? 'text-blue-100' : 'text-gray-500'}`}>
                   Started {formatScenarioDate(scenario.createdAt, 'Start date unavailable')}
@@ -716,6 +702,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   const investigationReadOnly = details.state === 'completed' || draReadOnly;
+  const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
 
   return (
     <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
@@ -729,9 +716,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {(details.stages || []).length > 0 &&
             (() => {
-              const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
               return (
-                <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100 flex flex-col gap-2">
+                <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100">
                   <div className="flex flex-wrap gap-1">
                     {(details.stages || []).map((s) => (
                       <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={investigationReadOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
@@ -739,7 +725,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                       </button>
                     ))}
                   </div>
-                  {activeStageInterpretation && <p className="text-sm text-gray-600">{activeStageInterpretation}</p>}
                 </div>
               );
             })()}
@@ -749,6 +734,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             </div>
             <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+              {(activeStage || activeStageInterpretation) && <div className="shrink-0 border-b border-gray-100 bg-blue-50 px-4 py-3">{activeStageInterpretation && <p className="mt-2 text-sm text-gray-600">{activeStageInterpretation}</p>}</div>}
               <DraAssessment value={details.stageNotes?.[activeStage] || ''} onChange={(val) => updateStageNote(activeStage, val)} readOnly={investigationReadOnly} activeStage={activeStage} />
             </div>
           </div>
