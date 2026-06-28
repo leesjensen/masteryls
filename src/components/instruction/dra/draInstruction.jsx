@@ -8,18 +8,11 @@ import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 import DraAssessment from './DraAssessment';
 
-
 function DraTabBar({ tabs, active, onChange }) {
   return (
     <div className="not-prose flex border-b border-gray-200 mt-4">
       {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onChange(tab.id)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-            active === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-          }`}
-        >
+        <button key={tab.id} onClick={() => onChange(tab.id)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${active === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
           {tab.label}
         </button>
       ))}
@@ -235,12 +228,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const disclosure = scenarioDisclosure(currentDetails.difficulty ?? params.difficulty);
     const lowerReply = replyText.toLowerCase();
 
-    const knownNames = new Set([
-      (currentDetails.stakeholders || [])[0]?.name,
-      ...(disclosure.showStakeholders ? (currentDetails.stakeholders || []).map((s) => s.name) : []),
-      ...(disclosure.showResources ? (currentDetails.resources || []).map((r) => r.name) : []),
-      ...(currentDetails.identified || []).map((t) => t.name),
-    ].filter(Boolean));
+    const knownNames = new Set([(currentDetails.stakeholders || [])[0]?.name, ...(disclosure.showStakeholders ? (currentDetails.stakeholders || []).map((s) => s.name) : []), ...(disclosure.showResources ? (currentDetails.resources || []).map((r) => r.name) : []), ...(currentDetails.identified || []).map((t) => t.name)].filter(Boolean));
 
     const found = [];
     for (const s of currentDetails.stakeholders || []) {
@@ -397,21 +385,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const showCoaching = details.state === 'inProgress' && !locked;
   const showEvaluation = (details.state === 'inProgress' && !locked) || details.state === 'completed';
 
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    ...(hasScenario ? [{ id: 'scenario', label: 'Scenario' }] : []),
-    ...(hasScenario ? [{ id: 'investigation', label: 'Investigation' }] : []),
-    ...(showCoaching ? [{ id: 'coaching', label: 'Coaching' }] : []),
-    ...(showEvaluation ? [{ id: 'evaluation', label: 'Evaluation' }] : []),
-  ];
+  const tabs = [{ id: 'overview', label: 'Overview' }, ...(hasScenario ? [{ id: 'scenario', label: 'Scenario' }] : []), ...(hasScenario ? [{ id: 'investigation', label: 'Investigation' }] : []), ...(showCoaching ? [{ id: 'coaching', label: 'Coaching' }] : []), ...(showEvaluation ? [{ id: 'evaluation', label: 'Evaluation' }] : [])];
 
   const safeActiveTab = tabs.some((t) => t.id === activeTab) ? activeTab : 'overview';
 
   const disclosure = scenarioDisclosure(details.difficulty ?? params.difficulty);
-  const revealedTargets = [
-    ...(disclosure.showStakeholders ? (details.stakeholders || []).map((s, i) => ({ key: `stakeholder:${i}`, type: 'stakeholder', ...s })) : []),
-    ...(disclosure.showResources ? (details.resources || []).map((r, i) => ({ key: `resource:${i}`, type: 'resource', ...r })) : []),
-  ];
+  const revealedTargets = [...(disclosure.showStakeholders ? (details.stakeholders || []).map((s, i) => ({ key: `stakeholder:${i}`, type: 'stakeholder', ...s })) : []), ...(disclosure.showResources ? (details.resources || []).map((r, i) => ({ key: `resource:${i}`, type: 'resource', ...r })) : [])];
 
   // The primary stakeholder (index 0) is always available regardless of difficulty —
   // they are the person who engaged the learner in the scenario.
@@ -421,9 +400,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   const revealedNames = new Set(revealedTargets.map((t) => t.name));
-  const identifiedTargets = (details.identified || [])
-    .map((item, i) => ({ key: `identified:${i}`, type: item.kind || 'stakeholder', ...item }))
-    .filter((t) => !revealedNames.has(t.name));
+  const identifiedTargets = (details.identified || []).map((item, i) => ({ key: `identified:${i}`, type: item.kind || 'stakeholder', ...item })).filter((t) => !revealedNames.has(t.name));
   const targets = [...revealedTargets, ...identifiedTargets];
 
   function renderActionButtons() {
@@ -432,18 +409,16 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (details.state === 'notStarted') {
       return (
         <div className="not-prose mt-4 flex flex-col items-start gap-2">
-          <p className="text-sm text-gray-600">
-            {canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}
-          </p>
+          <p className="text-sm text-gray-600">{canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}</p>
           {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
           <div className="flex flex-wrap gap-2">
             {canPractice && (
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
                 {generatingLabel || 'Generate scenario'}
               </button>
             )}
             {canFinal && (
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
                 {generatingLabel || 'Start final assessment'}
               </button>
             )}
@@ -459,21 +434,21 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             <span className="text-sm text-amber-700">Final assessment — the scenario is locked and must be completed.</span>
           ) : (
             <>
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
+              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
                 Cancel
               </button>
               {canFinal && (
-                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
                   Start final assessment
                 </button>
               )}
             </>
           )}
-          <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+          <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
             Complete assessment
           </button>
           {!isObserveReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40">
+            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40">
               {saving ? 'Saving…' : 'Save'}
             </button>
           )}
@@ -487,11 +462,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         <div className="not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3 flex flex-wrap items-center gap-4">
           <div>
             <div className="text-sm font-bold text-blue-600">Assessment complete</div>
-            {details.completedAt && (
-              <div className="text-xs text-blue-400">
-                Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </div>
-            )}
+            {details.completedAt && <div className="text-xs text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
           </div>
           {!isObserveReadOnly && (
             <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40 text-sm">
@@ -501,12 +472,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           {!wasFinal && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
-                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
                   {generatingLabel || 'Start new scenario'}
                 </button>
               )}
               {canFinal && (
-                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
                   {generatingLabel || 'Start final assessment'}
                 </button>
               )}
@@ -575,47 +546,35 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
       {safeActiveTab === 'investigation' ? (
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {(details.stages || []).length > 0 && (() => {
-            const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
-            return (
-              <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100 flex flex-col gap-2">
-                <div className="flex flex-wrap gap-1">
-                  {(details.stages || []).map((s) => (
-                    <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={investigationReadOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
-                      {s.stage}
-                    </button>
-                  ))}
+          {(details.stages || []).length > 0 &&
+            (() => {
+              const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
+              return (
+                <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100 flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-1">
+                    {(details.stages || []).map((s) => (
+                      <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={investigationReadOnly} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
+                        {s.stage}
+                      </button>
+                    ))}
+                  </div>
+                  {activeStageInterpretation && <p className="text-sm text-gray-600">{activeStageInterpretation}</p>}
                 </div>
-                {activeStageInterpretation && <p className="text-sm text-gray-600">{activeStageInterpretation}</p>}
-              </div>
-            );
-          })()}
+              );
+            })()}
           <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
-          <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
-            <DraInvestigation
-              targets={targets}
-              conversations={details.conversations || {}}
-              onSendMessage={sendInvestigationMessage}
-              readOnly={investigationReadOnly}
-              learningSession={learningSession}
-            />
-          </div>
-          <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
-          <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-            <DraAssessment
-              value={details.stageNotes?.[activeStage] || ''}
-              onChange={(val) => updateStageNote(activeStage, val)}
-              readOnly={investigationReadOnly}
-              activeStage={activeStage}
-            />
-          </div>
+            <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
+              <DraInvestigation targets={targets} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
+            </div>
+            <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+              <DraAssessment value={details.stageNotes?.[activeStage] || ''} onChange={(val) => updateStageNote(activeStage, val)} readOnly={investigationReadOnly} activeStage={activeStage} />
+            </div>
           </div>
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-auto">
-          <div className="markdown-body px-4 pb-4">
-            {renderTabContent()}
-          </div>
+        <div className="flex-1 mt-4 min-h-0 overflow-auto">
+          <div className="markdown-body px-4 pb-4">{renderTabContent()}</div>
         </div>
       )}
     </div>
