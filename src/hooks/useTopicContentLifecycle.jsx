@@ -60,15 +60,18 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
 
     onTopicLoaded?.();
     setDirty(false);
-
-    return () => {
-      if (dirtyRef.current) {
-        if (window.confirm('You have unsaved changes. Do you want to commit them before leaving?')) {
-          void commit();
-        }
-      }
-    };
   }, [learningSession]);
+
+  React.useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (dirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   return {
     content,

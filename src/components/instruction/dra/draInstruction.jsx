@@ -450,7 +450,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             Complete assessment
           </button>
           {!isObserveReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40">
+            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
               {saving ? 'Saving…' : 'Save'}
             </button>
           )}
@@ -467,7 +467,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             {details.completedAt && <div className="text-xs text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
           </div>
           {!isObserveReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40 text-sm">
+            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
               {saving ? 'Saving…' : 'Save'}
             </button>
           )}
