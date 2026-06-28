@@ -289,16 +289,20 @@ Assess three dimensions. For each overall dimension and each of its attributes, 
 - Competency attributes: Systems thinking, Communication, Design reasoning, Evidence-based reasoning, Decision-making
 - Disposition attributes: Curiosity, Ownership, Integrity, Persistence, Empathy, Accountability
 
+Also identify any concerns — things the learner did that were inappropriate, harmful, unethical, or showed seriously poor judgment (e.g. violating confidentiality, acting outside their authority, ignoring critical evidence, making harmful recommendations, or deceiving stakeholders). Only flag genuine problems, not merely suboptimal choices. For each concern assign a severity: Minor (poor judgment, minor lapse), Moderate (clear breach of process or ethics), or Major (harmful, deceptive, or seriously unethical action).
+
 Return a raw JSON object (no markdown code fence) with exactly this shape:
 {
   "process": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Framing", "confidence": "<level>", "summary": "<one sentence>", "evidence": ["..."] } ] },
   "competency": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
-  "disposition": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ ... ] }
+  "disposition": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
+  "concerns": [ { "name": "<short label>", "severity": "Minor|Moderate|Major", "description": "<one sentence>" } ]
 }
 
 Rules:
 - Base every judgment only on observed evidence; when evidence is sparse, use lower confidence levels (Beginning/Emerging)
 - Include every attribute listed for each dimension
+- Return an empty array for "concerns" if there are none
 - Return only the JSON object`;
 
   const response = await makeSimpleAiRequest(prompt);
