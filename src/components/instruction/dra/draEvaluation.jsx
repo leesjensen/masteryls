@@ -18,11 +18,35 @@ export function confidenceToScore(level) {
   return idx >= 0 ? idx + 1 : 0;
 }
 
+function confidenceToPoints(level) {
+  return Math.max(0, confidenceToScore(level) - 1);
+}
+
+function averageConfidencePoints(items, fallbackConfidence) {
+  const points = (items || [])
+    .map((item) => confidenceToPoints(item?.confidence))
+    .filter((score) => Number.isFinite(score));
+
+  if (points.length === 0) {
+    return confidenceToPoints(fallbackConfidence);
+  }
+
+  return points.reduce((sum, score) => sum + score, 0) / points.length;
+}
+
+function pointsToConfidenceLevel(points) {
+  const rounded = Math.max(0, Math.min(CONFIDENCE_LEVELS.length - 1, Math.round(points)));
+  return CONFIDENCE_LEVELS[rounded];
+}
+
 const DIMENSIONS = [
   ['process', 'Process'],
   ['competency', 'Competency'],
   ['disposition', 'Disposition'],
 ];
+
+const DIMENSION_WEIGHT_NOTES = {
+};
 
 function StarRating({ level }) {
   const score = confidenceToScore(level);
@@ -101,9 +125,15 @@ export default function DraEvaluation({ evaluation }) {
 
   const concerns = evaluation.concerns || [];
   const penalty = concerns.reduce((sum, c) => sum + (CONCERN_PENALTIES[c.severity] || 0), 0);
-  const rawScore = DIMENSIONS.reduce((sum, [key]) => sum + confidenceToScore(evaluation[key]?.confidence), 0);
-  const maxScore = DIMENSIONS.length * 5;
-  const totalScore = Math.max(0, rawScore - penalty);
+  const processAveragePoints = averageConfidencePoints(evaluation.process?.attributes, evaluation.process?.confidence);
+  const competencyPoints = confidenceToPoints(evaluation.competency?.confidence);
+  const dispositionPoints = confidenceToPoints(evaluation.disposition?.confidence);
+  const cdFactor = ((competencyPoints + dispositionPoints) / 2) / 4;
+  const weightedStagePoints = processAveragePoints * cdFactor;
+  const totalScore = Math.max(0, (weightedStagePoints * (15 / 4)) - penalty);
+  const maxScore = 15;
+  const overallLevel = pointsToConfidenceLevel(weightedStagePoints);
+  const equation = '(((FramingPts + ResearchPts + ModelingPts + ActionPts + ValidationPts + ReflectionPts) / 6) × (((CompetencyPts + DispositionPts) / 2) / 4)) × (15 / 4) - penalties';
 
   return (
     <div>
@@ -114,8 +144,8 @@ export default function DraEvaluation({ evaluation }) {
             {penalty > 0 && (
               <span className="text-xs text-red-600 tabular-nums">−{penalty} penalty</span>
             )}
-            <StarRating level={CONFIDENCE_LEVELS[Math.round(totalScore / DIMENSIONS.length) - 1]} />
-            <span className="text-sm font-semibold text-gray-600 tabular-nums">{totalScore} / {maxScore}</span>
+            <StarRating level={overallLevel} />
+            <span className="text-sm font-semibold text-gray-600 tabular-nums">Weighted score {Math.round(totalScore * 10) / 10} / {maxScore}</span>
           </div>
         </div>
         <div className="max-w-md mx-auto">
@@ -146,7 +176,9 @@ export default function DraEvaluation({ evaluation }) {
           {DIMENSIONS.map(([key, label]) => (
             <div key={key}>
               <div className="flex items-center justify-between mb-1">
-                <h3 className="text-sm font-bold text-gray-800">{label}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-gray-800">{label}</h3>
+                </div>
                 <StarRating level={evaluation[key]?.confidence} />
               </div>
               {evaluation[key]?.summary && <p className="text-xs text-gray-600 mb-2">{evaluation[key].summary}</p>}

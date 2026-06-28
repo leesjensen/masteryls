@@ -147,6 +147,10 @@ The goal of the evaluation is **not** to assess an artifact, but rather to evalu
 
 ### Evaluation Metrics
 
+Scoring equation:
+
+(((FramingPts + ResearchPts + ModelingPts + ActionPts + ValidationPts + ReflectionPts) / 6) × (((CompetencyPts + DispositionPts) / 2) / 4)) × (15 / 4) - penalties
+
 #### Process
 
 - Framing
