@@ -1,4 +1,5 @@
 import React from 'react';
+import Spinner from '../../Spinner';
 
 // Formative coaching panel (practice only). Shows the coach agent's feedback, hints,
 // and suggested next investigations on demand.
@@ -9,8 +10,9 @@ export default function DraCoach({ coaching, onRequest, busy, readOnly }) {
   return (
     <div className="not-prose">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <button onClick={onRequest} disabled={readOnly || busy} className="px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
-          {busy ? 'Coaching...' : coaching ? 'Get new coaching' : 'Get coaching'}
+        <button onClick={onRequest} disabled={readOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
+          {busy && <Spinner className="border-blue-200 border-t-blue-700" />}
+          {busy ? 'Coaching…' : coaching ? 'Get new coaching' : 'Get coaching'}
         </button>
       </div>
 

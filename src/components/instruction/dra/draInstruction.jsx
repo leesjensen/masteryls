@@ -7,6 +7,7 @@ import DraCoach from './draCoach';
 import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 import DraAssessment from './DraAssessment';
+import Spinner from '../../Spinner';
 
 function DraTabBar({ tabs, active, onChange }) {
   return (
@@ -379,7 +380,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   if (loading) return <div />;
 
-  const generatingLabel = busy ? 'Generating...' : null;
+
   const canPractice = params.practiceMode;
   const canFinal = params.finalMode;
   const locked = details.mode === 'final';
@@ -415,13 +416,15 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
           <div className="flex flex-wrap gap-2">
             {canPractice && (
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
-                {generatingLabel || 'Generate scenario'}
+              <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                {busy && <Spinner />}
+                {busy ? 'Generating…' : 'Generate scenario'}
               </button>
             )}
             {canFinal && (
-              <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-                {generatingLabel || 'Start final assessment'}
+              <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                {busy && <Spinner />}
+                {busy ? 'Generating…' : 'Start final assessment'}
               </button>
             )}
           </div>
@@ -440,17 +443,20 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 Cancel
               </button>
               {canFinal && (
-                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-                  Start final assessment
+                <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                  {busy && <Spinner />}
+                  {busy ? 'Generating…' : 'Start final assessment'}
                 </button>
               )}
             </>
           )}
-          <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+          <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+            {busy && <Spinner />}
             Complete assessment
           </button>
           {!isObserveReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+            <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+              {saving && <Spinner />}
               {saving ? 'Saving…' : 'Save'}
             </button>
           )}
@@ -467,20 +473,23 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             {details.completedAt && <div className="text-xs text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
           </div>
           {!isObserveReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+            <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+              {saving && <Spinner />}
               {saving ? 'Saving…' : 'Save'}
             </button>
           )}
           {!wasFinal && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
-                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
-                  {generatingLabel || 'Start new scenario'}
+                <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                  {busy && <Spinner />}
+                  {busy ? 'Generating…' : 'Start new scenario'}
                 </button>
               )}
               {canFinal && (
-                <button disabled={isObserveReadOnly || busy} className="px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
-                  {generatingLabel || 'Start final assessment'}
+                <button disabled={isObserveReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                  {busy && <Spinner />}
+                  {busy ? 'Generating…' : 'Start final assessment'}
                 </button>
               )}
             </div>
@@ -523,8 +532,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <div className="mt-4">
             {details.state === 'inProgress' && !locked && (
               <div className="not-prose mb-4">
-                <button onClick={refreshEvaluation} disabled={isObserveReadOnly || evaluating} className="px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
-                  {evaluating ? 'Evaluating...' : details.evaluation ? 'Update evaluation' : 'Evaluate my progress'}
+                <button onClick={refreshEvaluation} disabled={isObserveReadOnly || evaluating} className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60 text-sm">
+                  {evaluating && <Spinner className="border-blue-200 border-t-blue-700" />}
+                  {evaluating ? 'Evaluating…' : details.evaluation ? 'Update evaluation' : 'Evaluate my progress'}
                 </button>
               </div>
             )}
