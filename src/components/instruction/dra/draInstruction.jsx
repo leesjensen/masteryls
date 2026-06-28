@@ -338,7 +338,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setCoaching(true);
     try {
       const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage);
-      setLocalDetails({ ...details, coaching: result });
+      await autoSave({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');
     } finally {
@@ -351,7 +351,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setEvaluating(true);
     try {
       const evaluation = await computeEvaluation(details);
-      setLocalDetails({ ...details, evaluation });
+      await autoSave({ ...details, evaluation });
     } catch {
       alert('Unable to evaluate progress right now. Please try again.');
     } finally {
