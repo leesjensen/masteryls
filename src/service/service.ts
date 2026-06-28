@@ -723,6 +723,22 @@ class Service {
     return data?.signedUrl || '';
   }
 
+  async saveDraState(enrollmentId: string, topicId: string, state: object): Promise<void> {
+    const path = `enrollments/${enrollmentId}/topics/${topicId}/state.json`;
+    const blob = new Blob([JSON.stringify(state)], { type: 'application/json' });
+    const { error } = await this.supabase.storage
+      .from('dra-state')
+      .upload(path, blob, { upsert: true, contentType: 'application/json' });
+    if (error) throw new Error(error.message);
+  }
+
+  async loadDraState(enrollmentId: string, topicId: string): Promise<object | null> {
+    const path = `enrollments/${enrollmentId}/topics/${topicId}/state.json`;
+    const { data, error } = await this.supabase.storage.from('dra-state').download(path);
+    if (error) return null; // 404 = no state saved yet; treat any load failure as empty
+    return JSON.parse(await (data as Blob).text());
+  }
+
   /**
    * Retrieves progress records based on filters.
    * @param params - Object containing filter parameters (type, courseId, etc.) and pagination options.

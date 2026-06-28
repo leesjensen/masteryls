@@ -585,3 +585,83 @@ using (
 );
 
 
+-- =====================================================================
+-- DRA state storage bucket
+-- =====================================================================
+
+-- Private bucket, 1MB per-object cap, JSON only.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'dra-state',
+  'dra-state',
+  false,
+  1048576,
+  array['application/json']
+)
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- Helper: pull enrollment id out of "enrollments/{enrollmentId}/topics/{topicId}/state.json".
+create or replace function public.dra_state_enrollment_id(object_name text)
+returns uuid
+language sql
+stable
+as $$
+  select case
+    when split_part(object_name, '/', 1) = 'enrollments'
+      then nullif(split_part(object_name, '/', 2), '')::uuid
+    else null
+  end;
+$$;
+
+grant execute on function public.dra_state_enrollment_id(text) to authenticated;
+
+create policy "dra-state: learner inserts own"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'dra-state'
+  and exists (
+    select 1 from public.enrollment e
+    where e.id = public.dra_state_enrollment_id(name)
+      and e."learnerId" = auth.uid()
+  )
+);
+
+create policy "dra-state: learner updates own"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'dra-state'
+  and exists (
+    select 1 from public.enrollment e
+    where e.id = public.dra_state_enrollment_id(name)
+      and e."learnerId" = auth.uid()
+  )
+);
+
+create policy "dra-state: learner or manager reads"
+on storage.objects for select
+to authenticated
+using (
+  bucket_id = 'dra-state'
+  and exists (
+    select 1 from public.enrollment e
+    where e.id = public.dra_state_enrollment_id(name)
+      and (e."learnerId" = auth.uid() or public.auth_manages_course(auth.uid(), e."catalogId"))
+  )
+);
+
+create policy "dra-state: learner or manager deletes"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'dra-state'
+  and exists (
+    select 1 from public.enrollment e
+    where e.id = public.dra_state_enrollment_id(name)
+      and (e."learnerId" = auth.uid() or public.auth_manages_course(auth.uid(), e."catalogId"))
+  )
+);

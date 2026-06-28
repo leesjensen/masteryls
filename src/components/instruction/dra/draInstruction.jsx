@@ -108,6 +108,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [draState, setDraState] = React.useState({ details: { state: 'notStarted' } });
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [isDirty, setIsDirty] = React.useState(false);
   const [evaluating, setEvaluating] = React.useState(false);
   const [coaching, setCoaching] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('overview');
@@ -130,27 +132,32 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   React.useEffect(() => {
     async function loadState() {
-      if (!isPreview && user && learningSession?.enrollment) {
-        const state = await courseOps.getDraState();
-        const ds = state.details || {};
-        // Prevent the state-change effect below from overriding our tab restoration.
-        prevStateRef.current = ds.state;
-        setDraState(state);
+      try {
+        if (!isPreview && user && learningSession?.enrollment) {
+          const state = await courseOps.getDraState();
+          const ds = state.details || {};
+          // Prevent the state-change effect below from overriding our tab restoration.
+          prevStateRef.current = ds.state;
+          setDraState(state);
 
-        const uiSettings = courseId && topicId ? courseOps.getEnrollmentUiSettings(courseId) : null;
+          const uiSettings = courseId && topicId ? courseOps.getEnrollmentUiSettings(courseId) : null;
 
-        const savedStage = uiSettings?.[`draActiveStage_${topicId}`];
-        const stages = ds.stages || [];
-        if (savedStage && stages.some((s) => s.stage === savedStage)) {
-          setActiveStage(savedStage);
-        } else {
-          setActiveStage(stages[0]?.stage || '');
+          const savedStage = uiSettings?.[`draActiveStage_${topicId}`];
+          const stages = ds.stages || [];
+          if (savedStage && stages.some((s) => s.stage === savedStage)) {
+            setActiveStage(savedStage);
+          } else {
+            setActiveStage(stages[0]?.stage || '');
+          }
+
+          const savedTab = uiSettings?.[`draActiveTab_${topicId}`];
+          if (savedTab) setActiveTab(savedTab);
         }
-
-        const savedTab = uiSettings?.[`draActiveTab_${topicId}`];
-        if (savedTab) setActiveTab(savedTab);
+      } catch (err) {
+        console.error('Failed to load DRA state:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadState();
   }, [isPreview, user, learningSession?.enrollment]);
@@ -178,12 +185,41 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   function setLocalDetails(nextDetails) {
     setDraState({ details: nextDetails });
+    setIsDirty(true);
   }
 
-  async function persist(nextDetails) {
+  // Auto-saves without marking dirty — used for definitive actions (generate, cancel, complete).
+  async function autoSave(nextDetails) {
     setDraState({ details: nextDetails });
-    await courseOps.addProgress(null, null, 'dra', 0, nextDetails);
+    setIsDirty(false);
+    if (!isObserveReadOnly) {
+      await courseOps.saveDraState(nextDetails);
+    }
   }
+
+  async function handleSave() {
+    if (!isDirty || saving || isObserveReadOnly) return;
+    setSaving(true);
+    try {
+      await courseOps.saveDraState(details);
+      setIsDirty(false);
+    } catch {
+      alert('Unable to save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  React.useEffect(() => {
+    function handleBeforeUnload(e) {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
   function selectStage(stage) {
     if (isObserveReadOnly || activeStage === stage) return;
@@ -230,24 +266,19 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser, details.stakeholders || [], details.resources || []);
       const nextConversations = { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] };
       const newTargets = detectNewTargets(reply, details);
-      await persist({
+      setLocalDetails({
         ...details,
         conversations: nextConversations,
         ...(newTargets.length > 0 && { identified: [...(details.identified || []), ...newTargets] }),
       });
     } catch {
-      await persist({ ...details, conversations: { ...conversations, [key]: withUser } });
+      setLocalDetails({ ...details, conversations: { ...conversations, [key]: withUser } });
       alert('The interview partner could not respond. Please try again.');
     }
   }
 
   function updateStageNote(stage, value) {
     setLocalDetails({ ...details, stageNotes: { ...(details.stageNotes || {}), [stage]: value } });
-  }
-
-  async function saveStageNote() {
-    if (isObserveReadOnly) return;
-    await persist(details);
   }
 
   async function generateScenario(runMode = 'practice') {
@@ -263,7 +294,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       if (courseId && topicId && firstStage) {
         courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: firstStage });
       }
-      await persist({
+      const nextDetails = {
         state: 'inProgress',
         mode: runMode,
         difficulty: params.difficulty,
@@ -274,7 +305,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         stages,
         stageNotes,
         identified: primaryStakeholder ? [{ ...primaryStakeholder, kind: 'stakeholder' }] : [],
-      });
+      };
+      await autoSave(nextDetails);
+      await courseOps.addProgress(null, null, 'dra', 0, { state: 'inProgress', mode: runMode });
     } catch {
       alert('Unable to generate a scenario. Please try again.');
     } finally {
@@ -290,7 +323,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   async function cancelScenario() {
     if (isObserveReadOnly || busy) return;
-    await persist({ state: 'notStarted' });
+    await autoSave({ state: 'notStarted' });
   }
 
   function buildTranscripts(source) {
@@ -315,7 +348,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setCoaching(true);
     try {
       const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage);
-      await persist({ ...details, coaching: result });
+      setLocalDetails({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');
     } finally {
@@ -328,7 +361,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setEvaluating(true);
     try {
       const evaluation = await computeEvaluation(details);
-      await persist({ ...details, evaluation });
+      setLocalDetails({ ...details, evaluation });
     } catch {
       alert('Unable to evaluate progress right now. Please try again.');
     } finally {
@@ -346,7 +379,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       } catch {
         // Fall back to the most recent evaluation if the final scoring call fails.
       }
-      await persist({ ...details, evaluation, state: 'completed', completedAt: new Date().toISOString() });
+      const completedDetails = { ...details, evaluation, state: 'completed', completedAt: new Date().toISOString() };
+      await autoSave(completedDetails);
+      await courseOps.addProgress(null, null, 'dra', 0, { state: 'completed', mode: details.mode, completedAt: completedDetails.completedAt });
     } finally {
       setBusy(false);
     }
@@ -437,6 +472,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <button disabled={isObserveReadOnly || busy} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
             Complete assessment
           </button>
+          {!isObserveReadOnly && (
+            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40">
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          )}
         </div>
       );
     }
@@ -453,6 +493,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
               </div>
             )}
           </div>
+          {!isObserveReadOnly && (
+            <button disabled={!isDirty || saving} onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40 text-sm">
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          )}
           {!wasFinal && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
@@ -560,7 +605,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             <DraAssessment
               value={details.stageNotes?.[activeStage] || ''}
               onChange={(val) => updateStageNote(activeStage, val)}
-              onBlur={saveStageNote}
               readOnly={investigationReadOnly}
               activeStage={activeStage}
             />

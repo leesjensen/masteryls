@@ -1229,11 +1229,19 @@ Requirements:
   async function getDraState() {
     if (learningSession?.enrollment && learningSession?.topic) {
       const progress = await service.getProgress({ types: ['dra'], topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
-      if (progress && progress.data.length > 0) {
-        return progress.data[0];
+      if (progress?.data?.length > 0) {
+        const state = await service.loadDraState(learningSession.enrollment.id, learningSession.topic.id);
+        if (state) return state;
       }
     }
     return { details: { state: 'notStarted' } };
+  }
+
+  async function saveDraState(details) {
+    if (observeSession?.active && learningSession?.observeMode) return;
+    if (learningSession?.enrollment && learningSession?.topic) {
+      await service.saveDraState(learningSession.enrollment.id, learningSession.topic.id, { details });
+    }
   }
 
   async function generateDraScenario(params) {
@@ -1442,6 +1450,12 @@ Requirements:
       update = _getEnrollmentProgress(enrollment, topic.id);
       if (!enrollment.progress[topic.id].examCompleted) {
         enrollment.progress[topic.id].examCompleted = true;
+        update = true;
+      }
+    } else if (type === 'dra' && details?.state === 'completed') {
+      update = _getEnrollmentProgress(enrollment, topic.id);
+      if (!enrollment.progress[topic.id].draCompleted) {
+        enrollment.progress[topic.id].draCompleted = true;
         update = true;
       }
     }
@@ -1931,6 +1945,7 @@ Requirements:
     getLikertSummary,
     getExamState,
     getDraState,
+    saveDraState,
     generateDraScenario,
     getDraStakeholderResponse,
     getDraEvaluation,
