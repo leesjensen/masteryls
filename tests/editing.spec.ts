@@ -475,7 +475,7 @@ test('editor can generate preview and insert an AI image', async ({ page }) => {
     await route.fallback();
   });
 
-  await page.context().route('https://api.github.com/**/contents', async (route) => {
+  await page.context().route(/https:\/\/api\.github\.com\/.*\/contents(\?.+)?$/, async (route) => {
     if (route.request().method() === 'GET') {
       const files = imageUploaded ? [generatedImageFile] : [];
       await route.fulfill({
