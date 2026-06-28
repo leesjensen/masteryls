@@ -266,6 +266,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   function updateStageNote(stage, value) {
+    const current = details.stageNotes?.[stage] || '';
+    if (value.trim() === current.trim()) return;
     setLocalDetails({ ...details, stageNotes: { ...(details.stageNotes || {}), [stage]: value } });
   }
 
