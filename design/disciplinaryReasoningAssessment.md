@@ -182,11 +182,11 @@ Scoring equation:
 For each dimension (as a summation, and also individual attributes) the following is tracked:
 
 - A short textual summary based on the interaction.
-- Calculated confidence level.
+- Calculated rating.
 - Supporting evidence collected from investigation interactions and the reasoning record.
-- Each evidence item includes both a concise observation and a value weight indicating how useful that evidence is for judging the attribute.
+- Each evidence item includes both a concise observation and a strength value indicating how strongly that evidence supports the attribute's rating.
 
-Confidence levels:
+Rating levels:
 
 - Beginning
 - Emerging
@@ -194,7 +194,7 @@ Confidence levels:
 - Proficient
 - Exemplary
 
-Evidence weights:
+Evidence strengths:
 
 - `1` - weak or indirect signal
 - `2` - limited but relevant signal
@@ -202,21 +202,22 @@ Evidence weights:
 - `4` - strong and specific signal
 - `5` - especially strong, direct, and highly relevant signal
 
-The implementation uses both confidence and evidence support when calculating the displayed score. High confidence alone is not enough to sustain a high score if only one thin piece of evidence is available. Broader and stronger evidence increases score stability and gives the learner more actionable feedback.
+The implementation uses both rating and evidence support when calculating the displayed score. A high rating alone is not enough to sustain a high score if only one thin piece of evidence is available. Broader and stronger evidence increases score stability and gives the learner more actionable feedback.
 
 The current implementation applies evidence support in two steps:
 
-1. Each attribute's confidence level is converted to points (`Beginning=0` through `Exemplary=4`).
-2. Those points are multiplied by an evidence-support factor derived from both evidence count and cumulative evidence weight.
+1. Each attribute's rating is converted to points (`Beginning=0` through `Exemplary=4`).
+2. Those points are combined with an evidence-support signal derived from both evidence count and cumulative evidence strength.
 
 The evidence-support factor currently behaves as follows:
 
-- No evidence: `0.15`
+- No evidence: evidence contributes `0`, and the attribute score is reduced to `60%` of its base rating points
 - More evidence items increase support, up to 3 items
-- More total evidence weight increases support, up to a cumulative weight of 12
-- The final support factor is `0.45 * countFactor + 0.55 * weightFactor`, capped at `1.0`
+- Higher average evidence strength increases support, up to an average strength of 5
+- Evidence points are calculated as `4 * ((countFactor * 0.5) + (usefulnessFactor * 0.5))`
+- Attribute points are then calculated as `(baseRatingPoints * 0.7) + (evidencePoints * 0.3)`
 
-At the dimension level, the weighted attribute points are averaged. The displayed overall score then uses:
+At the dimension level, the attribute points are averaged to produce Process, Competency, and Disposition scores. The displayed overall score then uses:
 
 `ProcessScore × ((CompetencyScore + DispositionScore) / 2 / 4) × (15 / 4) - concern penalties`
 
@@ -227,16 +228,16 @@ This is intentional. Process is the primary measure of whether the learner actua
 A compact evaluation snapshot displays:
 
 - Overall weighted score
-- Overall confidence band
+- Overall rating band
 - Process, Competency, and Disposition summaries
-- Evidence count and cumulative evidence weight
+- Evidence count and cumulative evidence strength
 - Concerns, if any
 
-Each dimension is shown as a collapsible card. Opening a card reveals the underlying attributes, and opening an attribute reveals the supporting evidence items with their individual value weights. This makes the first screen easier to scan while still providing drill-down detail when needed.
+Each dimension is shown as a collapsible card. Opening a card reveals the underlying attributes, and opening an attribute reveals the supporting evidence items with their individual strength values. This makes the first screen easier to scan while still providing drill-down detail when needed.
 
 When in Practice mode the evaluation view is always available. In Final mode it is displayed when the assessment is completed.
 
-> Implementation status: an AI observation/assessment agent scores Process, Competency, and Disposition from the investigation transcripts and reasoning record. Each attribute includes a confidence level, a summary, and multiple weighted evidence items when available. The frontend computes a weighted score from the confidence levels, evidence coverage, evidence value, and any concern penalties. The learner sees a compact summary-first evaluation view with collapsible dimension and attribute drill-down. In Practice mode the learner can refresh the evaluation on demand and it is always visible; in Final mode it is computed and revealed at completion. Continuous automatic recalculation after every interaction remains an upcoming refinement.
+> Implementation status: an AI observation/assessment agent scores Process, Competency, and Disposition from the investigation transcripts and reasoning record. Each attribute includes a rating, a summary, and multiple evidence items with strength values when available. The frontend computes a weighted score from the ratings, evidence coverage, evidence strength, and any concern penalties. The learner sees a compact summary-first evaluation view with collapsible dimension and attribute drill-down. In Practice mode the learner can refresh the evaluation on demand and it is always visible; in Final mode it is computed and revealed at completion. Continuous automatic recalculation after every interaction remains an upcoming refinement.
 
 ## Investigation
 
@@ -378,7 +379,7 @@ repeat
     AI responds
     observation engine extracts evidence
     reasoning record updated
-    confidence recalculated
+    rating recalculated
     visualization updated
 until assessment complete
 ```
@@ -442,7 +443,7 @@ ReasoningRecord
 - hypotheses
 - decisions
 - evidence
-- confidence
+- learnerConfidence
 
 Evaluation
 
@@ -471,9 +472,9 @@ Observation Agent
 
 - Monitors interactions
 - Extracts evidence
-- Assigns confidence levels
-- Assigns value weights to evidence
-- Scores competencies using evidence-weighted support
+- Assigns ratings
+- Assigns evidence strength values
+- Scores competencies using evidence-supported evaluation
 
 Coach
 
@@ -644,8 +645,8 @@ Progress is stored in the learner's progress record in Supabase, following the s
 - `stages` — the six universal stages with discipline-specific interpretations, plus `activeStage` (the stage the learner is currently working in)
 - `conversations` — the learner's interview/consultation transcripts, keyed by stakeholder/resource (each message tagged with the active stage)
 - `investigations` — the learner's interactions and captured evidence
-- `reasoningRecord` — the learner's recorded reasoning (understanding, assumptions, unknowns, hypotheses, decisions, evidence, confidence)
-- `evaluation` — Process, Competency, and Disposition results, each with an overall confidence level plus per-attribute confidence, summary, and evidence items of the form `{ detail, weight }`
+- `reasoningRecord` — the learner's recorded reasoning (understanding, assumptions, unknowns, hypotheses, decisions, evidence, learner confidence)
+- `evaluation` — Process, Competency, and Disposition results, each with an overall rating plus per-attribute rating, summary, and evidence items of the form `{ detail, strength }`
 - `coaching` — the latest practice-mode coaching (feedback, hints, suggested investigations)
 
 Because the complete state lives in the progress record, the learner can save and resume an assessment exactly where they left off. The author's published parameters (discipline, problem type, difficulty, enabled modes, instability, learning outcomes) remain in the backing Markdown topic file; only learner-specific runtime state lives in the progress record.

@@ -255,7 +255,7 @@ Guidelines:
  * @param {{title?: string, description?: string, summary?: string}} scenario - The scenario context.
  * @param {Array<{name?: string, role?: string, messages: Array<{role: 'user'|'model', text: string, stage?: string}>}>} transcripts - Interview/consultation transcripts.
  * @param {object} reasoningRecord - The learner's recorded reasoning fields.
- * @returns {Promise<object>} The evaluation: { process, competency, disposition } each with confidence/summary/attributes[].
+ * @returns {Promise<object>} The evaluation: { process, competency, disposition } each with rating/summary/attributes[].
  */
 export async function aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord) {
   const transcriptText = (transcripts || [])
@@ -283,7 +283,7 @@ ${transcriptText || '(no interviews conducted yet)'}
 REASONING RECORD:
 ${reasoningText || '(empty)'}
 
-Assess three dimensions. For each overall dimension and each of its attributes, give a confidence level (exactly one of: Beginning, Emerging, Developing, Proficient, Exemplary), a one-sentence summary, and supporting evidence drawn from the learner's actual behavior.
+Assess three dimensions. For each overall dimension and each of its attributes, give a rating (exactly one of: Beginning, Emerging, Developing, Proficient, Exemplary), a one-sentence summary, and supporting evidence drawn from the learner's actual behavior.
 
 - Process attributes: Framing, Research, Modeling, Action, Validation, Reflection
 - Competency attributes: Systems thinking, Communication, Design reasoning, Evidence-based reasoning, Decision-making
@@ -293,20 +293,20 @@ Also identify any concerns — things the learner did that were inappropriate, h
 
 For each attribute's evidence, return 2 to 4 pieces when available. Each evidence item must include:
 - "detail": a concise observation drawn from the learner's actual behavior
-- "weight": an integer from 1 to 5 indicating how valuable that evidence is for judging the attribute
+- "strength": an integer from 1 to 5 indicating how strongly that evidence supports the rating
 
-Use higher weights only when the evidence is specific, relevant, and meaningfully demonstrates the attribute. If evidence is sparse, return fewer items and lower confidence.
+Use higher strength values only when the evidence is specific, relevant, and meaningfully demonstrates the attribute. If evidence is sparse, return fewer items and lower ratings.
 
 Return a raw JSON object (no markdown code fence) with exactly this shape:
 {
-  "process": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Framing", "confidence": "<level>", "summary": "<one sentence>", "evidence": [ { "detail": "...", "weight": 1 } ] } ] },
-  "competency": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
-  "disposition": { "confidence": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
+  "process": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Framing", "rating": "<level>", "summary": "<one sentence>", "evidence": [ { "detail": "...", "strength": 1 } ] } ] },
+  "competency": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
+  "disposition": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
   "concerns": [ { "name": "<short label>", "severity": "Minor|Moderate|Major", "description": "<one sentence>" } ]
 }
 
 Rules:
-- Base every judgment only on observed evidence; when evidence is sparse, use lower confidence levels (Beginning/Emerging)
+- Base every judgment only on observed evidence; when evidence is sparse, use lower ratings (Beginning/Emerging)
 - Include every attribute listed for each dimension
 - Do not invent evidence; every evidence detail must be grounded in the transcript or reasoning record
 - Keep evidence details short and concrete

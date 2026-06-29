@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 
-const CONFIDENCE_LEVELS = ['Beginning', 'Emerging', 'Developing', 'Proficient', 'Exemplary'];
+const RATING_LEVELS = ['Beginning', 'Emerging', 'Developing', 'Proficient', 'Exemplary'];
 
 const CONCERN_PENALTIES = { Minor: 0.5, Moderate: 1, Major: 2 };
 const CONCERN_STYLES = {
@@ -10,30 +10,23 @@ const CONCERN_STYLES = {
   Major: { badge: 'bg-red-100 text-red-800 border-red-300', row: 'border-red-200 bg-red-50' },
 };
 
-export function confidenceToScore(level) {
-  const idx = CONFIDENCE_LEVELS.indexOf(level);
+function getRating(entity, fallback = 'Beginning') {
+  if (entity?.rating) return entity.rating;
+  return fallback;
+}
+
+export function ratingToScore(level) {
+  const idx = RATING_LEVELS.indexOf(level);
   return idx >= 0 ? idx + 1 : 0;
 }
 
-function confidenceToPoints(level) {
-  return Math.max(0, confidenceToScore(level) - 1);
+function ratingToPoints(level) {
+  return Math.max(0, ratingToScore(level) - 1);
 }
 
-function averageConfidencePoints(items, fallbackConfidence) {
-  const points = (items || [])
-    .map((item) => confidenceToPoints(item?.confidence))
-    .filter((score) => Number.isFinite(score));
-
-  if (points.length === 0) {
-    return confidenceToPoints(fallbackConfidence);
-  }
-
-  return points.reduce((sum, score) => sum + score, 0) / points.length;
-}
-
-function pointsToConfidenceLevel(points) {
-  const rounded = Math.max(0, Math.min(CONFIDENCE_LEVELS.length - 1, Math.round(points)));
-  return CONFIDENCE_LEVELS[rounded];
+function pointsToRatingLevel(points) {
+  const rounded = Math.max(0, Math.min(RATING_LEVELS.length - 1, Math.round(points)));
+  return RATING_LEVELS[rounded];
 }
 
 const DIMENSIONS = [
@@ -44,16 +37,16 @@ const DIMENSIONS = [
 
 function normalizeEvidenceItem(item) {
   if (typeof item === 'string') {
-    return { detail: item, weight: 3 };
+    return { detail: item, strength: 3 };
   }
   if (!item || typeof item !== 'object') {
-    return { detail: '', weight: 0 };
+    return { detail: '', strength: 0 };
   }
 
   const detail = typeof item.detail === 'string' ? item.detail : typeof item.text === 'string' ? item.text : '';
-  const rawWeight = Number(item.weight);
-  const weight = Number.isFinite(rawWeight) ? Math.max(1, Math.min(5, Math.round(rawWeight))) : 3;
-  return { detail, weight };
+  const rawStrength = Number(item.strength);
+  const strength = Number.isFinite(rawStrength) ? Math.max(1, Math.min(5, Math.round(rawStrength))) : 3;
+  return { detail, strength };
 }
 
 function getEvidenceStats(items) {
@@ -61,41 +54,48 @@ function getEvidenceStats(items) {
     .map(normalizeEvidenceItem)
     .filter((item) => item.detail);
 
-  const totalWeight = normalized.reduce((sum, item) => sum + item.weight, 0);
-  const averageWeight = normalized.length > 0 ? totalWeight / normalized.length : 0;
+  const totalStrength = normalized.reduce((sum, item) => sum + item.strength, 0);
+  const averageStrength = normalized.length > 0 ? totalStrength / normalized.length : 0;
   return {
     items: normalized,
     count: normalized.length,
-    totalWeight,
-    averageWeight,
+    totalStrength,
+    averageStrength,
   };
 }
 
-function evidenceSupportFactor(items) {
+function evidenceStrengthPoints(items) {
   const stats = getEvidenceStats(items);
-  if (stats.count === 0) return 0.15;
+  if (stats.count === 0) return 0;
 
   const countFactor = Math.min(1, stats.count / 3);
-  const weightFactor = Math.min(1, stats.totalWeight / 12);
-  return Math.min(1, (countFactor * 0.45) + (weightFactor * 0.55));
+  const usefulnessFactor = Math.min(1, stats.averageStrength / 5);
+  return 4 * ((countFactor * 0.5) + (usefulnessFactor * 0.5));
 }
 
-function weightedAttributePoints(attribute, fallbackConfidence) {
-  const basePoints = confidenceToPoints(attribute?.confidence || fallbackConfidence);
-  return basePoints * evidenceSupportFactor(attribute?.evidence);
+function calculatedAttributePoints(attribute, fallbackRating) {
+  const basePoints = ratingToPoints(getRating(attribute, fallbackRating));
+  const evidencePoints = evidenceStrengthPoints(attribute?.evidence);
+  const evidenceCount = getEvidenceStats(attribute?.evidence).count;
+
+  if (evidenceCount === 0) {
+    return basePoints * 0.6;
+  }
+
+  return (basePoints * 0.7) + (evidencePoints * 0.3);
 }
 
-function weightedDimensionPoints(attributes, fallbackConfidence) {
+function weightedDimensionPoints(attributes, fallbackRating) {
   if (!Array.isArray(attributes) || attributes.length === 0) {
-    return confidenceToPoints(fallbackConfidence) * 0.15;
+    return ratingToPoints(fallbackRating) * 0.6;
   }
 
   const points = attributes
-    .map((attribute) => weightedAttributePoints(attribute, fallbackConfidence))
+    .map((attribute) => calculatedAttributePoints(attribute, fallbackRating))
     .filter((score) => Number.isFinite(score));
 
   if (points.length === 0) {
-    return confidenceToPoints(fallbackConfidence) * 0.15;
+    return ratingToPoints(fallbackRating) * 0.6;
   }
 
   return points.reduce((sum, score) => sum + score, 0) / points.length;
@@ -105,12 +105,12 @@ function getDimensionEvidenceStats(dimension) {
   return (dimension?.attributes || []).reduce((acc, attribute) => {
     const stats = getEvidenceStats(attribute?.evidence);
     acc.count += stats.count;
-    acc.totalWeight += stats.totalWeight;
+    acc.totalStrength += stats.totalStrength;
     return acc;
-  }, { count: 0, totalWeight: 0 });
+  }, { count: 0, totalStrength: 0 });
 }
 
-function getConfidenceTone(level) {
+function getRatingTone(level) {
   switch (level) {
     case 'Exemplary':
       return {
@@ -140,17 +140,6 @@ function getConfidenceTone(level) {
   }
 }
 
-function StarRating({ level, size = 'text-base' }) {
-  const score = confidenceToScore(level);
-  return (
-    <span className="inline-flex items-center" title={level || 'Beginning'}>
-      {Array.from({ length: 5 }, (_, i) => (
-        <span key={i} className={`${size} leading-none ${i < score ? 'text-amber-400' : 'text-gray-300'}`}>★</span>
-      ))}
-    </span>
-  );
-}
-
 function SummaryStat({ label, value, subvalue, tone = 'text-gray-900' }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2">
@@ -165,7 +154,9 @@ function AttributeRow({ attr }) {
   const [open, setOpen] = React.useState(false);
   const evidenceStats = getEvidenceStats(attr.evidence);
   const hasEvidence = evidenceStats.count > 0;
-  const tone = getConfidenceTone(attr.confidence);
+  const calculatedPoints = calculatedAttributePoints(attr, getRating(attr));
+  const calculatedLevel = pointsToRatingLevel(calculatedPoints);
+  const tone = getRatingTone(calculatedLevel);
 
   return (
     <div className="rounded-md border border-gray-200 bg-white">
@@ -183,7 +174,9 @@ function AttributeRow({ attr }) {
                 <div className="text-sm font-semibold text-gray-800">{attr.name}</div>
                 {attr.summary && <div className="text-xs text-gray-500">{attr.summary}</div>}
               </div>
-              <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone.chip}`}>{attr.confidence || 'Beginning'}</span>
+              <div className="flex items-center gap-2">
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone.chip}`}>{calculatedLevel}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -192,13 +185,13 @@ function AttributeRow({ attr }) {
         <div className="border-t border-gray-100 px-6 py-2">
           <div className="mb-1 flex items-center justify-between gap-2">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Evidence</div>
-            <div className="text-[11px] text-gray-500">Total weight {evidenceStats.totalWeight}</div>
+            <div className="text-[11px] text-gray-500">Total strength {evidenceStats.totalStrength}</div>
           </div>
           <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
             {evidenceStats.items.map((e, i) => (
               <li key={i}>
                 <span>{e.detail}</span>
-                <span className="ml-2 rounded-full border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">Value {e.weight}/5</span>
+                <span className="ml-2 rounded-full border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">Strength {e.strength}/5</span>
               </li>
             ))}
           </ul>
@@ -211,8 +204,10 @@ function AttributeRow({ attr }) {
 function DimensionCard({ label, dimension, defaultOpen = false }) {
   const [open, setOpen] = React.useState(defaultOpen);
   const attributes = dimension?.attributes || [];
-  const tone = getConfidenceTone(dimension?.confidence);
   const evidenceStats = getDimensionEvidenceStats(dimension);
+  const weightedPoints = weightedDimensionPoints(attributes, getRating(dimension));
+  const weightedLevel = pointsToRatingLevel(weightedPoints);
+  const tone = getRatingTone(weightedLevel);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -226,14 +221,13 @@ function DimensionCard({ label, dimension, defaultOpen = false }) {
                 {dimension?.summary && <div className="mt-0.5 text-xs text-gray-600">{dimension.summary}</div>}
               </div>
               <div className="flex items-center gap-2">
-                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone.chip}`}>{dimension?.confidence || 'Beginning'}</span>
-                <StarRating level={dimension?.confidence} size="text-sm" />
+                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone.chip}`}>{weightedLevel}</span>
               </div>
             </div>
             <div className="mt-2 text-[11px] font-medium text-gray-500">
               {open
                 ? 'Hide attribute details'
-                : `Show ${attributes.length} attribute${attributes.length === 1 ? '' : 's'}, ${evidenceStats.count} evidence item${evidenceStats.count === 1 ? '' : 's'}, weight ${evidenceStats.totalWeight}`}
+                : `Show ${attributes.length} attribute${attributes.length === 1 ? '' : 's'}, ${evidenceStats.count} evidence item${evidenceStats.count === 1 ? '' : 's'}, strength ${evidenceStats.totalStrength}`}
             </div>
           </div>
         </div>
@@ -254,17 +248,22 @@ export default function DraEvaluation({ evaluation }) {
 
   const concerns = evaluation.concerns || [];
   const penalty = concerns.reduce((sum, c) => sum + (CONCERN_PENALTIES[c.severity] || 0), 0);
-  const processAveragePoints = weightedDimensionPoints(evaluation.process?.attributes, evaluation.process?.confidence);
-  const competencyPoints = weightedDimensionPoints(evaluation.competency?.attributes, evaluation.competency?.confidence);
-  const dispositionPoints = weightedDimensionPoints(evaluation.disposition?.attributes, evaluation.disposition?.confidence);
+  const processAveragePoints = weightedDimensionPoints(evaluation.process?.attributes, getRating(evaluation.process));
+  const competencyPoints = weightedDimensionPoints(evaluation.competency?.attributes, getRating(evaluation.competency));
+  const dispositionPoints = weightedDimensionPoints(evaluation.disposition?.attributes, getRating(evaluation.disposition));
+  const processLevel = pointsToRatingLevel(processAveragePoints);
+  const competencyLevel = pointsToRatingLevel(competencyPoints);
+  const dispositionLevel = pointsToRatingLevel(dispositionPoints);
   const cdFactor = ((competencyPoints + dispositionPoints) / 2) / 4;
   const weightedStagePoints = processAveragePoints * cdFactor;
   const totalScore = Math.max(0, (weightedStagePoints * (15 / 4)) - penalty);
   const maxScore = 15;
-  const overallLevel = pointsToConfidenceLevel(weightedStagePoints);
-  const overallTone = getConfidenceTone(overallLevel);
+  const processMultiplier = ((competencyPoints + dispositionPoints) / 2) / 4;
+  const overallNormalizedPoints = (totalScore / maxScore) * 4;
+  const overallLevelFromTotal = pointsToRatingLevel(overallNormalizedPoints);
+  const overallTone = getRatingTone(overallLevelFromTotal);
   const totalEvidence = DIMENSIONS.reduce((sum, [key]) => sum + getDimensionEvidenceStats(evaluation[key]).count, 0);
-  const totalEvidenceWeight = DIMENSIONS.reduce((sum, [key]) => sum + getDimensionEvidenceStats(evaluation[key]).totalWeight, 0);
+  const totalEvidenceStrength = DIMENSIONS.reduce((sum, [key]) => sum + getDimensionEvidenceStats(evaluation[key]).totalStrength, 0);
 
   return (
     <div className="not-prose space-y-4">
@@ -274,21 +273,33 @@ export default function DraEvaluation({ evaluation }) {
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">Evaluation Snapshot</div>
             <div className="mt-1 flex items-center gap-3">
               <div className="text-2xl font-bold text-gray-900">{Math.round(totalScore * 10) / 10} / {maxScore}</div>
-              <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${overallTone.chip}`}>{overallLevel}</span>
+              <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${overallTone.chip}`}>{overallLevelFromTotal}</span>
             </div>
-            <div className="mt-2 text-sm text-gray-600">Open a dimension card below to see the attribute breakdown and evidence behind the evaluation.</div>
+            <div className="mt-2 text-sm text-gray-600">Final score = Process base score × Character multiplier, with evidence shaping both layers and concerns reducing the final result.</div>
           </div>
           <div className="min-w-[180px] flex items-center gap-2">
-            <StarRating level={overallLevel} />
             {penalty > 0 && <span className="text-xs font-semibold text-red-600">Includes −{penalty} penalty</span>}
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <SummaryStat label="Process" value={evaluation.process?.confidence || 'Beginning'} />
-          <SummaryStat label="Competency" value={evaluation.competency?.confidence || 'Beginning'} />
-          <SummaryStat label="Disposition" value={evaluation.disposition?.confidence || 'Beginning'} />
-          <SummaryStat label="Evidence" value={String(totalEvidence)} subvalue={`Weight ${totalEvidenceWeight}${concerns.length > 0 ? ` · ${concerns.length} concern${concerns.length === 1 ? '' : 's'}` : ''}`} />
+          <SummaryStat label="1. Evidence Basis" value={String(totalEvidence)} subvalue={`Strength ${totalEvidenceStrength}${concerns.length > 0 ? ` · ${concerns.length} concern${concerns.length === 1 ? '' : 's'}` : ''}`} />
+          <SummaryStat label="2. Competency Score" value={competencyLevel} subvalue={`${Math.round(competencyPoints * 10) / 10} / 4 calculated from competency details`} />
+          <SummaryStat label="2. Disposition Score" value={dispositionLevel} subvalue={`${Math.round(dispositionPoints * 10) / 10} / 4 calculated from disposition details`} />
+          <SummaryStat label="3. Process Base" value={processLevel} subvalue={`${Math.round(processAveragePoints * 10) / 10} / 4 calculated from process details`} />
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <SummaryStat
+            label="Character Multiplier"
+            value={`${Math.round(processMultiplier * 100)}%`}
+            subvalue="Competency and Disposition combine to determine how strongly Process counts"
+          />
+          <SummaryStat
+            label="Scoring Flow"
+            value={`${Math.round(processAveragePoints * 10) / 10} × ${Math.round(processMultiplier * 100) / 100}`}
+            subvalue={`= ${Math.round(weightedStagePoints * 10) / 10} pre-scale points${penalty > 0 ? `, then −${penalty}` : ''}`}
+          />
         </div>
       </div>
 
