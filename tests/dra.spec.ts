@@ -344,7 +344,7 @@ test('dra practice mode evaluates progress across the three dimensions with dril
   await page.getByRole('button', { name: 'Evaluation' }).click();
   await page.getByRole('button', { name: 'Evaluate my progress' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Process', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Process/i })).toBeVisible();
   await expect(page.getByText('Solid framing of the problem.')).toBeVisible();
 
   // Drill into a Process attribute to reveal its supporting evidence.

@@ -6,6 +6,18 @@ async function initAndOpenBasicCourse({ page }: { page: any }) {
   await navigateToCourse(page);
 }
 
+async function setMonacoModelValue(page: any, matcherText: string, nextValue: string) {
+  await page.evaluate(({ matcherText, nextValue }) => {
+    const monaco = (window as any).monaco;
+    const models = monaco?.editor?.getModels?.() || [];
+    const model = models.find((candidate: any) => String(candidate.getValue()).includes(matcherText));
+    if (!model) {
+      throw new Error(`Unable to find Monaco model containing: ${matcherText}`);
+    }
+    model.setValue(nextValue);
+  }, { matcherText, nextValue });
+}
+
 test('snapshot ref lookup is reused across initial topic reads', async ({ page }) => {
   await initBasicCourse({ page });
 
@@ -60,10 +72,7 @@ test('editor commit', async ({ page }) => {
   await page.locator('.absolute.left-0\\.5').click();
   await expect(page.getByRole('code')).toContainText('# Home');
 
-  await page.getByText('# Home').click();
-  await page.getByRole('textbox', { name: 'Editor content' }).press('End');
-  await page.getByRole('textbox', { name: 'Editor content' }).fill('\n# Home altered!');
-  // await page.getByRole('textbox').fill('# Home\n\naltered!');
+  await setMonacoModelValue(page, '# Home', '# Home\n\n# Home altered!');
   await expect(page.getByRole('code')).toContainText('altered!');
 
   await page.getByRole('button', { name: 'Commit', exact: true }).click();

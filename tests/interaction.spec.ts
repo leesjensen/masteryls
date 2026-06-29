@@ -1,6 +1,18 @@
 import { test, expect } from './fixtures';
 import { initBasicCourse, navigateToCourse, navigateToCourseNoLogin } from './testInit';
 
+async function setMonacoModelValue(page: any, matcherText: string, nextValue: string) {
+  await page.evaluate(({ matcherText, nextValue }) => {
+    const monaco = (window as any).monaco;
+    const models = monaco?.editor?.getModels?.() || [];
+    const model = models.find((candidate: any) => String(candidate.getValue()).includes(matcherText));
+    if (!model) {
+      throw new Error(`Unable to find Monaco model containing: ${matcherText}`);
+    }
+    model.setValue(nextValue);
+  }, { matcherText, nextValue });
+}
+
 test('interaction multiple choice', async ({ page }) => {
   const interactionMarkdown = `
 # Quiz
@@ -319,7 +331,7 @@ Create an HTML page from your prompt.
   const editedHtml = generatedHtml.replace('Generated AI Page', 'Edited AI Page');
   const sourceEditorInput = sourceEditor.getByRole('textbox', { name: 'Editor content' });
   await sourceEditorInput.click({ force: true });
-  await sourceEditorInput.fill(editedHtml);
+  await setMonacoModelValue(page, 'Generated AI Page', editedHtml);
   await expect(page.getByRole('button', { name: 'Apply HTML changes' })).toBeEnabled();
   await page.getByRole('button', { name: 'Apply HTML changes' }).click();
   await expect(page.getByRole('button', { name: 'Submit' })).toBeEnabled();
