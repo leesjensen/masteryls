@@ -42,36 +42,99 @@ const DIMENSIONS = [
   ['disposition', 'Disposition'],
 ];
 
+function normalizeEvidenceItem(item) {
+  if (typeof item === 'string') {
+    return { detail: item, weight: 3 };
+  }
+  if (!item || typeof item !== 'object') {
+    return { detail: '', weight: 0 };
+  }
+
+  const detail = typeof item.detail === 'string' ? item.detail : typeof item.text === 'string' ? item.text : '';
+  const rawWeight = Number(item.weight);
+  const weight = Number.isFinite(rawWeight) ? Math.max(1, Math.min(5, Math.round(rawWeight))) : 3;
+  return { detail, weight };
+}
+
+function getEvidenceStats(items) {
+  const normalized = (items || [])
+    .map(normalizeEvidenceItem)
+    .filter((item) => item.detail);
+
+  const totalWeight = normalized.reduce((sum, item) => sum + item.weight, 0);
+  const averageWeight = normalized.length > 0 ? totalWeight / normalized.length : 0;
+  return {
+    items: normalized,
+    count: normalized.length,
+    totalWeight,
+    averageWeight,
+  };
+}
+
+function evidenceSupportFactor(items) {
+  const stats = getEvidenceStats(items);
+  if (stats.count === 0) return 0.15;
+
+  const countFactor = Math.min(1, stats.count / 3);
+  const weightFactor = Math.min(1, stats.totalWeight / 12);
+  return Math.min(1, (countFactor * 0.45) + (weightFactor * 0.55));
+}
+
+function weightedAttributePoints(attribute, fallbackConfidence) {
+  const basePoints = confidenceToPoints(attribute?.confidence || fallbackConfidence);
+  return basePoints * evidenceSupportFactor(attribute?.evidence);
+}
+
+function weightedDimensionPoints(attributes, fallbackConfidence) {
+  if (!Array.isArray(attributes) || attributes.length === 0) {
+    return confidenceToPoints(fallbackConfidence) * 0.15;
+  }
+
+  const points = attributes
+    .map((attribute) => weightedAttributePoints(attribute, fallbackConfidence))
+    .filter((score) => Number.isFinite(score));
+
+  if (points.length === 0) {
+    return confidenceToPoints(fallbackConfidence) * 0.15;
+  }
+
+  return points.reduce((sum, score) => sum + score, 0) / points.length;
+}
+
+function getDimensionEvidenceStats(dimension) {
+  return (dimension?.attributes || []).reduce((acc, attribute) => {
+    const stats = getEvidenceStats(attribute?.evidence);
+    acc.count += stats.count;
+    acc.totalWeight += stats.totalWeight;
+    return acc;
+  }, { count: 0, totalWeight: 0 });
+}
+
 function getConfidenceTone(level) {
   switch (level) {
     case 'Exemplary':
       return {
         chip: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-        bar: 'bg-emerald-500',
         text: 'text-emerald-700',
       };
     case 'Proficient':
       return {
         chip: 'bg-sky-100 text-sky-800 border-sky-300',
-        bar: 'bg-sky-500',
         text: 'text-sky-700',
       };
     case 'Developing':
       return {
         chip: 'bg-amber-100 text-amber-800 border-amber-300',
-        bar: 'bg-amber-500',
         text: 'text-amber-700',
       };
     case 'Emerging':
       return {
         chip: 'bg-orange-100 text-orange-800 border-orange-300',
-        bar: 'bg-orange-500',
         text: 'text-orange-700',
       };
     default:
       return {
         chip: 'bg-gray-100 text-gray-700 border-gray-300',
-        bar: 'bg-gray-500',
         text: 'text-gray-700',
       };
   }
@@ -100,7 +163,8 @@ function SummaryStat({ label, value, subvalue, tone = 'text-gray-900' }) {
 
 function AttributeRow({ attr }) {
   const [open, setOpen] = React.useState(false);
-  const hasEvidence = (attr.evidence || []).length > 0;
+  const evidenceStats = getEvidenceStats(attr.evidence);
+  const hasEvidence = evidenceStats.count > 0;
   const tone = getConfidenceTone(attr.confidence);
 
   return (
@@ -126,10 +190,16 @@ function AttributeRow({ attr }) {
       </button>
       {open && hasEvidence && (
         <div className="border-t border-gray-100 px-6 py-2">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Evidence</div>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Evidence</div>
+            <div className="text-[11px] text-gray-500">Total weight {evidenceStats.totalWeight}</div>
+          </div>
           <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
-            {attr.evidence.map((e, i) => (
-              <li key={i}>{e}</li>
+            {evidenceStats.items.map((e, i) => (
+              <li key={i}>
+                <span>{e.detail}</span>
+                <span className="ml-2 rounded-full border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">Value {e.weight}/5</span>
+              </li>
             ))}
           </ul>
         </div>
@@ -142,6 +212,7 @@ function DimensionCard({ label, dimension, defaultOpen = false }) {
   const [open, setOpen] = React.useState(defaultOpen);
   const attributes = dimension?.attributes || [];
   const tone = getConfidenceTone(dimension?.confidence);
+  const evidenceStats = getDimensionEvidenceStats(dimension);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -160,7 +231,9 @@ function DimensionCard({ label, dimension, defaultOpen = false }) {
               </div>
             </div>
             <div className="mt-2 text-[11px] font-medium text-gray-500">
-              {open ? 'Hide attribute details' : `Show ${attributes.length} attribute${attributes.length === 1 ? '' : 's'} and evidence`}
+              {open
+                ? 'Hide attribute details'
+                : `Show ${attributes.length} attribute${attributes.length === 1 ? '' : 's'}, ${evidenceStats.count} evidence item${evidenceStats.count === 1 ? '' : 's'}, weight ${evidenceStats.totalWeight}`}
             </div>
           </div>
         </div>
@@ -181,15 +254,17 @@ export default function DraEvaluation({ evaluation }) {
 
   const concerns = evaluation.concerns || [];
   const penalty = concerns.reduce((sum, c) => sum + (CONCERN_PENALTIES[c.severity] || 0), 0);
-  const processAveragePoints = averageConfidencePoints(evaluation.process?.attributes, evaluation.process?.confidence);
-  const competencyPoints = confidenceToPoints(evaluation.competency?.confidence);
-  const dispositionPoints = confidenceToPoints(evaluation.disposition?.confidence);
+  const processAveragePoints = weightedDimensionPoints(evaluation.process?.attributes, evaluation.process?.confidence);
+  const competencyPoints = weightedDimensionPoints(evaluation.competency?.attributes, evaluation.competency?.confidence);
+  const dispositionPoints = weightedDimensionPoints(evaluation.disposition?.attributes, evaluation.disposition?.confidence);
   const cdFactor = ((competencyPoints + dispositionPoints) / 2) / 4;
   const weightedStagePoints = processAveragePoints * cdFactor;
   const totalScore = Math.max(0, (weightedStagePoints * (15 / 4)) - penalty);
   const maxScore = 15;
   const overallLevel = pointsToConfidenceLevel(weightedStagePoints);
   const overallTone = getConfidenceTone(overallLevel);
+  const totalEvidence = DIMENSIONS.reduce((sum, [key]) => sum + getDimensionEvidenceStats(evaluation[key]).count, 0);
+  const totalEvidenceWeight = DIMENSIONS.reduce((sum, [key]) => sum + getDimensionEvidenceStats(evaluation[key]).totalWeight, 0);
 
   return (
     <div className="not-prose space-y-4">
@@ -213,7 +288,7 @@ export default function DraEvaluation({ evaluation }) {
           <SummaryStat label="Process" value={evaluation.process?.confidence || 'Beginning'} />
           <SummaryStat label="Competency" value={evaluation.competency?.confidence || 'Beginning'} />
           <SummaryStat label="Disposition" value={evaluation.disposition?.confidence || 'Beginning'} />
-          <SummaryStat label="Concerns" value={String(concerns.length)} subvalue={concerns.length > 0 ? 'Review below' : 'No flagged issues'} tone={concerns.length > 0 ? 'text-red-700' : 'text-gray-900'} />
+          <SummaryStat label="Evidence" value={String(totalEvidence)} subvalue={`Weight ${totalEvidenceWeight}${concerns.length > 0 ? ` · ${concerns.length} concern${concerns.length === 1 ? '' : 's'}` : ''}`} />
         </div>
       </div>
 
