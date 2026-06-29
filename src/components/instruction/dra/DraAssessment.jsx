@@ -24,9 +24,7 @@ function ToolbarButton({ active, disabled, onClick, title, children }) {
       }}
       disabled={disabled}
       title={title}
-      className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${
-        active ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-      }`}
+      className={`px-2 py-0.5 rounded text-xs font-medium transition-colors disabled:opacity-40 ${active ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
     >
       {children}
     </button>
@@ -40,7 +38,7 @@ export default function DraAssessment({ value, onChange, onBlur, readOnly, activ
     editable: !readOnly,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none h-full',
+        class: 'prose prose-sm max-w-none focus:outline-none h-full prose-p:my-2 prose-ul:my-1 prose-ol:my-1 prose-headings:mt-3 prose-headings:mb-2 prose-p:leading-4',
       },
     },
     onUpdate({ editor }) {
@@ -94,20 +92,29 @@ export default function DraAssessment({ value, onChange, onBlur, readOnly, activ
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {!readOnly && (
         <div className="shrink-0 flex items-center gap-0.5 border-b border-gray-200 px-2 py-1 bg-gray-50">
-          <ToolbarButton active={is.h2} onClick={can.h2} title="Heading">H2</ToolbarButton>
-          <ToolbarButton active={is.h3} onClick={can.h3} title="Subheading">H3</ToolbarButton>
+          <ToolbarButton active={is.h2} onClick={can.h2} title="Heading">
+            H2
+          </ToolbarButton>
+          <ToolbarButton active={is.h3} onClick={can.h3} title="Subheading">
+            H3
+          </ToolbarButton>
           <span className="w-px h-4 bg-gray-300 mx-1" />
-          <ToolbarButton active={is.bold} onClick={can.bold} title="Bold"><strong>B</strong></ToolbarButton>
-          <ToolbarButton active={is.italic} onClick={can.italic} title="Italic"><em>I</em></ToolbarButton>
+          <ToolbarButton active={is.bold} onClick={can.bold} title="Bold">
+            <strong>B</strong>
+          </ToolbarButton>
+          <ToolbarButton active={is.italic} onClick={can.italic} title="Italic">
+            <em>I</em>
+          </ToolbarButton>
           <span className="w-px h-4 bg-gray-300 mx-1" />
-          <ToolbarButton active={is.bullet} onClick={can.bullet} title="Bullet list">• List</ToolbarButton>
-          <ToolbarButton active={is.ordered} onClick={can.ordered} title="Numbered list">1. List</ToolbarButton>
+          <ToolbarButton active={is.bullet} onClick={can.bullet} title="Bullet list">
+            • List
+          </ToolbarButton>
+          <ToolbarButton active={is.ordered} onClick={can.ordered} title="Numbered list">
+            1. List
+          </ToolbarButton>
         </div>
       )}
-      <EditorContent
-        editor={editor}
-        className="flex-1 min-h-0 overflow-auto px-3 py-2 text-sm"
-      />
+      <EditorContent editor={editor} className="flex-1 min-h-0 overflow-auto px-3 py-2 text-sm" />
     </div>
   );
 }
