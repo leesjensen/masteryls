@@ -41,8 +41,7 @@ function getTargetIcon(target) {
   }
 }
 
-export default function DraInvestigation({ targets, conversations, onSendMessage, readOnly, learningSession }) {
-  const [selectedKey, setSelectedKey] = React.useState('');
+export default function DraInvestigation({ targets, selectedKey, onSelectTarget, conversations, onSendMessage, readOnly, learningSession }) {
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const lastMessageRef = React.useRef(null);
@@ -79,9 +78,9 @@ export default function DraInvestigation({ targets, conversations, onSendMessage
 
   React.useEffect(() => {
     if ((!selectedKey || !sortedTargets.some((t) => t.key === selectedKey)) && sortedTargets[0]) {
-      setSelectedKey(sortedTargets[0].key);
+      onSelectTarget?.(sortedTargets[0].key);
     }
-  }, [sortedTargets, selectedKey]);
+  }, [sortedTargets, selectedKey, onSelectTarget]);
 
   const selectedTarget = sortedTargets.find((t) => t.key === selectedKey) || null;
   const messages = conversations[selectedKey] || [];
@@ -90,7 +89,7 @@ export default function DraInvestigation({ targets, conversations, onSendMessage
     const isSelected = target.key === selectedKey;
 
     return (
-      <button key={target.key} onClick={() => setSelectedKey(target.key)} className={`w-full text-left px-3 py-2 rounded border text-sm ${isSelected ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}>
+      <button key={target.key} onClick={() => onSelectTarget?.(target.key)} className={`w-full text-left px-3 py-2 rounded border text-sm ${isSelected ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}>
         <div className="flex items-start gap-2 min-w-0">
           <div className="mt-0.5 shrink-0">{getTargetIcon(target)}</div>
           <div className="min-w-0">

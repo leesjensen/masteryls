@@ -154,6 +154,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [coaching, setCoaching] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('overview');
   const [activeStage, setActiveStage] = React.useState('');
+  const [selectedTargetKey, setSelectedTargetKey] = React.useState('');
   const courseId = learningSession?.course?.id;
   const topicId = learningSession?.topic?.id;
   const { panePercent: investigationPanePercent, splitContainerRef: investigationSplitRef, onPaneMoved: onInvestigationPaneMoved, onPaneResized: onInvestigationPaneResized } = useSplitPaneState(55);
@@ -193,6 +194,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
           const savedTab = uiSettings?.[`draActiveTab_${topicId}`];
           if (savedTab) setActiveTab(savedTab);
+
+          const savedTargetKey = uiSettings?.[`draSelectedTarget_${topicId}`];
+          if (savedTargetKey) setSelectedTargetKey(savedTargetKey);
         }
       } catch (err) {
         console.error('Failed to load DRA state:', err);
@@ -326,6 +330,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setActiveStage(stage);
     if (courseId && topicId) {
       courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: stage });
+    }
+  }
+
+  function selectTarget(targetKey) {
+    if (!targetKey || selectedTargetKey === targetKey) return;
+    setSelectedTargetKey(targetKey);
+    if (courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draSelectedTarget_${topicId}`]: targetKey });
     }
   }
 
@@ -731,7 +743,15 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             })()}
           <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
             <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
-              <DraInvestigation targets={targets} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
+              <DraInvestigation
+                targets={targets}
+                selectedKey={selectedTargetKey}
+                onSelectTarget={selectTarget}
+                conversations={details.conversations || {}}
+                onSendMessage={sendInvestigationMessage}
+                readOnly={investigationReadOnly}
+                learningSession={learningSession}
+              />
             </div>
             <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
