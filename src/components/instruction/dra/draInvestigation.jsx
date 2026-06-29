@@ -1,5 +1,45 @@
 import React from 'react';
+import { Blocks, Briefcase, Database, FileText, Map, Server, UserRound } from 'lucide-react';
 import Markdown from '../../Markdown';
+
+const resourceTypeOrder = {
+  person: 0,
+  artifact: 1,
+  system: 2,
+  data: 3,
+  environment: 4,
+};
+
+function getTargetCategory(target) {
+  return target.type === 'stakeholder' ? 'stakeholder' : 'resource';
+}
+
+function getResourceTypeLabel(target) {
+  if (target.type === 'stakeholder') return target.role || 'Stakeholder';
+  if (!target.type) return 'Resource';
+  return target.type.charAt(0).toUpperCase() + target.type.slice(1);
+}
+
+function getTargetIcon(target) {
+  if (getTargetCategory(target) === 'stakeholder') {
+    return <UserRound size={16} className="text-blue-600" />;
+  }
+
+  switch ((target.type || '').toLowerCase()) {
+    case 'person':
+      return <Briefcase size={16} className="text-amber-600" />;
+    case 'artifact':
+      return <FileText size={16} className="text-violet-600" />;
+    case 'system':
+      return <Server size={16} className="text-emerald-600" />;
+    case 'data':
+      return <Database size={16} className="text-cyan-700" />;
+    case 'environment':
+      return <Map size={16} className="text-rose-600" />;
+    default:
+      return <Blocks size={16} className="text-gray-500" />;
+  }
+}
 
 export default function DraInvestigation({ targets, conversations, onSendMessage, readOnly, learningSession }) {
   const [selectedKey, setSelectedKey] = React.useState('');
@@ -8,14 +48,59 @@ export default function DraInvestigation({ targets, conversations, onSendMessage
   const lastMessageRef = React.useRef(null);
   const inputRef = React.useRef(null);
 
-  React.useEffect(() => {
-    if ((!selectedKey || !targets.some((t) => t.key === selectedKey)) && targets[0]) {
-      setSelectedKey(targets[0].key);
-    }
-  }, [targets, selectedKey]);
+  const sortedTargets = React.useMemo(() => (
+    targets.map((target, index) => ({ ...target, originalIndex: index })).sort((a, b) => {
+      const aCategory = getTargetCategory(a);
+      const bCategory = getTargetCategory(b);
 
-  const selectedTarget = targets.find((t) => t.key === selectedKey) || null;
+      if (aCategory !== bCategory) {
+        return aCategory === 'stakeholder' ? -1 : 1;
+      }
+
+      if (aCategory === 'stakeholder') {
+        return a.originalIndex - b.originalIndex;
+      }
+
+      if (aCategory === 'resource') {
+        const aResourceRank = resourceTypeOrder[(a.type || '').toLowerCase()] ?? Number.MAX_SAFE_INTEGER;
+        const bResourceRank = resourceTypeOrder[(b.type || '').toLowerCase()] ?? Number.MAX_SAFE_INTEGER;
+        if (aResourceRank !== bResourceRank) return aResourceRank - bResourceRank;
+
+        const typeCompare = (a.type || '').localeCompare(b.type || '');
+        if (typeCompare !== 0) return typeCompare;
+      }
+
+      return (a.name || '').localeCompare(b.name || '');
+    })
+  ), [targets]);
+
+  const stakeholderTargets = sortedTargets.filter((target) => getTargetCategory(target) === 'stakeholder');
+  const resourceTargets = sortedTargets.filter((target) => getTargetCategory(target) === 'resource');
+
+  React.useEffect(() => {
+    if ((!selectedKey || !sortedTargets.some((t) => t.key === selectedKey)) && sortedTargets[0]) {
+      setSelectedKey(sortedTargets[0].key);
+    }
+  }, [sortedTargets, selectedKey]);
+
+  const selectedTarget = sortedTargets.find((t) => t.key === selectedKey) || null;
   const messages = conversations[selectedKey] || [];
+
+  function renderTargetButton(target) {
+    const isSelected = target.key === selectedKey;
+
+    return (
+      <button key={target.key} onClick={() => setSelectedKey(target.key)} className={`w-full text-left px-3 py-2 rounded border text-sm ${isSelected ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}>
+        <div className="flex items-start gap-2 min-w-0">
+          <div className="mt-0.5 shrink-0">{getTargetIcon(target)}</div>
+          <div className="min-w-0">
+            <div className="font-semibold truncate">{target.name}</div>
+            <div className="text-xs text-gray-500 truncate">{getResourceTypeLabel(target)}</div>
+          </div>
+        </div>
+      </button>
+    );
+  }
 
   React.useEffect(() => {
     lastMessageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -37,15 +122,23 @@ export default function DraInvestigation({ targets, conversations, onSendMessage
   return (
     <div className="flex flex-1 min-h-0 gap-4 p-4">
       <div className="w-48 shrink-0 space-y-1 overflow-y-auto">
-        {targets.length === 0 ? (
+        {sortedTargets.length === 0 ? (
           <p className="text-sm text-gray-500 italic">No stakeholders or resources are revealed yet. Work through the scenario to uncover them.</p>
         ) : (
-          targets.map((t) => (
-            <button key={t.key} onClick={() => setSelectedKey(t.key)} className={`w-full text-left px-3 py-2 rounded border text-sm ${t.key === selectedKey ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}>
-              <div className="font-semibold truncate">{t.name}</div>
-              <div className="text-xs text-gray-500 truncate">{t.type === 'stakeholder' ? t.role || 'Stakeholder' : t.type || 'Resource'}</div>
-            </button>
-          ))
+          <>
+            {stakeholderTargets.length > 0 && (
+              <>
+                <div className="px-1 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stakeholders</div>
+                {stakeholderTargets.map(renderTargetButton)}
+              </>
+            )}
+            {resourceTargets.length > 0 && (
+              <>
+                <div className="px-1 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Resources</div>
+                {resourceTargets.map(renderTargetButton)}
+              </>
+            )}
+          </>
         )}
       </div>
 
