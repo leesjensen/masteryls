@@ -1248,16 +1248,16 @@ Requirements:
     return aiDraScenarioGenerator(params || {});
   }
 
-  async function getDraStakeholderResponse(scenario, target, messages, stakeholders, resources) {
-    return aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders, resources);
+  async function getDraStakeholderResponse(scenario, target, messages, stakeholders, resources, difficulty) {
+    return aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders, resources, difficulty);
   }
 
-  async function getDraEvaluation(scenario, transcripts, reasoningRecord) {
-    return aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord);
+  async function getDraEvaluation(scenario, transcripts, reasoningRecord, difficulty) {
+    return aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord, difficulty);
   }
 
-  async function getDraCoaching(scenario, transcripts, reasoningRecord, activeStage) {
-    return aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage);
+  async function getDraCoaching(scenario, transcripts, reasoningRecord, activeStage, difficulty) {
+    return aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage, difficulty);
   }
 
   async function uploadSubmissionFile({ interactionId, file }) {

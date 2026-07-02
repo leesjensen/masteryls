@@ -189,7 +189,24 @@ Requirements:
 - Provide exactly these six stages in this order: Frame, Research, Model, Act, Validate, Reflect — each with a discipline-specific interpretation grounded in this scenario
 - The summary must remain high-level so it can be shown even when details are withheld; the description carries the full detail
 - Make the scenario specific and grounded in the named discipline
-- Calibrate complexity to the difficulty level
+
+Calibrate all of the following to the difficulty level (${difficulty ?? 3} on a 1–5 scale):
+
+Scenario complexity:
+- Difficulty 1–2: the right approach is relatively clear with few trade-offs; a straightforward path leads to a good solution
+- Difficulty 3: moderate ambiguity with some trade-offs the learner must navigate
+- Difficulty 4–5: genuine ambiguity where multiple defensible approaches exist, each with significant trade-offs and no clear right answer
+
+Constraint conflict:
+- Difficulty 1–2: constraints are independent and non-conflicting
+- Difficulty 3: constraints create mild tensions
+- Difficulty 4–5: at least two constraints must actively conflict so no solution can fully satisfy all of them simultaneously
+
+Stage interpretations (the "interpretation" field for each stage):
+- Difficulty 1–2: name the exact concrete actions the learner should take — specific artifacts to produce, specific people to consult, specific decisions to make (e.g. "Draft the municipal ordinance and re-programme the signal controllers to match the new flow patterns")
+- Difficulty 3: describe the general approach without naming specific artifacts or stakeholders
+- Difficulty 4–5: describe only the broad goal of the stage in discipline-neutral terms (e.g. "Record the actions you feel are appropriate to implement the model you have defined") — do not name specific actions, artifacts, or stakeholders
+
 - Return only the JSON object`;
 
   const response = await makeSimpleAiRequest(prompt);
@@ -207,7 +224,7 @@ Requirements:
  * @param {Array<{role: 'user'|'model', text: string}>} messages - The conversation so far.
  * @returns {Promise<string>} The in-character reply as GitHub-flavored markdown.
  */
-export async function aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders = [], resources = []) {
+export async function aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders = [], resources = [], difficulty = 3) {
   const isStakeholder = Boolean(target?.role) || (target?.type || 'stakeholder') === 'stakeholder';
   const persona = isStakeholder
     ? `You are ${target?.name || 'a stakeholder'}, ${target?.role || 'a stakeholder'} in this scenario.
@@ -231,9 +248,13 @@ ${persona}
 Known people and resources in this scenario:
 ${knownPeople || '(none listed)'}
 
+Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your responsiveness accordingly:
+- Difficulty 1–2: be warm, forthcoming, and proactive — volunteer relevant information freely, give clear direct answers, and gently redirect vague questions toward useful information
+- Difficulty 3: be professional and responsive — answer direct questions helpfully but don't volunteer everything unprompted
+- Difficulty 4–5: be guarded and reserved — require precise, well-framed questions to give useful answers; respond from your character's narrow personal perspective; give partial or indirect information; do not synthesize the big picture for the learner
+
 Guidelines:
 - Stay fully in character and respond as ${target?.name || 'this target'} would.
-- Reveal information only in response to relevant questions; do not volunteer the whole picture at once.
 - Be concise (under 150 words) and use plain GitHub-flavored markdown.
 - Do not evaluate the learner, give away the "answer", or break character.
 - When referring to other people or resources, use only the exact names listed above. Do not invent names.`;
@@ -257,7 +278,7 @@ Guidelines:
  * @param {object} reasoningRecord - The learner's recorded reasoning fields.
  * @returns {Promise<object>} The evaluation: { process, competency, disposition } each with rating/summary/attributes[].
  */
-export async function aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord) {
+export async function aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord, difficulty = 3) {
   const transcriptText = (transcripts || [])
     .filter((t) => (t.messages || []).length > 0)
     .map((t) => {
@@ -282,6 +303,11 @@ ${transcriptText || '(no interviews conducted yet)'}
 
 REASONING RECORD:
 ${reasoningText || '(empty)'}
+
+Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your rating thresholds accordingly:
+- Difficulty 1–2: sparse evidence is acceptable for mid-range ratings (Developing/Proficient); reward engagement and basic process participation
+- Difficulty 3: require meaningful, substantive engagement for Proficient ratings
+- Difficulty 4–5: require thorough transcripts with a broad range of stakeholders consulted, specific and well-reasoned stage notes, and demonstrated nuanced thinking for Proficient or Exemplary; give Beginning/Emerging when evidence is sparse regardless of apparent effort; at this difficulty, consulting fewer than half the available stakeholders or resources should be noted as a research gap in the Process dimension
 
 Assess three dimensions. For each overall dimension and each of its attributes, give a rating (exactly one of: Beginning, Emerging, Developing, Proficient, Exemplary), a one-sentence summary, and supporting evidence drawn from the learner's actual behavior.
 
@@ -329,7 +355,7 @@ Rules:
  * @param {string} [activeStage] - The disciplinary stage the learner is currently working in.
  * @returns {Promise<{feedback: string, hints: string[], suggestions: string[]}>}
  */
-export async function aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage) {
+export async function aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage, difficulty = 3) {
   const transcriptText = (transcripts || [])
     .filter((t) => (t.messages || []).length > 0)
     .map((t) => {
@@ -363,6 +389,11 @@ Provide brief coaching as a raw JSON object (no markdown code fence) with exactl
   "hints": ["1-3 short, actionable hints that nudge the learner's thinking"],
   "suggestions": ["1-3 specific next investigations (stakeholders to interview, resources to consult, or reasoning to record)"]
 }
+
+Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate how directive your coaching is:
+- Difficulty 1–2: be specific and prescriptive — name exact stakeholders to interview next, exact reasoning to record, and spell out what good work looks like at this stage
+- Difficulty 3: give balanced hints that suggest directions without naming specific next steps
+- Difficulty 4–5: give only general process principles and high-level observations — do not name specific stakeholders, resources, or actions; the learner must determine their own path
 
 Rules:
 - Encourage good reasoning habits and point to gaps without revealing the answer

@@ -370,7 +370,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     applyStateUpdate({ ...details, conversations: { ...conversations, [key]: withUser } });
 
     try {
-      const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser, details.stakeholders || [], details.resources || []);
+      const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser, details.stakeholders || [], details.resources || [], details.difficulty ?? params.difficulty);
       const nextConversations = { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] };
       const newTargets = detectNewTargets(reply, details);
       applyStateUpdate({
@@ -420,8 +420,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       };
       await autoSaveDetails(nextDetails, { selectPracticeScenarioId: runMode === 'practice' ? scenarioRunId : selectedPracticeScenarioId });
       await courseOps.addProgress(null, null, 'dra', 0, { state: 'inProgress', mode: runMode });
-    } catch {
-      alert('Unable to generate a scenario. Please try again.');
+    } catch (ex) {
+      alert(`Unable to generate a scenario. Please try again. ${ex.message || ''}`);
     } finally {
       setBusyAction(null);
     }
@@ -456,14 +456,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function computeEvaluation(source) {
-    return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.stageNotes || {});
+    return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.stageNotes || {}, source.difficulty);
   }
 
   async function requestCoaching() {
     if (draReadOnly || coaching) return;
     setCoaching(true);
     try {
-      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage);
+      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage, details.difficulty ?? params.difficulty);
       await autoSaveDetails({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');
@@ -574,7 +574,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   function renderActionButtons() {
     if (isPreview || !user) return null;
-    const actionBannerClass = 'not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3';
 
     if (details.state === 'notStarted') {
       return (
@@ -602,29 +601,27 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
     if (details.state === 'inProgress') {
       return (
-        <div className={actionBannerClass}>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="text-sm font-bold text-blue-600">Assessment in progress</div>
-              {locked && <div className="text-xs text-blue-400">Final assessment — the scenario is locked and must be completed.</div>}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {!locked && (
-                <button disabled={draReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
-                  Cancel
-                </button>
-              )}
-              <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
-                {busyAction === 'completeAssessment' && <Spinner />}
-                Complete assessment
+        <div className="not-prose rounded border border-blue-200 bg-blue-50 p-3 flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-blue-600">Assessment in progress</div>
+            {locked && <div className="text-xs text-blue-400">Final assessment — the scenario is locked and must be completed.</div>}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {!locked && (
+              <button disabled={draReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
+                Cancel
               </button>
-              {!draReadOnly && (
-                <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
-                  {saving && <Spinner />}
-                  {saving ? 'Saving…' : 'Save'}
-                </button>
-              )}
-            </div>
+            )}
+            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+              {busyAction === 'completeAssessment' && <Spinner />}
+              Complete assessment
+            </button>
+            {!draReadOnly && (
+              <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+                {saving && <Spinner />}
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            )}
           </div>
         </div>
       );
@@ -633,7 +630,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (details.state === 'completed') {
       const wasFinal = details.mode === 'final';
       return (
-        <div className="not-prose mt-4 rounded border border-blue-200 bg-blue-50 p-3 flex flex-wrap items-center gap-4">
+        <div className="not-prose rounded border border-blue-200 bg-blue-50 p-3 flex flex-wrap items-center gap-4">
           <div>
             <div className="text-sm font-bold text-blue-600">Assessment complete</div>
             {details.completedAt && <div className="text-xs text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
@@ -719,9 +716,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   return (
     <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
-      <div className="markdown-body px-4 pt-4 shrink-0">
-        <h1>{params.title || 'Disciplinary Reasoning Assessment'}</h1>
-        {renderActionButtons()}
+      <div className="px-4 pt-4 shrink-0">
+        <div className="not-prose flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-gray-200">
+          <h1 className="text-2xl font-semibold text-gray-900 m-0">{params.title || 'Disciplinary Reasoning Assessment'}</h1>
+          {(details.state === 'inProgress' || details.state === 'completed') && renderActionButtons()}
+        </div>
+        {details.state === 'notStarted' && renderActionButtons()}
         {tabs.length > 1 && <DraTabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
       </div>
 
@@ -743,15 +743,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             })()}
           <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
             <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
-              <DraInvestigation
-                targets={targets}
-                selectedKey={selectedTargetKey}
-                onSelectTarget={selectTarget}
-                conversations={details.conversations || {}}
-                onSendMessage={sendInvestigationMessage}
-                readOnly={investigationReadOnly}
-                learningSession={learningSession}
-              />
+              <DraInvestigation targets={targets} selectedKey={selectedTargetKey} onSelectTarget={selectTarget} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
             </div>
             <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
             <div className="flex-1 min-w-0 flex flex-col overflow-hidden">

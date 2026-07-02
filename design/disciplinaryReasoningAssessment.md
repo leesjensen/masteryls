@@ -123,9 +123,11 @@ The assessment may optionally introduce unexpected changes into the scenario at 
 
 ### Difficulty
 
-The difficulty of the scenario controls how much is exposed to the learner at the beginning and how complex the scenario is.
+Difficulty is a 1–5 scale set by the author. It controls six independent levers that together shift the experience from a heavily scaffolded tutorial (1) to an unguided professional challenge (5). All levers are calibrated at the same difficulty value so the experience is coherent across every part of the assessment.
 
-**Revealed constraints**
+#### 1. Information disclosure
+
+How much of the generated scenario is revealed to the learner upfront. Withheld stakeholders and resources still exist — the learner must discover them during investigation.
 
 ```
 ┌────────────┬─────────────┬─────────────┬──────────────┬───────────┐
@@ -140,6 +142,66 @@ The difficulty of the scenario controls how much is exposed to the learner at th
 │ 4–5        │ summary     │ —           │ —            │ —         │
 └────────────┴─────────────┴─────────────┴──────────────┴───────────┘
 ```
+
+#### 2. Stage hints
+
+The AI-generated interpretation for each stage tells the learner what to do in that stage. At low difficulty the hint is specific and actionable; at high difficulty it describes only the broad goal, leaving the learner to determine their own approach.
+
+| Difficulty | Stage hint style | Example |
+|---|---|---|
+| 1–2 | Names exact actions, artifacts, and stakeholders | "Draft the municipal ordinance and re-programme the signal controllers to match the new flow patterns." |
+| 3 | Describes the general approach without naming specifics | "Develop and document the implementation plan for your proposed solution." |
+| 4–5 | States only the broad goal of the stage | "Record the actions you feel are appropriate to implement the model you have defined." |
+
+#### 3. Stakeholder cooperativeness
+
+How readily stakeholders and resources share information during investigation conversations.
+
+| Difficulty | Stakeholder behaviour |
+|---|---|
+| 1–2 | Warm and forthcoming — volunteers relevant information freely, gives clear direct answers, gently redirects vague questions |
+| 3 | Professional and responsive — answers direct questions helpfully but does not volunteer everything unprompted |
+| 4–5 | Guarded and reserved — requires precise, well-framed questions; responds from a narrow personal perspective; gives partial or indirect information; does not synthesise the big picture |
+
+#### 4. Coaching directiveness
+
+How specific the coaching feedback is. Coaching is only available in Practice mode.
+
+| Difficulty | Coaching style |
+|---|---|
+| 1–2 | Prescriptive — names exact stakeholders to interview next, exact reasoning to record, and spells out what good work looks like at each stage |
+| 3 | Balanced — suggests directions without naming specific next steps |
+| 4–5 | Principle-only — gives general process observations; does not name specific stakeholders, resources, or actions |
+
+#### 5. Evaluation bar
+
+The evidence threshold the AI evaluator requires before awarding higher ratings.
+
+| Difficulty | Evaluation standard |
+|---|---|
+| 1–2 | Sparse evidence is acceptable for mid-range ratings; engagement and basic process participation are rewarded |
+| 3 | Meaningful, substantive engagement is required for Proficient ratings |
+| 4–5 | Thorough transcripts across a broad range of sources, specific and well-reasoned stage notes, and demonstrated nuanced thinking are required for Proficient or Exemplary; sparse evidence yields Beginning/Emerging regardless of apparent effort; consulting fewer than half the available stakeholders or resources is flagged as a process gap |
+
+#### 6. Constraint conflict
+
+Whether the generated constraints can all be satisfied simultaneously.
+
+| Difficulty | Constraint design |
+|---|---|
+| 1–2 | Constraints are independent and non-conflicting |
+| 3 | Constraints create mild tensions |
+| 4–5 | At least two constraints actively conflict — no solution can fully satisfy all of them simultaneously |
+
+#### Scenario complexity
+
+Difficulty also influences the overall ambiguity of the scenario itself:
+
+- **Difficulty 1–2** — the right approach is relatively clear with few trade-offs; a straightforward path leads to a good solution
+- **Difficulty 3** — moderate ambiguity with trade-offs the learner must navigate
+- **Difficulty 4–5** — genuine ambiguity where multiple defensible approaches exist, each with significant trade-offs and no clear right answer
+
+> Implementation status: all six levers are implemented. Information disclosure is applied in the frontend at render time. The remaining five levers (stage hints, constraint conflict, stakeholder cooperativeness, coaching directiveness, evaluation bar, scenario complexity) are injected into the respective AI prompts at generation or interaction time using the difficulty value stored with the scenario when it was generated.
 
 ## Evaluation
 
