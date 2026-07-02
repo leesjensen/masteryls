@@ -411,10 +411,12 @@ Rules:
 
 function parseJsonResponse(response) {
   const text = String(response || '').trim();
+  // Strip trailing commas before } or ] — a common AI output error.
+  const cleaned = text.replace(/,(\s*[}\]])/g, '$1');
   try {
-    return JSON.parse(text);
+    return JSON.parse(cleaned);
   } catch {
-    const match = text.match(/\{[\s\S]*\}/);
+    const match = cleaned.match(/\{[\s\S]*\}/);
     if (match) {
       return JSON.parse(match[0]);
     }
