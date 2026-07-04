@@ -99,27 +99,20 @@ function ScenarioView({ details, difficulty, learningSession }) {
 
 function createEmptyDraState() {
   return {
-    details: { state: 'notStarted' },
     practiceScenarios: [],
     selectedPracticeScenarioId: null,
+    finalScenario: null,
   };
 }
 
 function normalizeDraState(state) {
-  const base = createEmptyDraState();
-  if (!state || typeof state !== 'object') {
-    return base;
-  }
+  if (!state || typeof state !== 'object') return createEmptyDraState();
 
-  const details = state.details && typeof state.details === 'object' ? state.details : base.details;
   const practiceScenarios = Array.isArray(state.practiceScenarios) ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId) : [];
   const selectedPracticeScenarioId = typeof state.selectedPracticeScenarioId === 'string' && practiceScenarios.some((item) => item.scenarioRunId === state.selectedPracticeScenarioId) ? state.selectedPracticeScenarioId : null;
+  const finalScenario = state.finalScenario && typeof state.finalScenario === 'object' && state.finalScenario.scenarioRunId ? state.finalScenario : null;
 
-  return {
-    details,
-    practiceScenarios,
-    selectedPracticeScenarioId,
-  };
+  return { practiceScenarios, selectedPracticeScenarioId, finalScenario };
 }
 
 function formatScenarioLabel(details, index) {
@@ -177,15 +170,15 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         if (!isPreview && user && learningSession?.enrollment) {
           const state = await courseOps.getDraState();
           const normalizedState = normalizeDraState(state);
-          const ds = normalizedState.details || {};
+          const activeScenario = normalizedState.practiceScenarios.find((s) => s.scenarioRunId === normalizedState.selectedPracticeScenarioId) || normalizedState.finalScenario || {};
           // Prevent the state-change effect below from overriding our tab restoration.
-          prevStateRef.current = ds.state;
+          prevStateRef.current = activeScenario.state;
           setDraState(normalizedState);
 
           const uiSettings = courseId && topicId ? courseOps.getEnrollmentUiSettings(courseId) : null;
 
           const savedStage = uiSettings?.[`draActiveStage_${topicId}`];
-          const stages = ds.stages || [];
+          const stages = activeScenario.stages || [];
           if (savedStage && stages.some((s) => s.stage === savedStage)) {
             setActiveStage(savedStage);
           } else {
@@ -208,9 +201,10 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [isPreview, user, learningSession?.enrollment]);
 
   const params = React.useMemo(() => parseDraMarkdown(markdown), [markdown]);
-  const details = draState.details || { state: 'notStarted' };
   const practiceScenarios = draState.practiceScenarios || [];
   const selectedPracticeScenarioId = draState.selectedPracticeScenarioId || null;
+  const finalScenario = draState.finalScenario || null;
+  const details = practiceScenarios.find((s) => s.scenarioRunId === selectedPracticeScenarioId) || finalScenario || { state: 'notStarted' };
   const busy = busyAction !== null;
   const inProgressPracticeScenario = findInProgressPracticeScenario(practiceScenarios);
   const hasScenarioInProgress = Boolean(inProgressPracticeScenario);
@@ -235,34 +229,25 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [details.state]);
 
   function applyStateUpdate(nextDetails, options = {}) {
-    const { selectPracticeScenarioId = nextDetails?.mode === 'practice' ? nextDetails?.scenarioRunId || null : null, preserveSelection = false } = options;
+    const { preserveSelection = false } = options;
 
     setDraState((prev) => {
       const current = normalizeDraState(prev);
-      let nextPracticeScenarios = current.practiceScenarios;
-      let nextSelectedPracticeScenarioId = preserveSelection ? current.selectedPracticeScenarioId : current.selectedPracticeScenarioId;
+
+      if (nextDetails?.mode === 'final') {
+        return { practiceScenarios: current.practiceScenarios, selectedPracticeScenarioId: current.selectedPracticeScenarioId, finalScenario: nextDetails };
+      }
 
       if (nextDetails?.mode === 'practice' && nextDetails?.scenarioRunId) {
         const existingIndex = current.practiceScenarios.findIndex((item) => item.scenarioRunId === nextDetails.scenarioRunId);
-        if (existingIndex === -1) {
-          nextPracticeScenarios = [...current.practiceScenarios, nextDetails];
-        } else {
-          nextPracticeScenarios = current.practiceScenarios.map((item, index) => (index === existingIndex ? nextDetails : item));
-        }
-        nextSelectedPracticeScenarioId = selectPracticeScenarioId ?? nextDetails.scenarioRunId;
-      } else if (!preserveSelection && nextDetails?.mode !== 'practice') {
-        nextSelectedPracticeScenarioId = current.selectedPracticeScenarioId;
+        const nextPracticeScenarios = existingIndex === -1
+          ? [...current.practiceScenarios, nextDetails]
+          : current.practiceScenarios.map((item, index) => (index === existingIndex ? nextDetails : item));
+        const nextSelectedId = preserveSelection ? current.selectedPracticeScenarioId : nextDetails.scenarioRunId;
+        return { practiceScenarios: nextPracticeScenarios, selectedPracticeScenarioId: nextSelectedId, finalScenario: current.finalScenario };
       }
 
-      if (preserveSelection && current.selectedPracticeScenarioId) {
-        nextSelectedPracticeScenarioId = current.selectedPracticeScenarioId;
-      }
-
-      return {
-        details: nextDetails,
-        practiceScenarios: nextPracticeScenarios,
-        selectedPracticeScenarioId: nextSelectedPracticeScenarioId,
-      };
+      return current;
     });
     setIsDirty(true);
   }
@@ -281,8 +266,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const current = normalizeDraState(draState);
     let nextPracticeScenarios = current.practiceScenarios;
     let nextSelectedPracticeScenarioId = current.selectedPracticeScenarioId;
+    let nextFinalScenario = current.finalScenario;
 
-    if (nextDetails?.mode === 'practice' && nextDetails?.scenarioRunId) {
+    if (nextDetails?.mode === 'final') {
+      nextFinalScenario = nextDetails;
+      nextSelectedPracticeScenarioId = null;
+    } else if (nextDetails?.mode === 'practice' && nextDetails?.scenarioRunId) {
       const existingIndex = current.practiceScenarios.findIndex((item) => item.scenarioRunId === nextDetails.scenarioRunId);
       if (existingIndex === -1) {
         nextPracticeScenarios = [...current.practiceScenarios, nextDetails];
@@ -290,15 +279,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         nextPracticeScenarios = current.practiceScenarios.map((item, index) => (index === existingIndex ? nextDetails : item));
       }
       nextSelectedPracticeScenarioId = options.selectPracticeScenarioId ?? nextDetails.scenarioRunId;
-    } else if (options.clearSelectedPracticeScenarioId) {
-      nextSelectedPracticeScenarioId = null;
     }
 
-    await autoSaveState({
-      details: nextDetails,
-      practiceScenarios: nextPracticeScenarios,
-      selectedPracticeScenarioId: nextSelectedPracticeScenarioId,
-    });
+    await autoSaveState({ practiceScenarios: nextPracticeScenarios, selectedPracticeScenarioId: nextSelectedPracticeScenarioId, finalScenario: nextFinalScenario });
   }
 
   async function handleSave() {
@@ -435,11 +418,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   async function cancelScenario() {
     if (draReadOnly || busy) return;
-    await autoSaveState({
-      details: { state: 'notStarted' },
-      practiceScenarios,
-      selectedPracticeScenarioId: null,
-    });
+    await autoSaveState({ practiceScenarios, selectedPracticeScenarioId: null, finalScenario });
   }
 
   function buildTranscripts(source) {
@@ -535,11 +514,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   function openPracticeScenario(scenarioRunId) {
     const scenario = practiceScenarios.find((item) => item.scenarioRunId === scenarioRunId);
     if (!scenario) return;
-    setDraState((prev) => ({
-      ...normalizeDraState(prev),
-      details: scenario,
-      selectedPracticeScenarioId: scenarioRunId,
-    }));
+    setDraState((prev) => ({ ...normalizeDraState(prev), selectedPracticeScenarioId: scenarioRunId }));
     setActiveStage(scenario.stages?.[0]?.stage || '');
     if (scenario.stages?.[0]?.stage && courseId && topicId) {
       courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: scenario.stages[0].stage });
