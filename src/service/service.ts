@@ -723,20 +723,51 @@ class Service {
     return data?.signedUrl || '';
   }
 
-  async saveDraState(enrollmentId: string, topicId: string, state: object): Promise<void> {
-    const path = `enrollments/${enrollmentId}/topics/${topicId}/state.json`;
-    const blob = new Blob([JSON.stringify(state)], { type: 'application/json' });
-    const { error } = await this.supabase.storage
-      .from('dra-state')
-      .upload(path, blob, { upsert: true, contentType: 'application/json' });
+  private async draUpload(path: string, data: object): Promise<void> {
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const { error } = await this.supabase.storage.from('dra-state').upload(path, blob, { upsert: true, contentType: 'application/json' });
     if (error) throw new Error(error.message);
   }
 
-  async loadDraState(enrollmentId: string, topicId: string): Promise<object | null> {
-    const path = `enrollments/${enrollmentId}/topics/${topicId}/state.json`;
+  private async draDownload(path: string): Promise<any | null> {
     const { data, error } = await this.supabase.storage.from('dra-state').download(path);
-    if (error) return null; // 404 = no state saved yet; treat any load failure as empty
+    if (error) return null;
     return JSON.parse(await (data as Blob).text());
+  }
+
+  async saveDraState(enrollmentId: string, topicId: string, state: any): Promise<void> {
+    const base = `enrollments/${enrollmentId}/topics/${topicId}`;
+    const practiceScenarios: any[] = Array.isArray(state.practiceScenarios) ? state.practiceScenarios : [];
+    const finalScenario = state.finalScenario || null;
+
+    const index = {
+      selectedPracticeScenarioId: state.selectedPracticeScenarioId || null,
+      finalScenarioId: finalScenario?.scenarioRunId || null,
+      practiceScenarioIds: practiceScenarios.map((s: any) => s.scenarioRunId),
+    };
+
+    await Promise.all([
+      this.draUpload(`${base}/scenarios.json`, index),
+      ...practiceScenarios.map((s: any) => this.draUpload(`${base}/scenario-${s.scenarioRunId}.json`, s)),
+      ...(finalScenario?.scenarioRunId ? [this.draUpload(`${base}/scenario-${finalScenario.scenarioRunId}.json`, finalScenario)] : []),
+    ]);
+  }
+
+  async loadDraState(enrollmentId: string, topicId: string): Promise<object | null> {
+    const base = `enrollments/${enrollmentId}/topics/${topicId}`;
+    const index = await this.draDownload(`${base}/scenarios.json`);
+    if (!index) return null;
+
+    const [practiceScenarios, finalScenario] = await Promise.all([
+      Promise.all((index.practiceScenarioIds || []).map((id: string) => this.draDownload(`${base}/scenario-${id}.json`))),
+      index.finalScenarioId ? this.draDownload(`${base}/scenario-${index.finalScenarioId}.json`) : Promise.resolve(null),
+    ]);
+
+    return {
+      practiceScenarios: practiceScenarios.filter(Boolean),
+      selectedPracticeScenarioId: index.selectedPracticeScenarioId,
+      finalScenario,
+    };
   }
 
   /**

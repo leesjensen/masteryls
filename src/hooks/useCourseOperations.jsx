@@ -1234,7 +1234,7 @@ Requirements:
         if (state) return state;
       }
     }
-    return { details: { state: 'notStarted' } };
+    return { practiceScenarios: [], selectedPracticeScenarioId: null, finalScenario: null };
   }
 
   async function saveDraState(state) {
