@@ -513,6 +513,36 @@ Parameters:
 - `file`: optional starter HTML file.
 - `height`: optional frame height.
 
+### 7.12 GitHub submission
+
+What it does: Collects a public GitHub repository URL from the learner and grades the **contents of the repository** against your criteria. On submit, MasteryLS reads the repository's files and an AI evaluates them, returning a score (0–100) and actionable markdown feedback that references real file paths (highlighting what the application code does well and where it falls short). This differs from URL submission (7.7): a URL submission validates/transforms a single link, whereas a GitHub submission fetches and evaluates the repository itself.
+
+The learner input is validated against the `https://github.com/owner/repo` form before submission is enabled.
+
+> [!NOTE]
+>
+> There is no toolbar template button for GitHub submission. Author it by inserting a `masteryls` fence manually and giving it a unique `id` (UUID).
+
+````
+```masteryls
+{"id":"6b1d1b1e-3d9a-4c2a-9d3e-2f2a7c9a1b44", "title":"Submit your project repository", "type":"github-submission", "syncGrade":true, "autoGrade":false, "gradingCriteria":"- README documents how to build and run\n- Application code is organized into clear modules\n- Includes automated tests that cover core behavior" }
+Submit the URL of your GitHub repository.
+```
+````
+
+Parameters:
+
+- `type: "github-submission"`
+- `gradingCriteria` (string): rubric the repository's files are graded against by AI. Application code files are weighted over markdown files; large or binary files are skipped.
+- `syncGrade` (bool): enables the manual "Submit to Gradebook" button after grading feedback.
+- `autoGrade` (bool): controls posted-grade vs comment-only behavior in the linked gradebook.
+- Body is the prompt/instructions shown to the learner.
+
+Notes:
+
+- The repository must be publicly accessible for MasteryLS to read its files.
+- Grading is grounded strictly in the submitted repository's files; feedback cites real paths from the repo.
+
 ## 8) Course Settings (Detailed, including Repair tools)
 
 Open: sidebar `Settings`.

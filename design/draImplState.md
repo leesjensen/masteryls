@@ -22,8 +22,14 @@ Last updated after the **coaching agent** slice. Working tree clean; all phases 
 
 ### Deferred refinements (not yet built)
 - Continuous auto-evaluation after each interaction (currently on-demand / at completion).
-- Discovering *withheld* stakeholders/resources at hard difficulties (they are generated + saved but only revealed by difficulty).
 - Instability events (the `instability` param is stored but does nothing yet).
+
+### Target discovery (implemented)
+Every generated scenario reveals at least one **primary stakeholder** (`details.identified[0]`,
+seeded in `generateScenario`). Additional withheld stakeholders/resources are **auto-surfaced**
+when named in an interview reply — see `detectNewTargets` in `draInstruction.jsx` (exact
+name match against the generated cast, appended to `details.identified`). There is no manual
+"identify by name" affordance (an earlier attempt was reverted).
 - Canvas gradebook sync for `dra` (falls through to the default Canvas "page" target).
 
 ## Key concepts

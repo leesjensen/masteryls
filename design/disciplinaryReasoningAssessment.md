@@ -307,9 +307,9 @@ The investigation is the core interactive experience of the assessment. It invol
 
 ### Investigative Pattern
 
-At any point during the investigation, the learner may identify a stakeholder or resource.
+Every scenario reveals at least one primary stakeholder from the outset — the contact through whom the learner first learns about the project. Additional stakeholders and resources are not identified by the learner directly; instead they are surfaced automatically as they come up in conversation. When an interview reply names another stakeholder or resource that exists in the scenario, that party is added to the available list and becomes available for interaction.
 
-Each stakeholder is automatically assigned a role within the scenario based on the situation they represent. Once identified, the stakeholder becomes available for interaction.
+Each stakeholder is automatically assigned a role within the scenario based on the situation they represent.
 
 Each investigation follows this pattern:
 
@@ -320,7 +320,7 @@ Each investigation follows this pattern:
 5. Feedback and assessment are generated.
 6. In **Practice Mode**, evidence, feedback, and assessment are displayed continuously throughout the assessment.
 
-> Implementation status: the six universal stages are generated with discipline-specific interpretations and the learner selects the active stage (which tags their messages). The learner interviews the difficulty-revealed stakeholders and consults revealed resources through an in-character AI agent, and records their thinking in the reasoning record. Stages, conversations, the active stage, and the reasoning record persist to the progress record for save/resume. Discovering withheld stakeholders/resources and the evidence/evaluation engine are upcoming phases.
+> Implementation status: the six universal stages are generated with discipline-specific interpretations and the learner selects the active stage (which tags their messages). Every scenario reveals at least one primary stakeholder; the learner interviews that stakeholder (and any difficulty-revealed stakeholders/resources) through an in-character AI agent, and additional stakeholders/resources are surfaced automatically when they are named in a reply. The learner records their thinking in the reasoning/stage notes. Stages, conversations, surfaced targets, the active stage, and the notes persist to the progress record for save/resume.
 
 ### Stages
 
