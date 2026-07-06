@@ -325,6 +325,8 @@ Parameters:
 
 - `type: "essay"`
 - `gradingCriteria` (string, optional): Additional grading criteria used by AI when scoring and generating feedback. The additional grading criteria is applied together with the essay prompt and surrounding content. This gives you the opportunity to add criteria that is not specifically displayed to the learner.
+- `syncGrade` (bool): enables the manual "Submit to Gradebook" button after grading feedback.
+- `autoGrade` (bool): controls posted-grade vs comment-only behavior in the linked gradebook.
 - Body is prompt/context.
 
 ### 7.4 Survey
@@ -392,6 +394,7 @@ Simple **submission** by file
 Parameters:
 
 - `type: "file-submission"`
+- `gradingCriteria` (string, optional): rubric used by AI to score the uploaded file(s) and generate feedback. Applied together with the prompt and surrounding content; lets you add criteria not shown to the learner.
 - `syncGrade` (bool): enables manual “Submit to Gradebook” after grading feedback.
 - `autoGrade` (bool): controls posted-grade vs comment-only behavior in linked gradebook.
 
@@ -433,6 +436,8 @@ Help me understand the **Socratic method**.
 Parameters:
 
 - `type: "teaching"`
+- `syncGrade` (bool): enables the manual "Submit to Gradebook" button after grading feedback.
+- `autoGrade` (bool): controls posted-grade vs comment-only behavior in the linked gradebook.
 - Body is teaching objective/context.
 
 ### 7.9 Prompt
@@ -451,6 +456,8 @@ Ask the learner to craft a prompt.
 Parameters:
 
 - `type: "prompt"`
+- `syncGrade` (bool): enables the manual "Submit to Gradebook" button after grading feedback.
+- `autoGrade` (bool): controls posted-grade vs comment-only behavior in the linked gradebook.
 - Body defines task/prompt constraints.
 
 ### 7.10 Web page
@@ -512,6 +519,8 @@ Parameters:
 - `gradingCriteria` (string): rubric for submit-time grading.
 - `file`: optional starter HTML file.
 - `height`: optional frame height.
+- `syncGrade` (bool): enables the manual "Submit to Gradebook" button after grading feedback.
+- `autoGrade` (bool): controls posted-grade vs comment-only behavior in the linked gradebook.
 
 ### 7.12 GitHub submission
 
@@ -533,7 +542,7 @@ Submit the URL of your GitHub repository.
 Parameters:
 
 - `type: "github-submission"`
-- `gradingCriteria` (string): rubric the repository's files are graded against by AI. Application code files are weighted over markdown files; large or binary files are skipped.
+- `gradingCriteria` (string, required): rubric the repository's files are graded against by AI. Application code files are weighted over markdown files; large or binary files are skipped. If omitted, a submission scores 0 with "No grading criteria configured".
 - `syncGrade` (bool): enables the manual "Submit to Gradebook" button after grading feedback.
 - `autoGrade` (bool): controls posted-grade vs comment-only behavior in the linked gradebook.
 - Body is the prompt/instructions shown to the learner.
