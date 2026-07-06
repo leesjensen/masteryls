@@ -648,7 +648,15 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             {(isPreview || !user) && (
               <div className="not-prose mt-4 rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
                 When a learner begins, a scenario is generated from these parameters.
-                {!user && ' Login to take this assessment.'}
+                {!user && (
+                  <>
+                    {' '}
+                    <a href="/" className="font-semibold underline underline-offset-2 hover:text-gray-800">
+                      Login
+                    </a>{' '}
+                    to take this assessment.
+                  </>
+                )}
               </div>
             )}
           </div>
