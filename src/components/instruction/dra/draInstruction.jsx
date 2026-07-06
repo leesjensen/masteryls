@@ -165,6 +165,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [content, learningSession?.topic]);
 
   React.useEffect(() => {
+    setDraState(createEmptyDraState());
+    setActiveTab('overview');
+    setActiveStage('');
+    setSelectedTargetKey('');
+    setLoading(true);
+
     async function loadState() {
       try {
         if (!isPreview && user && learningSession?.enrollment) {
@@ -198,7 +204,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       }
     }
     loadState();
-  }, [isPreview, user, learningSession?.enrollment]);
+  }, [isPreview, user, learningSession?.enrollment, topicId]);
 
   const params = React.useMemo(() => parseDraMarkdown(markdown), [markdown]);
   const practiceScenarios = draState.practiceScenarios || [];
