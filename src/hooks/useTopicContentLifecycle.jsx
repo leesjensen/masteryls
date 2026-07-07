@@ -2,13 +2,24 @@ import React from 'react';
 import useLatest from './useLatest';
 
 export default function useTopicContentLifecycle({ courseOps, learningSession, contentAvailable, onTopicLoaded }) {
-  const [content, setContent] = React.useState('');
+  const [content, setContentState] = React.useState('');
+  // Bumped only when `content` is replaced from a NON-keystroke source (topic load,
+  // discard, apply-commit). The editor uses this signal to know when to re-apply text
+  // into the model; keystroke updates do not bump it, so typing never re-applies (which
+  // would move the caret). See MonacoMarkdownEditor.
+  const [contentEpoch, setContentEpoch] = React.useState(0);
   const [committedContent, setCommittedContent] = React.useState('');
   const [committing, setCommitting] = React.useState(false);
   const [dirty, setDirty] = React.useState(false);
 
   const dirtyRef = useLatest(dirty);
   const contentRef = useLatest(content);
+
+  // Replace content from an external source (not the editor's own typing).
+  function setContentExternal(next) {
+    setContentState(next);
+    setContentEpoch((epoch) => epoch + 1);
+  }
 
   async function commit() {
     if (committing || !dirtyRef.current) return;
@@ -33,13 +44,15 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
       nextContent = await courseOps.getTopic(learningSession.topic);
     }
     setDirty(false);
-    setContent(nextContent);
+    setContentExternal(nextContent);
     setCommittedContent(nextContent);
   }
 
   function handleEditorChange(value) {
     if (committing) return;
-    setContent(value || '');
+    // Editor-originated change: update state WITHOUT bumping the epoch so the editor
+    // does not re-apply its own text (which would move the caret).
+    setContentState(value || '');
     setDirty(true);
   }
 
@@ -48,12 +61,12 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
 
     if (learningSession.topic?.type === 'embedded' || learningSession.topic?.type === 'video') {
       const nextContent = learningSession.topic.path || '';
-      setContent(nextContent);
+      setContentExternal(nextContent);
       setCommittedContent(nextContent);
     } else {
       courseOps.getTopic(learningSession.topic).then((markdown) => {
         const nextContent = markdown || '';
-        setContent(nextContent);
+        setContentExternal(nextContent);
         setCommittedContent(nextContent);
       });
     }
@@ -75,8 +88,11 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
 
   return {
     content,
+    contentEpoch,
     committedContent,
-    setContent,
+    // Consumers (e.g. EditorCommits applying a revision) are external sources, so the
+    // exposed setter bumps the epoch to make the editor re-apply the new text.
+    setContent: setContentExternal,
     committing,
     dirty,
     setDirty,

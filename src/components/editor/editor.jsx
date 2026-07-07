@@ -26,7 +26,7 @@ export default function Editor({ courseOps, user, learningSession }) {
 
   const contentAvailable = !!(learningSession?.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published'));
 
-  const { content, committedContent, setContent, committing, dirty, setDirty, handleEditorChange, discard, commit } = useTopicContentLifecycle({
+  const { content, contentEpoch, committedContent, setContent, committing, dirty, setDirty, handleEditorChange, discard, commit } = useTopicContentLifecycle({
     courseOps,
     learningSession,
     contentAvailable,
@@ -67,7 +67,7 @@ export default function Editor({ courseOps, user, learningSession }) {
   function getEditor() {
     let editor = null;
     if (learningSession.topic?.type !== 'embedded' && learningSession.topic?.type !== 'video') {
-      editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} committedContent={committedContent} diffContent={diffContent} onChange={handleEditorChange} commit={commit} onEditorReady={handleEditorReady} onPasteFiles={handlePastedFiles} onPasteCommitStateChange={setPastingImageCommit} getExistingTopicFileNames={getExistingTopicFileNames} />;
+      editor = <MarkdownEditor ref={markdownEditorRef} course={learningSession.course} currentTopic={learningSession.topic} content={content} contentEpoch={contentEpoch} committedContent={committedContent} diffContent={diffContent} onChange={handleEditorChange} commit={commit} onEditorReady={handleEditorReady} onPasteFiles={handlePastedFiles} onPasteCommitStateChange={setPastingImageCommit} getExistingTopicFileNames={getExistingTopicFileNames} />;
     }
     return editor;
   }

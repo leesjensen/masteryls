@@ -240,7 +240,7 @@ function computeChangedLineMarkers(baseText, currentText) {
   };
 }
 
-const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, committedContent, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames }, ref) {
+const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, contentEpoch, committedContent, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames }, ref) {
   const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on', changedLines: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const [generatingContent, setGeneratingContent] = React.useState(false);
@@ -814,7 +814,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
         </div>
       )}
       <div className="flex-1 overflow-hidden">
-        <MonacoMarkdownEditor content={content} diffContent={diffContent} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" options={editorOptions} />
+        <MonacoMarkdownEditor content={content} contentEpoch={contentEpoch} diffContent={diffContent} onChange={onChange} onMount={handleEditorDidMount} theme="vs-light" options={editorOptions} />
       </div>
 
       {generatingContent && (
