@@ -6,8 +6,59 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
   const editorRef = useRef(null);
   const { spellCheckerRef } = useMonacoSpellChecker();
 
+  // The plain (non-diff) editor is intentionally UNCONTROLLED: it is seeded with
+  // `defaultValue` and thereafter owns its own text. We must not bind `value={content}`,
+  // because @monaco-editor/react's value-sync overwrites the live model whenever the
+  // `content` prop differs from it — and during fast typing the React `content` state
+  // lags the model by a keystroke, so that overwrite reverts the model and drops the
+  // caret at the end of the document. Instead we push content in ourselves, but only
+  // for genuinely EXTERNAL changes (topic load, discard, apply-commit) and never for a
+  // value the editor itself just emitted (a keystroke echo).
+  const lastEditorValueRef = useRef(content); // best-known current editor text
+  const applyingExternalRef = useRef(false); // true while we imperatively replace text
+
+  function handleChange(value, ev) {
+    lastEditorValueRef.current = value;
+    if (applyingExternalRef.current) return; // ignore the echo from our own replace
+    if (onChange) onChange(value, ev);
+  }
+
+  React.useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || diffContent) return;
+    const model = editor.getModel?.();
+    if (!model) return;
+
+    const current = editor.getValue();
+    if (content === current) {
+      lastEditorValueRef.current = content;
+      return;
+    }
+    // A value the editor just emitted (typing lag); do NOT clobber the live model.
+    if (content === lastEditorValueRef.current) return;
+
+    // Genuine external content change: replace the text, preserving the selection.
+    applyingExternalRef.current = true;
+    try {
+      const selections = editor.getSelections();
+      editor.executeEdits('external-content-sync', [{ range: model.getFullModelRange(), text: content ?? '' }]);
+      editor.pushUndoStop();
+      if (selections) {
+        try {
+          editor.setSelections(selections);
+        } catch {
+          // selection may be out of range for the new text; Monaco clamps on next interaction
+        }
+      }
+      lastEditorValueRef.current = content ?? '';
+    } finally {
+      applyingExternalRef.current = false;
+    }
+  }, [content, diffContent]);
+
   function handleEditorDidMount(editor, monaco) {
     editorRef.current = editor;
+    lastEditorValueRef.current = editor.getValue();
 
     // Setup spell checker if enabled and not in compare mode
     if (spellCheckerRef.current && !diffContent) {
@@ -79,7 +130,7 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
     return <DiffEditor height={height} width={width} language="markdown" original={diffContent} modified={content} keepCurrentOriginalModel={true} keepCurrentModifiedModel={true} onMount={handleDiffEditorDidMount} theme={theme} options={{ ...editorOptions, ...options, originalEditable: false, enableSplitViewResizing: true, renderSideBySide: true, ignoreTrimWhitespace: false, renderIndicators: true }} />;
   }
 
-  return <Editor height={height} width={width} language="markdown" value={content} onChange={onChange} onMount={handleEditorDidMount} theme={theme} options={{ ...editorOptions, ...options }} />;
+  return <Editor height={height} width={width} language="markdown" defaultValue={content} onChange={handleChange} onMount={handleEditorDidMount} theme={theme} options={{ ...editorOptions, ...options }} />;
 };
 
 export default MonacoMarkdownEditor;
