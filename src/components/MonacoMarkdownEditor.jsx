@@ -109,7 +109,11 @@ const MonacoMarkdownEditor = ({ content, diffContent, onChange, onMount, readOnl
     guides: {
       indentation: false,
     },
-    quickSuggestions: true,
+    // Disable the word-completion popup (suggesting words already in the document).
+    quickSuggestions: false,
+    suggestOnTriggerCharacters: false,
+    wordBasedSuggestions: 'off',
+    parameterHints: { enabled: false },
     lineNumbersMinChars: 1,
     lineDecorationsWidth: 0,
     stickyScroll: { enabled: false },
