@@ -454,7 +454,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (draReadOnly || coaching) return;
     setCoaching(true);
     try {
-      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage, details.difficulty ?? params.difficulty);
+      const result = await courseOps.getDraCoaching(
+        details.scenario,
+        buildTranscripts(details),
+        details.stageNotes || {},
+        activeStage,
+        details.difficulty ?? params.difficulty,
+        details.evaluation,
+      );
       await autoSaveDetails({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');

@@ -1256,8 +1256,8 @@ Requirements:
     return aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord, difficulty, previousEvaluation);
   }
 
-  async function getDraCoaching(scenario, transcripts, reasoningRecord, activeStage, difficulty) {
-    return aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage, difficulty);
+  async function getDraCoaching(scenario, transcripts, reasoningRecord, activeStage, difficulty, evaluation) {
+    return aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage, difficulty, evaluation);
   }
 
   async function uploadSubmissionFile({ interactionId, file }) {

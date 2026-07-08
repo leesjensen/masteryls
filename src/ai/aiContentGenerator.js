@@ -364,6 +364,113 @@ Rules:
   return parseJsonResponse(response);
 }
 
+const DRA_RATING_BASE_SCORES = {
+  Beginning: 0,
+  Emerging: 25,
+  Developing: 50,
+  Proficient: 75,
+  Exemplary: 100,
+};
+const DRA_POSITIVE_SUPPORT_VALUES = { light: 10, moderate: 20, strong: 34 };
+const DRA_NEGATIVE_SUPPORT_VALUES = { light: 10, moderate: 20, strong: 30 };
+const DRA_SUPPORT_CAP = 110;
+const DRA_DIFFICULTY_SUPPORT_MULTIPLIERS = {
+  1: 1.75,
+  2: 1.4,
+  3: 1.0,
+  4: 0.85,
+  5: 0.7,
+};
+
+function draNormalizedDifficulty(difficulty) {
+  return Math.max(1, Math.min(5, Math.round(Number(difficulty) || 3)));
+}
+
+function draRatingToBaseScore(level) {
+  return DRA_RATING_BASE_SCORES[level] ?? 0;
+}
+
+function draScoreToLevel(score) {
+  if (score >= 80) return 'Exemplary';
+  if (score >= 60) return 'Proficient';
+  if (score >= 40) return 'Developing';
+  if (score >= 20) return 'Emerging';
+  return 'Beginning';
+}
+
+function draNormalizeEvidenceItem(item) {
+  if (!item || typeof item !== 'object') {
+    return { detail: '', polarity: 'positive', impact: 'moderate' };
+  }
+  return {
+    detail: typeof item.detail === 'string' ? item.detail : '',
+    polarity: item.polarity === 'negative' ? 'negative' : 'positive',
+    impact: ['light', 'moderate', 'strong'].includes(item.impact) ? item.impact : 'moderate',
+  };
+}
+
+function draEvidenceValue(item) {
+  return item.polarity === 'negative'
+    ? -DRA_NEGATIVE_SUPPORT_VALUES[item.impact]
+    : DRA_POSITIVE_SUPPORT_VALUES[item.impact];
+}
+
+function draAttributeScore(attribute, fallbackRating, difficulty) {
+  const baseScore = draRatingToBaseScore(attribute?.rating || fallbackRating);
+  const items = (attribute?.evidence || []).map(draNormalizeEvidenceItem).filter((item) => item.detail);
+  const positiveSupportRaw = items.filter((item) => item.polarity === 'positive').reduce((sum, item) => sum + draEvidenceValue(item), 0);
+  const negativeSupport = items.filter((item) => item.polarity === 'negative').reduce((sum, item) => sum + Math.abs(draEvidenceValue(item)), 0);
+  const positiveSupport = Math.min(DRA_SUPPORT_CAP, positiveSupportRaw);
+  const netSupport = Math.max(0, positiveSupport - negativeSupport);
+  const adjustedSupport = Math.max(0, Math.min(100, netSupport * (DRA_DIFFICULTY_SUPPORT_MULTIPLIERS[draNormalizedDifficulty(difficulty)] || 1)));
+  const supportFactor = adjustedSupport / 100;
+  const supportedScore = baseScore * (0.5 + (0.5 * supportFactor));
+  return { name: attribute?.name || '', score: supportedScore };
+}
+
+function draDimensionSummary(dimension, difficulty) {
+  const attributes = Array.isArray(dimension?.attributes) ? dimension.attributes : [];
+  const fallbackRating = dimension?.rating || 'Beginning';
+  const attributeScores = attributes.map((attribute) => draAttributeScore(attribute, fallbackRating, difficulty));
+  const score = attributeScores.length > 0
+    ? attributeScores.reduce((sum, attribute) => sum + attribute.score, 0) / attributeScores.length
+    : draRatingToBaseScore(fallbackRating);
+  const weakestAttributes = attributeScores
+    .slice()
+    .sort((a, b) => a.score - b.score)
+    .slice(0, 2)
+    .map((attribute) => `${attribute.name} ${Math.round(attribute.score)}`);
+  return { score, level: draScoreToLevel(score), weakestAttributes };
+}
+
+function buildDraEvaluationSummary(evaluation, difficulty = 3) {
+  if (!evaluation) return '(none)';
+
+  const process = draDimensionSummary(evaluation.process, difficulty);
+  const competency = draDimensionSummary(evaluation.competency, difficulty);
+  const disposition = draDimensionSummary(evaluation.disposition, difficulty);
+  const characterScore = (competency.score + disposition.score) / 2;
+  const processMultiplier = 0.5 + (0.5 * (characterScore / 100));
+  const overallScore = process.score * processMultiplier;
+  const weakestDimension = [
+    ['Process', process.score],
+    ['Competency', competency.score],
+    ['Disposition', disposition.score],
+  ].sort((a, b) => a[1] - b[1])[0];
+
+  return [
+    `Overall score: ${Math.round(overallScore)} / 100 (${draScoreToLevel(overallScore)})`,
+    `Process: ${Math.round(process.score)} (${process.level})`,
+    `Competency: ${Math.round(competency.score)} (${competency.level})`,
+    `Disposition: ${Math.round(disposition.score)} (${disposition.level})`,
+    `Character: ${Math.round(characterScore)} -> ${Math.round(processMultiplier * 100)}% Process multiplier`,
+    `Weakest dimension: ${weakestDimension[0]} ${Math.round(weakestDimension[1])}`,
+    `Weakest Process attributes: ${process.weakestAttributes.join(', ') || '(none)'}`,
+    `Weakest Competency attributes: ${competency.weakestAttributes.join(', ') || '(none)'}`,
+    `Weakest Disposition attributes: ${disposition.weakestAttributes.join(', ') || '(none)'}`,
+  ].join('\n');
+}
+
 /**
  * Coaching agent for a Disciplinary Reasoning Assessment. Provides encouraging,
  * formative guidance (feedback, hints, suggested next investigations) without giving
@@ -374,9 +481,10 @@ Rules:
  * @param {Array<{name?: string, role?: string, messages: Array<{role: 'user'|'model', text: string}>}>} transcripts - Interview/consultation transcripts.
  * @param {object} reasoningRecord - The learner's recorded reasoning fields.
  * @param {string} [activeStage] - The disciplinary stage the learner is currently working in.
+ * @param {object} [evaluation] - The latest evaluation snapshot, if available.
  * @returns {Promise<{feedback: string, hints: string[], suggestions: string[]}>}
  */
-export async function aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage, difficulty = 3) {
+export async function aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage, difficulty = 3, evaluation = null) {
   const transcriptText = (transcripts || [])
     .filter((t) => (t.messages || []).length > 0)
     .map((t) => {
@@ -390,19 +498,36 @@ export async function aiDraCoachGenerator(scenario, transcripts, reasoningRecord
     .map(([k, v]) => `- ${k}: ${v}`)
     .join('\n');
 
+  const evaluationText = evaluation ? JSON.stringify(evaluation, null, 2) : '(none)';
+  const evaluationSummaryText = buildDraEvaluationSummary(evaluation, difficulty);
+
   const prompt = `You are an encouraging coach for a disciplinary reasoning assessment.
 Help the learner improve their reasoning process WITHOUT giving away the solution or doing the thinking for them.
 
-SCENARIO: ${scenario?.title || ''}
+<SCENARIO>
+${scenario?.title || ''}
 ${scenario?.description || scenario?.summary || ''}
+</SCENARIO>
 
-CURRENT STAGE: ${activeStage || 'unspecified'}
+<CURRENT_STAGE>
+${activeStage || 'unspecified'}
+</CURRENT_STAGE>
 
-INVESTIGATION TRANSCRIPTS:
+<INVESTIGATION_TRANSCRIPTS>
 ${transcriptText || '(no interviews conducted yet)'}
+</INVESTIGATION_TRANSCRIPTS>
 
-REASONING RECORD:
+<REASONING_RECORD>
 ${reasoningText || '(empty)'}
+</REASONING_RECORD>
+
+<CURRENT_EVALUATION_SUMMARY>
+${evaluationSummaryText}
+</CURRENT_EVALUATION_SUMMARY>
+
+<CURRENT_EVALUATION_JSON>
+${evaluationText}
+</CURRENT_EVALUATION_JSON>
 
 Provide brief coaching as a raw JSON object (no markdown code fence) with exactly this shape:
 {
@@ -418,6 +543,13 @@ Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate how directive yo
 
 Rules:
 - Encourage good reasoning habits and point to gaps without revealing the answer
+- If CURRENT_EVALUATION_SUMMARY is available, you MUST use it to focus the coaching on the weakest current dimension(s) or attributes first
+- Avoid spending most of the coaching on dimensions that are already strong unless they contain a specific unresolved concern
+- When scores are already high in Process or Competency, shift attention toward the lower-scoring dimensions or attributes that would most improve the learner's overall performance
+- Be supportive and progress-sensitive: acknowledge real improvement and suggest next steps that move the learner forward meaningfully rather than nitpicking already-strong areas
+- Prefer suggestions that are likely to produce distinct new evidence in the weaker dimensions
+- Treat CURRENT_EVALUATION_SUMMARY as the primary prioritization signal and CURRENT_EVALUATION_JSON as supporting detail
+- If Disposition or a Disposition attribute is currently weakest, at least two of the hints/suggestions should target that area unless the record shows a more urgent unresolved concern elsewhere
 - Keep each item concise
 - Return only the JSON object`;
 
