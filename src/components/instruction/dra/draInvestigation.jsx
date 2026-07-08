@@ -44,8 +44,10 @@ function getTargetIcon(target) {
 export default function DraInvestigation({ targets, selectedKey, onSelectTarget, conversations, onSendMessage, readOnly, learningSession }) {
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
+  const [mobilePickerOpen, setMobilePickerOpen] = React.useState(false);
   const inputRef = React.useRef(null);
   const messageListRef = React.useRef(null);
+  const mobilePickerRef = React.useRef(null);
 
   const sortedTargets = React.useMemo(
     () =>
@@ -89,6 +91,21 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
   const selectedTarget = sortedTargets.find((t) => t.key === selectedKey) || null;
   const messages = conversations[selectedKey] || [];
 
+  React.useEffect(() => {
+    function handlePointerDown(event) {
+      if (!mobilePickerRef.current?.contains(event.target)) {
+        setMobilePickerOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, []);
+
   function renderTargetButton(target) {
     const isSelected = target.key === selectedKey;
 
@@ -99,28 +116,6 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
           <div className="min-w-0">
             <div className="font-semibold truncate">{target.name}</div>
             <div className="text-xs text-gray-500 truncate">{getResourceTypeLabel(target)}</div>
-          </div>
-        </div>
-      </button>
-    );
-  }
-
-  function renderCompactTargetChip(target) {
-    const isSelected = target.key === selectedKey;
-
-    return (
-      <button
-        key={target.key}
-        onClick={() => onSelectTarget?.(target.key)}
-        className={`shrink-0 rounded-full border px-3 py-2 text-left text-xs transition-colors ${
-          isSelected ? 'border-blue-400 bg-blue-50 text-blue-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <div className="shrink-0">{getTargetIcon(target)}</div>
-          <div className="min-w-0">
-            <div className="max-w-[8rem] truncate font-semibold">{target.name}</div>
-            <div className="max-w-[8rem] truncate text-[11px] text-gray-500">{getResourceTypeLabel(target)}</div>
           </div>
         </div>
       </button>
@@ -170,21 +165,88 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
       </div>
 
       <div className="flex-1 flex min-h-0 flex-col gap-3 overflow-hidden">
-        <div className="md:hidden shrink-0 overflow-hidden">
+        <div className="md:hidden shrink-0">
           {sortedTargets.length === 0 ? (
             <p className="text-sm text-gray-500 italic">No stakeholders or resources are revealed yet. Work through the scenario to uncover them.</p>
           ) : (
-            <div className="space-y-2">
-              {stakeholderTargets.length > 0 && (
-                <div>
-                  <div className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stakeholders</div>
-                  <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1">{stakeholderTargets.map(renderCompactTargetChip)}</div>
-                </div>
-              )}
-              {resourceTargets.length > 0 && (
-                <div>
-                  <div className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Resources</div>
-                  <div className="flex gap-2 overflow-x-auto overscroll-x-contain pb-1">{resourceTargets.map(renderCompactTargetChip)}</div>
+            <div ref={mobilePickerRef} className="rounded-lg border border-gray-200 bg-white p-3">
+              <label htmlFor="dra-mobile-target-select" className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                Conversation target
+              </label>
+              <button
+                id="dra-mobile-target-select"
+                type="button"
+                onClick={() => setMobilePickerOpen((open) => !open)}
+                className="mt-2 flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0">{selectedTarget ? getTargetIcon(selectedTarget) : <UserRound size={16} className="text-gray-400" />}</span>
+                  <span className="truncate">
+                    {selectedTarget ? `${selectedTarget.name} - ${getResourceTypeLabel(selectedTarget)}` : 'Select a target'}
+                  </span>
+                </span>
+                <span className="ml-2 shrink-0 text-gray-500">{mobilePickerOpen ? '▲' : '▼'}</span>
+              </button>
+              {mobilePickerOpen && (
+                <div className="mt-2 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                  {stakeholderTargets.length > 0 && (
+                    <div>
+                      <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stakeholders</div>
+                      <div className="space-y-1">
+                        {stakeholderTargets.map((target) => {
+                          const isSelected = target.key === selectedKey;
+                          return (
+                            <button
+                              key={target.key}
+                              type="button"
+                              onClick={() => {
+                                onSelectTarget?.(target.key);
+                                setMobilePickerOpen(false);
+                              }}
+                              className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
+                                isSelected ? 'bg-blue-50 text-blue-800' : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span className="shrink-0">{getTargetIcon(target)}</span>
+                              <span className="min-w-0">
+                                <span className="block truncate font-medium">{target.name}</span>
+                                <span className="block truncate text-xs text-gray-500">{getResourceTypeLabel(target)}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {resourceTargets.length > 0 && (
+                    <div className={stakeholderTargets.length > 0 ? 'mt-2 border-t border-gray-100 pt-2' : ''}>
+                      <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Resources</div>
+                      <div className="space-y-1">
+                        {resourceTargets.map((target) => {
+                          const isSelected = target.key === selectedKey;
+                          return (
+                            <button
+                              key={target.key}
+                              type="button"
+                              onClick={() => {
+                                onSelectTarget?.(target.key);
+                                setMobilePickerOpen(false);
+                              }}
+                              className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
+                                isSelected ? 'bg-blue-50 text-blue-800' : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <span className="shrink-0">{getTargetIcon(target)}</span>
+                              <span className="min-w-0">
+                                <span className="block truncate font-medium">{target.name}</span>
+                                <span className="block truncate text-xs text-gray-500">{getResourceTypeLabel(target)}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
