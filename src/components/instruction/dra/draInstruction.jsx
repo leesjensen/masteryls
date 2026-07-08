@@ -11,12 +11,14 @@ import Spinner from '../../Spinner';
 
 function DraTabBar({ tabs, active, onChange }) {
   return (
-    <div className="not-prose flex border-b border-gray-200 mt-4">
+    <div className="not-prose mt-4 overflow-x-auto">
+      <div className="flex min-w-max border-b border-gray-200">
       {tabs.map((tab) => (
         <button key={tab.id} onClick={() => onChange(tab.id)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${active === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
           {tab.label}
         </button>
       ))}
+      </div>
     </div>
   );
 }
@@ -148,6 +150,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [activeTab, setActiveTab] = React.useState('overview');
   const [activeStage, setActiveStage] = React.useState('');
   const [selectedTargetKey, setSelectedTargetKey] = React.useState('');
+  const [mobileInvestigationView, setMobileInvestigationView] = React.useState('chat');
+  const [isMobileInvestigationLayout, setIsMobileInvestigationLayout] = React.useState(false);
   const courseId = learningSession?.course?.id;
   const topicId = learningSession?.topic?.id;
   const { panePercent: investigationPanePercent, splitContainerRef: investigationSplitRef, onPaneMoved: onInvestigationPaneMoved, onPaneResized: onInvestigationPaneResized } = useSplitPaneState(55);
@@ -165,10 +169,23 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [content, learningSession?.topic]);
 
   React.useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const syncLayoutMode = (event) => setIsMobileInvestigationLayout(event.matches);
+    syncLayoutMode(mediaQuery);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncLayoutMode);
+      return () => mediaQuery.removeEventListener('change', syncLayoutMode);
+    }
+    mediaQuery.addListener(syncLayoutMode);
+    return () => mediaQuery.removeListener(syncLayoutMode);
+  }, []);
+
+  React.useEffect(() => {
     setDraState(createEmptyDraState());
     setActiveTab('overview');
     setActiveStage('');
     setSelectedTargetKey('');
+    setMobileInvestigationView('chat');
     setLoading(true);
 
     async function loadState() {
@@ -196,6 +213,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
           const savedTargetKey = uiSettings?.[`draSelectedTarget_${topicId}`];
           if (savedTargetKey) setSelectedTargetKey(savedTargetKey);
+
+          const savedInvestigationView = uiSettings?.[`draInvestigationMobileView_${topicId}`];
+          if (savedInvestigationView === 'chat' || savedInvestigationView === 'record') {
+            setMobileInvestigationView(savedInvestigationView);
+          }
         }
       } catch (err) {
         console.error('Failed to load DRA state:', err);
@@ -327,6 +349,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setSelectedTargetKey(targetKey);
     if (courseId && topicId) {
       courseOps.saveEnrollmentUiSettings(courseId, { [`draSelectedTarget_${topicId}`]: targetKey });
+    }
+  }
+
+  function selectMobileInvestigationView(view) {
+    if (view !== 'chat' && view !== 'record') return;
+    setMobileInvestigationView(view);
+    if (courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draInvestigationMobileView_${topicId}`]: view });
     }
   }
 
@@ -595,23 +625,23 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
     if (details.state === 'inProgress') {
       return (
-        <div className="not-prose rounded border border-blue-200 bg-blue-50 p-3 flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="text-sm font-bold text-blue-600">Assessment in progress</div>
-            {locked && <div className="text-xs text-blue-400">Final assessment — the scenario is locked and must be completed.</div>}
+        <div className="not-prose flex flex-wrap items-center justify-end gap-2">
+          <div className="hidden sm:flex min-w-0 items-center gap-2 text-sm text-blue-700">
+            <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold">In progress</span>
+            {locked && <span className="text-xs text-blue-500">Final assessment</span>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!locked && (
-              <button disabled={draReadOnly || busy} className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-60" onClick={cancelScenario}>
+              <button disabled={draReadOnly || busy} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded border border-gray-200 hover:bg-gray-200 disabled:opacity-60" onClick={cancelScenario}>
                 Cancel
               </button>
             )}
-            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
               {busyAction === 'completeAssessment' && <Spinner />}
               Complete assessment
             </button>
             {!draReadOnly && (
-              <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+              <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
                 {saving && <Spinner />}
                 {saving ? 'Saving…' : 'Save'}
               </button>
@@ -624,13 +654,13 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (details.state === 'completed') {
       const wasFinal = details.mode === 'final';
       return (
-        <div className="not-prose rounded border border-blue-200 bg-blue-50 p-3 flex flex-wrap items-center gap-4">
-          <div>
-            <div className="text-sm font-bold text-blue-600">Assessment complete</div>
-            {details.completedAt && <div className="text-xs text-blue-400">Completed on {new Date(details.completedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>}
+        <div className="not-prose flex flex-wrap items-center justify-end gap-2">
+          <div className="hidden sm:flex items-center gap-2 text-sm text-blue-700">
+            <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold">Complete</span>
+            {details.completedAt && <span className="text-xs text-blue-500">Completed {new Date(details.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>}
           </div>
           {!draReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+            <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
               {saving && <Spinner />}
               {saving ? 'Saving…' : 'Save'}
             </button>
@@ -638,13 +668,13 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           {!wasFinal && !hasScenarioInProgress && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
-                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
                   {busyAction === 'generatePractice' && <Spinner />}
                   {busyAction === 'generatePractice' ? 'Generating…' : 'Start new scenario'}
                 </button>
               )}
               {canFinal && (
-                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
                   {busyAction === 'startFinal' && <Spinner />}
                   {busyAction === 'startFinal' ? 'Generating…' : 'Start final assessment'}
                 </button>
@@ -715,6 +745,81 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const investigationReadOnly = details.state === 'completed' || draReadOnly;
   const stageNavigationDisabled = false;
   const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
+  const showMobileRecord = isMobileInvestigationLayout && mobileInvestigationView === 'record';
+
+  function renderStagePills() {
+    if ((details.stages || []).length === 0) return null;
+
+    return (
+      <div className="not-prose shrink-0">
+        <div className="flex flex-wrap gap-1.5">
+          {(details.stages || []).map((s) => (
+            <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={stageNavigationDisabled} className={`px-2.5 py-1 rounded-full border text-xs disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white/90 text-gray-700 hover:bg-white'}`}>
+              {s.stage}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function renderMobileInvestigationToggle() {
+    if (!isMobileInvestigationLayout) return null;
+
+    return (
+      <div className="shrink-0 border-b border-gray-100 bg-blue-50 px-4 py-3">
+        <div className="flex items-center justify-end">
+          <div className="inline-flex rounded-full border border-gray-200 bg-white p-1">
+            <button
+              type="button"
+              onClick={() => selectMobileInvestigationView('chat')}
+              className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              Chat
+            </button>
+            <button
+              type="button"
+              onClick={() => selectMobileInvestigationView('record')}
+              className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'record' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              Record
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderInvestigationStageHeader({ showToggle = false } = {}) {
+    if (!activeStageInterpretation && !showToggle) return null;
+
+    return (
+      <div className="shrink-0 border-b border-gray-100 bg-blue-50 px-4 py-3">
+        {renderStagePills()}
+        {showToggle && isMobileInvestigationLayout && (
+          <div className="mt-2 flex items-center justify-end">
+            <div className="inline-flex rounded-full border border-gray-200 bg-white p-1">
+              <button
+                type="button"
+                onClick={() => selectMobileInvestigationView('chat')}
+                className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                Chat
+              </button>
+              <button
+                type="button"
+                onClick={() => selectMobileInvestigationView('record')}
+                className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'record' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+              >
+                Record
+              </button>
+            </div>
+          </div>
+        )}
+        {activeStageInterpretation && <p className="mt-2 text-sm text-gray-600">{activeStageInterpretation}</p>}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
@@ -729,30 +834,34 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
       {safeActiveTab === 'investigation' ? (
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {(details.stages || []).length > 0 &&
-            (() => {
-              return (
-                <div className="not-prose shrink-0 px-4 py-3 border-b border-gray-100">
-                  <div className="flex flex-wrap gap-1">
-                    {(details.stages || []).map((s) => (
-                      <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={stageNavigationDisabled} className={`px-3 py-1 rounded-full border text-sm disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'}`}>
-                        {s.stage}
-                      </button>
-                    ))}
+          {isMobileInvestigationLayout ? (
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              {renderMobileInvestigationToggle()}
+              {showMobileRecord ? (
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <div className="flex h-full min-h-0 flex-col overflow-hidden">
+                    {renderInvestigationStageHeader()}
+                    <DraAssessment value={details.stageNotes?.[activeStage] || ''} onChange={(val) => updateStageNote(activeStage, val)} readOnly={investigationReadOnly} activeStage={activeStage} />
                   </div>
                 </div>
-              );
-            })()}
-          <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
-            <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
-              <DraInvestigation targets={targets} selectedKey={selectedTargetKey} onSelectTarget={selectTarget} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
+              ) : (
+                <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+                  <DraInvestigation targets={targets} selectedKey={selectedTargetKey} onSelectTarget={selectTarget} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
+                </div>
+              )}
             </div>
-            <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
-            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-              {(activeStage || activeStageInterpretation) && <div className="shrink-0 border-b border-gray-100 bg-blue-50 px-4 py-3">{activeStageInterpretation && <p className="mt-2 text-sm text-gray-600">{activeStageInterpretation}</p>}</div>}
-              <DraAssessment value={details.stageNotes?.[activeStage] || ''} onChange={(val) => updateStageNote(activeStage, val)} readOnly={investigationReadOnly} activeStage={activeStage} />
+          ) : (
+            <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
+              <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
+                <DraInvestigation targets={targets} selectedKey={selectedTargetKey} onSelectTarget={selectTarget} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
+              </div>
+              <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
+              <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+                {renderInvestigationStageHeader({ showToggle: false })}
+                <DraAssessment value={details.stageNotes?.[activeStage] || ''} onChange={(val) => updateStageNote(activeStage, val)} readOnly={investigationReadOnly} activeStage={activeStage} />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 mt-4 min-h-0 overflow-auto">
