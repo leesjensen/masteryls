@@ -276,9 +276,10 @@ Guidelines:
  * @param {{title?: string, description?: string, summary?: string}} scenario - The scenario context.
  * @param {Array<{name?: string, role?: string, messages: Array<{role: 'user'|'model', text: string, stage?: string}>}>} transcripts - Interview/consultation transcripts.
  * @param {object} reasoningRecord - The learner's recorded reasoning fields.
+ * @param {object} [previousEvaluation] - The prior evaluation to update conservatively when available.
  * @returns {Promise<object>} The evaluation: { process, competency, disposition } each with rating/summary/attributes[].
  */
-export async function aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord, difficulty = 3) {
+export async function aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord, difficulty = 3, previousEvaluation = null) {
   const transcriptText = (transcripts || [])
     .filter((t) => (t.messages || []).length > 0)
     .map((t) => {
@@ -292,8 +293,11 @@ export async function aiDraEvaluationGenerator(scenario, transcripts, reasoningR
     .map(([k, v]) => `- ${k}: ${v}`)
     .join('\n');
 
+  const priorEvaluationText = previousEvaluation ? JSON.stringify(previousEvaluation, null, 2) : '(none)';
+
   const prompt = `You are the observation and assessment agent for a disciplinary reasoning assessment.
 Evaluate the learner's reasoning and competency (NOT any final artifact) based only on the evidence below.
+Your goal is to produce a stable, supportive, evidence-grounded evaluation that recognizes meaningful progress without inflating ratings beyond what the record supports.
 
 SCENARIO: ${scenario?.title || ''}
 ${scenario?.description || scenario?.summary || ''}
@@ -303,6 +307,9 @@ ${transcriptText || '(no interviews conducted yet)'}
 
 REASONING RECORD:
 ${reasoningText || '(empty)'}
+
+PREVIOUS EVALUATION:
+${priorEvaluationText}
 
 Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your rating thresholds accordingly:
 - Difficulty 1–2: sparse evidence is acceptable for mid-range ratings (Developing/Proficient); reward engagement and basic process participation
@@ -316,6 +323,17 @@ Assess three dimensions. For each overall dimension and each of its attributes, 
 - Disposition attributes: Curiosity, Ownership, Integrity, Persistence, Empathy, Accountability
 
 Also identify any global concerns — issues that affect the assessment as a whole and cannot be cleanly localized to one attribute (e.g. academic dishonesty, refusal to engage, serious safety or ethics violations). Only flag genuine cross-cutting problems, not merely suboptimal choices. For each concern assign a severity: Minor (poor judgment, minor lapse), Moderate (clear breach of process or ethics), or Major (harmful, deceptive, or seriously unethical action).
+
+If a PREVIOUS EVALUATION is provided, treat it as a prior to update conservatively rather than regrading from scratch:
+- Verify whether each prior rating and evidence item is still supported by the current record
+- Keep prior evidence items when they are still supported
+- Remove prior evidence items only when they are unsupported, duplicated, or clearly weaker than better distinct evidence now available
+- Add new evidence items when the learner has shown genuinely new or clearer progress
+- Preserve stable ratings when the current record still reasonably supports them
+- Change ratings only when the total verified evidence now clearly supports a different level
+- Be supportive: look for effort that moves the learner in the right direction and credit meaningful progress
+- Do not be sticky to past mistakes: if the previous evaluation was clearly wrong, correct it
+- Prefer gradual changes over large swings unless the evidence clearly warrants the change
 
 For each attribute's evidence, return up to 5 pieces when available. Each evidence item must include:
 - "detail": a concise observation drawn from the learner's actual behavior
@@ -335,6 +353,7 @@ Return a raw JSON object (no markdown code fence) with exactly this shape:
 Rules:
 - Base every judgment only on observed evidence; when evidence is sparse, use lower ratings (Beginning/Emerging)
 - Ratings should be conservative and stable. Do not overrate an attribute when the supporting evidence is thin.
+- When a previous evaluation exists, avoid unnecessary churn in wording, evidence selection, and ratings.
 - Include every attribute listed for each dimension
 - Do not invent evidence; every evidence detail must be grounded in the transcript or reasoning record
 - Keep evidence details short and concrete

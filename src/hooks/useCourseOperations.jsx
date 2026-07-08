@@ -1252,8 +1252,8 @@ Requirements:
     return aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders, resources, difficulty);
   }
 
-  async function getDraEvaluation(scenario, transcripts, reasoningRecord, difficulty) {
-    return aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord, difficulty);
+  async function getDraEvaluation(scenario, transcripts, reasoningRecord, difficulty, previousEvaluation) {
+    return aiDraEvaluationGenerator(scenario, transcripts, reasoningRecord, difficulty, previousEvaluation);
   }
 
   async function getDraCoaching(scenario, transcripts, reasoningRecord, activeStage, difficulty) {

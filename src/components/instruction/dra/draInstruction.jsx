@@ -441,7 +441,13 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function computeEvaluation(source) {
-    return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.stageNotes || {}, source.difficulty);
+    return courseOps.getDraEvaluation(
+      source.scenario,
+      buildTranscripts(source),
+      source.stageNotes || {},
+      source.difficulty,
+      source.evaluation,
+    );
   }
 
   async function requestCoaching() {
