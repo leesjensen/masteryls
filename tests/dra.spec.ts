@@ -102,9 +102,10 @@ const SCENARIO = {
 const STAKEHOLDER_REPLY = 'Downtime is our biggest concern.';
 
 const EVALUATION = {
-  process: { rating: 'Developing', summary: 'Solid framing of the problem.', attributes: [{ name: 'Framing', rating: 'Proficient', summary: 'Clarified the core constraints.', evidence: [{ detail: 'Asked the CIO about downtime', strength: 4 }] }] },
+  process: { rating: 'Developing', summary: 'Solid framing of the problem.', attributes: [{ name: 'Framing', rating: 'Proficient', summary: 'Clarified the core constraints.', evidence: [{ detail: 'Asked the CIO about downtime', polarity: 'positive', impact: 'strong' }] }] },
   competency: { rating: 'Emerging', summary: 'Beginning to reason about the system.', attributes: [{ name: 'Systems thinking', rating: 'Emerging', summary: 'Considered downstream agencies.', evidence: [] }] },
   disposition: { rating: 'Developing', summary: 'Curious and engaged.', attributes: [{ name: 'Curiosity', rating: 'Developing', summary: 'Probed for root concerns.', evidence: [] }] },
+  concerns: [],
 };
 
 const COACHING = {

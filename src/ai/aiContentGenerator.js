@@ -315,17 +315,18 @@ Assess three dimensions. For each overall dimension and each of its attributes, 
 - Competency attributes: Systems thinking, Communication, Design reasoning, Evidence-based reasoning, Decision-making
 - Disposition attributes: Curiosity, Ownership, Integrity, Persistence, Empathy, Accountability
 
-Also identify any concerns — things the learner did that were inappropriate, harmful, unethical, or showed seriously poor judgment (e.g. violating confidentiality, acting outside their authority, ignoring critical evidence, making harmful recommendations, or deceiving stakeholders). Only flag genuine problems, not merely suboptimal choices. For each concern assign a severity: Minor (poor judgment, minor lapse), Moderate (clear breach of process or ethics), or Major (harmful, deceptive, or seriously unethical action).
+Also identify any global concerns — issues that affect the assessment as a whole and cannot be cleanly localized to one attribute (e.g. academic dishonesty, refusal to engage, serious safety or ethics violations). Only flag genuine cross-cutting problems, not merely suboptimal choices. For each concern assign a severity: Minor (poor judgment, minor lapse), Moderate (clear breach of process or ethics), or Major (harmful, deceptive, or seriously unethical action).
 
-For each attribute's evidence, return 2 to 4 pieces when available. Each evidence item must include:
+For each attribute's evidence, return up to 5 pieces when available. Each evidence item must include:
 - "detail": a concise observation drawn from the learner's actual behavior
-- "strength": an integer from 1 to 5 indicating how strongly that evidence supports the rating
+- "polarity": either "positive" or "negative"
+- "impact": exactly one of "light", "moderate", or "strong"
 
-Use higher strength values only when the evidence is specific, relevant, and meaningfully demonstrates the attribute. If evidence is sparse, return fewer items and lower ratings.
+Use positive evidence when the learner's behavior supports the attribute. Use negative evidence when the learner's behavior directly undermines the attribute. Prefer placing problems into negative evidence on the specific affected attribute rather than into the global "concerns" array. Cite multiple distinct moments rather than one summarized pattern whenever the record supports it. You may draw separate evidence items from transcript actions and reasoning-record actions as long as they are genuinely distinct and not duplicates of the same moment. Use stronger impact values only when the evidence is specific, relevant, and meaningfully demonstrates or contradicts the attribute. If evidence is sparse, return fewer items and lower ratings.
 
 Return a raw JSON object (no markdown code fence) with exactly this shape:
 {
-  "process": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Framing", "rating": "<level>", "summary": "<one sentence>", "evidence": [ { "detail": "...", "strength": 1 } ] } ] },
+  "process": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Framing", "rating": "<level>", "summary": "<one sentence>", "evidence": [ { "detail": "...", "polarity": "positive", "impact": "moderate" } ] } ] },
   "competency": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
   "disposition": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
   "concerns": [ { "name": "<short label>", "severity": "Minor|Moderate|Major", "description": "<one sentence>" } ]
@@ -333,6 +334,7 @@ Return a raw JSON object (no markdown code fence) with exactly this shape:
 
 Rules:
 - Base every judgment only on observed evidence; when evidence is sparse, use lower ratings (Beginning/Emerging)
+- Ratings should be conservative and stable. Do not overrate an attribute when the supporting evidence is thin.
 - Include every attribute listed for each dimension
 - Do not invent evidence; every evidence detail must be grounded in the transcript or reasoning record
 - Keep evidence details short and concrete

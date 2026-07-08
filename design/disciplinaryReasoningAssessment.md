@@ -246,7 +246,7 @@ For each dimension (as a summation, and also individual attributes) the followin
 - A short textual summary based on the interaction.
 - Calculated rating.
 - Supporting evidence collected from investigation interactions and the reasoning record.
-- Each evidence item includes both a concise observation and a strength value indicating how strongly that evidence supports the attribute's rating.
+- Each evidence item includes a concise observation, a polarity (`positive` or `negative`), and an impact band (`light`, `moderate`, or `strong`).
 
 Rating levels:
 
@@ -256,34 +256,32 @@ Rating levels:
 - Proficient
 - Exemplary
 
-Evidence strengths:
+Evidence impacts:
 
-- `1` - weak or indirect signal
-- `2` - limited but relevant signal
-- `3` - solid supporting signal
-- `4` - strong and specific signal
-- `5` - especially strong, direct, and highly relevant signal
+- Positive evidence: `light = +10`, `moderate = +20`, `strong = +34`
+- Negative evidence: `light = -10`, `moderate = -20`, `strong = -30`
 
-The implementation uses both rating and evidence support when calculating the displayed score. A high rating alone is not enough to sustain a high score if only one thin piece of evidence is available. Broader and stronger evidence increases score stability and gives the learner more actionable feedback.
+The implementation uses both rating and evidence support when calculating the displayed score. A high rating alone is not enough to sustain a high score if the supporting evidence is weak, sparse, or contradicted by negative evidence.
 
 The current implementation applies evidence support in two steps:
 
-1. Each attribute's rating is converted to points (`Beginning=0` through `Exemplary=4`).
-2. Those points are combined with an evidence-support signal derived from both evidence count and cumulative evidence strength.
+1. Each attribute's rating is converted to a base score on a `0–100` scale:
+   `Beginning=0`, `Emerging=25`, `Developing=50`, `Proficient=75`, `Exemplary=100`.
+2. Evidence contributes a support total. Positive evidence increases support, negative evidence reduces it. Positive support is capped at `110` so abundant strong evidence can buffer some contradiction without letting the score exceed the AI's base judgment.
+3. The attribute's supported score is `baseScore × supportFactor`, where `supportFactor = clamp((positiveSupport - negativeSupport) / 100, 0, 1)`.
 
-The evidence-support factor currently behaves as follows:
+This means:
 
-- No evidence: evidence contributes `0`, and the attribute score is reduced to `60%` of its base rating points
-- More evidence items increase support, up to 3 items
-- Higher average evidence strength increases support, up to an average strength of 5
-- Evidence points are calculated as `4 * ((countFactor * 0.5) + (usefulnessFactor * 0.5))`
-- Attribute points are then calculated as `(baseRatingPoints * 0.7) + (evidencePoints * 0.3)`
+- No evidence produces `0%` support, so the supported score is `0`
+- Strong positive evidence is required to sustain a high rating
+- Negative evidence can directly reduce the supported score for the specific affected attribute
+- Evidence never raises a score above the AI's base rating; it can only validate or reduce it
 
-At the dimension level, the attribute points are averaged to produce Process, Competency, and Disposition scores. The displayed overall score then uses:
+At the dimension level, the supported attribute scores are averaged to produce Process, Competency, and Disposition scores on a `0–100` scale. The displayed overall score then uses:
 
-`ProcessScore × ((CompetencyScore + DispositionScore) / 2 / 4) × (15 / 4) - concern penalties`
+`ProcessScore × (0.5 + 0.5 × ((CompetencyScore + DispositionScore) / 2 / 100))`
 
-This is intentional. Process is the primary measure of whether the learner actually worked through the disciplinary moves of the assessment and how well they performed those moves. Competency and Disposition do not replace Process; instead, they act as quality multipliers on it. In practice this means a learner cannot earn a high overall score with weak Process, even if their professional tone, judgment, or communication appear strong. Strong Competency and Disposition amplify strong Process; they do not compensate for failing to carry out the process itself. Concern penalties are then subtracted from the result.
+This is intentional. Process is the primary measure of whether the learner actually worked through the disciplinary moves of the assessment and how well they performed those moves. Competency and Disposition do not replace Process; instead, they act as quality multipliers on it. The multiplier is softened so Process always retains at least half of its value, while stronger Competency and Disposition increase how much of the Process score counts. The final Process-derived score is then displayed on the assessment's `0–15` scale.
 
 ### Evaluation Visualization
 
@@ -292,14 +290,14 @@ A compact evaluation snapshot displays:
 - Overall weighted score
 - Overall rating band
 - Process, Competency, and Disposition summaries
-- Evidence count and cumulative evidence strength
+- Evidence count plus positive and negative support totals
 - Concerns, if any
 
-Each dimension is shown as a collapsible card. Opening a card reveals the underlying attributes, and opening an attribute reveals the supporting evidence items with their individual strength values. This makes the first screen easier to scan while still providing drill-down detail when needed.
+Each dimension is shown as a collapsible card. Opening a card reveals the underlying attributes, and opening an attribute reveals the supporting evidence items with their individual support or counter-evidence values. This makes the first screen easier to scan while still providing drill-down detail when needed.
 
 When in Practice mode the evaluation view is always available. In Final mode it is displayed when the assessment is completed.
 
-> Implementation status: an AI observation/assessment agent scores Process, Competency, and Disposition from the investigation transcripts and reasoning record. Each attribute includes a rating, a summary, and multiple evidence items with strength values when available. The frontend computes a weighted score from the ratings, evidence coverage, evidence strength, and any concern penalties. The learner sees a compact summary-first evaluation view with collapsible dimension and attribute drill-down. In Practice mode the learner can refresh the evaluation on demand and it is always visible; in Final mode it is computed and revealed at completion. Continuous automatic recalculation after every interaction remains an upcoming refinement.
+> Implementation status: an AI observation/assessment agent scores Process, Competency, and Disposition from the investigation transcripts and reasoning record. Each attribute includes a rating, a summary, and multiple evidence items with positive or negative support signals. The frontend computes a supported score from the rating, evidence polarity, and evidence impact, averages those scores within each dimension, applies the softened character multiplier to Process, and then displays the final result on the `0–15` assessment scale. The learner sees a compact summary-first evaluation view with collapsible dimension and attribute drill-down. In Practice mode the learner can refresh the evaluation on demand and it is always visible; in Final mode it is computed and revealed at completion. Continuous automatic recalculation after every interaction remains an upcoming refinement.
 
 ## Investigation
 
@@ -535,7 +533,7 @@ Observation Agent
 - Monitors interactions
 - Extracts evidence
 - Assigns ratings
-- Assigns evidence strength values
+- Assigns evidence polarity and impact values
 - Scores competencies using evidence-supported evaluation
 
 Coach
@@ -708,7 +706,7 @@ Progress is stored in the learner's progress record in Supabase, following the s
 - `conversations` — the learner's interview/consultation transcripts, keyed by stakeholder/resource (each message tagged with the active stage)
 - `investigations` — the learner's interactions and captured evidence
 - `reasoningRecord` — the learner's recorded reasoning (understanding, assumptions, unknowns, hypotheses, decisions, evidence, learner confidence)
-- `evaluation` — Process, Competency, and Disposition results, each with an overall rating plus per-attribute rating, summary, and evidence items of the form `{ detail, strength }`
+- `evaluation` — Process, Competency, and Disposition results, each with an overall rating plus per-attribute rating, summary, and evidence items of the form `{ detail, polarity, impact }`
 - `coaching` — the latest practice-mode coaching (feedback, hints, suggested investigations)
 
 Because the complete state lives in the progress record, the learner can save and resume an assessment exactly where they left off. The author's published parameters (discipline, problem type, difficulty, enabled modes, instability, learning outcomes) remain in the backing Markdown topic file; only learner-specific runtime state lives in the progress record.

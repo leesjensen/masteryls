@@ -691,7 +691,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 </button>
               </div>
             )}
-            <DraEvaluation evaluation={details.evaluation} />
+            <DraEvaluation evaluation={details.evaluation} difficulty={details.difficulty ?? params.difficulty} />
           </div>
         );
       default:
