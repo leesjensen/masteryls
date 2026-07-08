@@ -8,6 +8,7 @@ import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 import DraAssessment from './DraAssessment';
 import Spinner from '../../Spinner';
+import { FileText, MessageSquare } from 'lucide-react';
 
 function DraTabBar({ tabs, active, onChange }) {
   return (
@@ -767,55 +768,24 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (!isMobileInvestigationLayout) return null;
 
     return (
-      <div className="shrink-0 border-b border-gray-100 bg-blue-50 px-4 py-3">
-        <div className="flex items-center justify-end">
-          <div className="inline-flex rounded-full border border-gray-200 bg-white p-1">
-            <button
-              type="button"
-              onClick={() => selectMobileInvestigationView('chat')}
-              className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              Chat
-            </button>
-            <button
-              type="button"
-              onClick={() => selectMobileInvestigationView('record')}
-              className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'record' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              Record
-            </button>
-          </div>
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => selectMobileInvestigationView(mobileInvestigationView === 'chat' ? 'record' : 'chat')}
+        aria-label={mobileInvestigationView === 'chat' ? 'Open reasoning record' : 'Open chat'}
+        title={mobileInvestigationView === 'chat' ? 'Open reasoning record' : 'Open chat'}
+        className="absolute right-2 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-white/95 text-blue-700 shadow-md backdrop-blur-sm transition-colors hover:bg-blue-50"
+      >
+        {mobileInvestigationView === 'chat' ? <FileText size={18} /> : <MessageSquare size={18} />}
+      </button>
     );
   }
 
-  function renderInvestigationStageHeader({ showToggle = false } = {}) {
-    if (!activeStageInterpretation && !showToggle) return null;
+  function renderInvestigationStageHeader() {
+    if (!activeStageInterpretation) return null;
 
     return (
       <div className="shrink-0 border-b border-gray-100 bg-blue-50 px-4 py-3">
         {renderStagePills()}
-        {showToggle && isMobileInvestigationLayout && (
-          <div className="mt-2 flex items-center justify-end">
-            <div className="inline-flex rounded-full border border-gray-200 bg-white p-1">
-              <button
-                type="button"
-                onClick={() => selectMobileInvestigationView('chat')}
-                className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-              >
-                Chat
-              </button>
-              <button
-                type="button"
-                onClick={() => selectMobileInvestigationView('record')}
-                className={`rounded-full px-3 py-1 text-sm transition-colors ${mobileInvestigationView === 'record' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
-              >
-                Record
-              </button>
-            </div>
-          </div>
-        )}
         {activeStageInterpretation && <p className="mt-2 text-sm text-gray-600">{activeStageInterpretation}</p>}
       </div>
     );
@@ -835,7 +805,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       {safeActiveTab === 'investigation' ? (
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {isMobileInvestigationLayout ? (
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
               {renderMobileInvestigationToggle()}
               {showMobileRecord ? (
                 <div className="flex-1 min-h-0 overflow-hidden">
@@ -857,7 +827,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
               </div>
               <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
               <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
-                {renderInvestigationStageHeader({ showToggle: false })}
+                {renderInvestigationStageHeader()}
                 <DraAssessment value={details.stageNotes?.[activeStage] || ''} onChange={(val) => updateStageNote(activeStage, val)} readOnly={investigationReadOnly} activeStage={activeStage} />
               </div>
             </div>
