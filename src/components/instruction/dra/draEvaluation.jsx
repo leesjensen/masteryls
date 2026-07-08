@@ -196,8 +196,75 @@ function SummaryStat({ label, value, subvalue, tone = 'text-gray-900' }) {
   );
 }
 
+function ProcessStat({ process }) {
+  const processTone = getRatingTone(process.displayedLevel);
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Process</div>
+      <div className={`mt-2 rounded-md border px-2 py-2 text-center ${processTone.chip}`}>
+        <div className="text-[10px] font-semibold uppercase tracking-wide opacity-80">Process</div>
+        <div className="text-lg font-bold">{formatWholeNumber(process.score)}</div>
+      </div>
+      <div className="mt-2 text-xs text-gray-500">{process.displayedLevel}</div>
+    </div>
+  );
+}
+
+function CharacterStat({ competency, disposition, characterScore, processMultiplier }) {
+  const competencyTone = getRatingTone(competency.displayedLevel);
+  const dispositionTone = getRatingTone(disposition.displayedLevel);
+  const characterTone = getRatingTone(scoreToRatingLevel(characterScore));
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Character</div>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <div className={`min-w-0 flex-1 rounded-md border px-2 py-2 text-center ${competencyTone.chip}`}>
+          <div className="text-[10px] font-semibold uppercase tracking-wide opacity-80">Competency</div>
+          <div className="text-lg font-bold">{formatWholeNumber(competency.score)}</div>
+        </div>
+        <div className="shrink-0 text-base font-semibold text-gray-300">+</div>
+        <div className={`min-w-0 flex-1 rounded-md border px-2 py-2 text-center ${dispositionTone.chip}`}>
+          <div className="text-[10px] font-semibold uppercase tracking-wide opacity-80">Disposition</div>
+          <div className="text-lg font-bold">{formatWholeNumber(disposition.score)}</div>
+        </div>
+        <div className="shrink-0 text-base font-semibold text-gray-300">=</div>
+        <div className={`min-w-0 flex-1 rounded-md border px-2 py-2 text-center ${characterTone.chip}`}>
+          <div className="text-[10px] font-semibold uppercase tracking-wide opacity-80">Character</div>
+          <div className="text-lg font-bold">{formatWholeNumber(characterScore)}</div>
+        </div>
+      </div>
+      <div className="mt-2 text-xs text-gray-500">{formatWholeNumber(processMultiplier * 100)}% Process multiplier</div>
+    </div>
+  );
+}
+
 function formatWholeNumber(value) {
   return String(Math.round(value));
+}
+
+function statAccentClasses(variant) {
+  switch (variant) {
+    case 'process':
+      return 'border-sky-200 bg-sky-50';
+    case 'character':
+      return 'border-sky-200 bg-sky-50';
+    case 'evidence':
+      return 'border-gray-200 bg-gray-50';
+    default:
+      return 'border-gray-200 bg-white';
+  }
+}
+
+function TintedSummaryStat({ label, value, subvalue, tone = 'text-gray-900', variant }) {
+  return (
+    <div className={`rounded-lg border px-3 py-2 ${statAccentClasses(variant)}`}>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">{label}</div>
+      <div className={`mt-1 text-lg font-bold ${tone}`}>{value}</div>
+      {subvalue && <div className="text-xs text-gray-500">{subvalue}</div>}
+    </div>
+  );
 }
 
 function EvidenceBadge({ item }) {
@@ -276,12 +343,12 @@ function DimensionCard({ label, dimension, defaultOpen = false }) {
         <div className="flex items-start gap-3">
           <div className="pt-0.5 text-gray-500">{open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}</div>
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
                 <div className="text-sm font-bold text-gray-900">{label}</div>
                 {dimension?.summary && <div className="mt-0.5 text-xs text-gray-600">{dimension.summary}</div>}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-start gap-2 pt-0.5">
                 <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tone.chip}`}>{dimension.displayedLevel}</span>
               </div>
             </div>
@@ -334,34 +401,28 @@ export default function DraEvaluation({ evaluation, difficulty = 3 }) {
             <div className="mt-1 flex items-center gap-3">
               <div className="text-2xl font-bold text-gray-900">{formatWholeNumber(rawFinalScore)} / 100</div>
               <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${overallTone.chip}`}>{overallLevelFromTotal}</span>
+              <span className="rounded-full border border-gray-300 bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">Difficulty {difficulty}</span>
             </div>
-            <div className="mt-2 text-sm text-gray-600">Process is the main driver of the score. Competency and Disposition adjust how much of that Process score counts, and evidence supports or challenges each attribute along the way.</div>
-            <div className="mt-1 text-xs text-gray-500">A perfect score requires Process, Competency, and Disposition all to reach 100 / 100.</div>
+            <div className="mt-2 text-sm text-gray-600">Process is the main driver of the score. Character reflects Competency and Disposition, and determines how much of the Process score counts.</div>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <SummaryStat label="Evidence" value={`${totalEvidence} items`} subvalue={`Net support +${formatWholeNumber(totalNetSupport)}${totalNegativeSupport > 0 ? ` from +${totalPositiveSupport} / -${totalNegativeSupport}` : ''} · difficulty ${difficulty}${concerns.length > 0 ? ` · ${concerns.length} concern${concerns.length === 1 ? '' : 's'}` : ''}`} />
-          <SummaryStat label="Competency" value={formatWholeNumber(competency.score)} subvalue={competency.displayedLevel} />
-          <SummaryStat label="Disposition" value={formatWholeNumber(disposition.score)} subvalue={disposition.displayedLevel} />
-          <SummaryStat label="Process" value={formatWholeNumber(process.score)} subvalue={process.displayedLevel} />
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <SummaryStat
-            label="Character"
-            value={formatWholeNumber(characterScore)}
-            subvalue={`${formatWholeNumber(processMultiplier * 100)}% Process multiplier`}
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <TintedSummaryStat
+            label="Evidence"
+            value={`${totalEvidence} items`}
+            subvalue={`Net support +${formatWholeNumber(totalNetSupport)}${totalNegativeSupport > 0 ? ` from +${totalPositiveSupport} / -${totalNegativeSupport}` : ''}${concerns.length > 0 ? ` · ${concerns.length} concern${concerns.length === 1 ? '' : 's'}` : ''}`}
+            variant="evidence"
           />
-          <SummaryStat
-            label="Final Score"
-            value={`${formatWholeNumber(rawFinalScore)} / 100`}
-            subvalue={`${overallLevelFromTotal} overall`}
-          />
-        </div>
-
-        <div className="mt-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600">
-          Score flow: Process {formatWholeNumber(process.score)} x Character {Math.round(processMultiplier * 100)}% = {formatWholeNumber(rawFinalScore)}
+          <ProcessStat process={process} />
+          <div className="md:col-span-2">
+            <CharacterStat
+              competency={competency}
+              disposition={disposition}
+              characterScore={characterScore}
+              processMultiplier={processMultiplier}
+            />
+          </div>
         </div>
       </div>
 
