@@ -8,7 +8,8 @@ import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 import DraAssessment from './DraAssessment';
 import Spinner from '../../Spinner';
-import { FileText, MessageSquare } from 'lucide-react';
+import { FileText, MessageSquare, Search, Network, Play, CheckCircle2, RefreshCcw, Lightbulb } from 'lucide-react';
+import DraMobilePicker from './DraMobilePicker';
 
 function DraTabBar({ tabs, active, onChange }) {
   return (
@@ -139,6 +140,30 @@ function findInProgressPracticeScenario(practiceScenarios) {
   return (practiceScenarios || []).find((scenario) => scenario?.mode === 'practice' && scenario?.state === 'inProgress') || null;
 }
 
+function getStageIcon(stage) {
+  switch ((stage || '').toLowerCase()) {
+    case 'frame':
+    case 'framing':
+      return <Lightbulb size={16} className="text-amber-600" />;
+    case 'research':
+      return <Search size={16} className="text-cyan-700" />;
+    case 'model':
+    case 'modeling':
+      return <Network size={16} className="text-violet-600" />;
+    case 'act':
+    case 'action':
+      return <Play size={16} className="text-blue-600" />;
+    case 'validate':
+    case 'validation':
+      return <CheckCircle2 size={16} className="text-emerald-600" />;
+    case 'reflect':
+    case 'reflection':
+      return <RefreshCcw size={16} className="text-rose-600" />;
+    default:
+      return <FileText size={16} className="text-gray-500" />;
+  }
+}
+
 export default function DraInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
   const [markdown, setMarkdown] = React.useState(content || '');
   const [draState, setDraState] = React.useState(createEmptyDraState());
@@ -153,6 +178,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [selectedTargetKey, setSelectedTargetKey] = React.useState('');
   const [mobileInvestigationView, setMobileInvestigationView] = React.useState('chat');
   const [isMobileInvestigationLayout, setIsMobileInvestigationLayout] = React.useState(false);
+  const [mobileStagePickerOpen, setMobileStagePickerOpen] = React.useState(false);
   const courseId = learningSession?.course?.id;
   const topicId = learningSession?.topic?.id;
   const { panePercent: investigationPanePercent, splitContainerRef: investigationSplitRef, onPaneMoved: onInvestigationPaneMoved, onPaneResized: onInvestigationPaneResized } = useSplitPaneState(55);
@@ -747,15 +773,47 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const stageNavigationDisabled = false;
   const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
   const showMobileRecord = isMobileInvestigationLayout && mobileInvestigationView === 'record';
+  const activeStageItem = (details.stages || []).find((s) => s.stage === activeStage) || null;
 
   function renderStagePills() {
     if ((details.stages || []).length === 0) return null;
+
+    if (isMobileInvestigationLayout) {
+      return (
+        <DraMobilePicker
+          value={activeStage}
+          valueLabel={activeStageItem?.stage || 'Select stage'}
+          valueIcon={getStageIcon(activeStageItem?.stage)}
+          groups={[
+            {
+              items: (details.stages || []).map((s) => ({
+                value: s.stage,
+                label: s.stage,
+                icon: getStageIcon(s.stage),
+                selected: s.stage === activeStage,
+              })),
+            },
+          ]}
+          isOpen={mobileStagePickerOpen}
+          onToggle={() => setMobileStagePickerOpen((open) => !open)}
+          onClose={() => setMobileStagePickerOpen(false)}
+          onSelect={(value) => selectStage(value)}
+          disabled={stageNavigationDisabled}
+          className="not-prose shrink-0 w-[calc(100%-3.5rem)]"
+        />
+      );
+    }
 
     return (
       <div className="not-prose shrink-0">
         <div className="flex flex-wrap gap-1.5">
           {(details.stages || []).map((s) => (
-            <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={stageNavigationDisabled} className={`px-2.5 py-1 rounded-full border text-xs disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white/90 text-gray-700 hover:bg-white'}`}>
+            <button
+              key={s.stage}
+              onClick={() => selectStage(s.stage)}
+              disabled={stageNavigationDisabled}
+              className={`shrink-0 rounded-full border px-2.5 py-1 text-xs disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white/90 text-gray-700 hover:bg-white'}`}
+            >
               {s.stage}
             </button>
           ))}

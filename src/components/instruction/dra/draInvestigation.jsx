@@ -1,6 +1,7 @@
 import React from 'react';
 import { Blocks, Briefcase, Database, FileText, Map, Server, UserRound } from 'lucide-react';
 import Markdown from '../../Markdown';
+import DraMobilePicker from './DraMobilePicker';
 
 const resourceTypeOrder = {
   person: 0,
@@ -47,7 +48,6 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
   const [mobilePickerOpen, setMobilePickerOpen] = React.useState(false);
   const inputRef = React.useRef(null);
   const messageListRef = React.useRef(null);
-  const mobilePickerRef = React.useRef(null);
 
   const sortedTargets = React.useMemo(
     () =>
@@ -90,21 +90,6 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
 
   const selectedTarget = sortedTargets.find((t) => t.key === selectedKey) || null;
   const messages = conversations[selectedKey] || [];
-
-  React.useEffect(() => {
-    function handlePointerDown(event) {
-      if (!mobilePickerRef.current?.contains(event.target)) {
-        setMobilePickerOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('touchstart', handlePointerDown);
-    };
-  }, []);
 
   function renderTargetButton(target) {
     const isSelected = target.key === selectedKey;
@@ -165,91 +150,51 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
       </div>
 
       <div className="flex-1 flex min-h-0 flex-col gap-3 overflow-hidden">
-        <div className="md:hidden shrink-0">
+        <div className="md:hidden shrink-0 overflow-visible px-1 pt-1">
           {sortedTargets.length === 0 ? (
             <p className="text-sm text-gray-500 italic">No stakeholders or resources are revealed yet. Work through the scenario to uncover them.</p>
           ) : (
-            <div ref={mobilePickerRef} className="rounded-lg border border-gray-200 bg-white p-3">
-              <label htmlFor="dra-mobile-target-select" className="block text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                Conversation target
-              </label>
-              <button
-                id="dra-mobile-target-select"
-                type="button"
-                onClick={() => setMobilePickerOpen((open) => !open)}
-                className="mt-2 flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0">{selectedTarget ? getTargetIcon(selectedTarget) : <UserRound size={16} className="text-gray-400" />}</span>
-                  <span className="truncate">
-                    {selectedTarget ? `${selectedTarget.name} - ${getResourceTypeLabel(selectedTarget)}` : 'Select a target'}
-                  </span>
-                </span>
-                <span className="ml-2 shrink-0 text-gray-500">{mobilePickerOpen ? '▲' : '▼'}</span>
-              </button>
-              {mobilePickerOpen && (
-                <div className="mt-2 max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                  {stakeholderTargets.length > 0 && (
-                    <div>
-                      <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stakeholders</div>
-                      <div className="space-y-1">
-                        {stakeholderTargets.map((target) => {
-                          const isSelected = target.key === selectedKey;
-                          return (
-                            <button
-                              key={target.key}
-                              type="button"
-                              onClick={() => {
-                                onSelectTarget?.(target.key);
-                                setMobilePickerOpen(false);
-                              }}
-                              className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
-                                isSelected ? 'bg-blue-50 text-blue-800' : 'text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span className="shrink-0">{getTargetIcon(target)}</span>
-                              <span className="min-w-0">
-                                <span className="block truncate font-medium">{target.name}</span>
-                                <span className="block truncate text-xs text-gray-500">{getResourceTypeLabel(target)}</span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {resourceTargets.length > 0 && (
-                    <div className={stakeholderTargets.length > 0 ? 'mt-2 border-t border-gray-100 pt-2' : ''}>
-                      <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Resources</div>
-                      <div className="space-y-1">
-                        {resourceTargets.map((target) => {
-                          const isSelected = target.key === selectedKey;
-                          return (
-                            <button
-                              key={target.key}
-                              type="button"
-                              onClick={() => {
-                                onSelectTarget?.(target.key);
-                                setMobilePickerOpen(false);
-                              }}
-                              className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${
-                                isSelected ? 'bg-blue-50 text-blue-800' : 'text-gray-700 hover:bg-gray-50'
-                              }`}
-                            >
-                              <span className="shrink-0">{getTargetIcon(target)}</span>
-                              <span className="min-w-0">
-                                <span className="block truncate font-medium">{target.name}</span>
-                                <span className="block truncate text-xs text-gray-500">{getResourceTypeLabel(target)}</span>
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <DraMobilePicker
+              id="dra-mobile-target-select"
+              value={selectedKey}
+              valueLabel={selectedTarget ? `${selectedTarget.name} - ${getResourceTypeLabel(selectedTarget)}` : 'Select a target'}
+              valueIcon={selectedTarget ? getTargetIcon(selectedTarget) : <UserRound size={16} className="text-gray-400" />}
+              isOpen={mobilePickerOpen}
+              onToggle={() => setMobilePickerOpen((open) => !open)}
+              onClose={() => setMobilePickerOpen(false)}
+              onSelect={(value) => onSelectTarget?.(value)}
+              className="w-[calc(100%-3.5rem)]"
+              groups={[
+                ...(stakeholderTargets.length > 0
+                  ? [
+                      {
+                        label: 'Stakeholders',
+                        items: stakeholderTargets.map((target) => ({
+                          value: target.key,
+                          label: target.name,
+                          description: getResourceTypeLabel(target),
+                          icon: getTargetIcon(target),
+                          selected: target.key === selectedKey,
+                        })),
+                      },
+                    ]
+                  : []),
+                ...(resourceTargets.length > 0
+                  ? [
+                      {
+                        label: 'Resources',
+                        items: resourceTargets.map((target) => ({
+                          value: target.key,
+                          label: target.name,
+                          description: getResourceTypeLabel(target),
+                          icon: getTargetIcon(target),
+                          selected: target.key === selectedKey,
+                        })),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           )}
         </div>
 

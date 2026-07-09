@@ -248,16 +248,18 @@ test('dra practice mode can start a new scenario after completing', async ({ pag
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Complete assessment' }).click();
-  await expect(page.getByText('Assessment complete')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start new scenario' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Start new scenario' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
-  await expect(page.getByText('Assessment complete')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start new scenario' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Benefits Enrollment Recovery', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tax System Modernization (Completed)' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Tax System Modernization (Completed)' }).click();
-  await expect(page.getByText('Assessment complete')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start new scenario' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Scenario', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
 });
@@ -276,7 +278,7 @@ test('dra final mode confirms start and locks the scenario', async ({ page }) =>
   await page.getByRole('button', { name: 'Start final assessment' }).click();
 
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
-  await expect(page.getByText('the scenario is locked', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Generate new scenario' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
 });
