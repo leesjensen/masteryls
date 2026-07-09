@@ -34,7 +34,7 @@ Use the user menu (`New course`) to create a course. You can:
 
 After creation, the course is added to catalog and you are set as an editor for that course.
 
-Once you have MasteryLS fully deployed you can now log into your installation of MasteryLS using the **root email** you provided to the MasterLS CLI for installation. This user has full root access to your installation.
+Once you have MasteryLS fully deployed you can now log into your installation of MasteryLS using the **root email** you provided to the MasteryLS CLI for installation. This user has full root access to your installation.
 
 After logging in, you will see the root user's dashboard. Click on the user menu and select **New Course**.
 

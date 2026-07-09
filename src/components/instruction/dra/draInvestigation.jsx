@@ -113,6 +113,12 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
     container.scrollTop = container.scrollHeight;
   }, [selectedKey, messages.length]);
 
+  React.useEffect(() => {
+    if (!readOnly && !sending) {
+      inputRef.current?.focus();
+    }
+  }, [selectedKey, messages.length, readOnly, sending]);
+
   async function handleSend() {
     const text = input.trim();
     if (!text || sending || readOnly || !selectedTarget) return;
@@ -123,6 +129,7 @@ export default function DraInvestigation({ targets, selectedKey, onSelectTarget,
       await onSendMessage(selectedTarget, text);
     } finally {
       setSending(false);
+      inputRef.current?.focus();
     }
   }
 

@@ -33,7 +33,7 @@ async function loadApp() {
       <ProgressProvider>
         <RouterProvider router={router} />
       </ProgressProvider>
-    </AlertProvider>
+    </AlertProvider>,
   );
 }
 
@@ -60,7 +60,7 @@ function LoadingPage() {
           {!navigator.onLine ? 'You appear to be offline. Reconnect to load course content and continue working.' : 'It is taking longer than expected to load your content. If this continues please contact '}
           {navigator.onLine && (
             <>
-              <a href="mailto:support@masterls.com" className="text-blue-600 hover:underline">
+              <a href="mailto:support@masteryls.com" className="text-blue-600 hover:underline">
                 customer support.
               </a>
             </>

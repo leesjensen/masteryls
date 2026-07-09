@@ -1,6 +1,6 @@
 # Deploying MasteryLS
 
-You can deploy your own installation of MasterLS with two simple steps.
+You can deploy your own installation of MasteryLS with two simple steps.
 
 **① Configure GitHub** - Fork the MasteryLS GitHub Repository and configure GitHub Pages to serve as your _MasteryLS frontend_
 
