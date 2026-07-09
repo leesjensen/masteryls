@@ -220,19 +220,19 @@ Stage interpretations (the "interpretation" field for each stage):
  *
  * @async
  * @param {{title?: string, summary?: string, description?: string}} scenario - The generated scenario context.
- * @param {{key?: string, name?: string, role?: string, personality?: string, objectives?: string, type?: string, description?: string}} primaryTarget - The primary stakeholder or resource being interviewed/consulted.
+ * @param {{key?: string, name?: string, role?: string, personality?: string, objectives?: string, type?: string, description?: string}} primaryTarget - The stakeholder or resource the learner is directing this turn toward.
  * @param {Array<{key?: string, name?: string, role?: string, personality?: string, objectives?: string, type?: string, description?: string}>} listenerTargets - Stakeholders allowed to interject after the primary reply.
  * @param {Array<{role: 'user'|'model', text: string}>} messages - The shared conversation so far.
- * @returns {Promise<Array<{speakerKey: string, speakerName: string, speakerRole: string, text: string}>>} One primary reply plus up to two stakeholder interjections.
+ * @returns {Promise<Array<{speakerKey: string, speakerName: string, speakerRole: string, text: string}>>} One directed reply plus up to two stakeholder interjections.
  */
 export async function aiDraStakeholderResponseGenerator(scenario, primaryTarget, listenerTargets = [], messages, stakeholders = [], resources = [], difficulty = 3, activeStage = '') {
   const normalizedListeners = Array.isArray(listenerTargets) ? listenerTargets.filter(Boolean) : [];
   const isPrimaryStakeholder = Boolean(primaryTarget?.role) || (primaryTarget?.type || 'stakeholder') === 'stakeholder';
   const primaryPersona = isPrimaryStakeholder
-    ? `Primary speaker: ${primaryTarget?.name || 'a stakeholder'}, ${primaryTarget?.role || 'a stakeholder'}.
+    ? `Directed speaker: ${primaryTarget?.name || 'a stakeholder'}, ${primaryTarget?.role || 'a stakeholder'}.
 Personality: ${primaryTarget?.personality || 'professional and direct'}.
 Objectives: ${primaryTarget?.objectives || 'represent your interests honestly'}.`
-    : `Primary speaker represents "${primaryTarget?.name || 'a resource'}" (${primaryTarget?.type || 'resource'}).
+    : `Directed speaker represents "${primaryTarget?.name || 'a resource'}" (${primaryTarget?.type || 'resource'}).
 What it offers: ${primaryTarget?.description || 'relevant information for the investigation'}.`;
 
   const knownPeople = [
@@ -260,7 +260,7 @@ ${knownPeople || '(none listed)'}
 
 Current stage: ${activeStage || '(not specified)'}
 
-Optional stakeholder interjections allowed after the primary reply:
+Optional stakeholder interjections allowed after the directed reply:
 ${interjectionBlock}
 
 Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your responsiveness accordingly:
@@ -270,8 +270,8 @@ Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your responsiven
 
 Guidelines:
 - Stay fully in character.
-- The primary speaker must reply first.
-- You may include 0, 1, or 2 interjections after the primary reply, but only from the optional stakeholder list above.
+- The directed speaker must reply first.
+- You may include 0, 1, or 2 interjections after the directed reply, but only from the optional stakeholder list above.
 - Interjections must be from different stakeholders. Never use the same stakeholder twice in one turn.
 - Resources do not interject. If the primary target is a resource, only the primary resource reply is allowed.
 - Prefer no interjection unless another stakeholder has a distinct, relevant point that materially helps or challenges the discussion.
@@ -282,12 +282,12 @@ Guidelines:
 Return a raw JSON object with exactly this shape:
 {
   "replies": [
-    { "speakerKey": "${primaryTarget?.key || ''}", "speakerName": "${primaryTarget?.name || ''}", "speakerRole": "${primaryTarget?.role || primaryTarget?.type || ''}", "text": "primary reply" }
+    { "speakerKey": "${primaryTarget?.key || ''}", "speakerName": "${primaryTarget?.name || ''}", "speakerRole": "${primaryTarget?.role || primaryTarget?.type || ''}", "text": "directed reply" }
   ]
 }
 
 Rules for the JSON:
-- The first reply must always be from the primary speaker.
+- The first reply must always be from the directed speaker.
 - Return at most 3 total replies.
 - If you include interjections, each must use the exact speakerKey, speakerName, and speakerRole from the allowed stakeholder list.
 - Return only the JSON object.`;

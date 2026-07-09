@@ -62,12 +62,12 @@ export default function DraMobilePicker({
                       onSelect?.(item.value);
                       onClose?.();
                     }}
-                    className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${item.selected ? 'bg-blue-50 text-blue-800' : 'text-gray-700 hover:bg-gray-50'}`}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm ${item.className || (item.selected ? 'bg-blue-50 text-blue-800' : 'text-gray-700 hover:bg-gray-50')}`}
                   >
                     {item.icon && <span className="shrink-0">{item.icon}</span>}
                     <span className="min-w-0">
                       <span className="block truncate font-medium">{item.label}</span>
-                      {item.description && <span className="block truncate text-xs text-gray-500">{item.description}</span>}
+                      {item.description && <span className={`block truncate text-xs ${item.descriptionClassName || 'text-gray-500'}`}>{item.description}</span>}
                     </span>
                   </button>
                 ))}

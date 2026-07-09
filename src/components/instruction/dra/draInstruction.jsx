@@ -533,7 +533,19 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
-  function selectTarget(targetKey) {
+  function updateStakeholderGroup(nextTargetKey, nextListenerKeys) {
+    setSelectedTargetKey(nextTargetKey);
+    setSelectedListenerTargetKeys(nextListenerKeys);
+    if (courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, {
+        [`draSelectedTarget_${topicId}`]: nextTargetKey,
+        [`draSelectedListeners_${topicId}`]: nextListenerKeys,
+      });
+    }
+  }
+
+  function selectTarget(targetKey, options = {}) {
+    const { preserveCurrentInGroup = true } = options;
     if (!targetKey || selectedTargetKey === targetKey) return;
     const nextTarget = details.stakeholders?.find((_, index) => `stakeholder:${index}` === targetKey)
       || details.resources?.find((_, index) => `resource:${index}` === targetKey)
@@ -541,7 +553,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const nextTargetType = targetKey.startsWith('resource:') ? 'resource' : (nextTarget?.kind || nextTarget?.type || 'stakeholder');
     let nextListenerKeys = selectedListenerTargetKeys.filter((key) => key !== targetKey);
 
-    if (nextTargetType === 'stakeholder' && selectedTargetKey && selectedListenerTargetKeys.includes(targetKey)) {
+    if (nextTargetType === 'stakeholder' && selectedTargetKey && stakeholderTargets.some((target) => target.key === selectedTargetKey) && preserveCurrentInGroup) {
       nextListenerKeys = [...nextListenerKeys, selectedTargetKey].filter((key, index, list) => list.indexOf(key) === index);
     }
 
@@ -549,22 +561,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       nextListenerKeys = [];
     }
 
-    setSelectedTargetKey(targetKey);
-    setSelectedListenerTargetKeys(nextListenerKeys);
-    if (courseId && topicId) {
-      courseOps.saveEnrollmentUiSettings(courseId, {
-        [`draSelectedTarget_${topicId}`]: targetKey,
-        [`draSelectedListeners_${topicId}`]: nextListenerKeys,
-      });
-    }
+    updateStakeholderGroup(targetKey, nextListenerKeys);
   }
 
   function selectListenerTargetKeys(listenerTargetKeys) {
     const normalizedKeys = [...new Set((listenerTargetKeys || []).filter((key) => key && key !== selectedTargetKey))];
-    setSelectedListenerTargetKeys(normalizedKeys);
-    if (courseId && topicId) {
-      courseOps.saveEnrollmentUiSettings(courseId, { [`draSelectedListeners_${topicId}`]: normalizedKeys });
-    }
+    updateStakeholderGroup(selectedTargetKey, normalizedKeys);
   }
 
   function selectMobileInvestigationView(view) {
@@ -1207,6 +1209,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                     selectedListenerKeys={selectedListenerTargetKeys}
                     onSelectTarget={selectTarget}
                     onSelectListenerKeys={selectListenerTargetKeys}
+                    onUpdateStakeholderGroup={updateStakeholderGroup}
                     conversation={activeConversation}
                     onSendMessage={sendInvestigationMessage}
                     readOnly={investigationReadOnly}
@@ -1225,6 +1228,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                   selectedListenerKeys={selectedListenerTargetKeys}
                   onSelectTarget={selectTarget}
                   onSelectListenerKeys={selectListenerTargetKeys}
+                  onUpdateStakeholderGroup={updateStakeholderGroup}
                   conversation={activeConversation}
                   onSendMessage={sendInvestigationMessage}
                   readOnly={investigationReadOnly}

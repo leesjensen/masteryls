@@ -85,6 +85,7 @@ export default function DraInvestigation({
   selectedListenerKeys = [],
   onSelectTarget,
   onSelectListenerKeys,
+  onUpdateStakeholderGroup,
   conversation,
   onSendMessage,
   readOnly,
@@ -163,44 +164,62 @@ export default function DraInvestigation({
       return;
     }
 
-    if (target.key === selectedKey) return;
-    toggleListener(target.key);
+    const isCurrent = target.key === selectedKey;
+    const isInGroup = selectedListenerKeys.includes(target.key);
+
+    if (!isCurrent && !isInGroup) {
+      onSelectTarget?.(target.key);
+      return;
+    }
+
+    if (!isCurrent && isInGroup) {
+      toggleListener(target.key);
+      return;
+    }
+
+    if (selectedListeners.length === 0) {
+      return;
+    }
+
+    const nextDirectedTargetKey = selectedListenerKeys[selectedListenerKeys.length - 1];
+    const nextListenerKeys = selectedListenerKeys.filter((key) => key !== nextDirectedTargetKey);
+    onUpdateStakeholderGroup?.(nextDirectedTargetKey, nextListenerKeys);
   }
 
   function renderTargetButton(target) {
     const isSelected = target.key === selectedKey;
-    const isDraftPrimary = draftPrimaryKey === target.key && target.type === 'stakeholder';
-    const showPendingPrimary = isDraftPrimary && target.key !== selectedKey;
     const isStakeholder = target.type === 'stakeholder';
-    const isInGroup = isStakeholder && selectedListenerKeys.includes(target.key);
+    const isInGroup = isStakeholder && (target.key === selectedKey || selectedListenerKeys.includes(target.key));
+    const isDirected = draftPrimaryKey === target.key && target.type === 'stakeholder';
 
     return (
       <button
         key={target.key}
         onClick={() => (isStakeholder ? handleStakeholderAffordance(target) : onSelectTarget?.(target.key))}
         className={`w-full text-left px-3 py-2 rounded border text-sm ${
-          showPendingPrimary
+          isDirected
             ? 'border-amber-400 bg-amber-50 text-amber-900 ring-1 ring-amber-300'
-            : isSelected
-              ? 'border-blue-400 bg-blue-50 text-blue-800'
-              : isInGroup
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+            : isInGroup
+              ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+              : isSelected
+                ? 'border-blue-400 bg-blue-50 text-blue-800'
               : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
         }`}
       >
         <div className="flex items-start gap-2 min-w-0">
           <div className="mt-0.5 shrink-0">{getTargetIcon(target)}</div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="font-semibold truncate">{target.name}</div>
-              {showPendingPrimary && <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">Next primary</span>}
-              {!showPendingPrimary && isSelected && isStakeholder && <span className="shrink-0 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800">Primary</span>}
-              {!showPendingPrimary && !isSelected && isInGroup && <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">In group</span>}
-            </div>
-            <div className="text-xs text-gray-500 truncate">{getResourceTypeLabel(target)}</div>
+            <div className="font-semibold leading-tight break-words">{target.name}</div>
+            <div className="text-xs text-gray-500 leading-tight break-words">{getResourceTypeLabel(target)}</div>
           </div>
-          {isStakeholder && !isSelected && (
-            <div className={`mt-0.5 shrink-0 rounded-full p-1 ${isInGroup ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+          {isStakeholder && (
+            <div className={`mt-0.5 shrink-0 rounded-full p-1 ${
+              isDirected
+                ? 'bg-amber-100 text-amber-700'
+                : isInGroup
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-gray-100 text-gray-400'
+            }`}>
               <Check size={14} />
             </div>
           )}
@@ -210,8 +229,9 @@ export default function DraInvestigation({
   }
 
   function renderListenerSummary() {
-    if (selectedListeners.length === 0) return 'No additional stakeholders';
-    return selectedListeners.map((target) => target.name).join(', ');
+    if (selectedTarget?.type !== 'stakeholder') return 'No stakeholders selected';
+    const groupNames = [selectedTarget.name, ...selectedListeners.map((target) => target.name)];
+    return groupNames.join(', ');
   }
 
   React.useLayoutEffect(() => {
@@ -295,9 +315,15 @@ export default function DraInvestigation({
                         items: stakeholderTargets.map((target) => ({
                           value: target.key,
                           label: target.name,
-                          description: target.key === selectedKey ? `${getResourceTypeLabel(target)} · primary` : selectedListenerKeys.includes(target.key) ? `${getResourceTypeLabel(target)} · in group` : getResourceTypeLabel(target),
+                          description: `${getResourceTypeLabel(target)}${draftPrimaryKey === target.key ? ' · addressing' : target.key === selectedKey || selectedListenerKeys.includes(target.key) ? ' · in group' : ''}`,
+                          descriptionClassName: draftPrimaryKey === target.key ? 'text-amber-700' : target.key === selectedKey || selectedListenerKeys.includes(target.key) ? 'text-emerald-700' : 'text-gray-500',
                           icon: getTargetIcon(target),
                           selected: target.key === selectedKey || selectedListenerKeys.includes(target.key),
+                          className: draftPrimaryKey === target.key
+                            ? 'border border-amber-300 bg-amber-50 text-amber-900'
+                            : target.key === selectedKey || selectedListenerKeys.includes(target.key)
+                              ? 'border border-emerald-300 bg-emerald-50 text-emerald-900'
+                              : 'text-gray-700 hover:bg-gray-50',
                         })),
                       },
                     ]
@@ -360,7 +386,7 @@ export default function DraInvestigation({
                     ? 'border-blue-200 bg-blue-50 text-blue-800'
                     : 'border-amber-200 bg-amber-50 text-amber-900'
                 }`}>
-                  <span className="font-semibold">{draftPrimaryTarget.name}</span> will respond first
+                  Addressing <span className="font-semibold">{draftPrimaryTarget.name}</span>
                 </div>
               )}
               <div className="flex gap-2">

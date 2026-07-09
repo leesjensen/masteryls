@@ -364,8 +364,8 @@ test('dra investigation supports a primary stakeholder with distinct listener in
   await page.getByRole('button', { name: /Alex Tran.*Operations Director/ }).click();
   await page.getByRole('button', { name: /Rina Shah.*Security Lead/ }).click();
 
-  const chatInput = page.getByPlaceholder('Ask Dana Cole…');
-  await chatInput.fill('What do we need to protect during the migration?');
+  const chatInput = page.locator('textarea').last();
+  await chatInput.fill('Dana, what do we need to protect during the migration?');
   await page.getByRole('button', { name: 'Send', exact: true }).click();
 
   await expect(page.getByRole('main')).toContainText('Dana Cole · CIO');
@@ -376,10 +376,10 @@ test('dra investigation supports a primary stakeholder with distinct listener in
   await expect(page.getByRole('main')).toContainText('Any rollback plan must preserve audit logging.');
 
   await chatInput.fill('Alex, what is the operational constraint?');
-  await expect(page.getByText('Alex Tran will respond first')).toBeVisible();
+  await expect(page.getByText('Addressing Alex Tran')).toBeVisible();
   await page.getByRole('button', { name: 'Send', exact: true }).click();
 
-  await expect(page.getByRole('main')).toContainText('What do we need to protect during the migration?');
+  await expect(page.getByRole('main')).toContainText('Dana, what do we need to protect during the migration?');
   await expect(page.getByRole('main')).toContainText('Alex, what is the operational constraint?');
   await expect(page.getByPlaceholder('Ask Alex Tran…')).toBeVisible();
 });
