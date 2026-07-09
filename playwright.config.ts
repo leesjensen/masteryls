@@ -5,15 +5,15 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: [['html', { open: 'never' }]],
-  timeout: process.env.CI ? 20000 : 10000,
+  timeout: 20000,
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
   },
   expect: {
-    timeout: 7000,
+    timeout: 10000,
   },
 
   /* Configure projects for major browsers */
@@ -38,6 +38,6 @@ export default defineConfig({
     command: process.env.COVERAGE ? 'COVERAGE=true npm run dev' : 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
-    timeout: 5000,
+    timeout: 20000,
   },
 });

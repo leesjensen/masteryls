@@ -263,9 +263,16 @@ Guidelines:
 - If the directed speaker is a resource, only that resource responds.
 - If the directed speaker is a stakeholder, you may include 0, 1, or 2 interjects from the optional stakeholders after the directed reply.
 - Interjections must be from different stakeholders. Never use the same stakeholder twice in one turn.
-- Never interject unless another stakeholder has a distinct, relevant point that materially helps or challenges the discussion.
-- Optional stakeholders may only respond if the learner's question is directed generally or if another stakeholder has presented a point that need significant correction or clarification.
+- Default to no interjection. Silence is preferred unless an optional stakeholder clearly needs to speak.
+- Never interject unless the optional stakeholder adds a distinct, non-obvious point that materially improves the learner's understanding.
+- Optional stakeholders may only respond if at least one of these is true:
+  1. The learner addressed the group generally rather than one person.
+  2. The learner explicitly named or invited that stakeholder too.
+  3. The directed reply created a clear need for correction, clarification, or a missing stakeholder-specific constraint.
+  4. The optional stakeholder is the owner of a decision, risk, approval, or operational fact that the learner directly asked about.
 - Do not interject to repeat or summarize what has already been said.
+- Do not interject just to agree, show support, express satisfaction, praise the plan, or restate a stakeholder's standing goals or preferences.
+- If an interjection does not introduce a new fact, correction, tradeoff, constraint, objection, or decision, omit it.
 - Each interjecting stakeholder may contribute only one distinct point and then stop. Do not let interjections expand into mini-monologues or broader project summaries.
 - Each individual reply should be concise (prefer 2-4 sentences, under 90 words) and use plain GitHub-flavored markdown.
 - Focus narrowly on the learner's actual question and any immediately relevant prior messages in the thread.
@@ -277,11 +284,13 @@ Guidelines:
 Bad pattern to avoid:
 - Answer the question, then add a summary of the project, system, technical plan, or success criteria
 - Interjecting without adding significant new information or a distinct perspective
+- Interjecting with simple agreement such as "I agree", "That sounds good", "I'm happy with that", or "That works for me"
 - Interjecting when a question was addressed to the directed speaker
 
 Good pattern to follow:
 - Answer the exact question
 - Add at most one short clarifying detail if it directly helps
+- If the directed speaker already answered well enough, return only that one reply
 
 Return a raw JSON object with exactly this shape:
 {

@@ -135,7 +135,7 @@ test('adding a plain instruction topic creates the topic file and course entry',
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/instruction\/fresh-instruction-topic(?:\/fresh-instruction-topic\.md)?/, async (route: any) => {
@@ -155,7 +155,7 @@ test('adding a plain instruction topic creates the topic file and course entry',
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await navigateToCourse(page);
@@ -237,7 +237,7 @@ test('adding an instruction topic with a description uses AI generated content',
       return;
     }
 
-    await route.continue();
+    await route.fallback();
   });
 
   await context.route(/https:\/\/api\.github\.com\/repos\/ghAccount\/ghRepo\/contents\/instruction\/ai-generated-topic(?:\/ai-generated-topic\.md)?/, async (route: any) => {

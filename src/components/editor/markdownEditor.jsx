@@ -774,26 +774,26 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     <div className="flex-1 min-w-0 flex flex-col relative border border-gray-300">
       {/* Markdown Toolbar */}
       {editorLoaded && (
-        <div className="basis-[36px] flex items-center gap-1 px-2 py-1 bg-gray-50 border-b-2 border-gray-300 text-sm overflow-hidden whitespace-nowrap">
-          <div className="flex items-center gap-1 border border-gray-200 rounded bg-white p-1">
+        <div className="shrink-0 flex flex-wrap items-center gap-1 px-2 py-1 bg-gray-50 border-b-2 border-gray-300 text-sm">
+          <div className="flex shrink-0 items-center gap-1 border border-gray-200 rounded bg-white p-1">
             <EditorButton icon={WrapText} className={getToggleColor(editorOptions.wordWrap)} onClick={toggleWordWrap} title={`Word Wrap: ${getToggleText(editorOptions.wordWrap)}`} />
             <EditorButton icon={ListOrdered} className={getToggleColor(editorOptions.lineNumbers)} onClick={toggleLineNumbers} title={`Line Numbers: ${getToggleText(editorOptions.lineNumbers)}`} />
             <EditorButton icon={GitCompare} className={getToggleColor(editorOptions.changedLines)} onClick={toggleChangedLines} title={`Changed Lines: ${getToggleText(editorOptions.changedLines)}`} />
           </div>
-          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
+          <span className="shrink-0 rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Format</span>
           <EditorButton icon={Bold} onClick={() => wrapSelection('**', '**')} title="Bold (Ctrl+B)" />
           <EditorButton icon={Italic} onClick={() => wrapSelection('*', '*')} title="Italic (Ctrl+I)" />
           <EditorButton icon={Code} onClick={() => wrapSelection('`', '`')} title="Inline Code" />
           <EditorButton icon={Heading2} onClick={() => prefixInsertText('## ')} title="Heading 2" />
           <EditorButton icon={Heading3} onClick={() => prefixInsertText('### ')} title="Heading 3" />
-          <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Content</span>
+          <div className="w-px h-4 bg-gray-300 mx-1 shrink-0"></div>
+          <span className="shrink-0 rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Content</span>
           <EditorButton icon={Table} onClick={() => insertText(defaultTableTemplate)} title="Table" />
           <EditorButton icon={List} onClick={() => prefixInsertText('- ')} title="Bullet List" />
           <EditorButton icon={Link} onClick={() => insertLink()} title="Link" />
           <EditorButton icon={ImageIcon} onClick={() => insertText(`![alt text](${defaultImagePlaceholderUrl})`)} title="Image" />
-          <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Quiz</span>
+          <div className="w-px h-4 bg-gray-300 mx-1 shrink-0"></div>
+          <span className="shrink-0 rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">Quiz</span>
           <EditorButton icon={CircleDot} onClick={() => insertQuiz(defaultMultipleChoiceInteractionTemplate)} title="Multiple Choice Quiz" />
           <EditorButton icon={SquareX} onClick={() => insertQuiz(defaultMultipleSelectQuizTemplate)} title="Multiple Select Quiz" />
           <EditorButton icon={BookOpenCheck} onClick={() => insertQuiz(defaultEssayInteractionTemplate)} title="Essay Quiz" />
@@ -803,8 +803,8 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
           <EditorButton icon={CloudUpload} onClick={() => insertQuiz(defaultUrlInteractionTemplate)} title="URL Submission Quiz" />
           <EditorButton icon={Globe} onClick={() => insertQuiz(defaultWebPageInteractionTemplate)} title="Web Page Interaction" />
           <EditorButton icon={FileCode2} onClick={() => insertQuiz(defaultAiWebPageInteractionTemplate)} title="AI Web Page Interaction" />
-          <div className="w-px h-4 bg-gray-300 mx-1"></div>
-          <span className="rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">AI</span>
+          <div className="w-px h-4 bg-gray-300 mx-1 shrink-0"></div>
+          <span className="shrink-0 rounded-md bg-blue-50 border border-blue-500 text-blue-500 px-1 text-xs">AI</span>
           <EditorButton icon={ListChecks} onClick={() => insertAiQuiz()} title="AI generated quiz" />
           <EditorButton icon={TextSelect} onClick={() => insertAiSection()} title="AI generated section" />
           <EditorButton icon={Bot} onClick={() => insertPromptContent()} title="AI prompt response" />
