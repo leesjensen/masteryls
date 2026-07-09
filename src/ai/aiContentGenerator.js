@@ -230,23 +230,12 @@ export async function aiDraStakeholderResponseGenerator(scenario, primaryTarget,
   const isPrimaryStakeholder = Boolean(primaryTarget?.role) || (primaryTarget?.type || 'stakeholder') === 'stakeholder';
   const primaryPersona = isPrimaryStakeholder
     ? `Directed speaker: ${primaryTarget?.name || 'a stakeholder'}, ${primaryTarget?.role || 'a stakeholder'}.
-Personality: ${primaryTarget?.personality || 'professional and direct'}.
-Objectives: ${primaryTarget?.objectives || 'represent your interests honestly'}.`
-    : `Directed speaker represents "${primaryTarget?.name || 'a resource'}" (${primaryTarget?.type || 'resource'}).
-What it offers: ${primaryTarget?.description || 'relevant information for the investigation'}.`;
+Personality: ${primaryTarget?.personality || 'professional and direct'}.`
+    : `Directed speaker represents "${primaryTarget?.name || 'a resource'}" (${primaryTarget?.type || 'resource'}).`;
 
-  const knownPeople = [
-    ...stakeholders.map((s) => `- ${s.name} (${s.role})`),
-    ...resources.map((r) => `- ${r.name} (${r.type || 'resource'})`),
-  ].join('\n');
+  const knownPeople = [...stakeholders.map((s) => `- ${s.name} (${s.role})`), ...resources.map((r) => `- ${r.name} (${r.type || 'resource'})`)].join('\n');
 
-  const interjectionBlock = normalizedListeners.length > 0
-    ? normalizedListeners
-        .map(
-          (target) => `- ${target?.key || ''}: ${target?.name || 'Unknown'} (${target?.role || target?.type || 'stakeholder'})${target?.personality ? `; personality: ${target.personality}` : ''}${target?.objectives ? `; objectives: ${target.objectives}` : ''}`,
-        )
-        .join('\n')
-    : '(none)';
+  const interjectionBlock = normalizedListeners.length > 0 ? normalizedListeners.map((target) => `- ${target?.key || ''}: ${target?.name || 'Unknown'} (${target?.role || target?.type || 'stakeholder'})${target?.personality ? `; personality: ${target.personality}` : ''}`).join('\n') : '(none)';
 
   const instructionText = `You are a role-play partner in a disciplinary reasoning assessment.
 
@@ -271,13 +260,28 @@ Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your responsiven
 Guidelines:
 - Stay fully in character.
 - The directed speaker must reply first.
-- You may include 0, 1, or 2 interjections after the directed reply, but only from the optional stakeholder list above.
+- If the directed speaker is a resource, only that resource responds.
+- If the directed speaker is a stakeholder, you may include 0, 1, or 2 interjects from the optional stakeholders after the directed reply.
 - Interjections must be from different stakeholders. Never use the same stakeholder twice in one turn.
-- Resources do not interject. If the primary target is a resource, only the primary resource reply is allowed.
-- Prefer no interjection unless another stakeholder has a distinct, relevant point that materially helps or challenges the discussion.
-- Each individual reply should be concise (under 120 words) and use plain GitHub-flavored markdown.
+- Never interject unless another stakeholder has a distinct, relevant point that materially helps or challenges the discussion.
+- Optional stakeholders may only respond if the learner's question is directed generally or if another stakeholder has presented a point that need significant correction or clarification.
+- Do not interject to repeat or summarize what has already been said.
+- Each interjecting stakeholder may contribute only one distinct point and then stop. Do not let interjections expand into mini-monologues or broader project summaries.
+- Each individual reply should be concise (prefer 2-4 sentences, under 90 words) and use plain GitHub-flavored markdown.
+- Focus narrowly on the learner's actual question and any immediately relevant prior messages in the thread.
+- Treat any hidden motivations as private context, not as things to say out loud.
+- If the question can be answered in one direct point, stop after that point.
 - Do not evaluate the learner, give away the "answer", or break character.
 - When referring to other people or resources, use only the exact names listed above. Do not invent names.
+
+Bad pattern to avoid:
+- Answer the question, then add a summary of the project, system, technical plan, or success criteria
+- Interjecting without adding significant new information or a distinct perspective
+- Interjecting when a question was addressed to the directed speaker
+
+Good pattern to follow:
+- Answer the exact question
+- Add at most one short clarifying detail if it directly helps
 
 Return a raw JSON object with exactly this shape:
 {
@@ -293,9 +297,7 @@ Rules for the JSON:
 - Return only the JSON object.`;
 
   const instructions = { parts: [{ text: instructionText }] };
-  const contents = (messages || [])
-    .filter((msg) => msg.role === 'user' || msg.role === 'model')
-    .map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] }));
+  const contents = (messages || []).filter((msg) => msg.role === 'user' || msg.role === 'model').map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] }));
 
   const response = await makeAiRequest(instructions, contents);
   try {
@@ -500,9 +502,7 @@ function draNormalizeEvidenceItem(item) {
 }
 
 function draEvidenceValue(item) {
-  return item.polarity === 'negative'
-    ? -DRA_NEGATIVE_SUPPORT_VALUES[item.impact]
-    : DRA_POSITIVE_SUPPORT_VALUES[item.impact];
+  return item.polarity === 'negative' ? -DRA_NEGATIVE_SUPPORT_VALUES[item.impact] : DRA_POSITIVE_SUPPORT_VALUES[item.impact];
 }
 
 function draAttributeScore(attribute, fallbackRating, difficulty) {
@@ -514,7 +514,7 @@ function draAttributeScore(attribute, fallbackRating, difficulty) {
   const netSupport = Math.max(0, positiveSupport - negativeSupport);
   const adjustedSupport = Math.max(0, Math.min(100, netSupport * (DRA_DIFFICULTY_SUPPORT_MULTIPLIERS[draNormalizedDifficulty(difficulty)] || 1)));
   const supportFactor = adjustedSupport / 100;
-  const supportedScore = baseScore * (0.5 + (0.5 * supportFactor));
+  const supportedScore = baseScore * (0.5 + 0.5 * supportFactor);
   return { name: attribute?.name || '', score: supportedScore };
 }
 
@@ -522,9 +522,7 @@ function draDimensionSummary(dimension, difficulty) {
   const attributes = Array.isArray(dimension?.attributes) ? dimension.attributes : [];
   const fallbackRating = dimension?.rating || 'Beginning';
   const attributeScores = attributes.map((attribute) => draAttributeScore(attribute, fallbackRating, difficulty));
-  const score = attributeScores.length > 0
-    ? attributeScores.reduce((sum, attribute) => sum + attribute.score, 0) / attributeScores.length
-    : draRatingToBaseScore(fallbackRating);
+  const score = attributeScores.length > 0 ? attributeScores.reduce((sum, attribute) => sum + attribute.score, 0) / attributeScores.length : draRatingToBaseScore(fallbackRating);
   const weakestAttributes = attributeScores
     .slice()
     .sort((a, b) => a.score - b.score)
@@ -540,7 +538,7 @@ function buildDraEvaluationSummary(evaluation, difficulty = 3) {
   const competency = draDimensionSummary(evaluation.competency, difficulty);
   const disposition = draDimensionSummary(evaluation.disposition, difficulty);
   const characterScore = (competency.score + disposition.score) / 2;
-  const processMultiplier = 0.5 + (0.5 * (characterScore / 100));
+  const processMultiplier = 0.5 + 0.5 * (characterScore / 100);
   const overallScore = process.score * processMultiplier;
   const weakestDimension = [
     ['Process', process.score],
@@ -548,17 +546,7 @@ function buildDraEvaluationSummary(evaluation, difficulty = 3) {
     ['Disposition', disposition.score],
   ].sort((a, b) => a[1] - b[1])[0];
 
-  return [
-    `Overall score: ${Math.round(overallScore)} / 100 (${draScoreToLevel(overallScore)})`,
-    `Process: ${Math.round(process.score)} (${process.level})`,
-    `Competency: ${Math.round(competency.score)} (${competency.level})`,
-    `Disposition: ${Math.round(disposition.score)} (${disposition.level})`,
-    `Character: ${Math.round(characterScore)} -> ${Math.round(processMultiplier * 100)}% Process multiplier`,
-    `Weakest dimension: ${weakestDimension[0]} ${Math.round(weakestDimension[1])}`,
-    `Weakest Process attributes: ${process.weakestAttributes.join(', ') || '(none)'}`,
-    `Weakest Competency attributes: ${competency.weakestAttributes.join(', ') || '(none)'}`,
-    `Weakest Disposition attributes: ${disposition.weakestAttributes.join(', ') || '(none)'}`,
-  ].join('\n');
+  return [`Overall score: ${Math.round(overallScore)} / 100 (${draScoreToLevel(overallScore)})`, `Process: ${Math.round(process.score)} (${process.level})`, `Competency: ${Math.round(competency.score)} (${competency.level})`, `Disposition: ${Math.round(disposition.score)} (${disposition.level})`, `Character: ${Math.round(characterScore)} -> ${Math.round(processMultiplier * 100)}% Process multiplier`, `Weakest dimension: ${weakestDimension[0]} ${Math.round(weakestDimension[1])}`, `Weakest Process attributes: ${process.weakestAttributes.join(', ') || '(none)'}`, `Weakest Competency attributes: ${competency.weakestAttributes.join(', ') || '(none)'}`, `Weakest Disposition attributes: ${disposition.weakestAttributes.join(', ') || '(none)'}`].join('\n');
 }
 
 /**
