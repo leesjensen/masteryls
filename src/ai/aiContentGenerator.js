@@ -220,33 +220,48 @@ Stage interpretations (the "interpretation" field for each stage):
  *
  * @async
  * @param {{title?: string, summary?: string, description?: string}} scenario - The generated scenario context.
- * @param {{name?: string, role?: string, personality?: string, objectives?: string, type?: string, description?: string}} target - The stakeholder or resource being interviewed/consulted.
- * @param {Array<{role: 'user'|'model', text: string}>} messages - The conversation so far.
- * @returns {Promise<string>} The in-character reply as GitHub-flavored markdown.
+ * @param {{key?: string, name?: string, role?: string, personality?: string, objectives?: string, type?: string, description?: string}} primaryTarget - The primary stakeholder or resource being interviewed/consulted.
+ * @param {Array<{key?: string, name?: string, role?: string, personality?: string, objectives?: string, type?: string, description?: string}>} listenerTargets - Stakeholders allowed to interject after the primary reply.
+ * @param {Array<{role: 'user'|'model', text: string}>} messages - The shared conversation so far.
+ * @returns {Promise<Array<{speakerKey: string, speakerName: string, speakerRole: string, text: string}>>} One primary reply plus up to two stakeholder interjections.
  */
-export async function aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders = [], resources = [], difficulty = 3) {
-  const isStakeholder = Boolean(target?.role) || (target?.type || 'stakeholder') === 'stakeholder';
-  const persona = isStakeholder
-    ? `You are ${target?.name || 'a stakeholder'}, ${target?.role || 'a stakeholder'} in this scenario.
-Personality: ${target?.personality || 'professional and direct'}.
-Your objectives: ${target?.objectives || 'represent your interests honestly'}.`
-    : `You represent "${target?.name || 'a resource'}" (${target?.type || 'resource'}), an information resource in this scenario.
-What it offers: ${target?.description || 'relevant information for the investigation'}.`;
+export async function aiDraStakeholderResponseGenerator(scenario, primaryTarget, listenerTargets = [], messages, stakeholders = [], resources = [], difficulty = 3, activeStage = '') {
+  const normalizedListeners = Array.isArray(listenerTargets) ? listenerTargets.filter(Boolean).slice(0, 2) : [];
+  const isPrimaryStakeholder = Boolean(primaryTarget?.role) || (primaryTarget?.type || 'stakeholder') === 'stakeholder';
+  const primaryPersona = isPrimaryStakeholder
+    ? `Primary speaker: ${primaryTarget?.name || 'a stakeholder'}, ${primaryTarget?.role || 'a stakeholder'}.
+Personality: ${primaryTarget?.personality || 'professional and direct'}.
+Objectives: ${primaryTarget?.objectives || 'represent your interests honestly'}.`
+    : `Primary speaker represents "${primaryTarget?.name || 'a resource'}" (${primaryTarget?.type || 'resource'}).
+What it offers: ${primaryTarget?.description || 'relevant information for the investigation'}.`;
 
   const knownPeople = [
     ...stakeholders.map((s) => `- ${s.name} (${s.role})`),
     ...resources.map((r) => `- ${r.name} (${r.type || 'resource'})`),
   ].join('\n');
 
+  const interjectionBlock = normalizedListeners.length > 0
+    ? normalizedListeners
+        .map(
+          (target) => `- ${target?.key || ''}: ${target?.name || 'Unknown'} (${target?.role || target?.type || 'stakeholder'})${target?.personality ? `; personality: ${target.personality}` : ''}${target?.objectives ? `; objectives: ${target.objectives}` : ''}`,
+        )
+        .join('\n')
+    : '(none)';
+
   const instructionText = `You are a role-play partner in a disciplinary reasoning assessment.
 
 SCENARIO: ${scenario?.title || ''}
 ${scenario?.description || scenario?.summary || ''}
 
-${persona}
+${primaryPersona}
 
 Known people and resources in this scenario:
 ${knownPeople || '(none listed)'}
+
+Current stage: ${activeStage || '(not specified)'}
+
+Optional stakeholder interjections allowed after the primary reply:
+${interjectionBlock}
 
 Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your responsiveness accordingly:
 - Difficulty 1–2: be warm, forthcoming, and proactive — volunteer relevant information freely, give clear direct answers, and gently redirect vague questions toward useful information
@@ -254,17 +269,92 @@ Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your responsiven
 - Difficulty 4–5: be guarded and reserved — require precise, well-framed questions to give useful answers; respond from your character's narrow personal perspective; give partial or indirect information; do not synthesize the big picture for the learner
 
 Guidelines:
-- Stay fully in character and respond as ${target?.name || 'this target'} would.
-- Be concise (under 150 words) and use plain GitHub-flavored markdown.
+- Stay fully in character.
+- The primary speaker must reply first.
+- You may include 0, 1, or 2 interjections after the primary reply, but only from the optional stakeholder list above.
+- Interjections must be from different stakeholders. Never use the same stakeholder twice in one turn.
+- Resources do not interject. If the primary target is a resource, only the primary resource reply is allowed.
+- Prefer no interjection unless another stakeholder has a distinct, relevant point that materially helps or challenges the discussion.
+- Each individual reply should be concise (under 120 words) and use plain GitHub-flavored markdown.
 - Do not evaluate the learner, give away the "answer", or break character.
-- When referring to other people or resources, use only the exact names listed above. Do not invent names.`;
+- When referring to other people or resources, use only the exact names listed above. Do not invent names.
+
+Return a raw JSON object with exactly this shape:
+{
+  "replies": [
+    { "speakerKey": "${primaryTarget?.key || ''}", "speakerName": "${primaryTarget?.name || ''}", "speakerRole": "${primaryTarget?.role || primaryTarget?.type || ''}", "text": "primary reply" }
+  ]
+}
+
+Rules for the JSON:
+- The first reply must always be from the primary speaker.
+- Return at most 3 total replies.
+- If you include interjections, each must use the exact speakerKey, speakerName, and speakerRole from the allowed stakeholder list.
+- Return only the JSON object.`;
 
   const instructions = { parts: [{ text: instructionText }] };
   const contents = (messages || [])
     .filter((msg) => msg.role === 'user' || msg.role === 'model')
     .map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] }));
 
-  return makeAiRequest(instructions, contents);
+  const response = await makeAiRequest(instructions, contents);
+  try {
+    const parsed = parseJsonResponse(response);
+    const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
+    const primaryKey = primaryTarget?.key || '';
+    const allowedListenerKeys = new Set(normalizedListeners.filter((target) => (target?.type || 'stakeholder') === 'stakeholder').map((target) => target.key));
+    const usedSpeakers = new Set();
+
+    const normalizedReplies = replies
+      .map((reply, index) => {
+        const text = typeof reply?.text === 'string' ? reply.text.trim() : '';
+        if (!text) return null;
+
+        const speakerKey = typeof reply?.speakerKey === 'string' ? reply.speakerKey : '';
+        if (index === 0) {
+          return {
+            speakerKey: primaryKey,
+            speakerName: primaryTarget?.name || '',
+            speakerRole: primaryTarget?.role || primaryTarget?.type || '',
+            text,
+          };
+        }
+
+        if (!allowedListenerKeys.has(speakerKey) || usedSpeakers.has(speakerKey)) return null;
+        const speaker = normalizedListeners.find((target) => target.key === speakerKey);
+        if (!speaker) return null;
+        return {
+          speakerKey: speaker.key || '',
+          speakerName: speaker.name || '',
+          speakerRole: speaker.role || speaker.type || '',
+          text,
+        };
+      })
+      .filter(Boolean)
+      .filter((reply, index) => {
+        if (!reply) return false;
+        if (index === 0) return true;
+        if (usedSpeakers.has(reply.speakerKey)) return false;
+        usedSpeakers.add(reply.speakerKey);
+        return true;
+      })
+      .slice(0, 3);
+
+    if (normalizedReplies.length > 0) {
+      return normalizedReplies;
+    }
+  } catch {
+    // Fallback to the legacy plain-text single-speaker response shape.
+  }
+
+  return [
+    {
+      speakerKey: primaryTarget?.key || '',
+      speakerName: primaryTarget?.name || '',
+      speakerRole: primaryTarget?.role || primaryTarget?.type || '',
+      text: String(response || '').trim(),
+    },
+  ];
 }
 
 /**

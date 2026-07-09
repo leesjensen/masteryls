@@ -109,12 +109,167 @@ function createEmptyDraState() {
   };
 }
 
+function makeConversationKey(primaryTargetKey, listenerTargetKeys = []) {
+  const allTargetKeys = [...new Set([primaryTargetKey, ...(listenerTargetKeys || [])].filter(Boolean))].sort();
+  return `participants:${allTargetKeys.join(',')}`;
+}
+
+function parseConversationKey(conversationKey) {
+  const text = String(conversationKey || '');
+  if (text.startsWith('participants:')) {
+    const participantKeys = text.slice('participants:'.length).split(',').filter(Boolean);
+    return {
+      primaryTargetKey: participantKeys[0] || '',
+      listenerTargetKeys: participantKeys.slice(1),
+      participantTargetKeys: participantKeys,
+    };
+  }
+
+  const [primaryPart = '', listenersPart = ''] = text.split('|');
+  const primaryTargetKey = primaryPart.startsWith('primary:') ? primaryPart.slice('primary:'.length) : '';
+  const listenerTargetKeys = listenersPart.startsWith('listeners:')
+    ? listenersPart.slice('listeners:'.length).split(',').filter(Boolean)
+    : [];
+  const participantTargetKeys = [...new Set([primaryTargetKey, ...listenerTargetKeys].filter(Boolean))];
+  return { primaryTargetKey, listenerTargetKeys, participantTargetKeys };
+}
+
+function tokenizeStakeholderIdentifier(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function detectMentionedStakeholderPrimary(text, candidates = []) {
+  const openingWords = tokenizeStakeholderIdentifier(text).slice(0, 6);
+  if (openingWords.length === 0) return null;
+
+  const candidateDescriptors = candidates
+    .filter((candidate) => candidate?.key)
+    .map((candidate) => ({
+      key: candidate.key,
+      words: [...new Set([...tokenizeStakeholderIdentifier(candidate.name), ...tokenizeStakeholderIdentifier(candidate.role)])],
+      fullName: String(candidate.name || '').toLowerCase(),
+      fullIdentifier: `${String(candidate.name || '').toLowerCase()} ${String(candidate.role || '').toLowerCase()}`.trim(),
+    }));
+
+  for (const word of openingWords) {
+    const exactMatches = candidateDescriptors.filter((candidate) => candidate.words.includes(word));
+    if (exactMatches.length === 1) return exactMatches[0].key;
+    if (exactMatches.length > 1) continue;
+
+    if (word.length < 2) continue;
+    const prefixMatches = candidateDescriptors.filter((candidate) => candidate.words.some((candidateWord) => candidateWord.startsWith(word)));
+    if (prefixMatches.length === 1) return prefixMatches[0].key;
+  }
+
+  const openingPhrase = openingWords.join(' ');
+  if (!openingPhrase) return null;
+
+  let bestMatch = null;
+  candidateDescriptors.forEach((candidate) => {
+    const fullMatchIndex = candidate.fullIdentifier.indexOf(openingPhrase);
+    if (fullMatchIndex === -1) return;
+    if (!bestMatch || fullMatchIndex < bestMatch.index || candidate.fullIdentifier.length > bestMatch.identifier.length) {
+      bestMatch = {
+        key: candidate.key,
+        index: fullMatchIndex,
+        identifier: candidate.fullIdentifier,
+      };
+    }
+  });
+
+  return bestMatch?.key || null;
+}
+
+function normalizeConversationMessage(message, fallbackTarget = null) {
+  if (!message || typeof message !== 'object') return null;
+  const role = message.role === 'model' ? 'model' : 'user';
+  const text = typeof message.text === 'string' ? message.text : '';
+  if (!text.trim()) return null;
+  if (role === 'user') {
+    return {
+      role,
+      text,
+      stage: message.stage || '',
+      turnId: message.turnId || '',
+    };
+  }
+
+  return {
+    role,
+    text,
+    stage: message.stage || '',
+    turnId: message.turnId || '',
+    speakerKey: message.speakerKey || fallbackTarget?.key || '',
+    speakerName: message.speakerName || fallbackTarget?.name || '',
+    speakerRole: message.speakerRole || fallbackTarget?.role || fallbackTarget?.type || '',
+  };
+}
+
+function buildScenarioTargetMap(scenario) {
+  const map = new Map();
+
+  (scenario?.stakeholders || []).forEach((stakeholder, index) => {
+    map.set(`stakeholder:${index}`, { key: `stakeholder:${index}`, type: 'stakeholder', ...stakeholder });
+  });
+
+  (scenario?.resources || []).forEach((resource, index) => {
+    map.set(`resource:${index}`, { key: `resource:${index}`, type: 'resource', ...resource });
+  });
+
+  (scenario?.identified || []).forEach((target, index) => {
+    map.set(`identified:${index}`, { key: `identified:${index}`, type: target.kind || 'stakeholder', ...target });
+  });
+
+  return map;
+}
+
+function normalizeScenarioDetails(scenario) {
+  if (!scenario || typeof scenario !== 'object') return scenario;
+
+  const targetMap = buildScenarioTargetMap(scenario);
+  const rawConversations = scenario.conversations && typeof scenario.conversations === 'object' ? scenario.conversations : {};
+  const normalizedConversations = {};
+
+  Object.entries(rawConversations).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      const fallbackTarget = targetMap.get(key) || null;
+      const messages = value.map((message) => normalizeConversationMessage(message, fallbackTarget)).filter(Boolean);
+      normalizedConversations[makeConversationKey(key, [])] = {
+        primaryTargetKey: key,
+        listenerTargetKeys: [],
+        messages,
+      };
+      return;
+    }
+
+    if (value && typeof value === 'object') {
+      const primaryTargetKey = typeof value.primaryTargetKey === 'string' && value.primaryTargetKey ? value.primaryTargetKey : parseConversationKey(key).primaryTargetKey;
+      const listenerTargetKeys = Array.isArray(value.listenerTargetKeys) ? value.listenerTargetKeys.filter((item) => typeof item === 'string' && item) : parseConversationKey(key).listenerTargetKeys;
+      const fallbackTarget = targetMap.get(primaryTargetKey) || null;
+      const messages = Array.isArray(value.messages) ? value.messages.map((message) => normalizeConversationMessage(message, fallbackTarget)).filter(Boolean) : [];
+      normalizedConversations[makeConversationKey(primaryTargetKey, listenerTargetKeys)] = {
+        primaryTargetKey,
+        listenerTargetKeys: [...new Set(listenerTargetKeys)].sort(),
+        messages,
+      };
+    }
+  });
+
+  return { ...scenario, conversations: normalizedConversations };
+}
+
 function normalizeDraState(state) {
   if (!state || typeof state !== 'object') return createEmptyDraState();
 
-  const practiceScenarios = Array.isArray(state.practiceScenarios) ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId) : [];
+  const practiceScenarios = Array.isArray(state.practiceScenarios)
+    ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId).map(normalizeScenarioDetails)
+    : [];
   const selectedPracticeScenarioId = typeof state.selectedPracticeScenarioId === 'string' && practiceScenarios.some((item) => item.scenarioRunId === state.selectedPracticeScenarioId) ? state.selectedPracticeScenarioId : null;
-  const finalScenario = state.finalScenario && typeof state.finalScenario === 'object' && state.finalScenario.scenarioRunId ? state.finalScenario : null;
+  const finalScenario = state.finalScenario && typeof state.finalScenario === 'object' && state.finalScenario.scenarioRunId ? normalizeScenarioDetails(state.finalScenario) : null;
 
   return { practiceScenarios, selectedPracticeScenarioId, finalScenario };
 }
@@ -176,6 +331,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const [activeTab, setActiveTab] = React.useState('overview');
   const [activeStage, setActiveStage] = React.useState('');
   const [selectedTargetKey, setSelectedTargetKey] = React.useState('');
+  const [selectedListenerTargetKeys, setSelectedListenerTargetKeys] = React.useState([]);
   const [mobileInvestigationView, setMobileInvestigationView] = React.useState('chat');
   const [isMobileInvestigationLayout, setIsMobileInvestigationLayout] = React.useState(false);
   const [mobileStagePickerOpen, setMobileStagePickerOpen] = React.useState(false);
@@ -212,6 +368,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setActiveTab('overview');
     setActiveStage('');
     setSelectedTargetKey('');
+    setSelectedListenerTargetKeys([]);
     setMobileInvestigationView('chat');
     setLoading(true);
 
@@ -240,6 +397,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
           const savedTargetKey = uiSettings?.[`draSelectedTarget_${topicId}`];
           if (savedTargetKey) setSelectedTargetKey(savedTargetKey);
+
+          const savedListenerKeys = uiSettings?.[`draSelectedListeners_${topicId}`];
+          if (Array.isArray(savedListenerKeys)) {
+            setSelectedListenerTargetKeys(savedListenerKeys.filter((item) => typeof item === 'string' && item));
+          }
 
           const savedInvestigationView = uiSettings?.[`draInvestigationMobileView_${topicId}`];
           if (savedInvestigationView === 'chat' || savedInvestigationView === 'record') {
@@ -373,9 +535,35 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   function selectTarget(targetKey) {
     if (!targetKey || selectedTargetKey === targetKey) return;
+    const nextTarget = details.stakeholders?.find((_, index) => `stakeholder:${index}` === targetKey)
+      || details.resources?.find((_, index) => `resource:${index}` === targetKey)
+      || details.identified?.find((_, index) => `identified:${index}` === targetKey);
+    const nextTargetType = targetKey.startsWith('resource:') ? 'resource' : (nextTarget?.kind || nextTarget?.type || 'stakeholder');
+    let nextListenerKeys = selectedListenerTargetKeys.filter((key) => key !== targetKey);
+
+    if (nextTargetType === 'stakeholder' && selectedTargetKey && selectedListenerTargetKeys.includes(targetKey)) {
+      nextListenerKeys = [...nextListenerKeys, selectedTargetKey].filter((key, index, list) => list.indexOf(key) === index).slice(0, 2);
+    }
+
+    if (nextTargetType !== 'stakeholder') {
+      nextListenerKeys = [];
+    }
+
     setSelectedTargetKey(targetKey);
+    setSelectedListenerTargetKeys(nextListenerKeys);
     if (courseId && topicId) {
-      courseOps.saveEnrollmentUiSettings(courseId, { [`draSelectedTarget_${topicId}`]: targetKey });
+      courseOps.saveEnrollmentUiSettings(courseId, {
+        [`draSelectedTarget_${topicId}`]: targetKey,
+        [`draSelectedListeners_${topicId}`]: nextListenerKeys,
+      });
+    }
+  }
+
+  function selectListenerTargetKeys(listenerTargetKeys) {
+    const normalizedKeys = [...new Set((listenerTargetKeys || []).filter((key) => key && key !== selectedTargetKey))].slice(0, 2);
+    setSelectedListenerTargetKeys(normalizedKeys);
+    if (courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draSelectedListeners_${topicId}`]: normalizedKeys });
     }
   }
 
@@ -410,15 +598,66 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function sendInvestigationMessage(target, text) {
-    const key = target.key;
     const conversations = details.conversations || {};
-    const withUser = [...(conversations[key] || []), { role: 'user', text, stage: activeStage }];
-    applyStateUpdate({ ...details, conversations: { ...conversations, [key]: withUser } });
+    const participantTargets = target.type === 'stakeholder' ? [target, ...listenerTargets] : [target];
+    const listenerTargetKeys = participantTargets.filter((item) => item.key !== target.key).map((item) => item.key);
+    const addressedPrimaryKey = target.type === 'stakeholder' ? detectMentionedStakeholderPrimary(text, participantTargets) || target.key : target.key;
+    const addressedPrimaryTarget = participantTargets.find((item) => item.key === addressedPrimaryKey) || target;
+    const addressedListenerTargets = participantTargets.filter((item) => item.key !== addressedPrimaryTarget.key);
+    const conversationKey = makeConversationKey(addressedPrimaryTarget.key, addressedListenerTargets.map((item) => item.key));
+    const currentConversation = conversations[conversationKey] || {
+      primaryTargetKey: addressedPrimaryTarget.key,
+      listenerTargetKeys: addressedListenerTargets.map((item) => item.key),
+      messages: [],
+    };
+    const turnId = crypto.randomUUID();
+    const withUser = [...(currentConversation.messages || []), { role: 'user', text, stage: activeStage, turnId }];
+    applyStateUpdate({
+      ...details,
+      conversations: {
+        ...conversations,
+        [conversationKey]: {
+          primaryTargetKey: addressedPrimaryTarget.key,
+          listenerTargetKeys: addressedListenerTargets.map((item) => item.key),
+          messages: withUser,
+        },
+      },
+    });
 
     try {
-      const reply = await courseOps.getDraStakeholderResponse(details.scenario, target, withUser, details.stakeholders || [], details.resources || [], details.difficulty ?? params.difficulty);
-      const nextConversations = { ...conversations, [key]: [...withUser, { role: 'model', text: reply }] };
-      const newTargets = detectNewTargets(reply, details);
+      if (addressedPrimaryTarget.key !== selectedTargetKey) {
+        selectTarget(addressedPrimaryTarget.key);
+      }
+      const replies = await courseOps.getDraStakeholderResponse(
+        details.scenario,
+        addressedPrimaryTarget,
+        addressedListenerTargets,
+        withUser,
+        details.stakeholders || [],
+        details.resources || [],
+        details.difficulty ?? params.difficulty,
+        activeStage,
+      );
+      const normalizedReplies = (Array.isArray(replies) ? replies : [])
+        .map((reply) => ({
+          role: 'model',
+          text: typeof reply?.text === 'string' ? reply.text : '',
+          stage: activeStage,
+          turnId,
+          speakerKey: reply?.speakerKey || target.key,
+          speakerName: reply?.speakerName || target.name || '',
+          speakerRole: reply?.speakerRole || target.role || target.type || '',
+        }))
+        .filter((reply) => reply.text.trim());
+      const nextConversations = {
+        ...conversations,
+        [conversationKey]: {
+          primaryTargetKey: addressedPrimaryTarget.key,
+          listenerTargetKeys: addressedListenerTargets.map((item) => item.key),
+          messages: [...withUser, ...normalizedReplies],
+        },
+      };
+      const newTargets = detectNewTargets(normalizedReplies.map((reply) => reply.text).join('\n'), details);
       applyStateUpdate({
         ...details,
         conversations: nextConversations,
@@ -485,16 +724,64 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   function buildTranscripts(source) {
-    return Object.entries(source.conversations || {}).map(([key, messages]) => {
-      const [type, idx] = key.split(':');
-      let target;
-      if (type === 'identified') {
-        target = (source.identified || [])[Number(idx)];
-      } else {
-        target = (type === 'stakeholder' ? source.stakeholders : source.resources)?.[Number(idx)];
-      }
-      return { name: target?.name || key, role: target?.role || target?.type || '', messages };
+    const transcriptMap = new Map();
+    const targetLookup = buildScenarioTargetMap(source);
+
+    Object.values(source.conversations || {}).forEach((conversation) => {
+      const localTranscriptMap = new Map();
+      const messages = Array.isArray(conversation)
+        ? conversation
+        : Array.isArray(conversation?.messages)
+          ? conversation.messages
+          : [];
+
+      const learnerHistory = [];
+
+      messages.forEach((message) => {
+        if (message?.role === 'user') {
+          const learnerMessage = {
+            role: 'user',
+            text: message.text || '',
+            stage: message.stage || '',
+          };
+          learnerHistory.push(learnerMessage);
+          localTranscriptMap.forEach((transcript) => {
+            transcript.messages.push(learnerMessage);
+          });
+          return;
+        }
+
+        if (message?.role !== 'model' || !message?.speakerKey) return;
+        const target = targetLookup.get(message.speakerKey) || {};
+        if (!localTranscriptMap.has(message.speakerKey)) {
+          localTranscriptMap.set(message.speakerKey, {
+            name: message.speakerName || target.name || message.speakerKey,
+            role: message.speakerRole || target.role || target.type || '',
+            messages: [...learnerHistory],
+          });
+        }
+        localTranscriptMap.get(message.speakerKey).messages.push({
+          role: 'model',
+          text: message.text || '',
+          stage: message.stage || '',
+        });
+      });
+
+      localTranscriptMap.forEach((localTranscript, speakerKey) => {
+        if (!transcriptMap.has(speakerKey)) {
+          transcriptMap.set(speakerKey, {
+            name: localTranscript.name,
+            role: localTranscript.role,
+            messages: [...localTranscript.messages],
+          });
+          return;
+        }
+
+        transcriptMap.get(speakerKey).messages.push(...localTranscript.messages);
+      });
     });
+
+    return Array.from(transcriptMap.values()).filter((transcript) => transcript.messages.some((message) => message.text));
   }
 
   async function computeEvaluation(source) {
@@ -559,8 +846,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
-  if (loading) return <div />;
-
   const canPractice = params.practiceMode;
   const canFinal = params.finalMode;
   const locked = details.mode === 'final';
@@ -586,6 +871,38 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const revealedNames = new Set(revealedTargets.map((t) => t.name));
   const identifiedTargets = (details.identified || []).map((item, i) => ({ key: `identified:${i}`, type: item.kind || 'stakeholder', ...item })).filter((t) => !revealedNames.has(t.name));
   const targets = [...revealedTargets, ...identifiedTargets];
+  const targetMap = new Map(targets.map((target) => [target.key, target]));
+  const stakeholderTargets = targets.filter((target) => target.type === 'stakeholder');
+  const listenerTargets = selectedListenerTargetKeys.map((key) => targetMap.get(key)).filter((target) => target?.type === 'stakeholder');
+  const activeConversation = details.conversations?.[makeConversationKey(selectedTargetKey, selectedListenerTargetKeys)] || {
+    primaryTargetKey: selectedTargetKey,
+    listenerTargetKeys: selectedListenerTargetKeys,
+    messages: [],
+  };
+
+  React.useEffect(() => {
+    if (!selectedTargetKey && targets[0]?.key) {
+      setSelectedTargetKey(targets[0].key);
+    }
+  }, [selectedTargetKey, targets]);
+
+  React.useEffect(() => {
+    const selectedTargetIsStakeholder = selectedTargetKey ? stakeholderTargets.some((target) => target.key === selectedTargetKey) : true;
+    const validListenerKeys = selectedListenerTargetKeys
+      .filter(() => selectedTargetIsStakeholder)
+      .filter((key) => key !== selectedTargetKey)
+      .filter((key) => stakeholderTargets.some((target) => target.key === key))
+      .slice(0, 2);
+
+    if (validListenerKeys.length !== selectedListenerTargetKeys.length || validListenerKeys.some((key, index) => key !== selectedListenerTargetKeys[index])) {
+      setSelectedListenerTargetKeys(validListenerKeys);
+      if (courseId && topicId) {
+        courseOps.saveEnrollmentUiSettings(courseId, { [`draSelectedListeners_${topicId}`]: validListenerKeys });
+      }
+    }
+  }, [selectedListenerTargetKeys, selectedTargetKey, stakeholderTargets, courseId, topicId]);
+
+  if (loading) return <div />;
 
   function openPracticeScenario(scenarioRunId) {
     const scenario = practiceScenarios.find((item) => item.scenarioRunId === scenarioRunId);
@@ -874,14 +1191,36 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 </div>
               ) : (
                 <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
-                  <DraInvestigation targets={targets} selectedKey={selectedTargetKey} onSelectTarget={selectTarget} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
+                  <DraInvestigation
+                    targets={targets}
+                    stakeholderTargets={stakeholderTargets}
+                    selectedKey={selectedTargetKey}
+                    selectedListenerKeys={selectedListenerTargetKeys}
+                    onSelectTarget={selectTarget}
+                    onSelectListenerKeys={selectListenerTargetKeys}
+                    conversation={activeConversation}
+                    onSendMessage={sendInvestigationMessage}
+                    readOnly={investigationReadOnly}
+                    learningSession={learningSession}
+                  />
                 </div>
               )}
             </div>
           ) : (
             <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
               <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
-                <DraInvestigation targets={targets} selectedKey={selectedTargetKey} onSelectTarget={selectTarget} conversations={details.conversations || {}} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
+                <DraInvestigation
+                  targets={targets}
+                  stakeholderTargets={stakeholderTargets}
+                  selectedKey={selectedTargetKey}
+                  selectedListenerKeys={selectedListenerTargetKeys}
+                  onSelectTarget={selectTarget}
+                  onSelectListenerKeys={selectListenerTargetKeys}
+                  conversation={activeConversation}
+                  onSendMessage={sendInvestigationMessage}
+                  readOnly={investigationReadOnly}
+                  learningSession={learningSession}
+                />
               </div>
               <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
               <div className="flex-1 min-w-0 flex flex-col overflow-hidden">

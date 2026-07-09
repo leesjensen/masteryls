@@ -1248,8 +1248,8 @@ Requirements:
     return aiDraScenarioGenerator(params || {});
   }
 
-  async function getDraStakeholderResponse(scenario, target, messages, stakeholders, resources, difficulty) {
-    return aiDraStakeholderResponseGenerator(scenario, target, messages, stakeholders, resources, difficulty);
+  async function getDraStakeholderResponse(scenario, primaryTarget, listenerTargets, messages, stakeholders, resources, difficulty, activeStage) {
+    return aiDraStakeholderResponseGenerator(scenario, primaryTarget, listenerTargets, messages, stakeholders, resources, difficulty, activeStage);
   }
 
   async function getDraEvaluation(scenario, transcripts, reasoningRecord, difficulty, previousEvaluation) {

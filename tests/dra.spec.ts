@@ -335,6 +335,55 @@ test('dra investigation lets the learner interview a stakeholder and record reas
   await expect(understanding).toContainText('The agency fears downtime during migration.');
 });
 
+test('dra investigation supports a primary stakeholder with distinct listener interjections', async ({ page }) => {
+  const multiSpeakerScenario = {
+    ...SCENARIO,
+    stakeholders: [
+      { name: 'Dana Cole', role: 'CIO', personality: 'cautious', objectives: 'minimize downtime' },
+      { name: 'Alex Tran', role: 'Operations Director', personality: 'pragmatic', objectives: 'protect cutover operations' },
+      { name: 'Rina Shah', role: 'Security Lead', personality: 'precise', objectives: 'reduce compliance risk' },
+    ],
+  };
+  const multiSpeakerReply = JSON.stringify({
+    replies: [
+      { speakerKey: 'stakeholder:0', speakerName: 'Dana Cole', speakerRole: 'CIO', text: 'Downtime remains my top concern.' },
+      { speakerKey: 'stakeholder:1', speakerName: 'Alex Tran', speakerRole: 'Operations Director', text: 'Our cutover window is only six hours.' },
+      { speakerKey: 'stakeholder:2', speakerName: 'Rina Shah', speakerRole: 'Security Lead', text: 'Any rollback plan must preserve audit logging.' },
+    ],
+  });
+
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false, difficulty: 1 }));
+  installScenarioGemini(page, multiSpeakerScenario, multiSpeakerReply);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+  await page.getByRole('button', { name: 'Investigation' }).click();
+
+  await page.getByRole('button', { name: 'Alex Tran Operations Director' }).nth(1).click();
+  await page.getByRole('button', { name: 'Rina Shah Security Lead' }).nth(1).click();
+
+  const chatInput = page.getByPlaceholder('Ask Dana Cole…');
+  await chatInput.fill('What do we need to protect during the migration?');
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+
+  await expect(page.getByRole('main')).toContainText('Dana Cole · CIO');
+  await expect(page.getByRole('main')).toContainText('Alex Tran · Operations Director');
+  await expect(page.getByRole('main')).toContainText('Rina Shah · Security Lead');
+  await expect(page.getByRole('main')).toContainText('Downtime remains my top concern.');
+  await expect(page.getByRole('main')).toContainText('Our cutover window is only six hours.');
+  await expect(page.getByRole('main')).toContainText('Any rollback plan must preserve audit logging.');
+
+  await chatInput.fill('Alex, what is the operational constraint?');
+  await expect(page.getByText('Alex Tran will respond first')).toBeVisible();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+
+  await expect(page.getByRole('main')).toContainText('What do we need to protect during the migration?');
+  await expect(page.getByRole('main')).toContainText('Alex, what is the operational constraint?');
+  await expect(page.getByPlaceholder('Ask Alex Tran…')).toBeVisible();
+});
+
 test('dra practice mode evaluates progress across the three dimensions with drill-down', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
   installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false, difficulty: 1 }));
