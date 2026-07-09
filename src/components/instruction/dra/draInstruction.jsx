@@ -542,7 +542,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     let nextListenerKeys = selectedListenerTargetKeys.filter((key) => key !== targetKey);
 
     if (nextTargetType === 'stakeholder' && selectedTargetKey && selectedListenerTargetKeys.includes(targetKey)) {
-      nextListenerKeys = [...nextListenerKeys, selectedTargetKey].filter((key, index, list) => list.indexOf(key) === index).slice(0, 2);
+      nextListenerKeys = [...nextListenerKeys, selectedTargetKey].filter((key, index, list) => list.indexOf(key) === index);
     }
 
     if (nextTargetType !== 'stakeholder') {
@@ -560,7 +560,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   function selectListenerTargetKeys(listenerTargetKeys) {
-    const normalizedKeys = [...new Set((listenerTargetKeys || []).filter((key) => key && key !== selectedTargetKey))].slice(0, 2);
+    const normalizedKeys = [...new Set((listenerTargetKeys || []).filter((key) => key && key !== selectedTargetKey))];
     setSelectedListenerTargetKeys(normalizedKeys);
     if (courseId && topicId) {
       courseOps.saveEnrollmentUiSettings(courseId, { [`draSelectedListeners_${topicId}`]: normalizedKeys });
@@ -664,7 +664,17 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         ...(newTargets.length > 0 && { identified: [...(details.identified || []), ...newTargets] }),
       });
     } catch {
-      applyStateUpdate({ ...details, conversations: { ...conversations, [key]: withUser } });
+      applyStateUpdate({
+        ...details,
+        conversations: {
+          ...conversations,
+          [conversationKey]: {
+            primaryTargetKey: addressedPrimaryTarget.key,
+            listenerTargetKeys: addressedListenerTargets.map((item) => item.key),
+            messages: withUser,
+          },
+        },
+      });
       alert('The interview partner could not respond. Please try again.');
     }
   }
@@ -891,8 +901,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const validListenerKeys = selectedListenerTargetKeys
       .filter(() => selectedTargetIsStakeholder)
       .filter((key) => key !== selectedTargetKey)
-      .filter((key) => stakeholderTargets.some((target) => target.key === key))
-      .slice(0, 2);
+      .filter((key) => stakeholderTargets.some((target) => target.key === key));
 
     if (validListenerKeys.length !== selectedListenerTargetKeys.length || validListenerKeys.some((key, index) => key !== selectedListenerTargetKeys[index])) {
       setSelectedListenerTargetKeys(validListenerKeys);

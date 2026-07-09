@@ -1,5 +1,5 @@
 import React from 'react';
-import { Blocks, Briefcase, Check, Database, FileText, Map, Server, UserRound, Users } from 'lucide-react';
+import { Blocks, Briefcase, Check, Database, FileText, Map, Server, UserRound } from 'lucide-react';
 import Markdown from '../../Markdown';
 import DraMobilePicker from './DraMobilePicker';
 
@@ -93,7 +93,6 @@ export default function DraInvestigation({
   const [input, setInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [mobilePickerOpen, setMobilePickerOpen] = React.useState(false);
-  const [mobileListenerPickerOpen, setMobileListenerPickerOpen] = React.useState(false);
   const inputRef = React.useRef(null);
   const messageListRef = React.useRef(null);
 
@@ -137,8 +136,7 @@ export default function DraInvestigation({
   }, [sortedTargets, selectedKey, onSelectTarget]);
 
   const selectedTarget = sortedTargets.find((t) => t.key === selectedKey) || null;
-  const listenerOptions = stakeholderTargets.filter((target) => target.key !== selectedKey);
-  const selectedListeners = listenerOptions.filter((target) => selectedListenerKeys.includes(target.key));
+  const selectedListeners = stakeholderTargets.filter((target) => selectedListenerKeys.includes(target.key));
   const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
   const participantTargets = React.useMemo(
     () => (selectedTarget?.type === 'stakeholder' ? [selectedTarget, ...selectedListeners] : selectedTarget ? [selectedTarget] : []),
@@ -151,66 +149,62 @@ export default function DraInvestigation({
   const draftPrimaryTarget = participantTargets.find((target) => target.key === draftPrimaryKey) || selectedTarget;
 
   function toggleListener(targetKey) {
-    const next = selectedListenerKeys.includes(targetKey) ? selectedListenerKeys.filter((key) => key !== targetKey) : [...selectedListenerKeys, targetKey].slice(0, 2);
+    const next = selectedListenerKeys.includes(targetKey)
+      ? selectedListenerKeys.filter((key) => key !== targetKey)
+      : [...selectedListenerKeys, targetKey];
     onSelectListenerKeys?.(next);
+  }
+
+  function handleStakeholderAffordance(target) {
+    if (readOnly) return;
+
+    if (selectedTarget?.type !== 'stakeholder') {
+      onSelectTarget?.(target.key);
+      return;
+    }
+
+    if (target.key === selectedKey) return;
+    toggleListener(target.key);
   }
 
   function renderTargetButton(target) {
     const isSelected = target.key === selectedKey;
     const isDraftPrimary = draftPrimaryKey === target.key && target.type === 'stakeholder';
     const showPendingPrimary = isDraftPrimary && target.key !== selectedKey;
+    const isStakeholder = target.type === 'stakeholder';
+    const isInGroup = isStakeholder && selectedListenerKeys.includes(target.key);
 
     return (
       <button
         key={target.key}
-        onClick={() => onSelectTarget?.(target.key)}
+        onClick={() => (isStakeholder ? handleStakeholderAffordance(target) : onSelectTarget?.(target.key))}
         className={`w-full text-left px-3 py-2 rounded border text-sm ${
           showPendingPrimary
             ? 'border-amber-400 bg-amber-50 text-amber-900 ring-1 ring-amber-300'
             : isSelected
               ? 'border-blue-400 bg-blue-50 text-blue-800'
+              : isInGroup
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
               : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
         }`}
       >
         <div className="flex items-start gap-2 min-w-0">
           <div className="mt-0.5 shrink-0">{getTargetIcon(target)}</div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 min-w-0">
               <div className="font-semibold truncate">{target.name}</div>
               {showPendingPrimary && <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">Next primary</span>}
+              {!showPendingPrimary && isSelected && isStakeholder && <span className="shrink-0 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-800">Primary</span>}
+              {!showPendingPrimary && !isSelected && isInGroup && <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">In group</span>}
             </div>
             <div className="text-xs text-gray-500 truncate">{getResourceTypeLabel(target)}</div>
           </div>
+          {isStakeholder && !isSelected && (
+            <div className={`mt-0.5 shrink-0 rounded-full p-1 ${isInGroup ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+              <Check size={14} />
+            </div>
+          )}
         </div>
-      </button>
-    );
-  }
-
-  function renderListenerButton(target) {
-    const selected = selectedListenerKeys.includes(target.key);
-    const isDraftPrimary = draftPrimaryKey === target.key;
-
-    return (
-      <button
-        key={target.key}
-        type="button"
-        onClick={() => toggleListener(target.key)}
-        className={`flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left text-sm ${
-          isDraftPrimary
-            ? 'border-amber-400 bg-amber-50 text-amber-900 ring-1 ring-amber-300'
-            : selected
-              ? 'border-blue-400 bg-blue-50 text-blue-800'
-              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-        }`}
-      >
-        <span className="shrink-0">{selected ? <Check size={15} className="text-blue-600" /> : getTargetIcon(target)}</span>
-        <span className="min-w-0">
-          <span className="flex items-center gap-2 min-w-0">
-            <span className="block truncate font-medium">{target.name}</span>
-            {isDraftPrimary && <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">Next primary</span>}
-          </span>
-          <span className="block truncate text-xs text-gray-500">{target.role || 'Stakeholder'}</span>
-        </span>
       </button>
     );
   }
@@ -257,21 +251,13 @@ export default function DraInvestigation({
               <>
                 <div className="px-1 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stakeholders</div>
                 {stakeholderTargets.map(renderTargetButton)}
+                <p className="px-1 pt-1 text-[11px] text-gray-500">Tap stakeholders to include them in the group. Mention a name first in chat to shift the primary response.</p>
               </>
             )}
             {resourceTargets.length > 0 && (
               <>
                 <div className="px-1 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Resources</div>
                 {resourceTargets.map(renderTargetButton)}
-              </>
-            )}
-            {listenerOptions.length > 0 && (
-              <>
-                <div className="px-1 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Participants</div>
-                <div className="space-y-1">
-                  {listenerOptions.map(renderListenerButton)}
-                </div>
-                <p className="px-1 pt-1 text-[11px] text-gray-500">Add up to 2 more stakeholders to the discussion.</p>
               </>
             )}
           </>
@@ -291,7 +277,15 @@ export default function DraInvestigation({
               isOpen={mobilePickerOpen}
               onToggle={() => setMobilePickerOpen((open) => !open)}
               onClose={() => setMobilePickerOpen(false)}
-              onSelect={(value) => onSelectTarget?.(value)}
+              onSelect={(value) => {
+                const target = sortedTargets.find((item) => item.key === value);
+                if (!target) return;
+                if (target.type === 'stakeholder') {
+                  handleStakeholderAffordance(target);
+                } else {
+                  onSelectTarget?.(value);
+                }
+              }}
               className="w-[calc(100%-3.5rem)]"
               groups={[
                 ...(stakeholderTargets.length > 0
@@ -301,9 +295,9 @@ export default function DraInvestigation({
                         items: stakeholderTargets.map((target) => ({
                           value: target.key,
                           label: target.name,
-                          description: getResourceTypeLabel(target),
+                          description: target.key === selectedKey ? `${getResourceTypeLabel(target)} · primary` : selectedListenerKeys.includes(target.key) ? `${getResourceTypeLabel(target)} · in group` : getResourceTypeLabel(target),
                           icon: getTargetIcon(target),
-                          selected: target.key === selectedKey,
+                          selected: target.key === selectedKey || selectedListenerKeys.includes(target.key),
                         })),
                       },
                     ]
@@ -325,34 +319,7 @@ export default function DraInvestigation({
               ]}
             />
           )}
-          {listenerOptions.length > 0 && (
-            <div className="mt-2">
-              <DraMobilePicker
-                id="dra-mobile-listener-select"
-                value={selectedListenerKeys.join(',')}
-                valueLabel={renderListenerSummary()}
-                valueIcon={<Users size={16} className="text-blue-600" />}
-                isOpen={mobileListenerPickerOpen}
-                onToggle={() => setMobileListenerPickerOpen((open) => !open)}
-                onClose={() => setMobileListenerPickerOpen(false)}
-                onSelect={toggleListener}
-                className="w-[calc(100%-3.5rem)]"
-                menuClassName="space-y-2"
-                groups={[
-                  {
-                    label: 'Additional stakeholders',
-                    items: listenerOptions.map((target) => ({
-                      value: target.key,
-                      label: target.name,
-                      description: `${target.role || 'Stakeholder'}${selectedListenerKeys.includes(target.key) ? ' · selected' : ''}`,
-                      icon: selectedListenerKeys.includes(target.key) ? <Check size={16} className="text-blue-600" /> : getTargetIcon(target),
-                      selected: selectedListenerKeys.includes(target.key),
-                    })),
-                  },
-                ]}
-              />
-            </div>
-          )}
+          {selectedTarget?.type === 'stakeholder' && <p className="mt-2 px-1 text-xs text-gray-500">Group: {renderListenerSummary()}. Re-open the stakeholder list to add or remove people.</p>}
         </div>
 
         <div className="flex-1 flex flex-col min-h-0 border border-gray-200 rounded-lg overflow-hidden">

@@ -226,7 +226,7 @@ Stage interpretations (the "interpretation" field for each stage):
  * @returns {Promise<Array<{speakerKey: string, speakerName: string, speakerRole: string, text: string}>>} One primary reply plus up to two stakeholder interjections.
  */
 export async function aiDraStakeholderResponseGenerator(scenario, primaryTarget, listenerTargets = [], messages, stakeholders = [], resources = [], difficulty = 3, activeStage = '') {
-  const normalizedListeners = Array.isArray(listenerTargets) ? listenerTargets.filter(Boolean).slice(0, 2) : [];
+  const normalizedListeners = Array.isArray(listenerTargets) ? listenerTargets.filter(Boolean) : [];
   const isPrimaryStakeholder = Boolean(primaryTarget?.role) || (primaryTarget?.type || 'stakeholder') === 'stakeholder';
   const primaryPersona = isPrimaryStakeholder
     ? `Primary speaker: ${primaryTarget?.name || 'a stakeholder'}, ${primaryTarget?.role || 'a stakeholder'}.

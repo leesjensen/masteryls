@@ -361,8 +361,8 @@ test('dra investigation supports a primary stakeholder with distinct listener in
   await page.getByRole('button', { name: 'Generate scenario' }).click();
   await page.getByRole('button', { name: 'Investigation' }).click();
 
-  await page.getByRole('button', { name: 'Alex Tran Operations Director' }).nth(1).click();
-  await page.getByRole('button', { name: 'Rina Shah Security Lead' }).nth(1).click();
+  await page.getByRole('button', { name: /Alex Tran.*Operations Director/ }).click();
+  await page.getByRole('button', { name: /Rina Shah.*Security Lead/ }).click();
 
   const chatInput = page.getByPlaceholder('Ask Dana Cole…');
   await chatInput.fill('What do we need to protect during the migration?');
