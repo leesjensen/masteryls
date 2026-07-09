@@ -297,7 +297,19 @@ Rules for the JSON:
 - Return only the JSON object.`;
 
   const instructions = { parts: [{ text: instructionText }] };
-  const contents = (messages || []).filter((msg) => msg.role === 'user' || msg.role === 'model').map((msg) => ({ role: msg.role, parts: [{ text: msg.text }] }));
+  const contents = (messages || [])
+    .filter((msg) => msg.role === 'user' || msg.role === 'model')
+    .map((msg) => {
+      if (msg.role === 'model') {
+        const speakerName = typeof msg.speakerName === 'string' ? msg.speakerName.trim() : '';
+        const speakerRole = typeof msg.speakerRole === 'string' ? msg.speakerRole.trim() : '';
+        const speakerLabel = [speakerName, speakerRole].filter(Boolean).join(' · ');
+        const text = speakerLabel ? `[${speakerLabel}] ${msg.text}` : msg.text;
+        return { role: msg.role, parts: [{ text }] };
+      }
+
+      return { role: msg.role, parts: [{ text: msg.text }] };
+    });
 
   const response = await makeAiRequest(instructions, contents);
   try {
