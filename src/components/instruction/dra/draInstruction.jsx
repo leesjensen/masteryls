@@ -16,11 +16,11 @@ function DraTabBar({ tabs, active, onChange }) {
   return (
     <div className="not-prose mt-4 overflow-x-auto">
       <div className="flex min-w-max border-b border-gray-200">
-      {tabs.map((tab) => (
-        <button key={tab.id} onClick={() => onChange(tab.id)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${active === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-          {tab.label}
-        </button>
-      ))}
+        {tabs.map((tab) => (
+          <button key={tab.id} onClick={() => onChange(tab.id)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${active === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+            {tab.label}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -128,9 +128,7 @@ function parseConversationKey(conversationKey) {
 
   const [primaryPart = '', listenersPart = ''] = text.split('|');
   const primaryTargetKey = primaryPart.startsWith('primary:') ? primaryPart.slice('primary:'.length) : '';
-  const listenerTargetKeys = listenersPart.startsWith('listeners:')
-    ? listenersPart.slice('listeners:'.length).split(',').filter(Boolean)
-    : [];
+  const listenerTargetKeys = listenersPart.startsWith('listeners:') ? listenersPart.slice('listeners:'.length).split(',').filter(Boolean) : [];
   const participantTargetKeys = [...new Set([primaryTargetKey, ...listenerTargetKeys].filter(Boolean))];
   return { primaryTargetKey, listenerTargetKeys, participantTargetKeys };
 }
@@ -260,22 +258,24 @@ function normalizeScenarioDetails(scenario) {
     }
   });
 
-  const normalizedEvaluation = scenario.evaluation && typeof scenario.evaluation === 'object'
-    ? {
-        ...scenario.evaluation,
-        process: scenario.evaluation.process && typeof scenario.evaluation.process === 'object'
-          ? {
-              ...scenario.evaluation.process,
-              attributes: Array.isArray(scenario.evaluation.process.attributes)
-                ? scenario.evaluation.process.attributes.map((attribute) => ({
-                    ...attribute,
-                    name: normalizeDraProcessAttributeName(attribute?.name),
-                  }))
-                : scenario.evaluation.process.attributes,
-            }
-          : scenario.evaluation.process,
-      }
-    : scenario.evaluation;
+  const normalizedEvaluation =
+    scenario.evaluation && typeof scenario.evaluation === 'object'
+      ? {
+          ...scenario.evaluation,
+          process:
+            scenario.evaluation.process && typeof scenario.evaluation.process === 'object'
+              ? {
+                  ...scenario.evaluation.process,
+                  attributes: Array.isArray(scenario.evaluation.process.attributes)
+                    ? scenario.evaluation.process.attributes.map((attribute) => ({
+                        ...attribute,
+                        name: normalizeDraProcessAttributeName(attribute?.name),
+                      }))
+                    : scenario.evaluation.process.attributes,
+                }
+              : scenario.evaluation.process,
+        }
+      : scenario.evaluation;
 
   const { stages: _ignoredStages, ...rest } = scenario;
   return {
@@ -289,9 +289,7 @@ function normalizeScenarioDetails(scenario) {
 function normalizeDraState(state) {
   if (!state || typeof state !== 'object') return createEmptyDraState();
 
-  const practiceScenarios = Array.isArray(state.practiceScenarios)
-    ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId).map(normalizeScenarioDetails)
-    : [];
+  const practiceScenarios = Array.isArray(state.practiceScenarios) ? state.practiceScenarios.filter((item) => item && typeof item === 'object' && item.scenarioRunId).map(normalizeScenarioDetails) : [];
   const selectedPracticeScenarioId = typeof state.selectedPracticeScenarioId === 'string' && practiceScenarios.some((item) => item.scenarioRunId === state.selectedPracticeScenarioId) ? state.selectedPracticeScenarioId : null;
   const finalScenario = state.finalScenario && typeof state.finalScenario === 'object' && state.finalScenario.scenarioRunId ? normalizeScenarioDetails(state.finalScenario) : null;
 
@@ -476,9 +474,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
       if (nextDetails?.mode === 'practice' && nextDetails?.scenarioRunId) {
         const existingIndex = current.practiceScenarios.findIndex((item) => item.scenarioRunId === nextDetails.scenarioRunId);
-        const nextPracticeScenarios = existingIndex === -1
-          ? [...current.practiceScenarios, nextDetails]
-          : current.practiceScenarios.map((item, index) => (index === existingIndex ? nextDetails : item));
+        const nextPracticeScenarios = existingIndex === -1 ? [...current.practiceScenarios, nextDetails] : current.practiceScenarios.map((item, index) => (index === existingIndex ? nextDetails : item));
         const nextSelectedId = preserveSelection ? current.selectedPracticeScenarioId : nextDetails.scenarioRunId;
         return { practiceScenarios: nextPracticeScenarios, selectedPracticeScenarioId: nextSelectedId, finalScenario: current.finalScenario };
       }
@@ -567,10 +563,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   function selectTarget(targetKey, options = {}) {
     const { preserveCurrentInGroup = true } = options;
     if (!targetKey || selectedTargetKey === targetKey) return;
-    const nextTarget = details.stakeholders?.find((_, index) => `stakeholder:${index}` === targetKey)
-      || details.resources?.find((_, index) => `resource:${index}` === targetKey)
-      || details.identified?.find((_, index) => `identified:${index}` === targetKey);
-    const nextTargetType = targetKey.startsWith('resource:') ? 'resource' : (nextTarget?.kind || nextTarget?.type || 'stakeholder');
+    const nextTarget = details.stakeholders?.find((_, index) => `stakeholder:${index}` === targetKey) || details.resources?.find((_, index) => `resource:${index}` === targetKey) || details.identified?.find((_, index) => `identified:${index}` === targetKey);
+    const nextTargetType = targetKey.startsWith('resource:') ? 'resource' : nextTarget?.kind || nextTarget?.type || 'stakeholder';
     let nextListenerKeys = selectedListenerTargetKeys.filter((key) => key !== targetKey);
 
     if (nextTargetType === 'stakeholder' && selectedTargetKey && stakeholderTargets.some((target) => target.key === selectedTargetKey) && preserveCurrentInGroup) {
@@ -626,7 +620,10 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const addressedPrimaryKey = target.type === 'stakeholder' ? detectMentionedStakeholderPrimary(text, participantTargets) || target.key : target.key;
     const addressedPrimaryTarget = participantTargets.find((item) => item.key === addressedPrimaryKey) || target;
     const addressedListenerTargets = participantTargets.filter((item) => item.key !== addressedPrimaryTarget.key);
-    const conversationKey = makeConversationKey(addressedPrimaryTarget.key, addressedListenerTargets.map((item) => item.key));
+    const conversationKey = makeConversationKey(
+      addressedPrimaryTarget.key,
+      addressedListenerTargets.map((item) => item.key),
+    );
     const currentConversation = conversations[conversationKey] || {
       primaryTargetKey: addressedPrimaryTarget.key,
       listenerTargetKeys: addressedListenerTargets.map((item) => item.key),
@@ -650,16 +647,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       if (addressedPrimaryTarget.key !== selectedTargetKey) {
         selectTarget(addressedPrimaryTarget.key);
       }
-      const replies = await courseOps.getDraStakeholderResponse(
-        details.scenario,
-        addressedPrimaryTarget,
-        addressedListenerTargets,
-        withUser,
-        details.stakeholders || [],
-        details.resources || [],
-        details.difficulty ?? params.difficulty,
-        activeStage,
-      );
+      const replies = await courseOps.getDraStakeholderResponse(details.scenario, addressedPrimaryTarget, addressedListenerTargets, withUser, details.stakeholders || [], details.resources || [], details.difficulty ?? params.difficulty, activeStage);
       const normalizedReplies = (Array.isArray(replies) ? replies : [])
         .map((reply) => ({
           role: 'model',
@@ -759,11 +747,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
     Object.values(source.conversations || {}).forEach((conversation) => {
       const localTranscriptMap = new Map();
-      const messages = Array.isArray(conversation)
-        ? conversation
-        : Array.isArray(conversation?.messages)
-          ? conversation.messages
-          : [];
+      const messages = Array.isArray(conversation) ? conversation : Array.isArray(conversation?.messages) ? conversation.messages : [];
 
       const learnerHistory = [];
 
@@ -815,27 +799,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }
 
   async function computeEvaluation(source) {
-    return courseOps.getDraEvaluation(
-      source.scenario,
-      buildTranscripts(source),
-      source.stageNotes || {},
-      source.difficulty,
-      source.evaluation,
-    );
+    return courseOps.getDraEvaluation(source.scenario, buildTranscripts(source), source.stageNotes || {}, source.difficulty, source.evaluation);
   }
 
   async function requestCoaching() {
     if (draReadOnly || coaching) return;
     setCoaching(true);
     try {
-      const result = await courseOps.getDraCoaching(
-        details.scenario,
-        buildTranscripts(details),
-        details.stageNotes || {},
-        activeStage,
-        details.difficulty ?? params.difficulty,
-        details.evaluation,
-      );
+      const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage, details.difficulty ?? params.difficulty, details.evaluation);
       await autoSaveDetails({ ...details, coaching: result });
     } catch {
       alert('Unable to get coaching right now. Please try again.');
@@ -1068,6 +1039,113 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         return (
           <div className="mt-4">
             <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
+
+            <details className="not-prose rounded-lg border border-blue-200 bg-blue-50 open:pb-4" open>
+              <summary className="cursor-pointer select-none rounded-lg px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100 list-none">How this assessment works</summary>
+              <div className="px-4 pt-2 space-y-4">
+                <ol className="space-y-3 text-sm text-gray-700">
+                  <li className="flex gap-3">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
+                    <div>
+                      <strong>Start a scenario.</strong> {canPractice && canFinal ? 'Choose practice to explore freely or start the final assessment when you are ready.' : canPractice ? 'Click "Generate scenario" to create a unique case. You can cancel and generate a new one until you are happy with it.' : 'Click "Start final assessment" to begin. The scenario is locked once started and must be completed.'}
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">2</span>
+                    <div>
+                      <strong>Read the Scenario tab.</strong> Review the situation, constraints, and any stakeholders revealed to you. On harder difficulty settings some details are intentionally withheld for you to discover.
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
+                    <div>
+                      <strong>Work through the Workspace tab.</strong> The workspace is where you conduct your investigation and build your solution. Use the stage pills to move through the six stages of the assessment. The workspace has two sides: on the <strong>left</strong>, chat with stakeholders to gather information; on the <strong>right</strong>, use the reasoning record to document your work on each stage.
+                      {canPractice && (
+                        <span>
+                          {' '}
+                          In practice mode, the <strong>Coaching</strong> tab provides AI feedback on your approach at any point, and you can open the <strong>Evaluation</strong> tab to score your progress as many times as you like before finishing.
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">4</span>
+                    <div>
+                      <strong>Complete and review.</strong> When you have worked through all stages, click "Complete assessment." A final AI evaluation of your reasoning and process will appear on the Evaluation tab.
+                    </div>
+                  </li>
+                </ol>
+
+                {(canPractice || canFinal) && (
+                  <div>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Modes</div>
+                    <div className="grid gap-1.5">
+                      {canPractice && (
+                        <div className="rounded border border-blue-200 bg-white px-3 py-2 text-sm">
+                          <div className="mb-1 font-semibold text-blue-800">Practice</div>
+                          <ul className="space-y-1 text-xs text-gray-600 list-disc list-inside">
+                            <li>Cancel and regenerate freely until ready</li>
+                            <li>Coaching tab available throughout</li>
+                            <li>Evaluation can be run at any time to check progress</li>
+                            <li>Repeat as many times as you like</li>
+                          </ul>
+                        </div>
+                      )}
+                      {canFinal && (
+                        <div className="rounded border border-amber-200 bg-white px-3 py-2 text-sm">
+                          <div className="mb-1 font-semibold text-amber-800">Final assessment</div>
+                          <ul className="space-y-1 text-xs text-gray-600 list-disc list-inside">
+                            <li>Scenario is locked once started</li>
+                            <li>Must be completed; cannot be cancelled</li>
+                            <li>Coaching and mid-assessment evaluation are not available</li>
+                            <li>Evaluation is generated on completion</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">The six stages</div>
+                  <div className="grid gap-1.5">
+                    {DRA_FIXED_STAGES.map((s) => (
+                      <div key={s.stage} className="flex items-start gap-2 rounded border border-gray-200 bg-white px-3 py-2 text-sm">
+                        <div className="mt-0.5 shrink-0">{getStageIcon(s.stage)}</div>
+                        <div>
+                          <span className="font-semibold text-gray-800">{s.stage}</span>
+                          <span className="text-gray-500">: {s.interpretation}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded border border-blue-200 bg-white px-3 py-2 text-xs text-blue-800">
+                  <strong>Tip:</strong> You can chat with multiple stakeholders at once. In the Workspace, click additional stakeholder names in the left panel to add them to your conversation group. Start your message with a name to direct it at a specific person.
+                </div>
+
+                <div>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Evaluation</div>
+                  <div className="rounded border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 space-y-2">
+                    <p>Your mastery is measured across three dimensions using evidence drawn from your conversations and notes:</p>
+                    <ul className="space-y-1 list-disc list-inside text-xs text-gray-600">
+                      <li>
+                        <strong>Process:</strong> how thoroughly you applied the disciplinary reasoning framework across each stage. This is the foundation of your mastery rating.
+                      </li>
+                      <li>
+                        <strong>Competency:</strong> the depth of domain knowledge and reasoning skills you demonstrated.
+                      </li>
+                      <li>
+                        <strong>Disposition:</strong> the quality of your professional mindset and approach throughout.
+                      </li>
+                    </ul>
+                    <p className="text-xs text-gray-600">Each dimension is rated on a five-point mastery continuum: Beginning, Emerging, Developing, Proficient, and Exemplary. Your Character (the combination of Competency and Disposition) reflects the depth of your professional practice and shapes how fully your Process mastery is recognized.</p>
+                  </div>
+                </div>
+              </div>
+            </details>
+
             {(isPreview || !user) && (
               <div className="not-prose mt-4 rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
                 When a learner begins, a scenario is generated from these parameters.
@@ -1153,12 +1231,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       <div className="not-prose shrink-0">
         <div className="flex flex-wrap gap-1.5">
           {DRA_FIXED_STAGES.map((s) => (
-            <button
-              key={s.stage}
-              onClick={() => selectStage(s.stage)}
-              disabled={stageNavigationDisabled}
-              className={`shrink-0 rounded-full border px-2.5 py-1 text-xs disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white/90 text-gray-700 hover:bg-white'}`}
-            >
+            <button key={s.stage} onClick={() => selectStage(s.stage)} disabled={stageNavigationDisabled} className={`shrink-0 rounded-full border px-2.5 py-1 text-xs disabled:opacity-60 ${s.stage === activeStage ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white/90 text-gray-700 hover:bg-white'}`}>
               {s.stage}
             </button>
           ))}
@@ -1171,13 +1244,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     if (!isMobileInvestigationLayout) return null;
 
     return (
-      <button
-        type="button"
-        onClick={() => selectMobileInvestigationView(mobileInvestigationView === 'chat' ? 'record' : 'chat')}
-        aria-label={mobileInvestigationView === 'chat' ? 'Open reasoning record' : 'Open chat'}
-        title={mobileInvestigationView === 'chat' ? 'Open reasoning record' : 'Open chat'}
-        className="absolute right-2 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-white/95 text-blue-700 shadow-md backdrop-blur-sm transition-colors hover:bg-blue-50"
-      >
+      <button type="button" onClick={() => selectMobileInvestigationView(mobileInvestigationView === 'chat' ? 'record' : 'chat')} aria-label={mobileInvestigationView === 'chat' ? 'Open reasoning record' : 'Open chat'} title={mobileInvestigationView === 'chat' ? 'Open reasoning record' : 'Open chat'} className="absolute right-2 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-blue-200 bg-white/95 text-blue-700 shadow-md backdrop-blur-sm transition-colors hover:bg-blue-50">
         {mobileInvestigationView === 'chat' ? <FileText size={18} /> : <MessageSquare size={18} />}
       </button>
     );
@@ -1219,38 +1286,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 </div>
               ) : (
                 <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
-                  <DraInvestigation
-                    targets={targets}
-                    stakeholderTargets={stakeholderTargets}
-                    selectedKey={selectedTargetKey}
-                    selectedListenerKeys={selectedListenerTargetKeys}
-                    onSelectTarget={selectTarget}
-                    onSelectListenerKeys={selectListenerTargetKeys}
-                    onUpdateStakeholderGroup={updateStakeholderGroup}
-                    conversation={activeConversation}
-                    onSendMessage={sendInvestigationMessage}
-                    readOnly={investigationReadOnly}
-                    learningSession={learningSession}
-                  />
+                  <DraInvestigation targets={targets} stakeholderTargets={stakeholderTargets} selectedKey={selectedTargetKey} selectedListenerKeys={selectedListenerTargetKeys} onSelectTarget={selectTarget} onSelectListenerKeys={selectListenerTargetKeys} onUpdateStakeholderGroup={updateStakeholderGroup} conversation={activeConversation} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
                 </div>
               )}
             </div>
           ) : (
             <div className="flex-1 min-h-0 flex overflow-hidden" ref={investigationSplitRef}>
               <div className="min-w-0 flex flex-col overflow-hidden" style={{ width: `${investigationPanePercent}%` }}>
-                <DraInvestigation
-                  targets={targets}
-                  stakeholderTargets={stakeholderTargets}
-                  selectedKey={selectedTargetKey}
-                  selectedListenerKeys={selectedListenerTargetKeys}
-                  onSelectTarget={selectTarget}
-                  onSelectListenerKeys={selectListenerTargetKeys}
-                  onUpdateStakeholderGroup={updateStakeholderGroup}
-                  conversation={activeConversation}
-                  onSendMessage={sendInvestigationMessage}
-                  readOnly={investigationReadOnly}
-                  learningSession={learningSession}
-                />
+                <DraInvestigation targets={targets} stakeholderTargets={stakeholderTargets} selectedKey={selectedTargetKey} selectedListenerKeys={selectedListenerTargetKeys} onSelectTarget={selectTarget} onSelectListenerKeys={selectListenerTargetKeys} onUpdateStakeholderGroup={updateStakeholderGroup} conversation={activeConversation} onSendMessage={sendInvestigationMessage} readOnly={investigationReadOnly} learningSession={learningSession} />
               </div>
               <Splitter onMove={onInvestigationPaneMoved} onResized={onInvestigationPaneResized} />
               <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
