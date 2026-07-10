@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 
 export default function ProgressView({ courseOps, service, user }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [progressRecords, setProgressRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // courseId/topicId/userId can be pre-set via query params (e.g. the MasteryView
+  // "activity" link) to scope the view to one learner's work on one topic.
   const [filter, setFilter] = useState({
     type: '[]',
-    courseId: '',
+    courseId: searchParams.get('courseId') || '',
+    topicId: searchParams.get('topicId') || '',
+    userId: searchParams.get('userId') || '',
     startDate: '',
     endDate: '',
   });
@@ -28,10 +33,78 @@ export default function ProgressView({ courseOps, service, user }) {
     hasMore: false,
     currentPage: 1,
   });
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState(() => new Set());
+  const [courseTopics, setCourseTopics] = useState([]);
+  const [courseLearners, setCourseLearners] = useState([]);
+
+  // Editors/root can scope activity to any learner; a normal learner only sees their own.
+  const canFilterLearners = Boolean(user && (user.isRoot?.() || user.isEditor?.(filter.courseId) || user.isEditor?.()));
+
+  const availableCourses = React.useMemo(() => {
+    const catalog = service?.courseCatalog?.() || [];
+    if (!user) return [];
+    if (user.isRoot?.()) return catalog;
+    return catalog.filter((entry) => user.isEditor?.(entry.id) || enrolledCourseIds.has(entry.id));
+  }, [service, user, enrolledCourseIds]);
 
   useEffect(() => {
     updateAppBar({ title: 'Progress' });
   }, []);
+
+  // Courses the viewer is enrolled in (used to gate the course list for non-editors).
+  useEffect(() => {
+    let cancelled = false;
+    if (!user || !service?.enrollments) return undefined;
+    service
+      .enrollments(user.id)
+      .then((enrollmentMap) => {
+        if (!cancelled) setEnrolledCourseIds(new Set(enrollmentMap ? Array.from(enrollmentMap.keys()) : []));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user, service]);
+
+  // Topics for the selected course, for the topic filter.
+  useEffect(() => {
+    let cancelled = false;
+    if (!filter.courseId || !courseOps?.getCourse) {
+      setCourseTopics([]);
+      return undefined;
+    }
+    courseOps
+      .getCourse(filter.courseId)
+      .then((course) => {
+        if (!cancelled) setCourseTopics((course?.allTopics || []).filter((t) => t?.id));
+      })
+      .catch(() => {
+        if (!cancelled) setCourseTopics([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filter.courseId, courseOps]);
+
+  // Learners for the selected course (editors/root only), for the learner filter.
+  useEffect(() => {
+    let cancelled = false;
+    if (!filter.courseId || !canFilterLearners || !courseOps?.getMasteryOverview) {
+      setCourseLearners([]);
+      return undefined;
+    }
+    courseOps
+      .getMasteryOverview({ courseId: filter.courseId, page: 1, limit: 500 })
+      .then((result) => {
+        if (!cancelled) setCourseLearners(result?.rows || []);
+      })
+      .catch(() => {
+        if (!cancelled) setCourseLearners([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filter.courseId, canFilterLearners, courseOps]);
 
   useEffect(() => {
     fetchProgressData();
@@ -76,6 +149,11 @@ export default function ProgressView({ courseOps, service, user }) {
     setFilter((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Changing the course invalidates the selected topic and learner.
+  const handleCourseChange = (value) => {
+    setFilter((prev) => ({ ...prev, courseId: value, topicId: '', userId: '' }));
+  };
+
   const applyFilters = () => {
     setCurrentPage(1); // Reset to first page when applying filters
     fetchProgressData(1);
@@ -85,6 +163,8 @@ export default function ProgressView({ courseOps, service, user }) {
     setFilter({
       type: '',
       courseId: '',
+      topicId: '',
+      userId: '',
       startDate: '',
       endDate: '',
     });
@@ -307,20 +387,81 @@ export default function ProgressView({ courseOps, service, user }) {
     );
   }
 
+  const filteredLearner = courseLearners.find((l) => String(l.learnerId) === String(filter.userId));
+  const filteredLearnerName = filteredLearner?.learnerName || filteredLearner?.learnerEmail || '';
+  const selectedCourse = availableCourses.find((c) => String(c.id) === String(filter.courseId));
+  const selectedTopic = courseTopics.find((t) => String(t.id) === String(filter.topicId));
+
+  let activityHeading;
+  if (filter.userId && String(filter.userId) === String(user.id)) {
+    activityHeading = 'Your Learning Activity';
+  } else if (filter.userId) {
+    activityHeading = filteredLearnerName ? `${filteredLearnerName}'s Learning Activity` : 'Learner Learning Activity';
+  } else if (canFilterLearners) {
+    activityHeading = "All Users' Learning Activity";
+  } else {
+    activityHeading = 'Your Learning Activity';
+  }
+
   return (
     <>
       <div className="flex-1 m-6 flex flex-col bg-white">
         <main className="flex-1 overflow-auto p-4 border border-gray-200">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Your Learning Activity</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">{activityHeading}</h1>
+            {(selectedCourse || selectedTopic) && (
+              <p className="text-sm text-gray-500 mb-4">
+                {selectedCourse ? `Course: ${selectedCourse.title || selectedCourse.name}` : ''}
+                {selectedTopic ? `${selectedCourse ? ' · ' : ''}Topic: ${selectedTopic.title}` : ''}
+              </p>
+            )}
+            {!selectedCourse && !selectedTopic && <div className="mb-4" />}
 
             {/* Filters */}
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold mb-3">Filters</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Course</label>
+                  <select aria-label="Course" value={filter.courseId} onChange={(e) => handleCourseChange(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All courses</option>
+                    {availableCourses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title || c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                  <select aria-label="Topic" value={filter.topicId} onChange={(e) => handleFilterChange('topicId', e.target.value)} disabled={!filter.courseId} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400">
+                    <option value="">All topics</option>
+                    {courseTopics.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {canFilterLearners && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Learner</label>
+                    <select aria-label="Learner" value={filter.userId} onChange={(e) => handleFilterChange('userId', e.target.value)} disabled={!filter.courseId} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400">
+                      <option value="">All learners</option>
+                      {courseLearners.map((l) => (
+                        <option key={l.learnerId} value={l.learnerId}>
+                          {l.learnerName || l.learnerEmail}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
-                  <select value={filter.type} onChange={(e) => handleFilterChange('type', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select aria-label="Activity Type" value={filter.type} onChange={(e) => handleFilterChange('type', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="[]">All Types</option>
                     <option value='["instructionView"]'>Instruction View</option>
                     <option value='["embeddedView"]'>Embedded View</option>

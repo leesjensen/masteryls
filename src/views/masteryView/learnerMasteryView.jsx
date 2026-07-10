@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, FileClock } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 
@@ -544,14 +544,25 @@ export default function LearnerMasteryView({ courseOps }) {
               {sortedInstructionTopicSummaries.map((summary) => (
                 <tr key={summary.topicId} className="border-t border-gray-100 text-gray-700">
                   <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/course/${selectedCourseId}/topic/${summary.topicId}`)}
-                      className="text-left text-blue-700 hover:text-blue-900 hover:underline inline-flex items-center gap-1"
-                    >
-                      <TopicIcon type={summary.topicType} />
-                      {summary.topicTitle}
-                    </button>
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/course/${selectedCourseId}/topic/${summary.topicId}`)}
+                        className="text-left text-blue-700 hover:text-blue-900 hover:underline inline-flex items-center gap-1"
+                      >
+                        <TopicIcon type={summary.topicType} />
+                        {summary.topicTitle}
+                      </button>
+                      <button
+                        type="button"
+                        title="View this learner's activity for this topic"
+                        aria-label="View activity for this topic"
+                        onClick={() => navigate(`/progress?courseId=${selectedCourseId}&topicId=${summary.topicId}&userId=${routeLearnerId}`)}
+                        className="shrink-0 text-gray-400 hover:text-blue-700"
+                      >
+                        <FileClock size={15} />
+                      </button>
+                    </div>
                   </td>
                   <td className="px-3 py-2">{summary.avgPercent !== null ? `${summary.avgPercent}%` : '-'}</td>
                   <td className="px-3 py-2">

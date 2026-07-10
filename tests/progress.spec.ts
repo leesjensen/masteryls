@@ -19,14 +19,14 @@ test('progress filters apply and clear', async ({ page }) => {
   const tableRows = page.locator('tbody tr');
   await expect(tableRows).toHaveCount(6);
 
-  await page.getByRole('combobox').selectOption('["note"]');
+  await page.getByRole('combobox', { name: 'Activity Type' }).selectOption('["note"]');
   await page.getByRole('button', { name: 'Apply' }).click();
 
   await expect(page.getByText('note', { exact: true })).toBeVisible();
   await expect(tableRows).toHaveCount(1);
 
   await page.getByRole('button', { name: 'Clear' }).click();
-  await page.getByRole('combobox').selectOption('[]');
+  await page.getByRole('combobox', { name: 'Activity Type' }).selectOption('[]');
   await page.getByRole('button', { name: 'Apply' }).click();
   await expect(tableRows).toHaveCount(6);
 });
