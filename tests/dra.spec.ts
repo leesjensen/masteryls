@@ -89,20 +89,12 @@ const SCENARIO = {
   stakeholders: [{ name: 'Dana Cole', role: 'CIO', personality: 'cautious', objectives: 'minimize downtime' }],
   resources: [{ name: 'Legacy COBOL system', type: 'system', description: '14 million records' }],
   constraints: [{ name: 'Budget', description: 'capped at $2.5M' }],
-  stages: [
-    { stage: 'Frame', interpretation: 'Clarify the stakeholders and constraints.' },
-    { stage: 'Research', interpretation: 'Gather the system requirements.' },
-    { stage: 'Model', interpretation: 'Design a target architecture.' },
-    { stage: 'Act', interpretation: 'Plan the migration.' },
-    { stage: 'Validate', interpretation: 'Test the cutover.' },
-    { stage: 'Reflect', interpretation: 'Evaluate the tradeoffs.' },
-  ],
 };
 
 const STAKEHOLDER_REPLY = 'Downtime is our biggest concern.';
 
 const EVALUATION = {
-  process: { rating: 'Developing', summary: 'Solid framing of the problem.', attributes: [{ name: 'Framing', rating: 'Proficient', summary: 'Clarified the core constraints.', evidence: [{ detail: 'Asked the CIO about downtime', polarity: 'positive', impact: 'strong' }] }] },
+  process: { rating: 'Developing', summary: 'Solid understanding of the problem.', attributes: [{ name: 'Understand', rating: 'Proficient', summary: 'Clarified the core constraints.', evidence: [{ detail: 'Asked the CIO about downtime', polarity: 'positive', impact: 'strong' }] }] },
   competency: { rating: 'Emerging', summary: 'Beginning to reason about the system.', attributes: [{ name: 'Systems thinking', rating: 'Emerging', summary: 'Considered downstream agencies.', evidence: [] }] },
   disposition: { rating: 'Developing', summary: 'Curious and engaged.', attributes: [{ name: 'Curiosity', rating: 'Developing', summary: 'Probed for root concerns.', evidence: [] }] },
   concerns: [],
@@ -312,13 +304,13 @@ test('dra investigation lets the learner interview a stakeholder and record reas
   await page.getByText('Reasoning Lab').click();
   await page.getByRole('button', { name: 'Generate scenario' }).click();
 
-  await page.getByRole('button', { name: 'Investigation' }).click();
-  await expect(page.getByRole('button', { name: 'Investigation' })).toBeVisible();
+  await page.getByRole('button', { name: 'Workspace' }).click();
+  await expect(page.getByRole('button', { name: 'Workspace' })).toBeVisible();
 
-  // Stages structure the investigation; the first stage's interpretation shows by default.
-  await expect(page.getByText('Clarify the stakeholders and constraints.')).toBeVisible();
-  await page.getByRole('button', { name: 'Research', exact: true }).click();
-  await expect(page.getByText('Gather the system requirements.')).toBeVisible();
+  // Fixed stages structure the investigation; the first stage's interpretation shows by default.
+  await expect(page.getByText('Identify a clear understanding of the core task, including desired outcomes, constraints, and stakeholders.')).toBeVisible();
+  await page.getByRole('button', { name: 'Investigate', exact: true }).click();
+  await expect(page.getByText('Gather the relevant information, perspectives, and evidence necessary to create a plan.')).toBeVisible();
 
   // The first revealed target (a stakeholder) is auto-selected; ask it a question.
   const chatInput = page.getByPlaceholder('Ask Dana Cole…');
@@ -359,7 +351,7 @@ test('dra investigation supports a primary stakeholder with distinct listener in
   await navigateToCourse(page);
   await page.getByText('Reasoning Lab').click();
   await page.getByRole('button', { name: 'Generate scenario' }).click();
-  await page.getByRole('button', { name: 'Investigation' }).click();
+  await page.getByRole('button', { name: 'Workspace' }).click();
 
   await page.getByRole('button', { name: /Alex Tran.*Operations Director/ }).click();
   await page.getByRole('button', { name: /Rina Shah.*Security Lead/ }).click();
@@ -397,10 +389,10 @@ test('dra practice mode evaluates progress across the three dimensions with dril
   await page.getByRole('button', { name: 'Evaluate my progress' }).click();
 
   await expect(page.getByRole('button', { name: /Process/i })).toBeVisible();
-  await expect(page.getByText('Solid framing of the problem.')).toBeVisible();
+  await expect(page.getByText('Solid understanding of the problem.')).toBeVisible();
 
   // Drill into a Process attribute to reveal its supporting evidence.
-  await page.getByRole('button', { name: /Framing/ }).click();
+  await page.getByRole('button', { name: /Understand/ }).click();
   await expect(page.getByText('Asked the CIO about downtime')).toBeVisible();
 
   // After evaluating once, the control becomes an update action.
@@ -437,7 +429,7 @@ test('dra final mode does not offer coaching during the run', async ({ page }) =
   });
   await page.getByRole('button', { name: 'Start final assessment' }).click();
 
-  await page.getByRole('button', { name: 'Investigation', exact: true }).click();
+  await page.getByRole('button', { name: 'Workspace', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Get coaching' })).toHaveCount(0);
 });
 

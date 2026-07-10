@@ -10,6 +10,7 @@ import DraAssessment from './DraAssessment';
 import Spinner from '../../Spinner';
 import { FileText, MessageSquare, Search, Network, Play, CheckCircle2, RefreshCcw, Lightbulb } from 'lucide-react';
 import DraMobilePicker from './DraMobilePicker';
+import { DRA_FIXED_STAGES, createDraStageNotes, getDraStageDefinition, getFirstDraStage, getDraStageNames, normalizeDraProcessAttributeName, normalizeDraStageName } from '../../../utils/draStages';
 
 function DraTabBar({ tabs, active, onChange }) {
   return (
@@ -259,7 +260,30 @@ function normalizeScenarioDetails(scenario) {
     }
   });
 
-  return { ...scenario, conversations: normalizedConversations };
+  const normalizedEvaluation = scenario.evaluation && typeof scenario.evaluation === 'object'
+    ? {
+        ...scenario.evaluation,
+        process: scenario.evaluation.process && typeof scenario.evaluation.process === 'object'
+          ? {
+              ...scenario.evaluation.process,
+              attributes: Array.isArray(scenario.evaluation.process.attributes)
+                ? scenario.evaluation.process.attributes.map((attribute) => ({
+                    ...attribute,
+                    name: normalizeDraProcessAttributeName(attribute?.name),
+                  }))
+                : scenario.evaluation.process.attributes,
+            }
+          : scenario.evaluation.process,
+      }
+    : scenario.evaluation;
+
+  const { stages: _ignoredStages, ...rest } = scenario;
+  return {
+    ...rest,
+    stageNotes: createDraStageNotes(scenario.stageNotes),
+    evaluation: normalizedEvaluation,
+    conversations: normalizedConversations,
+  };
 }
 
 function normalizeDraState(state) {
@@ -296,23 +320,18 @@ function findInProgressPracticeScenario(practiceScenarios) {
 }
 
 function getStageIcon(stage) {
-  switch ((stage || '').toLowerCase()) {
-    case 'frame':
-    case 'framing':
+  switch (normalizeDraStageName(stage).toLowerCase()) {
+    case 'understand':
       return <Lightbulb size={16} className="text-amber-600" />;
-    case 'research':
+    case 'investigate':
       return <Search size={16} className="text-cyan-700" />;
-    case 'model':
-    case 'modeling':
+    case 'plan':
       return <Network size={16} className="text-violet-600" />;
-    case 'act':
-    case 'action':
+    case 'propose':
       return <Play size={16} className="text-blue-600" />;
-    case 'validate':
-    case 'validation':
+    case 'evaluate':
       return <CheckCircle2 size={16} className="text-emerald-600" />;
     case 'reflect':
-    case 'reflection':
       return <RefreshCcw size={16} className="text-rose-600" />;
     default:
       return <FileText size={16} className="text-gray-500" />;
@@ -384,12 +403,12 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
           const uiSettings = courseId && topicId ? courseOps.getEnrollmentUiSettings(courseId) : null;
 
-          const savedStage = uiSettings?.[`draActiveStage_${topicId}`];
-          const stages = activeScenario.stages || [];
-          if (savedStage && stages.some((s) => s.stage === savedStage)) {
+          const savedStage = normalizeDraStageName(uiSettings?.[`draActiveStage_${topicId}`]);
+          const stageNames = getDraStageNames();
+          if (savedStage && stageNames.includes(savedStage)) {
             setActiveStage(savedStage);
           } else {
-            setActiveStage(stages[0]?.stage || '');
+            setActiveStage(getFirstDraStage());
           }
 
           const savedTab = uiSettings?.[`draActiveTab_${topicId}`];
@@ -526,10 +545,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   }, [isDirty]);
 
   function selectStage(stage) {
-    if (activeStage === stage) return;
-    setActiveStage(stage);
+    const normalizedStage = normalizeDraStageName(stage);
+    if (!normalizedStage || activeStage === normalizedStage) return;
+    setActiveStage(normalizedStage);
     if (courseId && topicId) {
-      courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: stage });
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: normalizedStage });
     }
   }
 
@@ -692,10 +712,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setBusyAction(runMode === 'practice' ? 'generatePractice' : 'startFinal');
     try {
       const generated = await courseOps.generateDraScenario(params);
-      const stages = generated?.stages || [];
       const primaryStakeholder = generated?.stakeholders?.[0];
-      const stageNotes = Object.fromEntries(stages.map((s) => [s.stage, `# ${s.stage}\n\n`]));
-      const firstStage = stages[0]?.stage || '';
+      const stageNotes = createDraStageNotes();
+      const firstStage = getFirstDraStage();
       const scenarioRunId = crypto.randomUUID();
       setActiveStage(firstStage);
       if (courseId && topicId && firstStage) {
@@ -711,7 +730,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         constraints: generated?.constraints || [],
         stakeholders: generated?.stakeholders || [],
         resources: generated?.resources || [],
-        stages,
         stageNotes,
         identified: primaryStakeholder ? [{ ...primaryStakeholder, kind: 'stakeholder' }] : [],
       };
@@ -866,7 +884,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
   const showEvaluation = (details.state === 'inProgress' && !locked) || details.state === 'completed';
   const showPracticeScenarioPicker = params.practiceMode && practiceScenarios.length > 0;
 
-  const tabs = [{ id: 'overview', label: 'Overview' }, ...(hasScenario ? [{ id: 'scenario', label: 'Scenario' }] : []), ...(hasScenario ? [{ id: 'investigation', label: 'Investigation' }] : []), ...(showCoaching ? [{ id: 'coaching', label: 'Coaching' }] : []), ...(showEvaluation ? [{ id: 'evaluation', label: 'Evaluation' }] : [])];
+  const tabs = [{ id: 'overview', label: 'Overview' }, ...(hasScenario ? [{ id: 'scenario', label: 'Scenario' }] : []), ...(hasScenario ? [{ id: 'investigation', label: 'Workspace' }] : []), ...(showCoaching ? [{ id: 'coaching', label: 'Coaching' }] : []), ...(showEvaluation ? [{ id: 'evaluation', label: 'Evaluation' }] : [])];
 
   const safeActiveTab = tabs.some((t) => t.id === activeTab) ? activeTab : 'overview';
 
@@ -919,9 +937,10 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const scenario = practiceScenarios.find((item) => item.scenarioRunId === scenarioRunId);
     if (!scenario) return;
     setDraState((prev) => ({ ...normalizeDraState(prev), selectedPracticeScenarioId: scenarioRunId }));
-    setActiveStage(scenario.stages?.[0]?.stage || '');
-    if (scenario.stages?.[0]?.stage && courseId && topicId) {
-      courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: scenario.stages[0].stage });
+    const firstStage = getFirstDraStage();
+    setActiveStage(firstStage);
+    if (firstStage && courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`draActiveStage_${topicId}`]: firstStage });
     }
     selectTab('scenario');
   }
@@ -1099,13 +1118,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   const investigationReadOnly = details.state === 'completed' || draReadOnly;
   const stageNavigationDisabled = false;
-  const activeStageInterpretation = (details.stages || []).find((s) => s.stage === activeStage)?.interpretation || '';
+  const activeStageInterpretation = getDraStageDefinition(activeStage)?.interpretation || '';
   const showMobileRecord = isMobileInvestigationLayout && mobileInvestigationView === 'record';
-  const activeStageItem = (details.stages || []).find((s) => s.stage === activeStage) || null;
+  const activeStageItem = getDraStageDefinition(activeStage);
 
   function renderStagePills() {
-    if ((details.stages || []).length === 0) return null;
-
     if (isMobileInvestigationLayout) {
       return (
         <DraMobilePicker
@@ -1114,7 +1131,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           valueIcon={getStageIcon(activeStageItem?.stage)}
           groups={[
             {
-              items: (details.stages || []).map((s) => ({
+              items: DRA_FIXED_STAGES.map((s) => ({
                 value: s.stage,
                 label: s.stage,
                 icon: getStageIcon(s.stage),
@@ -1135,7 +1152,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     return (
       <div className="not-prose shrink-0">
         <div className="flex flex-wrap gap-1.5">
-          {(details.stages || []).map((s) => (
+          {DRA_FIXED_STAGES.map((s) => (
             <button
               key={s.stage}
               onClick={() => selectStage(s.stage)}

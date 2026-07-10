@@ -1,5 +1,6 @@
 import service from '../service/service';
 import { normalizeInteractionIds } from '../utils/interactionMeta';
+import { normalizeDraProcessAttributeName } from '../utils/draStages';
 
 const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
 const mermaidTheme = "%%{init: { 'theme': 'neutral', 'themeVariables': { 'mainBkg': '#ffffff', 'lineColor': '#000000', 'primaryTextColor': '#000000', 'actorBorder': '#000000', 'participantBorder': '#000000', 'noteBorderColor': '#000000' } }}%%";
@@ -157,7 +158,7 @@ question body
  * @param {number} params.difficulty - Difficulty from 1 (easy) to 5 (hard).
  * @param {boolean} params.instability - Whether instability events are enabled.
  * @param {string} params.learningOutcomes - The intended learning outcomes.
- * @returns {Promise<{scenario: {title: string, summary: string, description: string}, stakeholders: Array<{name: string, role: string, personality: string, objectives: string}>, resources: Array<{name: string, type: string, description: string}>, constraints: Array<{name: string, description: string}>, stages: Array<{stage: string, interpretation: string}>}>}
+ * @returns {Promise<{scenario: {title: string, summary: string, description: string}, stakeholders: Array<{name: string, role: string, personality: string, objectives: string}>, resources: Array<{name: string, type: string, description: string}>, constraints: Array<{name: string, description: string}>}>}
  */
 export async function aiDraScenarioGenerator({ discipline, problemType, difficulty, instability, learningOutcomes }) {
   const prompt = `You are designing an authentic, real-world scenario for a disciplinary reasoning assessment.
@@ -179,14 +180,12 @@ Return a raw JSON object (no markdown code fence) with exactly this shape:
   },
   "stakeholders": [ { "name": "person or role name", "role": "their role in the scenario", "personality": "how they communicate", "objectives": "what they want" } ],
   "resources": [ { "name": "artifact, system, or place", "type": "person | artifact | system | data | environment", "description": "what it offers the investigation" } ],
-  "constraints": [ { "name": "constraint name, e.g. Budget, Target completion date, Regulatory restrictions", "description": "the specific limit or requirement it imposes" } ],
-  "stages": [ { "stage": "Frame", "interpretation": "what this stage means for this specific scenario and discipline" } ]
+  "constraints": [ { "name": "constraint name, e.g. Budget, Target completion date, Regulatory restrictions", "description": "the specific limit or requirement it imposes" } ]
 }
 
 Requirements:
 - Provide 3 to 5 stakeholders, 2 to 4 resources, and 2 to 4 constraints
 - Constraints are the boundaries the response must respect (budget, deadlines, regulatory or technical restrictions, staffing limits, ...)
-- Provide exactly these six stages in this order: Frame, Research, Model, Act, Validate, Reflect — each with a discipline-specific interpretation grounded in this scenario
 - The summary must remain high-level so it can be shown even when details are withheld; the description carries the full detail
 - Make the scenario specific and grounded in the named discipline
 
@@ -201,11 +200,6 @@ Constraint conflict:
 - Difficulty 1–2: constraints are independent and non-conflicting
 - Difficulty 3: constraints create mild tensions
 - Difficulty 4–5: at least two constraints must actively conflict so no solution can fully satisfy all of them simultaneously
-
-Stage interpretations (the "interpretation" field for each stage):
-- Difficulty 1–2: name the exact concrete actions the learner should take — specific artifacts to produce, specific people to consult, specific decisions to make (e.g. "Draft the municipal ordinance and re-programme the signal controllers to match the new flow patterns")
-- Difficulty 3: describe the general approach without naming specific artifacts or stakeholders
-- Difficulty 4–5: describe only the broad goal of the stage in discipline-neutral terms (e.g. "Record the actions you feel are appropriate to implement the model you have defined") — do not name specific actions, artifacts, or stakeholders
 
 - Return only the JSON object`;
 
@@ -431,7 +425,7 @@ Difficulty: ${difficulty} (1=very easy, 5=very hard). Calibrate your rating thre
 
 Assess three dimensions. For each overall dimension and each of its attributes, give a rating (exactly one of: Beginning, Emerging, Developing, Proficient, Exemplary), a one-sentence summary, and supporting evidence drawn from the learner's actual behavior.
 
-- Process attributes: Framing, Research, Modeling, Action, Validation, Reflection
+- Process attributes: Understand, Investigate, Plan, Propose, Evaluate, Reflect
 - Competency attributes: Systems thinking, Communication, Design reasoning, Evidence-based reasoning, Decision-making
 - Disposition attributes: Curiosity, Ownership, Integrity, Persistence, Empathy, Accountability
 
@@ -457,7 +451,7 @@ Use positive evidence when the learner's behavior supports the attribute. Use ne
 
 Return a raw JSON object (no markdown code fence) with exactly this shape:
 {
-  "process": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Framing", "rating": "<level>", "summary": "<one sentence>", "evidence": [ { "detail": "...", "polarity": "positive", "impact": "moderate" } ] } ] },
+  "process": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Understand", "rating": "<level>", "summary": "<one sentence>", "evidence": [ { "detail": "...", "polarity": "positive", "impact": "moderate" } ] } ] },
   "competency": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
   "disposition": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ ... ] },
   "concerns": [ { "name": "<short label>", "severity": "Minor|Moderate|Major", "description": "<one sentence>" } ]
@@ -540,7 +534,12 @@ function draAttributeScore(attribute, fallbackRating, difficulty) {
 }
 
 function draDimensionSummary(dimension, difficulty) {
-  const attributes = Array.isArray(dimension?.attributes) ? dimension.attributes : [];
+  const attributes = Array.isArray(dimension?.attributes)
+    ? dimension.attributes.map((attribute) => ({
+        ...attribute,
+        name: normalizeDraProcessAttributeName(attribute?.name),
+      }))
+    : [];
   const fallbackRating = dimension?.rating || 'Beginning';
   const attributeScores = attributes.map((attribute) => draAttributeScore(attribute, fallbackRating, difficulty));
   const score = attributeScores.length > 0 ? attributeScores.reduce((sum, attribute) => sum + attribute.score, 0) / attributeScores.length : draRatingToBaseScore(fallbackRating);
