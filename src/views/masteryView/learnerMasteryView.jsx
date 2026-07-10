@@ -418,16 +418,6 @@ export default function LearnerMasteryView({ courseOps }) {
 
   return (
     <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => navigate(`/masteryview/course/${selectedCourseId}`)}
-          className="text-sm text-blue-700 hover:text-blue-900 hover:underline"
-        >
-          ← Course MasteryView
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label htmlFor="learner-masteryview-course" className="block text-sm font-medium text-gray-700 mb-1">
