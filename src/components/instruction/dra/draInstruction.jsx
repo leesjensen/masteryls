@@ -1040,7 +1040,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <div className="mt-4">
             <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
 
-            <details className="not-prose rounded-lg border border-blue-200 bg-blue-50 open:pb-4" open>
+            <div className="not-prose pt-8">
+            <details className="rounded-lg border border-blue-200 bg-blue-50 open:pb-4" open>
               <summary className="cursor-pointer select-none rounded-lg px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100 list-none">How this assessment works</summary>
               <div className="px-4 pt-2 space-y-4">
                 <ol className="space-y-3 text-sm text-gray-700">
@@ -1145,6 +1146,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 </div>
               </div>
             </details>
+            </div>
 
             {(isPreview || !user) && (
               <div className="not-prose mt-4 rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">

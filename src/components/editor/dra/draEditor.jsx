@@ -73,7 +73,7 @@ export default function DraEditor({ courseOps, learningSession }) {
 
       <div className="flex-1 overflow-hidden p-4">
         <div className="h-full overflow-auto min-w-0 border border-gray-200 rounded p-4">
-          <div className="space-y-6 max-w-3xl">
+          <div className="space-y-6">
             <section className="space-y-2">
                 <h2 className="text-sm font-semibold text-gray-700">Title</h2>
                 <input value={model.title} onChange={(e) => updateModel({ title: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" placeholder="Assessment title" />
@@ -92,7 +92,7 @@ export default function DraEditor({ courseOps, learningSession }) {
 
               <section className="space-y-2">
                 <h2 className="text-sm font-semibold text-gray-700">Difficulty: {model.difficulty} / 5</h2>
-                <input type="range" min={1} max={5} step={1} value={model.difficulty} onChange={(e) => updateModel({ difficulty: Number(e.target.value) })} className="w-full" />
+                <input type="range" min={1} max={5} step={1} value={model.difficulty} onChange={(e) => updateModel({ difficulty: Number(e.target.value) })} className="w-full max-w-xs" />
               </section>
 
               <section className="space-y-2">
