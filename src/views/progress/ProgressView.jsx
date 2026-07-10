@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowUp, ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowUp, ArrowDown, ChevronDown, ChevronRight, ExternalLink, Braces, X } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 
 export default function ProgressView({ courseOps, service, user }) {
@@ -36,6 +36,7 @@ export default function ProgressView({ courseOps, service, user }) {
   const [enrolledCourseIds, setEnrolledCourseIds] = useState(() => new Set());
   const [courseTopics, setCourseTopics] = useState([]);
   const [courseLearners, setCourseLearners] = useState([]);
+  const [detailRecord, setDetailRecord] = useState(null); // raw record(s) shown in the JSON popup
 
   // Editors/root can scope activity to any learner; a normal learner only sees their own.
   const canFilterLearners = Boolean(user && (user.isRoot?.() || user.isEditor?.(filter.courseId) || user.isEditor?.()));
@@ -587,7 +588,7 @@ export default function ProgressView({ courseOps, service, user }) {
                             Total Duration
                             {sortConfig.key === 'duration' && (sortConfig.direction === 'asc' ? <ArrowUp data-testid="sort-asc" size={12} className="ml-1 inline" aria-label="Sorted ascending" /> : <ArrowDown data-testid="sort-desc" size={12} className="ml-1 inline" aria-label="Sorted descending" />)}
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Navigate</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -618,13 +619,16 @@ export default function ProgressView({ courseOps, service, user }) {
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{group.eventCount > 1 ? <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">{group.eventCount} events</span> : <span className="text-gray-500">1 event</span>}</td>
                               <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">{formatDuration(group.totalDuration)}</td>
                               <td className="px-6 py-2 whitespace-nowrap">
-                                {group.catalogId && group.topicId && !(group.type === 'instructionView' && group.uniqueTopics && group.uniqueTopics.size > 1) ? (
-                                  <button onClick={() => navigateToTopic(group.catalogId, group.topicId)} className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
-                                    Go to Topic
+                                <div className="flex items-center gap-1">
+                                  {group.catalogId && group.topicId && !(group.type === 'instructionView' && group.uniqueTopics && group.uniqueTopics.size > 1) && (
+                                    <button onClick={() => navigateToTopic(group.catalogId, group.topicId)} title="Go to topic" aria-label="Go to topic" className="inline-flex items-center justify-center p-1.5 text-blue-600 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                      <ExternalLink size={15} aria-hidden="true" />
+                                    </button>
+                                  )}
+                                  <button onClick={() => setDetailRecord(group.eventCount > 1 ? group.events : group.events[0])} title="View details (JSON)" aria-label="View details" className="inline-flex items-center justify-center p-1.5 text-gray-500 rounded hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <Braces size={15} aria-hidden="true" />
                                   </button>
-                                ) : (
-                                  <span className="text-gray-400 text-xs"></span>
-                                )}
+                                </div>
                               </td>
                             </tr>
 
@@ -645,13 +649,16 @@ export default function ProgressView({ courseOps, service, user }) {
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">—</td>
                                   <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-700">{formatDuration(event.duration)}</td>
                                   <td className="px-6 py-2 whitespace-nowrap">
-                                    {event.catalogId && event.topicId ? (
-                                      <button onClick={() => navigateToTopic(event.catalogId, event.topicId)} className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200">
-                                        Go to Topic
+                                    <div className="flex items-center gap-1">
+                                      {event.catalogId && event.topicId && (
+                                        <button onClick={() => navigateToTopic(event.catalogId, event.topicId)} title="Go to topic" aria-label="Go to topic" className="inline-flex items-center justify-center p-1.5 text-blue-600 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                          <ExternalLink size={15} aria-hidden="true" />
+                                        </button>
+                                      )}
+                                      <button onClick={() => setDetailRecord(event)} title="View details (JSON)" aria-label="View details" className="inline-flex items-center justify-center p-1.5 text-gray-500 rounded hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <Braces size={15} aria-hidden="true" />
                                       </button>
-                                    ) : (
-                                      <span className="text-gray-400 text-xs">—</span>
-                                    )}
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
@@ -666,6 +673,20 @@ export default function ProgressView({ courseOps, service, user }) {
           </div>
         </main>
       </div>
+
+      {detailRecord !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDetailRecord(null)} role="dialog" aria-modal="true">
+          <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <h3 className="text-sm font-semibold text-gray-800">Activity details</h3>
+              <button onClick={() => setDetailRecord(null)} aria-label="Close" className="text-gray-500 hover:text-gray-800 focus:outline-none">
+                <X size={18} />
+              </button>
+            </div>
+            <pre className="overflow-auto whitespace-pre-wrap break-words p-4 text-xs text-gray-800">{JSON.stringify(detailRecord, null, 2)}</pre>
+          </div>
+        </div>
+      )}
     </>
   );
 }
