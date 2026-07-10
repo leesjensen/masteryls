@@ -1,160 +1,12 @@
 import React from 'react';
 import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import { computeDraScore, scoreToRatingLevel, getEvidenceValue } from './draScore';
 
-const RATING_LEVELS = ['Beginning', 'Emerging', 'Developing', 'Proficient', 'Exemplary'];
-const RATING_BASE_SCORES = {
-  Beginning: 0,
-  Emerging: 25,
-  Developing: 50,
-  Proficient: 75,
-  Exemplary: 100,
-};
-const POSITIVE_SUPPORT_VALUES = { light: 10, moderate: 20, strong: 34 };
-const NEGATIVE_SUPPORT_VALUES = { light: 10, moderate: 20, strong: 30 };
-const SUPPORT_CAP = 110;
-const DIFFICULTY_SUPPORT_MULTIPLIERS = {
-  1: 1.75,
-  2: 1.4,
-  3: 1.0,
-  4: 0.85,
-  5: 0.7,
-};
 const CONCERN_STYLES = {
   Minor: { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', row: 'border-yellow-200 bg-yellow-50' },
   Moderate: { badge: 'bg-orange-100 text-orange-800 border-orange-300', row: 'border-orange-200 bg-orange-50' },
   Major: { badge: 'bg-red-100 text-red-800 border-red-300', row: 'border-red-200 bg-red-50' },
 };
-
-const DIMENSIONS = [
-  ['process', 'Process'],
-  ['competency', 'Competency'],
-  ['disposition', 'Disposition'],
-];
-
-function getRating(entity, fallback = 'Beginning') {
-  if (entity?.rating) return entity.rating;
-  return fallback;
-}
-
-function ratingToBaseScore(level) {
-  return RATING_BASE_SCORES[level] ?? 0;
-}
-
-function scoreToRatingLevel(score) {
-  if (score >= 80) return 'Exemplary';
-  if (score >= 60) return 'Proficient';
-  if (score >= 40) return 'Developing';
-  if (score >= 20) return 'Emerging';
-  return 'Beginning';
-}
-
-function normalizeEvidenceItem(item) {
-  if (typeof item === 'string') {
-    return { detail: item, polarity: 'positive', impact: 'moderate' };
-  }
-  if (!item || typeof item !== 'object') {
-    return { detail: '', polarity: 'positive', impact: 'moderate' };
-  }
-
-  const detail = typeof item.detail === 'string' ? item.detail : typeof item.text === 'string' ? item.text : '';
-  const polarity = item.polarity === 'negative' ? 'negative' : 'positive';
-  const impact = ['light', 'moderate', 'strong'].includes(item.impact) ? item.impact : 'moderate';
-  return { detail, polarity, impact };
-}
-
-function getEvidenceValue(item) {
-  if (item.polarity === 'negative') {
-    return -NEGATIVE_SUPPORT_VALUES[item.impact];
-  }
-  return POSITIVE_SUPPORT_VALUES[item.impact];
-}
-
-function getDifficultySupportMultiplier(difficulty) {
-  const normalizedDifficulty = Math.max(1, Math.min(5, Math.round(Number(difficulty) || 3)));
-  return DIFFICULTY_SUPPORT_MULTIPLIERS[normalizedDifficulty] || DIFFICULTY_SUPPORT_MULTIPLIERS[3];
-}
-
-function getEvidenceStats(items, difficulty = 3) {
-  const normalized = (items || [])
-    .map(normalizeEvidenceItem)
-    .filter((item) => item.detail);
-
-  const positiveSupportRaw = normalized
-    .filter((item) => item.polarity === 'positive')
-    .reduce((sum, item) => sum + getEvidenceValue(item), 0);
-  const negativeSupport = normalized
-    .filter((item) => item.polarity === 'negative')
-    .reduce((sum, item) => sum + Math.abs(getEvidenceValue(item)), 0);
-
-  const positiveSupport = Math.min(SUPPORT_CAP, positiveSupportRaw);
-  const netSupport = Math.max(0, positiveSupport - negativeSupport);
-  const difficultyMultiplier = getDifficultySupportMultiplier(difficulty);
-  const adjustedSupport = Math.max(0, Math.min(100, netSupport * difficultyMultiplier));
-  const supportFactor = adjustedSupport / 100;
-
-  return {
-    items: normalized,
-    count: normalized.length,
-    positiveSupport,
-    negativeSupport,
-    netSupport,
-    adjustedSupport,
-    supportFactor,
-  };
-}
-
-function calculateAttributeScore(attribute, fallbackRating, difficulty) {
-  const baseScore = ratingToBaseScore(getRating(attribute, fallbackRating));
-  const evidenceStats = getEvidenceStats(attribute?.evidence, difficulty);
-  const supportedScore = baseScore * (0.5 + (0.5 * evidenceStats.supportFactor));
-  return {
-    baseScore,
-    supportedScore,
-    displayedLevel: scoreToRatingLevel(supportedScore),
-    evidenceStats,
-  };
-}
-
-function calculateDimensionScore(dimension, difficulty) {
-  const fallbackRating = getRating(dimension);
-  const attributes = Array.isArray(dimension?.attributes) ? dimension.attributes : [];
-
-  if (attributes.length === 0) {
-    const baseScore = ratingToBaseScore(fallbackRating);
-    return {
-      summary: dimension?.summary || '',
-      score: baseScore,
-      displayedLevel: scoreToRatingLevel(baseScore),
-      attributes: [],
-      evidenceStats: { count: 0, positiveSupport: 0, negativeSupport: 0, netSupport: 0, supportFactor: 0 },
-    };
-  }
-
-  const scoredAttributes = attributes.map((attribute) => ({
-    ...attribute,
-    calculation: calculateAttributeScore(attribute, fallbackRating, difficulty),
-  }));
-
-  const score = scoredAttributes.reduce((sum, attribute) => sum + attribute.calculation.supportedScore, 0) / scoredAttributes.length;
-  const evidenceStats = scoredAttributes.reduce((acc, attribute) => {
-    const stats = attribute.calculation.evidenceStats;
-    acc.count += stats.count;
-    acc.positiveSupport += stats.positiveSupport;
-    acc.negativeSupport += stats.negativeSupport;
-    return acc;
-  }, { count: 0, positiveSupport: 0, negativeSupport: 0 });
-  evidenceStats.netSupport = Math.max(0, evidenceStats.positiveSupport - evidenceStats.negativeSupport);
-  evidenceStats.adjustedSupport = Math.max(0, Math.min(100, evidenceStats.netSupport * getDifficultySupportMultiplier(difficulty)));
-  evidenceStats.supportFactor = evidenceStats.adjustedSupport / 100;
-
-  return {
-    summary: dimension?.summary || '',
-    score,
-    displayedLevel: scoreToRatingLevel(score),
-    attributes: scoredAttributes,
-    evidenceStats,
-  };
-}
 
 function getRatingTone(level) {
   switch (level) {
@@ -378,14 +230,7 @@ export default function DraEvaluation({ evaluation, difficulty = 3 }) {
   if (!evaluation) return null;
 
   const concerns = evaluation.concerns || [];
-  const process = calculateDimensionScore(evaluation.process, difficulty);
-  const competency = calculateDimensionScore(evaluation.competency, difficulty);
-  const disposition = calculateDimensionScore(evaluation.disposition, difficulty);
-  const characterScore = (competency.score + disposition.score) / 2;
-  const characterFactor = characterScore / 100;
-  const processMultiplier = 0.5 + (0.5 * characterFactor);
-  const rawFinalScore = process.score * processMultiplier;
-  const overallLevelFromTotal = scoreToRatingLevel(rawFinalScore);
+  const { process, competency, disposition, characterScore, processMultiplier, rawScore: rawFinalScore, level: overallLevelFromTotal } = computeDraScore(evaluation, difficulty);
   const overallTone = getRatingTone(overallLevelFromTotal);
   const totalEvidence = [process, competency, disposition].reduce((sum, dimension) => sum + dimension.evidenceStats.count, 0);
   const totalPositiveSupport = [process, competency, disposition].reduce((sum, dimension) => sum + dimension.evidenceStats.positiveSupport, 0);

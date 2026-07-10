@@ -1,6 +1,7 @@
 import React from 'react';
 import Markdown from '../../Markdown';
 import { parseDraMarkdown } from '../../../utils/draMarkdown';
+import { summarizeDraRun } from './draScore';
 import DraInvestigation from './draInvestigation';
 import DraEvaluation from './draEvaluation';
 import DraCoach from './draCoach';
@@ -484,13 +485,39 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setIsDirty(true);
   }
 
+  // The run whose score/items represent the topic in enrollment.progress: the final run
+  // when one exists (it is the graded assessment), otherwise the selected/latest practice run.
+  function pickSummaryRun(state) {
+    const s = normalizeDraState(state);
+    if (s.finalScenario) return s.finalScenario;
+    return s.practiceScenarios.find((r) => r.scenarioRunId === s.selectedPracticeScenarioId) || s.practiceScenarios[s.practiceScenarios.length - 1] || null;
+  }
+
+  // Roll the graded run into enrollment.progress (score/items/state/last-activity). The
+  // history row is throttled by courseOps unless `force`.
+  async function syncDraProgress(state, { force = false } = {}) {
+    if (draReadOnly || !courseOps.updateDraProgress) return;
+    const run = pickSummaryRun(state);
+    if (!run || run.state === 'notStarted') return;
+    const summary = summarizeDraRun(run, run.difficulty ?? params.difficulty);
+    try {
+      await courseOps.updateDraProgress(
+        { state: run.state, mode: run.mode, itemsCompleted: summary.itemsCompleted, totalItems: summary.totalItems, masteryScore: summary.score },
+        { force },
+      );
+    } catch {
+      // progress reporting is best-effort; never block the learner's save
+    }
+  }
+
   // Auto-saves without marking dirty — used for definitive actions (generate, cancel, complete).
-  async function autoSaveState(nextState) {
+  async function autoSaveState(nextState, { forceProgressRow = false } = {}) {
     const normalizedState = normalizeDraState(nextState);
     setDraState(normalizedState);
     setIsDirty(false);
     if (!draReadOnly) {
       await courseOps.saveDraState(normalizedState);
+      await syncDraProgress(normalizedState, { force: forceProgressRow });
     }
   }
 
@@ -513,7 +540,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       nextSelectedPracticeScenarioId = options.selectPracticeScenarioId ?? nextDetails.scenarioRunId;
     }
 
-    await autoSaveState({ practiceScenarios: nextPracticeScenarios, selectedPracticeScenarioId: nextSelectedPracticeScenarioId, finalScenario: nextFinalScenario });
+    await autoSaveState({ practiceScenarios: nextPracticeScenarios, selectedPracticeScenarioId: nextSelectedPracticeScenarioId, finalScenario: nextFinalScenario }, { forceProgressRow: options.forceProgressRow });
   }
 
   async function handleSave() {
@@ -521,6 +548,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     setSaving(true);
     try {
       await courseOps.saveDraState(draState);
+      await syncDraProgress(draState);
       setIsDirty(false);
     } catch {
       alert('Unable to save. Please try again.');
@@ -721,8 +749,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         stageNotes,
         identified: primaryStakeholder ? [{ ...primaryStakeholder, kind: 'stakeholder' }] : [],
       };
-      await autoSaveDetails(nextDetails, { selectPracticeScenarioId: runMode === 'practice' ? scenarioRunId : selectedPracticeScenarioId });
-      await courseOps.addProgress(null, null, 'dra', 0, { state: 'inProgress', mode: runMode });
+      await autoSaveDetails(nextDetails, { selectPracticeScenarioId: runMode === 'practice' ? scenarioRunId : selectedPracticeScenarioId, forceProgressRow: true });
     } catch (ex) {
       alert(`Unable to generate a scenario. Please try again. ${ex.message || ''}`);
     } finally {
@@ -839,9 +866,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         // Fall back to the most recent evaluation if the final scoring call fails.
       }
       const completedDetails = { ...details, evaluation, state: 'completed', completedAt: new Date().toISOString() };
-      await autoSaveDetails(completedDetails);
+      await autoSaveDetails(completedDetails, { forceProgressRow: true });
       selectTab('evaluation');
-      await courseOps.addProgress(null, null, 'dra', 0, { state: 'completed', mode: details.mode, completedAt: completedDetails.completedAt });
     } finally {
       setBusyAction(null);
     }

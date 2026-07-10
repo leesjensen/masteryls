@@ -1244,6 +1244,14 @@ Requirements:
     }
   }
 
+  // Roll a DRA run summary into enrollment.progress (always) and append a `dra` history
+  // row (throttled to 15 min, unless `force` for generate/complete). `summary` carries
+  // { state, mode, itemsCompleted, totalItems, masteryScore }.
+  async function updateDraProgress(summary = {}, { force = false } = {}) {
+    if (observeSession?.active && learningSession?.observeMode) return null;
+    return addProgress(null, null, 'dra', 0, { draState: summary.state, ...summary }, { throttleRowMs: PROGRESS_ROW_THROTTLE_MS, force });
+  }
+
   async function generateDraScenario(params) {
     return aiDraScenarioGenerator(params || {});
   }
@@ -1279,13 +1287,36 @@ Requirements:
     return service.getSubmissionFileUrl(storagePath);
   }
 
-  async function addProgress(providedUser, interactionId, type, duration = 0, details = {}) {
+  // Throttle how often a heartbeat/snapshot progress ROW is inserted, per (topic, type),
+  // so long sessions don't accumulate thousands of records. The cached enrollment summary
+  // is always updated (below), so MasteryView stays current between rows.
+  const PROGRESS_ROW_THROTTLE_MS = 15 * 60 * 1000;
+  const lastProgressRowAtRef = React.useRef({});
+
+  function _isThrottleableRowType(type) {
+    return typeof type === 'string' && type.endsWith('View');
+  }
+
+  async function addProgress(providedUser, interactionId, type, duration = 0, details = {}, options = {}) {
     if (observeSession?.active && learningSession?.observeMode) {
       return null;
     }
     const progressUser = providedUser || user;
     if (progressUser) {
       _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type, details, duration);
+
+      // Decide whether to write an actual history row now, or only update the cache.
+      const throttleMs = options.throttleRowMs != null ? options.throttleRowMs : _isThrottleableRowType(type) ? PROGRESS_ROW_THROTTLE_MS : 0;
+      if (throttleMs > 0 && !options.force) {
+        const key = `${learningSession?.topic?.id || ''}:${type}`;
+        const now = Date.now();
+        const lastAt = lastProgressRowAtRef.current[key] || 0;
+        if (now - lastAt < throttleMs) {
+          return null; // cache updated; skip the row this time
+        }
+        lastProgressRowAtRef.current[key] = now;
+      }
+
       const saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
 
       const topic = learningSession?.topic;
@@ -1414,7 +1445,7 @@ Requirements:
     if (!enrollment || !topic) return;
 
     var update = false;
-    if (type === 'instructionView' || type === 'embeddedView' || type === 'quizSubmit') {
+    if (type === 'instructionView' || type === 'embeddedView' || type === 'draView' || type === 'quizSubmit') {
       update = _getEnrollmentProgress(enrollment, topic.id);
 
       if (duration > 0) {
@@ -1452,12 +1483,22 @@ Requirements:
         enrollment.progress[topic.id].examCompleted = true;
         update = true;
       }
-    } else if (type === 'dra' && details?.state === 'completed') {
-      update = _getEnrollmentProgress(enrollment, topic.id);
-      if (!enrollment.progress[topic.id].draCompleted) {
-        enrollment.progress[topic.id].draCompleted = true;
-        update = true;
+    } else if (type === 'dra') {
+      _getEnrollmentProgress(enrollment, topic.id);
+      const entry = enrollment.progress[topic.id];
+      if (details?.draState || details?.state) entry.draState = details.draState || details.state;
+      if (details?.mode) entry.mode = details.mode;
+      if (Number.isFinite(Number(details?.itemsCompleted))) entry.itemsCompleted = Number(details.itemsCompleted);
+      if (Number.isFinite(Number(details?.totalItems))) entry.totalItems = Number(details.totalItems);
+      if (details?.masteryScore == null) {
+        // leave existing masteryScore untouched until an evaluation exists
+      } else if (Number.isFinite(Number(details.masteryScore))) {
+        entry.masteryScore = Number(details.masteryScore);
       }
+      if (details?.state === 'completed') entry.draCompleted = true;
+      entry.lastInteractionAt = new Date().toISOString();
+      update = true;
+      enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
     }
 
     // Accumulate total time spent across all topics
@@ -1493,11 +1534,14 @@ Requirements:
     let completedTopics = 0;
 
     publishedTopics.forEach((topic) => {
-      let topicPercent = enrollment.progress[topic.id] ? 1 : 0;
-      if (topic.interactions && topic.interactions.length > 0) {
-        const completedForTopic = enrollment.progress[topic.id]?.interactions || [];
-        const interactionPercent = completedForTopic.length / topic.interactions.length;
-        topicPercent = interactionPercent;
+      const topicProgress = enrollment.progress[topic.id];
+      let topicPercent = topicProgress ? 1 : 0;
+      if (topicProgress && Number.isFinite(Number(topicProgress.masteryScore))) {
+        // Scored topics (e.g. DRA) contribute their assessment score directly.
+        topicPercent = Math.max(0, Math.min(1, Number(topicProgress.masteryScore) / 100));
+      } else if (topic.interactions && topic.interactions.length > 0) {
+        const completedForTopic = topicProgress?.interactions || [];
+        topicPercent = completedForTopic.length / topic.interactions.length;
       }
       completedTopics += topicPercent;
     });
@@ -1946,6 +1990,7 @@ Requirements:
     getExamState,
     getDraState,
     saveDraState,
+    updateDraProgress,
     generateDraScenario,
     getDraStakeholderResponse,
     getDraEvaluation,

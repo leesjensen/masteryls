@@ -311,14 +311,23 @@ export default function LearnerMasteryView({ courseOps }) {
           if (completedSet.has(id)) return sum + 100;
           return sum;
         }, 0);
-        const avgPercent = interactionIds.length > 0 ? Math.round((scoreSum / interactionIds.length) * 100) / 100 : null;
+        let avgPercent = interactionIds.length > 0 ? Math.round((scoreSum / interactionIds.length) * 100) / 100 : null;
+        let itemsCompleted = completedInteractions;
+        let totalItems = interactionIds.length;
+
+        // DRA topics report stages contributed to (items) and the assessment score.
+        if (topic.type === 'dra') {
+          itemsCompleted = Number.isFinite(Number(topicProgress.itemsCompleted)) ? Number(topicProgress.itemsCompleted) : 0;
+          totalItems = Number.isFinite(Number(topicProgress.totalItems)) ? Number(topicProgress.totalItems) : 0;
+          avgPercent = Number.isFinite(Number(topicProgress.masteryScore)) ? Number(topicProgress.masteryScore) : null;
+        }
 
         return {
           topicId: topic.id,
           topicType: topic.type,
           topicTitle: topic.title || 'Untitled topic',
-          totalInteractions: interactionIds.length,
-          completedInteractions,
+          totalInteractions: totalItems,
+          completedInteractions: itemsCompleted,
           avgPercent,
           latestInteractionAt: topicProgress.lastInteractionAt || null,
           timeSpent: typeof topicProgress.timeSpent === 'number' ? topicProgress.timeSpent : 0,
@@ -525,8 +534,8 @@ export default function LearnerMasteryView({ courseOps }) {
                   </button>
                 </th>
                 <th className="text-left px-3 py-2 font-semibold">
-                  <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('completedInteractions')} aria-label="Sort by interactions completed">
-                    {detailSortLabel('completedInteractions', 'Interactions Completed')}
+                  <button type="button" className="hover:text-gray-900" onClick={() => toggleDetailSort('completedInteractions')} aria-label="Sort by items completed">
+                    {detailSortLabel('completedInteractions', 'Items Completed')}
                   </button>
                 </th>
                 <th className="text-left px-3 py-2 font-semibold">
