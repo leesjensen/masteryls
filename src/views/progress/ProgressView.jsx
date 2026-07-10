@@ -362,8 +362,11 @@ export default function ProgressView({ courseOps, service, user }) {
     const colors = {
       instructionView: 'bg-blue-100 text-blue-800',
       embeddedView: 'bg-purple-100 text-purple-800',
+      scheduleView: 'bg-cyan-100 text-cyan-800',
       quizSubmit: 'bg-green-100 text-green-800',
       exam: 'bg-amber-300 text-amber-800',
+      draUpdate: 'bg-indigo-100 text-indigo-800',
+      draView: 'bg-indigo-100 text-indigo-800',
       userLogout: 'bg-gray-400 text-gray-50',
       userLogin: 'bg-gray-100 text-gray-800',
       note: 'bg-yellow-100 text-yellow-800',

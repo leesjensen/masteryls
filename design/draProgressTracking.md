@@ -93,7 +93,7 @@ Each flush rolls duration into `totalTimeSpent` + `lastActivityAt`; add `draView
 `_updateEnrollmentCachedInfo` so DRA time accrues on the topic.
 
 ### Row throttle (all topics) — 15 minutes
-Time-view rows (`instructionView`/`embeddedView`/`draView`/…) and DRA snapshot (`dra`)
+Time-view rows (`instructionView`/`embeddedView`/`draView`/…) and DRA snapshot (`draUpdate`)
 rows are written at most once per **15 min per topic**, plus a final flush on leave.
 Discrete, meaningful events are **never** throttled and always write a row:
 `quizSubmit`, `exam` start/submit, and DRA **generate**/**complete**. Implemented as a
@@ -103,7 +103,7 @@ is **not** throttled, so accrued time/last-activity/summary stay current between
 ### B. DRA progress history rows (req 4.1)
 - **Summary (cache):** on each DRA save, update `enrollment.progress[topicId]` (score,
   items, state, time, lastActivity) — no new row.
-- **History (rows):** append a `dra` snapshot row on **generate**/**complete** (always)
+- **History (rows):** append a `draUpdate` snapshot row on **generate**/**complete** (always)
   and otherwise at most once per **15 min**, carrying
   `{ state, mode, scenarioRunId, score, itemsCompleted, totalItems }`.
 - Time history is the throttled `draView` rows from §A. Together this mirrors other topics
@@ -111,7 +111,7 @@ is **not** throttled, so accrued time/last-activity/summary stay current between
 
 ### C. `enrollment.progress` DRA summary (req 4.2)
 On DRA save/complete, update `enrollment.progress[topicId]` via a small addition to
-`_updateEnrollmentCachedInfo` (new `dra` handling that runs on any `dra` progress, not
+`_updateEnrollmentCachedInfo` (new `draUpdate` handling that runs on any `draUpdate` progress, not
 only completion):
 ```
 enrollment.progress[topicId] = {
@@ -152,11 +152,11 @@ Root `totalTimeSpent` and `lastActivityAt` continue to update as today.
 - `src/components/instruction/dra/draEvaluation.jsx` — use `computeDraScore`.
 - `src/components/instruction/dra/draInstruction.jsx` — on save/complete: compute
   `{ score, itemsCompleted, totalItems }`, call the new progress-summary op, append the
-  throttled `dra` history row, and `flush()` the time tracker.
+  throttled `draUpdate` history row, and `flush()` the time tracker.
 - `src/hooks/useProgressTracking.jsx` — periodic/visibility/pagehide flush + idle (§A).
 - `src/components/instruction/instruction.jsx` — stabilize `onProgress`; pass through.
 - `src/hooks/useCourseOperations.jsx` — `_updateEnrollmentCachedInfo` (`draView` per-topic
-  time + `dra` summary), `_calculateEnrollmentProgress` (`masteryScore`), and a helper
+  time + `draUpdate` summary), `_calculateEnrollmentProgress` (`masteryScore`), and a helper
   like `updateDraProgress({ score, itemsCompleted, totalItems, state, mode, duration })`.
 - `src/views/masteryView/learnerMasteryView.jsx` — rename label + DRA summary sourcing.
 - Constants: `ITEM_CHAR_THRESHOLD`, `IDLE_LIMIT_MS`, `TIME_FLUSH_INTERVAL_MS`.
@@ -194,7 +194,7 @@ derives `masteryPercent`, `totalTimeSpent`, `lastActivityAt` from `enrollment.pr
   for `*View` types); the enrollment-cache update is never throttled.
 - **DRA**: `syncDraProgress` runs on every save (`autoSaveState`/`handleSave`), forced on
   generate/complete; grade run = final-then-latest. `updateDraProgress` in courseOps
-  merges the summary into `enrollment.progress[topicId]` and appends a throttled `dra` row.
+  merges the summary into `enrollment.progress[topicId]` and appends a throttled `draUpdate` row.
 - **Time-flush-on-save was intentionally not wired.** `lastActivityAt` already updates on
   every save via the summary path (`updateDraProgress` → `_updateEnrollmentCachedInfo`),
   and topic time comes from the `draView` periodic/visibility flushes — so the "last used
@@ -205,7 +205,7 @@ derives `masteryPercent`, `totalTimeSpent`, `lastActivityAt` from `enrollment.pr
 
 - Unit: `draScore` (score for known evaluations), items counter (threshold), idle/flush
   logic where feasible.
-- E2E: DRA run records a `draView` duration + `dra` summary; `enrollment.progress[topic]`
+- E2E: DRA run records a `draView` duration + `draUpdate` summary; `enrollment.progress[topic]`
   gains `itemsCompleted/totalItems/masteryScore/timeSpent`; drill-down shows "Items
   Completed" and the score; Mastery reflects the DRA score. Existing `editing.spec` still
   green (shared time-tracking change).

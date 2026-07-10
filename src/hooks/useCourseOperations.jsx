@@ -1228,7 +1228,7 @@ Requirements:
 
   async function getDraState() {
     if (learningSession?.enrollment && learningSession?.topic) {
-      const progress = await service.getProgress({ types: ['dra'], topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
+      const progress = await service.getProgress({ types: ['dra', 'draUpdate'], topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id });
       if (progress?.data?.length > 0) {
         const state = await service.loadDraState(learningSession.enrollment.id, learningSession.topic.id);
         if (state) return state;
@@ -1249,7 +1249,7 @@ Requirements:
   // { state, mode, itemsCompleted, totalItems, masteryScore }.
   async function updateDraProgress(summary = {}, { force = false } = {}) {
     if (observeSession?.active && learningSession?.observeMode) return null;
-    return addProgress(null, null, 'dra', 0, { draState: summary.state, ...summary }, { throttleRowMs: PROGRESS_ROW_THROTTLE_MS, force });
+    return addProgress(null, null, 'draUpdate', 0, { draState: summary.state, ...summary }, { throttleRowMs: PROGRESS_ROW_THROTTLE_MS, force });
   }
 
   async function generateDraScenario(params) {
@@ -1483,7 +1483,7 @@ Requirements:
         enrollment.progress[topic.id].examCompleted = true;
         update = true;
       }
-    } else if (type === 'dra') {
+    } else if (type === 'draUpdate') {
       _getEnrollmentProgress(enrollment, topic.id);
       const entry = enrollment.progress[topic.id];
       if (details?.draState || details?.state) entry.draState = details.draState || details.state;
