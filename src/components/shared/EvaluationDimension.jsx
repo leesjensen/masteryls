@@ -28,7 +28,7 @@ function EvidenceBadge({ item }) {
     ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
     : 'border-red-300 bg-red-50 text-red-700';
 
-  return <span className={`ml-2 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${classes}`}>{label}</span>;
+  return <span className={`ml-1 inline-block whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${classes}`}>{label}</span>;
 }
 
 export function AttributeRow({ attr }) {
@@ -75,9 +75,7 @@ export function AttributeRow({ attr }) {
           </div>
           <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
             {evidenceStats.items.map((item, index) => (
-              <li key={index}>
-                <span>{item.detail} <span className="whitespace-nowrap"><EvidenceBadge item={item} /></span></span>
-              </li>
+              <li key={index}>{item.detail}{' '}<EvidenceBadge item={item} /></li>
             ))}
           </ul>
         </div>
