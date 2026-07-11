@@ -922,6 +922,26 @@ Rules:
   };
 }
 
+export async function aiInterviewJobDescriptionGenerator({ discipline, jobTitle, difficulty }) {
+  const d = Math.max(1, Math.min(5, Math.round(Number(difficulty) || 3)));
+  const seniority = INTERVIEW_DIFFICULTY_TABLE[d].seniority;
+
+  const prompt = `Write a realistic job description for the following role.
+
+Job title: ${jobTitle || 'professional position'}
+Discipline: ${discipline || 'general'}
+Seniority level: ${seniority}
+
+Write a job description in Markdown. Include:
+- A short opening paragraph describing the team and what the role involves
+- A "## Responsibilities" section with 5–7 bullet points
+- A "## Requirements" section with 4–6 bullet points calibrated to ${seniority} experience
+
+Keep the tone professional. Do not invent a specific company name — write as if from a plausible company in the field. Return only the Markdown text with no extra commentary or code fences.`;
+
+  return makeSimpleAiRequest(prompt);
+}
+
 function parseJsonResponse(response) {
   const text = String(response || '').trim();
   // Strip trailing commas before } or ] — a common AI output error.

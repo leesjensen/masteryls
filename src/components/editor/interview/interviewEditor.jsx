@@ -1,10 +1,12 @@
 import React from 'react';
+import { Sparkles } from 'lucide-react';
 import { parseInterviewMarkdown, serializeInterviewMarkdown, createEmptyInterviewModel } from '../../../utils/interviewMarkdown';
 
 export default function InterviewEditor({ courseOps, learningSession }) {
   const [model, setModel] = React.useState(createEmptyInterviewModel());
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
+  const [generatingJobDesc, setGeneratingJobDesc] = React.useState(false);
 
   React.useEffect(() => {
     const topic = learningSession?.topic;
@@ -34,6 +36,21 @@ export default function InterviewEditor({ courseOps, learningSession }) {
       setDirty(false);
     } finally {
       setCommitting(false);
+    }
+  }
+
+  async function generateJobDescription() {
+    if (generatingJobDesc) return;
+    setGeneratingJobDesc(true);
+    try {
+      const result = await courseOps.generateInterviewJobDescription({
+        discipline: model.discipline,
+        jobTitle: model.jobTitle,
+        difficulty: model.difficulty,
+      });
+      if (result) updateModel({ jobDescription: result });
+    } finally {
+      setGeneratingJobDesc(false);
     }
   }
 
@@ -100,7 +117,20 @@ export default function InterviewEditor({ courseOps, learningSession }) {
             </section>
 
             <section className="space-y-2">
-              <h2 className="text-sm font-semibold text-gray-700">Job description</h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-gray-700">Job description</h2>
+                <button
+                  type="button"
+                  onClick={generateJobDescription}
+                  disabled={generatingJobDesc}
+                  className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-blue-700 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-60"
+                >
+                  {generatingJobDesc
+                    ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-blue-300 border-t-blue-700" />
+                    : <Sparkles size={12} />}
+                  {generatingJobDesc ? 'Generating…' : 'Generate'}
+                </button>
+              </div>
               <textarea value={model.jobDescription} onChange={(e) => updateModel({ jobDescription: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" rows={6} placeholder="Describe the role, responsibilities, and requirements." />
             </section>
 

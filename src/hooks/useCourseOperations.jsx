@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator, aiInterviewScenarioGenerator, aiInterviewSessionResponseGenerator, aiInterviewEvaluationGenerator, aiInterviewCoachGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator, aiInterviewScenarioGenerator, aiInterviewSessionResponseGenerator, aiInterviewEvaluationGenerator, aiInterviewCoachGenerator, aiInterviewJobDescriptionGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -1308,6 +1308,10 @@ Requirements:
     return aiInterviewCoachGenerator(scenario, sessions, interviewers, difficulty, evaluation);
   }
 
+  async function generateInterviewJobDescription(params) {
+    return aiInterviewJobDescriptionGenerator(params || {});
+  }
+
   async function uploadSubmissionFile({ interactionId, file }) {
     const enrollmentId = learningSession?.enrollment?.id;
     if (!enrollmentId) throw new Error('Not enrolled in this course.');
@@ -2039,6 +2043,7 @@ Requirements:
     saveInterviewState,
     updateInterviewProgress,
     generateInterviewScenario,
+    generateInterviewJobDescription,
     getInterviewSessionResponse,
     getInterviewEvaluation,
     getInterviewCoaching,
