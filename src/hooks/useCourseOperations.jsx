@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator, aiInterviewScenarioGenerator, aiInterviewSessionResponseGenerator, aiInterviewEvaluationGenerator, aiInterviewCoachGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -8,6 +8,7 @@ import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapsho
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
 import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
+import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
@@ -1137,6 +1138,9 @@ ${topicDescription || 'overview content placeholder'}`;
       case 'dra':
         basicContent = createInitialDraMarkdown(topic.title || 'Disciplinary Reasoning Assessment');
         break;
+      case 'interview':
+        basicContent = createInitialInterviewMarkdown(topic.title || 'Interview Assessment');
+        break;
       case 'exam':
         if (topicDescription && topicDescription.trim().length > 0) {
           basicContent = await aiExamGenerator(courseContext.description, topic.title, topicDescription);
@@ -1266,6 +1270,42 @@ Requirements:
 
   async function getDraCoaching(scenario, transcripts, reasoningRecord, activeStage, difficulty, evaluation) {
     return aiDraCoachGenerator(scenario, transcripts, reasoningRecord, activeStage, difficulty, evaluation);
+  }
+
+  async function getInterviewState() {
+    if (learningSession?.enrollment && learningSession?.topic) {
+      const state = await service.loadInterviewState(learningSession.enrollment.id, learningSession.topic.id);
+      if (state) return state;
+    }
+    return { practiceRuns: [], selectedPracticeRunId: null, finalRun: null };
+  }
+
+  async function saveInterviewState(state) {
+    if (observeSession?.active && learningSession?.observeMode) return;
+    if (learningSession?.enrollment && learningSession?.topic) {
+      await service.saveInterviewState(learningSession.enrollment.id, learningSession.topic.id, state);
+    }
+  }
+
+  async function updateInterviewProgress(summary = {}, { force = false } = {}) {
+    if (observeSession?.active && learningSession?.observeMode) return null;
+    return addProgress(null, null, 'interviewUpdate', 0, { interviewState: summary.state, ...summary }, { throttleRowMs: PROGRESS_ROW_THROTTLE_MS, force });
+  }
+
+  async function generateInterviewScenario(params) {
+    return aiInterviewScenarioGenerator(params || {});
+  }
+
+  async function getInterviewSessionResponse(scenario, session, interviewers, messages, difficulty) {
+    return aiInterviewSessionResponseGenerator(scenario, session, interviewers, messages, difficulty);
+  }
+
+  async function getInterviewEvaluation(scenario, sessions, interviewers, difficulty, previousEvaluation) {
+    return aiInterviewEvaluationGenerator(scenario, sessions, interviewers, difficulty, previousEvaluation);
+  }
+
+  async function getInterviewCoaching(scenario, sessions, interviewers, difficulty, evaluation) {
+    return aiInterviewCoachGenerator(scenario, sessions, interviewers, difficulty, evaluation);
   }
 
   async function uploadSubmissionFile({ interactionId, file }) {
@@ -1995,6 +2035,13 @@ Requirements:
     getDraStakeholderResponse,
     getDraEvaluation,
     getDraCoaching,
+    getInterviewState,
+    saveInterviewState,
+    updateInterviewProgress,
+    generateInterviewScenario,
+    getInterviewSessionResponse,
+    getInterviewEvaluation,
+    getInterviewCoaching,
     repairCanvas,
     unlinkFromCanvas,
     linkToCanvas,

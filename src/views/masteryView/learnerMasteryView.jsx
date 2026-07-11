@@ -321,6 +321,12 @@ export default function LearnerMasteryView({ courseOps }) {
           totalItems = Number.isFinite(Number(topicProgress.totalItems)) ? Number(topicProgress.totalItems) : 0;
           avgPercent = Number.isFinite(Number(topicProgress.masteryScore)) ? Number(topicProgress.masteryScore) : null;
         }
+        // Interview topics report sessions completed and the overall mastery score.
+        if (topic.type === 'interview') {
+          itemsCompleted = Number.isFinite(Number(topicProgress.sessionsCompleted)) ? Number(topicProgress.sessionsCompleted) : 0;
+          totalItems = Number.isFinite(Number(topicProgress.totalSessions)) ? Number(topicProgress.totalSessions) : 0;
+          avgPercent = Number.isFinite(Number(topicProgress.masteryScore)) ? Number(topicProgress.masteryScore) : null;
+        }
 
         return {
           topicId: topic.id,

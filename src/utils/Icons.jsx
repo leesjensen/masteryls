@@ -1,5 +1,5 @@
 import React from 'react';
-import { Video, Images, BookCheck, ClipboardCheck, File, CalendarDays, Telescope } from 'lucide-react';
+import { Video, Images, BookCheck, ClipboardCheck, File, CalendarDays, Telescope, Briefcase } from 'lucide-react';
 
 export function GitHub({ size = 16, color = '#444' }) {
   return (
@@ -36,6 +36,8 @@ export function TopicIcon({ type }) {
       return <ClipboardCheck size={16} className="text-gray-600" />;
     case 'dra':
       return <Telescope size={16} className="text-gray-600" />;
+    case 'interview':
+      return <Briefcase size={16} className="text-gray-600" />;
     case 'schedule':
       return <CalendarDays size={16} className="text-gray-600" />;
     default:

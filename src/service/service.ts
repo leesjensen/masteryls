@@ -723,50 +723,110 @@ class Service {
     return data?.signedUrl || '';
   }
 
-  private async draUpload(path: string, data: object): Promise<void> {
+  private async topicStateUpload(path: string, data: object): Promise<void> {
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const { error } = await this.supabase.storage.from('dra-state').upload(path, blob, { upsert: true, contentType: 'application/json' });
     if (error) throw new Error(error.message);
   }
 
-  private async draDownload(path: string): Promise<any | null> {
+  private async topicStateDownload(path: string): Promise<any | null> {
     const { data, error } = await this.supabase.storage.from('dra-state').download(path);
     if (error) return null;
     return JSON.parse(await (data as Blob).text());
+  }
+
+  private async saveTopicStateCollection(
+    base: string,
+    indexFile: string,
+    itemPrefix: string,
+    index: object,
+    items: Array<{ id: string; data: any }>,
+  ): Promise<void> {
+    await Promise.all([
+      this.topicStateUpload(`${base}/${indexFile}`, index),
+      ...items.map(({ id, data }) => this.topicStateUpload(`${base}/${itemPrefix}-${id}.json`, data)),
+    ]);
+  }
+
+  private async loadTopicStateCollection(
+    base: string,
+    indexFile: string,
+    itemPrefix: string,
+    getPracticeIds: (index: any) => string[],
+    getFinalId: (index: any) => string | null,
+  ): Promise<{ index: any; items: any[]; finalItem: any | null } | null> {
+    const index = await this.topicStateDownload(`${base}/${indexFile}`);
+    if (!index) return null;
+    const [items, finalItem] = await Promise.all([
+      Promise.all(getPracticeIds(index).map((id) => this.topicStateDownload(`${base}/${itemPrefix}-${id}.json`))),
+      getFinalId(index) ? this.topicStateDownload(`${base}/${itemPrefix}-${getFinalId(index)}.json`) : Promise.resolve(null),
+    ]);
+    return { index, items: items.filter(Boolean), finalItem };
   }
 
   async saveDraState(enrollmentId: string, topicId: string, state: any): Promise<void> {
     const base = `enrollments/${enrollmentId}/topics/${topicId}`;
     const practiceScenarios: any[] = Array.isArray(state.practiceScenarios) ? state.practiceScenarios : [];
     const finalScenario = state.finalScenario || null;
-
-    const index = {
-      selectedPracticeScenarioId: state.selectedPracticeScenarioId || null,
-      finalScenarioId: finalScenario?.scenarioRunId || null,
-      practiceScenarioIds: practiceScenarios.map((s: any) => s.scenarioRunId),
-    };
-
-    await Promise.all([
-      this.draUpload(`${base}/scenarios.json`, index),
-      ...practiceScenarios.map((s: any) => this.draUpload(`${base}/scenario-${s.scenarioRunId}.json`, s)),
-      ...(finalScenario?.scenarioRunId ? [this.draUpload(`${base}/scenario-${finalScenario.scenarioRunId}.json`, finalScenario)] : []),
-    ]);
+    await this.saveTopicStateCollection(
+      base, 'scenarios.json', 'scenario',
+      {
+        selectedPracticeScenarioId: state.selectedPracticeScenarioId || null,
+        practiceScenarioIds: practiceScenarios.map((s: any) => s.scenarioRunId),
+        finalScenarioId: finalScenario?.scenarioRunId || null,
+      },
+      [
+        ...practiceScenarios.map((s: any) => ({ id: s.scenarioRunId, data: s })),
+        ...(finalScenario?.scenarioRunId ? [{ id: finalScenario.scenarioRunId, data: finalScenario }] : []),
+      ],
+    );
   }
 
   async loadDraState(enrollmentId: string, topicId: string): Promise<object | null> {
     const base = `enrollments/${enrollmentId}/topics/${topicId}`;
-    const index = await this.draDownload(`${base}/scenarios.json`);
-    if (!index) return null;
-
-    const [practiceScenarios, finalScenario] = await Promise.all([
-      Promise.all((index.practiceScenarioIds || []).map((id: string) => this.draDownload(`${base}/scenario-${id}.json`))),
-      index.finalScenarioId ? this.draDownload(`${base}/scenario-${index.finalScenarioId}.json`) : Promise.resolve(null),
-    ]);
-
+    const result = await this.loadTopicStateCollection(
+      base, 'scenarios.json', 'scenario',
+      (idx) => idx.practiceScenarioIds || [],
+      (idx) => idx.finalScenarioId || null,
+    );
+    if (!result) return null;
     return {
-      practiceScenarios: practiceScenarios.filter(Boolean),
-      selectedPracticeScenarioId: index.selectedPracticeScenarioId,
-      finalScenario,
+      practiceScenarios: result.items,
+      selectedPracticeScenarioId: result.index.selectedPracticeScenarioId,
+      finalScenario: result.finalItem,
+    };
+  }
+
+  async saveInterviewState(enrollmentId: string, topicId: string, state: any): Promise<void> {
+    const base = `enrollments/${enrollmentId}/topics/${topicId}`;
+    const practiceRuns: any[] = Array.isArray(state.practiceRuns) ? state.practiceRuns : [];
+    const finalRun = state.finalRun || null;
+    await this.saveTopicStateCollection(
+      base, 'interview.json', 'interview-run',
+      {
+        selectedPracticeRunId: state.selectedPracticeRunId || null,
+        practiceRunIds: practiceRuns.map((r: any) => r.runId),
+        finalRunId: finalRun?.runId || null,
+      },
+      [
+        ...practiceRuns.map((r: any) => ({ id: r.runId, data: r })),
+        ...(finalRun?.runId ? [{ id: finalRun.runId, data: finalRun }] : []),
+      ],
+    );
+  }
+
+  async loadInterviewState(enrollmentId: string, topicId: string): Promise<object | null> {
+    const base = `enrollments/${enrollmentId}/topics/${topicId}`;
+    const result = await this.loadTopicStateCollection(
+      base, 'interview.json', 'interview-run',
+      (idx) => idx.practiceRunIds || [],
+      (idx) => idx.finalRunId || null,
+    );
+    if (!result) return null;
+    return {
+      practiceRuns: result.items,
+      selectedPracticeRunId: result.index.selectedPracticeRunId,
+      finalRun: result.finalItem,
     };
   }
 

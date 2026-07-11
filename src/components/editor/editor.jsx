@@ -12,6 +12,7 @@ import Splitter from '../Splitter.jsx';
 import CommitOverlay from './commitOverlay.jsx';
 import ScheduleEditor from './scheduleEditor.jsx';
 import DraEditor from './dra/draEditor.jsx';
+import InterviewEditor from './interview/interviewEditor.jsx';
 
 const PREVIEW_DEBOUNCE_MS = 400;
 
@@ -105,6 +106,8 @@ export default function Editor({ courseOps, user, learningSession }) {
         return <ScheduleEditor courseOps={courseOps} learningSession={learningSession} />;
       case 'dra':
         return <DraEditor courseOps={courseOps} learningSession={learningSession} user={user} />;
+      case 'interview':
+        return <InterviewEditor courseOps={courseOps} learningSession={learningSession} user={user} />;
       default:
         return (
           <div className="flex-1 flex flex-col overflow-hidden relative">

@@ -660,6 +660,264 @@ Rules:
   };
 }
 
+// ─── Interview generators ────────────────────────────────────────────────────
+
+const INTERVIEW_DIFFICULTY_TABLE = {
+  1: { sessions: '2',   questions: '3–4', seniority: 'entry-level employees',           disposition: 'warm, encouraging, and patient — happy to rephrase or help' },
+  2: { sessions: '2–3', questions: '4–5', seniority: 'junior to mid-level professionals', disposition: 'friendly and supportive with occasional follow-up questions' },
+  3: { sessions: '3',   questions: '5–6', seniority: 'mid-level to senior professionals', disposition: 'professional and neutral — expects clear, substantive answers' },
+  4: { sessions: '4',   questions: '6–7', seniority: 'senior and lead professionals',     disposition: 'probing and skeptical — pushes back on weak or vague answers' },
+  5: { sessions: '4–5', questions: '7–8', seniority: 'senior, principal, and VP-level',   disposition: 'demanding and exacting — direct challenges, high expectations, no hand-holding' },
+};
+
+export async function aiInterviewScenarioGenerator({ discipline, jobTitle, jobDescription, difficulty, learningOutcomes }) {
+  const d = Math.max(1, Math.min(5, Math.round(Number(difficulty) || 3)));
+  const dt = INTERVIEW_DIFFICULTY_TABLE[d];
+
+  const prompt = `You are designing an interview simulation for a professional development assessment.
+The learner will participate in a series of job interviews for the position described below.
+
+Role: ${jobTitle || 'professional position'}
+Discipline: ${discipline || 'general'}
+Job description: ${jobDescription || '(not provided)'}
+Learning outcomes: ${learningOutcomes || 'demonstrate professional knowledge and readiness for the role'}
+Difficulty: ${d} / 5
+
+At difficulty ${d}:
+- Number of sessions: ${dt.sessions}
+- Questions per session: ${dt.questions}
+- Interviewer seniority: ${dt.seniority}
+- Interviewer disposition: ${dt.disposition}
+
+Generate a realistic interview scenario with multiple sessions. Each session has one or more interviewers.
+
+Return a raw JSON object (no markdown code fence) with exactly this shape:
+{
+  "scenario": {
+    "title": "short scenario name e.g. 'Backend Engineer Interview at Acme Corp'",
+    "company": "company name",
+    "summary": "1-2 sentence overview of the interview process",
+    "description": "2-3 paragraph context: company, team, role expectations, and what the learner should expect",
+    "roleContext": "1 paragraph on the specific role and why the company is hiring"
+  },
+  "interviewers": [
+    { "key": "unique_snake_case_key", "name": "Full Name", "role": "job title", "seniority": "entry|junior|mid|senior|lead|principal|vp", "personality": "brief personality note", "objectives": "what they are evaluating in this interview" }
+  ],
+  "sessions": [
+    {
+      "title": "session title e.g. 'Recruiter Screen' or 'Technical Interview'",
+      "objective": "what this session assesses",
+      "interviewerKeys": ["key1"],
+      "targetQuestionCount": 5
+    }
+  ]
+}
+
+Requirements:
+- Create ${dt.sessions} sessions
+- Each session should have ${dt.questions} as its targetQuestionCount (pick a number in that range)
+- Create 2-5 interviewers total; most sessions have 1 interviewer, senior sessions may have 2
+- Interviewers must reflect the ${dt.seniority} seniority level
+- Their disposition must be ${dt.disposition}
+- Sessions should progress logically: recruiter/HR screen first, then technical, then team/culture fit, then final/executive if difficulty is high enough
+- Return only the JSON object`;
+
+  const response = await makeSimpleAiRequest(prompt);
+  return parseJsonResponse(response);
+}
+
+export async function aiInterviewSessionResponseGenerator(scenario, session, interviewers, messages, difficulty) {
+  const d = Math.max(1, Math.min(5, Math.round(Number(difficulty) || 3)));
+  const dt = INTERVIEW_DIFFICULTY_TABLE[d];
+
+  const interviewerList = (interviewers || [])
+    .filter((iv) => (session?.interviewerKeys || []).includes(iv.key))
+    .map((iv) => `- ${iv.name} (${iv.role}): ${iv.personality}. Evaluating: ${iv.objectives}`)
+    .join('\n');
+
+  const history = (messages || [])
+    .map((m) => `${m.speakerName || (m.role === 'user' ? 'Candidate' : 'Interviewer')}: ${m.text}`)
+    .join('\n');
+
+  const targetCount = session?.targetQuestionCount || 5;
+  const candidateTurns = (messages || []).filter((m) => m.role === 'user').length;
+  const isNearEnd = candidateTurns >= targetCount - 1;
+  const isPastEnd = candidateTurns >= targetCount;
+
+  const sessionList = (scenario?.sessions || []);
+  const currentIndex = sessionList.findIndex((s) => s.title === session?.title);
+  const nextSession = currentIndex >= 0 && currentIndex < sessionList.length - 1 ? sessionList[currentIndex + 1] : null;
+  const isLastSession = !nextSession;
+
+  let nextInterviewerNames = '';
+  if (nextSession) {
+    const nextIvs = (scenario?.interviewers || []).filter((iv) => (nextSession.interviewerKeys || []).includes(iv.key));
+    nextInterviewerNames = nextIvs.map((iv) => iv.name).join(' and ');
+  }
+
+  const prompt = `You are role-playing as the interviewer(s) in a professional job interview simulation.
+
+COMPANY: ${scenario?.company || ''}
+ROLE: ${scenario?.title || ''}
+SESSION: ${session?.title || ''} — ${session?.objective || ''}
+
+INTERVIEWER(S):
+${interviewerList || '(see scenario context)'}
+
+CONVERSATION SO FAR:
+${history || '(session just started — open with a greeting and first question)'}
+
+DIFFICULTY: ${d} / 5 — interviewer disposition: ${dt.disposition}
+
+Candidate has answered approximately ${candidateTurns} of the planned ${targetCount} questions.
+
+${isPastEnd
+    ? `The candidate has answered enough questions. You MUST wrap up this session now. ${isLastSession
+      ? `This is the final session. Close warmly and naturally. End with something like: "Thanks for meeting with us. We'll be in touch soon. You can check out the evaluation to see where we'd like to take things from here."`
+      : `Transition naturally to the next session. End with something like: "I think we've covered what we needed. Next you'll be meeting with ${nextInterviewerNames || 'the team'}."`}`
+    : isNearEnd
+      ? `You are approaching the end of the session. If the candidate's last answer was complete, consider asking the closing question: "Do you have any questions for us?"`
+      : `Continue the interview naturally. Ask a follow-up or move to a new question related to the session objective.`}
+
+Return a raw JSON object (no markdown code fence):
+{
+  "replies": [
+    { "speakerKey": "interviewer_key", "speakerName": "Name", "speakerRole": "job title", "text": "what they say" }
+  ],
+  "sessionComplete": false,
+  "sessionSummary": ""
+}
+
+Rules:
+- Interviewers ask questions or follow up — they do not give answers to the candidate
+- In multi-interviewer sessions, have the most relevant interviewer speak; occasionally another may interject naturally
+- Set sessionComplete to true ONLY when you include the closing handoff or thank-you line
+- When sessionComplete is true, set sessionSummary to a 1-2 sentence note on how the session went (used for evaluation)
+- Return only the JSON object`;
+
+  const response = await makeSimpleAiRequest(prompt);
+  const parsed = parseJsonResponse(response);
+  return {
+    replies: Array.isArray(parsed?.replies) ? parsed.replies : [],
+    sessionComplete: Boolean(parsed?.sessionComplete),
+    sessionSummary: typeof parsed?.sessionSummary === 'string' ? parsed.sessionSummary : '',
+  };
+}
+
+export async function aiInterviewEvaluationGenerator(scenario, sessions, interviewers, difficulty, previousEvaluation) {
+  const d = Math.max(1, Math.min(5, Math.round(Number(difficulty) || 3)));
+
+  const sessionText = (sessions || [])
+    .map((s) => {
+      const msgs = (s.messages || []).map((m) => `${m.speakerName || (m.role === 'user' ? 'Candidate' : 'Interviewer')}: ${m.text}`).join('\n');
+      return `### ${s.title}\nObjective: ${s.objective || ''}\n${msgs || '(no messages)'}${s.sessionSummary ? `\nSession summary: ${s.sessionSummary}` : ''}`;
+    })
+    .join('\n\n');
+
+  const priorText = previousEvaluation ? JSON.stringify(previousEvaluation, null, 2) : '(none)';
+
+  const prompt = `You are evaluating a candidate's performance in a job interview simulation.
+
+ROLE: ${scenario?.title || ''}
+COMPANY: ${scenario?.company || ''}
+
+INTERVIEW TRANSCRIPTS:
+${sessionText || '(no sessions completed)'}
+
+PREVIOUS EVALUATION:
+${priorText}
+
+Difficulty: ${d} (1=very easy, 5=very hard). Calibrate rating thresholds accordingly.
+
+Evaluate the candidate across three areas:
+
+1. Sessions: rate each session individually.
+2. Competency attributes: Domain Knowledge, Communication, Problem Solving, Technical Depth, Role Clarity
+3. Disposition attributes: Curiosity, Ownership, Integrity, Persistence, Empathy, Accountability
+
+For each session and each attribute, provide a rating (exactly one of: Beginning, Emerging, Developing, Proficient, Exemplary), a one-sentence summary, and up to 5 evidence items.
+
+Each evidence item must include:
+- "detail": a concise observation from the candidate's actual behavior
+- "polarity": "positive" or "negative"
+- "impact": "light", "moderate", or "strong"
+
+${previousEvaluation ? `When a previous evaluation exists, update conservatively — keep stable ratings and confirmed evidence, update where new behavior changes the picture.` : ''}
+
+Return a raw JSON object (no markdown code fence):
+{
+  "sessions": [
+    { "sessionId": "session title", "rating": "<level>", "summary": "<one sentence>", "evidence": [ { "detail": "...", "polarity": "positive", "impact": "moderate" } ] }
+  ],
+  "competency": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Domain Knowledge", "rating": "<level>", "summary": "<one sentence>", "evidence": [ ... ] } ] },
+  "disposition": { "rating": "<level>", "summary": "<one sentence>", "attributes": [ { "name": "Curiosity", "rating": "<level>", "summary": "<one sentence>", "evidence": [ ... ] } ] },
+  "concerns": [ { "name": "<short label>", "severity": "Minor|Moderate|Major", "description": "<one sentence>" } ]
+}
+
+Rules:
+- Base every judgment only on observed evidence
+- When evidence is sparse, use lower ratings (Beginning/Emerging)
+- Include all five Competency attributes and all six Disposition attributes
+- Return an empty array for concerns if there are none
+- Return only the JSON object`;
+
+  const response = await makeSimpleAiRequest(prompt);
+  return parseJsonResponse(response);
+}
+
+export async function aiInterviewCoachGenerator(scenario, sessions, interviewers, difficulty, evaluation) {
+  const d = Math.max(1, Math.min(5, Math.round(Number(difficulty) || 3)));
+  const dt = INTERVIEW_DIFFICULTY_TABLE[d];
+
+  const sessionText = (sessions || [])
+    .filter((s) => (s.messages || []).length > 0)
+    .map((s) => {
+      const msgs = (s.messages || []).map((m) => `${m.speakerName || (m.role === 'user' ? 'Candidate' : 'Interviewer')}: ${m.text}`).join('\n');
+      return `### ${s.title}\n${msgs}`;
+    })
+    .join('\n\n');
+
+  const evaluationText = evaluation ? JSON.stringify(evaluation, null, 2) : '(none)';
+
+  const prompt = `You are a supportive coach helping a candidate prepare for a job interview simulation.
+
+ROLE: ${scenario?.title || ''}
+
+INTERVIEW TRANSCRIPTS SO FAR:
+${sessionText || '(no sessions started yet)'}
+
+CURRENT EVALUATION:
+${evaluationText}
+
+Difficulty: ${d} / 5 — interviewers are ${dt.disposition}.
+
+Provide brief coaching as a raw JSON object (no markdown code fence):
+{
+  "feedback": "1-2 sentences on how the interview is going overall",
+  "hints": ["1-3 short, actionable hints to improve the candidate's interview performance"],
+  "suggestions": ["1-3 specific things to do or say better in the next session or response"]
+}
+
+Calibrate how directive your coaching is based on difficulty:
+- Difficulty 1–2: be specific — name exact topics, skills, or phrasing to improve
+- Difficulty 3: give balanced hints without naming exact answers
+- Difficulty 4–5: give only general principles — the candidate must figure out the specifics
+
+Rules:
+- Encourage good communication habits and point to gaps without giving away ideal answers
+- If evaluation is available, focus coaching on the weakest dimension or attribute
+- Keep each item concise
+- Return only the JSON object`;
+
+  const response = await makeSimpleAiRequest(prompt);
+  const parsed = parseJsonResponse(response);
+  return {
+    feedback: parsed?.feedback || '',
+    hints: Array.isArray(parsed?.hints) ? parsed.hints : [],
+    suggestions: Array.isArray(parsed?.suggestions) ? parsed.suggestions : [],
+  };
+}
+
 function parseJsonResponse(response) {
   const text = String(response || '').trim();
   // Strip trailing commas before } or ] — a common AI output error.

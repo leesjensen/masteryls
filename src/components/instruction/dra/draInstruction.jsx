@@ -4,7 +4,8 @@ import { parseDraMarkdown } from '../../../utils/draMarkdown';
 import { summarizeDraRun } from './draScore';
 import DraInvestigation from './draInvestigation';
 import DraEvaluation from './draEvaluation';
-import DraCoach from './draCoach';
+import CoachPanel from '../../shared/CoachPanel';
+import TabBar from '../../shared/TabBar';
 import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 import DraAssessment from './DraAssessment';
@@ -12,20 +13,6 @@ import Spinner from '../../Spinner';
 import { FileText, MessageSquare, Search, Network, Play, CheckCircle2, RefreshCcw, Lightbulb } from 'lucide-react';
 import DraMobilePicker from './DraMobilePicker';
 import { DRA_FIXED_STAGES, createDraStageNotes, getDraStageDefinition, getFirstDraStage, getDraStageNames, normalizeDraProcessAttributeName, normalizeDraStageName } from '../../../utils/draStages';
-
-function DraTabBar({ tabs, active, onChange }) {
-  return (
-    <div className="not-prose mt-4 overflow-x-auto">
-      <div className="flex min-w-max border-b border-gray-200">
-        {tabs.map((tab) => (
-          <button key={tab.id} onClick={() => onChange(tab.id)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${active === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // Difficulty (1 easiest .. 5 hardest) gates how much of the scenario is revealed up
 // front. Withheld stakeholders and resources are still generated and saved — they
@@ -1200,7 +1187,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       case 'coaching':
         return (
           <div className="mt-4">
-            <DraCoach coaching={details.coaching} onRequest={requestCoaching} busy={coaching} readOnly={draReadOnly} />
+            <CoachPanel coaching={details.coaching} onRequest={requestCoaching} busy={coaching} readOnly={draReadOnly} />
           </div>
         );
       case 'evaluation':
@@ -1297,7 +1284,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           {(details.state === 'inProgress' || details.state === 'completed') && renderActionButtons()}
         </div>
         {details.state === 'notStarted' && renderActionButtons()}
-        {tabs.length > 1 && <DraTabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
+        {tabs.length > 1 && <TabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
       </div>
 
       {safeActiveTab === 'investigation' ? (
