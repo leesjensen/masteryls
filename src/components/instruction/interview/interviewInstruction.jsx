@@ -325,13 +325,11 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
         return (
           <div className="mt-4">
             <div className="not-prose mb-3 text-lg font-semibold text-gray-600">Description</div>
-            <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
             {params.jobDescription && (
-              <div className="not-prose mt-3">
-                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Job Description</div>
-                <p className="text-sm text-gray-700">{params.jobDescription}</p>
-              </div>
+              <p className="not-prose mb-4 text-sm text-gray-700">{params.jobDescription}</p>
             )}
+            <div className="not-prose mb-3 text-lg font-semibold text-gray-600">Outcomes</div>
+            <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
 
             <div className="not-prose mt-6 mb-8">
               <div className="mb-3 text-lg font-semibold text-gray-600">Interviews</div>
