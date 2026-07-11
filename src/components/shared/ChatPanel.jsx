@@ -11,6 +11,7 @@ export default function ChatPanel({
   emptyText = 'No messages yet.',
   banner = null,
   onInputChange,
+  footer = null,
 }) {
   const [input, setInput] = React.useState('');
   const inputRef = React.useRef(null);
@@ -74,7 +75,13 @@ export default function ChatPanel({
         )}
       </div>
 
-      {!readOnly && (
+      {footer && (
+        <div className="shrink-0 border-t border-gray-200 bg-gray-50 p-3">
+          {footer}
+        </div>
+      )}
+
+      {!readOnly && !footer && (
         <div className="shrink-0 border-t border-gray-200 bg-gray-50 p-3">
           {banner}
           <div className="flex gap-2">

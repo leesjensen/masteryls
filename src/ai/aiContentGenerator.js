@@ -745,8 +745,8 @@ export async function aiInterviewSessionResponseGenerator(scenario, session, int
 
   const targetCount = session?.targetQuestionCount || 5;
   const candidateTurns = (messages || []).filter((m) => m.role === 'user').length;
-  const isNearEnd = candidateTurns >= targetCount - 1;
-  const isPastEnd = candidateTurns >= targetCount;
+  const isNearEnd = candidateTurns >= targetCount;
+  const isPastEnd = candidateTurns >= targetCount + 2;
 
   const sessionList = (scenario?.sessions || []);
   const currentIndex = sessionList.findIndex((s) => s.title === session?.title);
@@ -776,11 +776,11 @@ DIFFICULTY: ${d} / 5 — interviewer disposition: ${dt.disposition}
 Candidate has answered approximately ${candidateTurns} of the planned ${targetCount} questions.
 
 ${isPastEnd
-    ? `The candidate has answered enough questions. You MUST wrap up this session now. ${isLastSession
-      ? `This is the final session. Close warmly and naturally. End with something like: "Thanks for meeting with us. We'll be in touch soon. You can check out the evaluation to see where we'd like to take things from here."`
-      : `Transition naturally to the next session. End with something like: "I think we've covered what we needed. Next you'll be meeting with ${nextInterviewerNames || 'the team'}."`}`
+    ? `The candidate has answered enough questions AND has had a chance to ask their own questions. You MUST now close this session with a natural sign-off. ${isLastSession
+      ? `This is the final session. Close warmly. Example: "Thanks so much for meeting with us today — we'll be in touch soon."`
+      : `Transition naturally to the next session. Example: "I think we've covered everything I needed. Next you'll be meeting with ${nextInterviewerNames || 'the team'}."`} Set sessionComplete to true.`
     : isNearEnd
-      ? `You are approaching the end of the session. If the candidate's last answer was complete, consider asking the closing question: "Do you have any questions for us?"`
+      ? `You have covered the planned questions. Continue naturally — ask a follow-up if the candidate's last answer warrants one, or begin winding down by asking if they have any questions for you. Do not rush; let the conversation close organically. Set sessionComplete to false.`
       : `Continue the interview naturally. Ask a follow-up or move to a new question related to the session objective.`}
 
 Return a raw JSON object (no markdown code fence):
@@ -795,7 +795,7 @@ Return a raw JSON object (no markdown code fence):
 Rules:
 - Interviewers ask questions or follow up — they do not give answers to the candidate
 - In multi-interviewer sessions, have the most relevant interviewer speak; occasionally another may interject naturally
-- Set sessionComplete to true ONLY when you include the closing handoff or thank-you line
+- IMPORTANT: "Do you have any questions for us?" is itself a question the candidate must answer — sessionComplete must be false when asking it; only set sessionComplete to true AFTER the candidate has replied and you deliver the closing sign-off
 - When sessionComplete is true, set sessionSummary to a 1-2 sentence note on how the session went (used for evaluation)
 - Return only the JSON object`;
 
