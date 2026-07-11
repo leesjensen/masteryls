@@ -1,7 +1,7 @@
 import React from 'react';
 import { Blocks, Briefcase, Check, Database, FileText, Map, Server, UserRound } from 'lucide-react';
-import Markdown from '../../Markdown';
 import DraMobilePicker from './DraMobilePicker';
+import ChatPanel from '../../shared/ChatPanel';
 
 const resourceTypeOrder = {
   person: 0,
@@ -91,11 +91,9 @@ export default function DraInvestigation({
   readOnly,
   learningSession,
 }) {
-  const [input, setInput] = React.useState('');
+  const [draftInput, setDraftInput] = React.useState('');
   const [sending, setSending] = React.useState(false);
   const [mobilePickerOpen, setMobilePickerOpen] = React.useState(false);
-  const inputRef = React.useRef(null);
-  const messageListRef = React.useRef(null);
 
   const sortedTargets = React.useMemo(
     () =>
@@ -144,8 +142,8 @@ export default function DraInvestigation({
     [selectedTarget, selectedListeners],
   );
   const draftPrimaryKey = React.useMemo(
-    () => (selectedTarget?.type === 'stakeholder' ? detectDraftPrimary(input, participantTargets) || selectedKey : selectedKey),
-    [input, participantTargets, selectedKey, selectedTarget],
+    () => (selectedTarget?.type === 'stakeholder' ? detectDraftPrimary(draftInput, participantTargets) || selectedKey : selectedKey),
+    [draftInput, participantTargets, selectedKey, selectedTarget],
   );
   const draftPrimaryTarget = participantTargets.find((target) => target.key === draftPrimaryKey) || selectedTarget;
 
@@ -234,29 +232,13 @@ export default function DraInvestigation({
     return groupNames.join(', ');
   }
 
-  React.useLayoutEffect(() => {
-    const container = messageListRef.current;
-    if (!container) return;
-    container.scrollTop = container.scrollHeight;
-  }, [selectedKey, messages.length]);
-
-  React.useEffect(() => {
-    if (!readOnly && !sending) {
-      inputRef.current?.focus();
-    }
-  }, [selectedKey, messages.length, readOnly, sending]);
-
-  async function handleSend() {
-    const text = input.trim();
-    if (!text || sending || readOnly || !selectedTarget) return;
+  async function handleSend(text) {
+    if (!selectedTarget) return;
     setSending(true);
-    setInput('');
-    if (inputRef.current) inputRef.current.style.height = 'auto';
     try {
       await onSendMessage(selectedTarget, text);
     } finally {
       setSending(false);
-      inputRef.current?.focus();
     }
   }
 
@@ -348,79 +330,21 @@ export default function DraInvestigation({
           {selectedTarget?.type === 'stakeholder' && <p className="mt-2 px-1 text-xs text-gray-500">Group: {renderListenerSummary()}. Re-open the stakeholder list to add or remove people.</p>}
         </div>
 
-        <div className="flex-1 flex flex-col min-h-0 border border-gray-200 rounded-lg overflow-hidden">
-          <div ref={messageListRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 && <p className="text-sm text-gray-400 text-center py-8">Ask {selectedTarget?.name} a question to begin.</p>}
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`rounded-lg px-3 py-2 max-w-[80%] break-words ${m.role === 'user' ? 'border-2 border-blue-500 text-gray-800' : 'border-2 border-gray-400'}`}>
-                  {m.role === 'model' && (m.speakerName || m.speakerRole) && (
-                    <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                      {m.speakerName || 'Scenario'}{m.speakerRole ? ` · ${m.speakerRole}` : ''}
-                    </div>
-                  )}
-                  <div className="markdown-body text-sm">
-                    <Markdown learningSession={learningSession} content={m.text} />
-                  </div>
-                </div>
-              </div>
-            ))}
-            {sending && (
-              <div className="flex justify-start">
-                <div className="rounded-lg px-3 py-2 border-2 border-gray-300 bg-gray-50">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {!readOnly && (
-            <div className="shrink-0 border-t border-gray-200 bg-gray-50 p-3">
-              {draftPrimaryTarget?.type === 'stakeholder' && (
-                <div className={`mb-2 rounded-md border px-3 py-2 text-xs ${
-                  draftPrimaryTarget.key === selectedKey
-                    ? 'border-blue-200 bg-blue-50 text-blue-800'
-                    : 'border-amber-200 bg-amber-50 text-amber-900'
-                }`}>
-                  Addressing <span className="font-semibold">{draftPrimaryTarget.name}</span>
-                </div>
-              )}
-              <div className="flex gap-2">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  onInput={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                  }}
-                  placeholder={`Ask ${selectedTarget?.name || ''}…`}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  rows={1}
-                  style={{ minHeight: '2.5rem', maxHeight: '7.5rem' }}
-                  disabled={sending}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={sending || !input.trim()}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Send
-                </button>
-              </div>
+        <ChatPanel
+          messages={messages}
+          onSend={handleSend}
+          learningSession={learningSession}
+          sending={sending}
+          readOnly={readOnly}
+          placeholder={`Ask ${selectedTarget?.name || ''}…`}
+          emptyText={`Ask ${selectedTarget?.name || 'a stakeholder'} a question to begin.`}
+          onInputChange={setDraftInput}
+          banner={draftPrimaryTarget?.type === 'stakeholder' ? (
+            <div className={`mb-2 rounded-md border px-3 py-2 text-xs ${draftPrimaryTarget.key === selectedKey ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+              Addressing <span className="font-semibold">{draftPrimaryTarget.name}</span>
             </div>
-          )}
-        </div>
+          ) : null}
+        />
       </div>
     </div>
   );

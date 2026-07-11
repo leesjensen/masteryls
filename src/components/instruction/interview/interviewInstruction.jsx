@@ -23,6 +23,16 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
   const [coaching, setCoaching] = React.useState(false);
   const [busyAction, setBusyAction] = React.useState(null);
 
+  const courseId = learningSession?.course?.id;
+  const topicId = learningSession?.topic?.id;
+
+  function selectTab(tab) {
+    setActiveTab(tab);
+    if (courseId && topicId) {
+      courseOps.saveEnrollmentUiSettings(courseId, { [`interviewActiveTab_${topicId}`]: tab });
+    }
+  }
+
   React.useEffect(() => {
     const topic = learningSession?.topic;
     if (content != null) { setMarkdown(content); return; }
@@ -36,22 +46,29 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
   const canFinal = params.finalMode;
   const busy = Boolean(busyAction);
 
+  // Auto-navigate to Scenario tab only when a genuinely new run is created (not on restore)
+  const prevRunIdRef = React.useRef(null);
+
   React.useEffect(() => {
     if (!user || isPreview) { setLoadingState(false); return; }
     courseOps.getInterviewState().then((state) => {
       setFullState(state);
       const existing = (state?.practiceRuns || []).find((r) => r.runId === state.selectedPracticeRunId) || null;
+      // Pre-seed ref so the auto-navigate effect doesn't fire for an existing run
+      if (existing) prevRunIdRef.current = existing.runId;
       setRun(existing);
+      // Restore saved tab
+      const uiSettings = courseId && topicId ? courseOps.getEnrollmentUiSettings(courseId) : null;
+      const savedTab = uiSettings?.[`interviewActiveTab_${topicId}`];
+      if (savedTab) setActiveTab(savedTab);
       setLoadingState(false);
     });
   }, [learningSession?.topic?.id]);
 
-  // Auto-navigate to Scenario tab when a new run starts
-  const prevRunIdRef = React.useRef(null);
   React.useEffect(() => {
     if (run?.runId && run.runId !== prevRunIdRef.current) {
       prevRunIdRef.current = run.runId;
-      setActiveTab('scenario');
+      selectTab('scenario');
     }
   }, [run?.runId]);
 
@@ -145,7 +162,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
     const updatedState = { ...currentState, selectedPracticeRunId: null };
     setFullState(updatedState);
     setRun(null);
-    setActiveTab('overview');
+    selectTab('overview');
     await courseOps.saveInterviewState(updatedState);
   }
 
@@ -163,7 +180,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
       const completedRun = { ...run, evaluation, completedAt: Date.now() };
       await persistRun(completedRun);
       setRun(completedRun);
-      setActiveTab('evaluation');
+      selectTab('evaluation');
     } finally {
       setBusyAction(null);
     }
@@ -188,7 +205,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
     const updatedState = { ...(fullState || {}), selectedPracticeRunId: runId };
     setFullState(updatedState);
     setRun(selected);
-    setActiveTab('scenario');
+    selectTab('scenario');
   }
 
   function renderPracticeRunList(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3', headingClassName = 'text-sm font-semibold text-blue-700 mb-2') {
@@ -491,7 +508,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
           {(runInProgress || runComplete) && renderActionButtons()}
         </div>
         {!run && renderActionButtons()}
-        {tabs.length > 1 && <TabBar tabs={tabs} active={safeActiveTab} onChange={setActiveTab} />}
+        {tabs.length > 1 && <TabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
       </div>
 
       {safeActiveTab === 'interview' ? (
@@ -506,7 +523,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
             persistRun={persistRun}
             onStartRun={startRun}
             busyAction={busyAction}
-            setActiveTab={setActiveTab}
+            setActiveTab={selectTab}
           />
         </div>
       ) : (
