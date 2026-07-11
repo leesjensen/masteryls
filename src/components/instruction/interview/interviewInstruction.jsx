@@ -1,4 +1,5 @@
 import React from 'react';
+import { BadgeCheck, CircleDashed } from 'lucide-react';
 import { parseInterviewMarkdown } from '../../../utils/interviewMarkdown';
 import Markdown from '../../Markdown';
 import TabBar from '../../shared/TabBar';
@@ -198,15 +199,19 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
         <div className="space-y-2">
           {practiceRuns.map((r, index) => {
             const isSelected = fullState?.selectedPracticeRunId === r.runId;
-            const status = r.completedAt ? 'Completed' : 'In progress';
+            const isCompleted = Boolean(r.completedAt);
             const title = r.scenario?.title || r.scenario?.company || `Practice run ${index + 1}`;
             return (
-              <button key={r.runId} type="button" onClick={() => selectPracticeRun(r.runId)} className={`w-full rounded border px-3 py-2 text-left transition-colors ${isSelected ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}>
-                <div className="text-sm font-medium">{title} ({status})</div>
+              <button key={r.runId} type="button" onClick={() => selectPracticeRun(r.runId)} className={`w-full rounded border px-3 py-2 text-left transition-colors ${isSelected ? 'border-blue-500 bg-blue-600 text-white' : isCompleted ? 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}>
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  {isCompleted
+                    ? <BadgeCheck size={14} className={isSelected ? 'text-white shrink-0' : 'text-blue-500 shrink-0'} />
+                    : <CircleDashed size={14} className={isSelected ? 'text-blue-100 shrink-0' : 'text-blue-400 shrink-0'} />}
+                  {title}
+                </div>
                 <div className={`mt-1 text-xs ${isSelected ? 'text-blue-100' : 'text-gray-500'}`}>
                   Started {formatRunDate(r.createdAt)}
-                  {' · '}
-                  Completed {r.completedAt ? formatRunDate(r.completedAt) : 'In progress'}
+                  {isCompleted && <> · Completed {formatRunDate(r.completedAt)}</>}
                 </div>
               </button>
             );
@@ -257,11 +262,11 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!locked && (
-              <button disabled={busy} onClick={cancelRun} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded border border-gray-200 hover:bg-gray-200 disabled:opacity-60">
+              <button disabled={busy} onClick={cancelRun} className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded border border-gray-200 hover:bg-gray-200 disabled:opacity-60">
                 Cancel
               </button>
             )}
-            <button disabled={busy} onClick={completeRun} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
+            <button disabled={busy} onClick={completeRun} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
               {busyAction === 'completeRun' && <Spinner />}
               Complete assessment
             </button>
@@ -275,18 +280,17 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
         <div className="not-prose flex flex-wrap items-center justify-end gap-2">
           <div className="hidden sm:flex items-center gap-2 text-sm text-blue-700">
             <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold">Complete</span>
-            {run.completedAt && <span className="text-xs text-blue-500">Completed {new Date(run.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>}
           </div>
           {!locked && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
-                <button disabled={busy} onClick={() => startRun('practice')} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
+                <button disabled={busy} onClick={() => startRun('practice')} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
                   {busyAction === 'startPractice' && <Spinner />}
                   {busyAction === 'startPractice' ? 'Generating…' : 'New practice run'}
                 </button>
               )}
               {canFinal && (
-                <button disabled={busy} onClick={() => startRun('final')} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60">
+                <button disabled={busy} onClick={() => startRun('final')} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60">
                   {busyAction === 'startFinal' && <Spinner />}
                   {busyAction === 'startFinal' ? 'Generating…' : 'Start final interview'}
                 </button>

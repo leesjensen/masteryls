@@ -10,7 +10,7 @@ import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 import DraAssessment from './DraAssessment';
 import Spinner from '../../Spinner';
-import { FileText, MessageSquare, Search, Network, Play, CheckCircle2, RefreshCcw, Lightbulb } from 'lucide-react';
+import { FileText, MessageSquare, Search, Network, Play, CheckCircle2, RefreshCcw, Lightbulb, BadgeCheck, CircleDashed } from 'lucide-react';
 import DraMobilePicker from './DraMobilePicker';
 import { DRA_FIXED_STAGES, createDraStageNotes, getDraStageDefinition, getFirstDraStage, getDraStageNames, normalizeDraProcessAttributeName, normalizeDraStageName } from '../../../utils/draStages';
 
@@ -85,7 +85,7 @@ function ScenarioView({ details, difficulty, learningSession }) {
         </>
       )}
 
-      {somethingWithheld && <p className="not-prose mt-3 text-sm text-gray-500 italic">Further details, constraints, stakeholders, and resources emerge as you investigate.</p>}
+      {somethingWithheld && <p className="not-prose mt-3 text-sm text-gray-500 italic">Additional details, stakeholders, and resources are revealed through your work in the Workspace tab.</p>}
     </>
   );
 }
@@ -938,13 +938,19 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         <div className="space-y-2">
           {practiceScenarios.map((scenario, index) => {
             const isSelected = selectedPracticeScenarioId === scenario.scenarioRunId;
+            const isCompleted = Boolean(scenario.completedAt);
+            const title = scenario?.scenario?.title || `Practice scenario ${index + 1}`;
             return (
-              <button key={scenario.scenarioRunId} type="button" onClick={() => openPracticeScenario(scenario.scenarioRunId)} className={`w-full rounded border px-3 py-2 text-left transition-colors ${isSelected ? 'border-blue-500 bg-blue-600 text-white' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}>
-                <div className="text-sm font-medium">{formatScenarioLabel(scenario, index)}</div>
+              <button key={scenario.scenarioRunId} type="button" onClick={() => openPracticeScenario(scenario.scenarioRunId)} className={`w-full rounded border px-3 py-2 text-left transition-colors ${isSelected ? 'border-blue-500 bg-blue-600 text-white' : isCompleted ? 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}>
+                <div className="flex items-center gap-1.5 text-sm font-medium">
+                  {isCompleted
+                    ? <BadgeCheck size={14} className={isSelected ? 'text-white shrink-0' : 'text-blue-500 shrink-0'} />
+                    : <CircleDashed size={14} className={isSelected ? 'text-blue-100 shrink-0' : 'text-blue-400 shrink-0'} />}
+                  {title}
+                </div>
                 <div className={`mt-1 text-xs ${isSelected ? 'text-blue-100' : 'text-gray-500'}`}>
                   Started {formatScenarioDate(scenario.createdAt, 'Start date unavailable')}
-                  {' · '}
-                  Completed {scenario.completedAt ? formatScenarioDate(scenario.completedAt, 'Completion date unavailable') : 'In progress'}
+                  {isCompleted && <> · Completed {formatScenarioDate(scenario.completedAt, 'Completion date unavailable')}</>}
                 </div>
               </button>
             );
@@ -990,16 +996,16 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!locked && (
-              <button disabled={draReadOnly || busy} className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded border border-gray-200 hover:bg-gray-200 disabled:opacity-60" onClick={cancelScenario}>
+              <button disabled={draReadOnly || busy} className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded border border-gray-200 hover:bg-gray-200 disabled:opacity-60" onClick={cancelScenario}>
                 Cancel
               </button>
             )}
-            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
               {busyAction === 'completeAssessment' && <Spinner />}
               Complete assessment
             </button>
             {!draReadOnly && (
-              <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+              <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
                 {saving && <Spinner />}
                 {saving ? 'Saving…' : 'Save'}
               </button>
@@ -1015,10 +1021,9 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         <div className="not-prose flex flex-wrap items-center justify-end gap-2">
           <div className="hidden sm:flex items-center gap-2 text-sm text-blue-700">
             <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold">Complete</span>
-            {details.completedAt && <span className="text-xs text-blue-500">Completed {new Date(details.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>}
           </div>
           {!draReadOnly && (
-            <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
+            <button disabled={!isDirty || saving} onClick={handleSave} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:bg-gray-200 disabled:text-gray-500 disabled:opacity-40">
               {saving && <Spinner />}
               {saving ? 'Saving…' : 'Save'}
             </button>
@@ -1026,13 +1031,13 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           {!wasFinal && !hasScenarioInProgress && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
-                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
                   {busyAction === 'generatePractice' && <Spinner />}
                   {busyAction === 'generatePractice' ? 'Generating…' : 'Start new scenario'}
                 </button>
               )}
               {canFinal && (
-                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
                   {busyAction === 'startFinal' && <Spinner />}
                   {busyAction === 'startFinal' ? 'Generating…' : 'Start final assessment'}
                 </button>
