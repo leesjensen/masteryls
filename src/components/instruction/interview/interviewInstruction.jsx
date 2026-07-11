@@ -510,7 +510,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
           />
         </div>
       ) : (
-        <div className="flex-1 mt-0 min-h-0 overflow-auto">
+        <div className="flex-1 mt-4 min-h-0 overflow-auto">
           <div className="markdown-body px-4 pb-4">{renderTabContent()}</div>
         </div>
       )}
