@@ -12,6 +12,7 @@ test('serialize/parse round-trips a populated model', () => {
     practiceMode: true,
     finalMode: true,
     instability: true,
+    engagementDescription: '',
     learningOutcomes: 'Demonstrate systems thinking and evidence-based architectural decision-making.',
   };
 

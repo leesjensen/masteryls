@@ -1056,7 +1056,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <div className="mt-4">
             <div className="not-prose mb-3 text-lg font-semibold text-gray-600">Description</div>
             {params.engagementDescription && (
-              <p className="not-prose mb-4 text-sm text-gray-700">{params.engagementDescription}</p>
+              <Markdown learningSession={learningSession} content={params.engagementDescription} />
             )}
             <div className="not-prose mb-3 text-lg font-semibold text-gray-600">Outcomes</div>
             <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
