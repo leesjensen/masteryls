@@ -188,6 +188,8 @@ Requirements:
 - Constraints are the boundaries the response must respect (budget, deadlines, regulatory or technical restrictions, staffing limits, ...)
 - The summary must remain high-level so it can be shown even when details are withheld; the description carries the full detail
 - Make the scenario specific and grounded in the named discipline
+- Use culturally diverse names for all people — draw broadly from East Asian, South Asian, Hispanic/Latino, African, Middle Eastern, and European backgrounds; do not default to predominantly Anglo-Saxon names
+- Make the organisation or company name specific and memorable — avoid generic placeholders like "Acme Corp", "TechCorp", or "[Industry] Solutions"; invent a plausible, distinctive name
 
 Calibrate all of the following to the difficulty level (${difficulty ?? 3} on a 1–5 scale):
 
@@ -720,6 +722,8 @@ Requirements:
 - Interviewers must reflect the ${dt.seniority} seniority level
 - Their disposition must be ${dt.disposition}
 - Sessions should progress logically: recruiter/HR screen first, then technical, then team/culture fit, then final/executive if difficulty is high enough
+- Use culturally diverse full names for all interviewers — draw broadly from East Asian, South Asian, Hispanic/Latino, African, Middle Eastern, and European backgrounds; do not default to predominantly Anglo-Saxon names
+- Make the company name specific and memorable — avoid generic placeholders like "Acme Corp", "TechCorp", or "[Industry] Solutions"; invent a plausible, distinctive name that fits the industry
 - Return only the JSON object`;
 
   const response = await makeSimpleAiRequest(prompt);
