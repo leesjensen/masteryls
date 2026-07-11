@@ -929,12 +929,11 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     selectTab('scenario');
   }
 
-  function renderPracticeScenarioList(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3', headingClassName = 'text-sm font-semibold text-blue-700 mb-2') {
+  function renderPracticeScenarioList(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3') {
     if (!showPracticeScenarioPicker) return null;
 
     return (
       <div className={containerClassName}>
-        <div className={headingClassName}>Practice scenarios</div>
         <div className="space-y-2">
           {practiceScenarios.map((scenario, index) => {
             const isSelected = selectedPracticeScenarioId === scenario.scenarioRunId;
@@ -968,7 +967,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
         <div className="not-prose mt-4 flex flex-col items-start gap-2">
           <p className="text-sm text-gray-600">{canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}</p>
           {isObserveReadOnly && <p className="text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
-          {renderPracticeScenarioList('w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3', 'text-sm font-semibold text-blue-700 mb-2')}
           <div className="flex flex-wrap gap-2">
             {canPractice && (
               <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
@@ -1056,13 +1054,47 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       case 'overview':
         return (
           <div className="mt-4">
+            <div className="not-prose mb-3 text-lg font-semibold text-gray-600">Description</div>
             <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
+            {params.engagementDescription && (
+              <div className="not-prose mt-3">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Engagement Description</div>
+                <p className="text-sm text-gray-700">{params.engagementDescription}</p>
+              </div>
+            )}
 
-            <div className="not-prose pt-8">
-            <details className="rounded-lg border border-blue-200 bg-blue-50 open:pb-4" open>
-              <summary className="cursor-pointer select-none rounded-lg px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100 list-none">How this assessment works</summary>
-              <div className="px-4 pt-2 space-y-4">
-                <ol className="space-y-3 text-sm text-gray-700">
+            <div className="not-prose mt-6 mb-8">
+              <div className="mb-3 text-lg font-semibold text-gray-600">Scenarios</div>
+              {showPracticeScenarioPicker && renderPracticeScenarioList()}
+              {!isPreview && user && details.state === 'notStarted' && (
+                <div className={showPracticeScenarioPicker ? 'mt-3' : ''}>
+                  {!showPracticeScenarioPicker && (
+                    <p className="mb-3 text-sm text-gray-600">{canPractice ? 'Generate a scenario to begin. You can cancel and generate a new one until you are ready.' : 'When you start, a scenario is generated and locked until you complete the assessment.'}</p>
+                  )}
+                  {isObserveReadOnly && <p className="mb-2 text-sm text-amber-700">Observe mode is read-only. Assessment actions are disabled.</p>}
+                  <div className="flex flex-wrap gap-2">
+                    {canPractice && (
+                      <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={() => generateScenario('practice')}>
+                        {busyAction === 'generatePractice' && <Spinner />}
+                        {busyAction === 'generatePractice' ? 'Generating…' : 'Generate scenario'}
+                      </button>
+                    )}
+                    {canFinal && (
+                      <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60" onClick={startFinal}>
+                        {busyAction === 'startFinal' && <Spinner />}
+                        {busyAction === 'startFinal' ? 'Generating…' : 'Start final assessment'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="not-prose pt-0">
+            <div className="mb-3 text-lg font-semibold text-gray-600">How It Works</div>
+            <div className="rounded-lg border border-blue-200 bg-blue-50 pb-4">
+              <div className="px-4 pt-4 space-y-4">
+                <ol className="list-none !pl-0 space-y-3 text-sm text-gray-700">
                   <li className="flex gap-3">
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
                     <div>
@@ -1163,9 +1195,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                   </div>
                 </div>
               </div>
-            </details>
             </div>
-
+            </div>
             {(isPreview || !user) && (
               <div className="not-prose mt-4 rounded border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-600">
                 When a learner begins, a scenario is generated from these parameters.
@@ -1185,7 +1216,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       case 'scenario':
         return (
           <div className="mt-4">
-            {renderPracticeScenarioList('not-prose mb-4 rounded border border-blue-200 bg-blue-50 p-3', 'text-sm font-semibold text-blue-700 mb-2')}
             <ScenarioView details={details} difficulty={details.difficulty ?? params.difficulty} learningSession={learningSession} />
           </div>
         );
@@ -1288,7 +1318,6 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <h1 className="text-2xl font-semibold text-gray-900 m-0">{params.title || 'Disciplinary Reasoning Assessment'}</h1>
           {(details.state === 'inProgress' || details.state === 'completed') && renderActionButtons()}
         </div>
-        {details.state === 'notStarted' && renderActionButtons()}
         {tabs.length > 1 && <TabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
       </div>
 

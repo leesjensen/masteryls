@@ -21,6 +21,7 @@ export function createEmptyDraModel(title = '') {
     practiceMode: true,
     finalMode: false,
     instability: false,
+    engagementDescription: '',
     learningOutcomes: '',
   };
 }
@@ -50,6 +51,7 @@ function normalizeModel(raw, title = '') {
   delete model.mode;
 
   model.instability = Boolean(model.instability);
+  model.engagementDescription = typeof model.engagementDescription === 'string' ? model.engagementDescription : '';
   model.learningOutcomes = typeof model.learningOutcomes === 'string' ? model.learningOutcomes : '';
 
   return model;
@@ -82,6 +84,10 @@ export function serializeDraMarkdown(model) {
   lines.push(`**Difficulty:** ${m.difficulty} / 5`);
   lines.push(`**Modes:** ${[m.practiceMode && 'Practice', m.finalMode && 'Final'].filter(Boolean).join(', ') || 'Practice'}`);
   lines.push(`**Instability:** ${m.instability ? 'On' : 'Off'}`);
+  lines.push('');
+  lines.push('## Engagement Description');
+  lines.push('');
+  lines.push(m.engagementDescription || '_Engagement description to be defined._');
   lines.push('');
   lines.push('## Learning Outcomes');
   lines.push('');

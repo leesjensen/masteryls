@@ -208,11 +208,10 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
     selectTab('scenario');
   }
 
-  function renderPracticeRunList(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3', headingClassName = 'text-sm font-semibold text-blue-700 mb-2') {
+  function renderPracticeRunList(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3') {
     if (!showPracticeRunPicker) return null;
     return (
       <div className={containerClassName}>
-        <div className={headingClassName}>Practice interviews</div>
         <div className="space-y-2">
           {practiceRuns.map((r, index) => {
             const isSelected = fullState?.selectedPracticeRunId === r.runId;
@@ -251,7 +250,6 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
                 ? 'Start a practice interview to generate a unique scenario. You can repeat practice as many times as you like.'
                 : 'Start the final interview. The scenario is locked once started.'}
           </p>
-          {renderPracticeRunList()}
           <div className="flex flex-wrap gap-2">
             {canPractice && (
               <button disabled={busy} onClick={() => startRun('practice')} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
@@ -326,12 +324,48 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
       case 'overview':
         return (
           <div className="mt-4">
+            <div className="not-prose mb-3 text-lg font-semibold text-gray-600">Description</div>
             <Markdown learningSession={learningSession} content={params.learningOutcomes || '_Learning outcomes to be defined._'} />
-            <div className="not-prose pt-8">
-              <details className="rounded-lg border border-blue-200 bg-blue-50 open:pb-4" open>
-                <summary className="cursor-pointer select-none rounded-lg px-4 py-3 text-sm font-semibold text-blue-800 hover:bg-blue-100 list-none">How this assessment works</summary>
-                <div className="px-4 pt-2 space-y-4">
-                  <ol className="space-y-3 text-sm text-gray-700">
+            {params.jobDescription && (
+              <div className="not-prose mt-3">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Job Description</div>
+                <p className="text-sm text-gray-700">{params.jobDescription}</p>
+              </div>
+            )}
+
+            <div className="not-prose mt-6 mb-8">
+              <div className="mb-3 text-lg font-semibold text-gray-600">Interviews</div>
+              {showPracticeRunPicker && renderPracticeRunList()}
+              {!isPreview && user && !run && (
+                <div className={showPracticeRunPicker ? 'mt-3' : ''}>
+                  {!showPracticeRunPicker && (
+                    <p className="mb-3 text-sm text-gray-600">
+                      {canPractice && canFinal ? 'Choose practice to explore freely or start the final assessment when you are ready.' : canPractice ? 'Start a practice interview to generate a unique scenario. You can repeat practice as many times as you like.' : 'Start the final interview. The scenario is locked once started.'}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {canPractice && (
+                      <button disabled={busy} onClick={() => startRun('practice')} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
+                        {busyAction === 'startPractice' && <Spinner />}
+                        {busyAction === 'startPractice' ? 'Generating…' : 'Start practice interview'}
+                      </button>
+                    )}
+                    {canFinal && (
+                      <button disabled={busy} onClick={() => startRun('final')} className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-60">
+                        {busyAction === 'startFinal' && <Spinner />}
+                        {busyAction === 'startFinal' ? 'Generating…' : 'Start final interview'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="not-prose pt-0">
+              <div className="mb-3 text-lg font-semibold text-gray-600">How It Works</div>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 pb-4">
+                <div className="px-4 pt-4 space-y-4">
+                  <ol className="list-none !pl-0 space-y-3 text-sm text-gray-700">
                     <li className="flex gap-3">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
                       <div>
@@ -409,7 +443,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
                     </div>
                   </div>
                 </div>
-              </details>
+              </div>
             </div>
 
             {(isPreview || !user) && (
@@ -427,7 +461,6 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
         if (!run?.scenario) return <div className="mt-4 text-sm text-gray-500">Start an interview to generate the scenario.</div>;
         return (
           <div className="not-prose mt-4 space-y-4">
-            {renderPracticeRunList('mb-4 rounded border border-blue-200 bg-blue-50 p-3', 'text-sm font-semibold text-blue-700 mb-2')}
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Company</div>
               <div className="text-sm font-semibold text-gray-800">{run.scenario.company || run.scenario.title}</div>
@@ -507,7 +540,6 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
           <h1 className="text-2xl font-semibold text-gray-900 m-0">{params.title || learningSession?.topic?.title || 'Interview Assessment'}</h1>
           {(runInProgress || runComplete) && renderActionButtons()}
         </div>
-        {!run && renderActionButtons()}
         {tabs.length > 1 && <TabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
       </div>
 

@@ -118,6 +118,11 @@ export default function DraEditor({ courseOps, learningSession }) {
               </section>
 
               <section className="space-y-2">
+                <h2 className="text-sm font-semibold text-gray-700">Engagement description</h2>
+                <textarea value={model.engagementDescription} onChange={(e) => updateModel({ engagementDescription: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" rows={4} placeholder="Context about the engagement or client situation shown to learners in the overview." />
+              </section>
+
+              <section className="space-y-2">
                 <h2 className="text-sm font-semibold text-gray-700">Learning outcomes</h2>
                 <textarea value={model.learningOutcomes} onChange={(e) => updateModel({ learningOutcomes: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" rows={8} placeholder="What the learner should demonstrate. These guide scenario generation when the learner begins." />
               </section>
