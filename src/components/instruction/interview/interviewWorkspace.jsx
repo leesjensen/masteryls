@@ -1,24 +1,46 @@
 import React from 'react';
-import { CheckCircle2, UserRound } from 'lucide-react';
+import { BadgeCheck, Circle, CircleDashed, UserRound } from 'lucide-react';
 import { generateId } from '../../../utils/utils';
 import Spinner from '../../Spinner';
 import ChatPanel from '../../shared/ChatPanel';
 
-function SessionSidebar({ interviewers = [] }) {
+function SessionSidebar({ sessions = [], currentIndex = -1, interviewers = [] }) {
   return (
-    <div className="flex flex-col gap-1 p-3 border-r border-gray-200 min-w-[160px] max-w-[200px] bg-gray-50 shrink-0">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Interviewers</div>
-      {interviewers.map((iv) => (
-        <div key={iv.key} className="flex items-start gap-2 rounded px-2 py-2 border border-blue-200 bg-blue-50 text-blue-800">
-          <div className="mt-0.5 shrink-0">
-            <UserRound size={16} className="text-blue-600" />
+    <div className="flex flex-col gap-1 p-3 border-r border-gray-200 min-w-[160px] max-w-[200px] bg-gray-50 shrink-0 overflow-y-auto">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Sessions</div>
+      {sessions.map((s, i) => {
+        const isDone = s.state === 'completed';
+        const isActive = i === currentIndex && !isDone;
+        return (
+          <div key={i} className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs ${isActive ? 'bg-blue-50 border border-blue-200 text-blue-800 font-medium' : isDone ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className="shrink-0">
+              {isDone
+                ? <BadgeCheck size={13} className="text-gray-400" />
+                : isActive
+                  ? <CircleDashed size={13} className="text-blue-500" />
+                  : <Circle size={13} className="text-gray-300" />}
+            </div>
+            <div className="min-w-0 truncate">{s.title}</div>
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold leading-tight break-words">{iv.name}</div>
-            <div className="text-xs text-gray-500 leading-tight break-words">{iv.role}</div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
+
+      {interviewers.length > 0 && (
+        <>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1 mt-3">Interviewers</div>
+          {interviewers.map((iv) => (
+            <div key={iv.key} className="flex items-start gap-2 rounded px-2 py-2 border border-blue-200 bg-blue-50 text-blue-800">
+              <div className="mt-0.5 shrink-0">
+                <UserRound size={16} className="text-blue-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold leading-tight break-words">{iv.name}</div>
+                <div className="text-xs text-gray-500 leading-tight break-words">{iv.role}</div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -157,20 +179,23 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
 
   if (allSessionsDone) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm text-emerald-700 font-medium">
-          <CheckCircle2 size={16} /> All sessions complete
+      <div className="flex rounded-lg border border-gray-200 overflow-hidden h-full">
+        <SessionSidebar sessions={sessions} currentIndex={-1} />
+        <div className="flex flex-col flex-1 min-w-0 p-4 gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+            <BadgeCheck size={16} className="text-gray-500" /> All sessions complete
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <button onClick={() => setActiveTab('evaluation')} className="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">View evaluation</button>
+            {params.practiceMode && (
+              <button onClick={() => onStartRun('practice')} disabled={busy} className="inline-flex items-center gap-2 px-4 py-1 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
+                {busyAction === 'startPractice' && <Spinner className="border-gray-200 border-t-gray-600" />}
+                New practice run
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-3 flex-wrap">
-          <button onClick={() => setActiveTab('evaluation')} className="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">View evaluation</button>
-          {params.practiceMode && (
-            <button onClick={() => onStartRun('practice')} disabled={busy} className="inline-flex items-center gap-2 px-4 py-1 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60">
-              {busyAction === 'startPractice' && <Spinner className="border-gray-200 border-t-gray-600" />}
-              New practice run
-            </button>
-          )}
-        </div>
-        </div>
+      </div>
     );
   }
 
@@ -179,7 +204,7 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
 
   return (
     <div className="flex rounded-lg border border-gray-200 overflow-hidden h-full">
-      <SessionSidebar interviewers={sessionInterviewers} />
+      <SessionSidebar sessions={sessions} currentIndex={currentSessionIndex} interviewers={sessionInterviewers} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <div className="px-4 py-2 border-b border-gray-200 bg-white shrink-0">
