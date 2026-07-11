@@ -305,6 +305,7 @@ drop policy if exists "Root manages all" on public.role;
 drop policy if exists "User manage self" on public.enrollment;
 drop policy if exists "Root manages all" on public.enrollment;
 drop policy if exists "User read all" on public.topic;
+drop policy if exists "Course editor manages topics" on public.topic;
 drop policy if exists "Root manages all" on public.topic;
 drop policy if exists "Allow users to insert their own progress" on public.progress;
 drop policy if exists "Allow users to read their own progress" on public.progress;
@@ -474,6 +475,13 @@ on public.topic
 for select
 to authenticated
 using (true);
+
+create policy "Course editor manages topics"
+on public.topic
+for all
+to authenticated
+using (public.auth_manages_course(auth.uid(), "catalogId"))
+with check (public.auth_manages_course(auth.uid(), "catalogId"));
 
 create policy "Root manages all"
 on public.topic
