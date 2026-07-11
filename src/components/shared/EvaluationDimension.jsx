@@ -76,8 +76,7 @@ export function AttributeRow({ attr }) {
           <ul className="list-disc space-y-1 pl-4 text-xs text-gray-600">
             {evidenceStats.items.map((item, index) => (
               <li key={index}>
-                <span>{item.detail}</span>
-                <EvidenceBadge item={item} />
+                <span>{item.detail} <span className="whitespace-nowrap"><EvidenceBadge item={item} /></span></span>
               </li>
             ))}
           </ul>
