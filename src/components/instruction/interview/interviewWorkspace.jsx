@@ -14,7 +14,7 @@ function SessionSidebar({ sessions = [], currentIndex = -1, selectedIndex = -1, 
   return (
     <div className="flex flex-col p-3 border-r border-gray-200 min-w-[180px] max-w-[220px] bg-gray-50 shrink-0 overflow-y-auto">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Schedule</div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {sessions.map((s, i) => {
           const isDone = s.state === 'completed';
           const isLive = i === currentIndex;
@@ -22,56 +22,64 @@ function SessionSidebar({ sessions = [], currentIndex = -1, selectedIndex = -1, 
           const isClickable = isDone || isLive;
           const sessionIvs = (s.interviewerKeys || []).map((k) => interviewerMap.get(k)).filter(Boolean);
 
-          let cardClass = 'rounded-lg border px-3 py-2 transition-colors ';
-          if (isSelected && isLive) cardClass += 'bg-blue-50 border-blue-300 cursor-pointer';
-          else if (isSelected) cardClass += 'bg-white border-gray-400 cursor-pointer';
-          else if (isLive) cardClass += 'bg-blue-50 border-blue-200 cursor-pointer hover:border-blue-300';
-          else if (isDone) cardClass += 'bg-white border-gray-200 cursor-pointer hover:border-gray-300 hover:bg-gray-50';
-          else cardClass += 'bg-white border-gray-200 opacity-50';
-
           return (
-            <div key={i} className={cardClass} onClick={isClickable ? () => onSelect(i) : undefined}>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <div className="shrink-0">
-                  {isDone
-                    ? <BadgeCheck size={13} className="text-gray-400" />
-                    : isLive
-                      ? <CircleDashed size={13} className="text-blue-500" />
-                      : <Circle size={13} className="text-gray-300" />}
-                </div>
-                <div className={`text-xs font-semibold truncate ${isLive ? 'text-blue-800' : isDone ? 'text-gray-600' : 'text-gray-400'}`}>
-                  {s.title}
-                </div>
+            <div
+              key={i}
+              onClick={isClickable ? () => onSelect(i) : undefined}
+              className={`rounded border px-3 py-2 transition-colors ${
+                isSelected
+                  ? 'border-blue-400 bg-blue-50 cursor-pointer'
+                  : isLive
+                    ? 'border-blue-200 bg-blue-50 hover:border-blue-300 cursor-pointer'
+                    : isDone
+                      ? 'border-gray-200 bg-white hover:bg-gray-50 cursor-pointer'
+                      : 'border-gray-200 bg-white opacity-50 cursor-default'
+              }`}
+            >
+              <div className={`text-[11px] font-semibold truncate mb-2 ${isSelected || isLive ? 'text-blue-800' : isDone ? 'text-gray-600' : 'text-gray-300'}`}>
+                {s.title}
               </div>
-              {sessionIvs.length > 0 && (
-                <div className="flex flex-col gap-1 pl-0.5">
-                  {sessionIvs.map((iv) => (
-                    <div key={iv.key} className="flex items-center gap-1.5">
-                      <UserRound size={11} className={`shrink-0 ${isLive ? 'text-blue-400' : 'text-gray-300'}`} />
-                      <div className="min-w-0">
-                        <span className={`text-[11px] font-medium ${isLive ? 'text-blue-700' : isDone ? 'text-gray-500' : 'text-gray-400'}`}>{iv.name}</span>
-                        {iv.role && <span className={`text-[10px] ml-1 ${isLive ? 'text-blue-400' : 'text-gray-400'}`}>· {iv.role}</span>}
-                      </div>
+
+              <div className="flex flex-col gap-1.5">
+                {sessionIvs.map((iv) => (
+                  <div
+                    key={iv.key}
+                    className={`flex items-start gap-2 min-w-0 rounded border px-2 py-1.5 ${
+                      isSelected
+                        ? 'border-blue-300 bg-blue-100'
+                        : isLive
+                          ? 'border-blue-200 bg-blue-100'
+                          : isDone
+                            ? 'border-gray-200 bg-gray-50'
+                            : 'border-gray-100 bg-gray-50'
+                    }`}
+                  >
+                    <div className="mt-0.5 shrink-0">
+                      <UserRound size={14} className={isSelected || isLive ? 'text-blue-500' : isDone ? 'text-gray-400' : 'text-gray-200'} />
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-xs font-semibold leading-tight truncate ${isSelected || isLive ? 'text-blue-800' : isDone ? 'text-gray-700' : 'text-gray-300'}`}>{iv.name}</div>
+                      <div className="text-[11px] text-gray-500 leading-tight truncate">{iv.role}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })}
 
         {isRunComplete && (
-          <div
+          <button
             onClick={onSelectCompletion}
-            className={`rounded-lg border px-3 py-3 cursor-pointer transition-colors flex items-center justify-center gap-2
-              ${selectedIndex === null
-                ? 'bg-blue-50 border-blue-300 text-blue-800'
-                : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
-              }`}
+            className={`w-full text-left px-3 py-2 rounded border text-sm transition-colors flex items-center gap-2 ${
+              selectedIndex === null
+                ? 'border-blue-400 bg-blue-50 text-blue-800 cursor-pointer'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+            }`}
           >
-            <BadgeCheck size={15} className={selectedIndex === null ? 'text-blue-500' : 'text-gray-400'} />
-            <span className="text-xs font-semibold">Interview Complete</span>
-          </div>
+            <BadgeCheck size={16} className={selectedIndex === null ? 'text-blue-500' : 'text-gray-400'} />
+            <span className="font-semibold">Interview Complete</span>
+          </button>
         )}
       </div>
     </div>
