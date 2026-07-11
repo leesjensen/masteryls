@@ -1,25 +1,24 @@
 import React from 'react';
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2, UserRound } from 'lucide-react';
 import { generateId } from '../../../utils/utils';
 import Spinner from '../../Spinner';
 import ChatPanel from '../../shared/ChatPanel';
 
-function SessionSidebar({ sessions, currentIndex }) {
+function SessionSidebar({ interviewers = [] }) {
   return (
     <div className="flex flex-col gap-1 p-3 border-r border-gray-200 min-w-[160px] max-w-[200px] bg-gray-50 shrink-0">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Sessions</div>
-      {sessions.map((s, i) => {
-        const isDone = s.state === 'completed';
-        const isActive = i === currentIndex && !isDone;
-        return (
-          <div key={i} className={`flex items-start gap-2 rounded px-2 py-1.5 text-sm ${isActive ? 'bg-white border border-blue-200 text-blue-800 font-medium shadow-sm' : isDone ? 'text-gray-500' : 'text-gray-400'}`}>
-            <div className="mt-0.5 shrink-0">
-              {isDone ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Circle size={14} className={isActive ? 'text-blue-500 fill-blue-100' : 'text-gray-300'} />}
-            </div>
-            <div className="min-w-0 truncate">{s.title}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">Interviewers</div>
+      {interviewers.map((iv) => (
+        <div key={iv.key} className="flex items-start gap-2 rounded px-2 py-2 border border-blue-200 bg-blue-50 text-blue-800">
+          <div className="mt-0.5 shrink-0">
+            <UserRound size={16} className="text-blue-600" />
           </div>
-        );
-      })}
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold leading-tight break-words">{iv.name}</div>
+            <div className="text-xs text-gray-500 leading-tight break-words">{iv.role}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -171,8 +170,7 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
             </button>
           )}
         </div>
-        <SessionSidebar sessions={sessions} currentIndex={-1} />
-      </div>
+        </div>
     );
   }
 
@@ -181,7 +179,7 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
 
   return (
     <div className="flex rounded-lg border border-gray-200 overflow-hidden h-full">
-      <SessionSidebar sessions={sessions} currentIndex={currentSessionIndex} />
+      <SessionSidebar interviewers={sessionInterviewers} />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <div className="px-4 py-2 border-b border-gray-200 bg-white shrink-0">
