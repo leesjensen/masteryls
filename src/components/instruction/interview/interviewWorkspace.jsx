@@ -91,16 +91,18 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
   const [openingPending, setOpeningPending] = React.useState(false);
   const [advancing, setAdvancing] = React.useState(false);
   const [viewIndex, setViewIndex] = React.useState(null);
+  const [showCompletion, setShowCompletion] = React.useState(false);
 
   const sessions = run?.sessions || [];
   const currentSessionIndex = run?.currentSessionIndex ?? 0;
   const currentSession = sessions[currentSessionIndex] || null;
   const busy = Boolean(busyAction);
 
-  // When the active session advances, snap back to the live view
+  // When the active session advances or a new run starts, snap back to the live view
   React.useEffect(() => {
     setViewIndex(null);
-  }, [currentSessionIndex]);
+    setShowCompletion(false);
+  }, [run?.runId, currentSessionIndex]);
 
   const viewedIndex = viewIndex ?? currentSessionIndex;
   const viewedSession = sessions[viewedIndex] || null;
@@ -108,6 +110,7 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
   const isCurrentSessionDone = currentSession?.state === 'completed';
 
   function handleSelectSession(i) {
+    setShowCompletion(false);
     setViewIndex((prev) => (prev === i ? null : i));
   }
 
@@ -210,6 +213,12 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
       }
       finalSessions[currentSessionIndex] = finalSession;
 
+      if (result?.interviewTerminated) {
+        finalSessions = finalSessions.map((s, i) =>
+          i > currentSessionIndex ? { ...s, state: 'skipped' } : s,
+        );
+      }
+
       // Keep currentSessionIndex on the completed session — user advances manually
       let finalRun = { ...run, sessions: finalSessions, currentSessionIndex: currentSessionIndex };
 
@@ -220,7 +229,7 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
           run.scenario, completedSessions, run.interviewers, run.difficulty, run.evaluation,
         );
         finalRun = { ...finalRun, evaluation };
-        if (isLastSession) {
+        if (isLastSession || result?.interviewTerminated) {
           finalRun = { ...finalRun, completedAt: Date.now() };
         }
       }
@@ -275,20 +284,45 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
   const isLastSession = currentSessionIndex === sessions.length - 1;
   const viewedSessionInterviewers = (run.interviewers || []).filter((iv) => (viewedSession?.interviewerKeys || []).includes(iv.key));
 
-  const advanceFooter = isCurrentSessionDone && !isLastSession && !isRunComplete ? (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={handleAdvanceSession}
-        disabled={advancing}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-60"
-      >
-        {advancing && <Spinner className="border-blue-300 border-t-white" />}
-        Begin: {nextSession?.title}
-      </button>
-    </div>
-  ) : null;
+  const chatFooter = (() => {
+    if (isViewingPast) return null;
+    if (isRunComplete) return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setShowCompletion(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+        >
+          <BadgeCheck size={15} />
+          View results
+        </button>
+        {params.practiceMode && (
+          <button
+            onClick={() => onStartRun('practice')}
+            disabled={busy}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60"
+          >
+            {busyAction === 'startPractice' && <Spinner className="border-gray-200 border-t-gray-600" />}
+            New practice run
+          </button>
+        )}
+      </div>
+    );
+    if (isCurrentSessionDone && !isLastSession) return (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleAdvanceSession}
+          disabled={advancing}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-60"
+        >
+          {advancing && <Spinner className="border-blue-300 border-t-white" />}
+          Begin: {nextSession?.title}
+        </button>
+      </div>
+    );
+    return null;
+  })();
 
-  const mainPanel = isRunComplete && viewIndex === null ? (
+  const completionScreen = (
     <div className="flex flex-col items-center justify-center flex-1 gap-5 p-8 text-center">
       <BadgeCheck size={40} className="text-green-500" />
       <div>
@@ -314,7 +348,9 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
         )}
       </div>
     </div>
-  ) : (
+  );
+
+  const chatPanel = (
     <>
       <div className="px-4 py-2 border-b border-gray-200 bg-white shrink-0">
         <div className="text-sm font-semibold text-gray-800">{viewedSession?.title}</div>
@@ -332,7 +368,7 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
           readOnly={isViewingPast || isCurrentSessionDone}
           placeholder="Type your response…"
           emptyText="The interview is starting…"
-          footer={advanceFooter}
+          footer={chatFooter}
         />
       </div>
     </>
@@ -343,14 +379,14 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
       <SessionSidebar
         sessions={sessions}
         currentIndex={isRunComplete || isCurrentSessionDone ? -1 : currentSessionIndex}
-        selectedIndex={viewIndex}
+        selectedIndex={showCompletion ? null : viewIndex}
         allInterviewers={run.interviewers || []}
         onSelect={handleSelectSession}
         isRunComplete={isRunComplete}
-        onSelectCompletion={() => setViewIndex(null)}
+        onSelectCompletion={() => { setShowCompletion(true); setViewIndex(null); }}
       />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {mainPanel}
+        {showCompletion ? completionScreen : chatPanel}
       </div>
     </div>
   );

@@ -789,6 +789,7 @@ Return a raw JSON object (no markdown code fence):
     { "speakerKey": "interviewer_key", "speakerName": "Name", "speakerRole": "job title", "text": "what they say" }
   ],
   "sessionComplete": false,
+  "interviewTerminated": false,
   "sessionSummary": ""
 }
 
@@ -797,6 +798,7 @@ Rules:
 - In multi-interviewer sessions, have the most relevant interviewer speak; occasionally another may interject naturally
 - IMPORTANT: "Do you have any questions for us?" is itself a question the candidate must answer — sessionComplete must be false when asking it; only set sessionComplete to true AFTER the candidate has replied and you deliver the closing sign-off
 - When sessionComplete is true, set sessionSummary to a 1-2 sentence note on how the session went (used for evaluation)
+- If the candidate is being rude, hostile, or explicitly states they do not want to continue, the interviewer should respond in character (e.g. politely but firmly end the conversation), set sessionComplete to true AND set interviewTerminated to true. The sessionSummary should briefly note how the session ended. When interviewTerminated is true any remaining sessions will be skipped.
 - Return only the JSON object`;
 
   const response = await makeSimpleAiRequest(prompt);
@@ -804,6 +806,7 @@ Rules:
   return {
     replies: Array.isArray(parsed?.replies) ? parsed.replies : [],
     sessionComplete: Boolean(parsed?.sessionComplete),
+    interviewTerminated: Boolean(parsed?.interviewTerminated),
     sessionSummary: typeof parsed?.sessionSummary === 'string' ? parsed.sessionSummary : '',
   };
 }
