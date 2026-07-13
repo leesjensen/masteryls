@@ -3,6 +3,11 @@ import { normalizeInteractionIds } from '../utils/interactionMeta';
 import { normalizeDraProcessAttributeName } from '../utils/draStages';
 
 const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
+
+// A theme init directive works for every Mermaid diagram type (flowchart, classDiagram,
+// sequenceDiagram, stateDiagram, ...). We instruct the AI to prepend it so diagrams
+// render with a white background and black text/lines. (A `classDef default fill:...`
+// line only works for flowcharts and breaks other diagram types.)
 const mermaidTheme = "%%{init: { 'theme': 'neutral', 'themeVariables': { 'mainBkg': '#ffffff', 'lineColor': '#000000', 'primaryTextColor': '#000000', 'actorBorder': '#000000', 'participantBorder': '#000000', 'noteBorderColor': '#000000' } }}%%";
 
 /**
@@ -99,7 +104,7 @@ Requirements:
 - Do not over create bulleted lists with multiple levels
 - Make content educational and engaging
 - Prefer textual prose
-- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
+- If you include a Mermaid diagram, the first line INSIDE the \`\`\`mermaid code fence (immediately after the opening \`\`\`mermaid, on the line before the diagram type declaration) must be this exact directive so it renders with a white background and black lines/text for ANY diagram type (flowchart, classDiagram, sequenceDiagram, stateDiagram, etc.). Put it inside the code fence, never on a line above or outside the fence. ${mermaidTheme}
 - Include practical examples where applicable
 - Include references to external resources if relevant
 - Encourage thoughtful engagement with the material
@@ -665,11 +670,11 @@ Rules:
 // ─── Interview generators ────────────────────────────────────────────────────
 
 const INTERVIEW_DIFFICULTY_TABLE = {
-  1: { sessions: '2',   questions: '3–4', seniority: 'entry-level employees',           disposition: 'warm, encouraging, and patient — happy to rephrase or help' },
+  1: { sessions: '2', questions: '3–4', seniority: 'entry-level employees', disposition: 'warm, encouraging, and patient — happy to rephrase or help' },
   2: { sessions: '2–3', questions: '4–5', seniority: 'junior to mid-level professionals', disposition: 'friendly and supportive with occasional follow-up questions' },
-  3: { sessions: '3',   questions: '5–6', seniority: 'mid-level to senior professionals', disposition: 'professional and neutral — expects clear, substantive answers' },
-  4: { sessions: '4',   questions: '6–7', seniority: 'senior and lead professionals',     disposition: 'probing and skeptical — pushes back on weak or vague answers' },
-  5: { sessions: '4–5', questions: '7–8', seniority: 'senior, principal, and VP-level',   disposition: 'demanding and exacting — direct challenges, high expectations, no hand-holding' },
+  3: { sessions: '3', questions: '5–6', seniority: 'mid-level to senior professionals', disposition: 'professional and neutral — expects clear, substantive answers' },
+  4: { sessions: '4', questions: '6–7', seniority: 'senior and lead professionals', disposition: 'probing and skeptical — pushes back on weak or vague answers' },
+  5: { sessions: '4–5', questions: '7–8', seniority: 'senior, principal, and VP-level', disposition: 'demanding and exacting — direct challenges, high expectations, no hand-holding' },
 };
 
 export async function aiInterviewScenarioGenerator({ discipline, jobTitle, jobDescription, difficulty, learningOutcomes }) {
@@ -739,16 +744,14 @@ export async function aiInterviewSessionResponseGenerator(scenario, session, int
     .map((iv) => `- ${iv.name} (${iv.role}): ${iv.personality}. Evaluating: ${iv.objectives}`)
     .join('\n');
 
-  const history = (messages || [])
-    .map((m) => `${m.speakerName || (m.role === 'user' ? 'Candidate' : 'Interviewer')}: ${m.text}`)
-    .join('\n');
+  const history = (messages || []).map((m) => `${m.speakerName || (m.role === 'user' ? 'Candidate' : 'Interviewer')}: ${m.text}`).join('\n');
 
   const targetCount = session?.targetQuestionCount || 5;
   const candidateTurns = (messages || []).filter((m) => m.role === 'user').length;
   const isNearEnd = candidateTurns >= targetCount;
   const isPastEnd = candidateTurns >= targetCount + 2;
 
-  const sessionList = (scenario?.sessions || []);
+  const sessionList = scenario?.sessions || [];
   const currentIndex = sessionList.findIndex((s) => s.title === session?.title);
   const nextSession = currentIndex >= 0 && currentIndex < sessionList.length - 1 ? sessionList[currentIndex + 1] : null;
   const isLastSession = !nextSession;
@@ -775,13 +778,7 @@ DIFFICULTY: ${d} / 5 — interviewer disposition: ${dt.disposition}
 
 Candidate has answered approximately ${candidateTurns} of the planned ${targetCount} questions.
 
-${isPastEnd
-    ? `The candidate has answered enough questions AND has had a chance to ask their own questions. You MUST now close this session with a natural sign-off. ${isLastSession
-      ? `This is the final session. Close warmly. Example: "Thanks so much for meeting with us today — we'll be in touch soon."`
-      : `Transition naturally to the next session. Example: "I think we've covered everything I needed. Next you'll be meeting with ${nextInterviewerNames || 'the team'}."`} Set sessionComplete to true.`
-    : isNearEnd
-      ? `You have covered the planned questions. Continue naturally — ask a follow-up if the candidate's last answer warrants one, or begin winding down by asking if they have any questions for you. Do not rush; let the conversation close organically. Set sessionComplete to false.`
-      : `Continue the interview naturally. Ask a follow-up or move to a new question related to the session objective.`}
+${isPastEnd ? `The candidate has answered enough questions AND has had a chance to ask their own questions. You MUST now close this session with a natural sign-off. ${isLastSession ? `This is the final session. Close warmly. Example: "Thanks so much for meeting with us today — we'll be in touch soon."` : `Transition naturally to the next session. Example: "I think we've covered everything I needed. Next you'll be meeting with ${nextInterviewerNames || 'the team'}."`} Set sessionComplete to true.` : isNearEnd ? `You have covered the planned questions. Continue naturally — ask a follow-up if the candidate's last answer warrants one, or begin winding down by asking if they have any questions for you. Do not rush; let the conversation close organically. Set sessionComplete to false.` : `Continue the interview naturally. Ask a follow-up or move to a new question related to the session objective.`}
 
 Return a raw JSON object (no markdown code fence):
 {
@@ -1037,7 +1034,7 @@ Requirements:
 - The section title should be concise and descriptive
 - The section body should be clear and unambiguous
 - Ensure that the section is educational and reinforces key concepts from the topic
-- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
+- If you include a Mermaid diagram, the first line INSIDE the \`\`\`mermaid code fence (immediately after the opening \`\`\`mermaid, on the line before the diagram type declaration) must be this exact directive so it renders with a white background and black lines/text for ANY diagram type (flowchart, classDiagram, sequenceDiagram, stateDiagram, etc.). Put it inside the code fence, never on a line above or outside the fence. ${mermaidTheme}
 `;
 
   return makeSimpleAiRequest(prompt);
@@ -1335,7 +1332,7 @@ Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
 - Prefer short responses of less than 200 words with one or two concise paragraphs
 - Prefer to use bullet points, lists, mermaid diagrams, and code examples instead of text
-- If you include a Mermaid diagram, include this line in the diagram to enforce white background and black lines/text: ${mermaidDefaultClassDef}
+- If you include a Mermaid diagram, the first line INSIDE the \`\`\`mermaid code fence (immediately after the opening \`\`\`mermaid, on the line before the diagram type declaration) must be this exact directive so it renders with a white background and black lines/text for ANY diagram type (flowchart, classDiagram, sequenceDiagram, stateDiagram, etc.). Put it inside the code fence, never on a line above or outside the fence. ${mermaidTheme}
 - Directly addresses the student's question or comment
 - References specific parts of the topic content when relevant
 - Provides additional context, examples, or explanations that enhance understanding
