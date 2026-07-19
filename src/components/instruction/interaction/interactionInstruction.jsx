@@ -312,7 +312,10 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           }
         }
 
-        if (type !== 'likert') {
+        // likert and ai-web-page keep their own submitDisabled logic (stay disabled until the
+        // learner changes their answer/HTML) - forcing this back to enabled here would fight
+        // with that and leave the button clickable right after a submission with no changes.
+        if (type !== 'likert' && type !== 'ai-web-page') {
           event.target.disabled = false;
         }
       }

@@ -214,7 +214,7 @@ test('dra hardest difficulty reveals only the high-level summary', async ({ page
   await expect(page.getByText('Dana Cole')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Constraints' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Stakeholders' })).toHaveCount(0);
-  await expect(page.getByText('emerge as you investigate', { exact: false })).toBeVisible();
+  await expect(page.getByText('revealed through your work in the Workspace tab', { exact: false })).toBeVisible();
 });
 
 test('dra practice mode can start a new scenario after completing', async ({ page }) => {
@@ -247,9 +247,13 @@ test('dra practice mode can start a new scenario after completing', async ({ pag
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Start new scenario' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Benefits Enrollment Recovery', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Tax System Modernization (Completed)' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Tax System Modernization (Completed)' }).click();
+  // The practice scenario history list lives on the Overview tab; starting a new scenario
+  // auto-switches to the Scenario tab, so switch back to see it.
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Tax System Modernization' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Tax System Modernization' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Start new scenario' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Scenario', exact: true }).click();
