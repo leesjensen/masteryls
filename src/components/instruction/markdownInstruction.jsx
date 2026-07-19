@@ -9,7 +9,13 @@ import useMarkdownLocation from '../../hooks/useMarkdownLocation';
 
 import '../markdown.css';
 
-export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning', previewFileUrls = {} }) {
+// See instruction.jsx for why this needs to be a stable module-level default rather than
+// an inline `= {}` - an inline object literal default is a new reference on every call
+// when the caller doesn't pass previewFileUrls, which would defeat the content-load
+// effect's dependency array below (it includes previewFileUrls) and re-run on every render.
+const EMPTY_PREVIEW_FILE_URLS = {};
+
+export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning', previewFileUrls = EMPTY_PREVIEW_FILE_URLS }) {
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +54,11 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         });
       }
     }
-  }, [learningSession, content, instructionState, previewFileUrls]);
+    // Depend on the topic id/path rather than the whole learningSession object: the
+    // periodic progress heartbeat replaces learningSession with a new reference every
+    // ~60s (to record lastActivityAt), which would otherwise re-trigger a content
+    // reload and the loading-overlay fade on every heartbeat, looking like a refresh.
+  }, [learningSession.topic?.id, learningSession.topic?.path, content, instructionState, previewFileUrls]);
 
   useEffect(() => {
     if (!learningSession?.enrollment?.id) return;

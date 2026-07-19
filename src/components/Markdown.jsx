@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearchResults } from '../hooks/useSearchResults';
+import useLatest from '../hooks/useLatest';
 import { createHighlightedComponent, HighlightedText, renderHighlightedCodeBlock } from './HighlightedText';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -25,10 +26,30 @@ function markdownUrlTransform(value, key, node) {
   return defaultUrlTransform(value);
 }
 
+function extractPlainText(children) {
+  return React.Children.toArray(children)
+    .map((child) => {
+      if (typeof child === 'string') return child;
+      if (typeof child === 'number') return String(child);
+      if (React.isValidElement(child)) return extractPlainText(child.props.children);
+      return '';
+    })
+    .join('')
+    .trim();
+}
+
 export default function Markdown({ learningSession, content, languagePlugins = [], noteMessages = [], onMakeHeadingActive = null }) {
   const { searchResults } = useSearchResults();
   const navigate = useNavigate();
   const containerRef = React.useRef(null);
+  // These are recreated on every render of our callers (interactionInstruction.jsx builds a
+  // fresh languagePlugins array, markdownInstruction.jsx builds a fresh onMakeHeadingActive
+  // closure, every time they re-render - which happens on every progress heartbeat). Reading
+  // them through refs lets the react-markdown `components` map below stay reference-stable
+  // across those re-renders, so react-markdown doesn't remount rendered interactions (e.g. an
+  // essay textarea) and wipe unsaved input every ~60s.
+  const languagePluginsRef = useLatest(languagePlugins);
+  const onMakeHeadingActiveRef = useLatest(onMakeHeadingActive);
 
   // Get search terms for highlighting
   const searchTerms = React.useMemo(() => {
@@ -38,8 +59,8 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     return searchResults.query.trim().split(/\s+/);
   }, [searchResults]);
 
-  const renderInteraction = (children, languagePlugins) => {
-    const plugin = languagePlugins.find((p) => p.lang === 'masteryls');
+  const renderInteraction = (children) => {
+    const plugin = languagePluginsRef.current.find((p) => p.lang === 'masteryls');
     if (!plugin?.processor) {
       return null;
     }
@@ -77,170 +98,6 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     [learningSession?.topic?.path, learningSession?.topic?.snapshotPath],
   );
 
-  const customComponents = {
-    pre({ node, children, ...props }) {
-      return (
-        <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }} {...props}>
-          <BlockCodeContext.Provider value={true}>{children}</BlockCodeContext.Provider>
-        </pre>
-      );
-    },
-    code({ node, className, children, ...props }) {
-      const isBlock = React.useContext(BlockCodeContext);
-      const match = /language-(\w+)/.exec(className || '');
-      const language = match?.[1];
-
-      // masteryls interaction
-      if (isBlock && language === 'masteryls') {
-        return renderInteraction(children, languagePlugins);
-      }
-      // Use SyntaxHighlighter for fenced code blocks with or without a language
-      else if (isBlock) {
-        const codeText = String(children).replace(/\n$/, '');
-        return renderHighlightedCodeBlock(codeText, language, searchTerms, props);
-      }
-
-      return createHighlightedComponent('code', searchTerms)({ children, node, ...props });
-    },
-
-    // Wrap text nodes to enable highlighting
-    strong: createHighlightedComponent('strong', searchTerms),
-    p: createHighlightedComponent('p', searchTerms),
-    h1: createHighlightedComponent('h1', searchTerms),
-    h2: createHighlightedComponent('h2', searchTerms),
-    h3: createHighlightedComponent('h3', searchTerms),
-    h4: createHighlightedComponent('h4', searchTerms),
-    h5: createHighlightedComponent('h5', searchTerms),
-    h6: createHighlightedComponent('h6', searchTerms),
-    li: createHighlightedComponent('li', searchTerms),
-    table({ node, children, ...props }) {
-      return (
-        <div className="markdown-table-scroll" role="region" aria-label="Scrollable table">
-          <table {...props}>{children}</table>
-        </div>
-      );
-    },
-    td: createHighlightedComponent('td', searchTerms),
-    th: createHighlightedComponent('th', searchTerms),
-    blockquote: createHighlightedComponent('blockquote', searchTerms),
-    span({ node, style, children, ...props }) {
-      const safeStyle = sanitizeInlineStyle(style);
-      return (
-        <span style={safeStyle} {...props}>
-          {children}
-        </span>
-      );
-    },
-    iframe({ node, src, loading, referrerPolicy, referrerpolicy, sandbox, ...props }) {
-      if (!src || !src.startsWith('https://')) {
-        return null;
-      }
-
-      return <iframe src={src} loading={loading || 'lazy'} referrerPolicy={referrerPolicy || referrerpolicy || 'strict-origin-when-cross-origin'} sandbox={sandbox || 'allow-scripts allow-same-origin allow-presentation'} {...props} />;
-    },
-
-    source({ node, src, ...props }) {
-      const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
-      return <source src={resolvedSrc} {...props} />;
-    },
-
-    img({ node, src, ...props }) {
-      const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
-      return <img src={resolvedSrc} {...props} />;
-    },
-
-    // Custom link handler for internal navigation
-    // Absolute URL: open in new tab.
-    //     https://cow.com
-    // Root-relative URL: Specific course and topic.
-    //     /course/abc/topic/def
-    //     /course/51a72d23-50ab-4147-a1db-27a062aed771/topic/140d86ce9e9b4ce59fd095bb959c9df4
-    // Relative URL: relative path to either a topic or a resource of current topic in the current course.
-    //     main.java - resource in current topic
-    //     ./main.java - resource in current topic
-    //     ../simon/simon.md
-    //     ../../readme.md
-    a({ node, href, children, ...props }) {
-      return (
-        <a
-          href={href}
-          onClick={(e) => {
-            e.preventDefault();
-            if (href?.startsWith('http')) {
-              window.open(href, '_blank', 'noopener,noreferrer');
-            } else if (href?.startsWith('/')) {
-              navigate(href);
-            } else {
-              const match = href?.match(/^([^#]*)(#.*)?$/);
-              const hrefPath = match?.[1];
-              const hrefAnchor = match?.[2];
-
-              if (!hrefPath && hrefAnchor) {
-                scrollToAnchor(hrefAnchor, containerRef);
-              } else if (hrefPath) {
-                const canonicalResolvedUrl = new URL(hrefPath, learningSession.topic.path).toString();
-                const resolvedUrl = resolveTopicUrl(hrefPath);
-                const targetTopic = learningSession.course.topicFromPath(canonicalResolvedUrl, false);
-                if (targetTopic) {
-                  const anchor = hrefAnchor ? `#${hrefAnchor}` : '';
-                  navigate(`/course/${learningSession.course.id}/topic/${targetTopic.id}${anchor}`);
-                } else {
-                  window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
-                }
-              }
-            }
-          }}
-          {...props}
-        >
-          {children}
-        </a>
-      );
-    },
-
-    // Handle other plugin elements
-    div({ node, className, children, ...props }) {
-      // Check if this div has plugin attributes
-      const pluginMatch = className?.match(/data-plugin-(\w+)/);
-      if (pluginMatch) {
-        const pluginLang = pluginMatch[1];
-        const plugin = languagePlugins.find((p) => p.lang === pluginLang);
-        if (plugin?.handler) {
-          return (
-            <div
-              className={className}
-              {...props}
-              onClick={(e) => {
-                const pluginElement = e.target.closest(`[data-plugin-${pluginLang}]`);
-                if (pluginElement) {
-                  plugin.handler(e, pluginElement);
-                }
-              }}
-            >
-              {children}
-            </div>
-          );
-        }
-      }
-      return (
-        <div className={className} {...props}>
-          {children}
-        </div>
-      );
-    },
-  };
-
-  function extractPlainText(children) {
-    return React.Children.toArray(children)
-      .map((child) => {
-        if (typeof child === 'string') return child;
-        if (typeof child === 'number') return String(child);
-        if (React.isValidElement(child)) return extractPlainText(child.props.children);
-        return '';
-      })
-      .join('')
-      .trim();
-  }
-
   function renderHighlightedChildren(children) {
     return React.Children.map(children, (child, index) => {
       if (typeof child === 'string') {
@@ -254,47 +111,208 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     });
   }
 
-  if (onMakeHeadingActive !== null) {
-    // Modify heading components to include StickyNote icon and heading ID
-    const headingComponents = ['h2', 'h3', 'h4'].reduce((acc, tag) => {
-      acc[tag] = ({ node, children, className, ...props }) => {
-        const HeadingTag = tag;
-        const headingText = extractPlainText(children);
-        const headingId = headingText
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w-]/g, '');
-
-        const existingNote = noteMessages.find((note) => note.section === headingText);
-
+  // Memoized so react-markdown sees stable component identities across renders that don't
+  // actually change the topic/course (e.g. the progress heartbeat re-rendering this tree).
+  // Unstable identities here would make react-markdown treat elements as a different type
+  // and remount the rendered subtree - including interaction state like an in-progress essay.
+  const components = React.useMemo(() => {
+    const customComponents = {
+      pre({ node, children, ...props }) {
         return (
-          <HeadingTag
-            id={headingId}
-            className={`flex items-center gap-2 cursor-pointer ${className || ''}`.trim()}
-            {...props}
-            onClick={() => {
-              navigate(`/course/${learningSession.course.id}/topic/${learningSession.topic.id}#${headingId}`);
-            }}
-          >
-            {renderHighlightedChildren(children)}
-            <span title={`${existingNote ? 'View' : 'Add'} notes for this section`}>
-              <StickyNote
-                size={12}
-                className={`cursor-pointer transition-colors ${existingNote ? 'text-yellow-500 fill-yellow-100' : 'text-gray-400 hover:text-yellow-300'}`}
-                onClick={() => {
-                  onMakeHeadingActive(headingText);
-                }}
-              />
-            </span>
-          </HeadingTag>
+          <pre style={{ padding: '3px', borderRadius: 0, background: 'transparent' }} {...props}>
+            <BlockCodeContext.Provider value={true}>{children}</BlockCodeContext.Provider>
+          </pre>
         );
-      };
-      return acc;
-    }, {});
-    Object.assign(customComponents, headingComponents);
-  }
+      },
+      code({ node, className, children, ...props }) {
+        const isBlock = React.useContext(BlockCodeContext);
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match?.[1];
 
-  const components = { ...customComponents, MermaidBlock };
+        // masteryls interaction
+        if (isBlock && language === 'masteryls') {
+          return renderInteraction(children);
+        }
+        // Use SyntaxHighlighter for fenced code blocks with or without a language
+        else if (isBlock) {
+          const codeText = String(children).replace(/\n$/, '');
+          return renderHighlightedCodeBlock(codeText, language, searchTerms, props);
+        }
+
+        return createHighlightedComponent('code', searchTerms)({ children, node, ...props });
+      },
+
+      // Wrap text nodes to enable highlighting
+      strong: createHighlightedComponent('strong', searchTerms),
+      p: createHighlightedComponent('p', searchTerms),
+      h1: createHighlightedComponent('h1', searchTerms),
+      h2: createHighlightedComponent('h2', searchTerms),
+      h3: createHighlightedComponent('h3', searchTerms),
+      h4: createHighlightedComponent('h4', searchTerms),
+      h5: createHighlightedComponent('h5', searchTerms),
+      h6: createHighlightedComponent('h6', searchTerms),
+      li: createHighlightedComponent('li', searchTerms),
+      table({ node, children, ...props }) {
+        return (
+          <div className="markdown-table-scroll" role="region" aria-label="Scrollable table">
+            <table {...props}>{children}</table>
+          </div>
+        );
+      },
+      td: createHighlightedComponent('td', searchTerms),
+      th: createHighlightedComponent('th', searchTerms),
+      blockquote: createHighlightedComponent('blockquote', searchTerms),
+      span({ node, style, children, ...props }) {
+        const safeStyle = sanitizeInlineStyle(style);
+        return (
+          <span style={safeStyle} {...props}>
+            {children}
+          </span>
+        );
+      },
+      iframe({ node, src, loading, referrerPolicy, referrerpolicy, sandbox, ...props }) {
+        if (!src || !src.startsWith('https://')) {
+          return null;
+        }
+
+        return <iframe src={src} loading={loading || 'lazy'} referrerPolicy={referrerPolicy || referrerpolicy || 'strict-origin-when-cross-origin'} sandbox={sandbox || 'allow-scripts allow-same-origin allow-presentation'} {...props} />;
+      },
+
+      source({ node, src, ...props }) {
+        const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
+        return <source src={resolvedSrc} {...props} />;
+      },
+
+      img({ node, src, ...props }) {
+        const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
+        return <img src={resolvedSrc} {...props} />;
+      },
+
+      // Custom link handler for internal navigation
+      // Absolute URL: open in new tab.
+      //     https://cow.com
+      // Root-relative URL: Specific course and topic.
+      //     /course/abc/topic/def
+      //     /course/51a72d23-50ab-4147-a1db-27a062aed771/topic/140d86ce9e9b4ce59fd095bb959c9df4
+      // Relative URL: relative path to either a topic or a resource of current topic in the current course.
+      //     main.java - resource in current topic
+      //     ./main.java - resource in current topic
+      //     ../simon/simon.md
+      //     ../../readme.md
+      a({ node, href, children, ...props }) {
+        return (
+          <a
+            href={href}
+            onClick={(e) => {
+              e.preventDefault();
+              if (href?.startsWith('http')) {
+                window.open(href, '_blank', 'noopener,noreferrer');
+              } else if (href?.startsWith('/')) {
+                navigate(href);
+              } else {
+                const match = href?.match(/^([^#]*)(#.*)?$/);
+                const hrefPath = match?.[1];
+                const hrefAnchor = match?.[2];
+
+                if (!hrefPath && hrefAnchor) {
+                  scrollToAnchor(hrefAnchor, containerRef);
+                } else if (hrefPath) {
+                  const canonicalResolvedUrl = new URL(hrefPath, learningSession.topic.path).toString();
+                  const resolvedUrl = resolveTopicUrl(hrefPath);
+                  const targetTopic = learningSession.course.topicFromPath(canonicalResolvedUrl, false);
+                  if (targetTopic) {
+                    const anchor = hrefAnchor ? `#${hrefAnchor}` : '';
+                    navigate(`/course/${learningSession.course.id}/topic/${targetTopic.id}${anchor}`);
+                  } else {
+                    window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+                  }
+                }
+              }
+            }}
+            {...props}
+          >
+            {children}
+          </a>
+        );
+      },
+
+      // Handle other plugin elements
+      div({ node, className, children, ...props }) {
+        // Check if this div has plugin attributes
+        const pluginMatch = className?.match(/data-plugin-(\w+)/);
+        if (pluginMatch) {
+          const pluginLang = pluginMatch[1];
+          const plugin = languagePluginsRef.current.find((p) => p.lang === pluginLang);
+          if (plugin?.handler) {
+            return (
+              <div
+                className={className}
+                {...props}
+                onClick={(e) => {
+                  const pluginElement = e.target.closest(`[data-plugin-${pluginLang}]`);
+                  if (pluginElement) {
+                    plugin.handler(e, pluginElement);
+                  }
+                }}
+              >
+                {children}
+              </div>
+            );
+          }
+        }
+        return (
+          <div className={className} {...props}>
+            {children}
+          </div>
+        );
+      },
+    };
+
+    if (onMakeHeadingActiveRef.current !== null) {
+      // Modify heading components to include StickyNote icon and heading ID
+      const headingComponents = ['h2', 'h3', 'h4'].reduce((acc, tag) => {
+        acc[tag] = ({ node, children, className, ...props }) => {
+          const HeadingTag = tag;
+          const headingText = extractPlainText(children);
+          const headingId = headingText
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^\w-]/g, '');
+
+          const existingNote = noteMessages.find((note) => note.section === headingText);
+
+          return (
+            <HeadingTag
+              id={headingId}
+              className={`flex items-center gap-2 cursor-pointer ${className || ''}`.trim()}
+              {...props}
+              onClick={() => {
+                navigate(`/course/${learningSession.course.id}/topic/${learningSession.topic.id}#${headingId}`);
+              }}
+            >
+              {renderHighlightedChildren(children)}
+              <span title={`${existingNote ? 'View' : 'Add'} notes for this section`}>
+                <StickyNote
+                  size={12}
+                  className={`cursor-pointer transition-colors ${existingNote ? 'text-yellow-500 fill-yellow-100' : 'text-gray-400 hover:text-yellow-300'}`}
+                  onClick={() => {
+                    onMakeHeadingActiveRef.current(headingText);
+                  }}
+                />
+              </span>
+            </HeadingTag>
+          );
+        };
+        return acc;
+      }, {});
+      Object.assign(customComponents, headingComponents);
+    }
+
+    return { ...customComponents, MermaidBlock };
+    // Deliberately excludes languagePlugins/onMakeHeadingActive (read via refs above) so this
+    // stays stable across re-renders that don't change the topic/course/notes/search state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerms, resolveTopicUrl, navigate, noteMessages, Boolean(onMakeHeadingActive), learningSession?.course?.id, learningSession?.topic?.id, learningSession?.topic?.path]);
 
   return (
     <div ref={containerRef}>

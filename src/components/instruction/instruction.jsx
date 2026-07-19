@@ -8,7 +8,14 @@ import InterviewInstruction from './interview/interviewInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 import { addInteractionProgress } from './interaction/interactionProgressStore';
 
-export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', previewFileUrls = {} }) {
+// A `= {}` default parameter evaluates to a NEW object on every call when the caller
+// doesn't pass previewFileUrls (the normal student-viewing route never does). That fresh
+// identity was flowing down into markdownInstruction.jsx's content-load effect dependency
+// array, making it think something changed and re-fetch/fade on every render (e.g. every
+// progress heartbeat). A stable module-level default fixes that.
+const EMPTY_PREVIEW_FILE_URLS = {};
+
+export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', previewFileUrls = EMPTY_PREVIEW_FILE_URLS }) {
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
@@ -18,7 +25,11 @@ export default function Instruction({ courseOps, learningSession, user, content 
       });
       setLoadingProgress(false);
     });
-  }, [learningSession]);
+    // Only re-fetch when the topic or enrollment actually changes, not on every
+    // learningSession reference change (e.g. the periodic progress heartbeat updating
+    // lastActivityAt). Re-running this on every heartbeat re-publishes stale interaction
+    // snapshots into the interaction store, clobbering in-progress unsaved interactions.
+  }, [learningSession.topic?.id, learningSession.enrollment?.id]);
 
   useProgressTracking({
     progressType: `${learningSession.topic.type || 'instruction'}View`,

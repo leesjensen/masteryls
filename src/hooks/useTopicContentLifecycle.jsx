@@ -73,7 +73,10 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
 
     onTopicLoaded?.();
     setDirty(false);
-  }, [learningSession]);
+    // Depend on topic identity, not the whole learningSession object: a save/commit or
+    // an interaction-structure update republishes learningSession with a new reference
+    // for the SAME topic, which would otherwise refetch and reset in-progress edits.
+  }, [learningSession.topic?.id, learningSession.topic?.path, contentAvailable]);
 
   React.useEffect(() => {
     function handleBeforeUnload(e) {

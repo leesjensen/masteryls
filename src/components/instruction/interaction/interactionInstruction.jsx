@@ -18,6 +18,11 @@ import { isSubmittableInteractionType, parseInteractionMeta } from '../../../uti
 import { validateSubmittedUrl } from '../../../utils/urlValidation';
 import { useCanvasGradebookEligibility } from '../../../hooks/canvas/useCanvasGradebookEligibility.jsx';
 
+// See instruction.jsx for why this needs to be a stable module-level default rather than
+// an inline `= {}` - it gets forwarded to markdownInstruction.jsx, whose content-load
+// effect depends on previewFileUrls by reference.
+const EMPTY_PREVIEW_FILE_URLS = {};
+
 function InteractionCard({ meta, controlJsx, isObserveReadOnly, isUnauthenticatedReadOnly, instructionState, isCourseLinkedToGradebook, canSubmitToCanvasGradebook, onSyncGrade, getSubmissionFileUrl, toBoolean }) {
   const progress = useInteractionProgressStore(meta.id) || {};
   const isEvaluating = progress?.evaluationState === 'loading';
@@ -83,7 +88,7 @@ function InteractionCard({ meta, controlJsx, isObserveReadOnly, isUnauthenticate
  *
  * @returns {JSX.Element} The rendered interaction instruction component
  */
-export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null, previewFileUrls = {} }) {
+export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null, previewFileUrls = EMPTY_PREVIEW_FILE_URLS }) {
   const isCourseLinkedToGradebook = Boolean(learningSession?.course?.externalRefs?.canvasCourseId);
   const canSubmitToCanvasGradebook = useCanvasGradebookEligibility({ courseOps, learningSession, user, isCourseLinkedToGradebook });
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
