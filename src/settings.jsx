@@ -277,15 +277,36 @@ export default function Settings({ courseOps, user, course }) {
     });
   };
 
-  const reindexSearch = () => {
-    courseOps.reindexCourse(course.id);
+  const reindexCourse = () => {
     showAlert({
       message: (
         <div className="text-xs">
-          <div>Indexing {course.title}</div>
+          <div>Reindexing {course.title}…</div>
         </div>
       ),
     });
+    courseOps
+      .reindexCourse(course.id)
+      .then((result) => {
+        showAlert({
+          message: (
+            <div className="text-xs">
+              <div>
+                Reindexed {course.title}: {result?.topicsIndexed ?? 0} topics indexed, {result?.manifestsFixed ?? 0} interaction manifest{result?.manifestsFixed === 1 ? '' : 's'} repaired.
+              </div>
+            </div>
+          ),
+        });
+      })
+      .catch((error) => {
+        showAlert({
+          message: (
+            <div className="text-xs">
+              <div>Reindex failed: {error?.message || 'Unknown error'}</div>
+            </div>
+          ),
+        });
+      });
   };
 
   const unpinContent = () => {
@@ -430,8 +451,8 @@ export default function Settings({ courseOps, user, course }) {
               <div>
                 <h2 className="text-lg font-semibold mb-3 text-gray-800">Repair</h2>
                 <div className="flex items-center justify-between gap-2">
-                  <button type="button" onClick={reindexSearch} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
-                    Reindex search
+                  <button type="button" onClick={reindexCourse} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100" title="Rebuild the topic search index and repair the interaction manifests in course.json">
+                    Reindex course
                   </button>
                   <button type="button" onClick={unpinContent} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
                     Unpin content

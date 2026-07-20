@@ -152,13 +152,35 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const course = await getCourse(courseId);
     if (!course) throw new Error('Course not found for indexing.');
 
+    // We may repair the per-topic interaction manifest in course.json (see below), so
+    // build an editable copy and track whether anything changed.
+    const updatedCourse = Course.copy(course);
+    let manifestsFixed = 0;
+
     const topics = [];
     for (const topic of course.allTopics) {
       if (topic?.state === 'stub') {
         continue;
       }
-      let content = await getTopic(topic);
-      content = cleanMarkdownForIndexing(content);
+      const raw = await getTopic(topic);
+
+      // Reconcile the interaction manifest from the RAW markdown (before the cleaning
+      // below strips the ```masteryls fences). This re-derives what an editor commit would
+      // have written, repairing topics whose interactions were authored outside the editor.
+      // Only when content actually loaded — a failed/empty fetch must never wipe a manifest.
+      if (typeof raw === 'string' && raw.trim().length > 0 && topic.type !== 'embedded' && topic.type !== 'video' && topic.type !== 'schedule') {
+        const nextInteractions = _extractInteractionIds(raw);
+        const current = Array.isArray(topic.interactions) ? topic.interactions : [];
+        if (!_areStringArraysEqual(current, nextInteractions)) {
+          const target = updatedCourse.topicFromId(topic.id);
+          if (target) {
+            target.interactions = nextInteractions;
+            manifestsFixed += 1;
+          }
+        }
+      }
+
+      const content = cleanMarkdownForIndexing(raw);
       if (content && content.length > 0) {
         topics.push({ id: topic.id, content });
       }
@@ -167,6 +189,21 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (topics.length > 0) {
       await service.indexCourse(courseId, topics);
     }
+
+    if (manifestsFixed > 0) {
+      const token = user.getSetting('gitHubToken', courseId);
+      if (!token) {
+        throw new Error('A GitHub token is required to repair the course interaction manifests.');
+      }
+      await _updateCourseStructure(token, updatedCourse, 'reindex(course) sync interaction manifests');
+      // Keep the active session in sync so a later structure write cannot re-persist the
+      // stale (empty) manifests we just repaired.
+      if (learningSession?.course?.id === courseId) {
+        setLearningSession({ ...learningSession, course: updatedCourse });
+      }
+    }
+
+    return { topicsIndexed: topics.length, manifestsFixed };
   }
 
   function cleanMarkdownForIndexing(md) {
@@ -1556,7 +1593,12 @@ Requirements:
     update = true;
 
     if (update) {
-      service.saveEnrollment(enrollment);
+      // saveEnrollment is fire-and-forget; surface a failed upsert (which would otherwise
+      // silently leave the DB / MasteryView stale) instead of an unhandled rejection.
+      Promise.resolve(service.saveEnrollment(enrollment)).catch((e) => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to save enrollment progress', { enrollmentId: enrollment?.id, topicId: topic?.id, type, message: e?.message });
+      });
       setLearningSession({ ...learningSession, enrollment: enrollment });
     }
   }
