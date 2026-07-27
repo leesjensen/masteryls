@@ -13,16 +13,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/leesjensen/flexls.git"
+    "url": "git+https://github.com/leesjensen/masteryls.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/leesjensen/flexls/issues"
+    "url": "https://github.com/leesjensen/masteryls/issues"
   },
-  "homepage": "https://github.com/leesjensen/flexls#readme",
+  "homepage": "https://github.com/leesjensen/masteryls#readme",
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "@types/node": "^24.3.0",
