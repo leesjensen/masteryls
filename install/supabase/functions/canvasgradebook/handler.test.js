@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCanvasGradebookHandler } from './handler.js';
+import { createCanvasGradebookHandler, buildCanvasComment } from './handler.js';
 
 function createMockSupabase({ user, roles }) {
   return {
@@ -206,8 +206,26 @@ test('canvasgradebook can submit comment and url without posting grade when auto
   const updateRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(updateRequest.submission, undefined);
   assert.ok(updateRequest.comment.text_comment.includes('Suggested grade: 75/100 (75%)'));
-  assert.ok(updateRequest.comment.text_comment.includes('Feedback:'));
   assert.ok(updateRequest.comment.text_comment.includes('Strong progress.'));
+});
+
+test('buildCanvasComment separates the header lines with <br> line breaks', () => {
+  const comment = buildCanvasComment({ feedback: '', normalizedPercent: 90, normalizedPoints: 100, postedGrade: 90, autoGrade: true });
+  assert.ok(comment.includes('MasteryLS feedback<br>'));
+  assert.ok(comment.includes('Suggested grade: 90/100 (90%)<br>'));
+  assert.ok(!comment.includes('Feedback:')); // no feedback section when feedback is empty
+});
+
+test('buildCanvasComment appends the client-provided HTML feedback without escaping it', () => {
+  const feedbackHtml = '<strong>Summary</strong><br><ul><li>Backend missing</li></ul>';
+  const comment = buildCanvasComment({
+    feedback: feedbackHtml,
+    normalizedPercent: 50,
+    normalizedPoints: 100,
+    postedGrade: null,
+    autoGrade: false,
+  });
+  assert.ok(comment.includes(feedbackHtml));
 });
 
 test('canvasgradebook denies editor for a different course', async () => {
@@ -239,10 +257,7 @@ test('canvasgradebook denies editor for a different course', async () => {
 });
 
 test('canvasgradebook allows editor when catalogId matches role object', async () => {
-  const fetchSequence = [
-    new Response(JSON.stringify([{ id: 7, email: 'learner@test.com', login_id: 'learner@test.com' }]), { status: 200 }),
-    new Response(JSON.stringify({ id: 99, grade: 'A' }), { status: 200 }),
-  ];
+  const fetchSequence = [new Response(JSON.stringify([{ id: 7, email: 'learner@test.com', login_id: 'learner@test.com' }]), { status: 200 }), new Response(JSON.stringify({ id: 99, grade: 'A' }), { status: 200 })];
   const calls = [];
   const fetchFn = async (url, init) => {
     calls.push({ url, init });

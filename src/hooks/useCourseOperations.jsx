@@ -10,6 +10,7 @@ import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
+import { markdownToHtml } from '../utils/markdownToHtml';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
@@ -1471,7 +1472,7 @@ Requirements:
       throw new Error('Unable to submit grade because learner email is missing.');
     }
 
-    const interactionFeedback = String(details?.feedback || '').trim();
+    const interactionFeedback = markdownToHtml(String(details?.feedback || '').trim());
     const submissionUrl = typeof details?.url === 'string' ? details.url.trim() : '';
     const autoGrade = details?.autoGrade === true;
 

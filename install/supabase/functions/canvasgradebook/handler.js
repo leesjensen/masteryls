@@ -11,7 +11,10 @@ function normalizePercent(percentCorrect) {
   return Math.max(0, Math.min(100, parsed));
 }
 
-function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }) {
+// Canvas collapses plain-text newlines in submission comments, so the header
+// lines are joined with <br>. The feedback is already simplified HTML produced
+// by the client (markdownToHtml), so it is appended as-is rather than escaped.
+export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }) {
   const lines = [];
   const suggestedGrade = Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100;
   lines.push('MasteryLS feedback');
@@ -22,14 +25,14 @@ function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, pos
     lines.push(`Posted grade: ${postedGrade}`);
   }
 
+  let comment = lines.join('<br>\n');
+
   const trimmedFeedback = String(feedback || '').trim();
   if (trimmedFeedback) {
-    lines.push('');
-    lines.push('Feedback:');
-    lines.push(trimmedFeedback);
+    comment += `<br>\n<br>\n${trimmedFeedback}`;
   }
 
-  return lines.join('\n');
+  return comment;
 }
 
 export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeader, getEnv, fetchFn = fetch }) {
