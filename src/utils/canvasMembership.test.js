@@ -46,3 +46,28 @@ test('canvas membership checker returns false when eligibility lookup says not e
   const result = await checker.isLearnerInCanvasCourse('12345', 'bud@cow.com');
   assert.equal(result, false);
 });
+
+test('canvas membership checker returns false without calling when course id or email is missing', async () => {
+  const calls = [];
+  const checker = createCanvasCourseMembershipChecker({
+    checkLearnerEligibility: async (params) => {
+      calls.push(params);
+      return { eligible: true };
+    },
+  });
+
+  assert.equal(await checker.isLearnerInCanvasCourse('', 'bud@cow.com'), false);
+  assert.equal(await checker.isLearnerInCanvasCourse('12345', ''), false);
+  assert.equal(calls.length, 0);
+});
+
+test('canvas membership checker fails closed when the eligibility lookup throws', async () => {
+  const checker = createCanvasCourseMembershipChecker({
+    checkLearnerEligibility: async () => {
+      throw new Error('canvas offline');
+    },
+  });
+
+  const result = await checker.isLearnerInCanvasCourse('12345', 'bud@cow.com');
+  assert.equal(result, false);
+});

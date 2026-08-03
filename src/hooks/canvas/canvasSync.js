@@ -22,6 +22,13 @@ export function hasCanvasTopicLink(topic) {
   return !!(topic?.externalRefs?.canvasPageId || topic?.externalRefs?.canvasQuizId || topic?.externalRefs?.canvasAssignmentId);
 }
 
+export function getCanvasCourseUrl(canvasCourseId) {
+  if (!canvasCourseId) {
+    return null;
+  }
+  return `https://byu.instructure.com/courses/${canvasCourseId}`;
+}
+
 export function getCanvasTopicUrl(canvasCourseId, topic) {
   if (!canvasCourseId || !topic?.externalRefs) {
     return null;

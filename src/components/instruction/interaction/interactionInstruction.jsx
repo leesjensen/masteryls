@@ -16,7 +16,6 @@ import { updateInteractionProgress, getInteractionProgress, useInteractionProgre
 import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 import { isSubmittableInteractionType, parseInteractionMeta } from '../../../utils/interactionMeta';
 import { validateSubmittedUrl } from '../../../utils/urlValidation';
-import { useCanvasGradebookEligibility } from '../../../hooks/canvas/useCanvasGradebookEligibility.jsx';
 
 // See instruction.jsx for why this needs to be a stable module-level default rather than
 // an inline `= {}` - it gets forwarded to markdownInstruction.jsx, whose content-load
@@ -90,7 +89,10 @@ function InteractionCard({ meta, controlJsx, isObserveReadOnly, isUnauthenticate
  */
 export default function InteractionInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', quizStateReporter = null, previewFileUrls = EMPTY_PREVIEW_FILE_URLS }) {
   const isCourseLinkedToGradebook = Boolean(learningSession?.course?.externalRefs?.canvasCourseId);
-  const canSubmitToCanvasGradebook = useCanvasGradebookEligibility({ courseOps, learningSession, user, isCourseLinkedToGradebook });
+  // Course-level eligibility is resolved once in courseOps; apply the cheap
+  // per-topic gate (only project topics submit to the gradebook) here.
+  const isProjectTopic = learningSession?.topic?.type === 'project';
+  const canSubmitToCanvasGradebook = Boolean(courseOps?.canSubmitToCanvasGradebook) && isCourseLinkedToGradebook && isProjectTopic;
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const isUnauthenticatedReadOnly = !user;
 

@@ -33,6 +33,28 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   const discussionToggleHandler = React.useRef(null);
   const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ checkLearnerEligibility: (params) => service.checkCanvasGradebookEligibility(params) }));
 
+  // Course-level Canvas gradebook eligibility. This is the expensive, async part
+  // (is the learner a student in the linked Canvas course?) and depends only on
+  // the course + user, so it is resolved once per course entry rather than on
+  // every topic/interaction mount. Cheap per-topic gating (project topic, not
+  // read-only) is applied by the interaction components that consume this.
+  const [canSubmitToCanvasGradebook, setCanSubmitToCanvasGradebook] = React.useState(false);
+  const eligibilityCanvasCourseId = learningSession?.course?.externalRefs?.canvasCourseId;
+  React.useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!eligibilityCanvasCourseId || !user) {
+        if (active) setCanSubmitToCanvasGradebook(false);
+        return;
+      }
+      const eligible = await isLearnerInCanvasCourse(user, learningSession?.course);
+      if (active) setCanSubmitToCanvasGradebook(eligible === true);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [eligibilityCanvasCourseId, user?.id]);
+
   function getWorkingCourse() {
     const courseId = learningSession?.course?.id;
     if (!courseId) {
@@ -2069,6 +2091,7 @@ Requirements:
     getSubmissionFileUrl,
     syncProjectInteractionGrade,
     isLearnerInCanvasCourse,
+    canSubmitToCanvasGradebook,
     getProgress,
     getMasteryOverview,
     getTopicProgress,
