@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown, FileClock } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
+import { completedInteractionIds } from '../../utils/topicProgress';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -301,10 +302,10 @@ export default function LearnerMasteryView({ courseOps }) {
       .map((topic) => {
         const topicProgress = selectedLearner.progress[topic.id] || {};
         const interactionIds = Array.isArray(topic.interactions) ? topic.interactions : [];
-        const completedInteractions = (topicProgress.interactions || []).filter((id) => interactionIds.includes(id)).length;
+        const completedSet = new Set(completedInteractionIds(topicProgress));
+        const completedInteractions = interactionIds.filter((id) => completedSet.has(id)).length;
 
         const scores = topicProgress.scores || {};
-        const completedSet = new Set(topicProgress.interactions || []);
         const scoreSum = interactionIds.reduce((sum, id) => {
           const score = scores[id];
           if (Number.isFinite(score)) return sum + score;

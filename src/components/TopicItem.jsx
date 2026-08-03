@@ -2,6 +2,7 @@ import React from 'react';
 import { BadgeCheck, StickyNote } from 'lucide-react';
 
 import { TopicIcon } from '../utils/Icons';
+import { completedInteractionIds } from '../utils/topicProgress';
 import { useNavigate } from 'react-router-dom';
 
 function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDateLabel = '' }) {
@@ -11,13 +12,13 @@ function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDate
   React.useEffect(() => {
     if (enrollment && enrollment.progress) {
       if (topic.interactions && topic.interactions.length > 0) {
-        const completedInteractions = enrollment?.progress[topic.id]?.interactions || [];
+        const completedInteractions = completedInteractionIds(enrollment?.progress?.[topic.id]);
         setProgressMeter({ completed: completedInteractions.length, total: topic.interactions.length });
       } else if (enrollment.progress[topic.id]) {
         setProgressMeter({ completed: 1, total: 1 });
       }
     }
-  }, [enrollment?.progress[topic.id]?.interactions]);
+  }, [enrollment?.progress[topic.id]?.scores, enrollment?.progress[topic.id]?.interactions]);
 
   function navigateToTopic(e, anchor) {
     if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {

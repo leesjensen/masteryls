@@ -830,7 +830,15 @@ Pick the right answer.
       return;
     }
 
-    gradebookCalls.push(await route.request().postDataJSON());
+    const body = await route.request().postDataJSON();
+    // The course-level gradebook eligibility check also hits this endpoint (mode: 'check')
+    // when a course is Canvas-linked. Only count actual grade posts.
+    if (body?.mode === 'check') {
+      await route.fulfill({ status: 200, json: { ok: true, eligible: true } });
+      return;
+    }
+
+    gradebookCalls.push(body);
     await route.fulfill({ status: 200, json: { ok: true, postedGrade: 200 } });
   });
 
@@ -1169,10 +1177,19 @@ Simple **essay** question
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
-  await page.getByRole('textbox').click();
-  await page.getByRole('textbox').fill('example text');
 
-  await page.getByRole('button', { name: 'Submit' }).click();
+  const textbox = page.getByRole('textbox');
+  const submit = page.getByRole('button', { name: 'Submit' });
+  // The interaction can re-render (progress/enrollment load) shortly after the topic
+  // opens, remounting the uncontrolled textarea and clearing its value. Retry the fill
+  // until it sticks and Submit becomes enabled so the click doesn't race the remount.
+  await expect(async () => {
+    await textbox.fill('example text');
+    await expect(textbox).toHaveValue('example text', { timeout: 1000 });
+    await expect(submit).toBeEnabled({ timeout: 1000 });
+  }).toPass({ timeout: 15000 });
+
+  await submit.click();
 
   await expect(page.locator('pre')).toContainText(expectedResponse);
 }

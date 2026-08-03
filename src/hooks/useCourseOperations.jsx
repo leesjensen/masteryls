@@ -11,6 +11,7 @@ import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { markdownToHtml } from '../utils/markdownToHtml';
+import { completedInteractionIds } from '../utils/topicProgress';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
@@ -1528,8 +1529,13 @@ Requirements:
    *   mastery: 99,
    *   lastActivityAt: '2026-06-01T10:00:00Z',
    *   [topicId]: {
+   *     // `scores` is the source of truth for completed interactions: keys are the
+   *     // completed interaction ids, values are percentCorrect (null = unscored type).
+   *     scores: { 'interactionId1': 85, 'interactionId2': null },
+   *     // `interactions` is a legacy completed-id array from before `scores` existed.
+   *     // It is read (unioned via completedInteractionIds) but no longer written, and
+   *     // is folded into `scores` and removed the next time the topic sees activity.
    *     interactions: ['interactionId1', 'interactionId2'],
-   *     scores: { 'interactionId1': 85, 'interactionId2': 92 },
    *     lastInteractionAt: '2026-06-01T10:00:00Z',
    *     notes: true,
    *     examCompleted: true,
@@ -1557,13 +1563,16 @@ Requirements:
         update = true;
       }
 
-      if (type === 'quizSubmit' && interactionId && (!enrollment.progress[topic.id].interactions || !enrollment.progress[topic.id].interactions.includes(interactionId))) {
-        enrollment.progress[topic.id].interactions = [...(enrollment.progress[topic.id].interactions || []), interactionId];
-        update = true;
-      }
       if (type === 'quizSubmit' && interactionId) {
+        const entry = enrollment.progress[topic.id];
         const score = Number.isFinite(Number(details?.percentCorrect)) ? Number(details.percentCorrect) : null;
-        enrollment.progress[topic.id].scores = { ...(enrollment.progress[topic.id].scores || {}), [interactionId]: score };
+        const nextScores = { ...(entry.scores || {}), [interactionId]: score };
+        // Fold any legacy completion list into scores keys (null = completed, unscored), then drop it.
+        if (Array.isArray(entry.interactions)) {
+          for (const id of entry.interactions) if (!(id in nextScores)) nextScores[id] = null;
+          delete entry.interactions;
+        }
+        entry.scores = nextScores;
         update = true;
       }
       enrollment.progress[topic.id].lastInteractionAt = new Date().toISOString();
@@ -1631,7 +1640,7 @@ Requirements:
       enrollment.progress = {};
     }
     if (!enrollment.progress[topicId]) {
-      enrollment.progress[topicId] = { interactions: [] };
+      enrollment.progress[topicId] = { scores: {} };
       return true;
     }
     return false;
@@ -1649,7 +1658,7 @@ Requirements:
         // Scored topics (e.g. DRA) contribute their assessment score directly.
         topicPercent = Math.max(0, Math.min(1, Number(topicProgress.masteryScore) / 100));
       } else if (topic.interactions && topic.interactions.length > 0) {
-        const completedForTopic = topicProgress?.interactions || [];
+        const completedForTopic = completedInteractionIds(topicProgress);
         topicPercent = completedForTopic.length / topic.interactions.length;
       }
       completedTopics += topicPercent;
