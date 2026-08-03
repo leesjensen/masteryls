@@ -101,7 +101,7 @@ Scale: Never | Rarely | Sometimes | Often | Always
 ### File submission
 
 ```masteryls
-{"id":"39283", "title":"File submission", "type":"file-submission", "syncGrade":true, "autoGrade":false }
+{"id":"39283", "title":"File submission", "type":"file-submission", "syncGrade":false, "autoGrade":false }
 Simple **submission** by file
 ```
 
@@ -113,17 +113,17 @@ Simple **submission** by file
 ### URL submission
 
 ```masteryls
-{"id":"39284", "title":"URL submission", "type":"url-submission", "validateUrl":true, "syncGrade":true, "autoGrade":false }
+{"id":"39284", "title":"URL submission", "type":"url-submission", "validateUrl":true, "syncGrade":false, "autoGrade":false }
 Simple **submission** by url
 ```
 
 ```masteryls
-{"id":"39287", "title":"URL submission (AI criteria + URL transform)", "type":"url-submission", "validateUrl":true, "syncGrade":true, "autoGrade":false, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
+{"id":"39287", "title":"URL submission (AI criteria + URL transform)", "type":"url-submission", "validateUrl":true, "syncGrade":false, "autoGrade":false, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
 Submit your repository URL.
 ```
 
 ```masteryls
-{"id":"39288", "title":"URL submission (AI criteria only)", "type":"url-submission", "syncGrade":true, "autoGrade":true, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly" }
+{"id":"39288", "title":"URL submission (AI criteria only)", "type":"url-submission", "syncGrade":false, "autoGrade":true, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly" }
 Submit a direct URL to the page or document you want graded.
 ```
 

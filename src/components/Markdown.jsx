@@ -18,6 +18,12 @@ import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize'
 
 const BlockCodeContext = React.createContext(false);
 
+// Stable empty reference so the "no search" case doesn't hand `searchTerms` a fresh array
+// identity on every searchResults change (e.g. setSearchResults(null) on course load). A new
+// identity would recompute the memoized `components` map below and remount rendered
+// interactions, wiping in-progress state.
+const EMPTY_SEARCH_TERMS = [];
+
 function markdownUrlTransform(value, key, node) {
   if (key === 'src' && node?.tagName === 'img' && String(value || '').startsWith('blob:')) {
     return value;
@@ -50,11 +56,18 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   // essay textarea) and wipe unsaved input every ~60s.
   const languagePluginsRef = useLatest(languagePlugins);
   const onMakeHeadingActiveRef = useLatest(onMakeHeadingActive);
+  // noteMessages loads asynchronously (after the topic mounts, once the enrollment's notes
+  // are fetched). Reading it through a ref - instead of listing it as a `components` memo
+  // dependency - keeps the components map reference-stable so react-markdown does NOT remount
+  // the rendered subtree (which would wipe in-progress interaction state such as an unsaved
+  // essay or checked survey answers). Heading note indicators still update, because the
+  // parent's setNoteMessages re-render re-invokes the heading component and re-reads the ref.
+  const noteMessagesRef = useLatest(noteMessages);
 
   // Get search terms for highlighting
   const searchTerms = React.useMemo(() => {
     if (!searchResults || searchResults.matches.length === 0) {
-      return [];
+      return EMPTY_SEARCH_TERMS;
     }
     return searchResults.query.trim().split(/\s+/);
   }, [searchResults]);
@@ -115,6 +128,14 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   // actually change the topic/course (e.g. the progress heartbeat re-rendering this tree).
   // Unstable identities here would make react-markdown treat elements as a different type
   // and remount the rendered subtree - including interaction state like an in-progress essay.
+  // The link/image/navigation handlers need the current topic + resolver, but reading those
+  // values as `components` memo dependencies would rebuild the map (and remount every rendered
+  // interaction) whenever the topic object is replaced or its snapshotPath resolves async.
+  // Reading them through refs keeps the map stable; a genuine topic switch still remounts
+  // interactions because the `content` prop passed to ReactMarkdown changes.
+  const learningSessionRef = useLatest(learningSession);
+  const resolveTopicUrlRef = useLatest(resolveTopicUrl);
+
   const components = React.useMemo(() => {
     const customComponents = {
       pre({ node, children, ...props }) {
@@ -179,12 +200,12 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       },
 
       source({ node, src, ...props }) {
-        const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
+        const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrlRef.current(src) : src;
         return <source src={resolvedSrc} {...props} />;
       },
 
       img({ node, src, ...props }) {
-        const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrl(src) : src;
+        const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrlRef.current(src) : src;
         return <img src={resolvedSrc} {...props} />;
       },
 
@@ -217,12 +238,13 @@ export default function Markdown({ learningSession, content, languagePlugins = [
                 if (!hrefPath && hrefAnchor) {
                   scrollToAnchor(hrefAnchor, containerRef);
                 } else if (hrefPath) {
-                  const canonicalResolvedUrl = new URL(hrefPath, learningSession.topic.path).toString();
-                  const resolvedUrl = resolveTopicUrl(hrefPath);
-                  const targetTopic = learningSession.course.topicFromPath(canonicalResolvedUrl, false);
+                  const session = learningSessionRef.current;
+                  const canonicalResolvedUrl = new URL(hrefPath, session.topic.path).toString();
+                  const resolvedUrl = resolveTopicUrlRef.current(hrefPath);
+                  const targetTopic = session.course.topicFromPath(canonicalResolvedUrl, false);
                   if (targetTopic) {
                     const anchor = hrefAnchor ? `#${hrefAnchor}` : '';
-                    navigate(`/course/${learningSession.course.id}/topic/${targetTopic.id}${anchor}`);
+                    navigate(`/course/${session.course.id}/topic/${targetTopic.id}${anchor}`);
                   } else {
                     window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
                   }
@@ -279,7 +301,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
             .replace(/\s+/g, '-')
             .replace(/[^\w-]/g, '');
 
-          const existingNote = noteMessages.find((note) => note.section === headingText);
+          const existingNote = noteMessagesRef.current.find((note) => note.section === headingText);
 
           return (
             <HeadingTag
@@ -287,7 +309,8 @@ export default function Markdown({ learningSession, content, languagePlugins = [
               className={`flex items-center gap-2 cursor-pointer ${className || ''}`.trim()}
               {...props}
               onClick={() => {
-                navigate(`/course/${learningSession.course.id}/topic/${learningSession.topic.id}#${headingId}`);
+                const session = learningSessionRef.current;
+                navigate(`/course/${session.course.id}/topic/${session.topic.id}#${headingId}`);
               }}
             >
               {renderHighlightedChildren(children)}
@@ -309,10 +332,14 @@ export default function Markdown({ learningSession, content, languagePlugins = [
     }
 
     return { ...customComponents, MermaidBlock };
-    // Deliberately excludes languagePlugins/onMakeHeadingActive (read via refs above) so this
-    // stays stable across re-renders that don't change the topic/course/notes/search state.
+    // Depends ONLY on things that change how nodes render (search highlighting, whether
+    // headings get the note affordance). Everything topic/course/session-derived is read via
+    // refs above (languagePlugins, onMakeHeadingActive, noteMessages, learningSession,
+    // resolveTopicUrl) so replacing the topic object or resolving its snapshotPath does NOT
+    // rebuild this map and remount rendered interactions. Genuine topic switches remount
+    // naturally because the `content` string passed to ReactMarkdown changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerms, resolveTopicUrl, navigate, noteMessages, Boolean(onMakeHeadingActive), learningSession?.course?.id, learningSession?.topic?.id, learningSession?.topic?.path]);
+  }, [searchTerms, navigate, Boolean(onMakeHeadingActive)]);
 
   return (
     <div ref={containerRef}>

@@ -1058,8 +1058,7 @@ Help the learner understand testing.
   await expect(submitSession).toBeDisabled();
   await expect(clearButton).toBeDisabled();
 
-  await input.click();
-  await input.type('I would explain testing with small examples.');
+  await input.fill('I would explain testing with small examples.');
   await expect(respondButton).toBeEnabled();
   await respondButton.click();
 
@@ -1087,8 +1086,7 @@ Help the learner understand testing.
   await page.getByText('topic 1').click();
   const input = page.getByPlaceholder('As a teacher, respond to the learner ...');
   const respondButton = page.getByRole('button', { name: 'Respond' });
-  await input.click();
-  await input.type('A response that will fail.');
+  await input.fill('A response that will fail.');
   await expect(respondButton).toBeEnabled();
   await respondButton.click();
 
@@ -1177,19 +1175,10 @@ Simple **essay** question
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
+  await page.getByRole('textbox').click();
+  await page.getByRole('textbox').fill('example text');
 
-  const textbox = page.getByRole('textbox');
-  const submit = page.getByRole('button', { name: 'Submit' });
-  // The interaction can re-render (progress/enrollment load) shortly after the topic
-  // opens, remounting the uncontrolled textarea and clearing its value. Retry the fill
-  // until it sticks and Submit becomes enabled so the click doesn't race the remount.
-  await expect(async () => {
-    await textbox.fill('example text');
-    await expect(textbox).toHaveValue('example text', { timeout: 1000 });
-    await expect(submit).toBeEnabled({ timeout: 1000 });
-  }).toPass({ timeout: 15000 });
-
-  await submit.click();
+  await page.getByRole('button', { name: 'Submit' }).click();
 
   await expect(page.locator('pre')).toContainText(expectedResponse);
 }

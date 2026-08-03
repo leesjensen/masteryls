@@ -268,7 +268,7 @@ What it does: Presents a single-answer objective question and awards score based
 
 ````
 ```masteryls
-{"id":"39280", "title":"Multiple choice", "type":"multiple-choice", "syncGrade":true, "autoGrade":false }
+{"id":"39280", "title":"Multiple choice", "type":"multiple-choice", "syncGrade":false, "autoGrade":false }
 Simple **multiple choice** question
 
 - [ ] This is **not** the right answer
@@ -292,7 +292,7 @@ What it does: Presents a multi-answer objective question where learners can choo
 
 ````
 ```masteryls
-{"id":"39281", "title":"Multiple select", "type":"multiple-select", "syncGrade":true, "autoGrade":false }
+{"id":"39281", "title":"Multiple select", "type":"multiple-select", "syncGrade":false, "autoGrade":false }
 A **multiple select** question can have multiple answers.
 
 - [ ] Wrong
@@ -386,7 +386,7 @@ What it does: Collects one or more uploaded files as learner deliverables for pr
 
 ````
 ```masteryls
-{"id":"39283", "title":"File submission", "type":"file-submission", "syncGrade":true, "autoGrade":false }
+{"id":"39283", "title":"File submission", "type":"file-submission", "syncGrade":false, "autoGrade":false }
 Simple **submission** by file
 ```
 ````
@@ -406,7 +406,7 @@ What it does: Collects a learner URL submission, optionally validates/rewrites t
 
 ````
 ```masteryls
-{"id":"39287", "title":"URL submission (AI criteria + URL transform)", "type":"url-submission", "validateUrl":true, "syncGrade":true, "autoGrade":false, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
+{"id":"39287", "title":"URL submission (AI criteria + URL transform)", "type":"url-submission", "validateUrl":true, "syncGrade":false, "autoGrade":false, "gradingCriteria":"- Include a section named HTML Deliverable\n- At least two completed checklist items are explained clearly", "urlPrompt":"Convert the user provided URL to create a URL that is the path to the raw GitHub content for the README.md file." }
 Submit your repository URL.
 ```
 ````
@@ -534,7 +534,7 @@ The learner input is validated against the `https://github.com/owner/repo` form 
 
 ````
 ```masteryls
-{"id":"6b1d1b1e-3d9a-4c2a-9d3e-2f2a7c9a1b44", "title":"Submit your project repository", "type":"github-submission", "syncGrade":true, "autoGrade":false, "gradingCriteria":"- README documents how to build and run\n- Application code is organized into clear modules\n- Includes automated tests that cover core behavior" }
+{"id":"6b1d1b1e-3d9a-4c2a-9d3e-2f2a7c9a1b44", "title":"Submit your project repository", "type":"github-submission", "syncGrade":false, "autoGrade":false, "gradingCriteria":"- README documents how to build and run\n- Application code is organized into clear modules\n- Includes automated tests that cover core behavior" }
 Submit the URL of your GitHub repository.
 ```
 ````

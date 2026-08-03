@@ -61,7 +61,9 @@ test('dashboard join/leave course', async ({ page }) => {
   ];
 
   await page.getByRole('button', { name: 'R Rocket Science' }).click();
-  await expect(page.getByRole('button', { name: 'R Rocket Science' })).toBeVisible();
+  // Enrolling converts the course card from a button into a link (courseCard.jsx), so wait
+  // for the enrolled link to appear rather than racing the just-clicked button's removal.
+  await expect(page.getByRole('link', { name: /Rocket Science/ })).toBeVisible();
   await expect(page.getByRole('link')).toContainText('Progress0%');
 
   enrollments = [];
