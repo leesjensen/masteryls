@@ -1577,7 +1577,7 @@ Requirements:
       }
       enrollment.progress[topic.id].lastInteractionAt = new Date().toISOString();
       update = true;
-      if (type === 'quizSubmit' && details?.syncGrade === true && !enrollment.progress[topic.id].projectSubmission) {
+      if (type === 'quizSubmit' && topic.type === 'project' && details?.syncGrade === true && !enrollment.progress[topic.id].projectSubmission) {
         enrollment.progress[topic.id].projectSubmission = true;
         update = true;
       }
