@@ -74,6 +74,17 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
   const [responses, setResponses] = React.useState(initialResponses);
   const [summary, setSummary] = React.useState(null);
 
+  // The saved responses can arrive after mount (the progress store is populated async when a
+  // topic loads). Re-sync local responses so a previously-submitted set of answers renders even
+  // when it lands late. Keyed on the saved values so it only runs when they actually change, and
+  // since the store only holds responses for already-submitted interactions it never clobbers
+  // a user's in-progress answers.
+  const savedResponsesKey = JSON.stringify(normalizeResponsesByQuestions(progress.responses || {}, questions));
+  React.useEffect(() => {
+    setResponses(progress.responses || {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedResponsesKey]);
+
   const answeredCount = questions.filter((question) => Number.isFinite(Number(responses[question.qid]))).length;
   const allAnswered = questions.length > 0 && answeredCount === questions.length;
   const hasChanges = responsesChanged(responses, progress.responses || {}, questions);

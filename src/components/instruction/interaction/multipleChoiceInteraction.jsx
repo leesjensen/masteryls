@@ -23,7 +23,18 @@ export default function MultipleChoiceInteraction({ id, quizType, body }) {
 
   const useRadioButtons = (quizType || '').toLowerCase() === 'multiple-choice';
   const selectedIndices = progress.selected;
-  const [currentSelections, setCurrentSelections] = React.useState(new Set(selectedIndices || []));
+  const [currentSelections, setCurrentSelections] = React.useState(() => new Set(selectedIndices || []));
+
+  // The saved selection can arrive after mount (the progress store is populated async when a
+  // topic loads). Keep the controlled inputs in sync so a previously-submitted selection renders
+  // even when it lands late. Keyed on the serialized ids so it only re-syncs when the saved set
+  // actually changes - and since the store only holds `selected` for already-submitted
+  // interactions, this never clobbers a user's in-progress (unsubmitted) clicks.
+  const selectedKey = Array.isArray(selectedIndices) ? selectedIndices.join(',') : '';
+  React.useEffect(() => {
+    setCurrentSelections(new Set(selectedIndices || []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedKey]);
 
   const handleSelectionChange = (index, checked) => {
     const newSelections = new Set(currentSelections);
@@ -49,11 +60,10 @@ export default function MultipleChoiceInteraction({ id, quizType, body }) {
       </div>
       <div>
         {choices.map((choice, i) => {
-          const selected = selectedIndices && selectedIndices.includes(i);
           return (
             <div key={i} className="flex items-start gap-2">
               <label className="cursor-pointer">
-                <input className="mt-1" type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${id}`} data-plugin-masteryls-index={i} defaultChecked={!!selected} onChange={(e) => handleSelectionChange(i, e.target.checked)} {...(choice.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} />
+                <input className="mt-1" type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${id}`} data-plugin-masteryls-index={i} checked={currentSelections.has(i)} onChange={(e) => handleSelectionChange(i, e.target.checked)} {...(choice.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} />
                 <span className="p-2">{inlineLiteMarkdown(choice.text)}</span>
               </label>
             </div>
