@@ -459,3 +459,85 @@ test('dra graphical editor edits a field and commits updated markdown', async ({
   expect(latest.path).toContain('instruction/reasoning-lab/');
   expect(latest.markdown).toContain('"discipline": "Civil Engineering"');
 });
+
+function draCanvasLinkedCourseOverride() {
+  return {
+    externalRefs: { canvasCourseId: '12345' },
+    modules: [
+      {
+        title: 'Module 1',
+        topics: [
+          { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
+          { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'Reasoning Lab', path: DRA_REPO_PATH, type: 'dra', points: 100, externalRefs: { canvasAssignmentId: 555 } },
+        ],
+      },
+    ],
+  };
+}
+
+function installGradebookRoute(page: any, calls: any[]) {
+  page.context().route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    const body = await route.request().postDataJSON();
+    if (body?.mode === 'check') {
+      await route.fulfill({ status: 200, json: { ok: true, eligible: true } });
+      return;
+    }
+    calls.push(body);
+    await route.fulfill({ status: 200, json: { ok: true, postedGrade: null } });
+  });
+}
+
+test('dra final assessment completion posts a non-autograded suggestion to canvasgradebook', async ({ page }) => {
+  const gradebookCalls: any[] = [];
+
+  await initBasicCourse({ page, courseJsonOverride: draCanvasLinkedCourseOverride() });
+  installGradebookRoute(page, gradebookCalls);
+  installDraRoutes(page, draMarkdown({ practiceMode: false, finalMode: true }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+  await page.getByRole('button', { name: 'Start final assessment' }).click();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
+
+  await expect.poll(() => gradebookCalls.length).toBe(1);
+  const payload = gradebookCalls[0];
+  expect(payload.topicType).toBe('dra');
+  expect(payload.autoGrade).toBe(false);
+  expect(payload.canvasAssignmentId).toBe(555);
+  expect(payload.pointsPossible).toBe(100);
+  expect(typeof payload.percentCorrect).toBe('number');
+  expect(payload.feedback).toContain('Overall');
+});
+
+test('dra practice completion does not sync to canvasgradebook', async ({ page }) => {
+  const gradebookCalls: any[] = [];
+
+  await initBasicCourse({ page, courseJsonOverride: draCanvasLinkedCourseOverride() });
+  installGradebookRoute(page, gradebookCalls);
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false }));
+  installScenarioGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
+
+  // Give any (incorrect) async sync a moment to fire before asserting it never did.
+  await page.waitForTimeout(300);
+  expect(gradebookCalls.length).toBe(0);
+});

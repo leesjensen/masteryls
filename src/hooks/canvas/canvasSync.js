@@ -1,8 +1,19 @@
+// project, dra, and interview topics are all "graded assignment" targets: they submit a
+// score + non-authoritative feedback comment to the Canvas gradebook (see
+// useCourseOperations.jsx's addProgress Canvas-sync branch for dra/interview).
+const ASSIGNMENT_TOPIC_TYPES = ['project', 'dra', 'interview'];
+
+// dra/interview backing files hold only author configuration (discipline, difficulty, job
+// description, ...), not learner-facing content - the actual scenario is generated
+// per-learner and lives entirely in MasteryLS, so there's nothing meaningful to render into
+// the Canvas assignment description.
+const MASTERYLS_ONLY_TOPIC_TYPES = ['dra', 'interview'];
+
 function topicCanvasTarget(topic) {
   if (topic?.type === 'exam') {
     return 'quiz';
   }
-  if (topic?.type === 'project') {
+  if (ASSIGNMENT_TOPIC_TYPES.includes(topic?.type)) {
     return 'assignment';
   }
   return 'page';
@@ -12,10 +23,21 @@ function pointsForTopic(topic) {
   if (topic?.type === 'exam') {
     return Number(topic?.points ?? 200);
   }
-  if (topic?.type === 'project') {
+  if (ASSIGNMENT_TOPIC_TYPES.includes(topic?.type)) {
     return Number(topic?.points ?? 100);
   }
   return undefined;
+}
+
+function submissionTypesForTopic(topic) {
+  // dra/interview never collect an actual submission through Canvas - completion happens in
+  // MasteryLS, which then posts a minimal text-entry "submission" (see
+  // useCourseOperations.jsx's addProgress Canvas-sync branch) purely so Canvas registers a
+  // real submission record. That's what makes Canvas show its "needs grading" indicator in
+  // the gradebook, the same way it does for project topics that submit a URL - without a
+  // submission record at all (submission_types: ['none']), nothing signals to the instructor
+  // that the student completed the work.
+  return MASTERYLS_ONLY_TOPIC_TYPES.includes(topic?.type) ? ['online_text_entry'] : ['online_url'];
 }
 
 export function hasCanvasTopicLink(topic) {
@@ -189,7 +211,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
         description: `<h1>${topic.title}</h1>`,
         points_possible: pointsForTopic(topic),
         grading_type: 'points',
-        submission_types: ['online_url'],
+        submission_types: submissionTypesForTopic(topic),
         ...(dueAt ? { due_at: dueAt } : {}),
         published: true,
       },
@@ -205,7 +227,8 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
   async function updateCanvasTopic({ course, topic, canvasCourseId, dueDatesByTopicId = {}, useStaticHtml = false }) {
     const masteryLsHeaderHtml = buildMasteryLsLinkHtml(course, topic);
-    const html = useStaticHtml ? masteryLsHeaderHtml : `${masteryLsHeaderHtml}${await renderTopicHtml(course, topic)}`;
+    const skipContent = useStaticHtml || MASTERYLS_ONLY_TOPIC_TYPES.includes(topic.type);
+    const html = skipContent ? masteryLsHeaderHtml : `${masteryLsHeaderHtml}${await renderTopicHtml(course, topic)}`;
     const dueAt = dueDatesByTopicId?.[topic.id] || null;
     const catalogId = course?.id;
 
@@ -223,14 +246,14 @@ export function createCanvasSync({ service, renderTopicHtml }) {
       return service.makeCanvasApiRequest(`/courses/${canvasCourseId}/quizzes/${topic.externalRefs.canvasQuizId}`, 'PUT', quizBody, catalogId);
     }
 
-    if (topic.type === 'project' && topic.externalRefs?.canvasAssignmentId) {
+    if (ASSIGNMENT_TOPIC_TYPES.includes(topic.type) && topic.externalRefs?.canvasAssignmentId) {
       const assignmentBody = {
         assignment: {
           name: topic.title,
           description: html,
           points_possible: pointsForTopic(topic),
           grading_type: 'points',
-          submission_types: ['online_url'],
+          submission_types: submissionTypesForTopic(topic),
           ...(dueAt ? { due_at: dueAt } : {}),
           published: true,
         },

@@ -22,6 +22,7 @@ async function mockLinkRequests(page: any) {
       updateQuiz: [] as string[],
       updateAssignment: [] as string[],
     },
+    assignmentPayloads: [] as any[],
   };
 
   // verifyGitHubAccount() checks this endpoint before linking.
@@ -75,6 +76,7 @@ async function mockLinkRequests(page: any) {
     if (method === 'POST' && endpoint?.match(/^\/courses\/\d+\/assignments$/)) {
       nextAssignmentId += 1;
       requestLog.create.assignments += 1;
+      requestLog.assignmentPayloads.push(body?.body?.assignment);
       if (body?.body?.assignment?.due_at) {
         requestLog.dueAt.createAssignment.push(body.body.assignment.due_at);
       }
@@ -113,6 +115,7 @@ async function mockLinkRequests(page: any) {
 
     if (method === 'PUT' && endpoint?.match(/^\/courses\/\d+\/assignments\/\d+$/)) {
       requestLog.update.assignments += 1;
+      requestLog.assignmentPayloads.push(body?.body?.assignment);
       if (body?.body?.assignment?.due_at) {
         requestLog.dueAt.updateAssignment.push(body.body.assignment.due_at);
       }
@@ -310,7 +313,7 @@ test('course link topic presets select all and select none', async ({ page }) =>
   await page.getByRole('button', { name: 'Select none', exact: true }).click();
   await expect(page.locator('text=0 of 4 selected.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Select projects and exams', exact: true }).click();
+  await page.getByRole('button', { name: 'Select gradable topics', exact: true }).click();
   await expect(page.locator('text=2 of 4 selected.')).toBeVisible();
 });
 
@@ -351,4 +354,51 @@ test('course link applies schedule due dates to exam quizzes and project assignm
   await expect.poll(() => requestLog.dueAt.createAssignment.length).toBeGreaterThan(0);
   await expect.poll(() => requestLog.dueAt.updateQuiz.length).toBeGreaterThan(0);
   await expect.poll(() => requestLog.dueAt.updateAssignment.length).toBeGreaterThan(0);
+});
+
+test('course link renders full content for project assignments but header-only, text-entry-only assignments for dra/interview', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'Type Coverage',
+          topics: [
+            { id: 'a3', title: 'Project Topic', type: 'project', path: 'instruction/project-topic/project-topic.md' },
+            { id: 'a5', title: 'Dra Topic', type: 'dra', path: 'instruction/dra-topic/dra-topic.md' },
+            { id: 'a6', title: 'Interview Topic', type: 'interview', path: 'instruction/interview-topic/interview-topic.md' },
+          ],
+        },
+      ],
+    },
+  });
+  const requestLog = await mockLinkRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseLinking(page);
+
+  await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
+  await page.waitForTimeout(300);
+  await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await page.getByRole('button', { name: 'Select all', exact: true }).click();
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
+
+  await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
+
+  // The update (PUT) call carries the real rendered content; the earlier create (POST) call
+  // only sends a placeholder, so take the last payload per assignment name.
+  function lastPayloadFor(name: string) {
+    return [...requestLog.assignmentPayloads].reverse().find((a: any) => a?.name === name);
+  }
+
+  const projectAssignment = lastPayloadFor('Project Topic');
+  expect(projectAssignment.submission_types).toEqual(['online_url']);
+  expect(projectAssignment.description).toContain('markdown!');
+
+  for (const title of ['Dra Topic', 'Interview Topic']) {
+    const assignment = lastPayloadFor(title);
+    expect(assignment.submission_types).toEqual(['online_text_entry']);
+    expect(assignment.description).toContain('View this content in');
+    expect(assignment.description).not.toContain('markdown!');
+  }
 });

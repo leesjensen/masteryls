@@ -1,16 +1,22 @@
 import React from 'react';
 
+// Topic types that submit a score to a Canvas gradebook assignment (see canvasSync.js's
+// ASSIGNMENT_TOPIC_TYPES) need a points-possible value; everything else doesn't.
+const POINTS_TOPIC_TYPES = ['exam', 'project', 'dra', 'interview'];
+
+function defaultPointsForType(type) {
+  return type === 'exam' ? 200 : POINTS_TOPIC_TYPES.includes(type) ? 100 : '';
+}
+
 function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading }) {
   const [newTitle, setNewTitle] = React.useState(topic.title || '');
   const [newType, setNewType] = React.useState(topic.type || 'instruction');
   const [newDescription, setNewDescription] = React.useState(topic.description || '');
-  const [newPoints, setNewPoints] = React.useState(topic.points ?? (topic.type === 'exam' ? 200 : topic.type === 'project' ? 100 : ''));
+  const [newPoints, setNewPoints] = React.useState(topic.points ?? defaultPointsForType(topic.type));
 
   React.useEffect(() => {
-    if (newType === 'exam') {
-      setNewPoints((prev) => (prev === '' || prev === undefined || prev === null ? 200 : prev));
-    } else if (newType === 'project') {
-      setNewPoints((prev) => (prev === '' || prev === undefined || prev === null ? 100 : prev));
+    if (POINTS_TOPIC_TYPES.includes(newType)) {
+      setNewPoints((prev) => (prev === '' || prev === undefined || prev === null ? defaultPointsForType(newType) : prev));
     } else {
       setNewPoints('');
     }
@@ -39,7 +45,7 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
           <option value="dra">Disciplinary Reasoning</option>
           <option value="interview">Interview</option>
         </select>
-        {(newType === 'exam' || newType === 'project') && (
+        {POINTS_TOPIC_TYPES.includes(newType) && (
           <input
             type="number"
             min={0}

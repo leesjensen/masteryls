@@ -8,6 +8,7 @@ import InterviewWorkspace from './interviewWorkspace';
 import InterviewEvaluation from './interviewEvaluation';
 import Spinner from '../../Spinner';
 import { generateId } from '../../../utils/utils';
+import { summarizeInterviewRun } from './interviewScore';
 
 function formatRunDate(value) {
   if (!value) return '';
@@ -148,7 +149,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
       }
 
       await courseOps.saveInterviewState(updatedState);
-      await courseOps.updateInterviewProgress({ state: updatedState, mode, sessionsCompleted: 0, totalSessions: newSessions.length }, { force: true });
+      await courseOps.updateInterviewProgress({ state: 'inProgress', mode, sessionsCompleted: 0, totalSessions: newSessions.length }, { force: true });
       setFullState(updatedState);
       setRun(newRun);
     } finally {
@@ -180,6 +181,11 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
       const completedRun = { ...run, evaluation, completedAt: Date.now() };
       await persistRun(completedRun);
       setRun(completedRun);
+      const summary = summarizeInterviewRun(completedRun, completedRun.difficulty);
+      await courseOps.updateInterviewProgress(
+        { state: 'completed', mode: completedRun.mode, sessionsCompleted: summary.sessionsCompleted, totalSessions: summary.totalSessions, masteryScore: summary.score, evaluation: completedRun.evaluation },
+        { force: true },
+      );
       selectTab('evaluation');
     } finally {
       setBusyAction(null);

@@ -3,6 +3,7 @@ import { BadgeCheck, Circle, CircleDashed, UserRound } from 'lucide-react';
 import { generateId } from '../../../utils/utils';
 import Spinner from '../../Spinner';
 import ChatPanel from '../../shared/ChatPanel';
+import { summarizeInterviewRun } from './interviewScore';
 
 function SessionSidebar({ sessions = [], currentIndex = -1, selectedIndex = -1, allInterviewers = [], onSelect, isRunComplete = false, onSelectCompletion }) {
   const interviewerMap = React.useMemo(() => {
@@ -236,6 +237,13 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
 
       await persistRun(finalRun);
       setRun(finalRun);
+      if (finalRun.completedAt) {
+        const summary = summarizeInterviewRun(finalRun, finalRun.difficulty);
+        await courseOps.updateInterviewProgress(
+          { state: 'completed', mode: finalRun.mode, sessionsCompleted: summary.sessionsCompleted, totalSessions: summary.totalSessions, masteryScore: summary.score, evaluation: finalRun.evaluation },
+          { force: true },
+        );
+      }
     } finally {
       setSending(false);
     }

@@ -1,55 +1,14 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { DimensionCard, getRatingTone, formatWholeNumber } from '../../shared/EvaluationDimension';
-import { calculateAttributeScore, calculateDimensionScore, scoreToRatingLevel } from '../dra/draScore';
+import { scoreToRatingLevel } from '../dra/draScore';
+import { computeInterviewScore } from './interviewScore';
 
 const CONCERN_STYLES = {
   Minor: { badge: 'bg-yellow-100 text-yellow-800 border-yellow-300', row: 'border-yellow-200 bg-yellow-50' },
   Moderate: { badge: 'bg-orange-100 text-orange-800 border-orange-300', row: 'border-orange-200 bg-orange-50' },
   Major: { badge: 'bg-red-100 text-red-800 border-red-300', row: 'border-red-200 bg-red-50' },
 };
-
-function computeInterviewScore(evaluation, difficulty = 3) {
-  if (!evaluation) return null;
-
-  const rawSessions = evaluation.sessions || [];
-  const sessionAttrs = rawSessions.map((s) => ({
-    name: s.title || s.sessionId || 'Session',
-    summary: s.summary || '',
-    rating: s.rating || 'Beginning',
-    evidence: s.evidence || [],
-    calculation: calculateAttributeScore(s, 'Beginning', difficulty),
-  }));
-
-  const sessionScore = sessionAttrs.length > 0
-    ? sessionAttrs.reduce((sum, s) => sum + s.calculation.supportedScore, 0) / sessionAttrs.length
-    : 0;
-
-  const sessionEvidence = sessionAttrs.reduce(
-    (acc, s) => {
-      const st = s.calculation.evidenceStats;
-      return { count: acc.count + st.count, positiveSupport: acc.positiveSupport + st.positiveSupport, negativeSupport: acc.negativeSupport + st.negativeSupport };
-    },
-    { count: 0, positiveSupport: 0, negativeSupport: 0 },
-  );
-  sessionEvidence.netSupport = Math.max(0, sessionEvidence.positiveSupport - sessionEvidence.negativeSupport);
-
-  const sessions = {
-    score: sessionScore,
-    displayedLevel: scoreToRatingLevel(sessionScore),
-    summary: `${rawSessions.length} interview session${rawSessions.length !== 1 ? 's' : ''} evaluated`,
-    attributes: sessionAttrs,
-    evidenceStats: sessionEvidence,
-  };
-
-  const competency = calculateDimensionScore(evaluation.competency, difficulty);
-  const disposition = calculateDimensionScore(evaluation.disposition, difficulty);
-  const characterScore = (competency.score + disposition.score) / 2;
-  const processMultiplier = 0.5 + 0.5 * (characterScore / 100);
-  const rawScore = sessionScore * processMultiplier;
-
-  return { rawScore, score: Math.round(rawScore), level: scoreToRatingLevel(rawScore), sessions, competency, disposition, characterScore, processMultiplier };
-}
 
 function TintedSummaryStat({ label, value, subvalue }) {
   return (

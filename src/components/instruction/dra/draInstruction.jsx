@@ -489,7 +489,16 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     const summary = summarizeDraRun(run, run.difficulty ?? params.difficulty);
     try {
       await courseOps.updateDraProgress(
-        { state: run.state, mode: run.mode, itemsCompleted: summary.itemsCompleted, totalItems: summary.totalItems, masteryScore: summary.score },
+        {
+          state: run.state,
+          mode: run.mode,
+          itemsCompleted: summary.itemsCompleted,
+          totalItems: summary.totalItems,
+          masteryScore: summary.score,
+          // Only needed by the Canvas-sync branch, which only fires on completion - omit
+          // otherwise so intermediate autosaves don't carry the full evaluation blob.
+          ...(run.state === 'completed' ? { evaluation: run.evaluation } : {}),
+        },
         { force },
       );
     } catch {

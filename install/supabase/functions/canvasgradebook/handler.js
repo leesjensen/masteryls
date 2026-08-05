@@ -153,13 +153,15 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       });
     }
 
-    if (topicType !== 'exam' && topicType !== 'project') {
-      return new Response(JSON.stringify({ error: 'topicType must be exam or project' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const VALID_TOPIC_TYPES = ['exam', 'project', 'dra', 'interview'];
+    if (!VALID_TOPIC_TYPES.includes(topicType)) {
+      return new Response(JSON.stringify({ error: `topicType must be one of: ${VALID_TOPIC_TYPES.join(', ')}` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const autoGrade = payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
     const feedback = String(payload.feedback || '');
     const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
+    const submissionText = typeof payload.submissionText === 'string' ? payload.submissionText.trim() : '';
 
     const normalizedPercent = normalizePercent(percentCorrect);
     const normalizedPoints = Number(pointsPossible);
@@ -213,6 +215,17 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
             user_id: learner.id,
             submission_type: 'online_url',
             url: submissionUrl,
+          },
+        });
+      } else if (submissionText) {
+        // dra/interview have no URL to submit - post a minimal text-entry submission instead,
+        // purely so Canvas registers a real submission record and shows its "needs grading"
+        // indicator in the gradebook (a comment alone leaves no such signal).
+        await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions`, 'POST', {
+          submission: {
+            user_id: learner.id,
+            submission_type: 'online_text_entry',
+            body: submissionText,
           },
         });
       }

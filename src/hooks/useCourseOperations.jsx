@@ -11,6 +11,8 @@ import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { markdownToHtml } from '../utils/markdownToHtml';
+import { formatDraFeedbackForCanvas } from '../components/instruction/dra/draScore';
+import { formatInterviewFeedbackForCanvas } from '../components/instruction/interview/interviewScore';
 import { completedInteractionIds } from '../utils/topicProgress';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
@@ -376,7 +378,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (topicType === 'exam') {
       return 200;
     }
-    if (topicType === 'project') {
+    if (topicType === 'project' || topicType === 'dra' || topicType === 'interview') {
       return 100;
     }
     return undefined;
@@ -1402,6 +1404,37 @@ Requirements:
     return typeof type === 'string' && type.endsWith('View');
   }
 
+  // Posts a final DRA/interview score+feedback to Canvas as a suggested (non-authoritative)
+  // grade - autoGrade is always false here, so it lands as a comment for the instructor to
+  // review rather than a posted grade. Mirrors the exam sync block in addProgress, but for
+  // topic types whose completion is only known once an AI evaluation has been computed.
+  async function _syncFinalAssessmentToCanvas({ topicType, topic, course, learnerEmail, percentCorrect, feedback }) {
+    if (!Number.isFinite(percentCorrect) || !topic.externalRefs?.canvasAssignmentId) return;
+    const pointsPossible = Number(topic?.points ?? defaultPointsForTopicType(topicType));
+    if (!Number.isFinite(pointsPossible) || pointsPossible <= 0) return;
+
+    try {
+      await service.makeCanvasGradebookRequest({
+        courseId: String(course.externalRefs.canvasCourseId),
+        catalogId: course.id,
+        topicType,
+        percentCorrect,
+        pointsPossible,
+        canvasAssignmentId: topic.externalRefs.canvasAssignmentId,
+        learnerEmail,
+        autoGrade: false,
+        feedback,
+        // Posts a minimal text-entry submission so Canvas registers a real submission record
+        // and shows its "needs grading" indicator in the gradebook - without this, autoGrade:
+        // false plus no submission leaves no visible signal that the learner completed the
+        // assessment (see canvasSync.js's submissionTypesForTopic).
+        submissionText: 'Completed in MasteryLS. See the feedback comment below for the AI-generated evaluation and suggested score.',
+      });
+    } catch (error) {
+      console.error(`Unable to sync Canvas grade for topic '${topic.title}': ${error.message}`);
+    }
+  }
+
   async function addProgress(providedUser, interactionId, type, duration = 0, details = {}, options = {}) {
     if (observeSession?.active && learningSession?.observeMode) {
       return null;
@@ -1450,6 +1483,27 @@ Requirements:
             }
           }
         }
+      } else if (topic && course?.externalRefs?.canvasCourseId && topic.type === 'dra' && type === 'draUpdate' && details?.mode === 'final' && details?.state === 'completed') {
+        await _syncFinalAssessmentToCanvas({
+          topicType: 'dra',
+          topic,
+          course,
+          learnerEmail: progressUser.email,
+          // Not pre-coerced with Number(): masteryScore is `null` when no evaluation exists
+          // yet, and Number(null) === 0 would wrongly read as a real 0% score. Passing the
+          // raw value lets Number.isFinite() below correctly reject null/undefined.
+          percentCorrect: details?.masteryScore,
+          feedback: markdownToHtml(formatDraFeedbackForCanvas(details?.evaluation)),
+        });
+      } else if (topic && course?.externalRefs?.canvasCourseId && topic.type === 'interview' && type === 'interviewUpdate' && details?.mode === 'final' && details?.state === 'completed') {
+        await _syncFinalAssessmentToCanvas({
+          topicType: 'interview',
+          topic,
+          course,
+          learnerEmail: progressUser.email,
+          percentCorrect: details?.masteryScore,
+          feedback: markdownToHtml(formatInterviewFeedbackForCanvas(details?.evaluation)),
+        });
       }
 
       return saved;
@@ -1609,6 +1663,22 @@ Requirements:
         entry.masteryScore = Number(details.masteryScore);
       }
       if (details?.state === 'completed') entry.draCompleted = true;
+      entry.lastInteractionAt = new Date().toISOString();
+      update = true;
+      enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
+    } else if (type === 'interviewUpdate') {
+      _getEnrollmentProgress(enrollment, topic.id);
+      const entry = enrollment.progress[topic.id];
+      if (details?.interviewState || details?.state) entry.interviewState = details.interviewState || details.state;
+      if (details?.mode) entry.mode = details.mode;
+      if (Number.isFinite(Number(details?.sessionsCompleted))) entry.sessionsCompleted = Number(details.sessionsCompleted);
+      if (Number.isFinite(Number(details?.totalSessions))) entry.totalSessions = Number(details.totalSessions);
+      if (details?.masteryScore == null) {
+        // leave existing masteryScore untouched until an evaluation exists
+      } else if (Number.isFinite(Number(details.masteryScore))) {
+        entry.masteryScore = Number(details.masteryScore);
+      }
+      if (details?.state === 'completed') entry.interviewCompleted = true;
       entry.lastInteractionAt = new Date().toISOString();
       update = true;
       enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);

@@ -206,3 +206,25 @@ export function summarizeDraRun(details, difficulty) {
     totalItems,
   };
 }
+
+/**
+ * Builds a compact markdown summary of a DRA evaluation, suitable for posting as Canvas
+ * submission feedback (see courseOps.addProgress's dra Canvas-sync branch).
+ */
+export function formatDraFeedbackForCanvas(evaluation, difficulty = 3) {
+  if (!evaluation) return '';
+  const scored = computeDraScore(evaluation, difficulty);
+  const lines = [];
+  if (scored) lines.push(`**Overall: ${scored.score}/100 (${scored.level})**`);
+  if (scored?.process?.summary) lines.push(`\n**Process:** ${scored.process.summary}`);
+  if (scored?.competency?.summary) lines.push(`\n**Competency:** ${scored.competency.summary}`);
+  if (scored?.disposition?.summary) lines.push(`\n**Disposition:** ${scored.disposition.summary}`);
+
+  const concerns = Array.isArray(evaluation.concerns) ? evaluation.concerns : [];
+  if (concerns.length > 0) {
+    lines.push('\n**Concerns:**');
+    concerns.forEach((c) => lines.push(`- ${c.name} (${c.severity}): ${c.description}`));
+  }
+
+  return lines.join('\n');
+}

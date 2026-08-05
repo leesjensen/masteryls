@@ -209,6 +209,75 @@ test('canvasgradebook can submit comment and url without posting grade when auto
   assert.ok(updateRequest.comment.text_comment.includes('Strong progress.'));
 });
 
+test('canvasgradebook accepts dra and interview topicType, posts a text-entry submission, and never posts a grade', async () => {
+  for (const topicType of ['dra', 'interview']) {
+    const { fetchFn, calls } = buildFetchStub();
+    const handler = createCanvasGradebookHandler({
+      createSupabaseClientFromAuthHeader: () =>
+        createMockSupabase({
+          user: { id: 'u6', email: 'learner@test.com' },
+          roles: [],
+        }),
+      getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+      fetchFn,
+    });
+
+    const response = await handler(
+      makeRequest({
+        courseId: '12345',
+        topicType,
+        percentCorrect: 82,
+        pointsPossible: 100,
+        learnerEmail: 'learner@test.com',
+        canvasAssignmentId: 999,
+        autoGrade: false,
+        feedback: 'Overall: 82/100 (Proficient)',
+        submissionText: 'Completed in MasteryLS.',
+      }),
+    );
+
+    assert.equal(response.status, 200);
+
+    // A submission record must exist (not just a comment) so Canvas shows its "needs
+    // grading" indicator in the gradebook, even though no grade is posted.
+    const submitRequest = getSubmissionRequest(calls, 'POST');
+    assert.equal(submitRequest.submission.submission_type, 'online_text_entry');
+    assert.equal(submitRequest.submission.body, 'Completed in MasteryLS.');
+
+    const updateRequest = getSubmissionRequest(calls, 'PUT');
+    assert.equal(updateRequest.submission, undefined, `${topicType} should not post a grade`);
+    assert.ok(updateRequest.comment.text_comment.includes('Suggested grade: 82/100 (82%)'));
+  }
+});
+
+test('canvasgradebook rejects an unsupported topicType', async () => {
+  const { fetchFn } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u7', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({
+      courseId: '12345',
+      topicType: 'schedule',
+      percentCorrect: 82,
+      pointsPossible: 100,
+      learnerEmail: 'learner@test.com',
+      canvasAssignmentId: 999,
+    }),
+  );
+
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.match(body.error, /topicType must be one of/);
+});
+
 test('buildCanvasComment separates the header lines with <br> line breaks', () => {
   const comment = buildCanvasComment({ feedback: '', normalizedPercent: 90, normalizedPoints: 100, postedGrade: 90, autoGrade: true });
   assert.ok(comment.includes('MasteryLS feedback<br>'));

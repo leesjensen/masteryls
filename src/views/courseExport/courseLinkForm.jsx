@@ -20,9 +20,14 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     return candidateCourse.modules.flatMap((module) => module.topics || []);
   }
 
+  // Topic types that submit a graded assignment to Canvas - see canvasSync.js's
+  // ASSIGNMENT_TOPIC_TYPES (plus 'exam', which is a quiz rather than an assignment but is
+  // still gradable).
+  const GRADABLE_TOPIC_TYPES = ['project', 'exam', 'dra', 'interview'];
+
   function projectsAndExamsTopicIds(candidateCourse) {
     return topicsForCourse(candidateCourse)
-      .filter((topic) => topic?.id && (topic.type === 'project' || topic.type === 'exam'))
+      .filter((topic) => topic?.id && GRADABLE_TOPIC_TYPES.includes(topic.type))
       .map((topic) => topic.id);
   }
 
@@ -217,7 +222,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
                 Select none
               </button>
               <button type="button" onClick={setPresetProjectsAndExams} className="px-3 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200">
-                Select projects and exams
+                Select gradable topics
               </button>
             </div>
             <p className="text-xs text-gray-500 mb-2">
