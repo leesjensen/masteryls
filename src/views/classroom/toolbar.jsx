@@ -4,6 +4,7 @@ import { GitHub, Canvas } from '../../utils/Icons.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 import { getCanvasTopicUrl, getCanvasCourseUrl, hasCanvasTopicLink } from '../../hooks/canvas/canvasSync.js';
+import MasteryPie from '../../components/MasteryPie.jsx';
 
 export default function Toolbar({ courseOps, user, learningSession, settings, editing, toggleEditor }) {
   const navigate = useNavigate();
@@ -43,6 +44,8 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   // Link to the topic when it is individually linked, otherwise the Canvas course page.
   const canvasUrl = canvasTopicUrl || getCanvasCourseUrl(canvasCourseId);
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
+  const masteryPercent = learningSession?.enrollment?.progress?.mastery;
+  const hasMastery = Number.isFinite(Number(masteryPercent));
 
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
@@ -54,8 +57,8 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
         {canvasCourseId && <ToolBarButton title={courseOps.canSubmitToCanvasGradebook ? 'Canvas — your grades submit here' : canvasTopicUrl ? 'Canvas topic' : 'Canvas course site'} onClick={() => window.open(canvasUrl, '_blank')} icon={Canvas} badge={courseOps.canSubmitToCanvasGradebook} />}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" onClick={navigateToSchedule} icon={CalendarDays} />}
-        <ToolBarButton title="MasteryView" onClick={navigateToMasteryView} icon={ChartArea} />
         <ToolBarButton title="GitHub repository" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')} icon={GitHub} />
+        {hasMastery ? <MasteryPie percent={masteryPercent} title={`Mastery ${Math.round(Number(masteryPercent))}% — open MasteryView`} onClick={navigateToMasteryView} /> : <ToolBarButton title="MasteryView" onClick={navigateToMasteryView} icon={ChartArea} />}
         <ToolBarButton title="Previous topic" onClick={() => navigateToTopic('prev')} icon={SquareChevronLeft} />
         <ToolBarButton title="Next topic" onClick={() => navigateToTopic('next')} icon={SquareChevronRight} />
       </div>
