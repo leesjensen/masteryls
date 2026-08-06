@@ -87,7 +87,7 @@ function SessionSidebar({ sessions = [], currentIndex = -1, selectedIndex = -1, 
   );
 }
 
-export default function InterviewWorkspace({ courseOps, learningSession, user, params, run, setRun, persistRun, onStartRun, busyAction, setActiveTab }) {
+export default function InterviewWorkspace({ courseOps, learningSession, user, params, run, setRun, persistRun, onStartRun, busyAction, setActiveTab, finalCompleted = false }) {
   const [sending, setSending] = React.useState(false);
   const [openingPending, setOpeningPending] = React.useState(false);
   const [advancing, setAdvancing] = React.useState(false);
@@ -266,6 +266,13 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
   }
 
   if (!run) {
+    if (finalCompleted) {
+      return (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">The final assessment has been completed and cannot be retaken.</p>
+        </div>
+      );
+    }
     return (
       <div className="space-y-3">
         <p className="text-sm text-gray-600">No interview started yet. Use the button above to generate a scenario and begin.</p>
@@ -303,16 +310,6 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
           <BadgeCheck size={15} />
           View results
         </button>
-        {params.practiceMode && (
-          <button
-            onClick={() => onStartRun('practice')}
-            disabled={busy}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60"
-          >
-            {busyAction === 'startPractice' && <Spinner className="border-gray-200 border-t-gray-600" />}
-            New practice run
-          </button>
-        )}
       </div>
     );
     if (isCurrentSessionDone && !isLastSession) return (
@@ -344,16 +341,6 @@ export default function InterviewWorkspace({ courseOps, learningSession, user, p
         >
           View Evaluation
         </button>
-        {params.practiceMode && (
-          <button
-            onClick={() => onStartRun('practice')}
-            disabled={busy}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50 disabled:opacity-60"
-          >
-            {busyAction === 'startPractice' && <Spinner className="border-gray-200 border-t-gray-600" />}
-            New practice run
-          </button>
-        )}
       </div>
     </div>
   );

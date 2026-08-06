@@ -34,6 +34,22 @@ function interviewCourseOverride() {
   };
 }
 
+// A course with no Canvas link at all, for tests that only care about the interview UI/flow
+// and would otherwise need to mock the Canvas eligibility check for no reason.
+function plainCourseOverride() {
+  return {
+    modules: [
+      {
+        title: 'Module 1',
+        topics: [
+          { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
+          { id: '4c5d6e7f-8a9b-0c1d-2e3f-4a5b6c7d8e9f', title: 'Mock Interview', path: INTERVIEW_REPO_PATH, type: 'interview' },
+        ],
+      },
+    ],
+  };
+}
+
 function installInterviewRoutes(page: any, initialMarkdown: string) {
   const context = page.context();
   let currentMarkdown = initialMarkdown;
@@ -163,4 +179,64 @@ test('interview practice completion does not sync to canvasgradebook', async ({ 
   // Give any (incorrect) async sync a moment to fire before asserting it never did.
   await page.waitForTimeout(300);
   expect(gradebookCalls.length).toBe(0);
+});
+
+test('interview: chat footer and completion screen do not offer a new practice run after finishing', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: plainCourseOverride() });
+  installInterviewRoutes(page, interviewMarkdown({ practiceMode: true, finalMode: false }));
+  installInterviewGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Mock Interview').click();
+
+  await page.getByRole('button', { name: 'Start practice interview' }).click();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Interview', exact: true }).click();
+  const resultsButton = page.getByRole('button', { name: 'View results' });
+  await expect(resultsButton).toBeVisible();
+  // Scoped to the chat footer itself (not page-wide) since the persistent top action bar
+  // legitimately still offers "New practice run" here - practice mode remains available and
+  // the final hasn't been taken. Only the chat footer's own copy should be gone.
+  await expect(resultsButton.locator('..').getByRole('button', { name: 'New practice run' })).toHaveCount(0);
+
+  await resultsButton.click();
+  const completeHeading = page.getByText('Interview complete', { exact: true });
+  await expect(completeHeading).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View Evaluation' })).toBeVisible();
+  await expect(completeHeading.locator('../..').getByRole('button', { name: 'New practice run' })).toHaveCount(0);
+});
+
+test('interview: completing the final removes new-practice-run and retake-final options everywhere', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: plainCourseOverride() });
+  installInterviewRoutes(page, interviewMarkdown({ practiceMode: true, finalMode: true }));
+  installInterviewGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Mock Interview').click();
+
+  // Complete a practice run first so there is history to review later.
+  await page.getByRole('button', { name: 'Start practice interview' }).click();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await page.getByRole('button', { name: 'Start final interview' }).click();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
+
+  // Once the final is complete, neither option should be offered in the action bar.
+  await expect(page.getByRole('button', { name: 'New practice run' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start final interview' })).toHaveCount(0);
+
+  // Reviewing the earlier practice run must not resurrect the start options.
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await page.getByRole('button', { name: /Backend Engineer Interview/ }).click();
+  await expect(page.getByText('Evaluation Snapshot')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'New practice run' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start final interview' })).toHaveCount(0);
 });

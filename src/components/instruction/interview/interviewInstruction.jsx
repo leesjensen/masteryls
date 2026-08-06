@@ -54,7 +54,12 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
     if (!user || isPreview) { setLoadingState(false); return; }
     courseOps.getInterviewState().then((state) => {
       setFullState(state);
-      const existing = (state?.practiceRuns || []).find((r) => r.runId === state.selectedPracticeRunId) || null;
+      // Prefer restoring the explicitly-selected practice run; otherwise fall back to the
+      // final run (if one exists) rather than leaving `run` unset - the final was never
+      // being restored on reload at all, which is what let "Start final interview" reappear
+      // after the final had already been completed.
+      const existingPractice = (state?.practiceRuns || []).find((r) => r.runId === state.selectedPracticeRunId) || null;
+      const existing = existingPractice || state?.finalRun || null;
       // Pre-seed ref so the auto-navigate effect doesn't fire for an existing run
       if (existing) prevRunIdRef.current = existing.runId;
       setRun(existing);
@@ -76,6 +81,10 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
   const runInProgress = run && !run.completedAt;
   const runComplete = run && Boolean(run.completedAt);
   const locked = run?.mode === 'final';
+  // Tracks completion of the final run independent of which run is currently being viewed
+  // (fullState.finalRun, not the local `run`) - reviewing a past practice run, or reloading
+  // the page, must not make "start a new run" reappear once the final has been completed.
+  const finalCompleted = Boolean(fullState?.finalRun?.completedAt);
   const showCoaching = canPractice && runInProgress && run?.mode === 'practice';
   const practiceRuns = fullState?.practiceRuns || [];
   const showPracticeRunPicker = canPractice && practiceRuns.length > 0;
@@ -247,6 +256,13 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
     if (isPreview || !user) return null;
 
     if (!run) {
+      if (finalCompleted) {
+        return (
+          <div className="not-prose mt-4 flex flex-col items-start gap-2">
+            <p className="text-sm text-gray-600">The final assessment has been completed and cannot be retaken.</p>
+          </div>
+        );
+      }
       return (
         <div className="not-prose mt-4 flex flex-col items-start gap-2">
           <p className="text-sm text-gray-600">
@@ -302,7 +318,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
           <div className="hidden sm:flex items-center gap-2 text-sm text-blue-700">
             <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-semibold">Complete</span>
           </div>
-          {!locked && (
+          {!locked && !finalCompleted && (
             <div className="flex flex-wrap gap-2">
               {canPractice && (
                 <button disabled={busy} onClick={() => startRun('practice')} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
@@ -340,7 +356,12 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
             <div className="not-prose mt-6 mb-8">
               <div className="mb-3 text-lg font-semibold text-gray-600">Interviews</div>
               {showPracticeRunPicker && renderPracticeRunList()}
-              {!isPreview && user && !run && (
+              {!isPreview && user && !run && finalCompleted && (
+                <div className={showPracticeRunPicker ? 'mt-3' : ''}>
+                  <p className="text-sm text-gray-600">The final assessment has been completed and cannot be retaken.</p>
+                </div>
+              )}
+              {!isPreview && user && !run && !finalCompleted && (
                 <div className={showPracticeRunPicker ? 'mt-3' : ''}>
                   {!showPracticeRunPicker && (
                     <p className="mb-3 text-sm text-gray-600">
@@ -560,6 +581,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
             onStartRun={startRun}
             busyAction={busyAction}
             setActiveTab={selectTab}
+            finalCompleted={finalCompleted}
           />
         </div>
       ) : (
