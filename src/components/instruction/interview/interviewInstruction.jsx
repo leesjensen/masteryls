@@ -87,7 +87,10 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
   const finalCompleted = Boolean(fullState?.finalRun?.completedAt);
   const showCoaching = canPractice && runInProgress && run?.mode === 'practice';
   const practiceRuns = fullState?.practiceRuns || [];
-  const showPracticeRunPicker = canPractice && practiceRuns.length > 0;
+  const finalRun = fullState?.finalRun || null;
+  // The final run must be reviewable the same as practice runs - it's not just the most
+  // recently active `run`, since selecting a past practice run (or reloading) can replace it.
+  const showRunHistory = Boolean(finalRun) || (canPractice && practiceRuns.length > 0);
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -214,26 +217,46 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
     }
   }
 
-  function selectPracticeRun(runId) {
-    const selected = practiceRuns.find((r) => r.runId === runId);
-    if (!selected) return;
-    const updatedState = { ...(fullState || {}), selectedPracticeRunId: runId };
+  // Shared by both the final-run entry and each practice-run entry in the history list -
+  // selecting either just changes which run is being viewed/reviewed, it never starts or
+  // restarts anything.
+  function selectRun(target) {
+    if (!target) return;
+    const updatedState = target.mode === 'final' ? { ...(fullState || {}) } : { ...(fullState || {}), selectedPracticeRunId: target.runId };
     setFullState(updatedState);
-    setRun(selected);
+    setRun(target);
     selectTab('scenario');
   }
 
-  function renderPracticeRunList(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3') {
-    if (!showPracticeRunPicker) return null;
+  function renderRunHistory(containerClassName = 'w-full max-w-3xl rounded border border-blue-200 bg-blue-50 p-3') {
+    if (!showRunHistory) return null;
     return (
       <div className={containerClassName}>
         <div className="space-y-2">
+          {finalRun && (
+            <button
+              type="button"
+              onClick={() => selectRun(finalRun)}
+              className={`w-full rounded border px-3 py-2 text-left transition-colors ${run?.runId === finalRun.runId ? 'border-amber-500 bg-amber-600 text-white' : 'border-amber-200 bg-white text-amber-800 hover:bg-amber-50'}`}
+            >
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                {finalRun.completedAt
+                  ? <BadgeCheck size={14} className={run?.runId === finalRun.runId ? 'text-white shrink-0' : 'text-amber-600 shrink-0'} />
+                  : <CircleDashed size={14} className={run?.runId === finalRun.runId ? 'text-amber-100 shrink-0' : 'text-amber-400 shrink-0'} />}
+                Final: {finalRun.scenario?.title || finalRun.scenario?.company || 'Final interview'}
+              </div>
+              <div className={`mt-1 text-xs ${run?.runId === finalRun.runId ? 'text-amber-100' : 'text-gray-500'}`}>
+                Started {formatRunDate(finalRun.createdAt)}
+                {finalRun.completedAt && <> · Completed {formatRunDate(finalRun.completedAt)}</>}
+              </div>
+            </button>
+          )}
           {practiceRuns.map((r, index) => {
-            const isSelected = fullState?.selectedPracticeRunId === r.runId;
+            const isSelected = run?.runId === r.runId;
             const isCompleted = Boolean(r.completedAt);
             const title = r.scenario?.title || r.scenario?.company || `Practice run ${index + 1}`;
             return (
-              <button key={r.runId} type="button" onClick={() => selectPracticeRun(r.runId)} className={`w-full rounded border px-3 py-2 text-left transition-colors ${isSelected ? 'border-blue-500 bg-blue-600 text-white' : isCompleted ? 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}>
+              <button key={r.runId} type="button" onClick={() => selectRun(r)} className={`w-full rounded border px-3 py-2 text-left transition-colors ${isSelected ? 'border-blue-500 bg-blue-600 text-white' : isCompleted ? 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100' : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-100'}`}>
                 <div className="flex items-center gap-1.5 text-sm font-medium">
                   {isCompleted
                     ? <BadgeCheck size={14} className={isSelected ? 'text-white shrink-0' : 'text-blue-500 shrink-0'} />
@@ -355,15 +378,15 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
 
             <div className="not-prose mt-6 mb-8">
               <div className="mb-3 text-lg font-semibold text-gray-600">Interviews</div>
-              {showPracticeRunPicker && renderPracticeRunList()}
+              {showRunHistory && renderRunHistory()}
               {!isPreview && user && !run && finalCompleted && (
-                <div className={showPracticeRunPicker ? 'mt-3' : ''}>
+                <div className={showRunHistory ? 'mt-3' : ''}>
                   <p className="text-sm text-gray-600">The final assessment has been completed and cannot be retaken.</p>
                 </div>
               )}
               {!isPreview && user && !run && !finalCompleted && (
-                <div className={showPracticeRunPicker ? 'mt-3' : ''}>
-                  {!showPracticeRunPicker && (
+                <div className={showRunHistory ? 'mt-3' : ''}>
+                  {!showRunHistory && (
                     <p className="mb-3 text-sm text-gray-600">
                       {canPractice && canFinal ? 'Choose practice to explore freely or start the final assessment when you are ready.' : canPractice ? 'Start a practice interview to generate a unique scenario. You can repeat practice as many times as you like.' : 'Start the final interview. The scenario is locked once started.'}
                     </p>

@@ -233,10 +233,20 @@ test('interview: completing the final removes new-practice-run and retake-final 
   await expect(page.getByRole('button', { name: 'New practice run' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Start final interview' })).toHaveCount(0);
 
-  // Reviewing the earlier practice run must not resurrect the start options.
+  // Both runs should now be listed and reviewable - the final one labeled distinctly.
   await page.getByRole('button', { name: 'Overview', exact: true }).click();
-  await page.getByRole('button', { name: /Backend Engineer Interview/ }).click();
+  await expect(page.getByRole('button', { name: /^Final: Backend Engineer Interview/ })).toBeVisible();
+
+  // Reviewing the earlier practice run must not resurrect the start options.
+  await page.getByRole('button', { name: /^Backend Engineer Interview/ }).click();
   await expect(page.getByText('Evaluation Snapshot')).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'New practice run' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Start final interview' })).toHaveCount(0);
+
+  // The final run itself must still be reviewable after viewing a practice run - this is
+  // the literal reported bug: only the practice run could be reviewed after the final.
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await page.getByRole('button', { name: /^Final: Backend Engineer Interview/ }).click();
+  await page.getByRole('button', { name: 'Evaluation', exact: true }).click();
+  await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 });
