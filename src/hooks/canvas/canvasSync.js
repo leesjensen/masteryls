@@ -225,6 +225,25 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     return canvasAssignment;
   }
 
+  // Course-level "Reading interactions" assignment that mirrors the learner's overall mastery.
+  // Worth 80 points with mastery posted as raw points, so mastery over 80 is extra credit. It
+  // collects no student submission - MasteryLS posts the grade directly (see masteryCanvasSync).
+  async function createMasteryAssignment({ canvasCourseId, catalogId }) {
+    const body = {
+      assignment: {
+        name: 'Reading interactions',
+        description: '<p>Automatically updated from your MasteryLS reading-interaction progress. Reaching 80% mastery earns full marks; going beyond earns extra credit.</p>',
+        points_possible: 80,
+        grading_type: 'points',
+        submission_types: ['none'],
+        published: true,
+      },
+    };
+
+    const canvasAssignment = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments`, 'POST', body, catalogId);
+    return canvasAssignment;
+  }
+
   async function updateCanvasTopic({ course, topic, canvasCourseId, dueDatesByTopicId = {}, useStaticHtml = false }) {
     const masteryLsHeaderHtml = buildMasteryLsLinkHtml(course, topic);
     const skipContent = useStaticHtml || MASTERYLS_ONLY_TOPIC_TYPES.includes(topic.type);
@@ -333,7 +352,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
   function removeCanvasReferences(updatedCourse) {
     if (updatedCourse.externalRefs) {
-      const { canvasCourseId, canvasScheduleFileId, ...remainingCourseRefs } = updatedCourse.externalRefs;
+      const { canvasCourseId, canvasScheduleFileId, canvasMasteryAssignmentId, ...remainingCourseRefs } = updatedCourse.externalRefs;
       updatedCourse.externalRefs = Object.keys(remainingCourseRefs).length > 0 ? remainingCourseRefs : undefined;
     }
 
@@ -425,5 +444,6 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     removeCanvasReferences,
     linkCourseResources,
     updateCanvasTopic,
+    createMasteryAssignment,
   };
 }

@@ -97,6 +97,20 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     setIsLoading(false);
   }
 
+  async function createMasteryAssignment() {
+    setLoadingTitle('Creating Mastery Assignment');
+    setIsLoading(true);
+    try {
+      setUpdateMessage('Creating "Reading interactions" assignment...');
+      const updatedCourse = await courseOps.createMasteryAssignment(course);
+      setCourse(updatedCourse);
+      showAlert({ message: 'Mastery assignment "Reading interactions" created', type: 'info' });
+    } catch (error) {
+      showAlert({ message: `Error creating mastery assignment: ${error.message}`, type: 'error' });
+    }
+    setIsLoading(false);
+  }
+
   function viewCanvas() {
     const url = `https://byu.instructure.com/courses/${canvasCourseId}`;
     window.open(url, '_blank');
@@ -126,6 +140,8 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   const selectedScheduleTitle = selectedSchedule?.title || selectedSchedule?.path || 'No schedule selected';
   const modules = Array.isArray(course?.modules) ? course.modules : [];
   const topicCount = modules.reduce((count, module) => count + (Array.isArray(module?.topics) ? module.topics.length : 0), 0);
+  const masteryAssignmentUrl =
+    course?.externalRefs?.canvasCourseId && course?.externalRefs?.canvasMasteryAssignmentId ? `https://byu.instructure.com/courses/${course.externalRefs.canvasCourseId}/assignments/${course.externalRefs.canvasMasteryAssignmentId}` : null;
 
   function setPresetSelectAll() {
     setSelectedTopicIds(
@@ -277,6 +293,48 @@ export default function CourseLinkForm({ courseOps, onClose }) {
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">Exam and project due dates will be read from the selected schedule file.</p>
+          </div>
+        )}
+
+        {course && (
+          <div>
+            <label className="block text-lg font-medium text-gray-700 mb-1">Mastery assignment</label>
+            {course?.externalRefs?.canvasMasteryAssignmentId ? (
+              <>
+                <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-24 shrink-0 text-gray-500">Assignment</span>
+                    <input readOnly value="Reading interactions" className="flex-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700" />
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-24 shrink-0 text-gray-500">Points</span>
+                    <input readOnly value="80 — mastery over 80 earns extra credit" className="flex-1 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                  <span>
+                    Linked assignment:{' '}
+                    {masteryAssignmentUrl ? (
+                      <a href={masteryAssignmentUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-800">
+                        Reading interactions
+                      </a>
+                    ) : (
+                      <strong>Reading interactions</strong>
+                    )}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Each learner's overall reading-interaction mastery is posted to this assignment automatically.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500 mb-2">Create a Canvas assignment that mirrors each learner's overall reading-interaction mastery (80 points; mastery over 80 earns extra credit).</p>
+                <button type="button" disabled={!course?.externalRefs?.canvasCourseId} onClick={createMasteryAssignment} className="px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                  Create mastery assignment
+                </button>
+                {!course?.externalRefs?.canvasCourseId && <p className="text-xs text-gray-400 mt-1">Link the course to Canvas first.</p>}
+              </>
+            )}
           </div>
         )}
 

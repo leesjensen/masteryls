@@ -250,6 +250,40 @@ test('canvasgradebook accepts dra and interview topicType, posts a text-entry su
   }
 });
 
+test('canvasgradebook mastery topicType posts the grade only (no comment, no submission) for learner-self', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u8', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({
+      courseId: '12345',
+      topicType: 'mastery',
+      percentCorrect: 92, // the learner's mastery, posts as raw points
+      pointsPossible: 100,
+      learnerEmail: 'learner@test.com',
+      canvasAssignmentId: 999,
+    }),
+  );
+
+  assert.equal(response.status, 200);
+
+  // No submission record is created for mastery (grade-only).
+  const submitCall = calls.find((c) => c.url.includes('/submissions') && String(c.init?.method || '').toUpperCase() === 'POST');
+  assert.equal(submitCall, undefined, 'mastery must not POST a submission');
+
+  const updateRequest = getSubmissionRequest(calls, 'PUT');
+  assert.equal(updateRequest.submission.posted_grade, 92, 'posted grade equals raw mastery');
+  assert.equal(updateRequest.comment, undefined, 'mastery must not attach a comment');
+});
+
 test('canvasgradebook rejects an unsupported topicType', async () => {
   const { fetchFn } = buildFetchStub();
   const handler = createCanvasGradebookHandler({

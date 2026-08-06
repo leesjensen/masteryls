@@ -153,12 +153,16 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       });
     }
 
-    const VALID_TOPIC_TYPES = ['exam', 'project', 'dra', 'interview'];
+    const VALID_TOPIC_TYPES = ['exam', 'project', 'dra', 'interview', 'mastery'];
     if (!VALID_TOPIC_TYPES.includes(topicType)) {
       return new Response(JSON.stringify({ error: `topicType must be one of: ${VALID_TOPIC_TYPES.join(', ')}` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const autoGrade = payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
+    // The course-level "mastery" assignment is auto-graded and updated frequently, so it posts
+    // the grade only - no submission and no comment (a comment on every mastery change would spam
+    // the submission thread).
+    const isMastery = topicType === 'mastery';
+    const autoGrade = isMastery ? true : payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
     const feedback = String(payload.feedback || '');
     const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
     const submissionText = typeof payload.submissionText === 'string' ? payload.submissionText.trim() : '';
@@ -231,7 +235,6 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       }
 
       const postedGrade = autoGrade ? Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100 : null;
-      const textComment = buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade });
       const updatePayload = {
         ...(autoGrade
           ? {
@@ -240,9 +243,14 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
               },
             }
           : {}),
-        comment: {
-          text_comment: textComment,
-        },
+        // Mastery updates are grade-only; everything else attaches the MasteryLS feedback comment.
+        ...(isMastery
+          ? {}
+          : {
+              comment: {
+                text_comment: buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }),
+              },
+            }),
       };
 
       const submission = await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions/${learner.id}`, 'PUT', updatePayload);

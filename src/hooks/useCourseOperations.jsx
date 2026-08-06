@@ -17,6 +17,7 @@ import { completedInteractionIds } from '../utils/topicProgress';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
+import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -35,6 +36,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   const courseCache = React.useRef(new Map());
   const discussionToggleHandler = React.useRef(null);
   const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ checkLearnerEligibility: (params) => service.checkCanvasGradebookEligibility(params) }));
+  // Coalesces posting course mastery to the Canvas "Reading interactions" assignment so frequent
+  // mastery changes don't hammer Canvas (on-change + debounce + flush). See masteryCanvasSync.js.
+  const masteryCanvasSync = React.useRef(createMasteryCanvasSync({ post: (params) => service.makeCanvasGradebookRequest(params) }));
 
   // Course-level Canvas gradebook eligibility. This is the expensive, async part
   // (is the learner a student in the linked Canvas course?) and depends only on
@@ -57,6 +61,22 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       active = false;
     };
   }, [eligibilityCanvasCourseId, user?.id]);
+
+  // Force any pending mastery post when the learner leaves the page or switches topics, so the
+  // last debounced value always lands even if the debounce window hasn't elapsed.
+  React.useEffect(() => {
+    const flush = () => masteryCanvasSync.current.flush();
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && document.hidden) flush();
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', onVisibility);
+      flush();
+    };
+  }, [learningSession?.topic?.id]);
 
   function getWorkingCourse() {
     const courseId = learningSession?.course?.id;
@@ -1702,7 +1722,28 @@ Requirements:
         console.error('Failed to save enrollment progress', { enrollmentId: enrollment?.id, topicId: topic?.id, type, message: e?.message });
       });
       setLearningSession({ ...learningSession, enrollment: enrollment });
+      _scheduleMasteryCanvasSync(enrollment);
     }
+  }
+
+  // Schedule a (coalesced) post of the learner's mastery to the Canvas mastery assignment. No-op
+  // unless the course is linked, the mastery assignment exists, and this learner is a Canvas
+  // student (eligibility precomputed once per session). Observe mode never reaches here because
+  // addProgress short-circuits before mutating a learner's progress.
+  function _scheduleMasteryCanvasSync(enrollment) {
+    const course = learningSession?.course;
+    const canvasCourseId = course?.externalRefs?.canvasCourseId;
+    const canvasAssignmentId = course?.externalRefs?.canvasMasteryAssignmentId;
+    if (!canvasCourseId || !canvasAssignmentId || !canSubmitToCanvasGradebook || !user?.email) {
+      return;
+    }
+    masteryCanvasSync.current.schedule({
+      canvasCourseId,
+      catalogId: course.id,
+      canvasAssignmentId,
+      learnerEmail: user.email,
+      mastery: enrollment?.progress?.mastery,
+    });
   }
 
   function _getEnrollmentProgress(enrollment, topicId) {
@@ -2019,6 +2060,26 @@ Requirements:
     return canvasSync.updateCanvasTopic({ course, topic, canvasCourseId });
   }
 
+  // Create the course-level "Reading interactions" Canvas assignment that mirrors learner mastery,
+  // and persist its id on course.externalRefs so later mastery posts can target it. Idempotent:
+  // returns the course unchanged if the assignment already exists.
+  async function createMasteryAssignment(course) {
+    await verifyCanvasAccess(course);
+    const canvasCourseId = course?.externalRefs?.canvasCourseId;
+    if (!canvasCourseId) {
+      throw new Error('Link the course to Canvas before creating the mastery assignment.');
+    }
+    if (course?.externalRefs?.canvasMasteryAssignmentId) {
+      return course;
+    }
+
+    const assignment = await canvasSync.createMasteryAssignment({ canvasCourseId, catalogId: course.id });
+    const updatedCourse = Course.copy(course);
+    updatedCourse.externalRefs = { ...updatedCourse.externalRefs, canvasMasteryAssignmentId: assignment.id };
+    await updateCourseStructure(updatedCourse, null, 'add(canvas) reading interactions mastery assignment');
+    return updatedCourse;
+  }
+
   function _generateTopicPath(course, topicTitle, topicDescription, topicType) {
     if (topicType === 'embedded') {
       return topicDescription || `https://www.youtube.com/embed/HXNx_Gp0jyM`;
@@ -2196,6 +2257,7 @@ Requirements:
     unlinkFromCanvas,
     linkToCanvas,
     updateCanvasPage,
+    createMasteryAssignment,
     service,
   };
 }
