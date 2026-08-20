@@ -15,6 +15,18 @@ import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize'
 /**
  * Static version of Markdown component for server-side rendering (no router hooks)
  */
+// A topic can be linked to Canvas as a page, quiz, or assignment (see canvasSync.js's
+// topicCanvasTarget) - resolve whichever one actually exists, as a root-relative Canvas
+// path so the link works regardless of which Canvas domain the course lives on.
+function resolveCanvasResourcePath(canvasCourseId, targetTopic, hrefAnchor = '') {
+  const refs = targetTopic?.externalRefs;
+  if (!canvasCourseId || !refs) return null;
+  if (refs.canvasPageId) return `/courses/${canvasCourseId}/pages/${refs.canvasPageId}${hrefAnchor}`;
+  if (refs.canvasQuizId) return `/courses/${canvasCourseId}/quizzes/${refs.canvasQuizId}${hrefAnchor}`;
+  if (refs.canvasAssignmentId) return `/courses/${canvasCourseId}/assignments/${refs.canvasAssignmentId}${hrefAnchor}`;
+  return null;
+}
+
 export default function MarkdownStatic({ course, topic, content, languagePlugins = [] }) {
   const topicBasePath = topic?.snapshotPath || topic?.path;
 
@@ -75,17 +87,18 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
       if (href?.startsWith('http')) {
         src = href;
       } else if (href?.startsWith('/')) {
-        const match = href.match(/\/course\/([^/]+)\/topic\/([^/]+)/);
+        const match = href.match(/\/course\/([^/#]+)\/topic\/([^/#]+)(#.*)?$/);
         if (match) {
-          const [, courseId, topicId] = match;
+          const [, courseId, topicId, hrefAnchor = ''] = match;
           if (courseId === course.id) {
             const targetTopic = course.topicFromId(topicId);
-            if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
-              src = `./${targetTopic.externalRefs.canvasPageId}`;
-            }
+            // Prefer linking directly to the Canvas page/quiz/assignment for the target
+            // topic (whichever type it was linked as); fall back to the MasteryLS URL
+            // rather than dropping the link entirely when no Canvas resource exists yet.
+            src = resolveCanvasResourcePath(course.externalRefs?.canvasCourseId, targetTopic, hrefAnchor) || `https://masteryls.com/course/${courseId}/topic/${topicId}${hrefAnchor}`;
           } else {
             // we could look up the course and see if it has a canvasCourseId, but for now, just link to the masteryls site
-            src = `https://masteryls.com/course/${courseId}/topic/${topicId}`;
+            src = `https://masteryls.com/course/${courseId}/topic/${topicId}${hrefAnchor}`;
           }
         }
       } else {
@@ -96,9 +109,18 @@ export default function MarkdownStatic({ course, topic, content, languagePlugins
         const canonicalResolvedUrl = new URL(hrefPath, topic.path).toString();
         const resolvedUrl = new URL(hrefPath, topicBasePath).toString();
         const targetTopic = course.topicFromPath(canonicalResolvedUrl, false);
-        if (targetTopic && targetTopic.externalRefs?.canvasPageId) {
-          src = `/courses/${course.externalRefs.canvasCourseId}/pages/${targetTopic.externalRefs.canvasPageId}${hrefAnchor}`;
+        const canvasResourcePath = resolveCanvasResourcePath(course.externalRefs?.canvasCourseId, targetTopic, hrefAnchor);
+        if (canvasResourcePath) {
+          src = canvasResourcePath;
+        } else if (targetTopic) {
+          // The relative link resolves to a real topic in this course, but that topic
+          // hasn't been linked to Canvas yet (or the course itself isn't Canvas-linked) -
+          // send it to MasteryLS rather than the raw source file, matching how the
+          // /course/.../topic/... link branch above falls back.
+          src = `https://masteryls.com/course/${course.id}/topic/${targetTopic.id}${hrefAnchor}`;
         } else {
+          // Not a topic at all (e.g. an image, PDF, or other repo file) - link straight to
+          // the raw resolved content.
           src = resolvedUrl + hrefAnchor;
         }
       }

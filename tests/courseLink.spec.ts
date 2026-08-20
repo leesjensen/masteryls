@@ -23,6 +23,7 @@ async function mockLinkRequests(page: any) {
       updateAssignment: [] as string[],
     },
     assignmentPayloads: [] as any[],
+    pagePayloads: [] as any[],
   };
 
   // verifyGitHubAccount() checks this endpoint before linking.
@@ -100,6 +101,7 @@ async function mockLinkRequests(page: any) {
 
     if (method === 'PUT' && endpoint?.match(/^\/courses\/\d+\/pages\/\d+$/)) {
       requestLog.update.pages += 1;
+      requestLog.pagePayloads.push(body?.body?.wiki_page);
       await route.fulfill({ status: 200, json: { id: 1, published: true } });
       return;
     }
@@ -401,4 +403,90 @@ test('course link renders full content for project assignments but header-only, 
     expect(assignment.description).toContain('View this content in');
     expect(assignment.description).not.toContain('markdown!');
   }
+});
+
+test('course link resolves cross-topic links to the target Canvas page/quiz/assignment instead of dropping them', async ({ page }) => {
+  const courseId = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  await initBasicCourse({
+    page,
+    topicMarkdown: `# Home
+
+- [Overview](/course/${courseId}/topic/ov1)
+- [Pizza Project](/course/${courseId}/topic/pj1)
+`,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'Type Coverage',
+          topics: [
+            { id: 'home1', title: 'Home', path: 'README.md' },
+            { id: 'ov1', title: 'Overview', path: 'instruction/overview/overview.md' },
+            { id: 'pj1', title: 'Pizza Project', type: 'project', path: 'instruction/project-topic/project-topic.md' },
+          ],
+        },
+      ],
+    },
+  });
+  const requestLog = await mockLinkRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseLinking(page);
+
+  await page.getByLabel('Course', { exact: true }).selectOption(courseId);
+  await page.waitForTimeout(300);
+  await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await page.getByRole('button', { name: 'Select all', exact: true }).click();
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
+
+  await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
+
+  // Home is rendered/linked first among the three topics, so its update-content payload is
+  // the first page PUT captured (Overview is also a page, Pizza Project an assignment).
+  const homePage = requestLog.pagePayloads[0];
+  expect(homePage.body).toMatch(/<a[^>]+href="\/courses\/12345\/pages\/\d+"[^>]*>Overview<\/a>/);
+  expect(homePage.body).toMatch(/<a[^>]+href="\/courses\/12345\/assignments\/\d+"[^>]*>Pizza Project<\/a>/);
+  // The original bug: links to topics that resolve to a quiz/assignment (not a page) were
+  // silently dropped, rendering as plain text instead of an anchor.
+  expect(homePage.body).not.toContain('<li>Overview</li>');
+  expect(homePage.body).not.toContain('<li>Pizza Project</li>');
+});
+
+test('course link sends relative links to un-linked topics to MasteryLS instead of the raw GitHub source', async ({ page }) => {
+  const courseId = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  await initBasicCourse({
+    page,
+    topicMarkdown: `# Home
+
+- [Chess](chess/chess.md) - Instructions for building your application
+`,
+    courseJsonOverride: {
+      modules: [
+        {
+          title: 'Type Coverage',
+          topics: [
+            { id: 'home1', title: 'Home', path: 'README.md' },
+            // Chess is a real topic in the course but is deliberately left unselected below,
+            // so it never gets Canvas refs - this is the reported scenario.
+            { id: 'chess1', title: 'Chess', path: 'chess/chess.md' },
+          ],
+        },
+      ],
+    },
+  });
+  const requestLog = await mockLinkRequests(page);
+
+  await navigateToDashboard(page);
+  await openCourseLinking(page);
+
+  await page.getByLabel('Course', { exact: true }).selectOption(courseId);
+  await page.waitForTimeout(300);
+  await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
+  await page.getByLabel('Home', { exact: true }).check();
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
+
+  await expect(page.locator('#root')).toContainText('Rocket Science linked successfully');
+
+  const homePage = requestLog.pagePayloads[0];
+  expect(homePage.body).toContain(`<a href="https://masteryls.com/course/${courseId}/topic/chess1">Chess</a>`);
+  expect(homePage.body).not.toContain('raw.githubusercontent.com');
 });
