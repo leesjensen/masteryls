@@ -6,7 +6,7 @@ import ScheduleInstruction from './scheduleInstruction';
 import DraInstruction from './dra/draInstruction';
 import InterviewInstruction from './interview/interviewInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
-import { addInteractionProgress } from './interaction/interactionProgressStore';
+import { replaceAllInteractionProgress } from './interaction/interactionProgressStore';
 
 // A `= {}` default parameter evaluates to a NEW object on every call when the caller
 // doesn't pass previewFileUrls (the normal student-viewing route never does). That fresh
@@ -19,16 +19,28 @@ export default function Instruction({ courseOps, learningSession, user, content 
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
+    // Guards against out-of-order resolution: if enrollment.id changes again (e.g. the
+    // observe-session race in app.jsx briefly resolving to two different enrollments in
+    // quick succession) before this fetch resolves, a stale response must not overwrite the
+    // interaction store with the wrong learner's answers.
+    let cancelled = false;
     courseOps.getTopicProgress(['quizSubmit']).then((progress) => {
-      Object.entries(progress).forEach(([key, value]) => {
-        addInteractionProgress(key, value.details || {});
-      });
+      if (cancelled) return;
+      // Replace (not merge into) the store: addInteractionProgress/updateInteractionProgress
+      // only ever add/overwrite keys present in `progress`, so an interaction the
+      // currently-viewed learner never submitted would otherwise keep showing whichever
+      // OTHER learner's answer was left over from before - e.g. exiting observe mode after
+      // viewing a learner who completed an interaction you personally haven't.
+      replaceAllInteractionProgress(new Map(Object.entries(progress).map(([key, value]) => [key, value.details || {}])));
       setLoadingProgress(false);
     });
     // Only re-fetch when the topic or enrollment actually changes, not on every
     // learningSession reference change (e.g. the periodic progress heartbeat updating
     // lastActivityAt). Re-running this on every heartbeat re-publishes stale interaction
     // snapshots into the interaction store, clobbering in-progress unsaved interactions.
+    return () => {
+      cancelled = true;
+    };
   }, [learningSession.topic?.id, learningSession.enrollment?.id]);
 
   useProgressTracking({

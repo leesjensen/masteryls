@@ -175,7 +175,16 @@ function ClassroomPage() {
   const { setSearchResults } = useSearchResults();
 
   const { courseId, topicId } = useParams();
+  // Tracks the most recently started invocation of the effect below. On load,
+  // `observeSession` starts null and is asynchronously replaced once useObserveSession
+  // restores it from localStorage, so this effect can fire twice in quick succession (once
+  // as "myself", once as "the observed learner") with no guarantee the later-started one
+  // resolves last. Without this guard, whichever async fetch happens to resolve last wins,
+  // regardless of which invocation it belongs to - silently flipping observeMode and the
+  // loaded enrollment back and forth depending on network timing.
+  const latestEffectSeqRef = React.useRef(0);
   React.useEffect(() => {
+    const seq = ++latestEffectSeqRef.current;
     (async () => {
       try {
         if (courseId !== null) {
@@ -227,6 +236,12 @@ function ClassroomPage() {
 
           const { observeForCourse, learnerId } = getEffectiveLearnerId({ userId: user?.id, courseId: course.id, observeSession });
           const enrollment = learnerId ? await service.enrollment(learnerId, course.id) : null;
+          // A newer invocation started (and possibly already applied its own result) while
+          // this one was awaiting the enrollment fetch - discard this stale result instead
+          // of overwriting whatever the newer invocation set.
+          if (seq !== latestEffectSeqRef.current) {
+            return;
+          }
           setLearningSession({ course, topic, enrollment, observeMode: observeForCourse });
         }
       } catch (error) {
