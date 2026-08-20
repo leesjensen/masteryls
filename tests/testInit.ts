@@ -626,6 +626,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
           const typeFilter = requestUrl.searchParams.get('type');
           const topicFilter = requestUrl.searchParams.get('topicId');
           const enrollmentFilter = requestUrl.searchParams.get('enrollmentId');
+          const interactionFilter = requestUrl.searchParams.get('interactionId');
 
           const eqMatch = typeFilter?.match(/^eq\.(.+)$/);
           const inMatch = typeFilter?.match(/^in\.\((.+)\)$/);
@@ -649,6 +650,11 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
           const enrollmentMatch = enrollmentFilter?.match(/^eq\.(.+)$/);
           if (enrollmentMatch) {
             json = json.filter((p) => p.enrollmentId === decodeURIComponent(enrollmentMatch[1]));
+          }
+
+          const interactionMatch = interactionFilter?.match(/^eq\.(.+)$/);
+          if (interactionMatch) {
+            json = json.filter((p) => p.interactionId === decodeURIComponent(interactionMatch[1]));
           }
 
           await route.fulfill({

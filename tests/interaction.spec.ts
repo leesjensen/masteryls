@@ -1161,6 +1161,157 @@ Pick all that apply.
   await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 });
 
+test('interaction likert results stay scoped to their own interaction when multiple are present', async ({ page }) => {
+  const idA = 'a1b2c3d4-e5f6-7890-1234-567890123481';
+  const idB = 'a1b2c3d4-e5f6-7890-1234-567890123482';
+  const interactionMarkdown = `
+# Feedback
+
+\`\`\`masteryls
+{"id":"${idA}", "title":"Session A Feedback", "type":"likert"}
+Rate session A.
+
+Scale: Disagree | Neutral | Agree
+
+| qid | item |
+|-----|------|
+| q1 | I found session A useful. |
+\`\`\`
+
+\`\`\`masteryls
+{"id":"${idB}", "title":"Session B Feedback", "type":"likert"}
+Rate session B.
+
+Scale: Disagree | Neutral | Agree
+
+| qid | item |
+|-----|------|
+| q1 | I found session B useful. |
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+  await page.getByText('topic 1').click();
+
+  const widgetA = page.locator(`[data-plugin-masteryls-id="${idA}"]`);
+  const widgetB = page.locator(`[data-plugin-masteryls-id="${idB}"]`);
+
+  // Submit different answers to each interaction: A = Disagree, B = Agree.
+  await widgetA.getByRole('radio', { name: 'Disagree', exact: true }).check();
+  await widgetA.locator(`#submit-${idA}`).click();
+  await expect(widgetA.getByText('Submission received')).toBeVisible();
+
+  await widgetB.getByRole('radio', { name: 'Agree', exact: true }).check();
+  await widgetB.locator(`#submit-${idB}`).click();
+  await expect(widgetB.getByText('Submission received')).toBeVisible();
+
+  const resultsA = widgetA.locator('details');
+  const resultsB = widgetB.locator('details');
+
+  // Expand A's results first and confirm it shows only its own question/data.
+  await widgetA.getByText('Results', { exact: true }).click();
+  await expect(resultsA.getByText('I found session A useful.')).toBeVisible();
+  await expect(resultsA.getByText('I found session B useful.')).toHaveCount(0);
+
+  // Expand B's results and refresh it - this is the reported trigger for the bug.
+  await widgetB.getByText('Results', { exact: true }).click();
+  await expect(resultsB.getByText('I found session B useful.')).toBeVisible();
+  await widgetB.getByRole('button', { name: 'Refresh' }).click();
+  await expect(resultsB.getByText('I found session B useful.')).toBeVisible();
+  await expect(resultsB.getByText('I found session A useful.')).toHaveCount(0);
+
+  // Refreshing B must not have clobbered A's already-displayed results.
+  await expect(resultsA.getByText('I found session A useful.')).toBeVisible();
+  await expect(resultsA.getByText('I found session B useful.')).toHaveCount(0);
+
+  // Now refresh A explicitly and confirm it still shows its own data.
+  await widgetA.getByRole('button', { name: 'Refresh' }).click();
+  await expect(resultsA.getByText('I found session A useful.')).toBeVisible();
+  await expect(resultsA.getByText('I found session B useful.')).toHaveCount(0);
+});
+
+test('interaction likert results stay scoped to their own interaction across different topics', async ({ page }) => {
+  const idA = 'a1b2c3d4-e5f6-7890-1234-567890123483';
+  const idB = 'a1b2c3d4-e5f6-7890-1234-567890123484';
+
+  const markdownA = `
+# Topic A
+
+\`\`\`masteryls
+{"id":"${idA}", "title":"Session A Feedback", "type":"likert"}
+Rate session A.
+
+Scale: Disagree | Neutral | Agree
+
+| qid | item |
+|-----|------|
+| q1 | I found session A useful. |
+\`\`\`
+`;
+
+  const markdownB = `
+# Topic B
+
+\`\`\`masteryls
+{"id":"${idB}", "title":"Session B Feedback", "type":"likert"}
+Rate session B.
+
+Scale: Disagree | Neutral | Agree
+
+| qid | item |
+|-----|------|
+| q1 | I found session B useful. |
+\`\`\`
+`;
+
+  await initBasicCourse({ page });
+  // Override the default topic1/topic2 markdown with distinct content per topic - the
+  // generic `**/*.md` route installed by initBasicCourse returns the same body for every
+  // topic, so these more specific routes (registered after) take priority per URL.
+  await page.context().route('https://raw.githubusercontent.com/**/something/more/topic1.md', async (route) => {
+    await route.fulfill({ body: markdownA, contentType: 'text/plain; charset=utf-8' });
+  });
+  await page.context().route('https://raw.githubusercontent.com/**/something/more/topic2.md', async (route) => {
+    await route.fulfill({ body: markdownB, contentType: 'text/plain; charset=utf-8' });
+  });
+
+  await navigateToCourse(page);
+  await page.getByText('topic 1', { exact: true }).click();
+
+  const widgetA = page.locator(`[data-plugin-masteryls-id="${idA}"]`);
+  await widgetA.getByRole('radio', { name: 'Disagree', exact: true }).check();
+  await widgetA.locator(`#submit-${idA}`).click();
+  await expect(widgetA.getByText('Submission received')).toBeVisible();
+  await widgetA.getByText('Results', { exact: true }).click();
+  const resultsA = widgetA.locator('details');
+  await expect(resultsA.getByText('I found session A useful.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Module 2' }).click();
+  await page.getByText('topic 2', { exact: true }).click();
+
+  const widgetB = page.locator(`[data-plugin-masteryls-id="${idB}"]`);
+  await widgetB.getByRole('radio', { name: 'Agree', exact: true }).check();
+  await widgetB.locator(`#submit-${idB}`).click();
+  await expect(widgetB.getByText('Submission received')).toBeVisible();
+  await widgetB.getByText('Results', { exact: true }).click();
+  const resultsB = widgetB.locator('details');
+  await expect(resultsB.getByText('I found session B useful.')).toBeVisible();
+  await expect(resultsB.getByText('I found session A useful.')).toHaveCount(0);
+  await widgetB.getByRole('button', { name: 'Refresh' }).click();
+  await expect(resultsB.getByText('I found session B useful.')).toBeVisible();
+  await expect(resultsB.getByText('I found session A useful.')).toHaveCount(0);
+
+  // Navigating back to topic 1 must show its own results, not the just-refreshed topic 2 data.
+  await page.getByText('topic 1', { exact: true }).click();
+  const widgetA2 = page.locator(`[data-plugin-masteryls-id="${idA}"]`);
+  await expect(widgetA2.getByText('Results', { exact: true })).toBeVisible();
+  await widgetA2.getByText('Results', { exact: true }).click();
+  const resultsA2 = widgetA2.locator('details');
+  await expect(resultsA2.getByText('I found session A useful.')).toBeVisible();
+  await expect(resultsA2.getByText('I found session B useful.')).toHaveCount(0);
+});
+
 async function verifyAiEssayResponse(page, generatedResponse, expectedResponse) {
   const interactionMarkdown = `
 # Quiz

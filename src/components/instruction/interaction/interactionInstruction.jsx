@@ -120,10 +120,15 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
     let controlJsx = generateInteractionComponent(meta, interactionBody);
     if (meta.type === 'web-page') {
-      return controlJsx;
+      // Without a key tied to the interaction's own id, React matches elements across
+      // re-renders by tree position/type alone - so switching to a topic whose markdown
+      // has a masteryls block in the same structural position (e.g. another topic's single
+      // interaction) reuses the SAME component instance instead of mounting a new one,
+      // silently carrying over stale local state (see the InteractionCard key below).
+      return React.cloneElement(controlJsx, { key: meta.id || meta.title });
     }
 
-    return <InteractionCard meta={meta} controlJsx={controlJsx} isObserveReadOnly={isObserveReadOnly} isUnauthenticatedReadOnly={isUnauthenticatedReadOnly} instructionState={instructionState} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToCanvasGradebook={canSubmitToCanvasGradebook} onSyncGrade={syncGradeToCanvas} getSubmissionFileUrl={courseOps.getSubmissionFileUrl} toBoolean={toBoolean} />;
+    return <InteractionCard key={meta.id} meta={meta} controlJsx={controlJsx} isObserveReadOnly={isObserveReadOnly} isUnauthenticatedReadOnly={isUnauthenticatedReadOnly} instructionState={instructionState} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToCanvasGradebook={canSubmitToCanvasGradebook} onSyncGrade={syncGradeToCanvas} getSubmissionFileUrl={courseOps.getSubmissionFileUrl} toBoolean={toBoolean} />;
   }
 
   function generateInteractionComponent(meta, interactionBody) {
