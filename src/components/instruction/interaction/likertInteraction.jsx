@@ -3,6 +3,7 @@ import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdo
 import { useInteractionProgressStore } from './interactionProgressStore';
 import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 import { canViewLikertResults, parseLikertBody } from '../../../utils/likertInteraction';
+import { scheduleDateBoundsToIso } from '../../../utils/scheduleMarkdown';
 
 function parseVisibilityMode(showResults) {
   const normalized = String(showResults || '')
@@ -74,6 +75,15 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
   const [responses, setResponses] = React.useState(initialResponses);
   const [summary, setSummary] = React.useState(null);
 
+  // Schedule files that define both a start and end date become selectable "periods" that scope
+  // the results to responses submitted within that window. Results default to the active
+  // schedule's period when it has one; "All time" removes the date filter.
+  const schedulePeriods = (typeof courseOps?.getScheduleFiles === 'function' ? courseOps.getScheduleFiles() : [])
+    .map((file) => ({ id: file.id, title: file.title || 'Schedule', isDefault: Boolean(file.default), bounds: scheduleDateBoundsToIso(file) }))
+    .filter((period) => period.bounds);
+  const defaultPeriod = schedulePeriods.find((period) => period.isDefault);
+  const [periodId, setPeriodId] = React.useState(() => (defaultPeriod ? defaultPeriod.id : 'all'));
+
   // The saved responses can arrive after mount (the progress store is populated async when a
   // topic loads). Re-sync local responses so a previously-submitted set of answers renders even
   // when it lands late. Keyed on the saved values so it only runs when they actually change, and
@@ -97,9 +107,10 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
     }));
   }
 
-  function loadSummary() {
+  function loadSummary(selectedPeriodId = periodId) {
     if (!canViewResults || !questions.length) return;
-    courseOps.getLikertSummary(id, { questions, scaleValues: scale.values }).then((data) => {
+    const bounds = schedulePeriods.find((period) => period.id === selectedPeriodId)?.bounds || {};
+    courseOps.getLikertSummary(id, { questions, scaleValues: scale.values, startDate: bounds.startDate, endDate: bounds.endDate }).then((data) => {
       setSummary(data);
     });
   }
@@ -156,7 +167,25 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
                             <span className="text-xs text-slate-500">Overall average</span>
                             <span className="font-semibold tabular-nums">{formatAverage(summary.overallAverage)}</span>
                           </span>
-                          <button className="sm:ml-auto px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700" onClick={loadSummary}>
+                          {schedulePeriods.length > 0 && (
+                            <select
+                              value={periodId}
+                              onChange={(e) => {
+                                setPeriodId(e.target.value);
+                                loadSummary(e.target.value);
+                              }}
+                              className="sm:ml-auto rounded-md border border-blue-200 bg-white/80 px-2 py-1 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                              title="Limit results to a schedule period"
+                            >
+                              {schedulePeriods.map((period) => (
+                                <option key={period.id} value={period.id}>
+                                  {period.title}
+                                </option>
+                              ))}
+                              <option value="all">All time</option>
+                            </select>
+                          )}
+                          <button className={`${schedulePeriods.length > 0 ? '' : 'sm:ml-auto '}px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700`} onClick={() => loadSummary()}>
                             Refresh
                           </button>
                         </div>

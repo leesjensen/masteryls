@@ -1,7 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildWeeks, parseCellItems, parseScheduleMarkdown, serializeScheduleMarkdown, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+import { buildWeeks, parseCellItems, parseScheduleMarkdown, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+
+test('scheduleDateBoundsToIso expands YYYY-MM-DD dates to inclusive start/end of day', () => {
+  const bounds = scheduleDateBoundsToIso({ startDate: '2026-01-10', endDate: '2026-05-01' });
+  assert.ok(bounds);
+  assert.equal(bounds.startDate, new Date('2026-01-10T00:00:00.000').toISOString());
+  assert.equal(bounds.endDate, new Date('2026-05-01T23:59:59.999').toISOString());
+  assert.ok(new Date(bounds.startDate) < new Date(bounds.endDate));
+});
+
+test('scheduleDateBoundsToIso returns null unless both dates are present and valid', () => {
+  assert.equal(scheduleDateBoundsToIso({ startDate: '2026-01-10' }), null);
+  assert.equal(scheduleDateBoundsToIso({ endDate: '2026-05-01' }), null);
+  assert.equal(scheduleDateBoundsToIso({ startDate: '', endDate: '' }), null);
+  assert.equal(scheduleDateBoundsToIso({ startDate: 'not-a-date', endDate: '2026-05-01' }), null);
+  assert.equal(scheduleDateBoundsToIso(), null);
+});
 
 test('parseScheduleMarkdown extracts title links table and special days', () => {
   const md = `# Winter 2026 Schedule

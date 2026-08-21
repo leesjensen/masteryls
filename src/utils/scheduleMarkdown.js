@@ -8,6 +8,29 @@ export const SCHEDULE_WARNING = {
 
 const CANONICAL_HEADERS = ['Week', 'Date', 'Module', 'Due', 'Topics Covered', 'Slides'];
 
+function scheduleDayToIso(value, endOfDay) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+  // Schedule dates are authored as YYYY-MM-DD (date inputs). Expand to the inclusive start/end of
+  // that day; fall back to Date parsing for any other representation.
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T${endOfDay ? '23:59:59.999' : '00:00:00.000'}`) : new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+// Convert a schedule file's inclusive start/end dates into ISO timestamp bounds for filtering
+// records by createdAt. Returns null unless BOTH bounds are valid, so callers can uniformly treat
+// "no defined period" (missing or malformed dates) as "no date filter".
+export function scheduleDateBoundsToIso({ startDate, endDate } = {}) {
+  const start = scheduleDayToIso(startDate, false);
+  const end = scheduleDayToIso(endDate, true);
+  if (!start || !end) {
+    return null;
+  }
+  return { startDate: start, endDate: end };
+}
+
 export function parseScheduleMarkdown(markdown = '', options = {}) {
   const strict = Boolean(options.strict);
   const lines = markdown.split(/\r?\n/);

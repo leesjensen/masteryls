@@ -1862,8 +1862,8 @@ Requirements:
     return { voters: Object.keys(voters).length, votes };
   }
 
-  async function getLikertSummary(interactionId, { questions = [], scaleValues = [] } = {}) {
-    const progressItems = await getProgress({ interactionId, types: ['quizSubmit'], limit: 1000 });
+  async function getLikertSummary(interactionId, { questions = [], scaleValues = [], startDate = null, endDate = null } = {}) {
+    const progressItems = await getProgress({ interactionId, types: ['quizSubmit'], limit: 1000, startDate: startDate || undefined, endDate: endDate || undefined });
 
     // Only use each learner's latest submission.
     const voters = progressItems.data.reduce((acc, item) => {
