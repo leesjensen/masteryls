@@ -414,3 +414,44 @@ test('schedule editor can set default schedule used as fallback selection', asyn
   const readSelect = page.locator('select:has(option[value="default"])').first();
   await expect(readSelect).toHaveValue('joe');
 });
+
+test('schedule editor date range only marks the schedule dirty and persists on commit', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  const { courseJsonPuts } = installScheduleRoutes(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+  await page.locator('.absolute.left-0\\.5').click();
+
+  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
+  await fileSelect.selectOption('joe');
+
+  await page.locator('#schedule-start-date').fill('2026-01-05');
+  await page.locator('#schedule-end-date').fill('2026-04-24');
+
+  // Setting the dates should only mark the schedule dirty, not persist anything yet - a
+  // native date input fires onChange per segment edit (e.g. each digit of the year), so
+  // saving on every change previously caused a network request (and course.json PUT) per
+  // keystroke, interrupting the picker.
+  await expect(page.getByRole('heading', { name: 'Editor' })).toContainText('*');
+  expect(courseJsonPuts.length).toBe(0);
+
+  await page.getByRole('button', { name: 'Commit' }).click();
+  await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
+
+  const joeFile = courseJsonPuts[courseJsonPuts.length - 1].schedule.files.find((file: any) => file.id === 'joe');
+  expect(joeFile.startDate).toBe('2026-01-05');
+  expect(joeFile.endDate).toBe('2026-04-24');
+  // The other schedule file must be untouched.
+  const winterFile = courseJsonPuts[courseJsonPuts.length - 1].schedule.files.find((file: any) => file.id === 'default');
+  expect(winterFile.startDate).toBeUndefined();
+  expect(winterFile.endDate).toBeUndefined();
+
+  // Switching away and back should show the saved values, confirming they round-trip through
+  // the in-memory course (not just the last commit payload).
+  await fileSelect.selectOption('default');
+  await expect(page.locator('#schedule-start-date')).toHaveValue('');
+  await fileSelect.selectOption('joe');
+  await expect(page.locator('#schedule-start-date')).toHaveValue('2026-01-05');
+  await expect(page.locator('#schedule-end-date')).toHaveValue('2026-04-24');
+});

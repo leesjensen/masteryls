@@ -356,6 +356,11 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
                 path: String(file.path || '').replace(`${course.links.gitHub.rawUrl}/`, ''),
                 default: Boolean(file.default),
                 state: file.state,
+                // Optional metadata labeling which term/dates this schedule covers - purely
+                // informational (see setScheduleDateRange), left undefined (and so omitted
+                // from the serialized JSON) when not set.
+                startDate: file.startDate || undefined,
+                endDate: file.endDate || undefined,
               }))
             : [],
         }
@@ -728,7 +733,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         if (!file.id) {
           file.id = generateId();
         }
-        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default));
+        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default), { startDate: file.startDate, endDate: file.endDate });
       });
   }
 
@@ -965,6 +970,40 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return fileId;
   }
 
+  // Sets (or clears, when passed empty strings) the informational start/end date range for a
+  // schedule file - purely metadata for editors managing multiple term schedules. It does not
+  // affect which schedule is selected/shown by default.
+  async function setScheduleDateRange(topic, fileId, { startDate = '', endDate = '' } = {}) {
+    const course = getWorkingCourse();
+    if (!course || !fileId) {
+      return null;
+    }
+    const token = user.getSetting('gitHubToken', course.id);
+    if (!user.isEditor(course.id) || !token) {
+      throw new Error('You do not have permission to update schedules for this course.');
+    }
+    if (!course.schedule?.id) {
+      throw new Error('No schedule exists for this course.');
+    }
+
+    const updatedCourse = Course.copy(course);
+    const scheduleTopic = getScheduleTopic(updatedCourse);
+    let schedules = Array.isArray(updatedCourse.schedule.files) ? [...updatedCourse.schedule.files] : [];
+
+    const index = schedules.findIndex((entry) => entry.id === fileId);
+    if (index === -1) {
+      throw new Error('Unable to find selected schedule file.');
+    }
+
+    schedules[index] = { ...schedules[index], startDate: startDate || undefined, endDate: endDate || undefined };
+    updatedCourse.schedule.files = schedules;
+
+    await _updateCourseStructure(token, updatedCourse, `update(course) schedule date range ${fileId}`);
+    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
+
+    return fileId;
+  }
+
   function sanitizeSchedulePath(rawPath) {
     let normalized = String(rawPath || '')
       .trim()
@@ -999,7 +1038,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return match ? match[1].trim() : '';
   }
 
-  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false) {
+  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false, { startDate, endDate } = {}) {
     const course = learningSession?.course;
     const rawRoot = course.links.gitHub.rawUrl;
     const apiRoot = course.links.gitHub.apiUrl;
@@ -1009,7 +1048,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (configuredPath.startsWith('http://') || configuredPath.startsWith('https://')) {
       const repoPath = configuredPath.replace(`${rawRoot}/`, '');
       const apiUrl = configuredPath.startsWith(rawRoot) ? `${apiRoot}/${repoPath}` : null;
-      return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault };
+      return { id, title, path: configuredPath, rawUrl: configuredPath, apiUrl, repoPath, default: isDefault, startDate, endDate };
     }
 
     let relativePath = '';
@@ -1033,6 +1072,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       apiUrl: `${apiRoot}/${normalizedRepoPath}`,
       repoPath: normalizedRepoPath,
       default: isDefault,
+      startDate,
+      endDate,
     };
   }
 
@@ -2210,6 +2251,7 @@ Requirements:
     deleteScheduleFile,
     deleteCourseSchedule,
     setDefaultScheduleFile,
+    setScheduleDateRange,
     getScheduleTopicContent,
     updateScheduleTopicContent,
     addTopicFiles,

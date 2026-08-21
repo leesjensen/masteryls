@@ -17,6 +17,8 @@ function createEmptyModel() {
     links: [],
     weeks: buildWeeks(1),
     specialDays: [],
+    startDate: '',
+    endDate: '',
   };
 }
 
@@ -489,7 +491,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
     courseOps.getScheduleTopicContent(learningSession.topic, selectedFileId).then((markdown) => {
       const parsed = parseScheduleMarkdown(markdown || '');
-      setModel({ ...createEmptyModel(), ...parsed });
+      setModel({ ...createEmptyModel(), ...parsed, startDate: activeFile?.startDate || '', endDate: activeFile?.endDate || '' });
       setDirty(false);
     });
   }, [selectedFileId, files, learningSession?.topic]);
@@ -641,6 +643,13 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     try {
       const markdown = serializeScheduleMarkdown(model);
       await courseOps.updateScheduleTopicContent(learningSession.topic, selectedFileId, markdown);
+
+      const nextStartDate = model.startDate || '';
+      const nextEndDate = model.endDate || '';
+      if (nextStartDate !== (selectedFile.startDate || '') || nextEndDate !== (selectedFile.endDate || '')) {
+        await courseOps.setScheduleDateRange(learningSession.topic, selectedFileId, { startDate: nextStartDate, endDate: nextEndDate });
+      }
+
       setDirty(false);
     } finally {
       setCommitting(false);
@@ -653,7 +662,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     }
 
     const markdown = await courseOps.getScheduleTopicContent(learningSession.topic, selectedFileId, true);
-    setModel({ ...createEmptyModel(), ...parseScheduleMarkdown(markdown || '') });
+    setModel({ ...createEmptyModel(), ...parseScheduleMarkdown(markdown || ''), startDate: selectedFile?.startDate || '', endDate: selectedFile?.endDate || '' });
     setDirty(false);
   }
 
@@ -779,6 +788,15 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     }
   }
 
+  // Informational metadata only (which term/dates this schedule covers) - part of the same
+  // dirty/Commit flow as the rest of the schedule model, not saved on every keystroke. A
+  // native date input fires onChange for every segment edit (e.g. typing a year one digit at
+  // a time), so persisting immediately caused a network round trip - and the resulting
+  // learningSession/course replacement - on every keystroke, which interrupted editing.
+  function updateScheduleDateRange(patch) {
+    updateModel({ ...model, ...patch });
+  }
+
   const weekGroups = groupSessionsByWeek(model.weeks || []);
   const topicByRepoPath = React.useMemo(() => {
     const entries = new Map();
@@ -893,13 +911,39 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         </div>
       </div>
 
+      <div className="basis-[41px] px-2 flex items-center gap-2 border-b border-gray-200 bg-gray-50">
+        <span className="text-xs font-semibold text-gray-500">Dates covered</span>
+        <label htmlFor="schedule-start-date" className="text-xs text-gray-600">
+          Start
+        </label>
+        <input
+          id="schedule-start-date"
+          type="date"
+          value={model.startDate || ''}
+          onChange={(e) => updateScheduleDateRange({ startDate: e.target.value })}
+          disabled={!selectedFile}
+          className="border border-gray-300 rounded px-2 py-1 text-xs"
+        />
+        <label htmlFor="schedule-end-date" className="text-xs text-gray-600">
+          End
+        </label>
+        <input
+          id="schedule-end-date"
+          type="date"
+          value={model.endDate || ''}
+          onChange={(e) => updateScheduleDateRange({ endDate: e.target.value })}
+          disabled={!selectedFile}
+          className="border border-gray-300 rounded px-2 py-1 text-xs"
+        />
+      </div>
+
       <div className="flex-1 overflow-hidden p-4">
         <div className="flex h-full overflow-hidden min-w-0 border border-gray-200 rounded" ref={splitContainerRef}>
           <div className="h-full overflow-auto min-w-0 shrink-0 p-4" style={{ width: `${editorPanePercent}%` }}>
             <div className="space-y-6">
               <section className="space-y-2">
                 <h2 className="text-sm font-semibold text-gray-700">Title</h2>
-                <input value={model.docTitle} onChange={(e) => updateModel({ ...model, docTitle: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
+                <input value={model.docTitle || ''} onChange={(e) => updateModel({ ...model, docTitle: e.target.value })} className="w-full border border-gray-300 rounded px-2 py-1 text-sm" />
               </section>
 
               <section className="space-y-2">
