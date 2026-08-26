@@ -45,6 +45,103 @@ Simple **multiple choice** question
   await expect(page.locator('pre')).toContainText('Fantastic job');
 });
 
+test('root users can review and navigate the latest learner responses', async ({ page }) => {
+  const interactionId = 'a1b2c3d4-e5f6-7890-1234-567890123457';
+  const interactionMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"${interactionId}", "title":"Reviewable question", "type":"multiple-choice" }
+Choose an answer
+
+- [ ] Wrong answer
+- [x] Right answer
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+
+  await page.context().route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route: any) => {
+    if (route.request().method() !== 'GET') {
+      await route.fallback();
+      return;
+    }
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('learnerId')) {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      json: [
+        { id: 'bud-enrollment', catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b', learnerId: '15cb92ef-d2d0-4080-8770-999516448960' },
+        { id: 'sally-enrollment', catalogId: '14602d77-0ff3-4267-b25e-4a7c3c47848b', learnerId: 'afcfefde-6cab-4d49-bdf8-375972c6de3e' },
+      ],
+    });
+  });
+
+  await page.context().route(/.*supabase.co\/rest\/v1\/user(\?.+)?/, async (route: any) => {
+    if (route.request().method() !== 'GET') {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      json: [
+        { id: '15cb92ef-d2d0-4080-8770-999516448960', name: 'Bud', email: 'bud@cow.com', settings: {} },
+        { id: 'afcfefde-6cab-4d49-bdf8-375972c6de3e', name: 'Sally', email: 'sally@bud.com', settings: {} },
+      ],
+    });
+  });
+
+  let responseFetches = 0;
+  await page.context().route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route: any) => {
+    if (route.request().method() !== 'GET') {
+      await route.fallback();
+      return;
+    }
+    const url = new URL(route.request().url());
+    const interactionFilter = url.searchParams.get('interactionId') || '';
+    if (!interactionFilter.includes(interactionId)) {
+      await route.fallback();
+      return;
+    }
+    responseFetches += 1;
+    await route.fulfill({
+      json: [
+        { id: 'bud-old', createdAt: '2026-01-01T00:00:00Z', userId: '15cb92ef-d2d0-4080-8770-999516448960', interactionId, type: 'quizSubmit', details: { type: 'multiple-choice', selected: [1], correct: [1], percentCorrect: 100 } },
+        { id: 'bud-latest', createdAt: '2026-01-02T00:00:00Z', userId: '15cb92ef-d2d0-4080-8770-999516448960', interactionId, type: 'quizSubmit', details: { type: 'multiple-choice', selected: [0], correct: [1], percentCorrect: 0 } },
+        { id: 'sally-latest', createdAt: '2026-01-03T00:00:00Z', userId: 'afcfefde-6cab-4d49-bdf8-375972c6de3e', interactionId, type: 'multiple-choice', details: { type: 'multiple-choice', selected: [1], correct: [1], percentCorrect: 100 } },
+      ],
+      headers: { 'content-range': '0-2/3' },
+    });
+  });
+
+  await navigateToCourse(page);
+  await page.getByText('topic 1').click();
+
+  const interaction = page.locator(`[data-plugin-masteryls-id="${interactionId}"]`);
+  await interaction.getByRole('button', { name: 'Show learner responses' }).click();
+  await expect(interaction.getByRole('button', { name: 'Hide learner responses' })).toBeVisible();
+  await expect.poll(() => responseFetches).toBe(1);
+  await expect(interaction.getByText('Bud', { exact: true })).toBeVisible();
+  await expect(interaction.locator('li').filter({ hasText: 'Wrong answer' })).toBeVisible();
+  await expect(interaction.getByText('1 of 2', { exact: true })).toBeVisible();
+
+  await interaction.getByRole('button', { name: 'Next' }).click();
+  await expect(interaction.getByText('Sally', { exact: true })).toBeVisible();
+  await expect(interaction.locator('li').filter({ hasText: 'Right answer' })).toBeVisible();
+  await expect(interaction.getByText('2 of 2', { exact: true })).toBeVisible();
+
+  await interaction.getByRole('button', { name: 'Refresh responses' }).click();
+  await expect.poll(() => responseFetches).toBe(2);
+  await expect(interaction.getByText('Bud', { exact: true })).toBeVisible();
+
+  await interaction.getByRole('button', { name: 'Hide learner responses' }).click();
+  await expect(interaction.getByRole('button', { name: 'Show learner responses (2)' })).toBeVisible();
+  await expect(interaction.getByText('Sally', { exact: true })).toHaveCount(0);
+
+  await interaction.getByRole('button', { name: 'Show learner responses (2)' }).click();
+  await expect(interaction.getByText('Bud', { exact: true })).toBeVisible();
+});
+
 test('interaction multiple choice is disabled when not logged in', async ({ page }) => {
   const interactionMarkdown = `
 # Quiz

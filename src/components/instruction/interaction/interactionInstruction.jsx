@@ -12,6 +12,7 @@ import TeachingInteraction from './teachingInteraction';
 import WebPageInteraction from './webPageInteraction';
 import AiWebPageInteraction from './aiWebPageInteraction';
 import InteractionFeedback from './interactionFeedback';
+import InteractionResponseReview from './InteractionResponseReview.jsx';
 import { updateInteractionProgress, getInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
 import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 import { isSubmittableInteractionType, parseInteractionMeta } from '../../../utils/interactionMeta';
@@ -22,7 +23,7 @@ import { validateSubmittedUrl } from '../../../utils/urlValidation';
 // effect depends on previewFileUrls by reference.
 const EMPTY_PREVIEW_FILE_URLS = {};
 
-function InteractionCard({ meta, controlJsx, isObserveReadOnly, isUnauthenticatedReadOnly, instructionState, isCourseLinkedToGradebook, canSubmitToCanvasGradebook, onSyncGrade, getSubmissionFileUrl, toBoolean }) {
+function InteractionCard({ meta, body, courseOps, courseId, topicId, controlJsx, isObserveReadOnly, isUnauthenticatedReadOnly, instructionState, isCourseLinkedToGradebook, canSubmitToCanvasGradebook, onSyncGrade, getSubmissionFileUrl, toBoolean }) {
   const progress = useInteractionProgressStore(meta.id) || {};
   const isEvaluating = progress?.evaluationState === 'loading';
   const s = isEvaluating ? 'interaction-active-border border-transparent bg-gray-50' : progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
@@ -45,6 +46,7 @@ function InteractionCard({ meta, controlJsx, isObserveReadOnly, isUnauthenticate
         {controlJsx}
       </fieldset>
       {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={onSyncGrade} getSubmissionFileUrl={getSubmissionFileUrl} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToGradebook={canSubmitToCanvasGradebook && !isInteractionReadOnly} />}
+      <InteractionResponseReview courseOps={courseOps} courseId={courseId} topicId={topicId} interactionId={meta.id} interactionType={meta.type} body={body} />
     </div>
   );
 }
@@ -128,7 +130,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
       return React.cloneElement(controlJsx, { key: meta.id || meta.title });
     }
 
-    return <InteractionCard key={meta.id} meta={meta} controlJsx={controlJsx} isObserveReadOnly={isObserveReadOnly} isUnauthenticatedReadOnly={isUnauthenticatedReadOnly} instructionState={instructionState} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToCanvasGradebook={canSubmitToCanvasGradebook} onSyncGrade={syncGradeToCanvas} getSubmissionFileUrl={courseOps.getSubmissionFileUrl} toBoolean={toBoolean} />;
+    return <InteractionCard key={meta.id} meta={meta} body={interactionBody} courseOps={courseOps} courseId={learningSession?.course?.id} topicId={learningSession?.topic?.id} controlJsx={controlJsx} isObserveReadOnly={isObserveReadOnly} isUnauthenticatedReadOnly={isUnauthenticatedReadOnly} instructionState={instructionState} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToCanvasGradebook={canSubmitToCanvasGradebook} onSyncGrade={syncGradeToCanvas} getSubmissionFileUrl={courseOps.getSubmissionFileUrl} toBoolean={toBoolean} />;
   }
 
   function generateInteractionComponent(meta, interactionBody) {

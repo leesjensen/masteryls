@@ -310,6 +310,7 @@ drop policy if exists "Root manages all" on public.topic;
 drop policy if exists "Allow users to insert their own progress" on public.progress;
 drop policy if exists "Allow users to read their own progress" on public.progress;
 drop policy if exists "Editor reads all users progress" on public.progress;
+drop policy if exists "Editor reads managed course progress" on public.progress;
 drop policy if exists "Root manages all" on public.progress;
 
 
@@ -506,11 +507,11 @@ for select
 to authenticated
 using (auth.uid() = "userId");
 
-create policy "Editor reads all users progress"
+create policy "Editor reads managed course progress"
 on public.progress
 for select
 to authenticated
-using (public.auth_is_editor(auth.uid()));
+using (public.auth_manages_course(auth.uid(), "catalogId"));
 
 create policy "Root manages all"
 on public.progress
