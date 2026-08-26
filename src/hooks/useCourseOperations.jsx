@@ -1077,6 +1077,15 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     };
   }
 
+  // Purely a fetch - it must NOT persist `fileId` as the learner's chosen schedule.
+  // Callers that represent a genuine user selection (the read view's and editor's file
+  // dropdowns) already persist synchronously themselves via setSelectedScheduleFile the
+  // moment the user picks a file. Background/incidental readers of schedule content (the
+  // sidebar's due-date sync, the "copy from" source read) call this same function but must
+  // never be able to change what's selected as a side effect of merely reading it - and
+  // because this is async, even a legitimate caller's own stale in-flight request (for a
+  // selectedFileId that has since changed) could otherwise persist the wrong file whenever
+  // it happens to resolve, regardless of resolution order.
   async function getScheduleTopicContent(topic, fileId, forceRefresh = false) {
     if (!topic) return '';
 
@@ -1094,7 +1103,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const response = await fetch(fetchUrl, { cache: 'no-store' });
     const markdown = await response.text();
     learningSession?.course?.markdownCache.set(fetchUrl, markdown);
-    setSelectedScheduleFile(topic, selectedFile.id);
 
     return markdown;
   }

@@ -29,9 +29,18 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
       return;
     }
 
+    // Guard against out-of-order resolution: if selectedFileId changes again before this
+    // fetch resolves (e.g. a rapid re-selection, or the file-picker effect above settling
+    // through more than one value), a slower older request must not overwrite the content
+    // a newer request already applied.
+    let cancelled = false;
     courseOps.getScheduleTopicContent(topic, selectedFileId).then((markdown) => {
+      if (cancelled) return;
       setContent(markdown || '');
     });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedFileId, learningSession?.topic]);
 
   function handleSelectionChange(event) {

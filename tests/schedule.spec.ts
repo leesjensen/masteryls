@@ -118,8 +118,57 @@ test('schedule read view lets learner switch files', async ({ page }) => {
   await expect(page.locator('header h1')).toContainText('Winter');
 
   await page.locator('select').first().selectOption('joe');
-  await expect(page.getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
+  await expect(page.locator('.markdown-body').getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
   await expect(page.locator('header h1')).toContainText("Joe's schedule");
+});
+
+test('a stale in-flight schedule fetch cannot silently overwrite a newer explicit selection', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  installScheduleRoutes(page);
+
+  let releaseWinterFetch: () => void = () => {};
+  const winterFetchGate = new Promise<void>((resolve) => {
+    releaseWinterFetch = resolve;
+  });
+
+  // Hold the default ("Winter") schedule's markdown response open. This simulates a slow
+  // network response for whichever request - the page's own initial fetch, or the sidebar's
+  // background due-date sync (contents.jsx), both of which read "the selected schedule" on
+  // mount - is still in flight when the learner picks a different schedule from the
+  // dropdown. Registered after installScheduleRoutes so it takes priority (Playwright runs
+  // routes in reverse registration order).
+  await page.context().route('https://raw.githubusercontent.com/**/instruction/schedule/schedule.md', async (route) => {
+    await winterFetchGate;
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/plain; charset=utf-8',
+      body: '# Winter 2026 Schedule\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   | Thu Jan 8 | Intro | | [Introduction](../instruction/introduction.md) | |\n\n## Special days\n\n- Jan 7: First day of class\n',
+    });
+  });
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+
+  // The dropdown's file list is computed synchronously, so it's already usable even while
+  // the default schedule's content fetch is stuck.
+  const fileSelect = page.locator('select').first();
+  await expect(fileSelect).toBeVisible();
+  await fileSelect.selectOption('joe');
+  await expect(page.locator('.markdown-body').getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
+
+  // Now let the stale Winter fetch(es) resolve, well after the explicit "joe" selection.
+  releaseWinterFetch();
+  await page.waitForTimeout(300);
+
+  // The learner's explicit selection must survive - both visibly right now (the rendered
+  // schedule content, not just the dropdown/breadcrumb), and persisted so a refresh still
+  // shows it. This is what previously regressed: the late-resolving stale request would
+  // silently rewrite the displayed content (and/or the persisted selection) back to the
+  // default, even while the dropdown kept showing the correct selection.
+  await expect(page.locator('.markdown-body').getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.markdown-body').getByRole('heading', { name: "Joe's schedule" })).toBeVisible();
+  await expect(page.locator('select').first()).toHaveValue('joe');
 });
 
 test('schedule form editor commits and can create additional schedule files', async ({ page }) => {

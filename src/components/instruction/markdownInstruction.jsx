@@ -46,6 +46,17 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
       return;
     }
 
+    // Schedule topics (see scheduleInstruction.jsx) always own and pass their content
+    // explicitly - `content` is legitimately empty here while THAT caller's own fetch for
+    // the learner's SELECTED schedule file is still in flight, not a signal to self-fetch.
+    // learningSession.topic.path for a schedule topic is the DEFAULT file's path, which can
+    // differ from the selected one; self-fetching it here would race the caller's correct
+    // fetch, and whichever resolves last silently wins - showing the default schedule
+    // instead of the one actually selected.
+    if (learningSession.topic?.type === 'schedule') {
+      return;
+    }
+
     if (learningSession.topic.path) {
       if (!isLoading) {
         setIsLoading(true);

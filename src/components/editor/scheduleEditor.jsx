@@ -489,11 +489,18 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     const activeFile = files.find((file) => file.id === selectedFileId);
     setSelectedFile(activeFile || null);
 
+    // Guard against out-of-order resolution: an older request for a previously-selected
+    // file must not clobber the model after a newer selection's fetch already applied.
+    let cancelled = false;
     courseOps.getScheduleTopicContent(learningSession.topic, selectedFileId).then((markdown) => {
+      if (cancelled) return;
       const parsed = parseScheduleMarkdown(markdown || '');
       setModel({ ...createEmptyModel(), ...parsed, startDate: activeFile?.startDate || '', endDate: activeFile?.endDate || '' });
       setDirty(false);
     });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedFileId, files, learningSession?.topic]);
 
   function updateModel(nextModel) {
