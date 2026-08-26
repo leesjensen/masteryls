@@ -227,16 +227,66 @@ Use this to recover from mistakes, compare revisions, and audit changes.
 
 <img src="schedule.png" width="700" />
 
-Schedule operations support:
+A course has at most one schedule, but that schedule can hold several **schedule files** - for example one per term, section, or meeting pattern (MW vs. TTh). Each schedule file is its own markdown document with a session table, and only one of them is ever the "default."
 
-- Create schedule topic.
-- Create additional schedule files.
-- Set default schedule file.
-- Copy schedule files and remap first session date.
-- Rename/delete non-default schedule files.
-- Delete entire schedule.
+### Creating the schedule topic
 
-Schedule data drives due-date context in TOC and can be used during Canvas linking.
+- A course starts with no schedule. In edit mode, if none exists yet, a **+ Create schedule** link appears at the bottom of the Topics list (below **+ Add New Module**).
+- Creating it adds a pinned **📅 Schedule** entry above the module list in the Topics sidebar (learners see this too) and creates a first schedule file titled "Schedule" at `schedule/schedule.md`, seeded with an empty session table.
+- The whole schedule (all files) can be removed with the **X** next to **📅 Schedule** in the sidebar (edit mode only) - this deletes every schedule file's underlying markdown from the repository and confirms before doing so.
+
+### The schedule editor
+
+Open **📅 Schedule** and toggle edit mode to reach the schedule editor. Its toolbar has:
+
+- **File dropdown** - switches between schedule files; the last option, **+ New schedule...**, opens the create dialog (below).
+- **Discard / Commit** - like the regular topic editor, changes to the form (title, links, weeks, special days, dates covered) are local until you click Commit. An asterisk next to "Editor" means there are unsaved changes.
+- **Default** - marks the currently selected file as the default (see below); disabled when it's already the default.
+- **Delete** - deletes the currently selected file; disabled for the default file (a schedule always needs a default, and it can't be removed this way).
+- **Dates covered / Start / End** - optional informational start and end dates for the file (e.g. the term it covers). These are purely descriptive metadata, not used for auto-selecting a schedule, and are saved together with the rest of the form when you click Commit.
+
+Below the toolbar is a split view: an editable form on the left (**Title**, **External links**, **Weeks** with sessions you can add/remove/drag-reorder and link to due items/topics covered/slides by picking existing course topics or typing a custom entry, and **Special days**) and a live rendered preview on the right.
+
+Note the **Title** field edits the markdown document's own `# heading` (what learners see as the page title when that file is open) - it's a different thing from the file's name shown in the dropdown, which is fixed once the file is created (see below).
+
+### Creating additional schedule files
+
+Use **+ New schedule...** in the dropdown to open the create dialog:
+
+- Enter a **title** for the new file.
+- Choose **Create from**: either a blank schedule, or copy the weeks/links/special days from an existing schedule file (its content, not just the currently open one).
+- When copying, an optional **First session date** shifts every session's date by the same offset needed to move the source's first dated session to that date - useful for reusing a Fall schedule's structure for a new Spring one.
+
+The new file's path is generated from its title (lower-cased, non-alphanumeric characters collapsed to dashes, always placed under `schedule/`) - e.g. "Fall 2026 MW Schedule" becomes `schedule/fall-2026-mw-schedule.md`. Creation fails if a file with that same generated path already exists.
+
+Schedule files cannot be renamed after creation - the dropdown label and file path are fixed at creation time; only the in-document **Title** field can be edited afterward, and editing it does not change the dropdown label.
+
+### Setting the default schedule
+
+Select a file and click **Default**. This:
+
+- Marks that file as the default (clearing the flag from every other file).
+- Immediately switches your own current selection to it.
+- Cannot be undone by deleting the file - the default file is protected from deletion until another file is made default instead.
+
+The default file is what a learner sees when they have no stored preference (see below), and is also what supplies the schedule topic's own title/breadcrumb.
+
+### How a learner selects a schedule
+
+On the learner-facing schedule page, a dropdown above the content lists all published schedule files. Picking one:
+
+- Immediately swaps in that file's content.
+- Persists the choice in that learner's per-course UI settings (stored in the browser), so the same file is shown again on later visits.
+
+If nothing is stored yet, or the stored choice no longer matches an existing file, the view falls back to the default file (or the first file if none is marked default). Selection is purely a manual, remembered preference - there is no date-based or calendar-aware auto-selection of the "current" schedule.
+
+### Deleting a schedule file
+
+With a non-default file selected, click **Delete** in the editor toolbar and confirm. This removes that file's markdown from the repository and switches your selection to the default file. The default file itself can't be deleted this way, and since a schedule always needs at least one file, that also means the last remaining file can't be deleted - delete the whole schedule instead (see above) if you no longer need it.
+
+### Due dates and Canvas
+
+Each schedule file's session table (`Due` column) drives the due-date badges shown next to topics in the Topics sidebar, based on whichever schedule file the current viewer has selected. Schedule content itself is not exported to Canvas, but the due dates it encodes are informational context editors can use when planning a Canvas link.
 
 ## 7) Interactions: Format, Parameters, and Examples
 
