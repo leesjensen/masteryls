@@ -1,131 +1,174 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import { updateAppBar } from '../../hooks/useAppBarState';
+import { markdownSanitizeSchema } from '../../components/markdownSanitize';
+import 'github-markdown-css/github-markdown-light.css';
+import '../../components/markdown.css';
 
-const stockImages = {
-  instruction: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-  aiLearning: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80',
-  aiContent: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&h=980',
-  personalized: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&h=980',
-  collaboration: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&h=980',
-  progress: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&h=980',
-  versionControl: 'https://images.unsplash.com/photo-1556075798-4825dfaaf498?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1476&h=980',
-  contact: 'https://images.unsplash.com/photo-1423666639041-f56000c27a9a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1473&h=980',
-};
+const readmeUrl = 'https://github.com/leesjensen/masteryls/blob/main/README.md';
+const rawRepositoryUrl = 'https://raw.githubusercontent.com/leesjensen/masteryls/main/';
+const githubRepositoryUrl = 'https://github.com/leesjensen/masteryls/blob/main/';
+const initialReadmePath = 'README.md';
 
-function AboutView() {
-  const navigate = useNavigate();
-  useEffect(() => {
-    updateAppBar({ title: 'About', tools: null });
-  }, []);
-
-  return (
-    <div>
-      <section className="py-14 bg-amber-50 border-b border-amber-100">
-        <div className="max-w-4xl mx-auto px-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-5">What is Mastery LS?</h1>
-          <p className="text-lg text-gray-700 leading-relaxed">Mastery LS is a modern learning platform that combines expert-led instruction with AI-powered support so you can learn faster, practice with purpose, and make measurable progress. MasteryLS helps you spend less time guessing what to study next and more time building real skills through guided projects, personalized feedback, and clear progress tracking.</p>
-          <p className="text-lg text-gray-700 leading-relaxed mt-4">
-            Whether you're looking to break into a new field, upskill for your current job, or just learn something new, Mastery LS provides the tools and support you need to succeed.{' '}
-            <a onClick={() => navigate('/')} className="text-amber-600 hover:text-amber-800 cursor-pointer">
-              Create an account
-            </a>{' '}
-            today to start your mastery of new skills and achieve your learning goals.
-          </p>
-        </div>
-      </section>
-
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-8">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Take a tour with us</h2>
-          <div className="flex justify-center">
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/HXNx_Gp0jyM" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-8">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Why Learn with Mastery LS?</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <PromoCard image={stockImages.instruction} title="Expert Instruction" description="Industry professionals with decades of experience." />
-            <PromoCard image={stockImages.aiLearning} title="AI Adaptive Learning" description="AI-powered mentoring, feedback, personalized learning paths, and adaptive assessments." />
-            <PromoCard image={stockImages.personalized} title="Experiential Projects" description="Curriculum that focuses on real-world projects to enhance learning outcomes." />
-            <PromoCard image={stockImages.collaboration} title="Collaboration" description="Tools and features that enhance teamwork and communication with instructors, mentors, peers, and AI bots." />
-            <PromoCard image={stockImages.aiContent} title="AI Content Generation" description="AI-powered course, topic, quiz, and feedback generation." />
-            <PromoCard image={stockImages.progress} title="Progress Tracking" description="Detailed analytics to monitor your learning journey and achievements." />
-            <PromoCard image={stockImages.versionControl} title="GitHub based content management" description="Full version history, branching, and collaboration features powered by GitHub." />
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-amber-600">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            <div className="text-white">
-              <h3 className="text-4xl font-bold mb-2">500+</h3>
-              <p className="text-amber-200 text-lg">Active Learners</p>
-            </div>
-            <div className="text-white">
-              <h3 className="text-4xl font-bold mb-2">12</h3>
-              <p className="text-amber-200 text-lg">Courses Available</p>
-            </div>
-            <div className="text-white">
-              <h3 className="text-4xl font-bold mb-2">89%</h3>
-              <p className="text-amber-200 text-lg">Success Rate</p>
-            </div>
-            <div className="text-white">
-              <h3 className="text-4xl font-bold mb-2">16</h3>
-              <p className="text-amber-200 text-lg">Mentors Online</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-amber-50 mb-10">
-        <div className="max-w-7xl mx-auto px-8">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-16">Get In Touch</h2>
-          <div className="flex items-center justify-between">
-            <div className="flex-1 pr-8">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-8">Contact Information</h3>
-              <div className="space-y-4">
-                <div className="flex">
-                  <span className="font-semibold text-gray-700 w-20">Email:</span>
-                  <span className="text-gray-600">support@masteryls.com</span>
-                </div>
-                <div className="flex">
-                  <span className="font-semibold text-gray-700 w-20">Phone:</span>
-                  <span className="text-gray-600">(555) 123-4567</span>
-                </div>
-                <div className="flex">
-                  <span className="font-semibold text-gray-700 w-20">Address:</span>
-                  <span className="text-gray-600">123 Learning Street, Education City, EC 12345</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex-1 hidden sm:block">
-              <img src={stockImages.contact} alt="Contact us" className="w-full h-auto rounded-lg shadow-lg" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer className="bg-gray-600 py-8">
-        <div className="max-w-7xl mx-auto px-8">
-          <p className="text-center text-gray-200">&copy; 2025 Mastery LS. All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
-  );
+function rawRepositoryPath(path) {
+  return new URL(path, rawRepositoryUrl).toString();
 }
 
-function PromoCard({ image, title, description }) {
+function githubRepositoryPath(path) {
+  return new URL(path, githubRepositoryUrl).toString();
+}
+
+function resolveReadmeUrl(value, currentPath) {
+  if (!value || value.startsWith('#')) return value;
+
+  try {
+    return new URL(value, rawRepositoryPath(currentPath)).toString();
+  } catch {
+    return value;
+  }
+}
+
+function resolveRelativeRepositoryPath(value, currentPath) {
+  if (!value || value.startsWith('#') || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(value)) return null;
+
+  try {
+    const target = new URL(value, rawRepositoryPath(currentPath));
+    const repositoryPath = new URL(rawRepositoryUrl).pathname;
+    if (target.origin !== new URL(rawRepositoryUrl).origin || !target.pathname.startsWith(repositoryPath)) return null;
+
+    return {
+      path: decodeURIComponent(target.pathname.slice(repositoryPath.length)),
+      hash: target.hash,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isMarkdownPath(path) {
+  return /\.md(?:own)?$/i.test(path);
+}
+
+function AboutView() {
+  const [version, setVersion] = useState('Unavailable');
+  const [readme, setReadme] = useState(null);
+  const [readmeError, setReadmeError] = useState(false);
+  const [readmePath, setReadmePath] = useState(initialReadmePath);
+
+  useEffect(() => {
+    updateAppBar({ title: 'About', tools: null });
+
+    let isMounted = true;
+
+    fetch('/version.json', { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Unable to load version (${response.status})`);
+        return response.json();
+      })
+      .then((data) => {
+        if (isMounted && data.version) setVersion(data.version);
+      })
+      .catch(() => {
+        // Keep the footer useful if version.json is unavailable in a local build.
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setReadme(null);
+    setReadmeError(false);
+
+    fetch(rawRepositoryPath(readmePath), { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Unable to load Markdown (${response.status})`);
+        return response.text();
+      })
+      .then((content) => {
+        setReadme(content);
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') setReadmeError(true);
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [readmePath]);
+
   return (
-    <div className="bg-amber-50 rounded-lg p-8 shadow-md hover:shadow-lg transition-shadow duration-300">
-      <img src={image} alt={title} className="w-full h-48 object-cover rounded-lg mb-6 hover:scale-103 transition-transform duration-300" />
-      <h3 className="text-2xl font-semibold text-gray-900 mb-4">{title}</h3>
-      <p className="text-gray-600 leading-relaxed">{description}</p>
-    </div>
+    <main className="flex min-h-0 flex-1 flex-col bg-white">
+      <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-4">
+        <div className="markdown-body mx-auto min-h-full max-w-5xl rounded border border-gray-200 p-4 sm:p-8">
+          {readmePath !== initialReadmePath && (
+            <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-gray-200 pb-4 text-sm">
+              <button type="button" onClick={() => setReadmePath(initialReadmePath)} className="text-amber-700 hover:text-amber-600 hover:underline">
+                ← Back to README
+              </button>
+              <span className="text-gray-500">{readmePath}</span>
+            </div>
+          )}
+          {readme ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSanitizeSchema]]}
+              components={{
+                a({ href, children, ...props }) {
+                  const repositoryTarget = resolveRelativeRepositoryPath(href, readmePath);
+                  if (repositoryTarget && isMarkdownPath(repositoryTarget.path)) {
+                    return (
+                      <a
+                        href={`${githubRepositoryPath(repositoryTarget.path)}${repositoryTarget.hash}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setReadmePath(repositoryTarget.path);
+                        }}
+                        {...props}
+                      >
+                        {children}
+                      </a>
+                    );
+                  }
+
+                  const isAnchor = href?.startsWith('#');
+                  return (
+                    <a href={resolveReadmeUrl(href, readmePath)} {...(!isAnchor && { target: '_blank', rel: 'noreferrer' })} {...props}>
+                      {children}
+                    </a>
+                  );
+                },
+                img({ src, ...props }) {
+                  return <img src={resolveReadmeUrl(src, readmePath)} {...props} />;
+                },
+              }}
+            >
+              {readme}
+            </ReactMarkdown>
+          ) : readmeError ? (
+            <div className="py-8 text-center text-gray-600">
+              <p>Unable to load the README here.</p>
+              <a href={readmeUrl} target="_blank" rel="noreferrer" className="text-amber-700 hover:text-amber-600 hover:underline">
+                Open README in GitHub
+              </a>
+            </div>
+          ) : (
+            <p className="py-8 text-center text-gray-600">Loading README…</p>
+          )}
+        </div>
+      </div>
+      <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        <span>Version {version}</span>
+        <a href={readmeUrl} target="_blank" rel="noreferrer" className="text-amber-700 hover:text-amber-600 hover:underline">
+          Open README in GitHub
+        </a>
+      </footer>
+    </main>
   );
 }
 

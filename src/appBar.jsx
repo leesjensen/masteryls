@@ -182,7 +182,7 @@ function UserMenu({ user, courseOps }) {
             )}
 
             <div className="border-t border-gray-200 my-1"></div>
-            <AppBarMenuItem icon={Info} onClick={() => handleMenuItemClick(() => window.open('https://github.com/leesjensen/masteryls/blob/main/README.md', '_blank', 'noopener,noreferrer'))} title="About" />
+            <AppBarMenuItem icon={Info} onClick={() => handleMenuItemClick(() => navigate('/about'))} title="About" />
 
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem
