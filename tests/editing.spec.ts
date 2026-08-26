@@ -575,3 +575,27 @@ test('editor commits can be shown with diff and apply actions', async ({ page })
   await page.getByRole('button', { name: 'Hide Commits' }).click();
   await expect(page.getByText('Initial topic commit')).not.toBeVisible();
 });
+
+test('closing a commit diff does not crash the editor', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(String(error)));
+
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByRole('button', { name: 'Show Commits' }).click();
+
+  // Open the diff view against a past commit (swaps the plain editor for a Monaco
+  // DiffEditor), wait for the diff editor to actually mount (so editorRef holds a real
+  // diff-editor instance, which has no getValue()), then immediately close it again
+  // (swaps back to the plain editor). Monaco creates the replacement instance
+  // asynchronously, so closing right after the diff editor mounts reliably hits the
+  // window where this previously crashed with "getValue is not a function".
+  await page.getByRole('button', { name: 'Diff' }).first().click();
+  await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+  await page.getByRole('button', { name: 'Diff' }).first().click();
+
+  await expect(page.locator('.monaco-diff-editor')).not.toBeVisible();
+  await expect(page.getByText('markdown!').first()).toBeVisible();
+  expect(pageErrors).toEqual([]);
+});

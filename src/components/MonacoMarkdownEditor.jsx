@@ -23,6 +23,18 @@ const MonacoMarkdownEditor = ({ content, contentEpoch = 0, diffContent, onChange
     if (onChange) onChange(value, ev);
   }
 
+  // Whenever `diffContent` toggles, this component swaps between rendering <Editor> and
+  // <DiffEditor> (different underlying Monaco instance kinds sharing this one ref). Monaco
+  // loads asynchronously, so there's a window after the swap where editorRef.current still
+  // points at the just-unmounted instance from the OTHER kind - notably a diff editor has
+  // no getValue(), so calling it below would throw. Null the ref immediately on swap so the
+  // content-sync effect below sees `!editor` and skips until the new instance's onMount runs.
+  React.useEffect(() => {
+    return () => {
+      editorRef.current = null;
+    };
+  }, [diffContent]);
+
   React.useEffect(() => {
     const editor = editorRef.current;
     if (!editor || diffContent) return;
