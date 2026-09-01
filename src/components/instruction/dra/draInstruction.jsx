@@ -12,6 +12,7 @@ import DraAssessment from './DraAssessment';
 import Spinner from '../../Spinner';
 import { FileText, MessageSquare, Search, Network, Play, CheckCircle2, RefreshCcw, Lightbulb, BadgeCheck, CircleDashed } from 'lucide-react';
 import DraMobilePicker from './DraMobilePicker';
+import ConfirmDialog from '../../../hooks/confirmDialog.jsx';
 import { DRA_FIXED_STAGES, createDraStageNotes, getDraStageDefinition, getFirstDraStage, getDraStageNames, normalizeDraProcessAttributeName, normalizeDraStageName } from '../../../utils/draStages';
 
 // Difficulty (1 easiest .. 5 hardest) gates how much of the scenario is revealed up
@@ -440,6 +441,8 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
+  const completeDialogRef = React.useRef(null);
+
   // Switch to relevant tab when assessment state changes (not on initial load — see loadState).
   const prevStateRef = React.useRef('notStarted');
   React.useEffect(() => {
@@ -851,6 +854,18 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
     }
   }
 
+  // Completing is irreversible (it scores the run and, for the final, locks it), so confirm
+  // first using the shared ConfirmDialog. This applies to both practice and final scenarios.
+  function requestCompleteAssessment() {
+    if (draReadOnly || busy) return;
+    completeDialogRef.current?.showModal();
+  }
+
+  function confirmedCompleteAssessment() {
+    completeDialogRef.current?.close();
+    completeAssessment();
+  }
+
   async function completeAssessment() {
     if (draReadOnly || busy) return;
     setBusyAction('completeAssessment');
@@ -1007,7 +1022,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
                 Cancel
               </button>
             )}
-            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={completeAssessment}>
+            <button disabled={draReadOnly || busy} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60" onClick={requestCompleteAssessment}>
               {busyAction === 'completeAssessment' && <Spinner />}
               Complete assessment
             </button>
@@ -1364,6 +1379,14 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <div className="markdown-body px-4 pb-4">{renderTabContent()}</div>
         </div>
       )}
+
+      <ConfirmDialog
+        dialogRef={completeDialogRef}
+        title="Complete assessment"
+        confirmed={confirmedCompleteAssessment}
+        confirmButtonText="Complete"
+        message={locked ? 'Are you sure you want to complete the final assessment? Your work will be scored and locked, and you will not be able to make further changes.' : 'Are you sure you want to complete this practice assessment? A final evaluation will be generated for this scenario.'}
+      />
     </div>
   );
 }

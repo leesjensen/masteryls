@@ -148,6 +148,7 @@ test('interview final assessment completion posts a non-autograded suggestion to
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 
   await expect.poll(() => gradebookCalls.length).toBe(1);
@@ -174,11 +175,36 @@ test('interview practice completion does not sync to canvasgradebook', async ({ 
   await page.getByRole('button', { name: 'Start practice interview' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 
   // Give any (incorrect) async sync a moment to fire before asserting it never did.
   await page.waitForTimeout(300);
   expect(gradebookCalls.length).toBe(0);
+});
+
+test('interview complete assessment asks for confirmation and Cancel aborts', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: plainCourseOverride() });
+  installInterviewRoutes(page, interviewMarkdown({ practiceMode: true, finalMode: false }));
+  installInterviewGemini(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Mock Interview').click();
+
+  await page.getByRole('button', { name: 'Start practice interview' }).click();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+
+  // Completing prompts for confirmation instead of finishing immediately.
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  const confirmDialog = page.getByRole('dialog');
+  await expect(confirmDialog.getByRole('heading', { name: 'Complete assessment' })).toBeVisible();
+  await expect(confirmDialog.getByText(/complete this practice assessment/i)).toBeVisible();
+
+  // Cancelling leaves the run in progress - no evaluation is produced.
+  await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+  await expect(page.getByText('Evaluation Snapshot')).toHaveCount(0);
 });
 
 test('interview: chat footer and completion screen do not offer a new practice run after finishing', async ({ page }) => {
@@ -192,6 +218,7 @@ test('interview: chat footer and completion screen do not offer a new practice r
   await page.getByRole('button', { name: 'Start practice interview' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 
   await page.getByRole('button', { name: 'Interview', exact: true }).click();
@@ -221,12 +248,14 @@ test('interview: completing the final removes new-practice-run and retake-final 
   await page.getByRole('button', { name: 'Start practice interview' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 
   await page.getByRole('button', { name: 'Overview', exact: true }).click();
   await page.getByRole('button', { name: 'Start final interview' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 
   // Once the final is complete, neither option should be offered in the action bar.

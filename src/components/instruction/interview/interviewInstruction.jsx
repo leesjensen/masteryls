@@ -7,6 +7,7 @@ import CoachPanel from '../../shared/CoachPanel';
 import InterviewWorkspace from './interviewWorkspace';
 import InterviewEvaluation from './interviewEvaluation';
 import Spinner from '../../Spinner';
+import ConfirmDialog from '../../../hooks/confirmDialog.jsx';
 import { generateId } from '../../../utils/utils';
 import { summarizeInterviewRun } from './interviewScore';
 
@@ -46,6 +47,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
   const canPractice = params.practiceMode;
   const canFinal = params.finalMode;
   const busy = Boolean(busyAction);
+  const completeDialogRef = React.useRef(null);
 
   // Auto-navigate to Scenario tab only when a genuinely new run is created (not on restore)
   const prevRunIdRef = React.useRef(null);
@@ -177,6 +179,18 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
     setRun(null);
     selectTab('overview');
     await courseOps.saveInterviewState(updatedState);
+  }
+
+  // Completing is irreversible (it scores the run and, for the final, locks it), so confirm
+  // first using the shared ConfirmDialog. This applies to both practice and final runs.
+  function requestCompleteRun() {
+    if (!run || busy) return;
+    completeDialogRef.current?.showModal();
+  }
+
+  function confirmedCompleteRun() {
+    completeDialogRef.current?.close();
+    completeRun();
   }
 
   async function completeRun() {
@@ -326,7 +340,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
                 Cancel
               </button>
             )}
-            <button disabled={busy} onClick={completeRun} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
+            <button disabled={busy} onClick={requestCompleteRun} className="inline-flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60">
               {busyAction === 'completeRun' && <Spinner />}
               Complete assessment
             </button>
@@ -612,6 +626,14 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
           <div className="markdown-body px-4 pb-4">{renderTabContent()}</div>
         </div>
       )}
+
+      <ConfirmDialog
+        dialogRef={completeDialogRef}
+        title="Complete assessment"
+        confirmed={confirmedCompleteRun}
+        confirmButtonText="Complete"
+        message={locked ? 'Are you sure you want to complete the final assessment? Your work will be scored and locked, and you will not be able to make further changes.' : 'Are you sure you want to complete this practice assessment? A final evaluation will be generated for this run.'}
+      />
     </div>
   );
 }

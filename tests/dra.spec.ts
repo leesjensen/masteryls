@@ -240,6 +240,7 @@ test('dra practice mode can start a new scenario after completing', async ({ pag
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Start new scenario' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toHaveCount(0);
 
@@ -258,6 +259,30 @@ test('dra practice mode can start a new scenario after completing', async ({ pag
   await expect(page.getByRole('button', { name: 'Start new scenario' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Scenario', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
+});
+
+test('dra complete assessment asks for confirmation and Cancel aborts', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: draCourseOverride() });
+  installDraRoutes(page, draMarkdown({ practiceMode: true, finalMode: false }));
+  installScenarioSequenceGemini(page, [SCENARIO]);
+
+  await navigateToCourse(page);
+  await page.getByText('Reasoning Lab').click();
+
+  await page.getByRole('button', { name: 'Generate scenario' }).click();
+  await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
+
+  // Completing prompts for confirmation instead of finishing immediately.
+  await page.getByRole('button', { name: 'Complete assessment' }).click();
+  const confirmDialog = page.getByRole('dialog');
+  await expect(confirmDialog.getByRole('heading', { name: 'Complete assessment' })).toBeVisible();
+  await expect(confirmDialog.getByText(/complete this practice assessment/i)).toBeVisible();
+
+  // Cancelling leaves the run in progress (not completed).
+  await confirmDialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Start new scenario' })).toHaveCount(0);
 });
 
 test('dra final mode confirms start and locks the scenario', async ({ page }) => {
@@ -509,6 +534,7 @@ test('dra final assessment completion posts a non-autograded suggestion to canva
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 
   await expect.poll(() => gradebookCalls.length).toBe(1);
@@ -535,6 +561,7 @@ test('dra practice completion does not sync to canvasgradebook', async ({ page }
   await page.getByRole('button', { name: 'Generate scenario' }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
   await page.getByRole('button', { name: 'Complete assessment' }).click();
+  await page.getByRole('button', { name: 'Complete', exact: true }).click();
   await expect(page.getByText('Evaluation Snapshot')).toBeVisible();
 
   // Give any (incorrect) async sync a moment to fire before asserting it never did.
