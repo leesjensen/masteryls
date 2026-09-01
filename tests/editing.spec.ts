@@ -579,6 +579,30 @@ test('editor commits can be shown with diff and apply actions', async ({ page })
   await expect(page.getByText('Initial topic commit')).not.toBeVisible();
 });
 
+test('latest commit gets a Diff button once the topic has unsaved changes', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await expect(page.getByRole('code')).toContainText('# Home');
+  await page.getByRole('button', { name: 'Show Commits' }).click();
+
+  await expect(page.getByText('Initial topic commit')).toBeVisible();
+
+  // While the editor is clean, only the past commit offers a Diff; the latest (loaded) commit
+  // has no Diff button.
+  await expect(page.getByRole('button', { name: 'Diff' })).toHaveCount(1);
+
+  // Make an edit so the topic is dirty.
+  await setMonacoModelValue(page, '# Home', '# Home\n\nEdited body!');
+  await expect(page.getByRole('button', { name: 'Discard' })).toBeEnabled();
+
+  // Now the latest commit also offers a Diff (working changes vs the latest commit), so there
+  // are two Diff buttons, and diffing against it opens the diff view.
+  await expect(page.getByRole('button', { name: 'Diff' })).toHaveCount(2);
+  await page.getByRole('button', { name: 'Diff' }).first().click();
+  await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+});
+
 test('closing a commit diff does not crash the editor', async ({ page }) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(String(error)));

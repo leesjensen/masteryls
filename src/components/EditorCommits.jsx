@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function EditorCommits({ currentTopic, course, user, courseOps, setContent, setDiffContent, setDirty }) {
+export default function EditorCommits({ currentTopic, course, user, courseOps, setContent, setDiffContent, setDirty, dirty = false }) {
   const [topicCommits, setTopicCommits] = useState([]);
   const [currentCommit, setCurrentCommit] = useState(null);
   const [diffCommit, setDiffCommit] = useState(null);
@@ -55,23 +55,25 @@ export default function EditorCommits({ currentTopic, course, user, courseOps, s
         {topicCommits.map((commit, idx) => (
           <li key={commit.sha} className="mb-2">
             <div className="flex items-center justify-start border border-gray-300 rounded p-1 w-full">
+              {/* Apply loads a past commit into the editor - not offered for the commit already loaded. */}
               {commit.sha !== currentCommit && (
-                <>
-                  <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-blue-50 rounded text-blue-700 border border-blue-300" onClick={() => handleApplyCommit(commit)}>
-                    Apply
-                  </button>
-                  {diffCommit !== commit.sha && (
-                    <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-amber-50 rounded text-gray-900 border border-gray-300" onClick={() => handleDiffCommit(commit)}>
-                      Diff
-                    </button>
-                  )}
-                  {diffCommit === commit.sha && (
-                    <button className="mr-2 px-2 py-1 text-xs bg-amber-200 hover:bg-amber-300 rounded text-amber-900 border border-amber-300" onClick={() => clearDiff()}>
-                      Diff
-                    </button>
-                  )}
-                </>
+                <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-blue-50 rounded text-blue-700 border border-blue-300" onClick={() => handleApplyCommit(commit)}>
+                  Apply
+                </button>
               )}
+              {/* Diff shows for past commits, and for the loaded commit once there are unsaved edits
+                  (so you can diff your working changes against it). Keep it visible while it is the
+                  active diff so it can always be cleared, even after the edits are discarded. */}
+              {(commit.sha !== currentCommit || dirty || diffCommit === commit.sha) &&
+                (diffCommit === commit.sha ? (
+                  <button className="mr-2 px-2 py-1 text-xs bg-amber-200 hover:bg-amber-300 rounded text-amber-900 border border-amber-300" onClick={() => clearDiff()}>
+                    Diff
+                  </button>
+                ) : (
+                  <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-amber-50 rounded text-gray-900 border border-gray-300" onClick={() => handleDiffCommit(commit)}>
+                    Diff
+                  </button>
+                ))}
               <div className="flex flex-col">
                 <div className="flex flex-row">
                   <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pr-1 text-amber-600 underline">
