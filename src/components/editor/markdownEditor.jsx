@@ -478,10 +478,10 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       return;
     }
 
-    const topic = await topicLinkDialogRef.current?.show({ topics });
+    const topic = await topicLinkDialogRef.current?.show({ topics, currentTopicPath: currentTopic?.path });
     if (!topic) return;
 
-    const markdown = createTopicLinkMarkdown(course.id, topic);
+    const markdown = createTopicLinkMarkdown(course.id, topic, currentTopic?.path);
     insertText(markdown);
   };
 

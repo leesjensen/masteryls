@@ -1,8 +1,9 @@
 import React from 'react';
-import { getTopicDisplayLabel } from './topicLinkUtils';
+import { getTopicDisplayLabel, topicLinkDisplayPath } from './topicLinkUtils';
 
 const TopicLinkDialog = React.forwardRef(function TopicLinkDialog(_, ref) {
   const [topics, setTopics] = React.useState([]);
+  const [currentTopicPath, setCurrentTopicPath] = React.useState('');
   const [query, setQuery] = React.useState('');
   const [selectedTopicId, setSelectedTopicId] = React.useState('');
   const dialogRef = React.useRef(null);
@@ -19,9 +20,10 @@ const TopicLinkDialog = React.forwardRef(function TopicLinkDialog(_, ref) {
       const title = String(topic.title || '').toLowerCase();
       const description = String(topic.description || '').toLowerCase();
       const path = String(topic.path || '').toLowerCase();
-      return title.includes(search) || description.includes(search) || path.includes(search);
+      const relativePath = String(topicLinkDisplayPath(currentTopicPath, topic)).toLowerCase();
+      return title.includes(search) || description.includes(search) || path.includes(search) || relativePath.includes(search);
     });
-  }, [topics, query]);
+  }, [topics, query, currentTopicPath]);
 
   const closeDialog = React.useCallback((selectedTopic = null) => {
     dialogRef.current?.close();
@@ -40,10 +42,11 @@ const TopicLinkDialog = React.forwardRef(function TopicLinkDialog(_, ref) {
   React.useImperativeHandle(
     ref,
     () => ({
-      show: ({ topics: nextTopics = [] } = {}) => {
+      show: ({ topics: nextTopics = [], currentTopicPath: nextCurrentTopicPath = '' } = {}) => {
         return new Promise((resolve) => {
           resolverRef.current = resolve;
           setTopics(nextTopics);
+          setCurrentTopicPath(nextCurrentTopicPath);
           setQuery('');
           setSelectedTopicId(nextTopics[0]?.id || '');
           dialogRef.current?.showModal();
@@ -90,11 +93,12 @@ const TopicLinkDialog = React.forwardRef(function TopicLinkDialog(_, ref) {
             {filteredTopics.map((topic) => {
               const isSelected = selectedTopicId === topic.id;
               const label = getTopicDisplayLabel(topic);
+              const displayPath = topicLinkDisplayPath(currentTopicPath, topic);
               return (
                 <li key={topic.id}>
                   <button type="button" onClick={() => setSelectedTopicId(topic.id)} onDoubleClick={confirmSelection} className={`w-full text-left px-3 py-2 transition-colors ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                     <div className="text-sm text-gray-800">{label}</div>
-                    {topic.path && <div className="text-xs text-gray-500 mt-1">{topic.path}</div>}
+                    {displayPath && <div className="text-xs text-gray-500 mt-1">{displayPath}</div>}
                   </button>
                 </li>
               );

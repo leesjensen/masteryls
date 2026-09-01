@@ -270,14 +270,17 @@ test('editor link insertion uses topic dialog with search', async ({ page }) => 
 
   await expect(page.getByRole('heading', { name: 'Insert topic link' })).not.toBeVisible();
 
+  // The current topic is Home (README.md at the repo root), so a link to topic 2
+  // (something/more/topic2.md) is inserted as a portable relative path, not an absolute
+  // /course/:id/topic/:id link.
   const insertedMarkdown = await page.evaluate(() => {
     const monaco = (window as any).monaco;
     const models = monaco?.editor?.getModels?.() || [];
-    const matchingModel = models.find((model: any) => String(model.getValue()).includes('[topic 2](/course/14602d77-0ff3-4267-b25e-4a7c3c47848b/topic/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b)'));
+    const matchingModel = models.find((model: any) => String(model.getValue()).includes('[topic 2](something/more/topic2.md)'));
     return matchingModel ? String(matchingModel.getValue()) : '';
   });
 
-  expect(insertedMarkdown).toContain('[topic 2](/course/14602d77-0ff3-4267-b25e-4a7c3c47848b/topic/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b)');
+  expect(insertedMarkdown).toContain('[topic 2](something/more/topic2.md)');
 });
 
 test('editor can insert AI generated quiz markdown', async ({ page }) => {
