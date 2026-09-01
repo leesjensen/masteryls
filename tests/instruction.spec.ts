@@ -167,6 +167,12 @@ test('markdown custom links navigate to relative and root-relative destinations'
   await navigateToCourse(page);
 
   await page.getByText('topic 1').click();
+
+  // The href attribute itself must be a resolved app URL (not the raw `topic2.md`), so that
+  // opening the link in a new tab / middle-click / cmd-click - which bypass the SPA click
+  // handler - land on a valid topic route instead of the "we have gotten lost" error page.
+  await expect(page.getByRole('link', { name: 'Go To Topic 2' })).toHaveAttribute('href', /\/course\/14602d77-0ff3-4267-b25e-4a7c3c47848b\/topic\/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b/);
+
   await page.getByRole('link', { name: 'Go To Topic 2' }).click();
   await expect(page).toHaveURL(/\/course\/14602d77-0ff3-4267-b25e-4a7c3c47848b\/topic\/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b/);
 

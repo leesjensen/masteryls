@@ -13,6 +13,7 @@ import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
 import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
+import { resolveMarkdownHref } from '../utils/resolveMarkdownHref';
 import { StickyNote } from 'lucide-react';
 import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
 
@@ -136,6 +137,24 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   const learningSessionRef = useLatest(learningSession);
   const resolveTopicUrlRef = useLatest(resolveTopicUrl);
 
+  // Resolve a raw markdown href to a real, navigable app URL, so the href attribute is valid
+  // whether the click is intercepted (SPA nav) or the browser follows it directly
+  // (open-in-new-tab / middle-click / cmd-click). The base topic needed to resolve a relative
+  // link is only known here, so the resolved href must be baked in at render time - by the time
+  // a bare relative path reaches the router the originating topic (and thus the base) is lost.
+  // The resolution rules live in the pure, unit-tested `resolveMarkdownHref` util.
+  const resolveHref = React.useCallback((href) => {
+    const session = learningSessionRef.current;
+    return resolveMarkdownHref(href, {
+      topicPath: session?.topic?.path,
+      courseId: session?.course?.id,
+      topicFromPath: session?.course ? (path, fallback) => session.course.topicFromPath(path, fallback) : undefined,
+      resolveTopicUrl: resolveTopicUrlRef.current,
+    });
+    // Reads only refs (stable), so it never needs to be rebuilt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const components = React.useMemo(() => {
     const customComponents = {
       pre({ node, children, ...props }) {
@@ -221,34 +240,21 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       //     ../simon/simon.md
       //     ../../readme.md
       a({ node, href, children, ...props }) {
+        const resolvedHref = resolveHref(href);
         return (
           <a
-            href={href}
+            href={resolvedHref}
             onClick={(e) => {
+              // Let modified clicks (new tab / new window / download) fall through to the
+              // browser, which uses the now-valid resolvedHref attribute.
+              if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
               e.preventDefault();
-              if (href?.startsWith('http')) {
-                window.open(href, '_blank', 'noopener,noreferrer');
-              } else if (href?.startsWith('/')) {
-                navigate(href);
-              } else {
-                const match = href?.match(/^([^#]*)(#.*)?$/);
-                const hrefPath = match?.[1];
-                const hrefAnchor = match?.[2];
-
-                if (!hrefPath && hrefAnchor) {
-                  scrollToAnchor(hrefAnchor, containerRef);
-                } else if (hrefPath) {
-                  const session = learningSessionRef.current;
-                  const canonicalResolvedUrl = new URL(hrefPath, session.topic.path).toString();
-                  const resolvedUrl = resolveTopicUrlRef.current(hrefPath);
-                  const targetTopic = session.course.topicFromPath(canonicalResolvedUrl, false);
-                  if (targetTopic) {
-                    const anchor = hrefAnchor ? `#${hrefAnchor}` : '';
-                    navigate(`/course/${session.course.id}/topic/${targetTopic.id}${anchor}`);
-                  } else {
-                    window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
-                  }
-                }
+              if (resolvedHref?.startsWith('http')) {
+                window.open(resolvedHref, '_blank', 'noopener,noreferrer');
+              } else if (resolvedHref?.startsWith('/')) {
+                navigate(resolvedHref);
+              } else if (resolvedHref?.startsWith('#')) {
+                scrollToAnchor(resolvedHref, containerRef);
               }
             }}
             {...props}
