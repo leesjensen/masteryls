@@ -17,6 +17,8 @@ import { updateInteractionProgress, getInteractionProgress, useInteractionProgre
 import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
 import { isSubmittableInteractionType, parseInteractionMeta } from '../../../utils/interactionMeta';
 import { validateSubmittedUrl } from '../../../utils/urlValidation';
+import { resolveInteractionHref } from './interactionHrefResolver';
+import { InteractionLinkResolverContext } from './interactionLinkResolver.jsx';
 
 // See instruction.jsx for why this needs to be a stable module-level default rather than
 // an inline `= {}` - it gets forwarded to markdownInstruction.jsx, whose content-load
@@ -721,21 +723,31 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     quizRoot.classList.add('ring-2', ringClass, 'bg-gray-50');
   }
 
+  // Resolve relative links rendered inside interaction bodies (via inlineLiteMarkdown) the same
+  // way the main topic content does, so a link like [x](../foo.md) inside a `masteryls` fence
+  // navigates to its topic route instead of resolving against the /course/:id/topic/:id URL and
+  // landing on the error page. The base topic is only known here, so we resolve at render time;
+  // the resolution rules (including the topic.path-vs-snapshotPath distinction) live in the pure,
+  // unit-tested resolveInteractionHref helper.
+  const resolveHref = React.useCallback((href) => resolveInteractionHref(href, learningSession), [learningSession]);
+
   return (
-    <MarkdownInstruction
-      courseOps={courseOps}
-      learningSession={learningSession}
-      user={user}
-      languagePlugins={[
-        {
-          lang: 'masteryls',
-          handler: handleInteractionClick,
-          processor: injectInteraction,
-        },
-      ]}
-      content={content}
-      instructionState={instructionState}
-      previewFileUrls={previewFileUrls}
-    />
+    <InteractionLinkResolverContext.Provider value={resolveHref}>
+      <MarkdownInstruction
+        courseOps={courseOps}
+        learningSession={learningSession}
+        user={user}
+        languagePlugins={[
+          {
+            lang: 'masteryls',
+            handler: handleInteractionClick,
+            processor: injectInteraction,
+          },
+        ]}
+        content={content}
+        instructionState={instructionState}
+        previewFileUrls={previewFileUrls}
+      />
+    </InteractionLinkResolverContext.Provider>
   );
 }

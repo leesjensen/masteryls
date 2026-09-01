@@ -180,6 +180,39 @@ test('markdown custom links navigate to relative and root-relative destinations'
   await expect(page).toHaveURL(/\/course\/14602d77-0ff3-4267-b25e-4a7c3c47848b\/topic\/2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e/);
 });
 
+// Regression guard: relative links inside a `masteryls` interaction code fence are rendered by
+// inlineLiteMarkdown. Previously it emitted a raw `<a href={url}>` with no relative-path
+// resolution and no SPA click interception, so a link like [x](../foo.md) kept its raw relative
+// href and resolved against the current /course/:id/topic/:id URL - landing on the "we have
+// gotten lost" error page - both when opened in a new tab AND on an ordinary click. Links now
+// resolve through InteractionLink just like the main topic content.
+test('relative links inside a masteryls interaction resolve to a topic route', async ({ page }) => {
+  const interactionMarkdown = `
+# Interaction Links
+
+\`\`\`masteryls
+{"id":"57d595a3-6ae5-40a9-a512-041c1c1cd198", "title":"Phase 0: Getting started", "type":"multiple-choice" }
+Which of the following did you complete?
+
+- [x] I used the [Go To Topic 2](topic2.md) template to create a repository.
+- [ ] I was not able to create the repo and am reaching out to a TA for help.
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+  await navigateToCourse(page);
+
+  await page.getByText('topic 1').click();
+
+  const link = page.getByRole('link', { name: 'Go To Topic 2' });
+  await expect(link).toBeVisible();
+
+  // Like a normal markdown link, the relative `topic2.md` should resolve to topic 2's route so
+  // the link is valid whether clicked or opened in a new tab. Today it renders the raw
+  // `topic2.md` instead, so this assertion fails - demonstrating the bug.
+  await expect(link).toHaveAttribute('href', /\/course\/14602d77-0ff3-4267-b25e-4a7c3c47848b\/topic\/5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b/);
+});
+
 test('markdown anchor links keep current route', async ({ page }) => {
   const anchorMarkdown = `
 # Anchors

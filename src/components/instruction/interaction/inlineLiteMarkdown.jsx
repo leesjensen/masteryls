@@ -2,6 +2,7 @@ import React from 'react';
 import { parseLiteMarkdownBlocks } from '../../../utils/liteMarkdownBlocks.js';
 import { HighlightedText } from '../../HighlightedText.jsx';
 import { getCurrentSearchTerms } from '../../../hooks/useSearchResults.js';
+import { InteractionLink } from './interactionLinkResolver.jsx';
 
 // lightweight markdown-to-HTML for option text (links, images, strong/em)
 
@@ -46,13 +47,14 @@ function parseInline(text, searchTerms = []) {
     },
     // images ![alt](url)
     { regex: /!\[([^\]]*)\]\(([^)]+)\)/, render: (m, alt, url, key) => <img key={key} alt={alt} src={url} /> },
-    // links [text](url)
+    // links [text](url) - InteractionLink resolves relative hrefs (e.g. `../foo.md`) against the
+    // current topic and intercepts clicks for SPA navigation, matching the main content renderer.
     {
       regex: /\[([^\]]+)\]\(([^)]+)\)/,
       render: (m, linkText, url, key) => (
-        <a key={key} href={url}>
+        <InteractionLink key={key} href={url}>
           {parseInline(linkText, searchTerms)}
-        </a>
+        </InteractionLink>
       ),
     },
     // strong **text**
