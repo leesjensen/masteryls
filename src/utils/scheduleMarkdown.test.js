@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildWeeks, parseCellItems, parseScheduleMarkdown, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+import { buildWeeks, parseCellItems, parseScheduleMarkdown, scheduleDateStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
 
 test('scheduleDateBoundsToIso expands YYYY-MM-DD dates to inclusive start/end of day', () => {
   const bounds = scheduleDateBoundsToIso({ startDate: '2026-01-10', endDate: '2026-05-01' });
@@ -17,6 +17,15 @@ test('scheduleDateBoundsToIso returns null unless both dates are present and val
   assert.equal(scheduleDateBoundsToIso({ startDate: '', endDate: '' }), null);
   assert.equal(scheduleDateBoundsToIso({ startDate: 'not-a-date', endDate: '2026-05-01' }), null);
   assert.equal(scheduleDateBoundsToIso(), null);
+});
+
+test('scheduleDateStatus identifies past today and future display dates', () => {
+  const referenceDate = new Date('2026-09-09T12:00:00');
+
+  assert.equal(scheduleDateStatus('Tue Jan 6 2026', referenceDate), 'past');
+  assert.equal(scheduleDateStatus('Sep 9', referenceDate), 'today');
+  assert.equal(scheduleDateStatus('2026-12-01', referenceDate), 'future');
+  assert.equal(scheduleDateStatus('Date', referenceDate), null);
 });
 
 test('parseScheduleMarkdown extracts title links table and special days', () => {

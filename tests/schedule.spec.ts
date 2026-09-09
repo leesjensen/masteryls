@@ -122,6 +122,32 @@ test('schedule read view lets learner switch files', async ({ page }) => {
   await expect(page.locator('header h1')).toContainText("Joe's schedule");
 });
 
+test('schedule read view marks rows whose dates have passed', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  const { markdownByRepoPath } = installScheduleRoutes(page);
+
+  markdownByRepoPath.set(
+    'instruction/schedule/schedule.md',
+    `# Date Status Schedule
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+|  1   | Mon Jan 3 2000 | Past module | | [Old topic](../instruction/introduction.md) | |
+|  2   | Mon Jan 3 2999 | Future module | | [Future topic](../instruction/introduction.md) | |
+`,
+  );
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+
+  const pastRow = page.locator('.markdown-body table tbody tr').filter({ hasText: 'Past module' });
+  const futureRow = page.locator('.markdown-body table tbody tr').filter({ hasText: 'Future module' });
+
+  await expect(pastRow).toHaveAttribute('data-schedule-date-status', 'past');
+  await expect(pastRow).toHaveClass(/schedule-row-past/);
+  await expect(futureRow).toHaveAttribute('data-schedule-date-status', 'future');
+});
+
 test('a stale in-flight schedule fetch cannot silently overwrite a newer explicit selection', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
   installScheduleRoutes(page);
