@@ -367,7 +367,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
   }
 
   async function onSurveyInteraction({ id, type, selected, syncGrade = false, autoGrade = false }) {
-    const details = { type, selected, syncGrade, autoGrade };
+    const details = { type, selected, feedback: 'Submission recorded', syncGrade, autoGrade };
     updateInteractionProgress(id, details);
     await courseOps.addProgress(null, id, 'quizSubmit', 0, details);
     return true;

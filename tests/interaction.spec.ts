@@ -1222,6 +1222,7 @@ How do you feel about this topic?
   await expect(great).not.toBeChecked();
 
   await submit.click();
+  await expect(page.getByText('Submission recorded', { exact: true })).toBeVisible();
   await expect(page.getByText('Total respondents:')).toBeVisible();
 });
 
@@ -1254,6 +1255,7 @@ Pick all that apply.
   await expect(helpful).toBeChecked();
 
   await submit.click();
+  await expect(page.getByText('Submission recorded', { exact: true })).toBeVisible();
   await expect(page.getByText('Total respondents:')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible();
 });
