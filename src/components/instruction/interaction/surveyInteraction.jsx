@@ -121,6 +121,7 @@ export default function SurveyInteraction({ id, body, multipleSelect, courseOps 
           );
         })}
         <InteractionSubmitRow id={id} details={progress} disabled={useRadioButtons && currentSelections.size === 0} buttonProps={{ onClick: showMyVotes }} />
+        {progress.feedback && <div className="mt-2 text-sm text-blue-800" role="status">{progress.feedback}</div>}
         {surveyResults}
       </div>
     </>

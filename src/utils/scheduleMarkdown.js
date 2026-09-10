@@ -7,6 +7,95 @@ export const SCHEDULE_WARNING = {
 };
 
 const CANONICAL_HEADERS = ['Week', 'Date', 'Module', 'Due', 'Topics Covered', 'Slides'];
+const SCHEDULE_MONTH_INDEX = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
+
+function startOfLocalDay(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+export function parseScheduleDisplayDate(value, referenceDate = new Date()) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return startOfLocalDay(`${raw}T00:00:00`);
+  }
+
+  const cleaned = raw
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/[,()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const tokens = cleaned.split(' ').filter(Boolean);
+  const monthTokenIndex = tokens.findIndex((token) => SCHEDULE_MONTH_INDEX[token.slice(0, 3).toLowerCase()] !== undefined);
+
+  if (monthTokenIndex >= 0) {
+    const dayMatch = tokens[monthTokenIndex + 1]?.match(/^(\d{1,2})(?:st|nd|rd|th)?$/i);
+    if (!dayMatch) {
+      return null;
+    }
+
+    const day = Number(dayMatch[1]);
+    const yearToken = tokens.slice(monthTokenIndex + 2).find((token) => /^\d{4}$/.test(token));
+    const fallbackYear = startOfLocalDay(referenceDate)?.getFullYear() || new Date().getFullYear();
+    const year = yearToken ? Number(yearToken) : fallbackYear;
+    const month = SCHEDULE_MONTH_INDEX[tokens[monthTokenIndex].slice(0, 3).toLowerCase()];
+    const parsed = new Date(year, month, day);
+
+    if (parsed.getFullYear() !== year || parsed.getMonth() !== month || parsed.getDate() !== day) {
+      return null;
+    }
+
+    parsed.setHours(0, 0, 0, 0);
+    return parsed;
+  }
+
+  if (/\d{4}/.test(raw)) {
+    return startOfLocalDay(raw);
+  }
+
+  return null;
+}
+
+export function scheduleDateStatus(value, referenceDate = new Date()) {
+  const parsedDate = parseScheduleDisplayDate(value, referenceDate);
+  const today = startOfLocalDay(referenceDate);
+
+  if (!parsedDate || !today) {
+    return null;
+  }
+
+  if (parsedDate.getTime() < today.getTime()) {
+    return 'past';
+  }
+
+  if (parsedDate.getTime() === today.getTime()) {
+    return 'today';
+  }
+
+  return 'future';
+}
 
 function scheduleDayToIso(value, endOfDay) {
   const raw = String(value || '').trim();

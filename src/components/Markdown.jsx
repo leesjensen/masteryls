@@ -14,6 +14,7 @@ import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
 import { resolveMarkdownHref } from '../utils/resolveMarkdownHref';
+import { scheduleDateStatus } from '../utils/scheduleMarkdown';
 import { StickyNote } from 'lucide-react';
 import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
 
@@ -43,6 +44,33 @@ function extractPlainText(children) {
     })
     .join('')
     .trim();
+}
+
+function extractNodeText(node) {
+  if (!node) return '';
+  if (node.type === 'text') return node.value || '';
+  if (node.type === 'element' && Array.isArray(node.children)) {
+    return node.children.map(extractNodeText).join('');
+  }
+  if (Array.isArray(node.children)) {
+    return node.children.map(extractNodeText).join('');
+  }
+  return '';
+}
+
+function scheduleDateTextFromTableRow(node) {
+  const cells = (node?.children || []).filter((child) => child?.tagName === 'td' || child?.tagName === 'th');
+  if (cells.length < 2) {
+    return '';
+  }
+
+  const firstCellText = extractNodeText(cells[0]).trim().toLowerCase();
+  const secondCellText = extractNodeText(cells[1]).trim();
+  if (firstCellText === 'week' || secondCellText.toLowerCase() === 'date') {
+    return '';
+  }
+
+  return secondCellText;
 }
 
 export default function Markdown({ learningSession, content, languagePlugins = [], noteMessages = [], onMakeHeadingActive = null }) {
@@ -197,6 +225,17 @@ export default function Markdown({ learningSession, content, languagePlugins = [
           <div className="markdown-table-scroll" role="region" aria-label="Scrollable table">
             <table {...props}>{children}</table>
           </div>
+        );
+      },
+      tr({ node, className, children, ...props }) {
+        const session = learningSessionRef.current;
+        const dateStatus = session?.topic?.type === 'schedule' ? scheduleDateStatus(scheduleDateTextFromTableRow(node)) : null;
+        const rowClassName = [className, dateStatus ? `schedule-row-${dateStatus}` : ''].filter(Boolean).join(' ');
+
+        return (
+          <tr className={rowClassName || undefined} data-schedule-date-status={dateStatus || undefined} {...props}>
+            {children}
+          </tr>
         );
       },
       td: createHighlightedComponent('td', searchTerms),

@@ -92,3 +92,58 @@
   word-break: normal;
   hyphens: none;
 }
+
+.markdown-body tr.schedule-row-past {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.markdown-body tr.schedule-row-past a {
+  color: #64748b;
+}
+
+.markdown-body tr.schedule-row-past td {
+  opacity: 0.78;
+}
+
+.markdown-body tr.schedule-row-past td:first-child {
+  border-left: 3px solid #94a3b8;
+}
+
+.markdown-body tr.schedule-row-past td:nth-child(2)::after {
+  content: 'Past';
+  display: inline-flex;
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.markdown-body tr.schedule-row-today {
+  background: #fff7ed;
+}
+
+.markdown-body tr.schedule-row-today td:first-child {
+  border-left: 3px solid #f97316;
+}
+
+.markdown-body tr.schedule-row-today td:nth-child(2)::after {
+  content: 'Today';
+  display: inline-flex;
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
