@@ -14,13 +14,17 @@ function normalizePercent(percentCorrect) {
 // Canvas collapses plain-text newlines in submission comments, so the header
 // lines are joined with <br>. The feedback is already simplified HTML produced
 // by the client (markdownToHtml), so it is appended as-is rather than escaped.
-export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }) {
+export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade, dateDue }) {
   const lines = [];
+  const date = new Date().toISOString();
   const suggestedGrade = Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100;
   lines.push('MasteryLS feedback');
   lines.push(`Suggested grade: ${suggestedGrade}/${normalizedPoints} (${normalizedPercent}%)`);
   lines.push(`Auto grade: ${autoGrade ? 'enabled' : 'disabled'}`);
-  lines.push(`Submitted at: ${new Date().toISOString()}`);
+  lines.push(`Submitted at: ${date}`);
+  if (dateDue) {
+    lines.push(`Grace Day Potential: ${calculateGraceDaysEarned({ dateSubmitted: date, dateDue })}`);
+  }
   if (typeof postedGrade === 'number') {
     lines.push(`Posted grade: ${postedGrade}`);
   }
@@ -33,6 +37,28 @@ export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoin
   }
 
   return comment;
+}
+
+export function calculateGraceDaysEarned({ dateSubmitted, dateDue }) {
+  const submitted = new Date(dateSubmitted);
+  const due = new Date(dateDue);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const isLate = submitted > due;
+  const round = isLate ? Math.ceil : Math.floor;
+  const direction = isLate ? -1 : 1;
+  let graceDaysEarned = 0;
+  let currentDate = new Date(submitted);
+  while (currentDate.toDateString() !== due.toDateString()) {
+    if(currentDate.getDay() === 6) {
+      currentDate = new Date(currentDate.getTime() + direction * msPerDay);
+      continue;
+    }
+    graceDaysEarned += direction;
+    currentDate = new Date(currentDate.getTime() + direction * msPerDay);
+  }
+
+  if( graceDaysEarned === 0 && isLate ) graceDaysEarned = -1;
+  return graceDaysEarned;
 }
 
 export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeader, getEnv, fetchFn = fetch }) {
@@ -213,6 +239,13 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
         return new Response(JSON.stringify({ error: 'Unable to resolve Canvas assignment id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
+      // Mastery updates never attach a comment, so there's no need to look up the due date.
+      let dateDue = null;
+      if (!isMastery) {
+        const assignment = await canvasApi(`/courses/${courseId}/assignments/${assignmentId}`);
+        dateDue = assignment?.due_at || null;
+      }
+
       if (submissionUrl) {
         await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions`, 'POST', {
           submission: {
@@ -248,7 +281,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
           ? {}
           : {
               comment: {
-                text_comment: buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }),
+                text_comment: buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade, dateDue }),
               },
             }),
       };

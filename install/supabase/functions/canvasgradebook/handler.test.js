@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCanvasGradebookHandler, buildCanvasComment } from './handler.js';
+import { createCanvasGradebookHandler, buildCanvasComment, calculateGraceDaysEarned } from './handler.js';
 
 function createMockSupabase({ user, roles }) {
   return {
@@ -48,6 +48,9 @@ function buildFetchStub() {
     if (url.includes('/quizzes/')) {
       return new Response(JSON.stringify({ assignment_id: 555 }), { status: 200 });
     }
+    if (url.includes('/assignments/') && !url.includes('/submissions') && method === 'GET') {
+      return new Response(JSON.stringify({ id: 999, due_at: '2026-05-10T23:59:00Z' }), { status: 200 });
+    }
     if (url.includes('/submissions') && method === 'POST') {
       return new Response(JSON.stringify({ id: 321, submission_type: 'online_url' }), { status: 200 });
     }
@@ -74,6 +77,51 @@ function getSubmissionRequest(calls, method = 'PUT') {
   return JSON.parse(call.init.body || '{}');
 }
 
+function graceDayTest({ dateSubmitted, dateDue, expectedGraceDays}) {
+  const result = calculateGraceDaysEarned({ dateSubmitted, dateDue });
+  assert.equal(result, expectedGraceDays);
+}
+
+test('calculateGraceDaysEarned returns 0 for submission on the due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-10T06:00:00Z'), // A thursday
+    dateDue: new Date('2026-09-10T12:00:00Z'), // A thursday
+    expectedGraceDays: 0
+  });
+});
+
+test('calculateGraceDaysEarned returns -1 for submission slightly after the due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-09T12:00:01Z'), // A wednesday
+    dateDue: new Date('2026-09-09T12:00:00Z'), // A wednesday
+    expectedGraceDays: -1
+  });
+});
+
+test('calculateGraceDaysEarned returns -1 for submission sunday after a saturday due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-12T12:00:00Z'), // A saturday
+    expectedGraceDays: -1
+  });
+});
+
+test('calculateGraceDaysEarned returns -1 for submission sunday after a friday due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-11T12:00:00Z'), // A friday
+    expectedGraceDays: -1
+  });
+});
+
+test('calculateGraceDaysEarned returns 1 for submission saturday before a monday due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-12T12:00:00Z'), // A saturday
+    dateDue: new Date('2026-09-14T12:00:00Z'), // A friday
+    expectedGraceDays: 1
+  });
+});
+
 test('canvasgradebook allows root user', async () => {
   const { fetchFn, calls } = buildFetchStub();
   const handler = createCanvasGradebookHandler({
@@ -99,7 +147,7 @@ test('canvasgradebook allows root user', async () => {
   );
 
   assert.equal(response.status, 200);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   const submissionRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(submissionRequest.submission.posted_grade, 90);
   assert.ok(typeof submissionRequest.comment?.text_comment === 'string');
@@ -137,7 +185,7 @@ test('canvasgradebook allows learner self-match', async () => {
   assert.equal(body.submission.url, 'https://example.com/project');
   assert.ok(body.submission.submitted_at);
   assert.notEqual(body.submission.workflow_state, 'unsubmitted');
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
   const submissionRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(submissionRequest.submission.posted_grade, 160);
   assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 160/200 (80%)'));
@@ -197,7 +245,7 @@ test('canvasgradebook can submit comment and url without posting grade when auto
   );
 
   assert.equal(response.status, 200);
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
 
   const submitAttemptRequest = getSubmissionRequest(calls, 'POST');
   assert.equal(submitAttemptRequest.submission.submission_type, 'online_url');
