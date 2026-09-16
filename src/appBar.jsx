@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info, UserCog } from 'lucide-react';
+import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info, UserCog, Moon } from 'lucide-react';
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 import UserProfileDialog from './components/UserProfileDialog.jsx';
+import { useTheme } from './hooks/useTheme.jsx';
 
 export function AppBar({ user, courseOps }) {
   const { title, subTitle, tools } = useAppBarState();
@@ -83,10 +84,23 @@ function AppBarMenuItem({ icon: Icon, onClick, title }) {
   );
 }
 
+function DarkModeMenuItem({ isDark, setDark }) {
+  return (
+    <button type="button" role="switch" aria-checked={isDark} onClick={() => setDark(!isDark)} className="w-full text-left px-4 py-1 text-sm text-gray-700 hover:text-amber-600 flex items-center gap-2 touch-manipulation">
+      <Moon size={16} />
+      <span className="flex-1">Dark mode</span>
+      <span className={`relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors duration-200 ${isDark ? 'bg-amber-600' : 'bg-gray-300'}`}>
+        <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-gray-50 shadow transition-transform duration-200 ${isDark ? 'translate-x-3' : ''}`} />
+      </span>
+    </button>
+  );
+}
+
 function UserMenu({ user, courseOps }) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { isDark, setDark } = useTheme();
   const menuRef = useRef(null);
 
   function getUserInitials(value) {
@@ -182,6 +196,7 @@ function UserMenu({ user, courseOps }) {
             )}
 
             <div className="border-t border-gray-200 my-1"></div>
+            <DarkModeMenuItem isDark={isDark} setDark={setDark} />
             <AppBarMenuItem icon={Info} onClick={() => handleMenuItemClick(() => navigate('/about'))} title="About" />
 
             <div className="border-t border-gray-200 my-1"></div>
