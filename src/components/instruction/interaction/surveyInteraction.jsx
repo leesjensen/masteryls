@@ -3,7 +3,7 @@ import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdo
 import { useInteractionProgressStore } from './interactionProgressStore';
 import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 
-export default function SurveyInteraction({ id, body, multipleSelect, courseOps }) {
+export default function SurveyInteraction({ id, body, multipleSelect, courseOps, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const [surveyResults, setSurveyResults] = React.useState(null);
 
@@ -120,7 +120,7 @@ export default function SurveyInteraction({ id, body, multipleSelect, courseOps 
             </div>
           );
         })}
-        <InteractionSubmitRow id={id} details={progress} disabled={useRadioButtons && currentSelections.size === 0} buttonProps={{ onClick: showMyVotes }} />
+        <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit'} disabled={useRadioButtons && currentSelections.size === 0} buttonProps={{ onClick: showMyVotes }} />
         {progress.feedback && <div className="mt-2 text-sm text-blue-800" role="status">{progress.feedback}</div>}
         {surveyResults}
       </div>

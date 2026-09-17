@@ -7,7 +7,7 @@ import { formatFileSize } from '../../../utils/utils';
 import { MAX_FILE_BYTES, IMAGE_BUDGET_BYTES, MAX_FILES_PER_SUBMISSION, ACCEPT_ATTRIBUTE, isAcceptedMime, isImageMime } from '../../../utils/fileSubmissionConstants';
 import { compressImageToBudget } from '../../../utils/imageCompression';
 
-export default function FileInteraction({ id, body }) {
+export default function FileInteraction({ id, body, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -188,7 +188,7 @@ export default function FileInteraction({ id, body }) {
         </ul>
       )}
 
-      <InteractionSubmitRow id={id} details={progress} label="Submit files" disabled={selectedFiles.length === 0} />
+      <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit files'} disabled={selectedFiles.length === 0} />
     </div>
   );
 }

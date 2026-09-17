@@ -3,7 +3,7 @@ import { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 
-export default function UrlInteraction({ id, body }) {
+export default function UrlInteraction({ id, body, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const existingUrl = progress.url || '';
   const [currentUrl, setCurrentUrl] = React.useState(existingUrl);
@@ -21,7 +21,7 @@ export default function UrlInteraction({ id, body }) {
         {renderLiteMarkdownBlocks(body)}
       </div>
       <input type="url" name={`quiz-${id}`} className="w-full p-3 border bg-white border-gray-300 rounded-lg transition-colors duration-200 placeholder-gray-400" value={currentUrl} onChange={handleChange} placeholder="Enter URL here..." />
-      <InteractionSubmitRow id={id} details={progress} label="Submit URL" disabled={!isValidUrl} />
+      <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit URL'} disabled={!isValidUrl} />
     </div>
   );
 }

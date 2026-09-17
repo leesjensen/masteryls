@@ -5,7 +5,7 @@ import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 
 const GITHUB_URL_PATTERN = /^https?:\/\/github\.com\/[^/\s]+\/[^/\s]+/i;
 
-export default function GithubInteraction({ id, body }) {
+export default function GithubInteraction({ id, body, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const existingUrl = progress.url || '';
   const [currentUrl, setCurrentUrl] = React.useState(existingUrl);
@@ -23,7 +23,7 @@ export default function GithubInteraction({ id, body }) {
         {renderLiteMarkdownBlocks(body)}
       </div>
       <input type="url" name={`quiz-${id}`} className="w-full p-3 border bg-white border-gray-300 rounded-lg transition-colors duration-200 placeholder-gray-400" value={currentUrl} onChange={handleChange} placeholder="https://github.com/owner/repo" />
-      <InteractionSubmitRow id={id} details={progress} disabled={!isValidUrl} />
+      <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit'} disabled={!isValidUrl} />
     </div>
   );
 }

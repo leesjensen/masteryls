@@ -6,7 +6,7 @@ import { updateInteractionProgress, useInteractionProgressStore } from './intera
 import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 import ScoreStars from './scoreStars';
 
-export default function TeachingInteraction({ id, topicTitle, body }) {
+export default function TeachingInteraction({ id, topicTitle, body, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const initialQuestion = progress.messages || (body ? [{ type: 'model', content: body, timestamp: Date.now() }] : []);
   const [messages, setMessages] = useState(initialQuestion);
@@ -126,7 +126,7 @@ export default function TeachingInteraction({ id, topicTitle, body }) {
           </button>
         </form>
       </div>
-      <InteractionSubmitRow id={id} details={progress} label="Submit session" disabled={responseCount < 1} buttonClassName="px-4 py-2 rounded-md" className="mt-4">
+      <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit session'} disabled={responseCount < 1} buttonClassName="px-4 py-2 rounded-md" className="mt-4">
         <button onClick={handleClear} type="button" className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 disabled:bg-gray-600 disabled:text-gray-50" disabled={responseCount < 1}>
           Clear
         </button>

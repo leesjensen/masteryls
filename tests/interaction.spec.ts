@@ -812,7 +812,9 @@ Submit your project URL.
   await expect(page).toHaveURL(/\/topic\/project-topic-1/);
 
   await page.locator('input[type="url"]').fill('https://example.com/my-project');
-  await page.getByRole('button', { name: 'Submit URL' }).click();
+  await expect(page.getByRole('button', { name: 'Get feedback' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit URL' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Get feedback' }).click();
 
   await expect(page.getByText('Submission received.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Submit to Gradebook' })).toBeVisible();
@@ -899,7 +901,7 @@ Submit your project URL.
   await expect(page).toHaveURL(/\/topic\/project-topic-4/);
 
   await page.locator('input[type="url"]').fill('https://example.com/my-autograded-project');
-  await page.getByRole('button', { name: 'Submit URL' }).click();
+  await page.getByRole('button', { name: 'Get feedback' }).click();
   await page.getByRole('button', { name: 'Submit to Gradebook' }).click();
 
   await expect.poll(() => gradebookCalls.length).toBe(1);
@@ -1042,7 +1044,7 @@ Submit your project URL.
   await expect(page).toHaveURL(/\/topic\/project-topic-2/);
 
   await page.locator('input[type="url"]').fill('https://example.com/my-project');
-  await page.getByRole('button', { name: 'Submit URL' }).click();
+  await page.getByRole('button', { name: 'Get feedback' }).click();
 
   await expect(page.getByText('Submission received.')).toBeVisible();
   await page.getByRole('button', { name: 'Submit to Gradebook' }).click();

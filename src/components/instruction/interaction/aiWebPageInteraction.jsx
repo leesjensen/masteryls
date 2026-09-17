@@ -66,7 +66,7 @@ function resolveWebPageUrl(file, topicPath) {
   }
 }
 
-export default function AiWebPageInteraction({ id, title, body, height, topicPath, file, allowAiPrompt = true, getSubmissionHistory }) {
+export default function AiWebPageInteraction({ id, title, body, height, topicPath, file, allowAiPrompt = true, getSubmissionHistory, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const { directions, html: htmlFromBody } = React.useMemo(() => parseBody(body), [body]);
 
@@ -392,7 +392,7 @@ export default function AiWebPageInteraction({ id, title, body, height, topicPat
 
         {currentHtml ? <WebPageInteraction title={title || 'AI web page'} html={currentHtml} height={height} topicPath={topicPath} /> : <div className="text-sm text-gray-500 border border-dashed border-gray-300 rounded-lg p-3">No HTML available yet. Add HTML in the editor or generate it from a prompt.</div>}
 
-        <InteractionSubmitRow id={id} details={progress} disabled={submitDisabled} buttonClassName="px-4 py-1" />
+        <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit'} disabled={submitDisabled} buttonClassName="px-4 py-1" />
 
         {getSubmissionHistory && (
           <div className="border border-blue-200 bg-blue-50/40 rounded-lg p-3 space-y-2">
