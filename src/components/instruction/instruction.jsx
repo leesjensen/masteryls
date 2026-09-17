@@ -24,7 +24,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
     // quick succession) before this fetch resolves, a stale response must not overwrite the
     // interaction store with the wrong learner's answers.
     let cancelled = false;
-    courseOps.getTopicProgress(['quizSubmit']).then((progress) => {
+    courseOps.getTopicProgress(['quizSubmit', 'canvasGradebookSubmit']).then((progress) => {
       if (cancelled) return;
       // Replace (not merge into) the store: addInteractionProgress/updateInteractionProgress
       // only ever add/overwrite keys present in `progress`, so an interaction the

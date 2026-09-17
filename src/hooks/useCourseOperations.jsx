@@ -1622,7 +1622,7 @@ Requirements:
     const submissionUrl = typeof details?.url === 'string' ? details.url.trim() : '';
     const autoGrade = details?.autoGrade === true;
 
-    return service.makeCanvasGradebookRequest({
+    const gradebookResult = await service.makeCanvasGradebookRequest({
       courseId: String(course.externalRefs.canvasCourseId),
       catalogId: course.id,
       topicType: 'project',
@@ -1635,6 +1635,20 @@ Requirements:
       feedback: interactionFeedback,
       submissionUrl: submissionUrl || undefined,
     });
+
+    const canvasSubmittedAt = new Date().toISOString();
+    const { canvasSyncState: _canvasSyncState, canvasSyncMessage: _canvasSyncMessage, ...detailsWithoutTransientSync } = details || {};
+    const syncedDetails = {
+      ...detailsWithoutTransientSync,
+      canvasSubmittedAt,
+      canvasPostedGrade: gradebookResult?.postedGrade,
+      canvasSyncState: 'success',
+      canvasSyncMessage: 'Grade submitted to Gradebook.',
+    };
+
+    await addProgress(progressUser, interactionId, 'canvasGradebookSubmit', 0, syncedDetails, { force: true });
+
+    return { ...gradebookResult, canvasSubmittedAt };
   }
 
   async function isLearnerInCanvasCourse(providedUser = null, providedCourse = null) {
@@ -1678,7 +1692,7 @@ Requirements:
     if (!enrollment || !topic) return;
 
     var update = false;
-    if (type === 'instructionView' || type === 'embeddedView' || type === 'draView' || type === 'quizSubmit') {
+    if (type === 'instructionView' || type === 'embeddedView' || type === 'draView' || type === 'quizSubmit' || type === 'canvasGradebookSubmit') {
       update = _getEnrollmentProgress(enrollment, topic.id);
 
       if (duration > 0) {
@@ -1700,7 +1714,7 @@ Requirements:
       }
       enrollment.progress[topic.id].lastInteractionAt = new Date().toISOString();
       update = true;
-      if (type === 'quizSubmit' && topic.type === 'project' && details?.syncGrade === true && !enrollment.progress[topic.id].projectSubmission) {
+      if (((type === 'quizSubmit' && details?.syncGrade === true) || type === 'canvasGradebookSubmit') && topic.type === 'project' && !enrollment.progress[topic.id].projectSubmission) {
         enrollment.progress[topic.id].projectSubmission = true;
         update = true;
       }
@@ -1835,13 +1849,13 @@ Requirements:
     return service.makeMasteryOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}) });
   }
 
-  async function getTopicProgress(types = ['quizSubmit']) {
+  async function getTopicProgress(types = ['quizSubmit', 'canvasGradebookSubmit']) {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
     const progressItems = await getProgress({ topicId: learningSession.topic.id, enrollmentId: learningSession.enrollment.id, types, limit: 1000 });
     return progressItems.data.reduce((acc, item) => {
       const interactionId = item.interactionId;
-      if (!acc[interactionId] || new Date(item.createdAt) > new Date(acc[interactionId].creationDate)) {
+      if (!acc[interactionId] || new Date(item.createdAt) > new Date(acc[interactionId].createdAt)) {
         acc[interactionId] = item;
       }
       return acc;

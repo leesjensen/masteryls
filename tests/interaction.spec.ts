@@ -820,8 +820,21 @@ Submit your project URL.
   await expect(page.getByRole('button', { name: 'Submit to Gradebook' })).toBeVisible();
   await expect.poll(() => gradebookCalls.length).toBe(0);
 
+  const gradebookProgressPost = page.waitForRequest((request) => {
+    if (request.method() !== 'POST' || !/supabase\.co\/rest\/v1\/progress/.test(request.url())) return false;
+    const body = request.postDataJSON();
+    const progressRow = Array.isArray(body) ? body[0] : body;
+    return progressRow?.type === 'canvasGradebookSubmit';
+  });
   await page.getByRole('button', { name: 'Submit to Gradebook' }).click();
-  await expect(page.getByText('Grade submitted to Gradebook.')).toBeVisible();
+  const gradebookProgressRequest = await gradebookProgressPost;
+  const gradebookProgressBody = gradebookProgressRequest.postDataJSON()[0];
+  expect(gradebookProgressBody.interactionId).toBe('a1b2c3d4-e5f6-7890-1234-567890123470');
+  expect(gradebookProgressBody.details.canvasSubmittedAt).toEqual(expect.any(String));
+  expect(gradebookProgressBody.details.canvasSyncState).toBe('success');
+
+  await expect(page.getByText(/Submitted to Gradebook on/)).toBeVisible();
+  await expect(page.getByText('Grade submitted to Gradebook.')).toHaveCount(0);
   await expect.poll(() => gradebookCalls.length).toBe(1);
   const payload = gradebookCalls[0];
   expect(payload.courseId).toBe('12345');
@@ -835,6 +848,11 @@ Submit your project URL.
   expect(payload.submissionUrl).toBe('https://example.com/my-project');
   expect(typeof payload.feedback).toBe('string');
   expect(payload.feedback.length).toBeGreaterThan(0);
+
+  await page.reload();
+  await expect(page.getByText('Submission received.')).toBeVisible();
+  await expect(page.getByText(/Submitted to Gradebook on/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit again to Gradebook' })).toBeVisible();
 });
 
 test('project submission sends autoGrade true when configured', async ({ page }) => {

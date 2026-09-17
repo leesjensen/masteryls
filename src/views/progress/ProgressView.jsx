@@ -365,6 +365,7 @@ export default function ProgressView({ courseOps, service, user }) {
       embeddedView: 'bg-purple-100 text-purple-800',
       scheduleView: 'bg-cyan-100 text-cyan-800',
       quizSubmit: 'bg-green-100 text-green-800',
+      canvasGradebookSubmit: 'bg-blue-100 text-blue-800',
       exam: 'bg-amber-300 text-amber-800',
       draUpdate: 'bg-indigo-100 text-indigo-800',
       draView: 'bg-indigo-100 text-indigo-800',
@@ -470,6 +471,7 @@ export default function ProgressView({ courseOps, service, user }) {
                     <option value='["instructionView"]'>Instruction View</option>
                     <option value='["embeddedView"]'>Embedded View</option>
                     <option value='["quizSubmit"]'>Quiz Submit</option>
+                    <option value='["canvasGradebookSubmit"]'>Gradebook Submission</option>
                     <option value='["exam"]'>Exam</option>
                     <option value='["note"]'>Note</option>
                     <option value='["userLogin", "userLogout"]'>Authorization</option>

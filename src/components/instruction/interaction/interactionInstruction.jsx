@@ -351,10 +351,12 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     });
 
     try {
-      await courseOps.syncProjectInteractionGrade(null, quizId, current);
+      const result = await courseOps.syncProjectInteractionGrade(null, quizId, current);
       const latest = getInteractionProgress(quizId) || current;
       updateInteractionProgress(quizId, {
         ...latest,
+        canvasSubmittedAt: result?.canvasSubmittedAt || latest.canvasSubmittedAt,
+        canvasPostedGrade: result?.postedGrade ?? latest.canvasPostedGrade,
         canvasSyncState: 'success',
         canvasSyncMessage: 'Grade submitted to Gradebook.',
       });
