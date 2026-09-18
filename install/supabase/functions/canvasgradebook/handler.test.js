@@ -153,6 +153,14 @@ test('calculateGraceDaysEarned earns no grace day for the sunday before a friday
   });
 });
 
+test('calculateGraceDaysEarned returns 18 for submission 3 weeks before the due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-03T06:00:00Z'), // A thursday
+    dateDue: new Date('2026-09-24T12:00:00Z'), // A thursday
+    expectedGraceDays: 18
+  });
+});
+
 test('canvasgradebook allows root user', async () => {
   const { fetchFn, calls } = buildFetchStub();
   const handler = createCanvasGradebookHandler({
