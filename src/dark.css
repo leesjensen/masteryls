@@ -1,0 +1,423 @@
+/* ==========================================================================
+   MasteryLS Dark Theme
+
+   Everything is scoped to `html.dark`. useTheme.jsx adds that class when
+   the user turns dark mode on, and the inline script in index.html adds it
+   before first paint so a reload doesn't flash white.
+   ========================================================================== */
+
+html.dark {
+  /* Tells Chrome to render scrollbars, form controls and the like dark. */
+  color-scheme: dark;
+
+  /* ---------------------------------------------------------------------
+     1. NEUTRALS — inverted.
+
+     In light mode the scale runs light (50) to dark (900), and the app uses
+     it as: gray-50 = page, white = card, gray-200/300 = borders,
+     gray-600..900 = text. We flip it end for end, so every one of those
+     roles keeps its meaning. Note the card surface (21%) is *lighter* than
+     the page (17%), preserving the sense of a card lifted off the page.
+     --------------------------------------------------------------------- */
+  --color-white: oklch(21% 0.008 264);   /* .bg-white — panels, cards, menus */
+
+  --color-gray-50:  oklch(17% 0.008 264);   /* page background (darkest)     */
+  --color-gray-100: oklch(22% 0.008 264);   /* hover fills, subtle stripes   */
+  --color-gray-200: oklch(29% 0.010 264);   /* hairline borders              */
+  --color-gray-300: oklch(37% 0.012 264);   /* borders, dividers             */
+  --color-gray-400: oklch(55% 0.015 264);   /* placeholder / disabled text   */
+  --color-gray-500: oklch(65% 0.015 264);   /* muted text                    */
+  --color-gray-600: oklch(74% 0.014 264);   /* secondary text                */
+  --color-gray-700: oklch(83% 0.012 264);   /* body text                     */
+  --color-gray-800: oklch(90% 0.010 264);   /* strong text                   */
+  --color-gray-900: oklch(95% 0.008 264);   /* headings (lightest)           */
+
+  --color-slate-50:  oklch(17% 0.012 257);
+  --color-slate-100: oklch(22% 0.014 257);
+  --color-slate-200: oklch(29% 0.016 257);
+  --color-slate-300: oklch(37% 0.018 257);
+  --color-slate-400: oklch(55% 0.022 257);
+  --color-slate-500: oklch(65% 0.022 257);
+  --color-slate-600: oklch(74% 0.020 257);
+  --color-slate-700: oklch(83% 0.018 257);
+  --color-slate-800: oklch(90% 0.014 257);
+  --color-slate-900: oklch(95% 0.010 257);
+
+  --color-neutral-50:  oklch(17% 0 0);
+  --color-neutral-100: oklch(22% 0 0);
+  --color-neutral-200: oklch(29% 0 0);
+  --color-neutral-300: oklch(37% 0 0);
+  --color-neutral-400: oklch(55% 0 0);
+  --color-neutral-500: oklch(65% 0 0);
+  --color-neutral-600: oklch(74% 0 0);
+  --color-neutral-700: oklch(83% 0 0);
+  --color-neutral-800: oklch(90% 0 0);
+  --color-neutral-900: oklch(95% 0 0);
+
+  /* `--color-black` is deliberately left alone: the app only uses it for
+     modal scrims (bg-black/40, bg-black/80), which should stay black. */
+
+  /* ---------------------------------------------------------------------
+     2. ACCENTS — only the pale end moves.
+
+     The accent scales get used two different ways, and the two disagree:
+
+         bg-sky-700  text-white        <- a solid button, wants a VIVID 700
+         bg-sky-100  text-sky-800      <- a status badge, wants a LIGHT 800
+
+     A variable can't be both. So we split the job by property: the pale
+     steps 50-300 (only ever backgrounds and borders here) become dark
+     tints via the variables, steps 400-900 keep Tailwind's stock values so
+     solid buttons stay vivid, and the *text* utilities are redirected in
+     section 3 to the `--mls-fg-*` tones below.
+
+     Each family is one hue angle, taken from Tailwind's own palette, at a
+     fixed lightness ramp — which is why every block looks identical.
+     --------------------------------------------------------------------- */
+  --color-red-50:  oklch(23% 0.035 25);  --color-red-100: oklch(27% 0.055 25);
+  --color-red-200: oklch(33% 0.075 25);  --color-red-300: oklch(41% 0.090 25);
+  --mls-fg-red: oklch(82% 0.13 25);
+
+  --color-rose-50:  oklch(23% 0.035 16);  --color-rose-100: oklch(27% 0.055 16);
+  --color-rose-200: oklch(33% 0.075 16);  --color-rose-300: oklch(41% 0.090 16);
+  --mls-fg-rose: oklch(82% 0.13 16);
+
+  --color-orange-50:  oklch(23% 0.035 52);  --color-orange-100: oklch(27% 0.055 52);
+  --color-orange-200: oklch(33% 0.075 52);  --color-orange-300: oklch(41% 0.090 52);
+  --mls-fg-orange: oklch(82% 0.13 52);
+
+  --color-amber-50:  oklch(23% 0.035 70);  --color-amber-100: oklch(27% 0.055 70);
+  --color-amber-200: oklch(33% 0.075 70);  --color-amber-300: oklch(41% 0.090 70);
+  --mls-fg-amber: oklch(84% 0.13 70);
+
+  --color-yellow-50:  oklch(23% 0.035 86);  --color-yellow-100: oklch(27% 0.055 86);
+  --color-yellow-200: oklch(33% 0.075 86);  --color-yellow-300: oklch(41% 0.090 86);
+  --mls-fg-yellow: oklch(86% 0.13 86);
+
+  --color-green-50:  oklch(23% 0.035 150);  --color-green-100: oklch(27% 0.055 150);
+  --color-green-200: oklch(33% 0.075 150);  --color-green-300: oklch(41% 0.090 150);
+  --mls-fg-green: oklch(84% 0.13 150);
+
+  --color-emerald-50:  oklch(23% 0.035 162);  --color-emerald-100: oklch(27% 0.055 162);
+  --color-emerald-200: oklch(33% 0.075 162);  --color-emerald-300: oklch(41% 0.090 162);
+  --mls-fg-emerald: oklch(84% 0.13 162);
+
+  --color-teal-50:  oklch(23% 0.035 186);  --color-teal-100: oklch(27% 0.055 186);
+  --color-teal-200: oklch(33% 0.075 186);  --color-teal-300: oklch(41% 0.090 186);
+  --mls-fg-teal: oklch(84% 0.12 186);
+
+  --color-cyan-50:  oklch(23% 0.035 215);  --color-cyan-100: oklch(27% 0.055 215);
+  --color-cyan-200: oklch(33% 0.075 215);  --color-cyan-300: oklch(41% 0.090 215);
+  --mls-fg-cyan: oklch(84% 0.12 215);
+
+  --color-sky-50:  oklch(23% 0.035 237);  --color-sky-100: oklch(27% 0.055 237);
+  --color-sky-200: oklch(33% 0.075 237);  --color-sky-300: oklch(41% 0.090 237);
+  --mls-fg-sky: oklch(84% 0.12 237);
+
+  --color-blue-50:  oklch(23% 0.035 260);  --color-blue-100: oklch(27% 0.055 260);
+  --color-blue-200: oklch(33% 0.075 260);  --color-blue-300: oklch(41% 0.090 260);
+  --mls-fg-blue: oklch(82% 0.13 260);
+
+  --color-indigo-50:  oklch(23% 0.035 277);  --color-indigo-100: oklch(27% 0.055 277);
+  --color-indigo-200: oklch(33% 0.075 277);  --color-indigo-300: oklch(41% 0.090 277);
+  --mls-fg-indigo: oklch(82% 0.13 277);
+
+  --color-violet-50:  oklch(23% 0.035 293);  --color-violet-100: oklch(27% 0.055 293);
+  --color-violet-200: oklch(33% 0.075 293);  --color-violet-300: oklch(41% 0.090 293);
+  --mls-fg-violet: oklch(82% 0.13 293);
+
+  --color-purple-50:  oklch(23% 0.035 302);  --color-purple-100: oklch(27% 0.055 302);
+  --color-purple-200: oklch(33% 0.075 302);  --color-purple-300: oklch(41% 0.090 302);
+  --mls-fg-purple: oklch(82% 0.13 302);
+
+  /* Prose tones, used by section 5. */
+  --mls-md-fg: oklch(88% 0.012 264);
+  --mls-md-muted: oklch(70% 0.016 264);
+  --mls-md-border: oklch(31% 0.010 264);
+  --mls-md-code-bg: oklch(25% 0.010 264);
+  --mls-md-link: oklch(76% 0.13 250);
+
+  /* The exercise snippets of section 7 get their own lifted surface: a grey
+     clearly above the page and the cards, so the block reads as a raised
+     slab rather than a hole. Its tokens are a step brighter to match. */
+  --mls-snippet-bg: oklch(32% 0.008 264);
+  --mls-snippet-border: oklch(42% 0.010 264);
+  --mls-snippet-fg: oklch(93% 0.012 264);
+
+  /* The app hard-codes `body { background: #fff }` outside of Tailwind. */
+  background-color: var(--color-gray-50);
+}
+
+html.dark body {
+  background: var(--color-gray-50);
+  color: var(--color-gray-700);
+}
+
+/* --------------------------------------------------------------------------
+   3. Text utilities that the variable swap can't serve.
+   -------------------------------------------------------------------------- */
+html.dark {
+
+  /* `--color-white` now means "dark panel", which is right for bg-white but
+     wrong for text-white — that one sits on solid coloured buttons and has
+     to stay light. Same for the decorative white borders and rings. */
+  .text-white,
+  .hover\:text-white:hover { color: oklch(97% 0.004 264); }
+
+  .border-white,
+  .border-t-white { border-color: oklch(97% 0.004 264); }
+  .border-white\/40 { border-color: oklch(97% 0.004 264 / 0.4); }
+  .ring-white { --tw-ring-color: oklch(97% 0.004 264); }
+
+  /* Steps 400-900 stay vivid for button backgrounds (section 2), so the
+     matching *text* utilities have to be redirected to a light tone or
+     badges like `bg-sky-100 text-sky-800` end up dark-on-dark. */
+  .text-red-600, .text-red-700, .text-red-800, .text-red-900,
+  .hover\:text-red-600:hover, .hover\:text-red-700:hover,
+  .hover\:text-red-800:hover, .hover\:text-red-900:hover { color: var(--mls-fg-red); }
+
+  .text-rose-600, .text-rose-700, .text-rose-800, .text-rose-900,
+  .hover\:text-rose-600:hover, .hover\:text-rose-700:hover,
+  .hover\:text-rose-800:hover, .hover\:text-rose-900:hover { color: var(--mls-fg-rose); }
+
+  .text-orange-600, .text-orange-700, .text-orange-800, .text-orange-900,
+  .hover\:text-orange-600:hover, .hover\:text-orange-700:hover,
+  .hover\:text-orange-800:hover, .hover\:text-orange-900:hover { color: var(--mls-fg-orange); }
+
+  .text-amber-600, .text-amber-700, .text-amber-800, .text-amber-900,
+  .hover\:text-amber-600:hover, .hover\:text-amber-700:hover,
+  .hover\:text-amber-800:hover, .hover\:text-amber-900:hover { color: var(--mls-fg-amber); }
+
+  .text-yellow-600, .text-yellow-700, .text-yellow-800, .text-yellow-900,
+  .hover\:text-yellow-600:hover, .hover\:text-yellow-700:hover,
+  .hover\:text-yellow-800:hover, .hover\:text-yellow-900:hover { color: var(--mls-fg-yellow); }
+
+  .text-green-600, .text-green-700, .text-green-800, .text-green-900,
+  .hover\:text-green-600:hover, .hover\:text-green-700:hover,
+  .hover\:text-green-800:hover, .hover\:text-green-900:hover { color: var(--mls-fg-green); }
+
+  .text-emerald-600, .text-emerald-700, .text-emerald-800, .text-emerald-900,
+  .hover\:text-emerald-600:hover, .hover\:text-emerald-700:hover,
+  .hover\:text-emerald-800:hover, .hover\:text-emerald-900:hover { color: var(--mls-fg-emerald); }
+
+  .text-teal-600, .text-teal-700, .text-teal-800, .text-teal-900,
+  .hover\:text-teal-600:hover, .hover\:text-teal-700:hover,
+  .hover\:text-teal-800:hover, .hover\:text-teal-900:hover { color: var(--mls-fg-teal); }
+
+  .text-cyan-600, .text-cyan-700, .text-cyan-800, .text-cyan-900,
+  .hover\:text-cyan-600:hover, .hover\:text-cyan-700:hover,
+  .hover\:text-cyan-800:hover, .hover\:text-cyan-900:hover { color: var(--mls-fg-cyan); }
+
+  .text-sky-600, .text-sky-700, .text-sky-800, .text-sky-900,
+  .hover\:text-sky-600:hover, .hover\:text-sky-700:hover,
+  .hover\:text-sky-800:hover, .hover\:text-sky-900:hover { color: var(--mls-fg-sky); }
+
+  .text-blue-600, .text-blue-700, .text-blue-800, .text-blue-900,
+  .hover\:text-blue-600:hover, .hover\:text-blue-700:hover,
+  .hover\:text-blue-800:hover, .hover\:text-blue-900:hover { color: var(--mls-fg-blue); }
+
+  .text-indigo-600, .text-indigo-700, .text-indigo-800, .text-indigo-900,
+  .hover\:text-indigo-600:hover, .hover\:text-indigo-700:hover,
+  .hover\:text-indigo-800:hover, .hover\:text-indigo-900:hover { color: var(--mls-fg-indigo); }
+
+  .text-violet-600, .text-violet-700, .text-violet-800, .text-violet-900,
+  .hover\:text-violet-600:hover, .hover\:text-violet-700:hover,
+  .hover\:text-violet-800:hover, .hover\:text-violet-900:hover { color: var(--mls-fg-violet); }
+
+  .text-purple-600, .text-purple-700, .text-purple-800, .text-purple-900,
+  .hover\:text-purple-600:hover, .hover\:text-purple-700:hover,
+  .hover\:text-purple-800:hover, .hover\:text-purple-900:hover { color: var(--mls-fg-purple); }
+
+  /* Inverting the neutrals turns `disabled:bg-gray-600` into a *light* fill
+     sitting under light `text-white`. Mute the whole control instead. */
+  button:disabled,
+  [role="button"][aria-disabled="true"] { opacity: 0.55; }
+  .disabled\:bg-gray-600:disabled { background-color: var(--color-gray-300); }
+}
+
+/* --------------------------------------------------------------------------
+   4. Shadows.
+
+   Tailwind's shadows are black at low alpha, which is invisible on a dark
+   page — cards lose their edge. Deepen them.
+   -------------------------------------------------------------------------- */
+html.dark {
+  .shadow-sm  { --tw-shadow-color: oklch(0% 0 0 / 0.55); }
+  .shadow,
+  .shadow-md  { --tw-shadow-color: oklch(0% 0 0 / 0.6); }
+  .shadow-lg,
+  .shadow-xl,
+  .shadow-2xl { --tw-shadow-color: oklch(0% 0 0 / 0.7); }
+}
+
+/* --------------------------------------------------------------------------
+   5. Rendered course content (`.markdown-body`).
+
+   This part of the page is github-markdown-css, which predates the variable
+   approach and hard-codes its light hex values, so each one needs an
+   explicit override. The replacements follow GitHub's own dark theme.
+   -------------------------------------------------------------------------- */
+html.dark .markdown-body {
+  color-scheme: dark;
+  color: var(--mls-md-fg);
+  background-color: transparent;
+
+  a { color: var(--mls-md-link); }
+  h1, h2 { border-bottom-color: var(--mls-md-border); }
+  h6 { color: var(--mls-md-muted); }
+  hr { background-color: var(--mls-md-border); border-bottom-color: var(--mls-md-border); }
+  blockquote { color: var(--mls-md-muted); border-left-color: var(--mls-md-border); }
+  mark { background-color: oklch(40% 0.09 86); color: var(--mls-md-fg); }
+  ::placeholder { color: var(--mls-md-muted); }
+  .absent { color: var(--mls-fg-red); }
+
+  code, tt { background-color: oklch(70% 0.02 264 / 0.18); }
+  pre, .highlight pre { color: var(--mls-md-fg); background-color: var(--mls-md-code-bg); }
+  kbd { color: var(--mls-md-fg); background-color: var(--mls-md-code-bg); border-color: var(--mls-md-border); box-shadow: inset 0 -1px 0 var(--mls-md-border); }
+
+  table tr { background-color: transparent; border-top-color: var(--mls-md-border); }
+  table tr:nth-child(2n) { background-color: oklch(100% 0 0 / 0.03); }
+  table th, table td { border-color: var(--mls-md-border); }
+  .csv-data .blob-num { background: transparent; }
+  .csv-data th { background: var(--mls-md-code-bg); }
+
+  span.frame > span { border-color: var(--mls-md-border); }
+  span.frame span span { color: var(--mls-md-fg); }
+  h1 .octicon-link, h2 .octicon-link, h3 .octicon-link,
+  h4 .octicon-link, h5 .octicon-link, h6 .octicon-link { color: var(--mls-md-fg); }
+
+  .footnotes { color: var(--mls-md-muted); border-top-color: var(--mls-md-border); }
+  .footnotes li:target { color: var(--mls-md-fg); }
+  .footnotes li:target::before { border-color: var(--mls-md-link); }
+
+  .markdown-alert { border-left-color: var(--mls-md-border); }
+  .markdown-alert-note, .markdown-alert-note .markdown-alert-title { border-left-color: var(--mls-fg-blue); color: var(--mls-fg-blue); }
+  .markdown-alert-important, .markdown-alert-important .markdown-alert-title { border-left-color: var(--mls-fg-purple); color: var(--mls-fg-purple); }
+  .markdown-alert-warning, .markdown-alert-warning .markdown-alert-title { border-left-color: var(--mls-fg-amber); color: var(--mls-fg-amber); }
+  .markdown-alert-tip, .markdown-alert-tip .markdown-alert-title { border-left-color: var(--mls-fg-green); color: var(--mls-fg-green); }
+  .markdown-alert-caution, .markdown-alert-caution .markdown-alert-title { border-left-color: var(--mls-fg-red); color: var(--mls-fg-red); }
+
+  /* Syntax highlighting — GitHub's dark token colours. */
+  .pl-c, .pl-ba, .pl-sg { color: #8b949e; }
+  .pl-c1, .pl-s .pl-v, .pl-ent { color: #79c0ff; }
+  .pl-e, .pl-en, .pl-mdr { color: #d2a8ff; }
+  .pl-smi, .pl-s .pl-s1, .pl-mi, .pl-mb { color: #c9d1d9; }
+  .pl-k { color: #ff7b72; }
+  .pl-s, .pl-pds, .pl-s .pl-pse .pl-s1,
+  .pl-sr, .pl-sr .pl-sre, .pl-sr .pl-sra, .pl-corl { color: #a5d6ff; }
+  .pl-v, .pl-smw, .pl-ml { color: #ffa657; }
+  .pl-bu { color: #f85149; }
+  .pl-c2 { color: #f0f6fc; background-color: #8e1519; }
+  .pl-sr .pl-cce { color: #7ee787; }
+  .pl-mh, .pl-mh .pl-en, .pl-ms { color: #79c0ff; }
+  .pl-md { color: #ffa198; background-color: #490202; }
+  .pl-mi1 { color: #aff5b4; background-color: #04260f; }
+  .pl-mc { color: #ffdfb6; background-color: #5a1e02; }
+  .pl-mi2 { color: #c9d1d9; background-color: #1158c7; }
+
+  tr.schedule-row-past { background: oklch(100% 0 0 / 0.02); color: var(--mls-md-muted); }
+  tr.schedule-row-past a { color: var(--mls-md-muted); }
+  tr.schedule-row-past td:first-child { border-left-color: oklch(45% 0.015 257); }
+  tr.schedule-row-past td:nth-child(2)::after { background: var(--mls-md-code-bg); color: var(--mls-md-muted); }
+  tr.schedule-row-today { background: oklch(60% 0.18 52 / 0.12); }
+  tr.schedule-row-today td:nth-child(2)::after { background: oklch(35% 0.09 52); color: var(--mls-fg-orange); }
+}
+
+/* --------------------------------------------------------------------------
+   6. Loose ends.
+   -------------------------------------------------------------------------- */
+html.dark {
+  /* The app sets this outside Tailwind, on the outermost wrapper. */
+  .app { background-color: var(--color-gray-50); }
+
+  /* While a submission is being evaluated the app drops the card's ring and
+     swaps in `.interaction-active-border`, a travelling-gradient border drawn
+     outside Tailwind — so its surface is a hard-coded `#f9fafb`, written twice:
+     once on the element and again on the `::after` that covers everything
+     inside the border band. That `::after` is what turned the exercise white
+     for the length of the evaluation. Point both at the same `gray-50` the
+     element's own `bg-gray-50` class already resolves to, so the card simply
+     keeps the surface it had. */
+  .interaction-active-border,
+  .interaction-active-border::after { background: var(--color-gray-50); }
+
+  /* The band itself is a gradient that sweeps two near-whites past blue-400.
+     Those whites are a glare on a dark page, so they drop to neutrals bright
+     enough to still read as a highlight travelling around the edge. */
+  .interaction-active-border::before {
+    background-image: linear-gradient(
+      var(--interaction-rotate),
+      oklch(32% 0.010 264 / 0.72),
+      oklch(50% 0.020 264 / 0.92) 80%,
+      var(--color-blue-400)
+    );
+  }
+
+  /* Keep diff gutters readable against the darker editor chrome. */
+  .monaco-editor .mls-line-changed-bg { background-color: oklch(60% 0.18 260 / 0.14); }
+
+  ::selection { background: oklch(45% 0.12 260); color: oklch(97% 0.004 264); }
+}
+
+/* --------------------------------------------------------------------------
+   7. Colours MasteryLS applies as inline styles from JavaScript.
+
+   Everything above works by re-pointing variables or overriding classes.
+   Neither reaches a `style="..."` attribute, which beats any normal
+   declaration no matter how specific. `!important` is the only thing that
+   outranks an inline style, so it's used here and nowhere else.
+
+   Chrome serialises those attributes through the CSSOM, so a colour React
+   wrote as `#eaeaea` appears as `rgb(234, 234, 234)` — that's what the
+   attribute selectors below match on.
+   -------------------------------------------------------------------------- */
+
+/* Exercise text goes through a lightweight markdown renderer (separate from
+   the `.markdown-body` one) that gives every code span an inline
+   `background-color: #eaeaea` and no colour of its own. The background
+   therefore stayed light while the text inherited our light foreground —
+   white on pale grey. This also catches the Prism inline-code background. */
+html.dark code[style*="background"]:not([style*="transparent"]) {
+  background-color: var(--mls-md-code-bg) !important;
+  color: var(--mls-md-fg) !important;
+}
+
+/* Fenced blocks tagged with a language are rendered by
+   react-syntax-highlighter, configured with a *light* Prism theme (`cse`) that
+   it applies as inline styles — a white slab with a pale grey border.
+
+   The library only labels the markup when the caller leaves `codeTagProps`
+   alone; MasteryLS passes its own, so both the wrapper and the `<code>` come
+   out with no class at all. The slab therefore has to be recognised by the two
+   inline declarations the theme always writes: `background-color: white` (the
+   keyword survives serialisation) and the `1px solid #dddddd` border. */
+html.dark [class*="language-"][style],
+html.dark div[style*="background-color: white"][style*="border: 1px solid rgb(221, 221, 221)"] {
+  background-color: var(--mls-snippet-bg) !important;
+  border-color: var(--mls-snippet-border) !important;
+  color: var(--mls-snippet-fg) !important;
+}
+
+/* That `<code>` is inline, not a block, so section 5's `.markdown-body code`
+   fill painted a band behind each line of text instead of filling the slab.
+   Inside a snippet the slab supplies the background, so clear it. */
+html.dark [class*="language-"][style] > code,
+html.dark div[style*="background-color: white"][style*="border: 1px solid rgb(221, 221, 221)"] > code {
+  background: none !important;
+  padding: 0 !important;
+}
+
+/* The theme also strips the semantic class off every token — they all end up
+   as plain `.token` with the colour inline — so a token can only be reached by
+   the colour it was given. `cse` uses exactly seven, mapped here to brighter
+   versions of the same hues, which keeps the highlighting recognisable and
+   lands every one between 6.0:1 and 10.7:1 on the slab above. */
+html.dark {
+  .token[style*="rgb(153, 153, 136)"] { color: #aab4c0 !important; } /* comments    */
+  .token[style*="rgb(57, 58, 52)"]    { color: #e6ecf3 !important; } /* punctuation */
+  .token[style*="rgb(0, 164, 219)"]   { color: #7ecbff !important; } /* keywords    */
+  .token[style*="rgb(54, 172, 170)"]  { color: #3fe0cf !important; } /* numbers     */
+  .token[style*="rgb(227, 17, 108)"]  { color: #ff9ec0 !important; } /* strings     */
+  .token[style*="rgb(154, 5, 15)"]    { color: #ffa8a2 !important; } /* functions   */
+  .token[style*="rgb(0, 0, 159)"]     { color: #a3b8ff !important; } /* tags        */
+}

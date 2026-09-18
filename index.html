@@ -12,6 +12,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="MasteryLS" />
     <link rel="stylesheet" href="/index.css" />
+    <script>
+      // Keep in sync with src/hooks/useTheme.jsx.
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('theme');
+        } catch {
+          // Blocked storage still has to fall through to the system check below.
+        }
+        var dark = theme === 'dark' || (theme !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      })();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info, UserCog } from 'lucide-react';
+import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info, UserCog, Moon, Sun, Monitor } from 'lucide-react';
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 import UserProfileDialog from './components/UserProfileDialog.jsx';
+import { useTheme } from './hooks/useTheme.jsx';
 
 export function AppBar({ user, courseOps }) {
   const { title, subTitle, tools } = useAppBarState();
@@ -83,10 +84,46 @@ function AppBarMenuItem({ icon: Icon, onClick, title }) {
   );
 }
 
+const THEME_OPTIONS = [
+  { value: 'system', label: 'Auto', icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+];
+
+function ThemeMenuItem({ preference, setPreference }) {
+  const labelId = useId();
+  return (
+    <div className="px-4 py-1 text-sm text-gray-700 flex items-center gap-2">
+      <span id={labelId} className="flex-1">
+        Theme
+      </span>
+      <div role="group" aria-labelledby={labelId} className="flex rounded-md border border-gray-300 overflow-hidden">
+        {THEME_OPTIONS.map(({ value, label, icon: Icon }) => {
+          const selected = preference === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={selected}
+              aria-label={label}
+              title={value === 'system' ? 'Match system' : label}
+              onClick={() => setPreference(value)}
+              className={`p-1 touch-manipulation transition-colors duration-200 ${selected ? 'bg-amber-600 text-white' : 'hover:text-amber-600'}`}
+            >
+              <Icon size={16} />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function UserMenu({ user, courseOps }) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { preference, setPreference } = useTheme();
   const menuRef = useRef(null);
 
   function getUserInitials(value) {
@@ -182,6 +219,7 @@ function UserMenu({ user, courseOps }) {
             )}
 
             <div className="border-t border-gray-200 my-1"></div>
+            <ThemeMenuItem preference={preference} setPreference={setPreference} />
             <AppBarMenuItem icon={Info} onClick={() => handleMenuItemClick(() => navigate('/about'))} title="About" />
 
             <div className="border-t border-gray-200 my-1"></div>
