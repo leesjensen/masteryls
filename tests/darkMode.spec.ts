@@ -92,7 +92,6 @@ test('the Auto theme follows the system setting, live and on first paint', async
   await page.emulateMedia({ colorScheme: 'dark' });
   const { expectDark, expectLight, chooseTheme, themeButton } = await setup(page);
 
-  // No stored choice yet, so the system setting decides.
   await expectDark();
   await page.getByRole('button', { name: 'User Menu' }).click();
   await expect(themeButton('Auto')).toHaveAttribute('aria-pressed', 'true');
@@ -167,7 +166,6 @@ test('the system theme still applies when theme storage is blocked', async ({ pa
   expect(await darkAtFirstPaint(page)).toBe(true);
   await expectDark();
 
-  // Choosing still works for this page; it just can't be saved.
   await chooseTheme('Light');
   await expectLight();
   expect(pageErrors).toEqual([]);

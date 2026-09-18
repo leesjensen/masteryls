@@ -239,7 +239,7 @@ html.dark {
    4. Shadows.
 
    Tailwind's shadows are black at low alpha, which is invisible on a dark
-   page — cards lose their edge. Deepen them and add a faint top highlight.
+   page — cards lose their edge. Deepen them.
    -------------------------------------------------------------------------- */
 html.dark {
   .shadow-sm  { --tw-shadow-color: oklch(0% 0 0 / 0.55); }
@@ -290,7 +290,6 @@ html.dark .markdown-body {
   .footnotes li:target { color: var(--mls-md-fg); }
   .footnotes li:target::before { border-color: var(--mls-md-link); }
 
-  /* GitHub alert callouts */
   .markdown-alert { border-left-color: var(--mls-md-border); }
   .markdown-alert-note, .markdown-alert-note .markdown-alert-title { border-left-color: var(--mls-fg-blue); color: var(--mls-fg-blue); }
   .markdown-alert-important, .markdown-alert-important .markdown-alert-title { border-left-color: var(--mls-fg-purple); color: var(--mls-fg-purple); }
@@ -316,7 +315,6 @@ html.dark .markdown-body {
   .pl-mc { color: #ffdfb6; background-color: #5a1e02; }
   .pl-mi2 { color: #c9d1d9; background-color: #1158c7; }
 
-  /* The schedule table's past/today row highlights. */
   tr.schedule-row-past { background: oklch(100% 0 0 / 0.02); color: var(--mls-md-muted); }
   tr.schedule-row-past a { color: var(--mls-md-muted); }
   tr.schedule-row-past td:first-child { border-left-color: oklch(45% 0.015 257); }

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 
 // index.html repeats this key, the media query and the light/dark/system rule in its pre-paint
 // script, so change them in both places.
-// Holds 'light' or 'dark' when the user has picked one; absent means follow the system.
 const THEME_STORAGE_KEY = 'theme';
 const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)';
 
@@ -35,7 +34,6 @@ export function useTheme() {
     applyTheme(isDark);
   }, [isDark]);
 
-  // Follows the OS/browser theme live, e.g. when the OS switches to dark at sunset.
   useEffect(() => {
     const query = window.matchMedia?.(SYSTEM_DARK_QUERY);
     if (!query) return;
