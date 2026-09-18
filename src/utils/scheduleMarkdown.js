@@ -120,6 +120,65 @@ export function scheduleDateBoundsToIso({ startDate, endDate } = {}) {
   return { startDate: start, endDate: end };
 }
 
+function normalizeGraceDay(value) {
+  const date = startOfLocalDay(value);
+  if (!date) {
+    return null;
+  }
+
+  if (date.getDay() === 0) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  return date;
+}
+
+function countNonSundayDaysAfterStartThroughEnd(startDate, endDate) {
+  let count = 0;
+  const cursor = new Date(startDate);
+  cursor.setDate(cursor.getDate() + 1);
+
+  while (cursor.getTime() <= endDate.getTime()) {
+    if (cursor.getDay() !== 0) {
+      count += 1;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return count;
+}
+
+export function calculateGraceDays(dueDate, submissionDate = new Date()) {
+  const due = normalizeGraceDay(dueDate);
+  const submitted = normalizeGraceDay(submissionDate);
+
+  if (!due || !submitted) {
+    return null;
+  }
+
+  if (submitted.getTime() === due.getTime()) {
+    return 0;
+  }
+
+  if (submitted.getTime() < due.getTime()) {
+    return countNonSundayDaysAfterStartThroughEnd(submitted, due);
+  }
+
+  return -countNonSundayDaysAfterStartThroughEnd(due, submitted);
+}
+
+export function formatGraceDaysLine(graceDays) {
+  if (graceDays === null || graceDays === undefined || graceDays === '') {
+    return '';
+  }
+  const value = Number(graceDays);
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+  const rounded = Math.trunc(value);
+  return `Grace days ${rounded > 0 ? '+' : ''}${rounded}`;
+}
+
 export function parseScheduleMarkdown(markdown = '', options = {}) {
   const strict = Boolean(options.strict);
   const lines = markdown.split(/\r?\n/);
