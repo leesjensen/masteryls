@@ -27,7 +27,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
 
   function navigateToMasteryView() {
     const courseId = learningSession.course.id;
-    if (user && !user.isRoot() && !user.isEditor(courseId)) {
+    if (user && !user.canOverseeCourse?.(courseId)) {
       navigate(`/masteryview/learner/${user.id}/course/${courseId}`);
     } else {
       navigate(`/masteryview/course/${courseId}`);

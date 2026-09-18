@@ -172,6 +172,46 @@ test('gradebookoverview allows editor for matching course', async () => {
   assert.equal(body.totalCount, 1);
 });
 
+test('gradebookoverview allows mentor for matching course', async () => {
+  const handler = createMasteryOverviewHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'mentor-user', email: 'mentor@test.com' },
+        dataMap: {
+          role: [{ id: 'r3', user: 'mentor-user', right: 'mentor', object: 'course-1' }],
+          enrollment: [{ id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 10 } }],
+          user: [{ id: 'u1', name: 'Learner One', email: 'learner1@test.com' }],
+          progress: [],
+        },
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  const response = await handler(makeRequest({ courseId: 'course-1' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.totalCount, 1);
+});
+
+test('gradebookoverview denies mentor for other course', async () => {
+  const handler = createMasteryOverviewHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'mentor-user', email: 'mentor@test.com' },
+        dataMap: {
+          role: [{ id: 'r3', user: 'mentor-user', right: 'mentor', object: 'course-9' }],
+          enrollment: [],
+          user: [],
+          progress: [],
+        },
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  const response = await handler(makeRequest({ courseId: 'course-1' }));
+  assert.equal(response.status, 403);
+});
+
 test('gradebookoverview denies editor for other course', async () => {
   const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>

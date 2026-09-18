@@ -64,13 +64,16 @@ test('canViewLikertResults allows all users when showResults=always', () => {
   assert.equal(canViewLikertResults('always', {}), true);
 });
 
-test('canViewLikertResults restricts editor mode to editor/root users', () => {
-  const rootUser = { isRoot: () => true, isEditor: () => false };
-  const editorUser = { isRoot: () => false, isEditor: () => true };
-  const learnerUser = { isRoot: () => false, isEditor: () => false };
+test('canViewLikertResults restricts editor mode to course overseers', () => {
+  const rootUser = { isRoot: () => true, isEditor: () => false, canOverseeCourse: () => true };
+  const editorUser = { isRoot: () => false, isEditor: () => true, canOverseeCourse: (courseId) => courseId === 'course-1' };
+  const mentorUser = { isRoot: () => false, isEditor: () => false, isMentor: () => true, canOverseeCourse: (courseId) => courseId === 'course-1' };
+  const learnerUser = { isRoot: () => false, isEditor: () => false, isMentor: () => false, canOverseeCourse: () => false };
 
   assert.equal(canViewLikertResults('editor', rootUser), true);
-  assert.equal(canViewLikertResults('editor', editorUser), true);
-  assert.equal(canViewLikertResults('editor', learnerUser), false);
-  assert.equal(canViewLikertResults('editor', null), false);
+  assert.equal(canViewLikertResults('editor', editorUser, 'course-1'), true);
+  assert.equal(canViewLikertResults('editor', mentorUser, 'course-1'), true);
+  assert.equal(canViewLikertResults('editor', mentorUser, 'course-2'), false);
+  assert.equal(canViewLikertResults('editor', learnerUser, 'course-1'), false);
+  assert.equal(canViewLikertResults('editor', null, 'course-1'), false);
 });

@@ -132,7 +132,7 @@ export default function LearnerMasteryView({ courseOps }) {
     const catalog = courseOpsRef.current?.service?.courseCatalog?.() || [];
     if (!user) return [];
     if (user.isRoot()) return catalog;
-    return catalog.filter((entry) => user.isEditor(entry.id) || enrolledCourseIds.has(entry.id));
+    return catalog.filter((entry) => user.canOverseeCourse?.(entry.id) || enrolledCourseIds.has(entry.id));
   }, [enrolledCourseIds, user]);
 
   React.useEffect(() => {

@@ -166,7 +166,7 @@ function ResponseText({ label, value }) {
 
 export default function InteractionResponseReview({ courseOps, courseId, topicId, interactionId, interactionType, body }) {
   const user = courseOps?.user;
-  const canReview = Boolean(user && (user.isRoot() || user.isEditor(courseId)));
+  const canReview = Boolean(user && user.canOverseeCourse?.(courseId));
   const [isOpen, setIsOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);

@@ -59,7 +59,7 @@ export default function useObserveSession(user) {
       return;
     }
     const courseId = observeSession.courseId;
-    const hasAccess = user.isRoot() || (courseId ? user.isEditor(courseId) : false);
+    const hasAccess = courseId ? user.canOverseeCourse?.(courseId) : user.isRoot();
     if (!hasAccess) {
       clearObserveSession();
     }

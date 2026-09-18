@@ -88,7 +88,7 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     ] = await Promise.all([
       supabase.auth.getUser(),
       candidateUserId
-        ? supabase.from('role').select('right, object').eq('user', candidateUserId).in('right', ['root', 'editor'])
+        ? supabase.from('role').select('right, object').eq('user', candidateUserId).in('right', ['root', 'editor', 'mentor'])
         : Promise.resolve({ data: null }),
       learnerId
         ? supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId).eq('learnerId', learnerId)
@@ -109,7 +109,7 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     // If the JWT decode failed or userId didn't match the verified identity, re-run the
     // role query with the correct userId. This is a fallback that doesn't occur normally.
     if (candidateUserId !== userId) {
-      const { data: recheckRoles } = await supabase.from('role').select('right, object').eq('user', userId).in('right', ['root', 'editor']);
+      const { data: recheckRoles } = await supabase.from('role').select('right, object').eq('user', userId).in('right', ['root', 'editor', 'mentor']);
       userRoles = recheckRoles;
     }
 
@@ -118,9 +118,11 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
 
     const isRoot = safeRoles.some((r) => r.right === 'root');
     const isEditor = safeRoles.some((r) => r.right === 'editor' && String(r.object) === courseId);
+    const isMentor = safeRoles.some((r) => r.right === 'mentor' && String(r.object) === courseId);
+    const canOverseeCourse = isRoot || isEditor || isMentor;
     const isEnrolledLearner = safeAllEnrollments.some((e) => String(e.learnerId) === String(userId));
 
-    if (!isRoot && !isEditor && !isEnrolledLearner) {
+    if (!canOverseeCourse && !isEnrolledLearner) {
       return new Response(JSON.stringify({ error: 'User is not authorized to view this course gradebook' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -134,8 +136,8 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
 
       let safeEnrollments = safeAllEnrollments;
 
-      // Enrolled learners who are not editors/roots can only see their own row
-      if (isEnrolledLearner && !isRoot && !isEditor) {
+      // Enrolled learners who are not course overseers can only see their own row
+      if (isEnrolledLearner && !canOverseeCourse) {
         safeEnrollments = safeEnrollments.filter((e) => String(e.learnerId) === String(userId));
       }
 

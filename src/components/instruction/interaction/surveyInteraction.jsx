@@ -3,12 +3,13 @@ import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdo
 import { useInteractionProgressStore } from './interactionProgressStore';
 import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 
-export default function SurveyInteraction({ id, body, multipleSelect, courseOps, submitLabel }) {
+export default function SurveyInteraction({ id, body, multipleSelect, courseOps, courseId, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const [surveyResults, setSurveyResults] = React.useState(null);
+  const canViewResults = Boolean(courseOps.user?.canOverseeCourse?.(courseId));
 
   function showMyVotes() {
-    if (courseOps.user?.isRoot()) {
+    if (canViewResults) {
       setTimeout(() => {
         generateResults();
       }, 1000);
@@ -54,10 +55,10 @@ export default function SurveyInteraction({ id, body, multipleSelect, courseOps,
   }
 
   React.useEffect(() => {
-    if (courseOps.user?.isRoot()) {
+    if (canViewResults) {
       generateResults();
     }
-  }, []);
+  }, [canViewResults]);
 
   const lines = body.split('\n');
   const firstChoiceIndex = lines.findIndex((l) => l.startsWith('- ['));

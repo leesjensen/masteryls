@@ -30,8 +30,16 @@ export class User {
     return this.isRole(['root']);
   }
 
-  isEditor(object: string | undefined): boolean {
+  isEditor(object?: string): boolean {
     return this.isRole(['editor'], object);
+  }
+
+  isMentor(object?: string): boolean {
+    return this.isRole(['mentor'], object);
+  }
+
+  canOverseeCourse(object?: string): boolean {
+    return this.isRoot() || this.isEditor(object) || this.isMentor(object);
   }
 
   getSetting(settingKey: string, courseId: string | undefined): string | undefined {

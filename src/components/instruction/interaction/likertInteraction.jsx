@@ -61,11 +61,11 @@ function responsesChanged(currentResponses, savedResponses, questions) {
   return questionIds.some((qid) => current[qid] !== saved[qid]);
 }
 
-export default function LikertInteraction({ id, body, meta, courseOps, submitLabel }) {
+export default function LikertInteraction({ id, body, meta, courseOps, courseId, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const { prompt, questions, scale } = parseLikertBody(body, meta);
   const visibilityMode = parseVisibilityMode(meta?.showResults || meta?.resultsVisibility);
-  const canViewResults = canViewLikertResults(visibilityMode, courseOps?.user);
+  const canViewResults = canViewLikertResults(visibilityMode, courseOps?.user, courseId);
   const required =
     String(meta?.required ?? 'true')
       .trim()

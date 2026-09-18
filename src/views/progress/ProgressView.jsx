@@ -38,19 +38,36 @@ export default function ProgressView({ courseOps, service, user }) {
   const [courseLearners, setCourseLearners] = useState([]);
   const [detailRecord, setDetailRecord] = useState(null); // raw record(s) shown in the JSON popup
 
-  // Editors/root can scope activity to any learner; a normal learner only sees their own.
-  const canFilterLearners = Boolean(user && (user.isRoot?.() || user.isEditor?.(filter.courseId) || user.isEditor?.()));
+  const needsCourseScopedActivity = Boolean(user && !user.isRoot?.() && (user.isEditor?.() || user.isMentor?.()));
+
+  // Editors/root/mentors can scope activity to any learner in courses they oversee.
+  const canFilterLearners = Boolean(user && (filter.courseId ? user.canOverseeCourse?.(filter.courseId) : user.isRoot?.() || user.isEditor?.() || user.isMentor?.()));
 
   const availableCourses = React.useMemo(() => {
     const catalog = service?.courseCatalog?.() || [];
     if (!user) return [];
     if (user.isRoot?.()) return catalog;
-    return catalog.filter((entry) => user.isEditor?.(entry.id) || enrolledCourseIds.has(entry.id));
+    return catalog.filter((entry) => user.canOverseeCourse?.(entry.id) || enrolledCourseIds.has(entry.id));
   }, [service, user, enrolledCourseIds]);
 
   useEffect(() => {
     updateAppBar({ title: 'Progress' });
   }, []);
+
+  useEffect(() => {
+    if (!needsCourseScopedActivity || filter.courseId || availableCourses.length === 0) {
+      return;
+    }
+    setFilter((prev) => (prev.courseId ? prev : { ...prev, courseId: availableCourses[0].id }));
+  }, [availableCourses, filter.courseId, needsCourseScopedActivity]);
+
+  useEffect(() => {
+    if (!needsCourseScopedActivity || !filter.courseId) {
+      return;
+    }
+    setCurrentPage(1);
+    fetchProgressData(1);
+  }, [filter.courseId, needsCourseScopedActivity]);
 
   // Courses the viewer is enrolled in (used to gate the course list for non-editors).
   useEffect(() => {
@@ -116,6 +133,16 @@ export default function ProgressView({ courseOps, service, user }) {
       setLoading(false);
       return;
     }
+    if (needsCourseScopedActivity && !filter.courseId) {
+      setProgressRecords([]);
+      setPaginationInfo({
+        totalRecords: 0,
+        hasMore: false,
+        currentPage: 1,
+      });
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -163,7 +190,7 @@ export default function ProgressView({ courseOps, service, user }) {
   const clearFilters = () => {
     setFilter({
       type: '',
-      courseId: '',
+      courseId: needsCourseScopedActivity ? availableCourses[0]?.id || '' : '',
       topicId: '',
       userId: '',
       startDate: '',

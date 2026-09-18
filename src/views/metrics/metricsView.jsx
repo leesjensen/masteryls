@@ -28,11 +28,18 @@ export default function MetricsView({ courseOps }) {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = React.useRef(null);
 
-  // Get course catalog for course filter
-  const courseCatalog = courseOps.courseCatalog();
+  const rawCourseCatalog = courseOps.courseCatalog();
+  const user = courseOps?.user;
+  const courseCatalog = React.useMemo(() => {
+    if (!user) return [];
+    if (user.isRoot?.()) return rawCourseCatalog;
+    if (user.isEditor?.() || user.isMentor?.()) {
+      return rawCourseCatalog.filter((course) => user.canOverseeCourse?.(course.id));
+    }
+    return rawCourseCatalog;
+  }, [rawCourseCatalog, user]);
 
-  // Check if user is an editor for the selected course
-  const isEditor = !!courseOps?.user?.isEditor();
+  const canFilterUsers = Boolean(courseOps?.user && (selectedCourseId ? courseOps.user.canOverseeCourse?.(selectedCourseId) : courseOps.user.isRoot?.() || courseOps.user.isEditor?.() || courseOps.user.isMentor?.()));
 
   // Helper function to validate custom date range
   const validateDateRange = () => {
@@ -250,7 +257,7 @@ export default function MetricsView({ courseOps }) {
               ))}
             </select>
           </div>
-          {isEditor && (
+          {canFilterUsers && (
             <div className="flex flex-1 items-center space-x-1 relative" ref={userDropdownRef}>
               <label htmlFor="userSearch" className="text-sm text-gray-600 w-16 md:w-auto">
                 User:

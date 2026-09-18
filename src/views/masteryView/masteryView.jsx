@@ -39,7 +39,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     if (user.isRoot()) {
       return true;
     }
-    return selectedCourseId ? user.isEditor(selectedCourseId) : user.isEditor();
+    return selectedCourseId ? user.canOverseeCourse?.(selectedCourseId) : user.isEditor() || user.isMentor?.();
   }, [user, selectedCourseId]);
 
   const availableCourses = React.useMemo(() => {
@@ -50,16 +50,16 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     if (user.isRoot()) {
       return catalog;
     }
-    return catalog.filter((entry) => user.isEditor(entry.id) || enrolledCourseIds.has(entry.id));
+    return catalog.filter((entry) => user.canOverseeCourse?.(entry.id) || enrolledCourseIds.has(entry.id));
   }, [enrolledCourseIds, user]);
 
   const hasCourseAccess = React.useMemo(() => {
     if (!user || !selectedCourseId) {
       return false;
     }
-    return user.isRoot() || user.isEditor(selectedCourseId) || enrolledCourseIds.has(selectedCourseId);
+    return user.canOverseeCourse?.(selectedCourseId) || enrolledCourseIds.has(selectedCourseId);
   }, [enrolledCourseIds, selectedCourseId, user]);
-  const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot() || user.isEditor(selectedCourseId))), [user, selectedCourseId]);
+  const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
 
   const confirmedIds = React.useMemo(() => new Set(confirmedFilters.map((f) => f.learnerId)), [confirmedFilters]);
 

@@ -38,7 +38,7 @@ export function parseLikertScale(scaleLine = '', fallbackMin = 1, fallbackMax = 
   return { values, labels };
 }
 
-export function canViewLikertResults(showResults, user) {
+export function canViewLikertResults(showResults, user, courseId = undefined) {
   const visibility = String(showResults || 'editor')
     .trim()
     .toLowerCase();
@@ -46,7 +46,7 @@ export function canViewLikertResults(showResults, user) {
     return true;
   }
 
-  return Boolean(user?.isRoot?.() || user?.isEditor?.());
+  return Boolean(user?.canOverseeCourse?.(courseId) || user?.isRoot?.() || (!courseId && (user?.isEditor?.() || user?.isMentor?.())));
 }
 
 function parseTableRow(line) {

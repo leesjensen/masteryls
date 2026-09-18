@@ -13,9 +13,13 @@ export default function Settings({ courseOps, user, course }) {
   const [selectedEditors, setSelectedEditors] = useState([]);
   const [editorUsers, setEditorUsers] = useState([]);
   const [editorsDialogOpen, setEditorsDialogOpen] = useState(false);
+  const [selectedMentors, setSelectedMentors] = useState([]);
+  const [mentorUsers, setMentorUsers] = useState([]);
+  const [mentorsDialogOpen, setMentorsDialogOpen] = useState(false);
   const [selectedLearners, setSelectedLearners] = useState([]);
   const [learnersDialogOpen, setLearnersDialogOpen] = useState(false);
   const ogSelectedEditorsRef = useRef([]);
+  const ogSelectedMentorsRef = useRef([]);
   const ogSelectedLearnersRef = useRef([]);
   const userCache = useRef(new Map());
   const [formData, setFormData] = useState({
@@ -76,6 +80,28 @@ export default function Settings({ courseOps, user, course }) {
     }
   };
 
+  const fetchMentors = async () => {
+    try {
+      const fetchedMentors = await courseOps.service.getMentorsForCourse(course.id);
+      setMentorUsers(fetchedMentors);
+      fetchedMentors.forEach((mentor) => userCache.current.set(mentor.id, mentor));
+      const mentorIds = fetchedMentors.map((mentor) => mentor.id);
+      ogSelectedMentorsRef.current = mentorIds;
+      setSelectedMentors(mentorIds);
+      return fetchedMentors;
+    } catch (error) {
+      showAlert({
+        type: 'error',
+        message: (
+          <div className="text-xs">
+            <div>{error.message || 'Failed to load mentors'}</div>
+          </div>
+        ),
+      });
+      return [];
+    }
+  };
+
   useEffect(() => {
     fetchLearners();
   }, [course.id, courseOps.service, showAlert]);
@@ -91,12 +117,23 @@ export default function Settings({ courseOps, user, course }) {
   }, [course.id, courseOps.service, showAlert, user]);
 
   useEffect(() => {
+    if (user?.isEditor(course.id) || user?.isRoot()) {
+      fetchMentors();
+      return;
+    }
+    ogSelectedMentorsRef.current = [];
+    setSelectedMentors([]);
+    setMentorUsers([]);
+  }, [course.id, courseOps.service, showAlert, user]);
+
+  useEffect(() => {
     const [editorsChanged, ,] = compareEditors(selectedEditors);
+    const [mentorsChanged, ,] = compareMentors(selectedMentors);
     const [learnersChanged, ,] = compareLearners(selectedLearners);
     const courseChanged = compareCourse(formData);
     const tokenChanged = compareGitHubToken(formData.gitHubToken);
-    setSettingsDirty(tokenChanged || courseChanged || editorsChanged || learnersChanged);
-  }, [selectedEditors, selectedLearners, formData]);
+    setSettingsDirty(tokenChanged || courseChanged || editorsChanged || mentorsChanged || learnersChanged);
+  }, [selectedEditors, selectedMentors, selectedLearners, formData]);
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -116,6 +153,16 @@ export default function Settings({ courseOps, user, course }) {
     return data.name !== course.name || data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository || data.state !== course.settings.state || data.deleteProtected !== (course.settings?.deleteProtected || false);
   };
 
+  const compareMentors = (newSelected) => {
+    const currentMentors = new Set(ogSelectedMentorsRef.current);
+    const newMentors = new Set(newSelected);
+
+    const toAdd = newSelected.filter((id) => !currentMentors.has(id));
+    const toRemove = ogSelectedMentorsRef.current.filter((id) => !newMentors.has(id));
+
+    return [toAdd.length !== 0 || toRemove.length !== 0, toAdd, toRemove];
+  };
+
   const compareLearners = (newSelected) => {
     const currentLearners = new Set(ogSelectedLearnersRef.current);
     const newLearners = new Set(newSelected);
@@ -132,6 +179,7 @@ export default function Settings({ courseOps, user, course }) {
 
   const handleSave = async () => {
     const [editorsChanged, toAdd, toRemove] = compareEditors(selectedEditors);
+    const [mentorsChanged, mentorsToAdd, mentorsToRemove] = compareMentors(selectedMentors);
     const [learnersChanged, learnersToAdd, learnersToRemove] = compareLearners(selectedLearners);
     if (editorsChanged && selectedEditors.length === 0) {
       showAlert({
@@ -216,6 +264,40 @@ export default function Settings({ courseOps, user, course }) {
         await courseOps.service.removeUserRole(user, 'editor', course.id);
       }
       await fetchEditors();
+    }
+
+    if (mentorsChanged) {
+      for (const userId of mentorsToAdd) {
+        const mentor = userCache.current.get(userId);
+        if (!mentor) {
+          showAlert({
+            type: 'error',
+            message: (
+              <div className="text-xs">
+                <div>Unable to add a mentor because user data is missing.</div>
+              </div>
+            ),
+          });
+          continue;
+        }
+        await courseOps.service.addUserRole(mentor, 'mentor', course.id, {});
+      }
+      for (const userId of mentorsToRemove) {
+        const mentor = userCache.current.get(userId);
+        if (!mentor) {
+          showAlert({
+            type: 'error',
+            message: (
+              <div className="text-xs">
+                <div>Unable to remove a mentor because user data is missing.</div>
+              </div>
+            ),
+          });
+          continue;
+        }
+        await courseOps.service.removeUserRole(mentor, 'mentor', course.id);
+      }
+      await fetchMentors();
     }
 
     if (learnersChanged) {
@@ -325,10 +407,13 @@ export default function Settings({ courseOps, user, course }) {
   }
 
   const editorVisible = user.isEditor(course.id);
+  const canManageMentors = user.isEditor(course.id) || user.isRoot();
   const canManageEnrollments = user.isEditor(course.id) || user.isRoot();
   const editorsCount = selectedEditors.length;
+  const mentorsCount = selectedMentors.length;
   const learnersCount = selectedLearners.length;
   const isOriginalEditor = (userId) => ogSelectedEditorsRef.current.includes(userId);
+  const isOriginalMentor = (userId) => ogSelectedMentorsRef.current.includes(userId);
   const isOriginalLearner = (userId) => ogSelectedLearnersRef.current.includes(userId);
 
   return (
@@ -478,6 +563,26 @@ export default function Settings({ courseOps, user, course }) {
           </>
         )}
 
+        {canManageMentors && (
+          <>
+            <div className="bg-gray-50 rounded-lg p-4 mb-1">
+              <div>
+                <h2 className="text-lg font-semibold mb-3 text-gray-800">Mentors</h2>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-gray-700">
+                      {mentorsCount} mentor{mentorsCount === 1 ? '' : 's'} assigned
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setMentorsDialogOpen(true)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                    Manage mentors
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
         {canManageEnrollments && (
           <>
             <div className="bg-gray-50 rounded-lg p-4 mb-1">
@@ -498,7 +603,7 @@ export default function Settings({ courseOps, user, course }) {
           </>
         )}
 
-        {(editorVisible || canManageEnrollments) && (
+        {(editorVisible || canManageMentors || canManageEnrollments) && (
           <>
             <div>
               <div className="flex flex-col justify-end w-[200px]">
@@ -542,6 +647,7 @@ export default function Settings({ courseOps, user, course }) {
         }
       />
       <UserSelectionDialog title="Manage editors" description="Add or remove editors. Changes are saved when you click Save changes." currentUsersLabel="Current editors" searchUsersLabel="Find users" selectedUserIds={selectedEditors} onSelectionChange={setSelectedEditors} searchUsers={(query) => courseOps.service.searchUsers(query, 25)} isOpen={editorsDialogOpen} onOpen={() => setEditorsDialogOpen(true)} onClose={() => setEditorsDialogOpen(false)} allowEmpty={false} isOriginalUser={isOriginalEditor} userCache={userCache.current} />
+      <UserSelectionDialog title="Manage mentors" description="Add or remove mentors. Changes are saved when you click Save changes." currentUsersLabel="Current mentors" searchUsersLabel="Find users" selectedUserIds={selectedMentors} onSelectionChange={setSelectedMentors} searchUsers={(query) => courseOps.service.searchUsers(query, 25)} isOpen={mentorsDialogOpen} onOpen={() => setMentorsDialogOpen(true)} onClose={() => setMentorsDialogOpen(false)} allowEmpty={true} isOriginalUser={isOriginalMentor} userCache={userCache.current} />
       <UserSelectionDialog title="Manage learners" description="Enroll or remove learners for this course. Changes are saved when you click Save changes." currentUsersLabel="Enrolled learners" searchUsersLabel="Find users" selectedUserIds={selectedLearners} onSelectionChange={setSelectedLearners} searchUsers={(query) => courseOps.service.searchUsers(query, 25)} isOpen={learnersDialogOpen} onOpen={() => setLearnersDialogOpen(true)} onClose={() => setLearnersDialogOpen(false)} allowEmpty={true} isOriginalUser={isOriginalLearner} userCache={userCache.current} />
     </div>
   );

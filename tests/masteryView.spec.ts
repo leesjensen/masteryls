@@ -70,6 +70,37 @@ test('masteryview loads learner overview for accessible course', async ({ page }
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
 });
 
+test('mentor can view course mastery and observe learners without edit controls', async ({ page }) => {
+  await initBasicCourse({ page });
+  await page.context().route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {
+    if (route.request().method() !== 'GET') {
+      await route.fallback();
+      return;
+    }
+    await route.fulfill({
+      json: [
+        {
+          user: LEARNER_ID,
+          right: 'mentor',
+          object: COURSE_ID,
+          settings: {},
+        },
+      ],
+    });
+  });
+  await mockGradebookOverview(page);
+
+  await navigateToDashboard(page);
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'MasteryView' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Observe' })).toBeVisible();
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await expect(page.getByRole('button', { name: 'New course' })).not.toBeVisible();
+  await expect(page.getByRole('button', { name: 'Link course' })).not.toBeVisible();
+});
+
 test('learner masteryview shows learner summary and topic detail', async ({ page }) => {
   await initBasicCourse({ page });
   await mockGradebookOverview(page);

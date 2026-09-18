@@ -293,6 +293,44 @@ class Service {
   }
 
   /**
+   * Retrieves users who have mentor access for a specific course.
+   * @param courseId - The ID of the course to load mentor users for.
+   * @returns An array of User objects with mentor roles loaded.
+   */
+  async getMentorsForCourse(courseId: string): Promise<User[]> {
+    const { data: roleData, error: roleError } = await this.supabase.from('role').select('user, right, object, settings').eq('right', 'mentor').eq('object', courseId);
+    if (roleError) {
+      throw new Error(roleError.message);
+    }
+
+    if (!roleData || roleData.length === 0) {
+      return [];
+    }
+
+    const userIds = roleData.map((role: any) => role.user);
+    const { data: userData, error: userError } = await this.supabase.from('user').select('id, name, email, settings').in('id', userIds);
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    const rolesByUser = new Map<string, Role[]>();
+    for (const role of roleData) {
+      if (!rolesByUser.has(role.user)) {
+        rolesByUser.set(role.user, []);
+      }
+      rolesByUser.get(role.user)?.push(role);
+    }
+
+    const users: User[] = [];
+    for (const item of userData || []) {
+      const roles = rolesByUser.get(item.id) || [];
+      users.push(new User({ ...item, roles }));
+    }
+
+    return users;
+  }
+
+  /**
    * Retrieves users currently enrolled in a specific course.
    * @param courseId - The course ID to load enrolled users for.
    * @returns An array of User objects for enrolled learners.

@@ -102,6 +102,9 @@ create index if not exists "progressEnrollmentTypeIdx" on public.progress ("enro
 -- Progress queries: by catalog+topic+interaction (survey/Likert summaries)
 create index if not exists "progressCatalogTopicIdx" on public.progress ("catalogId", "topicId", "interactionId");
 
+-- Progress queries: course-scoped activity pages ordered by newest first
+create index if not exists "progressCatalogCreatedAtIdx" on public.progress ("catalogId", "createdAt" desc);
+
 
 ----------------------- Functions
 
@@ -178,6 +181,22 @@ as $$
   );
 $$;
 
+-- Security helper: true when user has mentor role
+create or replace function public.auth_is_mentor(uid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.role
+    where "user" = uid
+      and "right" = 'mentor'
+  );
+$$;
+
 -- Security helper: true when user can manage a specific course
 create or replace function public.auth_manages_course(uid uuid, catalog_id uuid)
 returns boolean
@@ -195,6 +214,42 @@ as $$
         and "right" = 'editor'
         and object = catalog_id
     )
+  );
+$$;
+
+-- Security helper: true when user can oversee a specific course without editing it
+create or replace function public.auth_oversees_course(uid uuid, catalog_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select (
+    public.auth_manages_course(uid, catalog_id)
+    or exists (
+      select 1
+      from public.role
+      where "user" = uid
+        and "right" = 'mentor'
+        and object = catalog_id
+    )
+  );
+$$;
+
+-- Security helper: true when user can oversee a course that the target learner is enrolled in
+create or replace function public.auth_oversees_enrolled_user(uid uuid, target_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.enrollment e
+    where e."learnerId" = target_user_id
+      and public.auth_oversees_course(uid, e."catalogId")
   );
 $$;
 
@@ -242,7 +297,10 @@ execute function public.sync_public_user_email();
 -- Allow clients to execute role-check helper functions from policies
 grant execute on function public.auth_is_root(uuid) to authenticated;
 grant execute on function public.auth_is_editor(uuid) to authenticated;
+grant execute on function public.auth_is_mentor(uuid) to authenticated;
 grant execute on function public.auth_manages_course(uuid, uuid) to authenticated;
+grant execute on function public.auth_oversees_course(uuid, uuid) to authenticated;
+grant execute on function public.auth_oversees_enrolled_user(uuid, uuid) to authenticated;
 
 -- Define table grants by first revoking everything
 revoke all on table public.catalog from public, anon, authenticated;
@@ -295,6 +353,7 @@ drop policy if exists "Course editor deletes course" on public.catalog;
 drop policy if exists "Root manages all" on public.catalog;
 drop policy if exists "User manage self" on public."user";
 drop policy if exists "Editor reads all users" on public."user";
+drop policy if exists "Course overseer reads enrolled users" on public."user";
 drop policy if exists "Root manages all" on public."user";
 drop policy if exists "User read self" on public.role;
 drop policy if exists "Course editor reads course roles" on public.role;
@@ -303,6 +362,7 @@ drop policy if exists "Course editor updates course roles" on public.role;
 drop policy if exists "Course editor deletes course roles" on public.role;
 drop policy if exists "Root manages all" on public.role;
 drop policy if exists "User manage self" on public.enrollment;
+drop policy if exists "Course overseer reads course enrollments" on public.enrollment;
 drop policy if exists "Root manages all" on public.enrollment;
 drop policy if exists "User read all" on public.topic;
 drop policy if exists "Course editor manages topics" on public.topic;
@@ -369,6 +429,12 @@ for select
 to authenticated
 using (public.auth_is_editor(auth.uid()));
 
+create policy "Course overseer reads enrolled users"
+on public."user"
+for select
+to authenticated
+using (public.auth_oversees_enrolled_user(auth.uid(), id));
+
 create policy "Root manages all"
 on public."user"
 for all
@@ -391,7 +457,7 @@ on public.role
 for select
 to authenticated
 using (
-  "right" = 'editor'
+  "right" in ('editor', 'mentor')
   and object is not null
   and public.auth_manages_course(auth.uid(), object)
 );
@@ -401,7 +467,7 @@ on public.role
 for insert
 to authenticated
 with check (
-  "right" = 'editor'
+  "right" in ('editor', 'mentor')
   and object is not null
   and (
     public.auth_manages_course(auth.uid(), object)
@@ -422,12 +488,12 @@ on public.role
 for update
 to authenticated
 using (
-  "right" = 'editor'
+  "right" in ('editor', 'mentor')
   and object is not null
   and public.auth_manages_course(auth.uid(), object)
 )
 with check (
-  "right" = 'editor'
+  "right" in ('editor', 'mentor')
   and object is not null
   and public.auth_manages_course(auth.uid(), object)
 );
@@ -437,7 +503,7 @@ on public.role
 for delete
 to authenticated
 using (
-  "right" = 'editor'
+  "right" in ('editor', 'mentor')
   and object is not null
   and public.auth_manages_course(auth.uid(), object)
 );
@@ -459,6 +525,12 @@ for all
 to authenticated
 using (auth.uid() = "learnerId")
 with check (auth.uid() = "learnerId");
+
+create policy "Course overseer reads course enrollments"
+on public.enrollment
+for select
+to authenticated
+using (public.auth_oversees_course(auth.uid(), "catalogId"));
 
 create policy "Root manages all"
 on public.enrollment
@@ -511,7 +583,7 @@ create policy "Editor reads managed course progress"
 on public.progress
 for select
 to authenticated
-using (public.auth_manages_course(auth.uid(), "catalogId"));
+using (public.auth_oversees_course(auth.uid(), "catalogId"));
 
 create policy "Root manages all"
 on public.progress
@@ -567,7 +639,7 @@ with check (
   )
 );
 
--- Learner reads own; course manager (editor/root) reads anyone enrolled in courses they manage.
+-- Learner reads own; course overseer (root/editor/mentor) reads anyone enrolled in courses they oversee.
 create policy "submissions: learner or course manager reads"
 on storage.objects for select
 to authenticated
@@ -576,7 +648,7 @@ using (
   and exists (
     select 1 from public.enrollment e
     where e.id = public.submission_enrollment_id(name)
-      and (e."learnerId" = auth.uid() or public.auth_manages_course(auth.uid(), e."catalogId"))
+      and (e."learnerId" = auth.uid() or public.auth_oversees_course(auth.uid(), e."catalogId"))
   )
 );
 
@@ -659,7 +731,7 @@ using (
   and exists (
     select 1 from public.enrollment e
     where e.id = public.dra_state_enrollment_id(name)
-      and (e."learnerId" = auth.uid() or public.auth_manages_course(auth.uid(), e."catalogId"))
+      and (e."learnerId" = auth.uid() or public.auth_oversees_course(auth.uid(), e."catalogId"))
   )
 );
 

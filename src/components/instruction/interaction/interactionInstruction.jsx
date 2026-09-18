@@ -141,9 +141,9 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     if (meta.type && (meta.type === 'multiple-choice' || meta.type === 'multiple-select')) {
       return <MultipleChoiceInteraction id={meta.id} quizType={meta.type} body={interactionBody} />;
     } else if (meta.type === 'survey') {
-      return <SurveyInteraction id={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} />;
+      return <SurveyInteraction id={meta.id} body={interactionBody} multipleSelect={meta.multipleSelect} courseOps={courseOps} courseId={learningSession?.course?.id} />;
     } else if (meta.type === 'likert') {
-      return <LikertInteraction id={meta.id} body={interactionBody} meta={meta} courseOps={courseOps} />;
+      return <LikertInteraction id={meta.id} body={interactionBody} meta={meta} courseOps={courseOps} courseId={learningSession?.course?.id} />;
     } else if (meta.type === 'essay') {
       return <EssayInteraction id={meta.id} body={interactionBody} />;
     } else if (meta.type === 'file-submission') {
