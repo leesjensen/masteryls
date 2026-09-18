@@ -48,9 +48,6 @@ function buildFetchStub() {
     if (url.includes('/quizzes/')) {
       return new Response(JSON.stringify({ assignment_id: 555 }), { status: 200 });
     }
-    // Deliberately unstubbed: the due date now arrives in the request payload (read from the
-    // course schedule by the client), so the handler must never GET the Canvas assignment.
-    // Reintroducing that lookup falls through to the 'unexpected call' 500 below.
     if (url.includes('/submissions') && method === 'POST') {
       return new Response(JSON.stringify({ id: 321, submission_type: 'online_url' }), { status: 200 });
     }
@@ -92,7 +89,7 @@ test('calculateGraceDaysEarned returns 0 for submission on the due date', () => 
 
 test('calculateGraceDaysEarned returns -1 for submission slightly after the due date', () => {
   graceDayTest({
-    dateSubmitted: new Date('2026-09-09T12:00:01Z'), // A wednesday
+    dateSubmitted: new Date('2026-09-09T12:00:01Z'), // One second late (wednesday)
     dateDue: new Date('2026-09-09T12:00:00Z'), // A wednesday
     expectedGraceDays: -1
   });
@@ -106,11 +103,11 @@ test('calculateGraceDaysEarned returns -1 for submission sunday after a saturday
   });
 });
 
-test('calculateGraceDaysEarned returns -1 for submission sunday after a friday due date', () => {
+test('calculateGraceDaysEarned returns -2 for submission sunday after a friday due date', () => {
   graceDayTest({
     dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
     dateDue: new Date('2026-09-11T12:00:00Z'), // A friday
-    expectedGraceDays: -1
+    expectedGraceDays: -2
   });
 });
 
