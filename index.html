@@ -13,9 +13,17 @@
     <meta name="apple-mobile-web-app-title" content="MasteryLS" />
     <link rel="stylesheet" href="/index.css" />
     <script>
-      try {
-        if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
-      } catch {}
+      // Mirrors useTheme.jsx: an explicit 'light'/'dark' wins, otherwise follow the system.
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('theme');
+        } catch {
+          // Blocked storage still has to fall through to the system check below.
+        }
+        var dark = theme === 'dark' || (theme !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      })();
     </script>
   </head>
   <body>
