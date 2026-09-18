@@ -48,9 +48,9 @@ function buildFetchStub() {
     if (url.includes('/quizzes/')) {
       return new Response(JSON.stringify({ assignment_id: 555 }), { status: 200 });
     }
-    if (url.includes('/assignments/') && !url.includes('/submissions') && method === 'GET') {
-      return new Response(JSON.stringify({ id: 999, due_at: '2026-05-10T23:59:00Z' }), { status: 200 });
-    }
+    // Deliberately unstubbed: the due date now arrives in the request payload (read from the
+    // course schedule by the client), so the handler must never GET the Canvas assignment.
+    // Reintroducing that lookup falls through to the 'unexpected call' 500 below.
     if (url.includes('/submissions') && method === 'POST') {
       return new Response(JSON.stringify({ id: 321, submission_type: 'online_url' }), { status: 200 });
     }
@@ -147,7 +147,7 @@ test('canvasgradebook allows root user', async () => {
   );
 
   assert.equal(response.status, 200);
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 2);
   const submissionRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(submissionRequest.submission.posted_grade, 90);
   assert.ok(typeof submissionRequest.comment?.text_comment === 'string');
@@ -185,7 +185,7 @@ test('canvasgradebook allows learner self-match', async () => {
   assert.equal(body.submission.url, 'https://example.com/project');
   assert.ok(body.submission.submitted_at);
   assert.notEqual(body.submission.workflow_state, 'unsubmitted');
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 3);
   const submissionRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(submissionRequest.submission.posted_grade, 160);
   assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 160/200 (80%)'));
@@ -245,7 +245,7 @@ test('canvasgradebook can submit comment and url without posting grade when auto
   );
 
   assert.equal(response.status, 200);
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 3);
 
   const submitAttemptRequest = getSubmissionRequest(calls, 'POST');
   assert.equal(submitAttemptRequest.submission.submission_type, 'online_url');
@@ -255,6 +255,77 @@ test('canvasgradebook can submit comment and url without posting grade when auto
   assert.equal(updateRequest.submission, undefined);
   assert.ok(updateRequest.comment.text_comment.includes('Suggested grade: 75/100 (75%)'));
   assert.ok(updateRequest.comment.text_comment.includes('Strong progress.'));
+});
+
+function isoDaysFromNow(days) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function buildDueDateHandler(fetchFn) {
+  return createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u7', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+}
+
+function dueDateRequest(dateDue) {
+  return makeRequest({
+    courseId: '12345',
+    topicType: 'project',
+    percentCorrect: 90,
+    pointsPossible: 100,
+    learnerEmail: 'learner@test.com',
+    canvasAssignmentId: 999,
+    autoGrade: true,
+    dateDue,
+  });
+}
+
+test('canvasgradebook takes the grace-day due date from the payload without fetching the Canvas assignment', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = buildDueDateHandler(fetchFn);
+
+  // Two weekdays ahead of a submission made now, so grace days are earned rather than lost.
+  const response = await handler(dueDateRequest(isoDaysFromNow(9)));
+
+  assert.equal(response.status, 200);
+  assert.ok(
+    !calls.some((entry) => entry.url.includes('/assignments/999') && !entry.url.includes('/submissions')),
+    'handler should not GET the Canvas assignment for its due date',
+  );
+
+  const submissionRequest = getSubmissionRequest(calls, 'PUT');
+  assert.match(submissionRequest.comment.text_comment, /Grace Day Potential: \d+/);
+});
+
+test('canvasgradebook omits the grace-day line when no due date is supplied', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = buildDueDateHandler(fetchFn);
+
+  const response = await handler(dueDateRequest(undefined));
+
+  assert.equal(response.status, 200);
+  assert.ok(!getSubmissionRequest(calls, 'PUT').comment.text_comment.includes('Grace Day Potential'));
+});
+
+test('canvasgradebook ignores an unusable client-supplied due date', async () => {
+  // The payload is client-controlled and learners may post their own grades, so a date that
+  // cannot be parsed - or is too far out to be a real course date - is dropped rather than fed
+  // to the day-by-day grace-day walk.
+  for (const dateDue of ['not a date', '', isoDaysFromNow(5000), isoDaysFromNow(-5000)]) {
+    const { fetchFn, calls } = buildFetchStub();
+    const handler = buildDueDateHandler(fetchFn);
+
+    const response = await handler(dueDateRequest(dateDue));
+
+    assert.equal(response.status, 200, `expected ${dateDue} to be tolerated`);
+    assert.ok(!getSubmissionRequest(calls, 'PUT').comment.text_comment.includes('Grace Day Potential'), `expected ${dateDue} to be dropped`);
+  }
 });
 
 test('canvasgradebook accepts dra and interview topicType, posts a text-entry submission, and never posts a grade', async () => {

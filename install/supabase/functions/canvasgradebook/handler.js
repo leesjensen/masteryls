@@ -3,6 +3,25 @@ export const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// The due date is supplied by the client, which reads it from the course schedule (the same
+// source that seeded Canvas's due_at when the course was linked). Anything unparseable, or so
+// far from now that it can't be a real course date, is dropped rather than trusted - both
+// because the value only feeds an advisory comment line, and because calculateGraceDaysEarned
+// walks one day at a time and would spin on a bad date.
+const MAX_DUE_DATE_DRIFT_MS = 400 * 24 * 60 * 60 * 1000;
+
+function normalizeDueDate(dateDue) {
+  if (!dateDue) {
+    return null;
+  }
+  const parsed = new Date(dateDue);
+  const time = parsed.getTime();
+  if (!Number.isFinite(time) || Math.abs(time - Date.now()) > MAX_DUE_DATE_DRIFT_MS) {
+    return null;
+  }
+  return parsed.toISOString();
+}
+
 function normalizePercent(percentCorrect) {
   const parsed = Number(percentCorrect);
   if (!Number.isFinite(parsed)) {
@@ -171,7 +190,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     }
 
     // Grade-submission mode (default): validate the grade fields and post to Canvas.
-    const { topicType, percentCorrect, pointsPossible, canvasAssignmentId, canvasQuizId } = payload;
+    const { topicType, percentCorrect, pointsPossible, canvasAssignmentId, canvasQuizId, dateDue } = payload;
     if (!topicType || percentCorrect === undefined || pointsPossible === undefined) {
       return new Response(JSON.stringify({ error: 'topicType, percentCorrect, and pointsPossible are required' }), {
         status: 400,
@@ -193,6 +212,8 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
     const submissionText = typeof payload.submissionText === 'string' ? payload.submissionText.trim() : '';
 
+    // Mastery updates never attach a comment, so the due date is irrelevant for them.
+    const normalizedDueDate = isMastery ? null : normalizeDueDate(dateDue);
     const normalizedPercent = normalizePercent(percentCorrect);
     const normalizedPoints = Number(pointsPossible);
     if (normalizedPercent === null || !Number.isFinite(normalizedPoints) || normalizedPoints <= 0) {
@@ -239,13 +260,6 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
         return new Response(JSON.stringify({ error: 'Unable to resolve Canvas assignment id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Mastery updates never attach a comment, so there's no need to look up the due date.
-      let dateDue = null;
-      if (!isMastery) {
-        const assignment = await canvasApi(`/courses/${courseId}/assignments/${assignmentId}`);
-        dateDue = assignment?.due_at || null;
-      }
-
       if (submissionUrl) {
         await canvasApi(`/courses/${courseId}/assignments/${assignmentId}/submissions`, 'POST', {
           submission: {
@@ -281,7 +295,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
           ? {}
           : {
               comment: {
-                text_comment: buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade, dateDue }),
+                text_comment: buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade, dateDue: normalizedDueDate }),
               },
             }),
       };
