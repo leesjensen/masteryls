@@ -1987,6 +1987,27 @@ Requirements:
     return null;
   }
 
+  async function getScheduleDueDatesByTopicId(course, selectedScheduleFileId = null) {
+    const scheduleFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
+    if (!scheduleFiles.length) {
+      return {};
+    }
+
+    const selected = scheduleFiles.find((file) => file.id === selectedScheduleFileId) || scheduleFiles.find((file) => file.default) || scheduleFiles[0];
+    if (!selected?.path) {
+      return {};
+    }
+
+    const fetchUrl = selected.commit ? selected.path.replace(/(\/main\/)/, `/${selected.commit}/`) : selected.path;
+    const markdown = await fetch(fetchUrl, { cache: 'no-store' }).then((res) => res.text());
+
+    return buildScheduleDueDatesByTopicId({
+      course,
+      markdown,
+      scheduleRepoPath: repoRelativePathFromRawUrl(selected.path, course.links?.gitHub?.rawUrl),
+    });
+  }
+
   // Resolves each scheduled due item back to the topic it refers to (by repo path, falling back
   // to title) and returns { topicId: isoDueDate } for the topic types that carry due dates.
   // Pure - callers supply the already-fetched schedule markdown so they can choose whether to
@@ -2040,27 +2061,6 @@ Requirements:
     });
 
     return dueDatesByTopicId;
-  }
-
-  async function getScheduleDueDatesByTopicId(course, selectedScheduleFileId = null) {
-    const scheduleFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
-    if (!scheduleFiles.length) {
-      return {};
-    }
-
-    const selected = scheduleFiles.find((file) => file.id === selectedScheduleFileId) || scheduleFiles.find((file) => file.default) || scheduleFiles[0];
-    if (!selected?.path) {
-      return {};
-    }
-
-    const fetchUrl = selected.commit ? selected.path.replace(/(\/main\/)/, `/${selected.commit}/`) : selected.path;
-    const markdown = await fetch(fetchUrl, { cache: 'no-store' }).then((res) => res.text());
-
-    return buildScheduleDueDatesByTopicId({
-      course,
-      markdown,
-      scheduleRepoPath: repoRelativePathFromRawUrl(selected.path, course.links?.gitHub?.rawUrl),
-    });
   }
 
   // The due date that accompanies a grade posted to Canvas, read from the course schedule
