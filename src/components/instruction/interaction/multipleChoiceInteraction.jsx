@@ -3,7 +3,7 @@ import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdo
 import { useInteractionProgressStore } from './interactionProgressStore';
 import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
 
-export default function MultipleChoiceInteraction({ id, quizType, body }) {
+export default function MultipleChoiceInteraction({ id, quizType, body, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
 
   const lines = body.split('\n');
@@ -69,7 +69,7 @@ export default function MultipleChoiceInteraction({ id, quizType, body }) {
             </div>
           );
         })}
-        <InteractionSubmitRow id={id} details={progress} disabled={useRadioButtons && currentSelections.size === 0} />
+        <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit'} disabled={useRadioButtons && currentSelections.size === 0} />
       </div>
     </>
   );

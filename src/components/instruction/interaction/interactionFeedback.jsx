@@ -18,6 +18,8 @@ export default function InteractionFeedback({ quizId, onSyncGrade = null, getSub
   const canSyncGrade = details?.syncGrade === true && isCourseLinkedToGradebook === true && canSubmitToGradebook === true && Number.isFinite(percentCorrect) && typeof onSyncGrade === 'function';
   const syncState = details?.canvasSyncState || 'idle';
   const syncMessage = details?.canvasSyncMessage || null;
+  const canvasSubmittedAt = details?.canvasSubmittedAt || null;
+  const canvasSubmittedAtLabel = canvasSubmittedAt ? new Date(canvasSubmittedAt).toLocaleString() : '';
 
   const downloadableFiles = Array.isArray(details?.files) ? details.files.filter((f) => f && f.storagePath) : [];
 
@@ -54,12 +56,13 @@ export default function InteractionFeedback({ quizId, onSyncGrade = null, getSub
       <div className="markdown-body whitespace-normal">
         <ReactMarkdown remarkPlugins={[remarkGfm, remarkEmoji, remarkGithubBlockquoteAlert]}>{details.feedback}</ReactMarkdown>
       </div>
+      {canvasSubmittedAtLabel && <div className="mt-3 text-sm font-medium text-blue-900">Submitted to Gradebook on {canvasSubmittedAtLabel}</div>}
       {canSyncGrade && (
         <div className="mt-3">
           <button type="button" className="px-3 py-1.5 rounded border border-blue-700 bg-blue-700 text-white text-sm hover:bg-blue-800 disabled:opacity-60" disabled={syncState === 'loading'} onClick={() => onSyncGrade(quizId)}>
-            {syncState === 'loading' ? 'Submitting...' : syncState === 'success' ? 'Submit again to Gradebook' : 'Submit to Gradebook'}
+            {syncState === 'loading' ? 'Submitting...' : syncState === 'success' || canvasSubmittedAt ? 'Submit again to Gradebook' : 'Submit to Gradebook'}
           </button>
-          {syncMessage && <div className={`mt-2 text-sm ${syncState === 'error' ? 'text-red-700' : 'text-blue-800'}`}>{syncMessage}</div>}
+          {syncMessage && syncState !== 'success' && <div className={`mt-2 text-sm ${syncState === 'error' ? 'text-red-700' : 'text-blue-800'}`}>{syncMessage}</div>}
         </div>
       )}
     </div>

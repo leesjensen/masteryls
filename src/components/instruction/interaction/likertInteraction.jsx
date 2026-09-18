@@ -61,7 +61,7 @@ function responsesChanged(currentResponses, savedResponses, questions) {
   return questionIds.some((qid) => current[qid] !== saved[qid]);
 }
 
-export default function LikertInteraction({ id, body, meta, courseOps }) {
+export default function LikertInteraction({ id, body, meta, courseOps, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
   const { prompt, questions, scale } = parseLikertBody(body, meta);
   const visibilityMode = parseVisibilityMode(meta?.showResults || meta?.resultsVisibility);
@@ -144,7 +144,7 @@ export default function LikertInteraction({ id, body, meta, courseOps }) {
           </div>
         ))}
 
-        <InteractionSubmitRow id={id} details={progress} disabled={submitDisabled} />
+        <InteractionSubmitRow id={id} details={progress} label={submitLabel || 'Submit'} disabled={submitDisabled} />
 
         {progress.feedback && <div className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">{progress.feedback}</div>}
 

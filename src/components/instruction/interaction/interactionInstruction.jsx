@@ -30,6 +30,8 @@ function InteractionCard({ meta, body, courseOps, courseId, topicId, controlJsx,
   const isEvaluating = progress?.evaluationState === 'loading';
   const s = isEvaluating ? 'interaction-active-border border-transparent bg-gray-50' : progress && progress.feedback ? 'ring-2 ring-blue-400 bg-gray-50' : 'bg-blue-50';
   const isInteractionReadOnly = isObserveReadOnly || isUnauthenticatedReadOnly;
+  const allowsGradebookSubmit = toBoolean(meta.syncGrade, false) && isCourseLinkedToGradebook && canSubmitToCanvasGradebook && !isInteractionReadOnly;
+  const renderedControl = React.isValidElement(controlJsx) && allowsGradebookSubmit ? React.cloneElement(controlJsx, { submitLabel: 'Get feedback' }) : controlJsx;
 
   return (
     <div className={`rounded-lg px-4 py-4 border-1 border-neutral-400 shadow-sm overflow-x-auto break-words whitespace-pre-line ${s}`} data-plugin-masteryls data-plugin-masteryls-root data-plugin-masteryls-id={meta.id} data-plugin-masteryls-title={meta.title} data-plugin-masteryls-type={meta.type} data-plugin-masteryls-grading-criteria={meta.gradingCriteria || ''} data-plugin-masteryls-url-prompt={meta.urlPrompt || ''} data-plugin-masteryls-validate-url={toBoolean(meta.validateUrl, false) ? 'true' : 'false'} data-plugin-masteryls-sync-grade={toBoolean(meta.syncGrade, false) ? 'true' : 'false'} data-plugin-masteryls-auto-grade={toBoolean(meta.autoGrade, false) ? 'true' : 'false'}>
@@ -45,7 +47,7 @@ function InteractionCard({ meta, body, courseOps, courseId, topicId, controlJsx,
       )}
       {isObserveReadOnly && <div className="mb-2 text-xs text-amber-700">Observe mode is read-only. Submissions are disabled.</div>}
       <fieldset disabled={isInteractionReadOnly} className={`space-y-3 ${isInteractionReadOnly ? 'opacity-70' : ''}`.trim()}>
-        {controlJsx}
+        {renderedControl}
       </fieldset>
       {instructionState !== 'exam' && meta.type !== 'survey' && meta.type !== 'likert' && <InteractionFeedback quizId={meta.id} onSyncGrade={onSyncGrade} getSubmissionFileUrl={getSubmissionFileUrl} isCourseLinkedToGradebook={isCourseLinkedToGradebook} canSubmitToGradebook={canSubmitToCanvasGradebook && !isInteractionReadOnly} />}
       <InteractionResponseReview courseOps={courseOps} courseId={courseId} topicId={topicId} interactionId={meta.id} interactionType={meta.type} body={body} />
@@ -349,10 +351,12 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     });
 
     try {
-      await courseOps.syncProjectInteractionGrade(null, quizId, current);
+      const result = await courseOps.syncProjectInteractionGrade(null, quizId, current);
       const latest = getInteractionProgress(quizId) || current;
       updateInteractionProgress(quizId, {
         ...latest,
+        canvasSubmittedAt: result?.canvasSubmittedAt || latest.canvasSubmittedAt,
+        canvasPostedGrade: result?.postedGrade ?? latest.canvasPostedGrade,
         canvasSyncState: 'success',
         canvasSyncMessage: 'Grade submitted to Gradebook.',
       });
