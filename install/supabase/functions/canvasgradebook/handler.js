@@ -3,6 +3,25 @@ export const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// The due date is supplied by the client, which reads it from the course schedule (the same
+// source that seeded Canvas's due_at when the course was linked). Anything unparseable, or so
+// far from now that it can't be a real course date, is dropped rather than trusted - both
+// because the value only feeds an advisory comment line, and because calculateGraceDaysEarned
+// walks one day at a time and would spin on a bad date.
+const MAX_DUE_DATE_DRIFT_MS = 400 * 24 * 60 * 60 * 1000;
+
+function normalizeDueDate(dateDue) {
+  if (!dateDue) {
+    return null;
+  }
+  const parsed = new Date(dateDue);
+  const time = parsed.getTime();
+  if (!Number.isFinite(time) || Math.abs(time - Date.now()) > MAX_DUE_DATE_DRIFT_MS) {
+    return null;
+  }
+  return parsed.toISOString();
+}
+
 function normalizePercent(percentCorrect) {
   const parsed = Number(percentCorrect);
   if (!Number.isFinite(parsed)) {
@@ -14,13 +33,17 @@ function normalizePercent(percentCorrect) {
 // Canvas collapses plain-text newlines in submission comments, so the header
 // lines are joined with <br>. The feedback is already simplified HTML produced
 // by the client (markdownToHtml), so it is appended as-is rather than escaped.
-export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }) {
+export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade, dateDue }) {
   const lines = [];
+  const date = new Date().toISOString();
   const suggestedGrade = Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100;
   lines.push('MasteryLS feedback');
   lines.push(`Suggested grade: ${suggestedGrade}/${normalizedPoints} (${normalizedPercent}%)`);
   lines.push(`Auto grade: ${autoGrade ? 'enabled' : 'disabled'}`);
-  lines.push(`Submitted at: ${new Date().toISOString()}`);
+  lines.push(`Submitted at: ${date}`);
+  if (dateDue) {
+    lines.push(`Grace Day Potential: ${calculateGraceDaysEarned({ dateSubmitted: date, dateDue })}`);
+  }
   if (typeof postedGrade === 'number') {
     lines.push(`Posted grade: ${postedGrade}`);
   }
@@ -33,6 +56,41 @@ export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoin
   }
 
   return comment;
+}
+
+// Grace days are counted on a calendar with no Sundays. A Sunday is never a countable day
+// between the due date and the submission, and work handed in on a Sunday is treated as though
+// it arrived the following Monday - so a Friday-due assignment submitted Sunday is two days
+// late (Saturday, then Monday), the same as one submitted Monday.
+const SUNDAY = 0;
+
+export function calculateGraceDaysEarned({ dateSubmitted, dateDue }) {
+  const due = new Date(dateDue);
+
+  const submitted = new Date(dateSubmitted);
+  if (submitted.getDay() === SUNDAY) {
+    submitted.setDate(submitted.getDate() + 1);
+  }
+
+  const isLate = submitted > due;
+  const direction = isLate ? -1 : 1;
+  let graceDaysEarned = 0;
+  const currentDate = new Date(submitted);
+  // Steps by calendar date rather than by adding 24h: across a daylight-saving boundary a
+  // 24h step can skip or repeat a local date, and skipping the due date's own date would
+  // leave this loop walking forever.
+  const stepOneDay = () => currentDate.setDate(currentDate.getDate() + direction);
+  while (currentDate.toDateString() !== due.toDateString()) {
+    if (currentDate.getDay() === SUNDAY) {
+      stepOneDay();
+      continue;
+    }
+    graceDaysEarned += direction;
+    stepOneDay();
+  }
+
+  if (graceDaysEarned === 0 && isLate) graceDaysEarned = -1;
+  return graceDaysEarned;
 }
 
 export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeader, getEnv, fetchFn = fetch }) {
@@ -145,7 +203,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     }
 
     // Grade-submission mode (default): validate the grade fields and post to Canvas.
-    const { topicType, percentCorrect, pointsPossible, canvasAssignmentId, canvasQuizId } = payload;
+    const { topicType, percentCorrect, pointsPossible, canvasAssignmentId, canvasQuizId, dateDue } = payload;
     if (!topicType || percentCorrect === undefined || pointsPossible === undefined) {
       return new Response(JSON.stringify({ error: 'topicType, percentCorrect, and pointsPossible are required' }), {
         status: 400,
@@ -167,6 +225,8 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
     const submissionText = typeof payload.submissionText === 'string' ? payload.submissionText.trim() : '';
 
+    // Mastery updates never attach a comment, so the due date is irrelevant for them.
+    const normalizedDueDate = isMastery ? null : normalizeDueDate(dateDue);
     const normalizedPercent = normalizePercent(percentCorrect);
     const normalizedPoints = Number(pointsPossible);
     if (normalizedPercent === null || !Number.isFinite(normalizedPoints) || normalizedPoints <= 0) {
@@ -248,7 +308,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
           ? {}
           : {
               comment: {
-                text_comment: buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade }),
+                text_comment: buildCanvasComment({ feedback, normalizedPercent, normalizedPoints, postedGrade, autoGrade, dateDue: normalizedDueDate }),
               },
             }),
       };

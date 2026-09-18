@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCanvasGradebookHandler, buildCanvasComment } from './handler.js';
+import { createCanvasGradebookHandler, buildCanvasComment, calculateGraceDaysEarned } from './handler.js';
 
 function createMockSupabase({ user, roles }) {
   return {
@@ -73,6 +73,93 @@ function getSubmissionRequest(calls, method = 'PUT') {
   assert.ok(call, 'expected a Canvas submissions API call');
   return JSON.parse(call.init.body || '{}');
 }
+
+function graceDayTest({ dateSubmitted, dateDue, expectedGraceDays}) {
+  const result = calculateGraceDaysEarned({ dateSubmitted, dateDue });
+  assert.equal(result, expectedGraceDays);
+}
+
+test('calculateGraceDaysEarned returns 0 for submission on the due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-10T06:00:00Z'), // A thursday
+    dateDue: new Date('2026-09-10T12:00:00Z'), // A thursday
+    expectedGraceDays: 0
+  });
+});
+
+test('calculateGraceDaysEarned returns -1 for submission slightly after the due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-09T12:00:01Z'), // One second late (wednesday)
+    dateDue: new Date('2026-09-09T12:00:00Z'), // A wednesday
+    expectedGraceDays: -1
+  });
+});
+
+test('calculateGraceDaysEarned returns -1 for submission sunday after a saturday due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-12T12:00:00Z'), // A saturday
+    expectedGraceDays: -1
+  });
+});
+
+test('calculateGraceDaysEarned returns -2 for submission sunday after a friday due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-11T12:00:00Z'), // A friday
+    expectedGraceDays: -2
+  });
+});
+
+test('calculateGraceDaysEarned returns 1 for submission saturday before a monday due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-12T12:00:00Z'), // A saturday
+    dateDue: new Date('2026-09-14T12:00:00Z'), // A monday
+    expectedGraceDays: 1
+  });
+});
+
+test('calculateGraceDaysEarned treats a sunday submission as on time for a monday due date', () => {
+  // The sunday submission counts as monday's, and monday is the due date - so nothing is lost.
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-14T12:00:00Z'), // A monday
+    expectedGraceDays: 0
+  });
+});
+
+test('calculateGraceDaysEarned counts saturday against a late submission', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-12T12:00:00Z'), // A saturday
+    dateDue: new Date('2026-09-10T12:00:00Z'), // A thursday
+    expectedGraceDays: -2
+  });
+});
+
+test('calculateGraceDaysEarned counts a week late as six days, skipping the sunday', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-18T12:00:00Z'), // A friday
+    dateDue: new Date('2026-09-11T12:00:00Z'), // The friday a week earlier
+    expectedGraceDays: -6
+  });
+});
+
+test('calculateGraceDaysEarned earns no grace day for the sunday before a friday due date', () => {
+  // Submitting sunday is monday's submission, so it earns monday through thursday only.
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-18T12:00:00Z'), // The following friday
+    expectedGraceDays: 4
+  });
+});
+
+test('calculateGraceDaysEarned returns 18 for submission 3 weeks before the due date', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-03T06:00:00Z'), // A thursday
+    dateDue: new Date('2026-09-24T12:00:00Z'), // A thursday
+    expectedGraceDays: 18
+  });
+});
 
 test('canvasgradebook allows root user', async () => {
   const { fetchFn, calls } = buildFetchStub();
@@ -207,6 +294,77 @@ test('canvasgradebook can submit comment and url without posting grade when auto
   assert.equal(updateRequest.submission, undefined);
   assert.ok(updateRequest.comment.text_comment.includes('Suggested grade: 75/100 (75%)'));
   assert.ok(updateRequest.comment.text_comment.includes('Strong progress.'));
+});
+
+function isoDaysFromNow(days) {
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function buildDueDateHandler(fetchFn) {
+  return createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u7', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+}
+
+function dueDateRequest(dateDue) {
+  return makeRequest({
+    courseId: '12345',
+    topicType: 'project',
+    percentCorrect: 90,
+    pointsPossible: 100,
+    learnerEmail: 'learner@test.com',
+    canvasAssignmentId: 999,
+    autoGrade: true,
+    dateDue,
+  });
+}
+
+test('canvasgradebook takes the grace-day due date from the payload without fetching the Canvas assignment', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = buildDueDateHandler(fetchFn);
+
+  // Two weekdays ahead of a submission made now, so grace days are earned rather than lost.
+  const response = await handler(dueDateRequest(isoDaysFromNow(9)));
+
+  assert.equal(response.status, 200);
+  assert.ok(
+    !calls.some((entry) => entry.url.includes('/assignments/999') && !entry.url.includes('/submissions')),
+    'handler should not GET the Canvas assignment for its due date',
+  );
+
+  const submissionRequest = getSubmissionRequest(calls, 'PUT');
+  assert.match(submissionRequest.comment.text_comment, /Grace Day Potential: \d+/);
+});
+
+test('canvasgradebook omits the grace-day line when no due date is supplied', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = buildDueDateHandler(fetchFn);
+
+  const response = await handler(dueDateRequest(undefined));
+
+  assert.equal(response.status, 200);
+  assert.ok(!getSubmissionRequest(calls, 'PUT').comment.text_comment.includes('Grace Day Potential'));
+});
+
+test('canvasgradebook ignores an unusable client-supplied due date', async () => {
+  // The payload is client-controlled and learners may post their own grades, so a date that
+  // cannot be parsed - or is too far out to be a real course date - is dropped rather than fed
+  // to the day-by-day grace-day walk.
+  for (const dateDue of ['not a date', '', isoDaysFromNow(5000), isoDaysFromNow(-5000)]) {
+    const { fetchFn, calls } = buildFetchStub();
+    const handler = buildDueDateHandler(fetchFn);
+
+    const response = await handler(dueDateRequest(dateDue));
+
+    assert.equal(response.status, 200, `expected ${dateDue} to be tolerated`);
+    assert.ok(!getSubmissionRequest(calls, 'PUT').comment.text_comment.includes('Grace Day Potential'), `expected ${dateDue} to be dropped`);
+  }
 });
 
 test('canvasgradebook accepts dra and interview topicType, posts a text-entry submission, and never posts a grade', async () => {

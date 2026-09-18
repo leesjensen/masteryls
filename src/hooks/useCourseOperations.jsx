@@ -23,6 +23,12 @@ import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
  * @typedef {import('../service/service.ts').default} Service
  */
 
+// Topic types that carry a schedule due date. Only these get a due_at pushed to their Canvas
+// quiz/assignment at link time, and the Canvas feedback comment's grace-day line reads the
+// same schedule.md value rather than asking Canvas for it back - so the two agree as long as
+// due dates are edited in the schedule rather than directly in Canvas.
+const SCHEDULE_DUE_DATE_TOPIC_TYPES = ['exam', 'project'];
+
 /**
  * Custom hook for course operations
  * @param {Object} user - The current user object
@@ -1493,6 +1499,7 @@ Requirements:
         learnerEmail,
         autoGrade: false,
         feedback,
+        dateDue: await getTopicScheduleDueDate(course, topic),
         // Posts a minimal text-entry submission so Canvas registers a real submission record
         // and shows its "needs grading" indicator in the gradebook - without this, autoGrade:
         // false plus no submission leaves no visible signal that the learner completed the
@@ -1546,6 +1553,7 @@ Requirements:
                 canvasAssignmentId: topic.externalRefs?.canvasAssignmentId,
                 canvasQuizId: topic.externalRefs?.canvasQuizId,
                 learnerEmail: progressUser.email,
+                dateDue: await getTopicScheduleDueDate(course, topic),
               });
             } catch (error) {
               console.error(`Unable to sync Canvas grade for topic '${topic.title}': ${error.message}`);
@@ -1621,6 +1629,7 @@ Requirements:
     const interactionFeedback = markdownToHtml(String(details?.feedback || '').trim());
     const submissionUrl = typeof details?.url === 'string' ? details.url.trim() : '';
     const autoGrade = details?.autoGrade === true;
+    const dateDue = await getTopicScheduleDueDate(course, topic);
 
     const gradebookResult = await service.makeCanvasGradebookRequest({
       courseId: String(course.externalRefs.canvasCourseId),
@@ -1634,6 +1643,7 @@ Requirements:
       autoGrade,
       feedback: interactionFeedback,
       submissionUrl: submissionUrl || undefined,
+      dateDue,
     });
 
     const canvasSubmittedAt = new Date().toISOString();
@@ -2004,9 +2014,21 @@ Requirements:
 
     const fetchUrl = selected.commit ? selected.path.replace(/(\/main\/)/, `/${selected.commit}/`) : selected.path;
     const markdown = await fetch(fetchUrl, { cache: 'no-store' }).then((res) => res.text());
+
+    return buildScheduleDueDatesByTopicId({
+      course,
+      markdown,
+      scheduleRepoPath: repoRelativePathFromRawUrl(selected.path, course.links?.gitHub?.rawUrl),
+    });
+  }
+
+  // Resolves each scheduled due item back to the topic it refers to (by repo path, falling back
+  // to title) and returns { topicId: isoDueDate } for the topic types that carry due dates.
+  // Pure - callers supply the already-fetched schedule markdown so they can choose whether to
+  // hit the network or reuse a cached copy.
+  function buildScheduleDueDatesByTopicId({ course, markdown, scheduleRepoPath }) {
     const model = parseScheduleMarkdown(markdown || '');
-    const rawRoot = course.links?.gitHub?.rawUrl;
-    const selectedRepoPath = repoRelativePathFromRawUrl(selected.path, rawRoot);
+    const rawRoot = course?.links?.gitHub?.rawUrl;
 
     const topicByRepoPath = new Map();
     const topicByTitle = new Map();
@@ -2035,7 +2057,7 @@ Requirements:
 
         let topicId = null;
         if (href) {
-          const repoPath = resolveRelativeRepoPath(selectedRepoPath, href);
+          const repoPath = resolveRelativeRepoPath(scheduleRepoPath, href);
           topicId = topicByRepoPath.get(repoPath) || null;
         }
         if (!topicId && text) {
@@ -2046,13 +2068,47 @@ Requirements:
         }
 
         const topic = course.topicFromId(topicId);
-        if (topic?.type === 'exam' || topic?.type === 'project') {
+        if (SCHEDULE_DUE_DATE_TOPIC_TYPES.includes(topic?.type)) {
           dueDatesByTopicId[topicId] = dueAt;
         }
       });
     });
 
     return dueDatesByTopicId;
+  }
+
+  // The due date that accompanies a grade posted to Canvas, read from the course schedule
+  // instead of fetched back from the Canvas assignment. Prefers the schedule file the course
+  // was linked to Canvas with, so the date matches what was written to the assignment, and
+  // leans on getScheduleTopicContent's markdown cache - the Contents sidebar has usually
+  // already loaded the schedule by the time a grade is posted, so this costs no network call.
+  async function getTopicScheduleDueDate(course, topic) {
+    if (!topic?.id || !SCHEDULE_DUE_DATE_TOPIC_TYPES.includes(topic?.type)) {
+      return null;
+    }
+
+    try {
+      const scheduleTopic = getScheduleTopic(course);
+      if (!scheduleTopic) {
+        return null;
+      }
+
+      const scheduleFiles = getScheduleFiles(scheduleTopic);
+      const linkedFileId = course?.externalRefs?.canvasScheduleFileId;
+      const selectedFile = scheduleFiles.find((file) => file.id === linkedFileId) || getSelectedScheduleFile(scheduleTopic, scheduleFiles);
+      if (!selectedFile) {
+        return null;
+      }
+
+      const markdown = await getScheduleTopicContent(scheduleTopic, selectedFile.id);
+      const dueDatesByTopicId = buildScheduleDueDatesByTopicId({ course, markdown, scheduleRepoPath: selectedFile.repoPath });
+
+      return dueDatesByTopicId[topic.id] || null;
+    } catch (error) {
+      // The grace-day line is advisory - a schedule that won't load shouldn't block the grade.
+      console.error(`Unable to resolve schedule due date for topic '${topic.title}': ${error.message}`);
+      return null;
+    }
   }
 
   async function repairCanvas(course, canvasCourseId, setUpdateMessage) {
