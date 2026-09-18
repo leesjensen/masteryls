@@ -58,25 +58,38 @@ export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoin
   return comment;
 }
 
+// Grace days are counted on a calendar with no Sundays. A Sunday is never a countable day
+// between the due date and the submission, and work handed in on a Sunday is treated as though
+// it arrived the following Monday - so a Friday-due assignment submitted Sunday is two days
+// late (Saturday, then Monday), the same as one submitted Monday.
+const SUNDAY = 0;
+
 export function calculateGraceDaysEarned({ dateSubmitted, dateDue }) {
-  const submitted = new Date(dateSubmitted);
   const due = new Date(dateDue);
-  const msPerDay = 1000 * 60 * 60 * 24;
+
+  const submitted = new Date(dateSubmitted);
+  if (submitted.getDay() === SUNDAY) {
+    submitted.setDate(submitted.getDate() + 1);
+  }
+
   const isLate = submitted > due;
-  const round = isLate ? Math.ceil : Math.floor;
   const direction = isLate ? -1 : 1;
   let graceDaysEarned = 0;
-  let currentDate = new Date(submitted);
+  const currentDate = new Date(submitted);
+  // Steps by calendar date rather than by adding 24h: across a daylight-saving boundary a
+  // 24h step can skip or repeat a local date, and skipping the due date's own date would
+  // leave this loop walking forever.
+  const stepOneDay = () => currentDate.setDate(currentDate.getDate() + direction);
   while (currentDate.toDateString() !== due.toDateString()) {
-    if(currentDate.getDay() === 6) {
-      currentDate = new Date(currentDate.getTime() + direction * msPerDay);
+    if (currentDate.getDay() === SUNDAY) {
+      stepOneDay();
       continue;
     }
     graceDaysEarned += direction;
-    currentDate = new Date(currentDate.getTime() + direction * msPerDay);
+    stepOneDay();
   }
 
-  if( graceDaysEarned === 0 && isLate ) graceDaysEarned = -1;
+  if (graceDaysEarned === 0 && isLate) graceDaysEarned = -1;
   return graceDaysEarned;
 }
 

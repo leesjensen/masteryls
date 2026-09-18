@@ -114,8 +114,42 @@ test('calculateGraceDaysEarned returns -2 for submission sunday after a friday d
 test('calculateGraceDaysEarned returns 1 for submission saturday before a monday due date', () => {
   graceDayTest({
     dateSubmitted: new Date('2026-09-12T12:00:00Z'), // A saturday
-    dateDue: new Date('2026-09-14T12:00:00Z'), // A friday
+    dateDue: new Date('2026-09-14T12:00:00Z'), // A monday
     expectedGraceDays: 1
+  });
+});
+
+test('calculateGraceDaysEarned treats a sunday submission as on time for a monday due date', () => {
+  // The sunday submission counts as monday's, and monday is the due date - so nothing is lost.
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-14T12:00:00Z'), // A monday
+    expectedGraceDays: 0
+  });
+});
+
+test('calculateGraceDaysEarned counts saturday against a late submission', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-12T12:00:00Z'), // A saturday
+    dateDue: new Date('2026-09-10T12:00:00Z'), // A thursday
+    expectedGraceDays: -2
+  });
+});
+
+test('calculateGraceDaysEarned counts a week late as six days, skipping the sunday', () => {
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-18T12:00:00Z'), // A friday
+    dateDue: new Date('2026-09-11T12:00:00Z'), // The friday a week earlier
+    expectedGraceDays: -6
+  });
+});
+
+test('calculateGraceDaysEarned earns no grace day for the sunday before a friday due date', () => {
+  // Submitting sunday is monday's submission, so it earns monday through thursday only.
+  graceDayTest({
+    dateSubmitted: new Date('2026-09-13T12:00:00Z'), // A sunday
+    dateDue: new Date('2026-09-18T12:00:00Z'), // The following friday
+    expectedGraceDays: 4
   });
 });
 
