@@ -6,7 +6,7 @@ import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
-import { parseScheduleMarkdown } from '../utils/scheduleMarkdown';
+import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
@@ -1618,7 +1618,10 @@ Requirements:
       throw new Error('Unable to submit grade because learner email is missing.');
     }
 
-    const interactionFeedback = markdownToHtml(String(details?.feedback || '').trim());
+    const scheduleDueDates = await getScheduleDueDatesByTopicId(course, course.externalRefs?.canvasScheduleFileId || null).catch(() => ({}));
+    const graceDaysLine = formatGraceDaysLine(calculateGraceDays(scheduleDueDates?.[topic.id], new Date()));
+    const feedbackMarkdown = [graceDaysLine, String(details?.feedback || '').trim()].filter(Boolean).join('\n\n');
+    const interactionFeedback = markdownToHtml(feedbackMarkdown);
     const submissionUrl = typeof details?.url === 'string' ? details.url.trim() : '';
     const autoGrade = details?.autoGrade === true;
 

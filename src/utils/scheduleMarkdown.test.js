@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildWeeks, parseCellItems, parseScheduleMarkdown, scheduleDateStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+import { buildWeeks, calculateGraceDays, formatGraceDaysLine, parseCellItems, parseScheduleMarkdown, scheduleDateStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
 
 test('scheduleDateBoundsToIso expands YYYY-MM-DD dates to inclusive start/end of day', () => {
   const bounds = scheduleDateBoundsToIso({ startDate: '2026-01-10', endDate: '2026-05-01' });
@@ -26,6 +26,20 @@ test('scheduleDateStatus identifies past today and future display dates', () => 
   assert.equal(scheduleDateStatus('Sep 9', referenceDate), 'today');
   assert.equal(scheduleDateStatus('2026-12-01', referenceDate), 'future');
   assert.equal(scheduleDateStatus('Date', referenceDate), null);
+});
+
+test('calculateGraceDays treats Sundays as nonexistent', () => {
+  assert.equal(calculateGraceDays(new Date(2026, 8, 19), new Date(2026, 8, 20)), -1);
+  assert.equal(calculateGraceDays(new Date(2026, 8, 21), new Date(2026, 8, 19)), 1);
+  assert.equal(calculateGraceDays(new Date(2026, 8, 21), new Date(2026, 8, 21)), 0);
+  assert.equal(calculateGraceDays(new Date(2026, 8, 24), new Date(2026, 8, 21)), 3);
+});
+
+test('formatGraceDaysLine includes explicit positive sign', () => {
+  assert.equal(formatGraceDaysLine(3), 'Grace days +3');
+  assert.equal(formatGraceDaysLine(0), 'Grace days 0');
+  assert.equal(formatGraceDaysLine(-1), 'Grace days -1');
+  assert.equal(formatGraceDaysLine(null), '');
 });
 
 test('parseScheduleMarkdown extracts title links table and special days', () => {

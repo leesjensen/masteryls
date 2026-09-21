@@ -789,6 +789,7 @@ Submit your project URL.
     courseJsonOverride: {
       externalRefs: {
         canvasCourseId: '12345',
+        canvasScheduleFileId: 'default',
       },
       modules: [
         {
@@ -806,6 +807,17 @@ Submit your project URL.
         },
       ],
     },
+  });
+  await page.context().route('https://raw.githubusercontent.com/**/schedule/schedule.md', async (route: any) => {
+    await route.fulfill({
+      body: `# Schedule
+
+| Week | Date | Module | Due | Topics Covered | Slides |
+| :--: | ---- | ------ | --- | -------------- | ------ |
+| 1 | 2026-09-24 | Projects | [Project Topic](../something/more/topic1.md) | | |
+`,
+      contentType: 'text/plain; charset=utf-8',
+    });
   });
 
   await navigateToCourse(page);
@@ -847,6 +859,8 @@ Submit your project URL.
   expect(payload.autoGrade).toBe(false);
   expect(payload.submissionUrl).toBe('https://example.com/my-project');
   expect(typeof payload.feedback).toBe('string');
+  expect(payload.feedback).toMatch(/^Grace days [+-]?\d+/);
+  expect(payload.feedback).toContain('Submission received.');
   expect(payload.feedback.length).toBeGreaterThan(0);
 
   await page.reload();
