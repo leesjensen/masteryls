@@ -24,8 +24,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [overview, setOverview] = React.useState({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
   const [filterText, setFilterText] = React.useState('');
-  const [confirmedFilters, setConfirmedFilters] = React.useState([]);
-  const [showSuggestions, setShowSuggestions] = React.useState(false);
+  const [searchText, setSearchText] = React.useState('');
   const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
 
   const courseOpsRef = React.useRef(courseOps);
@@ -61,20 +60,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }, [enrolledCourseIds, selectedCourseId, user]);
   const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
 
-  const confirmedIds = React.useMemo(() => new Set(confirmedFilters.map((f) => f.learnerId)), [confirmedFilters]);
-
-  const suggestions = React.useMemo(() => {
-    if (!filterText) return [];
-    const lower = filterText.toLowerCase();
-    return overview.rows.filter(
-      (row) =>
-        !confirmedIds.has(row.learnerId) &&
-        ((row.learnerName || '').toLowerCase().includes(lower) || (row.learnerEmail || '').toLowerCase().includes(lower)),
-    );
-  }, [filterText, overview.rows, confirmedIds]);
-
   const displayedRows = React.useMemo(() => {
-    const rows = confirmedFilters.length === 0 ? overview.rows : overview.rows.filter((row) => confirmedIds.has(row.learnerId));
+    const rows = overview.rows;
 
     if (!sort.key) return rows;
 
@@ -107,7 +94,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
           return 0;
       }
     });
-  }, [confirmedFilters.length, confirmedIds, overview.rows, sort]);
+  }, [overview.rows, sort]);
 
   React.useEffect(() => {
     updateAppBar({ title: 'MasteryView', tools: null });
@@ -168,7 +155,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, page, limit: 50 });
+        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, page, limit: 50, search: searchText });
         if (!cancelled) {
           setOverview({
             rows: Array.isArray(result?.rows) ? result.rows : [],
@@ -195,7 +182,16 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     return () => {
       cancelled = true;
     };
-  }, [hasCourseAccess, selectedCourseId, page]);
+  }, [hasCourseAccess, selectedCourseId, page, searchText]);
+
+  React.useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearchText(filterText.trim());
+      setPage(1);
+    }, 800);
+
+    return () => clearTimeout(timeout);
+  }, [filterText]);
 
   function toggleSort(key) {
     setSort((prev) => prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' });
@@ -225,20 +221,9 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       navigate('/masteryview');
     }
     setPage(1);
-    setConfirmedFilters([]);
     setFilterText('');
+    setSearchText('');
     setSort({ key: null, direction: 'asc' });
-  }
-
-  function onConfirmFilter(row) {
-    if (confirmedIds.has(row.learnerId)) return;
-    setConfirmedFilters((prev) => [...prev, { learnerId: row.learnerId, learnerName: row.learnerName, learnerEmail: row.learnerEmail }]);
-    setFilterText('');
-    setShowSuggestions(false);
-  }
-
-  function onRemoveFilter(learnerId) {
-    setConfirmedFilters((prev) => prev.filter((f) => f.learnerId !== learnerId));
   }
 
   function onSelectLearner(row) {
@@ -301,48 +286,18 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
               value={filterText}
               onChange={(e) => {
                 setFilterText(e.target.value);
-                setShowSuggestions(true);
               }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Name or email"
               autoComplete="off"
               className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
               aria-label="Filter learner"
             />
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                {suggestions.map((row) => (
-                  <button
-                    key={row.learnerId}
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-amber-50 flex flex-col"
-                    onMouseDown={() => onConfirmFilter(row)}
-                  >
-                    <span className="font-medium">{row.learnerName || 'Unknown'}</span>
-                    <span className="text-gray-500 text-xs">{row.learnerEmail}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            {confirmedFilters.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {confirmedFilters.map((f) => (
-                  <span key={f.learnerId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs">
-                    {f.learnerName || f.learnerEmail}
-                    <button type="button" onClick={() => onRemoveFilter(f.learnerId)} className="hover:text-amber-900 font-bold leading-none" aria-label={`Remove ${f.learnerName || f.learnerEmail} filter`}>
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         )}
 
         {canViewLearnerFilters && (
           <div className="flex items-end text-sm text-gray-600">
-            <span>Total learners: {confirmedFilters.length > 0 ? displayedRows.length : overview.totalCount}</span>
+            <span>{searchText ? 'Matching learners' : 'Total learners'}: {overview.totalCount}</span>
           </div>
         )}
       </div>
@@ -415,17 +370,15 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
         </table>
       </div>
 
-      {confirmedFilters.length === 0 && (
-        <div className="flex items-center justify-end gap-2">
-          <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1 || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
-            Previous
-          </button>
-          <span className="text-sm text-gray-600">Page {overview.page || page}</span>
-          <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={!overview.hasMore || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
-            Next
-          </button>
-        </div>
-      )}
+      <div className="flex items-center justify-end gap-2">
+        <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1 || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
+          Previous
+        </button>
+        <span className="text-sm text-gray-600">Page {overview.page || page}</span>
+        <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={!overview.hasMore || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
+          Next
+        </button>
+      </div>
     </div>
   );
 }
