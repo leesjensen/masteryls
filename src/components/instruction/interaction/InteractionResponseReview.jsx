@@ -30,6 +30,86 @@ function getLatestResponses(progressRows) {
   return [...latestByUser.values()];
 }
 
+function isChoiceSummaryType(type) {
+  const normalized = String(type || '').toLowerCase();
+  return normalized === 'multiple-choice' || normalized === 'multiple-select';
+}
+
+function buildChoiceSummary({ responses, interactionType, body }) {
+  const choiceLabels = parseChoiceLabels(body);
+  const counts = choiceLabels.map((label, index) => ({ index, label: label || `Option ${index + 1}`, count: 0 }));
+  const correct = new Set();
+
+  responses.forEach((response) => {
+    const details = response?.details || {};
+    (Array.isArray(details.correct) ? details.correct : []).forEach((index) => correct.add(index));
+    const selected = Array.isArray(details.selected) ? details.selected : [];
+    selected.forEach((index) => {
+      if (!Number.isInteger(index) || index < 0) {
+        return;
+      }
+      while (counts.length <= index) {
+        counts.push({ index: counts.length, label: `Option ${counts.length + 1}`, count: 0 });
+      }
+      counts[index].count += 1;
+    });
+  });
+
+  return {
+    type: String(interactionType || responses[0]?.details?.type || '').toLowerCase(),
+    totalResponses: responses.length,
+    counts,
+    correct,
+  };
+}
+
+function ChoiceResponseSummary({ responses, interactionType, body, onRefresh, loading }) {
+  const summary = buildChoiceSummary({ responses, interactionType, body });
+  const denominator = Math.max(1, summary.totalResponses);
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="font-semibold text-gray-900">Choice summary</div>
+          <div className="text-xs text-gray-500">
+            {summary.totalResponses} response{summary.totalResponses === 1 ? '' : 's'}
+          </div>
+        </div>
+        <button type="button" onClick={onRefresh} disabled={loading} aria-label="Refresh responses" title="Refresh responses" className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50">
+          <RefreshCw size={14} aria-hidden="true" />
+        </button>
+      </div>
+      <div className="overflow-hidden rounded border border-indigo-100 bg-white">
+        <table className="min-w-full text-sm">
+          <thead className="bg-indigo-50 text-left text-xs uppercase tracking-wide text-gray-500">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Choice</th>
+              <th className="w-28 px-3 py-2 text-right font-semibold">Count</th>
+              <th className="w-28 px-3 py-2 text-right font-semibold">Percent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summary.counts.map((choice) => {
+              const percent = Math.round((choice.count / denominator) * 100);
+              return (
+                <tr key={choice.index} className="border-t border-indigo-50">
+                  <td className="px-3 py-2 text-gray-800">
+                    {choice.label}
+                    {summary.correct.has(choice.index) && <span className="ml-2 text-green-700">(correct)</span>}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums text-gray-800">{choice.count}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-gray-600">{percent}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function ResponseDetails({ response, interactionType, body, getSubmissionFileUrl }) {
   const details = response?.details || {};
   const type = String(details.type || interactionType || '').toLowerCase();
@@ -221,6 +301,7 @@ export default function InteractionResponseReview({ courseOps, courseId, topicId
   const learnerLabel = currentLearner?.name || currentLearner?.email || currentResponse?.userId || 'Unknown learner';
   const details = currentResponse?.details || {};
   const score = Number(details.percentCorrect);
+  const showChoiceSummary = responses.length > 0 && isChoiceSummaryType(interactionType || responses[0]?.details?.type);
 
   return (
     <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/50">
@@ -233,7 +314,8 @@ export default function InteractionResponseReview({ courseOps, courseId, topicId
           {loading && <div className="py-3 text-sm text-gray-600">Loading learner responses…</div>}
           {!loading && error && <div className="py-3 text-sm text-red-700">{error}</div>}
           {!loading && !error && responses.length === 0 && <div className="py-3 text-sm text-gray-600">No learner responses yet.</div>}
-          {!loading && !error && currentResponse && (
+          {!loading && !error && showChoiceSummary && <ChoiceResponseSummary responses={responses} interactionType={interactionType} body={body} onRefresh={loadResponses} loading={loading} />}
+          {!loading && !error && !showChoiceSummary && currentResponse && (
             <div>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
