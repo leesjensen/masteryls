@@ -120,6 +120,16 @@ test('settings repair and state changes', async ({ page }) => {
   await expect(page.getByText('Settings saved')).toBeVisible();
 });
 
+test('settings can repair course progress cache', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await page.getByText('Settings').click();
+
+  await page.getByRole('button', { name: 'Repair progress cache' }).click();
+  await expect(page.getByText(/Repaired progress cache for Rocket Science:/)).toBeVisible();
+});
+
 test('settings editor management requires at least one editor', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 

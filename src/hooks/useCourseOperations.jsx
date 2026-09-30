@@ -14,6 +14,7 @@ import { markdownToHtml } from '../utils/markdownToHtml';
 import { formatDraFeedbackForCanvas } from '../components/instruction/dra/draScore';
 import { formatInterviewFeedbackForCanvas } from '../components/instruction/interview/interviewScore';
 import { completedInteractionIds } from '../utils/topicProgress';
+import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
@@ -1848,6 +1849,65 @@ Requirements:
     return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
   }
 
+  async function repairCourseProgressCache(courseId) {
+    const course = await getCourse(courseId);
+    if (!course) throw new Error('Course not found for progress repair.');
+
+    const enrollments = await service.allEnrollments(courseId);
+    const enrollmentsById = new Map((enrollments || []).filter((enrollment) => enrollment?.id).map((enrollment) => [String(enrollment.id), enrollment]));
+    const enrollmentsByLearnerId = new Map((enrollments || []).filter((enrollment) => enrollment?.learnerId).map((enrollment) => [String(enrollment.learnerId), enrollment]));
+    const progressRowsByEnrollmentId = new Map();
+    let progressRowsProcessed = 0;
+    let page = 1;
+    const limit = 1000;
+
+    while (true) {
+      const result = await service.getProgress({ courseId, page, limit });
+      const rows = Array.isArray(result?.data) ? result.data : [];
+      progressRowsProcessed += rows.length;
+
+      for (const row of rows) {
+        const enrollment = row.enrollmentId ? enrollmentsById.get(String(row.enrollmentId)) : enrollmentsByLearnerId.get(String(row.userId || ''));
+        if (!enrollment?.id) {
+          continue;
+        }
+        const key = String(enrollment.id);
+        if (!progressRowsByEnrollmentId.has(key)) {
+          progressRowsByEnrollmentId.set(key, []);
+        }
+        progressRowsByEnrollmentId.get(key).push(row);
+      }
+
+      if (!result?.hasMore || rows.length === 0) {
+        break;
+      }
+      page += 1;
+    }
+
+    let enrollmentsUpdated = 0;
+    for (const enrollment of enrollments || []) {
+      const rows = progressRowsByEnrollmentId.get(String(enrollment.id)) || [];
+      const repairedProgress = repairEnrollmentProgressCache({ enrollment, course, progressRows: rows });
+      if (JSON.stringify(enrollment.progress || {}) === JSON.stringify(repairedProgress)) {
+        continue;
+      }
+
+      const repairedEnrollment = { ...enrollment, progress: repairedProgress };
+      await service.saveEnrollment(repairedEnrollment);
+      enrollmentsUpdated += 1;
+
+      if (learningSession?.enrollment?.id === enrollment.id) {
+        setLearningSession({ ...learningSession, enrollment: repairedEnrollment });
+      }
+    }
+
+    return {
+      enrollmentsScanned: (enrollments || []).length,
+      enrollmentsUpdated,
+      progressRowsProcessed,
+    };
+  }
+
   async function getMasteryOverview({ courseId, page = 1, limit = 50, search = '', learnerId = '' }) {
     return service.makeMasteryOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}) });
   }
@@ -2293,6 +2353,7 @@ Requirements:
     getAiWebPageResponse,
     validateUrlFromServer,
     addProgress,
+    repairCourseProgressCache,
     uploadSubmissionFile,
     clearSubmissionFolder,
     getSubmissionFileUrl,

@@ -18,6 +18,7 @@ export default function Settings({ courseOps, user, course }) {
   const [mentorsDialogOpen, setMentorsDialogOpen] = useState(false);
   const [selectedLearners, setSelectedLearners] = useState([]);
   const [learnersDialogOpen, setLearnersDialogOpen] = useState(false);
+  const [progressRepairing, setProgressRepairing] = useState(false);
   const ogSelectedEditorsRef = useRef([]);
   const ogSelectedMentorsRef = useRef([]);
   const ogSelectedLearnersRef = useRef([]);
@@ -402,6 +403,43 @@ export default function Settings({ courseOps, user, course }) {
     });
   };
 
+  const repairProgressCache = () => {
+    setProgressRepairing(true);
+    showAlert({
+      message: (
+        <div className="text-xs">
+          <div>Repairing progress cache for {course.title}…</div>
+        </div>
+      ),
+    });
+    courseOps
+      .repairCourseProgressCache(course.id)
+      .then((result) => {
+        showAlert({
+          message: (
+            <div className="text-xs">
+              <div>
+                Repaired progress cache for {course.title}: {result?.enrollmentsUpdated ?? 0} of {result?.enrollmentsScanned ?? 0} enrollment{result?.enrollmentsScanned === 1 ? '' : 's'} updated from {result?.progressRowsProcessed ?? 0} progress row{result?.progressRowsProcessed === 1 ? '' : 's'}.
+              </div>
+            </div>
+          ),
+        });
+      })
+      .catch((error) => {
+        showAlert({
+          type: 'error',
+          message: (
+            <div className="text-xs">
+              <div>Progress cache repair failed: {error?.message || 'Unknown error'}</div>
+            </div>
+          ),
+        });
+      })
+      .finally(() => {
+        setProgressRepairing(false);
+      });
+  };
+
   if (!user) {
     return null;
   }
@@ -538,6 +576,9 @@ export default function Settings({ courseOps, user, course }) {
                 <div className="flex items-center justify-between gap-2">
                   <button type="button" onClick={reindexCourse} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100" title="Rebuild the topic search index and repair the interaction manifests in course.json">
                     Reindex course
+                  </button>
+                  <button type="button" onClick={repairProgressCache} disabled={progressRepairing} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" title="Rebuild enrollment progress summaries from durable progress records">
+                    {progressRepairing ? 'Repairing progress…' : 'Repair progress cache'}
                   </button>
                   <button type="button" onClick={unpinContent} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
                     Unpin content
