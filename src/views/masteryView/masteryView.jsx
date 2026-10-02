@@ -59,6 +59,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     return user.canOverseeCourse?.(selectedCourseId) || enrolledCourseIds.has(selectedCourseId);
   }, [enrolledCourseIds, selectedCourseId, user]);
   const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
+  const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
+  const hasActions = canObserveLearners || canUnenrollLearners;
 
   const displayedRows = React.useMemo(() => {
     const rows = overview.rows;
@@ -245,6 +247,27 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     navigate(`/course/${selectedCourseId}`);
   }
 
+  async function onUnenrollLearner(row, event) {
+    event?.stopPropagation?.();
+    if (!canUnenrollLearners || !row?.enrollmentId) {
+      return;
+    }
+    const learnerLabel = row.learnerName || row.learnerEmail || 'this learner';
+    if (!window.confirm(`Unenroll ${learnerLabel} from this course? Their progress and submissions will no longer be accessible.`)) {
+      return;
+    }
+    try {
+      await courseOpsRef.current.unenrollLearner({ enrollmentId: row.enrollmentId });
+      setOverview((prev) => ({
+        ...prev,
+        rows: prev.rows.filter((r) => r.enrollmentId !== row.enrollmentId),
+        totalCount: Math.max(0, Number(prev.totalCount || 0) - 1),
+      }));
+    } catch (unenrollError) {
+      setError(unenrollError.message || String(unenrollError));
+    }
+  }
+
   if (!user) {
     return (
       <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
@@ -253,7 +276,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     );
   }
 
-  const colSpan = canObserveLearners ? 9 : 8;
+  const colSpan = hasActions ? 9 : 8;
 
   return (
     <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
@@ -324,7 +347,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                   </button>
                 </th>
               ))}
-              {canObserveLearners && <th className="text-left px-3 py-2 font-semibold">Observe</th>}
+              {hasActions && <th className="text-left px-3 py-2 font-semibold">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -353,15 +376,28 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                   <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
                   <td className="px-3 py-2">{formatDuration(row.totalTimeSpent || row.progress?.totalTimeSpent)}</td>
                   <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
-                  {canObserveLearners && (
+                  {hasActions && (
                     <td className="px-3 py-2">
-                      <button
-                        type="button"
-                        className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
-                        onClick={(event) => onObserveLearner(row, event)}
-                      >
-                        Observe
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {canObserveLearners && (
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
+                            onClick={(event) => onObserveLearner(row, event)}
+                          >
+                            Observe
+                          </button>
+                        )}
+                        {canUnenrollLearners && (
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-red-300 text-red-700 hover:bg-red-50 text-xs"
+                            onClick={(event) => onUnenrollLearner(row, event)}
+                          >
+                            Unenroll
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

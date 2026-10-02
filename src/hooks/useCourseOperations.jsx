@@ -1912,6 +1912,13 @@ Requirements:
     return service.makeMasteryOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}) });
   }
 
+  async function unenrollLearner({ enrollmentId }) {
+    if (!enrollmentId) {
+      throw new Error('An enrollment id is required to unenroll a learner.');
+    }
+    await service.deleteEnrollment({ id: enrollmentId });
+  }
+
   async function getTopicProgress(types = ['quizSubmit', 'canvasGradebookSubmit']) {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
@@ -2362,6 +2369,7 @@ Requirements:
     canSubmitToCanvasGradebook,
     getProgress,
     getMasteryOverview,
+    unenrollLearner,
     getTopicProgress,
     getSurveySummary,
     getLikertSummary,
