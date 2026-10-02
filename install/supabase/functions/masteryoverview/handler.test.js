@@ -341,3 +341,43 @@ test('gradebookoverview applies learner search and pagination metadata', async (
   assert.equal(body.rows.length, 1);
   assert.equal(body.rows[0].learnerEmail, 'bob@test.com');
 });
+
+test('gradebookoverview sorts the full result set before paginating', async () => {
+  const makeHandler = () =>
+    createMasteryOverviewHandler({
+      createSupabaseClientFromAuthHeader: () =>
+        createMockSupabase({
+          user: { id: 'root-user', email: 'root@test.com' },
+          dataMap: {
+            role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
+            enrollment: [
+              { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 50 } },
+              { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 90 } },
+              { id: 'e3', learnerId: 'u3', catalogId: 'course-1', progress: { mastery: 10 } },
+            ],
+            user: [
+              { id: 'u1', name: 'Alice', email: 'alice@test.com' },
+              { id: 'u2', name: 'Bob', email: 'bob@test.com' },
+              { id: 'u3', name: 'Carol', email: 'carol@test.com' },
+            ],
+            progress: [],
+          },
+        }),
+      getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+    });
+
+  // Page 1 sorted by mastery descending should surface the global top scorer, not the
+  // top scorer of whatever happened to land on this page.
+  const page1 = await (await makeHandler()(makeRequest({ courseId: 'course-1', sortKey: 'masteryPercent', sortDirection: 'desc', page: 1, limit: 1 }))).json();
+  assert.equal(page1.rows.length, 1);
+  assert.equal(page1.rows[0].masteryPercent, 90);
+  assert.equal(page1.hasMore, true);
+
+  // Page 2 continues the same global ordering across the page boundary.
+  const page2 = await (await makeHandler()(makeRequest({ courseId: 'course-1', sortKey: 'masteryPercent', sortDirection: 'desc', page: 2, limit: 1 }))).json();
+  assert.equal(page2.rows[0].masteryPercent, 50);
+
+  // Ascending reverses the global order.
+  const asc = await (await makeHandler()(makeRequest({ courseId: 'course-1', sortKey: 'masteryPercent', sortDirection: 'asc', page: 1, limit: 1 }))).json();
+  assert.equal(asc.rows[0].masteryPercent, 10);
+});

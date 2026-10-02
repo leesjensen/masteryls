@@ -1908,8 +1908,8 @@ Requirements:
     };
   }
 
-  async function getMasteryOverview({ courseId, page = 1, limit = 50, search = '', learnerId = '' }) {
-    return service.makeMasteryOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}) });
+  async function getMasteryOverview({ courseId, page = 1, limit = 50, search = '', learnerId = '', sortKey = '', sortDirection = 'asc' }) {
+    return service.makeMasteryOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}), ...(sortKey ? { sortKey, sortDirection } : {}) });
   }
 
   async function unenrollLearner({ enrollmentId }) {

@@ -9,6 +9,24 @@ function toLower(value) {
     .toLowerCase();
 }
 
+const SORTABLE_KEYS = new Set(['learnerName', 'learnerEmail', 'masteryPercent', 'completedTopics', 'examCompletedCount', 'projectSubmittedCount', 'totalTimeSpent', 'lastActivityAt']);
+
+function compareRows(a, b, key) {
+  switch (key) {
+    case 'learnerName':
+      return String(a.learnerName || '').localeCompare(String(b.learnerName || ''));
+    case 'learnerEmail':
+      return String(a.learnerEmail || '').localeCompare(String(b.learnerEmail || ''));
+    case 'lastActivityAt': {
+      const ad = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+      const bd = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+      return ad - bd;
+    }
+    default:
+      return Number(a[key] || 0) - Number(b[key] || 0);
+  }
+}
+
 function countCompletedTopics(progress) {
   if (!progress || typeof progress !== 'object') {
     return 0;
@@ -65,6 +83,8 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     const page = Math.max(1, Number(payload?.page || 1));
     const limit = Math.max(1, Math.min(100, Number(payload?.limit || 50)));
     const search = toLower(payload?.search || '');
+    const sortKey = SORTABLE_KEYS.has(payload?.sortKey) ? payload.sortKey : null;
+    const sortDirection = String(payload?.sortDirection || 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
 
     if (!courseId) {
       return new Response(JSON.stringify({ error: 'courseId is required' }), {
@@ -188,9 +208,12 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
           })
         : rows;
 
+      // Sort the full filtered set before paginating so the ordering is stable across pages.
+      const sortedRows = sortKey ? [...filteredRows].sort((a, b) => compareRows(a, b, sortKey) * (sortDirection === 'desc' ? -1 : 1)) : filteredRows;
+
       const offset = (page - 1) * limit;
-      const pagedRows = filteredRows.slice(offset, offset + limit);
-      const totalCount = filteredRows.length;
+      const pagedRows = sortedRows.slice(offset, offset + limit);
+      const totalCount = sortedRows.length;
       const hasMore = totalCount > offset + limit;
 
       return new Response(

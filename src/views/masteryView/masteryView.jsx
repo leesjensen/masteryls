@@ -62,41 +62,9 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
   const hasActions = canObserveLearners || canUnenrollLearners;
 
-  const displayedRows = React.useMemo(() => {
-    const rows = overview.rows;
-
-    if (!sort.key) return rows;
-
-    const dir = sort.direction === 'desc' ? -1 : 1;
-    return [...rows].sort((a, b) => {
-      switch (sort.key) {
-        case 'learnerName':
-          return String(a.learnerName || '').localeCompare(String(b.learnerName || '')) * dir;
-        case 'learnerEmail':
-          return String(a.learnerEmail || '').localeCompare(String(b.learnerEmail || '')) * dir;
-        case 'masteryPercent':
-          return (Number(a.masteryPercent || 0) - Number(b.masteryPercent || 0)) * dir;
-        case 'completedTopics':
-          return (Number(a.completedTopics || 0) - Number(b.completedTopics || 0)) * dir;
-        case 'examCompletedCount':
-          return (Number(a.examCompletedCount || 0) - Number(b.examCompletedCount || 0)) * dir;
-        case 'projectSubmittedCount':
-          return (Number(a.projectSubmittedCount || 0) - Number(b.projectSubmittedCount || 0)) * dir;
-        case 'totalTimeSpent': {
-          const at = Number(a.totalTimeSpent || a.progress?.totalTimeSpent || 0);
-          const bt = Number(b.totalTimeSpent || b.progress?.totalTimeSpent || 0);
-          return (at - bt) * dir;
-        }
-        case 'lastActivityAt': {
-          const ad = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
-          const bd = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
-          return (ad - bd) * dir;
-        }
-        default:
-          return 0;
-      }
-    });
-  }, [overview.rows, sort]);
+  // Rows arrive already sorted and paginated from the masteryoverview edge function, so the
+  // ordering is correct across pages. Render them as received.
+  const displayedRows = overview.rows;
 
   React.useEffect(() => {
     updateAppBar({ title: 'MasteryView', tools: null });
@@ -157,7 +125,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, page, limit: 50, search: searchText });
+        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, page, limit: 50, search: searchText, sortKey: sort.key || '', sortDirection: sort.direction });
         if (!cancelled) {
           setOverview({
             rows: Array.isArray(result?.rows) ? result.rows : [],
@@ -184,7 +152,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     return () => {
       cancelled = true;
     };
-  }, [hasCourseAccess, selectedCourseId, page, searchText]);
+  }, [hasCourseAccess, selectedCourseId, page, searchText, sort.key, sort.direction]);
 
   React.useEffect(() => {
     const timeout = setTimeout(() => {
@@ -197,6 +165,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
   function toggleSort(key) {
     setSort((prev) => prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' });
+    setPage(1);
   }
 
   function sortLabel(key, label) {
