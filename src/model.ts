@@ -72,7 +72,10 @@ export type Topic = {
 };
 
 export type Progress = {
-  mastery: number;
+  mastery?: number;
+  lastActivityAt?: string;
+  totalTimeSpent?: number;
+  [topicId: string]: any;
 };
 
 export type Enrollment = {

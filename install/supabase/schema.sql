@@ -120,6 +120,180 @@ begin
 end;
 $$;
 
+-- RPC: record a learner progress event and merge the enrollment progress cache
+-- against the current database row in one transaction. This avoids stale client
+-- enrollment snapshots overwriting newer nested progress, especially scores.
+drop function if exists public.record_progress_event(uuid, uuid, uuid, uuid, uuid, text, integer, jsonb, jsonb, jsonb, boolean);
+
+create or replace function public.record_progress_event(
+  p_user_id uuid,
+  p_catalog_id uuid,
+  p_enrollment_id uuid,
+  p_topic_id uuid,
+  p_interaction_id uuid default null,
+  p_type text default 'instructionView',
+  p_duration integer default 0,
+  p_details jsonb default '{}'::jsonb,
+  p_cache_update jsonb default '{}'::jsonb,
+  p_insert_progress boolean default true
+)
+returns table (
+  progress jsonb,
+  enrollment jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_enrollment public.enrollment%rowtype;
+  v_progress_row public.progress%rowtype;
+  v_progress jsonb;
+  v_entry jsonb;
+  v_scores jsonb;
+  v_timestamp timestamptz := now();
+  v_duration integer := greatest(coalesce(p_duration, 0), 0);
+  v_time_delta integer := 0;
+  v_legacy_id text;
+  v_score jsonb;
+begin
+  if auth.uid() is not null and auth.uid() <> p_user_id then
+    raise exception 'User is not authorized to record progress for this enrollment';
+  end if;
+
+  select *
+  into v_enrollment
+  from public.enrollment
+  where id = p_enrollment_id
+  for update;
+
+  if not found then
+    raise exception 'Enrollment not found';
+  end if;
+
+  if v_enrollment."learnerId" <> p_user_id then
+    raise exception 'User is not authorized to record progress for this enrollment';
+  end if;
+
+  if v_enrollment."catalogId" <> p_catalog_id then
+    raise exception 'Enrollment does not belong to the requested course';
+  end if;
+
+  if p_insert_progress then
+    insert into public.progress ("userId", "catalogId", "enrollmentId", "topicId", "interactionId", duration, type, details)
+    values (p_user_id, p_catalog_id, p_enrollment_id, p_topic_id, p_interaction_id, v_duration, p_type, coalesce(p_details, '{}'::jsonb))
+    returning * into v_progress_row;
+
+    v_timestamp := v_progress_row."createdAt";
+  end if;
+
+  v_progress := coalesce(v_enrollment.progress, '{}'::jsonb);
+
+  if p_topic_id is not null and coalesce((p_cache_update->>'touchTopic')::boolean, false) then
+    v_entry := coalesce(v_progress -> p_topic_id::text, '{}'::jsonb);
+    if jsonb_typeof(v_entry) <> 'object' then
+      v_entry := '{}'::jsonb;
+    end if;
+    if jsonb_typeof(coalesce(v_entry->'scores', '{}'::jsonb)) <> 'object' then
+      v_entry := jsonb_set(v_entry, '{scores}', '{}'::jsonb, true);
+    end if;
+
+    if (p_cache_update->>'timeSpentDelta') ~ '^[0-9]+$' then
+      v_time_delta := greatest((p_cache_update->>'timeSpentDelta')::integer, 0);
+    end if;
+
+    if v_time_delta > 0 then
+      v_entry := jsonb_set(v_entry, '{timeSpent}', to_jsonb(coalesce((v_entry->>'timeSpent')::integer, 0) + v_time_delta), true);
+    end if;
+
+    v_score := p_cache_update->'score';
+    if jsonb_typeof(v_score) = 'object' and coalesce(v_score->>'interactionId', '') <> '' then
+      v_scores := coalesce(v_entry->'scores', '{}'::jsonb);
+      if (v_score->>'percentCorrect') ~ '^-?[0-9]+(\.[0-9]+)?$' then
+        v_scores := v_scores || jsonb_build_object(v_score->>'interactionId', (v_score->>'percentCorrect')::numeric);
+      else
+        v_scores := v_scores || jsonb_build_object(v_score->>'interactionId', null);
+      end if;
+
+      if jsonb_typeof(v_entry->'interactions') = 'array' then
+        for v_legacy_id in select jsonb_array_elements_text(v_entry->'interactions')
+        loop
+          if not (v_scores ? v_legacy_id) then
+            v_scores := v_scores || jsonb_build_object(v_legacy_id, null);
+          end if;
+        end loop;
+        v_entry := v_entry - 'interactions';
+      end if;
+
+      v_entry := jsonb_set(v_entry, '{scores}', v_scores, true);
+    end if;
+
+    if coalesce((p_cache_update->>'touchTopicActivity')::boolean, false) then
+      v_entry := jsonb_set(v_entry, '{lastInteractionAt}', to_jsonb(v_timestamp), true);
+    end if;
+
+    if coalesce((p_cache_update->>'projectSubmission')::boolean, false) then
+      v_entry := jsonb_set(v_entry, '{projectSubmission}', 'true'::jsonb, true);
+    end if;
+
+    if coalesce((p_cache_update->>'notes')::boolean, false) then
+      v_entry := jsonb_set(v_entry, '{notes}', 'true'::jsonb, true);
+    end if;
+
+    if coalesce((p_cache_update->>'examCompleted')::boolean, false) then
+      v_entry := jsonb_set(v_entry, '{examCompleted}', 'true'::jsonb, true);
+    end if;
+
+    if p_cache_update ? 'draState' then
+      v_entry := jsonb_set(v_entry, '{draState}', to_jsonb(p_cache_update->>'draState'), true);
+    end if;
+    if p_cache_update ? 'mode' then
+      v_entry := jsonb_set(v_entry, '{mode}', to_jsonb(p_cache_update->>'mode'), true);
+    end if;
+    if (p_cache_update->>'itemsCompleted') ~ '^[0-9]+$' then
+      v_entry := jsonb_set(v_entry, '{itemsCompleted}', to_jsonb((p_cache_update->>'itemsCompleted')::integer), true);
+    end if;
+    if (p_cache_update->>'totalItems') ~ '^[0-9]+$' then
+      v_entry := jsonb_set(v_entry, '{totalItems}', to_jsonb((p_cache_update->>'totalItems')::integer), true);
+    end if;
+    if (p_cache_update->>'masteryScore') ~ '^-?[0-9]+(\.[0-9]+)?$' then
+      v_entry := jsonb_set(v_entry, '{masteryScore}', to_jsonb((p_cache_update->>'masteryScore')::numeric), true);
+    end if;
+    if coalesce((p_cache_update->>'draCompleted')::boolean, false) then
+      v_entry := jsonb_set(v_entry, '{draCompleted}', 'true'::jsonb, true);
+    end if;
+
+    if p_cache_update ? 'interviewState' then
+      v_entry := jsonb_set(v_entry, '{interviewState}', to_jsonb(p_cache_update->>'interviewState'), true);
+    end if;
+    if (p_cache_update->>'sessionsCompleted') ~ '^[0-9]+$' then
+      v_entry := jsonb_set(v_entry, '{sessionsCompleted}', to_jsonb((p_cache_update->>'sessionsCompleted')::integer), true);
+    end if;
+    if (p_cache_update->>'totalSessions') ~ '^[0-9]+$' then
+      v_entry := jsonb_set(v_entry, '{totalSessions}', to_jsonb((p_cache_update->>'totalSessions')::integer), true);
+    end if;
+    if coalesce((p_cache_update->>'interviewCompleted')::boolean, false) then
+      v_entry := jsonb_set(v_entry, '{interviewCompleted}', 'true'::jsonb, true);
+    end if;
+
+    v_progress := jsonb_set(v_progress, array[p_topic_id::text], v_entry, true);
+  end if;
+
+  if coalesce((p_cache_update->>'touchActivity')::boolean, false) then
+    v_progress := jsonb_set(v_progress, '{lastActivityAt}', to_jsonb(v_timestamp), true);
+  end if;
+
+  update public.enrollment
+  set progress = v_progress
+  where id = p_enrollment_id
+  returning * into v_enrollment;
+
+  progress := case when p_insert_progress then to_jsonb(v_progress_row) else null end;
+  enrollment := to_jsonb(v_enrollment);
+  return next;
+end;
+$$;
+
 -- RPC for free-text topic search with highlighted snippets
 create or replace function public.search_topics(search_query text, target_catalog_id uuid default null)
 returns table (
@@ -301,6 +475,7 @@ grant execute on function public.auth_is_mentor(uuid) to authenticated;
 grant execute on function public.auth_manages_course(uuid, uuid) to authenticated;
 grant execute on function public.auth_oversees_course(uuid, uuid) to authenticated;
 grant execute on function public.auth_oversees_enrolled_user(uuid, uuid) to authenticated;
+grant execute on function public.record_progress_event(uuid, uuid, uuid, uuid, uuid, text, integer, jsonb, jsonb, boolean) to authenticated;
 
 -- Define table grants by first revoking everything
 revoke all on table public.catalog from public, anon, authenticated;

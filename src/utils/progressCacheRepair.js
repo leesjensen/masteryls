@@ -1,5 +1,3 @@
-import { completedInteractionIds } from './topicProgress.js';
-
 const SUMMARY_KEYS = new Set(['mastery', 'lastActivityAt', 'totalTimeSpent']);
 const CACHE_REPAIR_TYPES = new Set(['instructionView', 'embeddedView', 'draView', 'quizSubmit', 'canvasGradebookSubmit', 'note', 'exam', 'draUpdate', 'interviewUpdate']);
 
@@ -31,35 +29,10 @@ function getTopicProgress(progress, topicId) {
   return progress[topicId];
 }
 
-export function calculateProgressMastery(progress, course) {
-  const publishedTopics = (Array.isArray(course?.allTopics) ? course.allTopics : []).filter((topic) => topic?.state === 'published');
-  if (publishedTopics.length === 0) {
-    return 0;
-  }
-
-  let completedTopics = 0;
-  for (const topic of publishedTopics) {
-    const topicProgress = progress?.[topic.id];
-    let topicPercent = topicProgress ? 1 : 0;
-
-    if (topicProgress && Number.isFinite(Number(topicProgress.masteryScore))) {
-      topicPercent = Math.max(0, Math.min(1, Number(topicProgress.masteryScore) / 100));
-    } else if (topicProgress && Array.isArray(topic.interactions) && topic.interactions.length > 0) {
-      const completed = completedInteractionIds(topicProgress);
-      topicPercent = completed.length / topic.interactions.length;
-    }
-
-    completedTopics += topicPercent;
-  }
-
-  return Math.round((completedTopics / publishedTopics.length) * 100);
-}
-
 export function repairEnrollmentProgressCache({ enrollment, course, progressRows }) {
   const topics = topicById(course);
   const existingProgress = isObject(enrollment?.progress) ? enrollment.progress : {};
   const nextProgress = structuredClone(existingProgress);
-  let rowDurationTotal = 0;
   let latestActivityAt = nextProgress.lastActivityAt || null;
   const topicDurationTotals = new Map();
 
@@ -75,7 +48,6 @@ export function repairEnrollmentProgressCache({ enrollment, course, progressRows
 
     if (duration > 0) {
       topicDurationTotals.set(row.topicId, Number(topicDurationTotals.get(row.topicId) || 0) + duration);
-      rowDurationTotal += duration;
     }
 
     if (row.type === 'quizSubmit' && row.interactionId) {
@@ -137,9 +109,9 @@ export function repairEnrollmentProgressCache({ enrollment, course, progressRows
     entry.timeSpent = Math.max(Number(entry.timeSpent || 0), duration);
   }
 
-  nextProgress.totalTimeSpent = Math.max(Number(nextProgress.totalTimeSpent || 0), rowDurationTotal);
   nextProgress.lastActivityAt = latestActivityAt;
-  nextProgress.mastery = calculateProgressMastery(nextProgress, course);
+  delete nextProgress.totalTimeSpent;
+  delete nextProgress.mastery;
 
   return nextProgress;
 }

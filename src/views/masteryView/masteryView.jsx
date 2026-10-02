@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
+import { deriveProgressSummary } from '../../utils/progressSummary.js';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -26,6 +27,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [filterText, setFilterText] = React.useState('');
   const [searchText, setSearchText] = React.useState('');
   const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
+  const [selectedCourse, setSelectedCourse] = React.useState(null);
 
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
@@ -62,9 +64,21 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
   const hasActions = canObserveLearners || canUnenrollLearners;
 
-  // Rows arrive already sorted and paginated from the masteryoverview edge function, so the
-  // ordering is correct across pages. Render them as received.
-  const displayedRows = overview.rows;
+  const displayedRows = React.useMemo(
+    () =>
+      overview.rows.map((row) => {
+        const summary = deriveProgressSummary(row.progress, selectedCourse);
+        const hasTopicProgress = summary.completedTopics > 0;
+        return {
+          ...row,
+          masteryPercent: hasTopicProgress || !Number.isFinite(Number(row.masteryPercent)) ? summary.mastery : Number(row.masteryPercent),
+          completedTopics: hasTopicProgress || !Number.isFinite(Number(row.completedTopics)) ? summary.completedTopics : Number(row.completedTopics),
+          totalTimeSpent: hasTopicProgress || !Number.isFinite(Number(row.totalTimeSpent)) ? summary.totalTimeSpent : Number(row.totalTimeSpent),
+          lastActivityAt: summary.lastActivityAt || row.lastActivityAt,
+        };
+      }),
+    [overview.rows, selectedCourse],
+  );
 
   React.useEffect(() => {
     updateAppBar({ title: 'MasteryView', tools: null });
@@ -112,6 +126,34 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       setPage(1);
     }
   }, [availableCourses, routeCourseId, selectedCourseId]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadSelectedCourse() {
+      if (!selectedCourseId) {
+        setSelectedCourse(null);
+        return;
+      }
+
+      try {
+        const course = await courseOpsRef.current.getCourse(selectedCourseId);
+        if (!cancelled) {
+          setSelectedCourse(course || null);
+        }
+      } catch {
+        if (!cancelled) {
+          setSelectedCourse(null);
+        }
+      }
+    }
+
+    loadSelectedCourse();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCourseId]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -343,7 +385,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                   <td className="px-3 py-2">{Number(row.completedTopics || 0)}</td>
                   <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
                   <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
-                  <td className="px-3 py-2">{formatDuration(row.totalTimeSpent || row.progress?.totalTimeSpent)}</td>
+                  <td className="px-3 py-2">{formatDuration(row.totalTimeSpent)}</td>
                   <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
                   {hasActions && (
                     <td className="px-3 py-2">

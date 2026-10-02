@@ -2,8 +2,9 @@ import React from 'react';
 import { EyeOff, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export default function CourseCard({ user, catalogEntry, enrollment, select, remove }) {
+export default function CourseCard({ user, catalogEntry, enrollment, masteryPercent = null, select, remove }) {
   const navigate = useNavigate();
+  const displayMastery = Number.isFinite(Number(masteryPercent)) ? Math.max(0, Math.min(100, Math.round(Number(masteryPercent)))) : Number.isFinite(Number(enrollment?.progress?.mastery)) ? Math.max(0, Math.min(100, Math.round(Number(enrollment.progress.mastery)))) : 0;
 
   const colorGenerator = (title) => {
     const colors = ['bg-cyan-700', 'bg-rose-700', 'bg-amber-600', 'bg-indigo-700', 'bg-emerald-700', 'bg-sky-700', 'bg-teal-700'];
@@ -42,10 +43,10 @@ export default function CourseCard({ user, catalogEntry, enrollment, select, rem
           <div className="mt-auto w-full">
             <div className="mb-1 flex items-center justify-between text-xs">
               <span className="font-medium text-slate-700">Progress</span>
-              <span className="text-slate-500">{enrollment.progress.mastery}%</span>
+              <span className="text-slate-500">{displayMastery}%</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded bg-slate-100">
-              <div className="h-full rounded bg-blue-500 transition-all duration-300" style={{ width: `${enrollment.progress.mastery}%` }} />
+              <div className="h-full rounded bg-blue-500 transition-all duration-300" style={{ width: `${displayMastery}%` }} />
             </div>
           </div>
         ) : (

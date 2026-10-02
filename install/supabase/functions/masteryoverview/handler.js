@@ -37,6 +37,26 @@ function countCompletedTopics(progress) {
   return Object.keys(progress).filter((key) => key !== 'mastery' && key !== 'lastActivityAt' && key !== 'totalTimeSpent').length;
 }
 
+function progressTopicValues(progress) {
+  if (!progress || typeof progress !== 'object') {
+    return [];
+  }
+  return Object.entries(progress)
+    .filter(([key, value]) => key !== 'mastery' && key !== 'lastActivityAt' && key !== 'totalTimeSpent' && value && typeof value === 'object' && !Array.isArray(value))
+    .map(([, value]) => value);
+}
+
+function totalTimeSpentFromTopics(progress) {
+  const topicValues = progressTopicValues(progress);
+  if (topicValues.length === 0) {
+    return typeof progress?.totalTimeSpent === 'number' ? progress.totalTimeSpent : 0;
+  }
+  return topicValues.reduce((sum, value) => {
+    const timeSpent = Number(value.timeSpent);
+    return sum + (Number.isFinite(timeSpent) && timeSpent > 0 ? timeSpent : 0);
+  }, 0);
+}
+
 // Decode the JWT payload without signature verification to extract the userId (sub claim).
 // Used only to fire auth queries in parallel with getUser(). The verified userId from
 // getUser() must match before any data is returned.
@@ -185,7 +205,7 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
       const rows = safeEnrollments.map((enrollment) => {
         const learner = learnersById.get(String(enrollment.learnerId || '')) || {};
         const progress = enrollment.progress || {};
-        const topicValues = Object.values(progress).filter((v) => v && typeof v === 'object');
+        const topicValues = progressTopicValues(progress);
 
         return {
           enrollmentId: enrollment.id,
@@ -197,7 +217,7 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
           examCompletedCount: topicValues.filter((v) => v.examCompleted === true).length,
           projectSubmittedCount: topicValues.filter((v) => v.projectSubmission === true).length,
           lastActivityAt: progress.lastActivityAt || null,
-          totalTimeSpent: typeof progress.totalTimeSpent === 'number' ? progress.totalTimeSpent : 0,
+          totalTimeSpent: totalTimeSpentFromTopics(progress),
           progress,
         };
       });

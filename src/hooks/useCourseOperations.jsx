@@ -1474,6 +1474,71 @@ Requirements:
     return typeof type === 'string' && type.endsWith('View');
   }
 
+  function _progressCacheUpdatePayload(topic, interactionId, type, details = {}, duration = 0) {
+    if (!topic?.id) return {};
+
+    const cacheUpdate = {
+      touchActivity: true,
+      touchTopic: false,
+      touchTopicActivity: false,
+      timeSpentDelta: Math.max(0, Math.round(Number(duration || 0))),
+    };
+
+    if (type === 'instructionView' || type === 'embeddedView' || type === 'draView' || type === 'quizSubmit' || type === 'canvasGradebookSubmit') {
+      cacheUpdate.touchTopic = true;
+      cacheUpdate.touchTopicActivity = true;
+
+      if (type === 'quizSubmit' && interactionId) {
+        const score = Number(details?.percentCorrect);
+        cacheUpdate.score = {
+          interactionId,
+          percentCorrect: Number.isFinite(score) ? score : null,
+        };
+      }
+
+      if (((type === 'quizSubmit' && details?.syncGrade === true) || type === 'canvasGradebookSubmit') && topic.type === 'project') {
+        cacheUpdate.projectSubmission = true;
+      }
+    } else if (type === 'note') {
+      cacheUpdate.touchTopic = true;
+      cacheUpdate.notes = true;
+    } else if (type === 'exam' && details?.state === 'completed') {
+      cacheUpdate.touchTopic = true;
+      cacheUpdate.examCompleted = true;
+    } else if (type === 'draUpdate') {
+      cacheUpdate.touchTopic = true;
+      cacheUpdate.touchTopicActivity = true;
+      if (details?.draState || details?.state) cacheUpdate.draState = details.draState || details.state;
+      if (details?.mode) cacheUpdate.mode = details.mode;
+      if (Number.isFinite(Number(details?.itemsCompleted))) cacheUpdate.itemsCompleted = Number(details.itemsCompleted);
+      if (Number.isFinite(Number(details?.totalItems))) cacheUpdate.totalItems = Number(details.totalItems);
+      if (Number.isFinite(Number(details?.masteryScore))) cacheUpdate.masteryScore = Number(details.masteryScore);
+      if (details?.state === 'completed') cacheUpdate.draCompleted = true;
+    } else if (type === 'interviewUpdate') {
+      cacheUpdate.touchTopic = true;
+      cacheUpdate.touchTopicActivity = true;
+      if (details?.interviewState || details?.state) cacheUpdate.interviewState = details.interviewState || details.state;
+      if (details?.mode) cacheUpdate.mode = details.mode;
+      if (Number.isFinite(Number(details?.sessionsCompleted))) cacheUpdate.sessionsCompleted = Number(details.sessionsCompleted);
+      if (Number.isFinite(Number(details?.totalSessions))) cacheUpdate.totalSessions = Number(details.totalSessions);
+      if (Number.isFinite(Number(details?.masteryScore))) cacheUpdate.masteryScore = Number(details.masteryScore);
+      if (details?.state === 'completed') cacheUpdate.interviewCompleted = true;
+    } else if (cacheUpdate.timeSpentDelta > 0) {
+      cacheUpdate.touchTopic = true;
+      cacheUpdate.touchTopicActivity = true;
+    }
+
+    return cacheUpdate;
+  }
+
+  function _applyRecordedEnrollment(enrollment) {
+    if (!enrollment) return;
+    if (learningSession?.enrollment?.id === enrollment.id) {
+      setLearningSession({ ...learningSession, enrollment });
+    }
+    _scheduleMasteryCanvasSync(enrollment);
+  }
+
   // Posts a final DRA/interview score+feedback to Canvas as a suggested (non-authoritative)
   // grade - autoGrade is always false here, so it lands as a comment for the instructor to
   // review rather than a posted grade. Mirrors the exam sync block in addProgress, but for
@@ -1511,21 +1576,42 @@ Requirements:
     }
     const progressUser = providedUser || user;
     if (progressUser) {
-      _updateEnrollmentCachedInfo(learningSession?.enrollment, learningSession?.topic, interactionId, type, details, duration);
-
       // Decide whether to write an actual history row now, or only update the cache.
       const throttleMs = options.throttleRowMs != null ? options.throttleRowMs : _isThrottleableRowType(type) ? PROGRESS_ROW_THROTTLE_MS : 0;
+      let insertProgress = true;
       if (throttleMs > 0 && !options.force) {
         const key = `${learningSession?.topic?.id || ''}:${type}`;
         const now = Date.now();
         const lastAt = lastProgressRowAtRef.current[key] || 0;
         if (now - lastAt < throttleMs) {
-          return null; // cache updated; skip the row this time
+          insertProgress = false; // cache updated; skip the row this time
+        } else {
+          lastProgressRowAtRef.current[key] = now;
         }
-        lastProgressRowAtRef.current[key] = now;
       }
 
-      const saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
+      let saved = null;
+      if (learningSession?.course?.id && learningSession?.enrollment?.id && learningSession?.topic?.id) {
+        const result = await service.recordProgress({
+          catalogId: learningSession.course.id,
+          enrollmentId: learningSession.enrollment.id,
+          topicId: learningSession.topic.id,
+          interactionId,
+          type,
+          duration,
+          details,
+          cacheUpdate: _progressCacheUpdatePayload(learningSession.topic, interactionId, type, details, duration),
+          insertProgress,
+        });
+        saved = result?.progress || null;
+        _applyRecordedEnrollment(result?.enrollment);
+      } else if (insertProgress) {
+        saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
+      }
+
+      if (!insertProgress) {
+        return null;
+      }
 
       const topic = learningSession?.topic;
       const course = learningSession?.course;
@@ -1692,107 +1778,6 @@ Requirements:
    *   }
    * }
    */
-  function _updateEnrollmentCachedInfo(enrollment, topic, interactionId, type, details = {}, duration = 0) {
-    if (!enrollment || !topic) return;
-
-    var update = false;
-    if (type === 'instructionView' || type === 'embeddedView' || type === 'draView' || type === 'quizSubmit' || type === 'canvasGradebookSubmit') {
-      update = _getEnrollmentProgress(enrollment, topic.id);
-
-      if (duration > 0) {
-        enrollment.progress[topic.id].timeSpent = (enrollment.progress[topic.id].timeSpent || 0) + duration;
-        update = true;
-      }
-
-      if (type === 'quizSubmit' && interactionId) {
-        const entry = enrollment.progress[topic.id];
-        const score = Number.isFinite(Number(details?.percentCorrect)) ? Number(details.percentCorrect) : null;
-        const nextScores = { ...(entry.scores || {}), [interactionId]: score };
-        // Fold any legacy completion list into scores keys (null = completed, unscored), then drop it.
-        if (Array.isArray(entry.interactions)) {
-          for (const id of entry.interactions) if (!(id in nextScores)) nextScores[id] = null;
-          delete entry.interactions;
-        }
-        entry.scores = nextScores;
-        update = true;
-      }
-      enrollment.progress[topic.id].lastInteractionAt = new Date().toISOString();
-      update = true;
-      if (((type === 'quizSubmit' && details?.syncGrade === true) || type === 'canvasGradebookSubmit') && topic.type === 'project' && !enrollment.progress[topic.id].projectSubmission) {
-        enrollment.progress[topic.id].projectSubmission = true;
-        update = true;
-      }
-      if (update) {
-        enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
-      }
-    } else if (type === 'note') {
-      update = _getEnrollmentProgress(enrollment, topic.id);
-      if (!enrollment.progress[topic.id].notes) {
-        enrollment.progress[topic.id].notes = true;
-        update = true;
-      }
-    } else if (type === 'exam' && details?.state === 'completed') {
-      update = _getEnrollmentProgress(enrollment, topic.id);
-      if (!enrollment.progress[topic.id].examCompleted) {
-        enrollment.progress[topic.id].examCompleted = true;
-        update = true;
-      }
-    } else if (type === 'draUpdate') {
-      _getEnrollmentProgress(enrollment, topic.id);
-      const entry = enrollment.progress[topic.id];
-      if (details?.draState || details?.state) entry.draState = details.draState || details.state;
-      if (details?.mode) entry.mode = details.mode;
-      if (Number.isFinite(Number(details?.itemsCompleted))) entry.itemsCompleted = Number(details.itemsCompleted);
-      if (Number.isFinite(Number(details?.totalItems))) entry.totalItems = Number(details.totalItems);
-      if (details?.masteryScore == null) {
-        // leave existing masteryScore untouched until an evaluation exists
-      } else if (Number.isFinite(Number(details.masteryScore))) {
-        entry.masteryScore = Number(details.masteryScore);
-      }
-      if (details?.state === 'completed') entry.draCompleted = true;
-      entry.lastInteractionAt = new Date().toISOString();
-      update = true;
-      enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
-    } else if (type === 'interviewUpdate') {
-      _getEnrollmentProgress(enrollment, topic.id);
-      const entry = enrollment.progress[topic.id];
-      if (details?.interviewState || details?.state) entry.interviewState = details.interviewState || details.state;
-      if (details?.mode) entry.mode = details.mode;
-      if (Number.isFinite(Number(details?.sessionsCompleted))) entry.sessionsCompleted = Number(details.sessionsCompleted);
-      if (Number.isFinite(Number(details?.totalSessions))) entry.totalSessions = Number(details.totalSessions);
-      if (details?.masteryScore == null) {
-        // leave existing masteryScore untouched until an evaluation exists
-      } else if (Number.isFinite(Number(details.masteryScore))) {
-        entry.masteryScore = Number(details.masteryScore);
-      }
-      if (details?.state === 'completed') entry.interviewCompleted = true;
-      entry.lastInteractionAt = new Date().toISOString();
-      update = true;
-      enrollment.progress.mastery = _calculateEnrollmentProgress(enrollment, learningSession.course);
-    }
-
-    // Accumulate total time spent across all topics
-    if (duration > 0) {
-      enrollment.progress.totalTimeSpent = (enrollment.progress.totalTimeSpent || 0) + duration;
-      update = true;
-    }
-
-    // Always record last activity regardless of type
-    enrollment.progress.lastActivityAt = new Date().toISOString();
-    update = true;
-
-    if (update) {
-      // saveEnrollment is fire-and-forget; surface a failed upsert (which would otherwise
-      // silently leave the DB / MasteryView stale) instead of an unhandled rejection.
-      Promise.resolve(service.saveEnrollment(enrollment)).catch((e) => {
-        // eslint-disable-next-line no-console
-        console.error('Failed to save enrollment progress', { enrollmentId: enrollment?.id, topicId: topic?.id, type, message: e?.message });
-      });
-      setLearningSession({ ...learningSession, enrollment: enrollment });
-      _scheduleMasteryCanvasSync(enrollment);
-    }
-  }
-
   // Schedule a (coalesced) post of the learner's mastery to the Canvas mastery assignment. No-op
   // unless the course is linked, the mastery assignment exists, and this learner is a Canvas
   // student (eligibility precomputed once per session). Observe mode never reaches here because
@@ -1811,38 +1796,6 @@ Requirements:
       learnerEmail: user.email,
       mastery: enrollment?.progress?.mastery,
     });
-  }
-
-  function _getEnrollmentProgress(enrollment, topicId) {
-    if (!enrollment.progress) {
-      enrollment.progress = {};
-    }
-    if (!enrollment.progress[topicId]) {
-      enrollment.progress[topicId] = { scores: {} };
-      return true;
-    }
-    return false;
-  }
-
-  function _calculateEnrollmentProgress(enrollment, course) {
-    let publishedTopics = course.allTopics.filter((topic) => topic.state === 'published');
-    if (publishedTopics.length === 0) return 0;
-    let completedTopics = 0;
-
-    publishedTopics.forEach((topic) => {
-      const topicProgress = enrollment.progress[topic.id];
-      let topicPercent = topicProgress ? 1 : 0;
-      if (topicProgress && Number.isFinite(Number(topicProgress.masteryScore))) {
-        // Scored topics (e.g. DRA) contribute their assessment score directly.
-        topicPercent = Math.max(0, Math.min(1, Number(topicProgress.masteryScore) / 100));
-      } else if (topic.interactions && topic.interactions.length > 0) {
-        const completedForTopic = completedInteractionIds(topicProgress);
-        topicPercent = completedForTopic.length / topic.interactions.length;
-      }
-      completedTopics += topicPercent;
-    });
-
-    return Math.round((completedTopics / publishedTopics.length) * 100);
   }
 
   async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, types = null, startDate = null, endDate = null, page = 1, limit = 100 }) {

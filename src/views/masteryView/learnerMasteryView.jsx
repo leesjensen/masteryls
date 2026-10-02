@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, ArrowUpDown, FileClock } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 import { completedInteractionIds } from '../../utils/topicProgress';
+import { deriveProgressSummary } from '../../utils/progressSummary.js';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -127,6 +128,16 @@ export default function LearnerMasteryView({ courseOps }) {
   courseOpsRef.current = courseOps;
 
   const user = courseOps?.user;
+  const selectedLearnerSummary = React.useMemo(() => deriveProgressSummary(selectedLearner?.progress, selectedCourse), [selectedCourse, selectedLearner]);
+  const selectedLearnerDisplaySummary = React.useMemo(() => {
+    const hasTopicProgress = selectedLearnerSummary.completedTopics > 0;
+    return {
+      ...selectedLearnerSummary,
+      mastery: hasTopicProgress || !Number.isFinite(Number(selectedLearner?.masteryPercent)) ? selectedLearnerSummary.mastery : Number(selectedLearner.masteryPercent),
+      completedTopics: hasTopicProgress || !Number.isFinite(Number(selectedLearner?.completedTopics)) ? selectedLearnerSummary.completedTopics : Number(selectedLearner.completedTopics),
+      totalTimeSpent: hasTopicProgress || !Number.isFinite(Number(selectedLearner?.totalTimeSpent)) ? selectedLearnerSummary.totalTimeSpent : Number(selectedLearner.totalTimeSpent),
+    };
+  }, [selectedLearner, selectedLearnerSummary]);
 
   const availableCourses = React.useMemo(() => {
     const catalog = courseOpsRef.current?.service?.courseCatalog?.() || [];
@@ -456,10 +467,10 @@ export default function LearnerMasteryView({ courseOps }) {
           {selectedLearner.learnerEmail && <p className="text-sm text-gray-500 mt-0.5">{selectedLearner.learnerEmail}</p>}
           <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
             <span>
-              Mastery: <strong>{Math.round(Number(selectedLearner.masteryPercent || 0))}%</strong>
+              Mastery: <strong>{Math.round(Number(selectedLearnerDisplaySummary.mastery || 0))}%</strong>
             </span>
             <span>
-              Topics completed: <strong>{selectedLearner.completedTopics}</strong>
+              Topics completed: <strong>{selectedLearnerDisplaySummary.completedTopics}</strong>
             </span>
             <span>
               Exams completed: <strong>{selectedLearner.examCompletedCount}</strong>
@@ -468,11 +479,11 @@ export default function LearnerMasteryView({ courseOps }) {
               Project submits: <strong>{selectedLearner.projectSubmittedCount}</strong>
             </span>
             <span>
-              Time spent: <strong>{formatDuration(selectedLearner.totalTimeSpent || selectedLearner.progress?.totalTimeSpent)}</strong>
+              Time spent: <strong>{formatDuration(selectedLearnerDisplaySummary.totalTimeSpent)}</strong>
             </span>
-            {selectedLearner.lastActivityAt && (
+            {(selectedLearnerSummary.lastActivityAt || selectedLearner.lastActivityAt) && (
               <span>
-                Last activity: <strong>{new Date(selectedLearner.lastActivityAt).toLocaleString()}</strong>
+                Last activity: <strong>{new Date(selectedLearnerSummary.lastActivityAt || selectedLearner.lastActivityAt).toLocaleString()}</strong>
               </span>
             )}
           </div>

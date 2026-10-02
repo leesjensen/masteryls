@@ -379,11 +379,11 @@ Create an HTML page from your prompt.
   await expect(page.getByRole('button', { name: 'Execute prompt' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
 
-  const progressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/rest\/v1\/progress/.test(request.url()));
+  const progressPost = page.waitForRequest((request) => request.method() === 'POST' && /supabase\.co\/functions\/v1\/progressrecord/.test(request.url()));
   await page.getByRole('button', { name: 'Submit' }).click();
 
   const progressRequest = await progressPost;
-  const progressBody = progressRequest.postDataJSON()[0];
+  const progressBody = progressRequest.postDataJSON();
   expect(progressBody.type).toBe('quizSubmit');
   expect(progressBody.interactionId).toBe('a1b2c3d4-e5f6-7890-1234-567890123460');
   expect(progressBody.details.prompt).toBe('Make a responsive page about CSS grid.');
@@ -832,14 +832,11 @@ Submit your project URL.
   await expect.poll(() => gradebookCalls.length).toBe(0);
 
   const gradebookProgressPost = page.waitForRequest((request) => {
-    if (request.method() !== 'POST' || !/supabase\.co\/rest\/v1\/progress/.test(request.url())) return false;
-    const body = request.postDataJSON();
-    const progressRow = Array.isArray(body) ? body[0] : body;
-    return progressRow?.type === 'canvasGradebookSubmit';
+    return request.method() === 'POST' && /supabase\.co\/functions\/v1\/progressrecord/.test(request.url()) && request.postDataJSON()?.type === 'canvasGradebookSubmit';
   });
   await page.getByRole('button', { name: 'Submit to Gradebook' }).click();
   const gradebookProgressRequest = await gradebookProgressPost;
-  const gradebookProgressBody = gradebookProgressRequest.postDataJSON()[0];
+  const gradebookProgressBody = gradebookProgressRequest.postDataJSON();
   expect(gradebookProgressBody.interactionId).toBe('a1b2c3d4-e5f6-7890-1234-567890123470');
   expect(gradebookProgressBody.details.canvasSubmittedAt).toEqual(expect.any(String));
   expect(gradebookProgressBody.details.canvasSyncState).toBe('success');

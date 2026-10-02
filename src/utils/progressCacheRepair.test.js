@@ -58,7 +58,8 @@ test('repairEnrollmentProgressCache restores missing quiz scores from progress r
     'interaction-2': 100,
   });
   assert.equal(repaired['topic-1'].timeSpent, 294);
-  assert.equal(repaired.mastery, 50);
+  assert.equal(repaired.mastery, undefined);
+  assert.equal(repaired.totalTimeSpent, undefined);
 });
 
 test('repairEnrollmentProgressCache merges durable rows without reducing cached time', () => {
@@ -87,5 +88,5 @@ test('repairEnrollmentProgressCache merges durable rows without reducing cached 
 
   assert.equal(repaired['topic-2'].projectSubmission, true);
   assert.equal(repaired['topic-2'].timeSpent, 400);
-  assert.equal(repaired.totalTimeSpent, 500);
+  assert.equal(repaired.totalTimeSpent, undefined);
 });

@@ -3,6 +3,7 @@ import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { GraduationCap, BookSearch, Eye, EyeOff } from 'lucide-react';
+import { deriveProgressSummary } from '../../utils/progressSummary.js';
 
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
@@ -11,6 +12,7 @@ export default function DashboardView({ courseOps, service, user }) {
   const [pendingEnrollmentRemoval, setPendingEnrollmentRemoval] = useState(null);
   const [userSearch, setUserSearch] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
+  const [enrollmentSummaries, setEnrollmentSummaries] = useState(new Map());
   const dialogRef = useRef(null);
 
   React.useEffect(() => {
@@ -23,6 +25,39 @@ export default function DashboardView({ courseOps, service, user }) {
       });
     }
   }, [user]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadEnrollmentSummaries() {
+      if (!enrollments || !courseOps?.getCourse) {
+        setEnrollmentSummaries(new Map());
+        return;
+      }
+
+      const summaries = new Map();
+      await Promise.all(
+        Array.from(enrollments.values()).map(async (enrollment) => {
+          try {
+            const course = await courseOps.getCourse(enrollment.catalogId);
+            summaries.set(enrollment.catalogId, deriveProgressSummary(enrollment.progress, course));
+          } catch {
+            summaries.set(enrollment.catalogId, deriveProgressSummary(enrollment.progress, null));
+          }
+        }),
+      );
+
+      if (!cancelled) {
+        setEnrollmentSummaries(summaries);
+      }
+    }
+
+    loadEnrollmentSummaries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courseOps, enrollments]);
 
   const addEnrollment = async (catalogEntry) => {
     if (!enrollments.has(catalogEntry.id)) {
@@ -54,13 +89,14 @@ export default function DashboardView({ courseOps, service, user }) {
     let activeEnrollmentCount = 0;
     let completedEnrollmentCount = 0;
     const visibleEnrollments = Array.from(enrollments.values()).filter((enrollment) => {
-      if (enrollment.progress.mastery >= 100) {
+      const summary = enrollmentSummaries.get(enrollment.catalogId) || deriveProgressSummary(enrollment.progress, null);
+      if (summary.mastery >= 100) {
         completedEnrollmentCount++;
       } else {
         activeEnrollmentCount++;
       }
 
-      if (enrollment.progress.mastery >= 100) {
+      if (summary.mastery >= 100) {
         return showCompleted;
       }
       return !showCompleted;
@@ -116,7 +152,7 @@ export default function DashboardView({ courseOps, service, user }) {
             {visibleEnrollments.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {visibleEnrollments.map((enrollment) => (
-                  <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} remove={() => requestedEnrollmentRemoval(enrollment)} />
+                  <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} masteryPercent={enrollmentSummaries.get(enrollment.catalogId)?.mastery} remove={() => requestedEnrollmentRemoval(enrollment)} />
                 ))}
               </div>
             ) : (

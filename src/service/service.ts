@@ -733,6 +733,19 @@ class Service {
     return data;
   }
 
+  async recordProgress(params: { catalogId: string; enrollmentId: string; topicId: string; interactionId?: string | null; type?: string; duration?: number; details?: object; cacheUpdate?: object; insertProgress?: boolean }): Promise<any> {
+    const { data, error } = await this.supabase.functions.invoke('progressrecord', {
+      body: params,
+    });
+
+    if (error) {
+      const edgeMessage = await extractEdgeFunctionErrorMessage(error, data);
+      throw new Error(edgeMessage || error.message);
+    }
+
+    return data;
+  }
+
   async uploadSubmissionFile(enrollmentId: string, interactionId: string, file: File): Promise<{ storagePath: string; size: number; type: string }> {
     const safeName = String(file.name || 'file').replace(/[^\w.\-]+/g, '_').slice(0, 80) || 'file';
     const storagePath = `enrollments/${enrollmentId}/interactions/${interactionId}/${crypto.randomUUID()}_${safeName}`;

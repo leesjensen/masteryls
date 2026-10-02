@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 import { getCanvasTopicUrl, getCanvasCourseUrl, hasCanvasTopicLink } from '../../hooks/canvas/canvasSync.js';
 import MasteryPie from '../../components/MasteryPie.jsx';
+import { deriveProgressSummary } from '../../utils/progressSummary.js';
 
 export default function Toolbar({ courseOps, user, learningSession, settings, editing, toggleEditor }) {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   // Link to the topic when it is individually linked, otherwise the Canvas course page.
   const canvasUrl = canvasTopicUrl || getCanvasCourseUrl(canvasCourseId);
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
-  const masteryPercent = learningSession?.enrollment?.progress?.mastery;
+  const masteryPercent = deriveProgressSummary(learningSession?.enrollment?.progress, learningSession?.course).mastery;
   const hasMastery = Number.isFinite(Number(masteryPercent));
 
   return (

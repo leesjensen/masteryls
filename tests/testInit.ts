@@ -601,6 +601,59 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
   });
 
   // Supabase - Progress
+  await context.route(/.*supabase.co\/functions\/v1\/progressrecord(\?.+)?/, async (route) => {
+    switch (route.request().method()) {
+      case 'OPTIONS':
+        await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+        return;
+      case 'POST':
+        {
+          const body = route.request().postDataJSON();
+          const saved = body.insertProgress === false
+            ? null
+            : {
+                id: `progress-${progressData.length + 1}`,
+                createdAt: new Date().toISOString(),
+                userId: '15cb92ef-d2d0-4080-8770-999516448960',
+                catalogId: body.catalogId,
+                enrollmentId: body.enrollmentId,
+                topicId: body.topicId,
+                interactionId: body.interactionId,
+                type: body.type,
+                duration: body.duration,
+                details: body.details || {},
+              };
+          if (saved) {
+            progressData.push(saved);
+          }
+          const cacheUpdate = body.cacheUpdate || {};
+          const score = cacheUpdate.score?.interactionId ? { [cacheUpdate.score.interactionId]: Number(cacheUpdate.score.percentCorrect ?? 100) } : {};
+          await route.fulfill({
+            status: 200,
+            json: {
+              progress: saved,
+              enrollment: {
+                id: body.enrollmentId,
+                catalogId: body.catalogId,
+                learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
+                settings: {},
+                progress: {
+                  lastActivityAt: new Date().toISOString(),
+                  [body.topicId]: {
+                    scores: score,
+                    timeSpent: Number(cacheUpdate.timeSpentDelta || 0),
+                    lastInteractionAt: new Date().toISOString(),
+                  },
+                },
+              },
+            },
+          });
+        }
+        return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
   await context.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'POST':
