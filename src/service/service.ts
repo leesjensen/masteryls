@@ -440,11 +440,13 @@ class Service {
 
    */
   async requestOtp(email: string, name: string | null, shouldCreateUser: boolean): Promise<void> {
+    const trimmedEmail = String(email || '').trim();
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
     const options: any = { shouldCreateUser };
-    if (name) {
-      options.data = { name };
+    if (trimmedName) {
+      options.data = { name: trimmedName };
     }
-    const { error } = await this.supabase.auth.signInWithOtp({ email, options });
+    const { error } = await this.supabase.auth.signInWithOtp({ email: trimmedEmail, options });
     if (error) {
       throw new Error(error.message);
     }
@@ -1279,8 +1281,9 @@ class Service {
   }
 
   private async _ensureUserRecord(authUser: any, fallback: { name?: string; email?: string }) {
-    const name = authUser.user_metadata?.name || fallback.name || (fallback.email ? fallback.email.split('@')[0] : 'New User');
-    const email = authUser.email || fallback.email || '';
+    const rawName = authUser.user_metadata?.name || fallback.name || (fallback.email ? fallback.email.split('@')[0] : 'New User');
+    const name = String(rawName).trim() || 'New User';
+    const email = String(authUser.email || fallback.email || '').trim();
     if (!email) {
       throw new Error('Unable to determine user email');
     }

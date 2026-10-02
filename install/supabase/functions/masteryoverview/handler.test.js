@@ -381,3 +381,29 @@ test('gradebookoverview sorts the full result set before paginating', async () =
   const asc = await (await makeHandler()(makeRequest({ courseId: 'course-1', sortKey: 'masteryPercent', sortDirection: 'asc', page: 1, limit: 1 }))).json();
   assert.equal(asc.rows[0].masteryPercent, 10);
 });
+
+test('gradebookoverview ignores leading/trailing whitespace when sorting by name', async () => {
+  const handler = createMasteryOverviewHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'root-user', email: 'root@test.com' },
+        dataMap: {
+          role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
+          enrollment: [
+            { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 10 } },
+            { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 20 } },
+          ],
+          user: [
+            // A stray leading space must not sort Matthew ahead of Aaron.
+            { id: 'u1', name: ' Matthew Hepworth', email: 'mwhep@test.com' },
+            { id: 'u2', name: 'Aaron Wood', email: 'waaron@test.com' },
+          ],
+          progress: [],
+        },
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  const body = await (await handler(makeRequest({ courseId: 'course-1', sortKey: 'learnerName', sortDirection: 'asc', page: 1, limit: 10 }))).json();
+  assert.deepEqual(body.rows.map((r) => r.learnerId), ['u2', 'u1']);
+});

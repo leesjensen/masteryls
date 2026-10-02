@@ -14,9 +14,11 @@ const SORTABLE_KEYS = new Set(['learnerName', 'learnerEmail', 'masteryPercent', 
 function compareRows(a, b, key) {
   switch (key) {
     case 'learnerName':
-      return String(a.learnerName || '').localeCompare(String(b.learnerName || ''));
+      // Trim so a stray leading/trailing space (which HTML hides but localeCompare treats as
+      // a significant, low-weight character) can't push a learner to the top or bottom.
+      return String(a.learnerName || '').trim().localeCompare(String(b.learnerName || '').trim());
     case 'learnerEmail':
-      return String(a.learnerEmail || '').localeCompare(String(b.learnerEmail || ''));
+      return String(a.learnerEmail || '').trim().localeCompare(String(b.learnerEmail || '').trim());
     case 'lastActivityAt': {
       const ad = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
       const bd = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
