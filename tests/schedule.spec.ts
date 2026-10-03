@@ -145,7 +145,9 @@ test('schedule read view marks rows whose dates have passed', async ({ page }) =
 
   await expect(pastRow).toHaveAttribute('data-schedule-date-status', 'past');
   await expect(pastRow).toHaveClass(/schedule-row-past/);
-  await expect(futureRow).toHaveAttribute('data-schedule-date-status', 'future');
+  // The only future row is also the nearest upcoming one, so it's promoted to "next".
+  await expect(futureRow).toHaveAttribute('data-schedule-date-status', 'next');
+  await expect(futureRow).toHaveClass(/schedule-row-next/);
 });
 
 test('a stale in-flight schedule fetch cannot silently overwrite a newer explicit selection', async ({ page }) => {

@@ -66,6 +66,7 @@ export default function DashboardView({ courseOps, service, user }) {
       if (!newEnrollment) throw new Error('Failed to create enrollment');
 
       setEnrollments((prev) => new Map(prev).set(catalogEntry.id, newEnrollment));
+      await service.logEvent('createEnrollment', { learnerId: user.id, courseId: catalogEntry.id });
     }
   };
 
@@ -76,7 +77,15 @@ export default function DashboardView({ courseOps, service, user }) {
 
   const confirmedEnrollmentRemoval = async () => {
     dialogRef.current.close();
+    const summary = enrollmentSummaries.get(pendingEnrollmentRemoval.catalogId) || deriveProgressSummary(pendingEnrollmentRemoval.progress, null);
     await service.deleteEnrollment(pendingEnrollmentRemoval);
+    await service.logEvent('deleteEnrollment', {
+      learnerId: user.id,
+      courseId: pendingEnrollmentRemoval.catalogId,
+      mastery: summary.mastery,
+      lastActivityAt: summary.lastActivityAt,
+      totalTimeSpent: summary.totalTimeSpent,
+    });
     setEnrollments((prev) => {
       const newEnrollments = new Map(prev);
       newEnrollments.delete(pendingEnrollmentRemoval.catalogId);

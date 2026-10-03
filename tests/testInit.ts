@@ -732,6 +732,15 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
+  // Supabase - Log table (write-only from the client; no test currently reads it back)
+  await context.route(/.*supabase.co\/rest\/v1\/log(\?.+)?/, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({ status: 201, json: {} });
+      return;
+    }
+    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
+  });
+
   // Supabase - Topic search RPC
   await context.route(/.*supabase.co\/rest\/v1\/rpc\/search_topics(\?.+)?/, async (route) => {
     if (route.request().method() === 'POST') {
@@ -924,7 +933,7 @@ async function register(page: any) {
 async function _register(page: any) {
   await page.getByRole('button', { name: "Don't have an account? Create" }).click();
   await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
-  await page.getByRole('textbox', { name: 'Email' }).fill('bud@cow.com');
+  await page.getByRole('textbox', { name: 'Email' }).fill('bud@byu.edu');
   await page.getByRole('button', { name: 'Send Code' }).click();
 
   await page.getByRole('textbox', { name: 'One-time code' }).fill('123456');

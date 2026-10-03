@@ -733,6 +733,19 @@ class Service {
     return data;
   }
 
+  /**
+   * Records an application event in the append-only log table. Failures are logged to the
+   * console rather than thrown, so a logging hiccup never blocks the action being logged.
+   * @param event - Short event name, e.g. "createEnrollment" or "deleteEnrollment".
+   * @param data - Arbitrary event details stored as jsonb.
+   */
+  async logEvent(event: string, data: Record<string, any> = {}): Promise<void> {
+    const { error } = await this.supabase.from('log').insert([{ event, data }]);
+    if (error) {
+      console.error(`Failed to record log event "${event}":`, error.message);
+    }
+  }
+
   async recordProgress(params: { catalogId: string; enrollmentId: string; topicId: string; interactionId?: string | null; type?: string; duration?: number; details?: object; cacheUpdate?: object; insertProgress?: boolean }): Promise<any> {
     const { data, error } = await this.supabase.functions.invoke('progressrecord', {
       body: params,
