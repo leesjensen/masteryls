@@ -14,7 +14,7 @@ import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
 import { resolveMarkdownHref } from '../utils/resolveMarkdownHref';
-import { scheduleDateStatus } from '../utils/scheduleMarkdown';
+import { scheduleDateStatus, getNextScheduleDate, parseScheduleDisplayDate } from '../utils/scheduleMarkdown';
 import { StickyNote } from 'lucide-react';
 import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
 
@@ -92,6 +92,19 @@ export default function Markdown({ learningSession, content, languagePlugins = [
   // essay or checked survey answers). Heading note indicators still update, because the
   // parent's setNoteMessages re-render re-invokes the heading component and re-reads the ref.
   const noteMessagesRef = useLatest(noteMessages);
+
+  // The next upcoming session's date, used by the `tr` renderer below to flag that one row as
+  // "next" (distinct from "today"). Computed from the raw markdown rather than per-row, since
+  // picking the single nearest future date requires seeing every row at once. Read through a
+  // ref for the same reason as the other session-derived values above: it must not be a
+  // `components` memo dependency, or every re-render would remount rendered interactions.
+  const nextSessionTime = React.useMemo(() => {
+    if (learningSession?.topic?.type !== 'schedule' || !content) {
+      return null;
+    }
+    return getNextScheduleDate(content)?.getTime() ?? null;
+  }, [content, learningSession?.topic?.type]);
+  const nextSessionTimeRef = useLatest(nextSessionTime);
 
   // Get search terms for highlighting
   const searchTerms = React.useMemo(() => {
@@ -229,7 +242,17 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       },
       tr({ node, className, children, ...props }) {
         const session = learningSessionRef.current;
-        const dateStatus = session?.topic?.type === 'schedule' ? scheduleDateStatus(scheduleDateTextFromTableRow(node)) : null;
+        const isSchedule = session?.topic?.type === 'schedule';
+        const dateText = isSchedule ? scheduleDateTextFromTableRow(node) : '';
+        let dateStatus = isSchedule ? scheduleDateStatus(dateText) : null;
+
+        if (dateStatus === 'future' && nextSessionTimeRef.current != null) {
+          const parsed = parseScheduleDisplayDate(dateText);
+          if (parsed && parsed.getTime() === nextSessionTimeRef.current) {
+            dateStatus = 'next';
+          }
+        }
+
         const rowClassName = [className, dateStatus ? `schedule-row-${dateStatus}` : ''].filter(Boolean).join(' ');
 
         return (

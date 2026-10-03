@@ -315,12 +315,18 @@ html.dark .markdown-body {
   .pl-mc { color: #ffdfb6; background-color: #5a1e02; }
   .pl-mi2 { color: #c9d1d9; background-color: #1158c7; }
 
-  tr.schedule-row-past { background: oklch(100% 0 0 / 0.02); color: var(--mls-md-muted); }
+  /* The [data-schedule-date-status] attribute selector is tacked on purely to out-specificity
+     the `table tr:nth-child(2n)` zebra stripe above - without it, the stripe's background wins
+     on even rows and the highlight silently disappears every other row. */
+  tr.schedule-row-past[data-schedule-date-status] { background: oklch(100% 0 0 / 0.02); color: var(--mls-md-muted); }
   tr.schedule-row-past a { color: var(--mls-md-muted); }
   tr.schedule-row-past td:first-child { border-left-color: oklch(45% 0.015 257); }
   tr.schedule-row-past td:nth-child(2)::after { background: var(--mls-md-code-bg); color: var(--mls-md-muted); }
-  tr.schedule-row-today { background: oklch(60% 0.18 52 / 0.12); }
+  tr.schedule-row-today[data-schedule-date-status] { background: oklch(60% 0.18 52 / 0.12); }
   tr.schedule-row-today td:nth-child(2)::after { background: oklch(35% 0.09 52); color: var(--mls-fg-orange); }
+  tr.schedule-row-next[data-schedule-date-status] { background: oklch(55% 0.15 260 / 0.14); }
+  tr.schedule-row-next td:first-child { border-left-color: var(--mls-fg-blue); }
+  tr.schedule-row-next td:nth-child(2)::after { background: oklch(32% 0.1 260); color: var(--mls-fg-blue); }
 }
 
 /* --------------------------------------------------------------------------

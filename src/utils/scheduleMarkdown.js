@@ -97,6 +97,27 @@ export function scheduleDateStatus(value, referenceDate = new Date()) {
   return 'future';
 }
 
+// The earliest row date that is strictly after today - i.e. the next upcoming session. Rows
+// that fall on today are reported as 'today' by scheduleDateStatus above, not 'future', so this
+// never collides with a session happening today; it only flags the next one after it.
+export function getNextScheduleDate(markdown, referenceDate = new Date()) {
+  const { weeks } = parseScheduleMarkdown(markdown);
+  let next = null;
+
+  for (const week of weeks) {
+    if (scheduleDateStatus(week.date, referenceDate) !== 'future') {
+      continue;
+    }
+
+    const parsed = parseScheduleDisplayDate(week.date, referenceDate);
+    if (parsed && (!next || parsed.getTime() < next.getTime())) {
+      next = parsed;
+    }
+  }
+
+  return next;
+}
+
 function scheduleDayToIso(value, endOfDay) {
   const raw = String(value || '').trim();
   if (!raw) {

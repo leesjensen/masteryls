@@ -93,7 +93,11 @@
   hyphens: none;
 }
 
-.markdown-body tr.schedule-row-past {
+/* The [data-schedule-date-status] attribute selector is tacked on purely to out-specificity
+   github-markdown-css's `.markdown-body table tr:nth-child(2n)` zebra striping - without it,
+   the stripe's background wins on even rows and the highlight silently disappears every other
+   row. */
+.markdown-body tr.schedule-row-past[data-schedule-date-status] {
   background: #f8fafc;
   color: #64748b;
 }
@@ -125,7 +129,7 @@
   vertical-align: middle;
 }
 
-.markdown-body tr.schedule-row-today {
+.markdown-body tr.schedule-row-today[data-schedule-date-status] {
   background: #fff7ed;
 }
 
@@ -141,6 +145,29 @@
   border-radius: 999px;
   background: #ffedd5;
   color: #9a3412;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.markdown-body tr.schedule-row-next[data-schedule-date-status] {
+  background: #eff6ff;
+}
+
+.markdown-body tr.schedule-row-next td:first-child {
+  border-left: 3px solid #3b82f6;
+}
+
+.markdown-body tr.schedule-row-next td:nth-child(2)::after {
+  content: 'Next';
+  display: inline-flex;
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1.25;
