@@ -79,6 +79,16 @@ create table if not exists public.progress (
   details jsonb default '{}'::jsonb
 );
 
+-- Generic append-only application event log. Any registered user can write an entry;
+-- only root/editor can read them back.
+create table if not exists public.log (
+  id uuid primary key default gen_random_uuid(),
+  event text not null,
+  data jsonb default '{}'::jsonb,
+  "createdAt" timestamp with time zone default now(),
+  "generatedBy" uuid references auth.users(id) on delete set null default auth.uid()
+);
+
 
 ----------------------- Indexes
 
@@ -104,6 +114,10 @@ create index if not exists "progressCatalogTopicIdx" on public.progress ("catalo
 
 -- Progress queries: course-scoped activity pages ordered by newest first
 create index if not exists "progressCatalogCreatedAtIdx" on public.progress ("catalogId", "createdAt" desc);
+
+-- Log queries: recent events ordered by newest first, optionally filtered by event type
+create index if not exists "logCreatedAtIdx" on public.log ("createdAt" desc);
+create index if not exists "logEventIdx" on public.log (event);
 
 
 ----------------------- Functions
@@ -484,6 +498,7 @@ revoke all on table public.role from public, anon, authenticated;
 revoke all on table public.enrollment from public, anon, authenticated;
 revoke all on table public.topic from public, anon, authenticated;
 revoke all on table public.progress from public, anon, authenticated;
+revoke all on table public.log from public, anon, authenticated;
 
 -- Catalog grants
 grant select on table public.catalog to anon, authenticated;
@@ -504,6 +519,10 @@ grant select, insert, update, delete on table public.topic to authenticated;
 -- Authenticated users can attempt read/write progress records (RLS will narrow to self)
 grant select, insert, update, delete on table public.progress to authenticated;
 
+-- Any registered user can insert a log entry; RLS narrows reads to root/editor. Logs are
+-- append-only, so update/delete are intentionally not granted to anyone.
+grant select, insert on table public.log to authenticated;
+
 
 ----------------------- Row Level Security
 
@@ -515,6 +534,7 @@ alter table public.role enable row level security;
 alter table public.enrollment enable row level security;
 alter table public.topic enable row level security;
 alter table public.progress enable row level security;
+alter table public.log enable row level security;
 
 
 ----------------------- Policies
@@ -547,6 +567,8 @@ drop policy if exists "Allow users to read their own progress" on public.progres
 drop policy if exists "Editor reads all users progress" on public.progress;
 drop policy if exists "Editor reads managed course progress" on public.progress;
 drop policy if exists "Root manages all" on public.progress;
+drop policy if exists "Registered user inserts log" on public.log;
+drop policy if exists "Root or editor reads log" on public.log;
 
 
 ----------------------- Policies: Catalog
@@ -766,6 +788,22 @@ for all
 to authenticated
 using (public.auth_is_root(auth.uid()))
 with check (public.auth_is_root(auth.uid()));
+
+
+----------------------- Policies: Log
+
+
+create policy "Registered user inserts log"
+on public.log
+for insert
+to authenticated
+with check ("generatedBy" = auth.uid());
+
+create policy "Root or editor reads log"
+on public.log
+for select
+to authenticated
+using (public.auth_is_root(auth.uid()) or public.auth_is_editor(auth.uid()));
 
 -- =====================================================================
 -- File submission storage bucket + RLS
