@@ -421,7 +421,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       }
     }
     loadState();
-  }, [isPreview, user, learningSession?.enrollment, topicId]);
+  }, [isPreview, user, learningSession?.enrollment?.id, topicId]);
 
   const params = React.useMemo(() => parseDraMarkdown(markdown), [markdown]);
   const practiceScenarios = draState.practiceScenarios || [];

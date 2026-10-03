@@ -17,7 +17,7 @@ export default function ExamInstruction({ courseOps, learningSession, user, cont
       setLoading(false);
     }
     fetchExamState();
-  }, [learningSession?.enrollment]);
+  }, [learningSession?.enrollment?.id]);
 
   const updateState = async (state) => {
     if (isObserveReadOnly) {

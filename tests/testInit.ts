@@ -601,6 +601,9 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
   });
 
   // Supabase - Progress
+  // Tracks accumulated enrollment progress across calls, mirroring the server-side
+  // read-modify-write behaviour of the record_progress_event SQL function.
+  const enrollmentProgressCache: Record<string, any> = { mastery: 0 };
   await context.route(/.*supabase.co\/functions\/v1\/progressrecord(\?.+)?/, async (route) => {
     switch (route.request().method()) {
       case 'OPTIONS':
@@ -627,7 +630,20 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
             progressData.push(saved);
           }
           const cacheUpdate = body.cacheUpdate || {};
-          const score = cacheUpdate.score?.interactionId ? { [cacheUpdate.score.interactionId]: Number(cacheUpdate.score.percentCorrect ?? 100) } : {};
+          enrollmentProgressCache.lastActivityAt = new Date().toISOString();
+          if (body.topicId && cacheUpdate.touchTopic !== false) {
+            const entry: Record<string, any> = enrollmentProgressCache[body.topicId] || { scores: {} };
+            if (Number(cacheUpdate.timeSpentDelta) > 0) {
+              entry.timeSpent = (entry.timeSpent || 0) + Number(cacheUpdate.timeSpentDelta);
+            }
+            if (cacheUpdate.score?.interactionId) {
+              entry.scores = { ...(entry.scores || {}), [cacheUpdate.score.interactionId]: Number(cacheUpdate.score.percentCorrect ?? 100) };
+            }
+            if (cacheUpdate.touchTopicActivity) {
+              entry.lastInteractionAt = new Date().toISOString();
+            }
+            enrollmentProgressCache[body.topicId] = entry;
+          }
           await route.fulfill({
             status: 200,
             json: {
@@ -637,14 +653,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
                 catalogId: body.catalogId,
                 learnerId: '15cb92ef-d2d0-4080-8770-999516448960',
                 settings: {},
-                progress: {
-                  lastActivityAt: new Date().toISOString(),
-                  [body.topicId]: {
-                    scores: score,
-                    timeSpent: Number(cacheUpdate.timeSpentDelta || 0),
-                    lastInteractionAt: new Date().toISOString(),
-                  },
-                },
+                progress: { ...enrollmentProgressCache },
               },
             },
           });

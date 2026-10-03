@@ -19,6 +19,7 @@ import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
+import { calculateProgressMastery } from '../utils/progressSummary.js';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -1533,10 +1534,12 @@ Requirements:
 
   function _applyRecordedEnrollment(enrollment) {
     if (!enrollment) return;
-    if (learningSession?.enrollment?.id === enrollment.id) {
-      setLearningSession({ ...learningSession, enrollment });
+    const mastery = calculateProgressMastery(enrollment.progress, learningSession?.course);
+    const enriched = { ...enrollment, progress: { ...enrollment.progress, mastery } };
+    if (learningSession?.enrollment?.id === enriched.id) {
+      setLearningSession({ ...learningSession, enrollment: enriched });
     }
-    _scheduleMasteryCanvasSync(enrollment);
+    _scheduleMasteryCanvasSync(enriched);
   }
 
   // Posts a final DRA/interview score+feedback to Canvas as a suggested (non-authoritative)
