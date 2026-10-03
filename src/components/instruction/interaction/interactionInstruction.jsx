@@ -224,9 +224,11 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const selected = [];
           const correct = [];
           const choices = [];
+          const feedbacks = [];
           inputs.forEach((inp) => {
             const idx = Number(inp.getAttribute('data-plugin-masteryls-index'));
             choices.push(inp.nextSibling.textContent.trim());
+            feedbacks.push(inp.getAttribute('data-plugin-masteryls-feedback') || '');
             if (inp.checked) selected.push(idx);
             if (inp.getAttribute('data-plugin-masteryls-correct') === 'true') correct.push(idx);
           });
@@ -240,7 +242,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
           const matched = Math.max(0, correctSelections - incorrectSelections);
           const percentCorrect = total === 0 ? 0 : Math.round((matched / total) * 100);
 
-          if (await onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, syncGrade, autoGrade })) {
+          if (await onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, feedbacks, syncGrade, autoGrade })) {
             displayGrade(interactionRoot, percentCorrect);
           }
         } else if (type === 'survey') {
@@ -387,22 +389,33 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     return true;
   }
 
-  async function onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, syncGrade = false, autoGrade = false }) {
+  async function onChoiceInteraction({ id, title, type, body, choices, selected, correct, percentCorrect, feedbacks = [], syncGrade = false, autoGrade = false }) {
     if (selected.length === 0) return false;
-    let feedback = '';
-    try {
-      const data = {
-        title,
-        type,
-        question: body,
-        choices: choices.map((choice) => '\n   -' + choice).join(''),
-        learnerAnswers: selected.map((i) => choices[i]),
-        correctAnswers: correct.map((i) => choices[i]),
-        percentCorrect: percentCorrect,
-      };
-      feedback = await courseOps.getChoiceInteractionFeedback(data);
-    } catch {
-      feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
+
+    // Authored feedback (indented markdown under a choice in the source) takes priority over the
+    // AI call - an editor who wrote feedback for the choices the learner picked gets exactly
+    // that, verbatim, with no AI round-trip.
+    const authoredFeedback = selected
+      .map((i) => feedbacks[i])
+      .filter(Boolean)
+      .join('\n\n');
+
+    let feedback = authoredFeedback;
+    if (!feedback) {
+      try {
+        const data = {
+          title,
+          type,
+          question: body,
+          choices: choices.map((choice) => '\n   -' + choice).join(''),
+          learnerAnswers: selected.map((i) => choices[i]),
+          correctAnswers: correct.map((i) => choices[i]),
+          percentCorrect: percentCorrect,
+        };
+        feedback = await courseOps.getChoiceInteractionFeedback(data);
+      } catch {
+        feedback = `${percentCorrect === 100 ? 'Great job! You got it all correct.' : `Good effort. Review the material see where you went wrong.`}`;
+      }
     }
     const details = { type, selected, correct, percentCorrect, feedback, syncGrade, autoGrade };
     updateInteractionProgress(id, details);

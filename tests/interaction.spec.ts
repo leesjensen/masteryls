@@ -45,6 +45,40 @@ Simple **multiple choice** question
   await expect(page.locator('pre')).toContainText('Fantastic job');
 });
 
+test('interaction multiple choice uses authored feedback for a selected choice instead of calling AI', async ({ page }) => {
+  const interactionMarkdown = `
+# Quiz
+\`\`\`masteryls
+{"id":"a1b2c3d4-e5f6-7890-1234-567890123499", "title":"Authored feedback", "type":"multiple-choice" }
+Pick the right answer
+
+- [ ] Wrong answer
+
+  Not quite - review the material and try again.
+
+- [x] Right answer
+
+  Nice work, that's correct!
+\`\`\`
+`;
+
+  await initBasicCourse({ page, topicMarkdown: interactionMarkdown });
+
+  // Prove the AI feedback call is skipped: fail the test loudly if it's ever reached.
+  await page.context().route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    throw new Error('AI feedback should not be called when a choice has authored feedback');
+  });
+
+  await navigateToCourse(page);
+  await page.getByText('topic 1').click();
+
+  await page.getByRole('radio', { name: 'Right answer' }).check();
+  await page.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(page.getByText("Nice work, that's correct!")).toBeVisible();
+  await expect(page.getByText('Not quite - review the material and try again.')).not.toBeVisible();
+});
+
 test('root users can review multiple choice response counts', async ({ page }) => {
   const interactionId = 'a1b2c3d4-e5f6-7890-1234-567890123457';
   const interactionMarkdown = `

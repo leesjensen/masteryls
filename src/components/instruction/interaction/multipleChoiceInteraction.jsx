@@ -2,24 +2,12 @@ import React from 'react';
 import inlineLiteMarkdown, { renderLiteMarkdownBlocks } from './inlineLiteMarkdown';
 import { useInteractionProgressStore } from './interactionProgressStore';
 import { InteractionSubmitRow } from './InteractionEvaluationStatus.jsx';
+import { parseMultipleChoiceBody } from '../../../utils/multipleChoiceInteraction';
 
 export default function MultipleChoiceInteraction({ id, quizType, body, submitLabel }) {
   const progress = useInteractionProgressStore(id) || {};
 
-  const lines = body.split('\n');
-  const firstChoiceIndex = lines.findIndex((l) => l.startsWith('- ['));
-
-  const promptLines = firstChoiceIndex >= 0 ? lines.slice(0, firstChoiceIndex) : lines;
-  const choiceLines = firstChoiceIndex >= 0 ? lines.slice(firstChoiceIndex) : [];
-
-  const prompt = promptLines.join('\n');
-  const choices = choiceLines
-    .filter((l) => l.startsWith('- ['))
-    .map((line) => {
-      const correct = /^\-\s*\[\s*[xX]\s*\]/.test(line);
-      const text = line.replace(/^\-\s*\[\s*[xX ]\s*\]\s*/, '').trim();
-      return { text, correct };
-    });
+  const { prompt, choices } = parseMultipleChoiceBody(body);
 
   const useRadioButtons = (quizType || '').toLowerCase() === 'multiple-choice';
   const selectedIndices = progress.selected;
@@ -63,7 +51,16 @@ export default function MultipleChoiceInteraction({ id, quizType, body, submitLa
           return (
             <div key={i} className="flex items-start gap-2">
               <label className="cursor-pointer">
-                <input className="mt-1" type={useRadioButtons ? 'radio' : 'checkbox'} name={`quiz-${id}`} data-plugin-masteryls-index={i} checked={currentSelections.has(i)} onChange={(e) => handleSelectionChange(i, e.target.checked)} {...(choice.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})} />
+                <input
+                  className="mt-1"
+                  type={useRadioButtons ? 'radio' : 'checkbox'}
+                  name={`quiz-${id}`}
+                  data-plugin-masteryls-index={i}
+                  checked={currentSelections.has(i)}
+                  onChange={(e) => handleSelectionChange(i, e.target.checked)}
+                  {...(choice.correct ? { 'data-plugin-masteryls-correct': 'true' } : {})}
+                  {...(choice.feedback ? { 'data-plugin-masteryls-feedback': choice.feedback } : {})}
+                />
                 <span className="p-2">{inlineLiteMarkdown(choice.text)}</span>
               </label>
             </div>
