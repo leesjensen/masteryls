@@ -7,8 +7,8 @@ const ALLOWED_EXTENSIONS = new Set(['md', 'markdown', 'js', 'jsx', 'mjs', 'cjs',
 
 const EXCLUDED_PATH_FRAGMENTS = ['node_modules/', 'dist/', 'build/', '.git/', '.next/', 'coverage/', '.cache/', 'vendor/'];
 
-const MAX_FILE_BYTES = 500 * 1024;
-const MAX_TOTAL_BYTES = 1200 * 1024;
+export const MAX_FILE_BYTES = 500 * 1024;
+export const MAX_TOTAL_BYTES = 1200 * 1024;
 const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 function jsonResponse(body, status = 200) {
@@ -231,10 +231,6 @@ export function createGithubGradeHandler({ createSupabaseClientFromAuthHeader, g
     const geminiBody = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        //        maxOutputTokens: 4096,
         responseMimeType: 'application/json',
       },
       safetySettings: [

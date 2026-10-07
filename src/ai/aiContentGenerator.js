@@ -1697,12 +1697,6 @@ async function makeAiRequest(instructions, contents, user) {
 }
 
 const standardRequestBody = {
-  generationConfig: {
-    temperature: 0.7,
-    topK: 40,
-    topP: 0.95,
-    //    maxOutputTokens: 5000,
-  },
   safetySettings: [
     {
       category: 'HARM_CATEGORY_HARASSMENT',

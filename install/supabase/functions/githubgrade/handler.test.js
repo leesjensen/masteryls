@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGithubGradeHandler } from './handler.js';
+import { createGithubGradeHandler, MAX_FILE_BYTES, MAX_TOTAL_BYTES } from './handler.js';
 
 function createMockSupabase({ user }) {
   return {
@@ -102,7 +102,7 @@ test('githubgrade happy path filters files and returns parsed grade', async () =
     { type: 'blob', path: 'src/styles.css', size: 300 },
     { type: 'blob', path: 'image.png', size: 5000 },
     { type: 'blob', path: 'node_modules/foo/index.js', size: 100 },
-    { type: 'blob', path: 'big.js', size: 200 * 1024 },
+    { type: 'blob', path: 'big.js', size: MAX_FILE_BYTES },
   ];
 
   const { fetchFn, calls } = makeFetchRouter([
@@ -139,11 +139,15 @@ test('githubgrade happy path filters files and returns parsed grade', async () =
 });
 
 test('githubgrade honors total size cap and reports filesSkipped', async () => {
+  // Each large file sits safely under the per-file cap, and the files are sized so that the
+  // small file plus two large files fit under the total cap while the third large file pushes
+  // past it — exercising the total-cap skip. Derived from the caps so it survives cap tuning.
+  const large = Math.floor(MAX_FILE_BYTES * 0.9);
   const tree = [
     { type: 'blob', path: 'small.md', size: 1000 },
-    { type: 'blob', path: 'a.js', size: 90_000 },
-    { type: 'blob', path: 'b.js', size: 90_000 },
-    { type: 'blob', path: 'c.js', size: 90_000 },
+    { type: 'blob', path: 'a.js', size: large },
+    { type: 'blob', path: 'b.js', size: large },
+    { type: 'blob', path: 'c.js', size: large },
   ];
 
   const { fetchFn } = makeFetchRouter([
@@ -164,8 +168,8 @@ test('githubgrade honors total size cap and reports filesSkipped', async () => {
   const response = await handler(makeRequest({ url: 'https://github.com/u/r', gradingCriteria: 'c' }));
   const body = await response.json();
   assert.equal(body.ok, true);
-  assert.equal(body.filesIncluded, 3, 'small.md + 2 of the 90KB files fit under 200KB cap');
-  assert.equal(body.filesSkipped, 1, 'one of the 90KB files is skipped');
+  assert.equal(body.filesIncluded, 3, 'small.md + 2 large files fit under the total cap');
+  assert.equal(body.filesSkipped, 1, 'the third large file is skipped by the total cap');
 });
 
 test('githubgrade parses multi-line markdown feedback with fenced code blocks', async () => {
