@@ -92,6 +92,10 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     const payload = await req.json();
     const courseId = String(payload?.courseId || '').trim();
     const learnerId = String(payload?.learnerId || '').trim() || null;
+    // Optional inclusive "enrolled between" window (ISO timestamps). Applied to enrollment.createdAt
+    // for overseer roster requests only - never to a single-learner drill-down or a self view.
+    const startDate = String(payload?.startDate || '').trim() || null;
+    const endDate = String(payload?.endDate || '').trim() || null;
 
     if (!courseId) {
       return new Response(JSON.stringify({ error: 'courseId is required' }), {
@@ -102,24 +106,19 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
 
     const supabase = createSupabaseClientFromAuthHeader(authHeader);
 
-    // Decode userId from JWT locally so auth and enrollment queries can fire
-    // in parallel with getUser(). Falls back to re-running auth after getUser()
-    // if the token can't be decoded or the userId doesn't match.
+    // Decode userId from the JWT locally so getUser() and the role lookup run in parallel. The
+    // enrollment read happens after, once the requester's role is known, so the heavy progress
+    // read can be restricted to exactly the rows they may see.
     const candidateUserId = extractUserIdFromToken(authHeader);
 
-    // 3 parallel operations: getUser + combined role check + enrollment fetch
     const [
       { data: authData, error: authError },
       { data: prefetchedRoles },
-      { data: allEnrollments, error: enrollmentsError },
     ] = await Promise.all([
       supabase.auth.getUser(),
       candidateUserId
         ? supabase.from('role').select('right, object').eq('user', candidateUserId).in('right', ['root', 'editor', 'mentor'])
         : Promise.resolve({ data: null }),
-      learnerId
-        ? supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId).eq('learnerId', learnerId)
-        : supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId),
     ]);
 
     if (authError || !authData?.user) {
@@ -141,31 +140,41 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     }
 
     const safeRoles = Array.isArray(userRoles) ? userRoles : [];
-    const safeAllEnrollments = Array.isArray(allEnrollments) ? allEnrollments : [];
 
     const isRoot = safeRoles.some((r) => r.right === 'root');
     const isEditor = safeRoles.some((r) => r.right === 'editor' && String(r.object) === courseId);
     const isMentor = safeRoles.some((r) => r.right === 'mentor' && String(r.object) === courseId);
     const canOverseeCourse = isRoot || isEditor || isMentor;
-    const isEnrolledLearner = safeAllEnrollments.some((e) => String(e.learnerId) === String(userId));
-
-    if (!canOverseeCourse && !isEnrolledLearner) {
-      return new Response(JSON.stringify({ error: 'User is not authorized to view this course gradebook' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     try {
+      // Scope the enrollment read to what the requester may see:
+      // - non-overseer: only their own enrollment (also serves as the authorization check below);
+      // - overseer drill-down (learnerId): that one learner, no date scope;
+      // - overseer roster: enrollments created within the "enrolled between" window, so
+      //   out-of-window cohorts are never fetched.
+      let query = supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId);
+      if (!canOverseeCourse) {
+        query = query.eq('learnerId', userId);
+      } else if (learnerId) {
+        query = query.eq('learnerId', learnerId);
+      } else {
+        if (startDate) query = query.gte('createdAt', startDate);
+        if (endDate) query = query.lte('createdAt', endDate);
+      }
+
+      const { data: enrollmentData, error: enrollmentsError } = await query;
       if (enrollmentsError) {
         throw enrollmentsError;
       }
 
-      let safeEnrollments = safeAllEnrollments;
+      const safeEnrollments = Array.isArray(enrollmentData) ? enrollmentData : [];
 
-      // Enrolled learners who are not course overseers can only see their own row
-      if (isEnrolledLearner && !canOverseeCourse) {
-        safeEnrollments = safeEnrollments.filter((e) => String(e.learnerId) === String(userId));
+      // Overseers are authorized by role; anyone else must have their own enrollment present.
+      if (!canOverseeCourse && safeEnrollments.length === 0) {
+        return new Response(JSON.stringify({ error: 'User is not authorized to view this course gradebook' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       if (safeEnrollments.length === 0) {

@@ -56,6 +56,10 @@ create table if not exists public.enrollment (
   settings jsonb default '{}'::jsonb
 );
 
+-- Speeds the mastery-overview roster query, which scopes a course's enrollments to an
+-- "enrolled between" window (catalogId + createdAt range).
+create index if not exists enrollment_catalog_created_idx on public.enrollment ("catalogId", "createdAt");
+
 -- Topic content cache with full-text search index source column
 create table if not exists public.topic (
   id uuid primary key,

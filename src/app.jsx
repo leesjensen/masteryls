@@ -158,8 +158,8 @@ function MasteryViewPage() {
 }
 
 function LearnerMasteryViewPage() {
-  const { courseOps } = useOutletContext();
-  return <LearnerMasteryView courseOps={courseOps} />;
+  const { courseOps, startObserveSession } = useOutletContext();
+  return <LearnerMasteryView courseOps={courseOps} startObserveSession={startObserveSession} />;
 }
 
 function ProgressPage() {

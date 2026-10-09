@@ -138,15 +138,84 @@ test('masteryview numeric sort spans all pages and resets to page one', async ({
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Zelda Zimmerman', exact: true })).toBeVisible();
 
-  // Advance to page 2 so we can prove sorting snaps back to page 1.
-  await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByText('Page 2')).toBeVisible();
+  // Pagination controls appear both above and below the list.
+  await expect(page.getByRole('button', { name: 'Next' })).toHaveCount(2);
+
+  // Advance to page 2 so we can prove sorting snaps back to page 1 (either Next button works).
+  await page.getByRole('button', { name: 'Next' }).first().click();
+  await expect(page.getByText('Page 2').first()).toBeVisible();
 
   // Ascending Time Spent: Aaron has the globally smallest time (and sits on page 2 by default),
   // so sorting pulls it to the top of page 1 - and paging resets to page 1.
   await page.getByRole('button', { name: 'Time Spent' }).click();
-  await expect(page.getByText('Page 1')).toBeVisible();
+  await expect(page.getByText('Page 1').first()).toBeVisible();
   await expect(page.locator('tbody tr').first()).toContainText('Aaron Aardvark');
+});
+
+// Three learners enrolled on distinct dates; the mock emulates the edge function's server-side
+// createdAt window by filtering on the startDate/endDate the client sends.
+function mockCohortOverview(page: any) {
+  const requests: any[] = [];
+  return page.route(/.*supabase.co\/functions\/v1\/masteryoverview(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    const payload = await route.request().postDataJSON();
+    requests.push(payload);
+    const allRows = [
+      { enrollmentId: 'e-early', learnerId: 'l-early', learnerName: 'Early Learner', learnerEmail: 'early@test.edu', createdAt: '2026-01-10T12:00:00Z', progress: {} },
+      { enrollmentId: 'e-mid', learnerId: 'l-mid', learnerName: 'Mid Learner', learnerEmail: 'mid@test.edu', createdAt: '2026-03-15T12:00:00Z', progress: {} },
+      { enrollmentId: 'e-late', learnerId: 'l-late', learnerName: 'Late Learner', learnerEmail: 'late@test.edu', createdAt: '2026-06-20T12:00:00Z', progress: {} },
+    ];
+    let rows = allRows;
+    if (payload?.startDate) rows = rows.filter((r) => r.createdAt >= payload.startDate);
+    if (payload?.endDate) rows = rows.filter((r) => r.createdAt <= payload.endDate);
+    await route.fulfill({ status: 200, json: { rows, totalCount: rows.length } });
+  }).then(() => requests);
+}
+
+test('masteryview filters the roster by enrollment date range (server-side)', async ({ page }) => {
+  await initBasicCourse({ page });
+  const requests = await mockCohortOverview(page);
+
+  await navigateToDashboard(page);
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'MasteryView' }).click();
+
+  // The test course's schedule has no dates, so the window defaults to "all dates": everyone shows.
+  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByText('Total learners: 3')).toBeVisible();
+
+  // A March window: the server returns only the learner enrolled in March, and the client sends
+  // the date bounds (refetch), rather than filtering locally.
+  await page.getByLabel('Enrolled start date').fill('2026-03-01');
+  await page.getByLabel('Enrolled end date').fill('2026-04-01');
+  await expect(page.getByText('Total learners: 1')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Mid Learner', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Early Learner', exact: true })).toHaveCount(0);
+  await expect.poll(() => requests.some((r) => r.startDate && r.endDate)).toBe(true);
+
+  // Clearing the range refetches the whole roster.
+  await page.getByRole('button', { name: 'All dates' }).click();
+  await expect(page.getByText('Total learners: 3')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Late Learner', exact: true })).toBeVisible();
+});
+
+test('masteryview schedule dropdown drives the enrolled-between window', async ({ page }) => {
+  await initBasicCourse({ page });
+  await mockCohortOverview(page);
+
+  await navigateToDashboard(page);
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'MasteryView' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  // The schedule picker defaults to the course's default schedule file ("Schedule").
+  await expect(page.getByLabel('Schedule')).toHaveValue('default');
+  // Editing a date detaches the window to "Custom".
+  await page.getByLabel('Enrolled start date').fill('2026-03-01');
+  await expect(page.getByLabel('Schedule')).toHaveValue('');
 });
 
 test('masteryview loads learner overview for accessible course', async ({ page }) => {
@@ -216,4 +285,7 @@ test('learner masteryview shows learner summary and topic detail', async ({ page
   await expect(page.getByText('bud@cow.com')).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
   await expect(page.getByRole('textbox', { name: /search learner/i })).not.toBeVisible();
+
+  // An overseer can jump straight into observing this learner from the drill-down header.
+  await expect(page.getByRole('button', { name: 'Observe' })).toBeVisible();
 });

@@ -109,7 +109,7 @@ function DailyActivityChart({ records }) {
   return <BarChartSvg dateGroups={dateGroups} />;
 }
 
-export default function LearnerMasteryView({ courseOps }) {
+export default function LearnerMasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { learnerId: routeLearnerId, courseId: routeCourseId } = useParams();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
@@ -128,7 +128,21 @@ export default function LearnerMasteryView({ courseOps }) {
   courseOpsRef.current = courseOps;
 
   const user = courseOps?.user;
+  const canObserve = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId) && typeof startObserveSession === 'function'), [user, selectedCourseId, startObserveSession]);
   const selectedLearnerSummary = React.useMemo(() => deriveProgressSummary(selectedLearner?.progress, selectedCourse), [selectedCourse, selectedLearner]);
+
+  function onObserveLearner() {
+    if (!canObserve || !selectedCourseId || !selectedLearner) {
+      return;
+    }
+    startObserveSession({
+      courseId: selectedCourseId,
+      learnerId: selectedLearner.learnerId || routeLearnerId,
+      learnerName: selectedLearner.learnerName,
+      learnerEmail: selectedLearner.learnerEmail,
+    });
+    navigate(`/course/${selectedCourseId}`);
+  }
   const selectedLearnerDisplaySummary = React.useMemo(() => {
     const hasTopicProgress = selectedLearnerSummary.completedTopics > 0;
     return {
@@ -462,7 +476,14 @@ export default function LearnerMasteryView({ courseOps }) {
       {!loading && selectedLearner && (
         <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-800">{selectedLearner.learnerName || selectedLearner.learnerEmail || 'Unknown learner'}</h2>
-          {selectedLearner.learnerEmail && <p className="text-sm text-gray-500 mt-0.5">{selectedLearner.learnerEmail}</p>}
+          <div className="flex items-center gap-3 mt-0.5">
+            {selectedLearner.learnerEmail && <p className="text-sm text-gray-500">{selectedLearner.learnerEmail}</p>}
+            {canObserve && (
+              <button type="button" onClick={onObserveLearner} className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs">
+                Observe
+              </button>
+            )}
+          </div>
           <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
             <span>
               Mastery: <strong>{Math.round(Number(selectedLearnerDisplaySummary.mastery || 0))}%</strong>

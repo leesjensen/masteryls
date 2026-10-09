@@ -1864,11 +1864,17 @@ Requirements:
     };
   }
 
-  // Returns identity + progress for a course's enrollments. Without learnerId: all learners with
-  // a trimmed progress blob (the client derives metrics and sorts/filters/paginates locally).
-  // With learnerId: that one learner's full progress blob (the drill-down needs the detail).
-  async function getMasteryOverview({ courseId, learnerId = '' }) {
-    return service.makeMasteryOverviewRequest({ courseId, ...(learnerId ? { learnerId } : {}) });
+  // Returns identity + progress for a course's enrollments. Without learnerId: the roster with a
+  // trimmed progress blob (the client derives metrics and sorts/filters/paginates locally),
+  // optionally restricted to enrollments created within [startDate, endDate]. With learnerId:
+  // that one learner's full progress blob (the drill-down needs the detail; date range ignored).
+  async function getMasteryOverview({ courseId, learnerId = '', startDate = '', endDate = '' }) {
+    return service.makeMasteryOverviewRequest({
+      courseId,
+      ...(learnerId ? { learnerId } : {}),
+      ...(startDate ? { startDate } : {}),
+      ...(endDate ? { endDate } : {}),
+    });
   }
 
   async function unenrollLearner({ enrollmentId }) {

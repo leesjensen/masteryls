@@ -20,6 +20,12 @@ function buildQuery(table, dataMap) {
         const allowed = new Set((filter.values || []).map((value) => String(value)));
         rows = rows.filter((row) => allowed.has(String(row?.[filter.key])));
       }
+      if (filter.kind === 'gte') {
+        rows = rows.filter((row) => row?.[filter.key] != null && String(row[filter.key]) >= String(filter.value));
+      }
+      if (filter.kind === 'lte') {
+        rows = rows.filter((row) => row?.[filter.key] != null && String(row[filter.key]) <= String(filter.value));
+      }
     }
 
     if (sortBy) {
@@ -71,6 +77,14 @@ function buildQuery(table, dataMap) {
     },
     in(key, values) {
       filters.push({ kind: 'in', key, values });
+      return query;
+    },
+    gte(key, value) {
+      filters.push({ kind: 'gte', key, value });
+      return query;
+    },
+    lte(key, value) {
+      filters.push({ kind: 'lte', key, value });
       return query;
     },
     order(key, options = {}) {
@@ -358,4 +372,79 @@ test('gradebookoverview returns every enrollment without paginating (client pagi
   assert.equal(body.rows.length, 120);
   assert.equal(body.page, undefined);
   assert.equal(body.hasMore, undefined);
+});
+
+function datedCohortClient() {
+  return createMockSupabase({
+    user: { id: 'root-user', email: 'root@test.com' },
+    dataMap: {
+      role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
+      enrollment: [
+        { id: 'e-old', learnerId: 'u-old', catalogId: 'course-1', createdAt: '2025-08-20T09:00:00Z', progress: {} },
+        { id: 'e-cur1', learnerId: 'u-cur1', catalogId: 'course-1', createdAt: '2026-01-15T09:00:00Z', progress: {} },
+        { id: 'e-cur2', learnerId: 'u-cur2', catalogId: 'course-1', createdAt: '2026-02-10T09:00:00Z', progress: {} },
+        { id: 'e-future', learnerId: 'u-future', catalogId: 'course-1', createdAt: '2026-09-01T09:00:00Z', progress: {} },
+      ],
+      user: [
+        { id: 'u-old', name: 'Old Cohort', email: 'old@test.com' },
+        { id: 'u-cur1', name: 'Current One', email: 'cur1@test.com' },
+        { id: 'u-cur2', name: 'Current Two', email: 'cur2@test.com' },
+        { id: 'u-future', name: 'Future Cohort', email: 'future@test.com' },
+      ],
+    },
+  });
+}
+
+test('gradebookoverview restricts an overseer roster to enrollments created within the window', async () => {
+  const handler = createMasteryOverviewHandler({
+    createSupabaseClientFromAuthHeader: datedCohortClient,
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  const response = await handler(makeRequest({ courseId: 'course-1', startDate: '2026-01-01T00:00:00.000Z', endDate: '2026-06-30T23:59:59.999Z' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+
+  // Only the two learners enrolled during the window; the prior and future cohorts are excluded.
+  assert.equal(body.totalCount, 2);
+  assert.deepEqual(body.rows.map((r) => r.learnerId).sort(), ['u-cur1', 'u-cur2']);
+});
+
+test('gradebookoverview ignores the date window for a single-learner drill-down', async () => {
+  const handler = createMasteryOverviewHandler({
+    createSupabaseClientFromAuthHeader: datedCohortClient,
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  // u-old is outside the window but must still resolve when requested specifically.
+  const response = await handler(makeRequest({ courseId: 'course-1', learnerId: 'u-old', startDate: '2026-01-01T00:00:00.000Z', endDate: '2026-06-30T23:59:59.999Z' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.rows.length, 1);
+  assert.equal(body.rows[0].learnerId, 'u-old');
+});
+
+test('gradebookoverview never date-filters a non-overseer self view', async () => {
+  const handler = createMasteryOverviewHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u-old', email: 'old@test.com' },
+        dataMap: {
+          role: [],
+          enrollment: [
+            { id: 'e-old', learnerId: 'u-old', catalogId: 'course-1', createdAt: '2025-08-20T09:00:00Z', progress: {} },
+            { id: 'e-cur1', learnerId: 'u-cur1', catalogId: 'course-1', createdAt: '2026-01-15T09:00:00Z', progress: {} },
+          ],
+          user: [{ id: 'u-old', name: 'Old Cohort', email: 'old@test.com' }],
+        },
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+  });
+
+  // The learner enrolled before the window still sees their own row (and only their own).
+  const response = await handler(makeRequest({ courseId: 'course-1', startDate: '2026-01-01T00:00:00.000Z', endDate: '2026-06-30T23:59:59.999Z' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.rows.length, 1);
+  assert.equal(body.rows[0].learnerId, 'u-old');
 });
