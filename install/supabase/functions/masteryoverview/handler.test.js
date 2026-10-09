@@ -111,7 +111,7 @@ function makeRequest(body, auth = 'Bearer token') {
   });
 }
 
-test('gradebookoverview allows root and returns aggregated rows', async () => {
+test('gradebookoverview returns identity plus a trimmed progress blob for the list', async () => {
   const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
@@ -126,8 +126,9 @@ test('gradebookoverview allows root and returns aggregated rows', async () => {
               progress: {
                 mastery: 80,
                 lastActivityAt: '2026-05-09T12:20:00Z',
-                'topic-1': { examCompleted: true, interactions: [] },
-                'topic-2': { projectSubmission: true, interactions: [] },
+                totalTimeSpent: 999,
+                'topic-1': { scores: { i1: 100, i2: null }, interactions: ['i1'], timeSpent: 120, lastInteractionAt: '2026-05-09T12:00:00Z', examCompleted: true, mode: 'ai', notes: true },
+                'topic-2': { scores: { i9: 50 }, timeSpent: 60, projectSubmission: true },
               },
             },
           ],
@@ -137,18 +138,32 @@ test('gradebookoverview allows root and returns aggregated rows', async () => {
     getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
   });
 
-  const response = await handler(makeRequest({ courseId: 'course-1', page: 1, limit: 10 }));
+  const response = await handler(makeRequest({ courseId: 'course-1' }));
   assert.equal(response.status, 200);
 
   const body = await response.json();
   assert.equal(body.totalCount, 1);
   assert.equal(body.rows.length, 1);
-  assert.equal(body.rows[0].learnerName, 'Learner One');
-  assert.equal(body.rows[0].masteryPercent, 80);
-  assert.equal(body.rows[0].completedTopics, 2);
-  assert.equal(body.rows[0].examCompletedCount, 1);
-  assert.equal(body.rows[0].projectSubmittedCount, 1);
-  assert.equal(body.rows[0].lastActivityAt, '2026-05-09T12:20:00Z');
+
+  const row = body.rows[0];
+  assert.equal(row.learnerName, 'Learner One');
+  assert.equal(row.learnerEmail, 'learner1@test.com');
+
+  // The server no longer computes metrics; the client derives them from the trimmed progress.
+  assert.equal(row.masteryPercent, undefined);
+  assert.equal(row.completedTopics, undefined);
+  assert.equal(row.totalTimeSpent, undefined);
+
+  // Top-level fallbacks are preserved.
+  assert.equal(row.progress.mastery, 80);
+  assert.equal(row.progress.lastActivityAt, '2026-05-09T12:20:00Z');
+  assert.equal(row.progress.totalTimeSpent, 999);
+
+  // Each topic is reduced to completedCount (scores/interactions collapsed) plus the fields the
+  // list derivation reads; raw scores and non-overview fields are dropped.
+  assert.deepEqual(row.progress['topic-1'], { completedCount: 2, timeSpent: 120, lastInteractionAt: '2026-05-09T12:00:00Z', examCompleted: true });
+  assert.deepEqual(row.progress['topic-2'], { completedCount: 1, timeSpent: 60, projectSubmission: true });
+  assert.equal(row.progress['topic-1'].scores, undefined);
 });
 
 test('gradebookoverview allows editor for matching course', async () => {
@@ -280,7 +295,8 @@ test('gradebookoverview denies learner not enrolled in requested course', async 
   assert.equal(response.status, 403);
 });
 
-test('gradebookoverview filters to single learner when learnerId is provided', async () => {
+test('gradebookoverview returns the FULL progress blob for a single-learner request', async () => {
+  const fullTopic = { scores: { i1: 100, i2: 80 }, interactions: ['i1'], timeSpent: 120, lastInteractionAt: '2026-05-09T12:00:00Z', masteryScore: 75, itemsCompleted: 3, totalItems: 6, mode: 'ai' };
   const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
@@ -288,7 +304,7 @@ test('gradebookoverview filters to single learner when learnerId is provided', a
         dataMap: {
           role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
           enrollment: [
-            { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 70 } },
+            { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 70, 'topic-1': fullTopic } },
             { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 90 } },
           ],
           user: [
@@ -306,104 +322,40 @@ test('gradebookoverview filters to single learner when learnerId is provided', a
   assert.equal(body.rows.length, 1);
   assert.equal(body.rows[0].learnerId, 'u1');
   assert.equal(body.rows[0].learnerEmail, 'alice@test.com');
-  assert.equal(body.rows[0].masteryPercent, 70);
+
+  // The drill-down needs per-interaction scores and DRA/interview fields, so a single-learner
+  // request is NOT trimmed - the raw entry is returned verbatim.
+  assert.deepEqual(body.rows[0].progress['topic-1'], fullTopic);
 });
 
-test('gradebookoverview applies learner search and pagination metadata', async () => {
+test('gradebookoverview returns every enrollment without paginating (client paginates)', async () => {
+  const enrollment = [];
+  const user = [];
+  for (let i = 1; i <= 120; i++) {
+    enrollment.push({ id: `e${i}`, learnerId: `u${i}`, catalogId: 'course-1', progress: { mastery: i } });
+    user.push({ id: `u${i}`, name: `Learner ${i}`, email: `l${i}@test.com` });
+  }
+
   const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>
       createMockSupabase({
         user: { id: 'root-user', email: 'root@test.com' },
         dataMap: {
           role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
-          enrollment: [
-            { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 20 } },
-            { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 30 } },
-          ],
-          user: [
-            { id: 'u1', name: 'Alice', email: 'alice@test.com' },
-            { id: 'u2', name: 'Bob', email: 'bob@test.com' },
-          ],
-          progress: [],
+          enrollment,
+          user,
         },
       }),
     getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
   });
 
-  const response = await handler(makeRequest({ courseId: 'course-1', search: 'bob', page: 1, limit: 1 }));
+  const response = await handler(makeRequest({ courseId: 'course-1' }));
   assert.equal(response.status, 200);
   const body = await response.json();
 
-  assert.equal(body.totalCount, 1);
-  assert.equal(body.limit, 1);
-  assert.equal(body.page, 1);
-  assert.equal(body.hasMore, false);
-  assert.equal(body.rows.length, 1);
-  assert.equal(body.rows[0].learnerEmail, 'bob@test.com');
-});
-
-test('gradebookoverview sorts the full result set before paginating', async () => {
-  const makeHandler = () =>
-    createMasteryOverviewHandler({
-      createSupabaseClientFromAuthHeader: () =>
-        createMockSupabase({
-          user: { id: 'root-user', email: 'root@test.com' },
-          dataMap: {
-            role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
-            enrollment: [
-              { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 50 } },
-              { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 90 } },
-              { id: 'e3', learnerId: 'u3', catalogId: 'course-1', progress: { mastery: 10 } },
-            ],
-            user: [
-              { id: 'u1', name: 'Alice', email: 'alice@test.com' },
-              { id: 'u2', name: 'Bob', email: 'bob@test.com' },
-              { id: 'u3', name: 'Carol', email: 'carol@test.com' },
-            ],
-            progress: [],
-          },
-        }),
-      getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
-    });
-
-  // Page 1 sorted by mastery descending should surface the global top scorer, not the
-  // top scorer of whatever happened to land on this page.
-  const page1 = await (await makeHandler()(makeRequest({ courseId: 'course-1', sortKey: 'masteryPercent', sortDirection: 'desc', page: 1, limit: 1 }))).json();
-  assert.equal(page1.rows.length, 1);
-  assert.equal(page1.rows[0].masteryPercent, 90);
-  assert.equal(page1.hasMore, true);
-
-  // Page 2 continues the same global ordering across the page boundary.
-  const page2 = await (await makeHandler()(makeRequest({ courseId: 'course-1', sortKey: 'masteryPercent', sortDirection: 'desc', page: 2, limit: 1 }))).json();
-  assert.equal(page2.rows[0].masteryPercent, 50);
-
-  // Ascending reverses the global order.
-  const asc = await (await makeHandler()(makeRequest({ courseId: 'course-1', sortKey: 'masteryPercent', sortDirection: 'asc', page: 1, limit: 1 }))).json();
-  assert.equal(asc.rows[0].masteryPercent, 10);
-});
-
-test('gradebookoverview ignores leading/trailing whitespace when sorting by name', async () => {
-  const handler = createMasteryOverviewHandler({
-    createSupabaseClientFromAuthHeader: () =>
-      createMockSupabase({
-        user: { id: 'root-user', email: 'root@test.com' },
-        dataMap: {
-          role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
-          enrollment: [
-            { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 10 } },
-            { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 20 } },
-          ],
-          user: [
-            // A stray leading space must not sort Matthew ahead of Aaron.
-            { id: 'u1', name: ' Matthew Hepworth', email: 'mwhep@test.com' },
-            { id: 'u2', name: 'Aaron Wood', email: 'waaron@test.com' },
-          ],
-          progress: [],
-        },
-      }),
-    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
-  });
-
-  const body = await (await handler(makeRequest({ courseId: 'course-1', sortKey: 'learnerName', sortDirection: 'asc', page: 1, limit: 10 }))).json();
-  assert.deepEqual(body.rows.map((r) => r.learnerId), ['u2', 'u1']);
+  // No server-side page cap - the client holds the whole set to sort/paginate locally.
+  assert.equal(body.totalCount, 120);
+  assert.equal(body.rows.length, 120);
+  assert.equal(body.page, undefined);
+  assert.equal(body.hasMore, undefined);
 });

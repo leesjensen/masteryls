@@ -1,4 +1,4 @@
-import { completedInteractionIds } from './topicProgress.js';
+import { completedInteractionCount } from './topicProgress.js';
 
 const SUMMARY_KEYS = new Set(['mastery', 'lastActivityAt', 'totalTimeSpent']);
 
@@ -26,8 +26,7 @@ export function calculateProgressMastery(progress, course) {
     if (topicProgress && Number.isFinite(Number(topicProgress.masteryScore))) {
       topicPercent = Math.max(0, Math.min(1, Number(topicProgress.masteryScore) / 100));
     } else if (topicProgress && Array.isArray(topic.interactions) && topic.interactions.length > 0) {
-      const completed = completedInteractionIds(topicProgress);
-      topicPercent = completed.length / topic.interactions.length;
+      topicPercent = completedInteractionCount(topicProgress) / topic.interactions.length;
     }
 
     completedTopics += topicPercent;
@@ -53,6 +52,14 @@ export function calculateProgressCompletedTopics(progress) {
   return topicEntries(progress).length;
 }
 
+export function calculateProgressExamCompletedCount(progress) {
+  return topicEntries(progress).filter(([, entry]) => entry.examCompleted === true).length;
+}
+
+export function calculateProgressProjectSubmittedCount(progress) {
+  return topicEntries(progress).filter(([, entry]) => entry.projectSubmission === true).length;
+}
+
 export function calculateProgressLastActivityAt(progress) {
   if (!isObject(progress)) return null;
   if (progress.lastActivityAt) return progress.lastActivityAt;
@@ -70,5 +77,7 @@ export function deriveProgressSummary(progress, course) {
     totalTimeSpent: calculateProgressTotalTimeSpent(progress),
     completedTopics: calculateProgressCompletedTopics(progress),
     lastActivityAt: calculateProgressLastActivityAt(progress),
+    examCompletedCount: calculateProgressExamCompletedCount(progress),
+    projectSubmittedCount: calculateProgressProjectSubmittedCount(progress),
   };
 }

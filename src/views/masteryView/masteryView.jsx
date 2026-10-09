@@ -4,6 +4,8 @@ import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 
+const PAGE_SIZE = 50;
+
 function formatDuration(seconds) {
   const s = Number(seconds);
   if (!Number.isFinite(s) || s <= 0) return '-';
@@ -15,6 +17,25 @@ function formatDuration(seconds) {
   return `${sec}s`;
 }
 
+// Compares two already-derived rows by a column. Names/emails are trimmed so a stray leading
+// space (invisible in the table, but significant to localeCompare) can't push a learner to an
+// extreme; dates and the numeric columns compare naturally.
+function compareRows(a, b, key) {
+  switch (key) {
+    case 'learnerName':
+      return String(a.learnerName || '').trim().localeCompare(String(b.learnerName || '').trim());
+    case 'learnerEmail':
+      return String(a.learnerEmail || '').trim().localeCompare(String(b.learnerEmail || '').trim());
+    case 'lastActivityAt': {
+      const ad = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+      const bd = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+      return ad - bd;
+    }
+    default:
+      return Number(a[key] || 0) - Number(b[key] || 0);
+  }
+}
+
 export default function MasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
@@ -22,10 +43,11 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [page, setPage] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
-  const [overview, setOverview] = React.useState({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
+  // The full set of enrollments for the course (identity + trimmed progress). The client derives
+  // metrics, then sorts/filters/paginates locally so ordering always matches the displayed values.
+  const [allRows, setAllRows] = React.useState([]);
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
   const [filterText, setFilterText] = React.useState('');
-  const [searchText, setSearchText] = React.useState('');
   const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
   const [selectedCourse, setSelectedCourse] = React.useState(null);
 
@@ -64,25 +86,58 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
   const hasActions = canObserveLearners || canUnenrollLearners;
 
-  const displayedRows = React.useMemo(
+  // Derive every displayed/sorted metric from the trimmed progress once per course load. This is
+  // the single source of truth - the table never sorts on values it doesn't display.
+  const derivedRows = React.useMemo(
     () =>
-      overview.rows.map((row) => {
+      allRows.map((row) => {
         const summary = deriveProgressSummary(row.progress, selectedCourse);
-        const hasTopicProgress = summary.completedTopics > 0;
         return {
-          ...row,
-          masteryPercent: hasTopicProgress || !Number.isFinite(Number(row.masteryPercent)) ? summary.mastery : Number(row.masteryPercent),
-          completedTopics: hasTopicProgress || !Number.isFinite(Number(row.completedTopics)) ? summary.completedTopics : Number(row.completedTopics),
-          totalTimeSpent: hasTopicProgress || !Number.isFinite(Number(row.totalTimeSpent)) ? summary.totalTimeSpent : Number(row.totalTimeSpent),
-          lastActivityAt: summary.lastActivityAt || row.lastActivityAt,
+          enrollmentId: row.enrollmentId,
+          learnerId: row.learnerId,
+          learnerName: row.learnerName,
+          learnerEmail: row.learnerEmail,
+          masteryPercent: summary.mastery,
+          completedTopics: summary.completedTopics,
+          examCompletedCount: summary.examCompletedCount,
+          projectSubmittedCount: summary.projectSubmittedCount,
+          totalTimeSpent: summary.totalTimeSpent,
+          lastActivityAt: summary.lastActivityAt,
         };
       }),
-    [overview.rows, selectedCourse],
+    [allRows, selectedCourse],
   );
+
+  const filteredRows = React.useMemo(() => {
+    const query = filterText.trim().toLowerCase();
+    if (!query) return derivedRows;
+    return derivedRows.filter((row) => String(row.learnerName || '').toLowerCase().includes(query) || String(row.learnerEmail || '').toLowerCase().includes(query));
+  }, [derivedRows, filterText]);
+
+  const sortedRows = React.useMemo(() => {
+    if (!sort.key) return filteredRows;
+    const dir = sort.direction === 'desc' ? -1 : 1;
+    return [...filteredRows].sort((a, b) => compareRows(a, b, sort.key) * dir);
+  }, [filteredRows, sort]);
+
+  const displayedRows = React.useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return sortedRows.slice(start, start + PAGE_SIZE);
+  }, [sortedRows, page]);
+
+  const hasMore = page * PAGE_SIZE < sortedRows.length;
 
   React.useEffect(() => {
     updateAppBar({ title: 'MasteryView', tools: null });
   }, []);
+
+  // Keep the current page in range as the filtered/sorted set shrinks (e.g. filtering or unenroll).
+  React.useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(sortedRows.length / PAGE_SIZE));
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [sortedRows.length, page]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -155,32 +210,28 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     };
   }, [selectedCourseId]);
 
+  // One fetch per course: the whole roster (trimmed). Sorting, filtering and pagination happen
+  // client-side against this set, so they never trigger another request.
   React.useEffect(() => {
     let cancelled = false;
 
     async function loadOverview() {
       if (!selectedCourseId || !hasCourseAccess) {
-        setOverview({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
+        setAllRows([]);
         return;
       }
 
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, page, limit: 50, search: searchText, sortKey: sort.key || '', sortDirection: sort.direction });
+        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId });
         if (!cancelled) {
-          setOverview({
-            rows: Array.isArray(result?.rows) ? result.rows : [],
-            totalCount: Number(result?.totalCount || 0),
-            page: Number(result?.page || page),
-            limit: Number(result?.limit || 50),
-            hasMore: Boolean(result?.hasMore),
-          });
+          setAllRows(Array.isArray(result?.rows) ? result.rows : []);
         }
       } catch (loadError) {
         if (!cancelled) {
           setError(loadError.message || String(loadError));
-          setOverview({ rows: [], totalCount: 0, page: 1, limit: 50, hasMore: false });
+          setAllRows([]);
         }
       } finally {
         if (!cancelled) {
@@ -194,19 +245,10 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     return () => {
       cancelled = true;
     };
-  }, [hasCourseAccess, selectedCourseId, page, searchText, sort.key, sort.direction]);
-
-  React.useEffect(() => {
-    const timeout = setTimeout(() => {
-      setSearchText(filterText.trim());
-      setPage(1);
-    }, 800);
-
-    return () => clearTimeout(timeout);
-  }, [filterText]);
+  }, [hasCourseAccess, selectedCourseId]);
 
   function toggleSort(key) {
-    setSort((prev) => prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' });
+    setSort((prev) => (prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' }));
     setPage(1);
   }
 
@@ -235,7 +277,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     }
     setPage(1);
     setFilterText('');
-    setSearchText('');
     setSort({ key: null, direction: 'asc' });
   }
 
@@ -269,11 +310,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     }
     try {
       await courseOpsRef.current.unenrollLearner({ enrollmentId: row.enrollmentId });
-      setOverview((prev) => ({
-        ...prev,
-        rows: prev.rows.filter((r) => r.enrollmentId !== row.enrollmentId),
-        totalCount: Math.max(0, Number(prev.totalCount || 0) - 1),
-      }));
+      setAllRows((prev) => prev.filter((r) => r.enrollmentId !== row.enrollmentId));
     } catch (unenrollError) {
       setError(unenrollError.message || String(unenrollError));
     }
@@ -288,6 +325,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }
 
   const colSpan = hasActions ? 9 : 8;
+  const isFiltering = filterText.trim().length > 0;
 
   return (
     <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
@@ -320,6 +358,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
               value={filterText}
               onChange={(e) => {
                 setFilterText(e.target.value);
+                setPage(1);
               }}
               placeholder="Name or email"
               autoComplete="off"
@@ -331,7 +370,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
         {canViewLearnerFilters && (
           <div className="flex items-end text-sm text-gray-600">
-            <span>{searchText ? 'Matching learners' : 'Total learners'}: {overview.totalCount}</span>
+            <span>{isFiltering ? 'Matching learners' : 'Total learners'}: {isFiltering ? filteredRows.length : derivedRows.length}</span>
           </div>
         )}
       </div>
@@ -421,8 +460,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
         <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1 || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
           Previous
         </button>
-        <span className="text-sm text-gray-600">Page {overview.page || page}</span>
-        <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={!overview.hasMore || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
+        <span className="text-sm text-gray-600">Page {page}</span>
+        <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={!hasMore || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
           Next
         </button>
       </div>

@@ -21,4 +21,20 @@ export function completedInteractionIds(topicProgress) {
   return Array.from(new Set([...fromScores, ...fromLegacy]));
 }
 
+/**
+ * Returns how many interactions a topic's progress entry has completed. Prefers a precomputed
+ * `completedCount` (emitted by the trimmed mastery-overview payload, where the raw `scores`/
+ * `interactions` are dropped) and falls back to counting ids for a full progress entry. This
+ * lets mastery be derived identically from either the trimmed list payload or a full blob.
+ *
+ * @param {object|undefined} topicProgress - enrollment.progress[topicId]
+ * @returns {number} Completed interaction count.
+ */
+export function completedInteractionCount(topicProgress) {
+  if (Number.isFinite(Number(topicProgress?.completedCount))) {
+    return Number(topicProgress.completedCount);
+  }
+  return completedInteractionIds(topicProgress).length;
+}
+
 export default completedInteractionIds;

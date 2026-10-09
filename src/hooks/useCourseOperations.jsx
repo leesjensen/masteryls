@@ -1864,8 +1864,11 @@ Requirements:
     };
   }
 
-  async function getMasteryOverview({ courseId, page = 1, limit = 50, search = '', learnerId = '', sortKey = '', sortDirection = 'asc' }) {
-    return service.makeMasteryOverviewRequest({ courseId, page, limit, search, ...(learnerId ? { learnerId } : {}), ...(sortKey ? { sortKey, sortDirection } : {}) });
+  // Returns identity + progress for a course's enrollments. Without learnerId: all learners with
+  // a trimmed progress blob (the client derives metrics and sorts/filters/paginates locally).
+  // With learnerId: that one learner's full progress blob (the drill-down needs the detail).
+  async function getMasteryOverview({ courseId, learnerId = '' }) {
+    return service.makeMasteryOverviewRequest({ courseId, ...(learnerId ? { learnerId } : {}) });
   }
 
   async function unenrollLearner({ enrollmentId }) {

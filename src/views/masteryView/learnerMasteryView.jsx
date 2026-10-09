@@ -234,8 +234,6 @@ export default function LearnerMasteryView({ courseOps }) {
         const result = await courseOpsRef.current.getMasteryOverview({
           courseId: selectedCourseId,
           learnerId: routeLearnerId,
-          page: 1,
-          limit: 1,
         });
         if (!cancelled) {
           const rows = Array.isArray(result?.rows) ? result.rows : [];
@@ -473,10 +471,10 @@ export default function LearnerMasteryView({ courseOps }) {
               Topics completed: <strong>{selectedLearnerDisplaySummary.completedTopics}</strong>
             </span>
             <span>
-              Exams completed: <strong>{selectedLearner.examCompletedCount}</strong>
+              Exams completed: <strong>{selectedLearnerSummary.examCompletedCount}</strong>
             </span>
             <span>
-              Project submits: <strong>{selectedLearner.projectSubmittedCount}</strong>
+              Project submits: <strong>{selectedLearnerSummary.projectSubmittedCount}</strong>
             </span>
             <span>
               Time spent: <strong>{formatDuration(selectedLearnerDisplaySummary.totalTimeSpent)}</strong>

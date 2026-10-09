@@ -112,7 +112,7 @@ export default function ProgressView({ courseOps, service, user }) {
       return undefined;
     }
     courseOps
-      .getMasteryOverview({ courseId: filter.courseId, page: 1, limit: 500 })
+      .getMasteryOverview({ courseId: filter.courseId })
       .then((result) => {
         if (!cancelled) setCourseLearners(result?.rows || []);
       })

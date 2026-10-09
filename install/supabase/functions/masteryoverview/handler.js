@@ -3,58 +3,48 @@ export const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function toLower(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase();
+const TOP_LEVEL_SUMMARY_KEYS = new Set(['mastery', 'lastActivityAt', 'totalTimeSpent']);
+
+// Count completed interactions for a topic entry as the union of the `scores` map keys and the
+// legacy `interactions` array. Mirrors completedInteractionIds() in src/utils/topicProgress.js so
+// the trimmed payload's completedCount matches what the client would derive from a full blob.
+function completedCountFor(entry) {
+  const scoresKeys = entry?.scores ? Object.keys(entry.scores) : [];
+  const legacy = Array.isArray(entry?.interactions) ? entry.interactions : [];
+  if (scoresKeys.length === 0) return legacy.length;
+  if (legacy.length === 0) return scoresKeys.length;
+  return new Set([...scoresKeys, ...legacy]).size;
 }
 
-const SORTABLE_KEYS = new Set(['learnerName', 'learnerEmail', 'masteryPercent', 'completedTopics', 'examCompletedCount', 'projectSubmittedCount', 'totalTimeSpent', 'lastActivityAt']);
+// Reduce a topic progress entry to only the fields the overview list derives from: the completed
+// interaction count (replacing the raw scores/interactions), mastery score, time, last activity,
+// and the exam/project flags. Everything else (scores values, DRA/interview detail, notes, mode)
+// is dropped - the drill-down fetches the full blob separately.
+function trimTopicEntry(entry) {
+  const trimmed = { completedCount: completedCountFor(entry) };
+  if (Number.isFinite(Number(entry.masteryScore))) trimmed.masteryScore = Number(entry.masteryScore);
+  if (Number.isFinite(Number(entry.timeSpent)) && Number(entry.timeSpent) > 0) trimmed.timeSpent = Number(entry.timeSpent);
+  if (entry.lastInteractionAt) trimmed.lastInteractionAt = entry.lastInteractionAt;
+  if (entry.examCompleted === true) trimmed.examCompleted = true;
+  if (entry.projectSubmission === true) trimmed.projectSubmission = true;
+  return trimmed;
+}
 
-function compareRows(a, b, key) {
-  switch (key) {
-    case 'learnerName':
-      // Trim so a stray leading/trailing space (which HTML hides but localeCompare treats as
-      // a significant, low-weight character) can't push a learner to the top or bottom.
-      return String(a.learnerName || '').trim().localeCompare(String(b.learnerName || '').trim());
-    case 'learnerEmail':
-      return String(a.learnerEmail || '').trim().localeCompare(String(b.learnerEmail || '').trim());
-    case 'lastActivityAt': {
-      const ad = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
-      const bd = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
-      return ad - bd;
+// Trim a full enrollment.progress blob for the list payload: keep the small top-level fallbacks
+// and a trimmed entry per topic.
+function trimProgress(progress) {
+  if (!progress || typeof progress !== 'object') return {};
+  const trimmed = {};
+  if (progress.lastActivityAt) trimmed.lastActivityAt = progress.lastActivityAt;
+  if (Number.isFinite(Number(progress.mastery))) trimmed.mastery = Number(progress.mastery);
+  if (Number.isFinite(Number(progress.totalTimeSpent))) trimmed.totalTimeSpent = Number(progress.totalTimeSpent);
+  for (const [key, value] of Object.entries(progress)) {
+    if (TOP_LEVEL_SUMMARY_KEYS.has(key)) continue;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      trimmed[key] = trimTopicEntry(value);
     }
-    default:
-      return Number(a[key] || 0) - Number(b[key] || 0);
   }
-}
-
-function countCompletedTopics(progress) {
-  if (!progress || typeof progress !== 'object') {
-    return 0;
-  }
-
-  return Object.keys(progress).filter((key) => key !== 'mastery' && key !== 'lastActivityAt' && key !== 'totalTimeSpent').length;
-}
-
-function progressTopicValues(progress) {
-  if (!progress || typeof progress !== 'object') {
-    return [];
-  }
-  return Object.entries(progress)
-    .filter(([key, value]) => key !== 'mastery' && key !== 'lastActivityAt' && key !== 'totalTimeSpent' && value && typeof value === 'object' && !Array.isArray(value))
-    .map(([, value]) => value);
-}
-
-function totalTimeSpentFromTopics(progress) {
-  const topicValues = progressTopicValues(progress);
-  if (topicValues.length === 0) {
-    return typeof progress?.totalTimeSpent === 'number' ? progress.totalTimeSpent : 0;
-  }
-  return topicValues.reduce((sum, value) => {
-    const timeSpent = Number(value.timeSpent);
-    return sum + (Number.isFinite(timeSpent) && timeSpent > 0 ? timeSpent : 0);
-  }, 0);
+  return trimmed;
 }
 
 // Decode the JWT payload without signature verification to extract the userId (sub claim).
@@ -102,11 +92,6 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     const payload = await req.json();
     const courseId = String(payload?.courseId || '').trim();
     const learnerId = String(payload?.learnerId || '').trim() || null;
-    const page = Math.max(1, Number(payload?.page || 1));
-    const limit = Math.max(1, Math.min(100, Number(payload?.limit || 50)));
-    const search = toLower(payload?.search || '');
-    const sortKey = SORTABLE_KEYS.has(payload?.sortKey) ? payload.sortKey : null;
-    const sortDirection = String(payload?.sortDirection || 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
 
     if (!courseId) {
       return new Response(JSON.stringify({ error: 'courseId is required' }), {
@@ -184,7 +169,7 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
       }
 
       if (safeEnrollments.length === 0) {
-        return new Response(JSON.stringify({ rows: [], totalCount: 0, page, limit, hasMore: false }), {
+        return new Response(JSON.stringify({ rows: [], totalCount: 0 }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -202,54 +187,28 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
 
       const learnersById = new Map(learners.map((entry) => [String(entry.id), entry]));
 
+      // A single-learner request (the drill-down) returns the FULL progress blob because the
+      // learner detail view needs per-interaction scores and DRA/interview fields. The list
+      // returns a TRIMMED blob; the client derives mastery/time and sorts/paginates/searches
+      // locally so display and ordering always share one computation path.
+      const isSingleLearner = Boolean(learnerId);
+
       const rows = safeEnrollments.map((enrollment) => {
         const learner = learnersById.get(String(enrollment.learnerId || '')) || {};
         const progress = enrollment.progress || {};
-        const topicValues = progressTopicValues(progress);
 
         return {
           enrollmentId: enrollment.id,
           learnerId: enrollment.learnerId,
           learnerName: learner.name || null,
           learnerEmail: learner.email || null,
-          masteryPercent: Number(progress.mastery || 0),
-          completedTopics: countCompletedTopics(progress),
-          examCompletedCount: topicValues.filter((v) => v.examCompleted === true).length,
-          projectSubmittedCount: topicValues.filter((v) => v.projectSubmission === true).length,
-          lastActivityAt: progress.lastActivityAt || null,
-          totalTimeSpent: totalTimeSpentFromTopics(progress),
-          progress,
+          progress: isSingleLearner ? progress : trimProgress(progress),
         };
       });
 
-      const filteredRows = search
-        ? rows.filter((row) => {
-            const name = toLower(row.learnerName);
-            const email = toLower(row.learnerEmail);
-            return name.includes(search) || email.includes(search);
-          })
-        : rows;
-
-      // Sort the full filtered set before paginating so the ordering is stable across pages.
-      const sortedRows = sortKey ? [...filteredRows].sort((a, b) => compareRows(a, b, sortKey) * (sortDirection === 'desc' ? -1 : 1)) : filteredRows;
-
-      const offset = (page - 1) * limit;
-      const pagedRows = sortedRows.slice(offset, offset + limit);
-      const totalCount = sortedRows.length;
-      const hasMore = totalCount > offset + limit;
-
-      return new Response(
-        JSON.stringify({
-          rows: pagedRows,
-          totalCount,
-          page,
-          limit,
-          hasMore,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        },
-      );
+      return new Response(JSON.stringify({ rows, totalCount: rows.length }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     } catch (error) {
       return new Response(JSON.stringify({ error: error?.message || String(error) }), {
         status: 500,
