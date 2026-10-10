@@ -19,6 +19,7 @@ import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
+import { buildAttendanceGradeRequest, DEFAULT_ATTENDANCE_POINTS_PER_SESSION, DEFAULT_ATTENDANCE_POINTS_POSSIBLE } from './canvas/attendanceCanvasSync.js';
 import { calculateProgressMastery } from '../utils/progressSummary.js';
 
 /**
@@ -692,6 +693,13 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (!learningSession?.course) return;
     const course = learningSession.course;
     return course.adjacentTopic(learningSession.topic.path, direction);
+  }
+
+  // Synthetic topic for the course Attendance view. Only available when attendance is enabled
+  // in the course settings.
+  function getAttendanceTopic(course = learningSession?.course) {
+    if (!course?.settings?.attendance) return null;
+    return { id: 'attendance', title: 'Attendance', type: 'attendance', path: 'attendance', state: 'published' };
   }
 
   function getScheduleTopic(course = learningSession?.course) {
@@ -1801,6 +1809,61 @@ Requirements:
     });
   }
 
+  // Open a new attendance session for the course. Returns the session including its code.
+  async function openAttendance(courseId, questions = []) {
+    return service.openAttendance(courseId, questions);
+  }
+
+  async function closeAttendance(sessionId) {
+    return service.closeAttendance(sessionId);
+  }
+
+  async function getOpenAttendance(courseId) {
+    return service.getOpenAttendance(courseId);
+  }
+
+  async function getAttendanceSessions(courseId) {
+    return service.getAttendanceSessions(courseId);
+  }
+
+  // Attendance progress rows for a learner in a course (one per attended session).
+  async function getLearnerAttendance(courseId, userId) {
+    const result = await service.getProgress({ courseId, userId, types: ['attendance'], limit: 1000 });
+    return result.data;
+  }
+
+  // Attendance progress rows for a session, joined with the learner's name and email.
+  async function getAttendanceResponses(courseId, sessionId) {
+    const [progress, learners] = await Promise.all([service.getProgress({ courseId, interactionId: sessionId, types: ['attendance'], limit: 1000 }), service.getEnrolledUsersForCourse(courseId).catch(() => [])]);
+    const learnersById = new Map(learners.map((learner) => [learner.id, learner]));
+    return progress.data.map((row) => ({ ...row, user: learnersById.get(row.userId) || null }));
+  }
+
+  // Record the current user's attendance with the code shown in class. When the session has
+  // questions and no answers are given, the result has status 'questions' and nothing is recorded.
+  // A newly recorded check-in also posts the learner's attendance points to Canvas.
+  async function recordAttendance(courseId, code, answers = null) {
+    if (observeSession?.active && learningSession?.observeMode) {
+      throw new Error('Attendance cannot be recorded while observing a learner.');
+    }
+    const result = await service.recordAttendance(courseId, code, answers);
+    if (result?.status === 'recorded') {
+      await _syncAttendanceToCanvas(result.attended);
+    }
+    return result;
+  }
+
+  async function _syncAttendanceToCanvas(attended) {
+    if (!canSubmitToCanvasGradebook) return;
+    const request = buildAttendanceGradeRequest({ course: learningSession?.course, learnerEmail: user?.email, attended });
+    if (!request) return;
+    try {
+      await service.makeCanvasGradebookRequest(request);
+    } catch (ex) {
+      console.error('Failed to sync attendance to Canvas:', ex);
+    }
+  }
+
   async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, types = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
     return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
   }
@@ -2178,6 +2241,30 @@ Requirements:
     return updatedCourse;
   }
 
+  // Create the course-level "Attendance" Canvas assignment and persist its id and point values on
+  // course.externalRefs.attendance. Idempotent: returns the course unchanged if it already exists.
+  async function createAttendanceAssignment(course, { pointsPerSession = DEFAULT_ATTENDANCE_POINTS_PER_SESSION, pointsPossible = DEFAULT_ATTENDANCE_POINTS_POSSIBLE } = {}) {
+    await verifyCanvasAccess(course);
+    const canvasCourseId = course?.externalRefs?.canvasCourseId;
+    if (!canvasCourseId) {
+      throw new Error('Link the course to Canvas before creating the attendance assignment.');
+    }
+    if (course?.externalRefs?.attendance?.canvasAssignmentId) {
+      return course;
+    }
+    pointsPerSession = Number(pointsPerSession);
+    pointsPossible = Number(pointsPossible);
+    if (!(pointsPerSession > 0) || !(pointsPossible > 0)) {
+      throw new Error('Attendance points must be greater than zero.');
+    }
+
+    const assignment = await canvasSync.createAttendanceAssignment({ canvasCourseId, catalogId: course.id, pointsPerSession, pointsPossible });
+    const updatedCourse = Course.copy(course);
+    updatedCourse.externalRefs = { ...updatedCourse.externalRefs, attendance: { canvasAssignmentId: assignment.id, pointsPerSession, pointsPossible } };
+    await updateCourseStructure(updatedCourse, null, 'add(canvas) attendance assignment');
+    return updatedCourse;
+  }
+
   function _generateTopicPath(course, topicTitle, topicDescription, topicType) {
     if (topicType === 'embedded') {
       return topicDescription || `https://www.youtube.com/embed/HXNx_Gp0jyM`;
@@ -2359,6 +2446,15 @@ Requirements:
     linkToCanvas,
     updateCanvasPage,
     createMasteryAssignment,
+    createAttendanceAssignment,
+    getAttendanceTopic,
+    openAttendance,
+    closeAttendance,
+    getOpenAttendance,
+    getAttendanceSessions,
+    getLearnerAttendance,
+    getAttendanceResponses,
+    recordAttendance,
     service,
   };
 }

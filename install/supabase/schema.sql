@@ -83,6 +83,20 @@ create table if not exists public.progress (
   details jsonb default '{}'::jsonb
 );
 
+-- Attendance sessions. Only course overseers can read these rows because they hold the
+-- check-in code. Learners record attendance through the record_attendance RPC, which writes
+-- a progress row of type 'attendance' with interactionId = attendance.id.
+-- questions: [{ id, type: 'multiple-choice', prompt, choices: [] }]
+create table if not exists public.attendance (
+  id uuid primary key default gen_random_uuid(),
+  "catalogId" uuid not null references public.catalog(id) on delete cascade,
+  "createdBy" uuid references public."user"(id) on delete set null default auth.uid(),
+  code char(4) not null,
+  questions jsonb not null default '[]'::jsonb,
+  "openedAt" timestamp with time zone not null default now(),
+  "closedAt" timestamp with time zone
+);
+
 -- Generic append-only application event log. Any registered user can write an entry;
 -- only root/editor can read them back.
 create table if not exists public.log (
@@ -118,6 +132,12 @@ create index if not exists "progressCatalogTopicIdx" on public.progress ("catalo
 
 -- Progress queries: course-scoped activity pages ordered by newest first
 create index if not exists "progressCatalogCreatedAtIdx" on public.progress ("catalogId", "createdAt" desc);
+
+-- Attendance: at most one open session per course, and session history by course
+create unique index if not exists "attendanceOneOpenIdx" on public.attendance ("catalogId") where "closedAt" is null;
+create index if not exists "attendanceCatalogOpenedIdx" on public.attendance ("catalogId", "openedAt");
+-- Attendance: a learner checks in to a session at most once (progress.interactionId = attendance.id)
+create unique index if not exists "progressAttendanceOnceIdx" on public.progress ("enrollmentId", "interactionId") where type = 'attendance';
 
 -- Log queries: recent events ordered by newest first, optionally filtered by event type
 create index if not exists "logCreatedAtIdx" on public.log ("createdAt" desc);
@@ -177,6 +197,11 @@ declare
 begin
   if auth.uid() is not null and auth.uid() <> p_user_id then
     raise exception 'User is not authorized to record progress for this enrollment';
+  end if;
+
+  -- Attendance can only be recorded through record_attendance, which verifies the code.
+  if p_type = 'attendance' then
+    raise exception 'Attendance must be recorded with an attendance code';
   end if;
 
   select *
@@ -309,6 +334,176 @@ begin
   progress := case when p_insert_progress then to_jsonb(v_progress_row) else null end;
   enrollment := to_jsonb(v_enrollment);
   return next;
+end;
+$$;
+
+-- RPC: open an attendance session for a course with a new random 4 digit code. Any session
+-- that is still open for the course is closed first.
+create or replace function public.open_attendance(p_catalog_id uuid, p_questions jsonb default '[]'::jsonb)
+returns public.attendance
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_session public.attendance%rowtype;
+begin
+  if not public.auth_oversees_course(auth.uid(), p_catalog_id) then
+    raise exception 'User is not authorized to take attendance for this course';
+  end if;
+
+  update public.attendance
+  set "closedAt" = now()
+  where "catalogId" = p_catalog_id
+    and "closedAt" is null;
+
+  insert into public.attendance ("catalogId", "createdBy", code, questions)
+  values (
+    p_catalog_id,
+    auth.uid(),
+    lpad(floor(random() * 10000)::int::text, 4, '0'),
+    case when jsonb_typeof(p_questions) = 'array' then p_questions else '[]'::jsonb end
+  )
+  returning * into v_session;
+
+  return v_session;
+end;
+$$;
+
+-- RPC: close an attendance session
+create or replace function public.close_attendance(p_session_id uuid)
+returns public.attendance
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_session public.attendance%rowtype;
+begin
+  select * into v_session from public.attendance where id = p_session_id;
+  if not found then
+    raise exception 'Attendance session not found';
+  end if;
+
+  if not public.auth_oversees_course(auth.uid(), v_session."catalogId") then
+    raise exception 'User is not authorized to take attendance for this course';
+  end if;
+
+  update public.attendance
+  set "closedAt" = coalesce("closedAt", now())
+  where id = p_session_id
+  returning * into v_session;
+
+  return v_session;
+end;
+$$;
+
+-- RPC: record the caller's attendance for the course's open session. The code must match.
+-- If the session has questions and no answers were provided, the questions are returned
+-- (status 'questions') without recording anything so the client can ask them and resubmit.
+create or replace function public.record_attendance(p_catalog_id uuid, p_code text, p_answers jsonb default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_enrollment public.enrollment%rowtype;
+  v_session public.attendance%rowtype;
+  v_attended integer;
+  v_status text := 'recorded';
+begin
+  select * into v_enrollment
+  from public.enrollment
+  where "catalogId" = p_catalog_id
+    and "learnerId" = v_user_id
+  limit 1;
+
+  if not found then
+    raise exception 'You must be enrolled in this course to record attendance';
+  end if;
+
+  select * into v_session
+  from public.attendance
+  where "catalogId" = p_catalog_id
+    and "closedAt" is null
+    and code = trim(coalesce(p_code, ''));
+
+  if not found then
+    raise exception 'No attendance is being taken with that code';
+  end if;
+
+  if exists (
+    select 1 from public.progress
+    where "enrollmentId" = v_enrollment.id
+      and type = 'attendance'
+      and "interactionId" = v_session.id
+  ) then
+    v_status := 'alreadyRecorded';
+  elsif jsonb_array_length(v_session.questions) > 0 and p_answers is null then
+    return jsonb_build_object('status', 'questions', 'sessionId', v_session.id, 'questions', v_session.questions);
+  else
+    insert into public.progress ("userId", "catalogId", "enrollmentId", "interactionId", type, details)
+    values (
+      v_user_id,
+      p_catalog_id,
+      v_enrollment.id,
+      v_session.id,
+      'attendance',
+      jsonb_build_object('answers', case when jsonb_typeof(p_answers) = 'object' then p_answers else '{}'::jsonb end)
+    )
+    on conflict ("enrollmentId", "interactionId") where type = 'attendance' do nothing;
+  end if;
+
+  select count(distinct "interactionId") into v_attended
+  from public.progress
+  where "enrollmentId" = v_enrollment.id
+    and type = 'attendance';
+
+  return jsonb_build_object('status', v_status, 'sessionId', v_session.id, 'attended', v_attended);
+end;
+$$;
+
+-- RPC: attendance sessions for a course (without codes) with attendee counts. Available to
+-- enrolled learners and course overseers so attendance history can be graphed.
+create or replace function public.attendance_sessions(p_catalog_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+begin
+  if not (
+    public.auth_oversees_course(v_user_id, p_catalog_id)
+    or exists (select 1 from public.enrollment where "catalogId" = p_catalog_id and "learnerId" = v_user_id)
+  ) then
+    raise exception 'User is not authorized to view attendance for this course';
+  end if;
+
+  return jsonb_build_object(
+    'enrolledCount', (select count(*) from public.enrollment where "catalogId" = p_catalog_id),
+    'sessions', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', a.id,
+        'openedAt', a."openedAt",
+        'closedAt', a."closedAt",
+        'questions', a.questions,
+        'attendeeCount', (
+          select count(distinct p."userId")
+          from public.progress p
+          where p."catalogId" = a."catalogId"
+            and p.type = 'attendance'
+            and p."interactionId" = a.id
+        )
+      ) order by a."openedAt")
+      from public.attendance a
+      where a."catalogId" = p_catalog_id
+    ), '[]'::jsonb)
+  );
 end;
 $$;
 
@@ -494,6 +689,10 @@ grant execute on function public.auth_manages_course(uuid, uuid) to authenticate
 grant execute on function public.auth_oversees_course(uuid, uuid) to authenticated;
 grant execute on function public.auth_oversees_enrolled_user(uuid, uuid) to authenticated;
 grant execute on function public.record_progress_event(uuid, uuid, uuid, uuid, uuid, text, integer, jsonb, jsonb, boolean) to authenticated;
+grant execute on function public.open_attendance(uuid, jsonb) to authenticated;
+grant execute on function public.close_attendance(uuid) to authenticated;
+grant execute on function public.record_attendance(uuid, text, jsonb) to authenticated;
+grant execute on function public.attendance_sessions(uuid) to authenticated;
 
 -- Define table grants by first revoking everything
 revoke all on table public.catalog from public, anon, authenticated;
@@ -503,6 +702,7 @@ revoke all on table public.enrollment from public, anon, authenticated;
 revoke all on table public.topic from public, anon, authenticated;
 revoke all on table public.progress from public, anon, authenticated;
 revoke all on table public.log from public, anon, authenticated;
+revoke all on table public.attendance from public, anon, authenticated;
 
 -- Catalog grants
 grant select on table public.catalog to anon, authenticated;
@@ -527,6 +727,9 @@ grant select, insert, update, delete on table public.progress to authenticated;
 -- append-only, so update/delete are intentionally not granted to anyone.
 grant select, insert on table public.log to authenticated;
 
+-- Attendance sessions are created and closed through RPCs; RLS narrows reads to overseers.
+grant select on table public.attendance to authenticated;
+
 
 ----------------------- Row Level Security
 
@@ -539,6 +742,7 @@ alter table public.enrollment enable row level security;
 alter table public.topic enable row level security;
 alter table public.progress enable row level security;
 alter table public.log enable row level security;
+alter table public.attendance enable row level security;
 
 
 ----------------------- Policies
@@ -573,6 +777,7 @@ drop policy if exists "Editor reads managed course progress" on public.progress;
 drop policy if exists "Root manages all" on public.progress;
 drop policy if exists "Registered user inserts log" on public.log;
 drop policy if exists "Root or editor reads log" on public.log;
+drop policy if exists "Course overseer reads attendance" on public.attendance;
 
 
 ----------------------- Policies: Catalog
@@ -772,7 +977,7 @@ create policy "Allow users to insert their own progress"
 on public.progress
 for insert
 to authenticated
-with check (auth.uid() = "userId");
+with check (auth.uid() = "userId" and coalesce(type, '') <> 'attendance');
 
 create policy "Allow users to read their own progress"
 on public.progress
@@ -792,6 +997,18 @@ for all
 to authenticated
 using (public.auth_is_root(auth.uid()))
 with check (public.auth_is_root(auth.uid()));
+
+
+----------------------- Policies: Attendance
+
+
+-- Sessions hold the check-in code, so only course overseers (and root) can read them.
+-- Writes go through the open_attendance/close_attendance RPCs.
+create policy "Course overseer reads attendance"
+on public.attendance
+for select
+to authenticated
+using (public.auth_oversees_course(auth.uid(), "catalogId"));
 
 
 ----------------------- Policies: Log

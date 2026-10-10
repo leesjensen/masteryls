@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 import { TopicIcon } from '../../utils/Icons.jsx';
+import AttendanceAssignmentSection from './attendanceAssignmentSection.jsx';
 
 export default function CourseLinkForm({ courseOps, onClose }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
@@ -107,6 +108,20 @@ export default function CourseLinkForm({ courseOps, onClose }) {
       showAlert({ message: 'Mastery assignment "Reading interactions" created', type: 'info' });
     } catch (error) {
       showAlert({ message: `Error creating mastery assignment: ${error.message}`, type: 'error' });
+    }
+    setIsLoading(false);
+  }
+
+  async function createAttendanceAssignment(points) {
+    setLoadingTitle('Creating Attendance Assignment');
+    setIsLoading(true);
+    try {
+      setUpdateMessage('Creating "Attendance" assignment...');
+      const updatedCourse = await courseOps.createAttendanceAssignment(course, points);
+      setCourse(updatedCourse);
+      showAlert({ message: 'Attendance assignment created', type: 'info' });
+    } catch (error) {
+      showAlert({ message: `Error creating attendance assignment: ${error.message}`, type: 'error' });
     }
     setIsLoading(false);
   }
@@ -337,6 +352,8 @@ export default function CourseLinkForm({ courseOps, onClose }) {
             )}
           </div>
         )}
+
+        {course && <AttendanceAssignmentSection course={course} onCreate={createAttendanceAssignment} />}
 
         <div className="flex items-center justify-end space-x-3 pt-2">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">

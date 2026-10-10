@@ -1,0 +1,336 @@
+import { test, expect } from './fixtures';
+import { initBasicCourse, navigateToCourse, navigateToDashboard } from './testInit';
+
+const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+const LEARNER_ID = '15cb92ef-d2d0-4080-8770-999516448960';
+const SESSION_ID = 'a77e0da7-0000-4000-8000-000000000001';
+const CODE = '4821';
+
+// Stateful mock of the attendance RPCs, the attendance table, and attendance progress rows.
+async function mockAttendance(page: any, { learner = false } = {}) {
+  const state: any = {
+    openSession: null,
+    sessions: [],
+    progress: [],
+    recordCalls: [] as any[],
+    enrolledCount: 3,
+  };
+
+  if (learner) {
+    // No roles: the user is a plain enrolled learner. Start with an open session that has a question.
+    await page.route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {
+      await route.fulfill({ json: [] });
+    });
+    state.openSession = {
+      id: SESSION_ID,
+      catalogId: COURSE_ID,
+      code: CODE,
+      questions: [
+        {
+          id: 'q1',
+          type: 'multiple-choice',
+          prompt: 'How are things going?',
+          choices: ['Great', 'Good', 'OK', 'Struggling'],
+        },
+      ],
+      openedAt: new Date().toISOString(),
+      closedAt: null,
+    };
+    state.sessions.push(state.openSession);
+  }
+
+  const sessionsResponse = () => ({
+    enrolledCount: state.enrolledCount,
+    sessions: state.sessions.map((session: any) => ({
+      id: session.id,
+      openedAt: session.openedAt,
+      closedAt: session.closedAt,
+      questions: session.questions,
+      attendeeCount: state.progress.filter((row: any) => row.interactionId === session.id).length,
+    })),
+  });
+
+  await page.route(/.*supabase.co\/rest\/v1\/rpc\/(open_attendance|close_attendance|record_attendance|attendance_sessions)(\?.+)?/, async (route: any) => {
+    const name = route
+      .request()
+      .url()
+      .match(/rpc\/([a-z_]+)/)[1];
+    const body = route.request().postDataJSON() || {};
+    switch (name) {
+      case 'open_attendance': {
+        state.openSession = {
+          id: SESSION_ID,
+          catalogId: body.p_catalog_id,
+          code: CODE,
+          questions: body.p_questions || [],
+          openedAt: new Date().toISOString(),
+          closedAt: null,
+        };
+        state.sessions.push(state.openSession);
+        // Simulate a learner checking in while attendance is open.
+        state.progress.push({
+          id: 'progress-attendance-1',
+          createdAt: new Date().toISOString(),
+          userId: LEARNER_ID,
+          catalogId: COURSE_ID,
+          interactionId: SESSION_ID,
+          type: 'attendance',
+          details: { answers: { q1: 'Good' } },
+        });
+        await route.fulfill({ json: state.openSession });
+        return;
+      }
+      case 'close_attendance': {
+        state.openSession.closedAt = new Date().toISOString();
+        const closed = state.openSession;
+        state.openSession = null;
+        await route.fulfill({ json: closed });
+        return;
+      }
+      case 'attendance_sessions':
+        await route.fulfill({ json: sessionsResponse() });
+        return;
+      case 'record_attendance': {
+        state.recordCalls.push(body);
+        const session = state.openSession;
+        if (!session || body.p_code !== session.code) {
+          await route.fulfill({
+            status: 400,
+            json: {
+              code: 'P0001',
+              message: 'No attendance is being taken with that code',
+            },
+          });
+          return;
+        }
+        if (session.questions.length > 0 && body.p_answers == null) {
+          await route.fulfill({
+            json: {
+              status: 'questions',
+              sessionId: session.id,
+              questions: session.questions,
+            },
+          });
+          return;
+        }
+        state.progress.push({
+          id: 'progress-attendance-1',
+          createdAt: new Date().toISOString(),
+          userId: LEARNER_ID,
+          catalogId: COURSE_ID,
+          interactionId: session.id,
+          type: 'attendance',
+          details: { answers: body.p_answers },
+        });
+        await route.fulfill({
+          json: {
+            status: 'recorded',
+            sessionId: session.id,
+            attended: state.progress.length,
+          },
+        });
+        return;
+      }
+    }
+  });
+
+  await page.route(/.*supabase.co\/rest\/v1\/attendance(\?.+)?/, async (route: any) => {
+    await route.fulfill({
+      json: state.openSession ? [state.openSession] : [],
+    });
+  });
+
+  await page.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route: any) => {
+    const url = decodeURIComponent(route.request().url());
+    if (route.request().method() === 'GET' && url.includes('type=in.(attendance)')) {
+      const sessionMatch = url.match(/interactionId=eq\.([0-9a-f-]+)/);
+      const rows = state.progress.filter((row: any) => !sessionMatch || row.interactionId === sessionMatch[1]);
+      await route.fulfill({
+        json: rows,
+        headers: {
+          'content-range': `0-${Math.max(rows.length - 1, 0)}/${rows.length}`,
+        },
+      });
+      return;
+    }
+    await route.fallback();
+  });
+
+  return state;
+}
+
+async function openAttendanceView(page: any) {
+  await navigateToCourse(page);
+  await page.getByRole('link', { name: 'Attendance' }).click();
+  await expect(page).toHaveURL(new RegExp(`/course/${COURSE_ID}/attendance$`));
+}
+
+test('attendance is hidden from the table of contents unless enabled for the course', async ({ page }) => {
+  await initBasicCourse({ page });
+  await navigateToCourse(page);
+  await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Attendance' })).toHaveCount(0);
+});
+
+test('an editor takes attendance with a question and reviews the responses', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    catalogSettingsOverride: { attendance: true },
+  });
+  const state = await mockAttendance(page);
+
+  await openAttendanceView(page);
+  await expect(page.getByText('No attendance has been taken yet.')).toBeVisible();
+
+  await page.getByLabel('Ask a question when learners check in').check();
+  await expect(page.getByLabel('Attendance question', { exact: true })).toHaveValue('How are things going?');
+  await page.getByRole('button', { name: 'Take attendance' }).click();
+
+  const overlay = page.getByTestId('attendance-code-overlay');
+  await expect(overlay).toBeVisible();
+  await expect(overlay.getByLabel('Attendance code value')).toHaveText(CODE);
+  await expect(overlay).toContainText('How are things going?');
+  await expect(overlay).toContainText('1 of 3 checked in');
+  expect(state.sessions[0].questions).toEqual([
+    {
+      id: 'q1',
+      type: 'multiple-choice',
+      prompt: 'How are things going?',
+      choices: ['Great', 'Good', 'OK', 'Struggling'],
+    },
+  ]);
+
+  await overlay.getByRole('button', { name: 'Close attendance' }).click();
+  await expect(overlay).toHaveCount(0);
+
+  await expect(page.getByTestId('course-attendance-chart')).toContainText('average attendance 33%');
+  const sessionList = page.getByTestId('attendance-session-list');
+  await expect(sessionList).toContainText('1 / 3 present');
+  await sessionList.getByRole('button').first().click();
+  const responses = page.getByTestId('attendance-responses');
+  await expect(responses).toContainText('Bud');
+  await expect(responses).toContainText('Good');
+});
+
+test('a learner checks in with the class code, answers the question, and sees their history', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    catalogSettingsOverride: { attendance: true },
+    courseJsonOverride: {
+      externalRefs: {
+        canvasCourseId: '12345',
+        attendance: {
+          canvasAssignmentId: 777,
+          pointsPerSession: 2,
+          pointsPossible: 80,
+        },
+      },
+    },
+  });
+  const state = await mockAttendance(page, { learner: true });
+
+  const gradePosts: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({
+        status: 204,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      });
+      return;
+    }
+    const body = await route.request().postDataJSON();
+    if (body?.mode === 'check') {
+      await route.fulfill({
+        status: 200,
+        json: { ok: true, eligible: true },
+      });
+      return;
+    }
+    gradePosts.push(body);
+    await route.fulfill({ status: 200, json: { ok: true } });
+  });
+
+  await openAttendanceView(page);
+  await expect(page.getByRole('button', { name: 'Take attendance' })).toHaveCount(0);
+  await expect(page.getByTestId('attendance-history')).toContainText('Attended 0 of 1 classes');
+
+  // A wrong code records nothing.
+  await page.getByLabel('Attendance code').fill('1111');
+  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+  await expect(page.getByText('No attendance is being taken with that code')).toBeVisible();
+  expect(state.progress.length).toBe(0);
+
+  // The right code asks the session's question before recording.
+  await page.getByLabel('Attendance code').fill(CODE);
+  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+  await expect(page.getByText('How are things going?')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit', exact: true })).toBeDisabled();
+  await page.getByRole('radio', { name: 'Good' }).check();
+  await page.getByRole('button', { name: 'Submit', exact: true }).click();
+
+  await expect(page.getByText('Your attendance has been recorded.')).toBeVisible();
+  expect(state.recordCalls.at(-1)).toEqual({
+    p_catalog_id: COURSE_ID,
+    p_code: CODE,
+    p_answers: { q1: 'Good' },
+  });
+  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 of 1 classes (100%)');
+  await expect(page.getByTestId('attendance-history')).toContainText('Points: 2 / 80');
+
+  await expect.poll(() => gradePosts.length).toBe(1);
+  expect(gradePosts[0]).toMatchObject({
+    topicType: 'attendance',
+    canvasAssignmentId: 777,
+    pointsPossible: 80,
+    percentCorrect: 2.5,
+    learnerEmail: 'bud@cow.com',
+  });
+});
+
+test('creating the attendance assignment posts the configured points and stores them on the course', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    catalogSettingsOverride: { attendance: true },
+    courseJsonOverride: { externalRefs: { canvasCourseId: '12345' } },
+  });
+  await page.route('https://api.github.com/user', async (route: any) => {
+    await route.fulfill({ status: 200, json: { login: 'mock-user' } });
+  });
+  const assignmentPayloads: any[] = [];
+  await page.route(/.*supabase.co\/functions\/v1\/canvas(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({
+        status: 204,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+      });
+      return;
+    }
+    const body = await route.request().postDataJSON();
+    assignmentPayloads.push(body.body.assignment);
+    await route.fulfill({
+      status: 200,
+      json: { id: 9100, name: body.body.assignment.name },
+    });
+  });
+
+  await navigateToDashboard(page);
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'Link course', exact: true }).click();
+  await page.getByLabel('Course', { exact: true }).selectOption(COURSE_ID);
+
+  await expect(page.getByLabel('Points per class')).toHaveValue('2');
+  await expect(page.getByLabel('Points possible')).toHaveValue('80');
+  await page.getByLabel('Points per class').fill('3');
+  await page.getByLabel('Points possible').fill('60');
+  await page.getByRole('button', { name: 'Create attendance assignment' }).click();
+
+  await expect(page.locator('#root')).toContainText('Attendance assignment created');
+  await expect(page.getByRole('link', { name: 'Attendance' })).toHaveAttribute('href', 'https://byu.instructure.com/courses/12345/assignments/9100');
+  expect(assignmentPayloads).toHaveLength(1);
+  expect(assignmentPayloads[0]).toMatchObject({
+    name: 'Attendance',
+    points_possible: 60,
+    grading_type: 'points',
+    submission_types: ['none'],
+  });
+});

@@ -153,16 +153,16 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       });
     }
 
-    const VALID_TOPIC_TYPES = ['exam', 'project', 'dra', 'interview', 'mastery'];
+    const VALID_TOPIC_TYPES = ['exam', 'project', 'dra', 'interview', 'mastery', 'attendance'];
     if (!VALID_TOPIC_TYPES.includes(topicType)) {
       return new Response(JSON.stringify({ error: `topicType must be one of: ${VALID_TOPIC_TYPES.join(', ')}` }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // The course-level "mastery" assignment is auto-graded and updated frequently, so it posts
+    // The course-level "mastery" and "attendance" assignments are auto-graded and updated frequently, so they post
     // the grade only - no submission and no comment (a comment on every mastery change would spam
     // the submission thread).
-    const isMastery = topicType === 'mastery';
-    const autoGrade = isMastery ? true : payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
+    const isGradeOnly = topicType === 'mastery' || topicType === 'attendance';
+    const autoGrade = isGradeOnly ? true : payload.autoGrade === undefined ? topicType === 'exam' : payload.autoGrade === true;
     const feedback = String(payload.feedback || '');
     const submissionUrl = typeof payload.submissionUrl === 'string' ? payload.submissionUrl.trim() : '';
     const submissionText = typeof payload.submissionText === 'string' ? payload.submissionText.trim() : '';
@@ -243,8 +243,8 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
               },
             }
           : {}),
-        // Mastery updates are grade-only; everything else attaches the MasteryLS feedback comment.
-        ...(isMastery
+        // Mastery and attendance updates are grade-only; everything else attaches the MasteryLS feedback comment.
+        ...(isGradeOnly
           ? {}
           : {
               comment: {

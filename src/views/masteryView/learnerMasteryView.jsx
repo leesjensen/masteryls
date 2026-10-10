@@ -5,6 +5,8 @@ import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 import { completedInteractionIds } from '../../utils/topicProgress';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
+import BarChartSvg from '../../components/charts/barChartSvg.jsx';
+import AttendanceHistory from '../../components/attendance/attendanceHistory.jsx';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -15,62 +17,6 @@ function formatDuration(seconds) {
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return sec > 0 ? `${m}m ${sec}s` : `${m}m`;
   return `${sec}s`;
-}
-
-function BarChartSvg({ dateGroups }) {
-  const W = 800;
-  const H = 220;
-  const PAD = { top: 16, right: 24, bottom: 44, left: 44 };
-  const cw = W - PAD.left - PAD.right;
-  const ch = H - PAD.top - PAD.bottom;
-  const n = dateGroups.length;
-
-  const maxCount = Math.max(...dateGroups.map((g) => g.count));
-  const slotW = cw / n;
-  const barW = Math.max(4, Math.min(slotW * 0.6, 60));
-
-  const xOf = (i) => PAD.left + i * slotW + slotW / 2;
-  const yOf = (count) => PAD.top + ch - (count / maxCount) * ch;
-
-  const yTicks =
-    maxCount <= 5
-      ? Array.from({ length: maxCount }, (_, i) => i + 1)
-      : [1, Math.round(maxCount / 2), maxCount];
-
-  const labelStep = Math.max(1, Math.ceil(n / 12));
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '180px' }} aria-label="Activity chart">
-      {yTicks.map((tick) => (
-        <line key={tick} x1={PAD.left} y1={yOf(tick)} x2={PAD.left + cw} y2={yOf(tick)} stroke="#f3f4f6" strokeWidth={1} />
-      ))}
-      <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
-      <line x1={PAD.left} y1={PAD.top + ch} x2={PAD.left + cw} y2={PAD.top + ch} stroke="#e5e7eb" strokeWidth={1} />
-      {yTicks.map((tick) => (
-        <text key={tick} x={PAD.left - 6} y={yOf(tick) + 4} textAnchor="end" fontSize={10} fill="#9ca3af">{tick}</text>
-      ))}
-      <text x={12} y={PAD.top + ch / 2} textAnchor="middle" fontSize={10} fill="#9ca3af" transform={`rotate(-90 12 ${PAD.top + ch / 2})`}>
-        Topics
-      </text>
-      {dateGroups.map((group, i) => {
-        const x = xOf(i);
-        const bh = Math.max(1, (group.count / maxCount) * ch);
-        const y = PAD.top + ch - bh;
-        const label = new Date(group.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        const showLabel = i % labelStep === 0 || i === n - 1;
-        return (
-          <g key={group.day}>
-            <rect x={x - barW / 2} y={y} width={barW} height={bh} fill="#3b82f6" rx={2} opacity={0.85}>
-              <title>{`${label}: ${group.count} topic${group.count !== 1 ? 's' : ''}`}</title>
-            </rect>
-            {showLabel && (
-              <text x={x} y={PAD.top + ch + 14} textAnchor="middle" fontSize={10} fill="#9ca3af">{label}</text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
-  );
 }
 
 function LastInteractionChart({ summaries }) {
@@ -517,7 +463,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         <div className="border border-gray-200 rounded-md p-3 bg-white">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              {chartMode === 'lastInteraction' ? 'Last Interaction Timeline' : 'Daily Activity'}
+              {chartMode === 'lastInteraction' ? 'Last Interaction Timeline' : chartMode === 'attendance' ? 'Attendance' : 'Daily Activity'}
             </span>
             <div className="flex text-xs border border-gray-200 rounded-md overflow-hidden">
               <button
@@ -534,6 +480,15 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               >
                 Daily Activity
               </button>
+              {selectedCourse?.settings?.attendance && (
+                <button
+                  type="button"
+                  onClick={() => setChartMode('attendance')}
+                  className={`px-3 py-1 transition-colors border-l border-gray-200 ${chartMode === 'attendance' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                >
+                  Attendance
+                </button>
+              )}
             </div>
           </div>
           {chartMode === 'lastInteraction' && <LastInteractionChart summaries={instructionTopicSummaries} />}
@@ -542,6 +497,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               ? <div className="text-sm text-gray-500 py-4 text-center">Loading activity...</div>
               : <DailyActivityChart records={activityRecords} />
           )}
+          {chartMode === 'attendance' && selectedCourse?.settings?.attendance && <AttendanceHistory courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} />}
         </div>
       )}
 

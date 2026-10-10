@@ -79,7 +79,8 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   }
 
   let content = null;
-  if (editorVisible) {
+  // The attendance view has no editable content, so it always renders its instruction view.
+  if (editorVisible && learningSession.topic?.type !== 'attendance') {
     content = <Editor courseOps={courseOps} user={user} learningSession={learningSession} />;
   } else {
     content = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} />;

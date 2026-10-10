@@ -400,6 +400,7 @@ export default function ProgressView({ courseOps, service, user }) {
       userLogin: 'bg-gray-100 text-gray-800',
       note: 'bg-yellow-100 text-yellow-800',
       accountCreation: 'bg-teal-100 text-teal-800',
+      attendance: 'bg-emerald-100 text-emerald-800',
       default: 'bg-gray-100 text-gray-800',
     };
     return colors[type] || colors.default;
@@ -501,6 +502,7 @@ export default function ProgressView({ courseOps, service, user }) {
                     <option value='["canvasGradebookSubmit"]'>Gradebook Submission</option>
                     <option value='["exam"]'>Exam</option>
                     <option value='["note"]'>Note</option>
+                    <option value='["attendance"]'>Attendance</option>
                     <option value='["userLogin", "userLogout"]'>Authorization</option>
                     <option value='["accountCreation"]'>Account Creation</option>
                   </select>

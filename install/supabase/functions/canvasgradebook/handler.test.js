@@ -284,6 +284,39 @@ test('canvasgradebook mastery topicType posts the grade only (no comment, no sub
   assert.equal(updateRequest.comment, undefined, 'mastery must not attach a comment');
 });
 
+test('canvasgradebook attendance topicType posts the grade only (no comment, no submission) for learner-self', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u9', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({
+      courseId: '12345',
+      topicType: 'attendance',
+      percentCorrect: 25, // 10 classes at 2 points each out of 80
+      pointsPossible: 80,
+      learnerEmail: 'learner@test.com',
+      canvasAssignmentId: 777,
+    }),
+  );
+
+  assert.equal(response.status, 200);
+
+  const submitCall = calls.find((c) => c.url.includes('/submissions') && String(c.init?.method || '').toUpperCase() === 'POST');
+  assert.equal(submitCall, undefined, 'attendance must not POST a submission');
+
+  const updateRequest = getSubmissionRequest(calls, 'PUT');
+  assert.equal(updateRequest.submission.posted_grade, 20, 'posted grade equals attendance points');
+  assert.equal(updateRequest.comment, undefined, 'attendance must not attach a comment');
+});
+
 test('canvasgradebook rejects an unsupported topicType', async () => {
   const { fetchFn } = buildFetchStub();
   const handler = createCanvasGradebookHandler({

@@ -356,7 +356,7 @@ async function blockExternalProviders(page: any) {
   });
 }
 
-async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, courseJsonOverride, searchTopicsResults, searchTopicsError = false }: { page: any; topicMarkdown?: string; courseJsonOverride?: any; searchTopicsResults?: any[]; searchTopicsError?: boolean }) {
+async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, courseJsonOverride, catalogSettingsOverride, searchTopicsResults, searchTopicsError = false }: { page: any; topicMarkdown?: string; courseJsonOverride?: any; catalogSettingsOverride?: any; searchTopicsResults?: any[]; searchTopicsError?: boolean }) {
   const context = page.context();
   const resolvedCourseJson = courseJsonOverride ? { ...courseJson, ...courseJsonOverride } : courseJson;
   const progressData = progress.map((entry) => ({ ...entry, details: entry.details ? { ...entry.details } : entry.details }));
@@ -374,7 +374,7 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     switch (route.request().method()) {
       case 'GET':
         await route.fulfill({
-          json: catalog,
+          json: catalogSettingsOverride ? catalog.map((entry, index) => (index === 0 ? { ...entry, settings: { ...entry.settings, ...catalogSettingsOverride } } : entry)) : catalog,
         });
         break;
       case 'POST':

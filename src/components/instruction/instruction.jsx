@@ -3,6 +3,7 @@ import EmbeddedInstruction from './embeddedInstruction';
 import ExamInstruction from './examInstruction';
 import InteractionInstruction from './interaction/interactionInstruction';
 import ScheduleInstruction from './scheduleInstruction';
+import AttendanceInstruction from '../attendance/attendanceInstruction';
 import DraInstruction from './dra/draInstruction';
 import InterviewInstruction from './interview/interviewInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
@@ -24,6 +25,11 @@ export default function Instruction({ courseOps, learningSession, user, content 
     // quick succession) before this fetch resolves, a stale response must not overwrite the
     // interaction store with the wrong learner's answers.
     let cancelled = false;
+    // The attendance view is a synthetic topic with no interactions of its own.
+    if (learningSession.topic?.type === 'attendance') {
+      setLoadingProgress(false);
+      return;
+    }
     courseOps.getTopicProgress(['quizSubmit', 'canvasGradebookSubmit']).then((progress) => {
       if (cancelled) return;
       // Replace (not merge into) the store: addInteractionProgress/updateInteractionProgress
@@ -46,7 +52,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
   useProgressTracking({
     progressType: `${learningSession.topic.type || 'instruction'}View`,
     onProgress: courseOps?.addProgress,
-    enabled: !content && !!learningSession.topic?.path && !!courseOps?.addProgress,
+    enabled: !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && !!courseOps?.addProgress,
     minDuration: 10,
     dependencies: [learningSession.topic?.path],
   });
@@ -68,6 +74,9 @@ export default function Instruction({ courseOps, learningSession, user, content 
       break;
     case 'exam':
       instructionComponent = <ExamInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} previewFileUrls={previewFileUrls} />;
+      break;
+    case 'attendance':
+      instructionComponent = <AttendanceInstruction courseOps={courseOps} learningSession={learningSession} user={user} />;
       break;
     case 'schedule':
       instructionComponent = <ScheduleInstruction courseOps={courseOps} learningSession={learningSession} user={user} instructionState={instructionState} />;

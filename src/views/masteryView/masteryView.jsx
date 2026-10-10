@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
+import CourseAttendanceChart from '../../components/attendance/courseAttendanceChart.jsx';
 
 const PAGE_SIZE = 50;
 
@@ -533,6 +534,13 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       )}
 
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+
+      {hasCourseAccess && selectedCourse?.id === selectedCourseId && selectedCourse?.settings?.attendance && (
+        <div className="border border-gray-200 rounded-md p-3 bg-white">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Attendance</div>
+          <CourseAttendanceChart courseOps={courseOps} courseId={selectedCourseId} />
+        </div>
+      )}
 
       {renderPagination()}
 

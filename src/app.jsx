@@ -35,6 +35,7 @@ export function createAppRouter(user) {
         { path: 'course/:courseId', element: <ClassroomPage /> },
         { path: 'course/:courseId/topic/:topicId', element: <ClassroomPage /> },
         { path: 'course/:courseId/schedule', element: <ClassroomPage /> },
+        { path: 'course/:courseId/attendance', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'courseCreation', element: <CourseCreationPage /> },
         { path: 'courseLink', element: <CourseLinkPage /> },
@@ -65,7 +66,8 @@ function App({ initialUser }) {
         const enrollment = await service.currentEnrollment(initialUser.id);
         if (enrollment) {
           const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
-          const topicPath = enrollmentUiSettings?.currentTopic ? (enrollmentUiSettings.currentTopic === 'schedule' ? '/schedule' : `/topic/${enrollmentUiSettings.currentTopic}`) : '';
+          const currentTopic = enrollmentUiSettings?.currentTopic;
+          const topicPath = currentTopic ? (currentTopic === 'schedule' || currentTopic === 'attendance' ? `/${currentTopic}` : `/topic/${currentTopic}`) : '';
           navigate(`/course/${enrollment.catalogId}${topicPath}`);
         } else {
           navigate('/dashboard');
@@ -189,6 +191,7 @@ function ClassroomPage() {
       try {
         if (courseId !== null) {
           const isScheduleRoute = location.pathname.endsWith('/schedule');
+          const isAttendanceRoute = location.pathname.endsWith('/attendance');
           let course = learningSession?.course;
           if (!course || course.id !== courseId) {
             course = await courseOps.getCourse(courseId);
@@ -213,6 +216,14 @@ function ClassroomPage() {
               topic = courseOps.getScheduleTopic(course);
               if (topic) {
                 courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: 'schedule' });
+              } else {
+                redirectToDefaultTopic();
+                return;
+              }
+            } else if (isAttendanceRoute) {
+              topic = courseOps.getAttendanceTopic(course);
+              if (topic) {
+                courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: 'attendance' });
               } else {
                 redirectToDefaultTopic();
                 return;

@@ -8,7 +8,7 @@ import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 import { parseScheduleMarkdown } from './utils/scheduleMarkdown.js';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, X } from 'lucide-react';
+import { CalendarDays, UserCheck, X } from 'lucide-react';
 
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
@@ -94,6 +94,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const [isReordering, setIsReordering] = React.useState(false);
 
   const scheduleTopic = courseOps.getScheduleTopic(learningSession?.course);
+  const attendanceTopic = courseOps.getAttendanceTopic(learningSession?.course);
   const scheduleFiles = scheduleTopic ? courseOps.getScheduleFiles(scheduleTopic) : [];
   const selectedScheduleFile = scheduleTopic ? courseOps.getSelectedScheduleFile(scheduleTopic, scheduleFiles) : null;
 
@@ -343,6 +344,21 @@ function Contents({ courseOps, learningSession, editorVisible }) {
                 <X size={12} />
               </button>
             )}
+          </div>
+        )}
+        {attendanceTopic && (
+          <div className="mb-2 flex items-center gap-2">
+            <a
+              href={`/course/${learningSession.course.id}/attendance`}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(`/course/${learningSession.course.id}/attendance`);
+              }}
+              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'attendance' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
+            >
+              <UserCheck size={14} />
+              Attendance
+            </a>
           </div>
         )}
         {editorVisible ? (

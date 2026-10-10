@@ -734,6 +734,73 @@ class Service {
   }
 
   /**
+   * Opens a new attendance session (closing any open one) and returns it, including its code.
+   * Only course overseers may open attendance.
+   * @param catalogId - The course catalog ID.
+   * @param questions - Questions to ask when learners check in: [{ id, type, prompt, choices }].
+   */
+  async openAttendance(catalogId: string, questions: object[] = []): Promise<any> {
+    const { data, error } = await this.supabase.rpc('open_attendance', { p_catalog_id: catalogId, p_questions: questions });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  /**
+   * Closes an attendance session.
+   * @param sessionId - The attendance session ID.
+   */
+  async closeAttendance(sessionId: string): Promise<any> {
+    const { data, error } = await this.supabase.rpc('close_attendance', { p_session_id: sessionId });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  /**
+   * Returns the course's open attendance session (including its code), or null. Only readable
+   * by course overseers.
+   * @param catalogId - The course catalog ID.
+   */
+  async getOpenAttendance(catalogId: string): Promise<any> {
+    const { data, error } = await this.supabase.from('attendance').select('*').eq('catalogId', catalogId).is('closedAt', null).maybeSingle();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  /**
+   * Records the current user's attendance for the course's open session.
+   * @param catalogId - The course catalog ID.
+   * @param code - The 4 digit attendance code.
+   * @param answers - Answers keyed by question id, or null if not yet answered.
+   * @returns { status: 'recorded' | 'alreadyRecorded' | 'questions', sessionId, attended?, questions? }
+   */
+  async recordAttendance(catalogId: string, code: string, answers: object | null = null): Promise<any> {
+    const { data, error } = await this.supabase.rpc('record_attendance', { p_catalog_id: catalogId, p_code: code, p_answers: answers });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  /**
+   * Returns the course's attendance sessions (without codes) and the enrolled learner count.
+   * @param catalogId - The course catalog ID.
+   * @returns { enrolledCount, sessions: [{ id, openedAt, closedAt, questions, attendeeCount }] }
+   */
+  async getAttendanceSessions(catalogId: string): Promise<{ enrolledCount: number; sessions: any[] }> {
+    const { data, error } = await this.supabase.rpc('attendance_sessions', { p_catalog_id: catalogId });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { enrolledCount: data?.enrolledCount || 0, sessions: data?.sessions || [] };
+  }
+
+  /**
    * Records an application event in the append-only log table. Failures are logged to the
    * console rather than thrown, so a logging hiccup never blocks the action being logged.
    * @param event - Short event name, e.g. "createEnrollment" or "deleteEnrollment".
@@ -1113,7 +1180,7 @@ class Service {
   /**
    * Invokes the Canvas gradebook edge function for secure grade passback.
    */
-  async makeCanvasGradebookRequest(params: { courseId: string; catalogId?: string; topicType: 'exam' | 'project' | 'dra' | 'interview' | 'mastery'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string; autoGrade?: boolean; feedback?: string; submissionUrl?: string; submissionText?: string }) {
+  async makeCanvasGradebookRequest(params: { courseId: string; catalogId?: string; topicType: 'exam' | 'project' | 'dra' | 'interview' | 'mastery' | 'attendance'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string; autoGrade?: boolean; feedback?: string; submissionUrl?: string; submissionText?: string }) {
     const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
       body: params,
     });

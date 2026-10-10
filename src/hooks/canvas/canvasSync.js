@@ -244,6 +244,25 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     return canvasAssignment;
   }
 
+  // Course-level "Attendance" assignment. Learners earn pointsPerSession for every class they check
+  // in to, up to pointsPossible. It collects no student submission - MasteryLS posts the grade
+  // directly (see attendanceCanvasSync).
+  async function createAttendanceAssignment({ canvasCourseId, catalogId, pointsPerSession, pointsPossible }) {
+    const body = {
+      assignment: {
+        name: 'Attendance',
+        description: `<p>Automatically updated when you check in to class with MasteryLS. Each class attended earns ${pointsPerSession} points, up to ${pointsPossible} points.</p>`,
+        points_possible: pointsPossible,
+        grading_type: 'points',
+        submission_types: ['none'],
+        published: true,
+      },
+    };
+
+    const canvasAssignment = await service.makeCanvasApiRequest(`/courses/${canvasCourseId}/assignments`, 'POST', body, catalogId);
+    return canvasAssignment;
+  }
+
   async function updateCanvasTopic({ course, topic, canvasCourseId, dueDatesByTopicId = {}, useStaticHtml = false }) {
     const masteryLsHeaderHtml = buildMasteryLsLinkHtml(course, topic);
     const skipContent = useStaticHtml || MASTERYLS_ONLY_TOPIC_TYPES.includes(topic.type);
@@ -352,7 +371,7 @@ export function createCanvasSync({ service, renderTopicHtml }) {
 
   function removeCanvasReferences(updatedCourse) {
     if (updatedCourse.externalRefs) {
-      const { canvasCourseId, canvasScheduleFileId, canvasMasteryAssignmentId, ...remainingCourseRefs } = updatedCourse.externalRefs;
+      const { canvasCourseId, canvasScheduleFileId, canvasMasteryAssignmentId, attendance, ...remainingCourseRefs } = updatedCourse.externalRefs;
       updatedCourse.externalRefs = Object.keys(remainingCourseRefs).length > 0 ? remainingCourseRefs : undefined;
     }
 
@@ -445,5 +464,6 @@ export function createCanvasSync({ service, renderTopicHtml }) {
     linkCourseResources,
     updateCanvasTopic,
     createMasteryAssignment,
+    createAttendanceAssignment,
   };
 }

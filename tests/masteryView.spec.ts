@@ -289,3 +289,30 @@ test('learner masteryview shows learner summary and topic detail', async ({ page
   // An overseer can jump straight into observing this learner from the drill-down header.
   await expect(page.getByRole('button', { name: 'Observe' })).toBeVisible();
 });
+
+test('masteryview shows course attendance and a learner attendance history when attendance is enabled', async ({ page }) => {
+  await initBasicCourse({ page, catalogSettingsOverride: { attendance: true } });
+  await mockGradebookOverview(page);
+  const sessions = [
+    { id: 'a77e0da7-0000-4000-8000-000000000001', openedAt: '2026-10-06T15:00:00Z', closedAt: '2026-10-06T15:10:00Z', questions: [], attendeeCount: 2 },
+    { id: 'a77e0da7-0000-4000-8000-000000000002', openedAt: '2026-10-08T15:00:00Z', closedAt: '2026-10-08T15:10:00Z', questions: [], attendeeCount: 1 },
+  ];
+  await page.route(/.*supabase.co\/rest\/v1\/rpc\/attendance_sessions(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: { enrolledCount: 2, sessions } });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route: any) => {
+    if (decodeURIComponent(route.request().url()).includes('type=in.(attendance)')) {
+      await route.fulfill({ json: [{ id: 'p1', userId: LEARNER_ID, interactionId: sessions[0].id, type: 'attendance', createdAt: sessions[0].openedAt, details: {} }] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await navigateToDashboard(page);
+  await page.goto(`/masteryview/course/${COURSE_ID}`);
+  await expect(page.getByTestId('course-attendance-chart')).toContainText('2 classes recorded, average attendance 75%');
+
+  await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
+  await page.getByRole('button', { name: 'Attendance', exact: true }).click();
+  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 of 2 classes (50%)');
+});
