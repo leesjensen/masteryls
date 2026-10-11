@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import CourseAttendanceChart from '../../components/attendance/courseAttendanceChart.jsx';
+import FeedbackEmailModal from './FeedbackEmailModal.jsx';
 
 const PAGE_SIZE = 50;
 
@@ -81,6 +82,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   // (and never fires with a stale/empty window during a course switch).
   const [rangeCourseId, setRangeCourseId] = React.useState(null);
 
+  const [feedbackModal, setFeedbackModal] = React.useState(null);
+
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
 
@@ -114,7 +117,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }, [enrolledCourseIds, selectedCourseId, user]);
   const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
   const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
-  const hasActions = canObserveLearners || canUnenrollLearners;
+  const canGenerateFeedback = canObserveLearners;
+  const hasActions = canObserveLearners || canUnenrollLearners || canGenerateFeedback;
 
   // Derive every displayed/sorted metric from the trimmed progress once per course load. This is
   // the single source of truth - the table never sorts on values it doesn't display.
@@ -372,6 +376,18 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     }
   }
 
+  function onGenerateFeedback(row, event) {
+    event?.stopPropagation?.();
+    if (!canGenerateFeedback || !selectedCourse) return;
+    setFeedbackModal({ row });
+  }
+
+  async function onGenerateEmail(row, senderName) {
+    const rawRow = allRows.find((r) => r.enrollmentId === row.enrollmentId);
+    const learnerData = { ...row, progress: rawRow?.progress ?? {} };
+    return courseOpsRef.current.generateLearnerFeedbackEmail(learnerData, selectedCourse, senderName);
+  }
+
   // Pick a schedule from the dropdown: its span becomes the enrolled-between window.
   function onScheduleSelect(scheduleId) {
     setSelectedScheduleId(scheduleId);
@@ -424,6 +440,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }
 
   return (
+    <>
     <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
       <div>
         <h2 className="text-xl font-semibold text-gray-800">Course MasteryView</h2>
@@ -614,6 +631,15 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                             Unenroll
                           </button>
                         )}
+                        {canGenerateFeedback && (
+                          <button
+                            type="button"
+                            className="px-2 py-1 rounded border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs"
+                            onClick={(event) => onGenerateFeedback(row, event)}
+                          >
+                            Feedback
+                          </button>
+                        )}
                       </div>
                     </td>
                   )}
@@ -625,5 +651,18 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
       {renderPagination()}
     </div>
+
+    {feedbackModal && (
+      <FeedbackEmailModal
+        learnerName={feedbackModal.row.learnerName}
+        learnerEmail={feedbackModal.row.learnerEmail}
+        senderName={user?.name || ''}
+        senderEmail={user?.email || ''}
+        onGenerate={(senderName) => onGenerateEmail(feedbackModal.row, senderName)}
+        onClose={() => setFeedbackModal(null)}
+      />
+    )}
+    </>
   );
 }
+

@@ -1,12 +1,12 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator, aiInterviewScenarioGenerator, aiInterviewSessionResponseGenerator, aiInterviewEvaluationGenerator, aiInterviewCoachGenerator, aiInterviewJobDescriptionGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator, aiInterviewScenarioGenerator, aiInterviewSessionResponseGenerator, aiInterviewEvaluationGenerator, aiInterviewCoachGenerator, aiInterviewJobDescriptionGenerator, aiLearnerFeedbackEmailGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
-import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown } from '../utils/scheduleMarkdown';
+import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown, scheduleDateStatus } from '../utils/scheduleMarkdown';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
@@ -1947,6 +1947,80 @@ Requirements:
     await service.deleteEnrollment({ id: enrollmentId });
   }
 
+  async function generateLearnerFeedbackEmail(learnerRow, course, senderNameOverride) {
+    const senderName = senderNameOverride || user?.name || 'Your Instructor';
+    const publishedTopics = Array.isArray(course?.allTopics) ? course.allTopics.filter((t) => t?.state === 'published') : [];
+    const totalTopics = publishedTopics.length;
+
+    // Build title->id map for schedule due-item matching
+    const topicByTitle = new Map();
+    publishedTopics.forEach((t) => { if (t.title) topicByTitle.set(t.title.trim().toLowerCase(), t.id); });
+
+    // Fetch and parse the course schedule if available
+    let scheduleContext = '';
+    try {
+      const schedFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files.filter((f) => f?.path) : [];
+      const defaultFile = schedFiles.find((f) => f.default) || schedFiles[0];
+      if (defaultFile) {
+        const rawRoot = course?.links?.gitHub?.rawUrl;
+        const configuredPath = defaultFile.path;
+        const rawUrl = (configuredPath.startsWith('http://') || configuredPath.startsWith('https://'))
+          ? configuredPath
+          : rawRoot ? `${rawRoot}/${configuredPath.replace(/^\//, '')}` : null;
+        if (rawUrl) {
+          const token = user?.getSetting?.('gitHubToken', course?.id);
+          const fetchUrl = await resolveSnapshotRawUrl(rawUrl, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
+          const response = await fetch(fetchUrl, { cache: 'no-store' });
+          const markdown = await response.text();
+          const model = parseScheduleMarkdown(markdown);
+          const weeks = Array.isArray(model?.weeks) ? model.weeks : [];
+          const progress = learnerRow.progress ?? {};
+
+          const pastLines = [];
+          const upcomingLines = [];
+          for (const week of weeks) {
+            if (!week.date) continue;
+            const status = scheduleDateStatus(week.date);
+            const isPast = status === 'past' || status === 'today';
+
+            const covered = (week.topicsCovered || []).map((i) => String(i.text || '').trim()).filter(Boolean);
+            const dueItems = (week.dueItems || [])
+              .map((item) => {
+                const title = String(item.text || '').trim();
+                if (!title) return null;
+                const topicId = topicByTitle.get(title.toLowerCase());
+                const tp = topicId ? progress[topicId] : null;
+                const done = Boolean(tp && (Number(tp.completedCount) > 0 || tp.examCompleted || tp.projectSubmission));
+                return { title, done };
+              })
+              .filter(Boolean);
+
+            const duePart = dueItems.length ? `due: ${dueItems.map((d) => `${d.title} (${d.done ? 'done' : 'not done'})`).join(', ')}` : '';
+            const coveredPart = covered.length ? `covering ${covered.join(', ')}` : '';
+            const parts = [coveredPart, duePart].filter(Boolean).join(' | ');
+            if (parts) {
+              if (isPast) pastLines.push(`  ${week.date}: ${parts}`);
+              else upcomingLines.push(`  ${week.date}: ${parts}`);
+            }
+          }
+
+          const contextParts = [];
+          if (pastLines.length) contextParts.push(`What should be done by now:\n${pastLines.join('\n')}`);
+          if (upcomingLines.length) contextParts.push(`Coming up next:\n${upcomingLines.slice(0, 3).join('\n')}`);
+          scheduleContext = contextParts.join('\n\n');
+        }
+      }
+    } catch {
+      scheduleContext = '';
+    }
+
+    const result = await aiLearnerFeedbackEmailGenerator(senderName, { ...learnerRow, totalTopics }, course, scheduleContext);
+    if (typeof result === 'string') {
+      return { subject: `Your progress in ${course?.title || 'the course'}`, body: result };
+    }
+    return result;
+  }
+
   async function getTopicProgress(types = ['quizSubmit', 'canvasGradebookSubmit']) {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
@@ -2422,6 +2496,7 @@ Requirements:
     getProgress,
     getMasteryOverview,
     unenrollLearner,
+    generateLearnerFeedbackEmail,
     getTopicProgress,
     getSurveySummary,
     getLikertSummary,
