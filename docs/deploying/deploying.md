@@ -21,7 +21,7 @@ You can deploy your own installation of MasteryLS with two simple steps.
 1. Create a [Supabase](https://supabase.com) account. A free Supabase account will work fine to start.
 1. Obtain a Supabase Auth Token. In the Supabase account dashboard, access the user profile menu and select **Account preferences**. Select **Access tokens** from the **Account settings** sidebar. Press **Generate new token**.
 
-   ![Generate token](/docs/generateToken.png)
+   ![Generate token](generateToken.png)
 
 1. Run the MasteryLS CLI to configure your Supabase account.
    - **root-name"**: Your root user name (e.g. "Root User")

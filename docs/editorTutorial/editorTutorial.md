@@ -1,4 +1,4 @@
-<img src="../public/masteryls-logo-horizontal.png" width="300" />
+<img src="../../public/masteryls-logo-horizontal.png" width="300" />
 
 # Editor Tutorial
 
@@ -225,7 +225,7 @@ Use this to recover from mistakes, compare revisions, and audit changes.
 
 ## 6) Create and Manage Schedules
 
-<img src="schedule.png" width="700" />
+<img src="../learnerTutorial/schedule.png" width="700" />
 
 A course has at most one schedule, but that schedule can hold several **schedule files** - for example one per term, section, or meeting pattern (MW vs. TTh). Each schedule file is its own markdown document with a session table, and only one of them is ever the "default."
 
@@ -301,8 +301,8 @@ Body/instructions...
 
 Additional examples:
 
-- Full interaction examples: [example-topic.md](example-topic.md)
-- AI web page authoring examples: [example-topic.md#ai-web-page-authoring-notes](example-topic.md#ai-web-page-authoring-notes)
+- Full interaction examples: [example-topic.md](../example-topic/example-topic.md)
+- AI web page authoring examples: [example-topic.md#ai-web-page-authoring-notes](../example-topic/example-topic.md#ai-web-page-authoring-notes)
 
 ### Core JSON parameters (common)
 
@@ -360,7 +360,7 @@ Parameters:
 
 ### 7.3 Essay
 
-<img src="essayInteraction.png" width="400" />
+<img src="../learnerTutorial/essayInteraction.png" width="400" />
 
 What it does: Collects a free-form written response for qualitative evaluation and feedback.
 
@@ -402,7 +402,7 @@ Parameters:
 
 ### 7.5 Likert
 
-<img src="likertInteraction.png" width="400" />
+<img src="../learnerTutorial/likertInteraction.png" width="400" />
 
 What it does: Collects scaled sentiment across multiple statements and supports aggregated results reporting.
 
@@ -430,7 +430,7 @@ Parameters:
 
 ### 7.6 File submission
 
-<img src="fileInteraction.png" width="400" />
+<img src="../learnerTutorial/fileInteraction.png" width="400" />
 
 What it does: Collects one or more uploaded files as learner deliverables for project evidence and optional gradebook workflows.
 
@@ -450,7 +450,7 @@ Parameters:
 
 ### 7.7 URL submission
 
-<img src="urlInteraction.png" width="400" />
+<img src="../learnerTutorial/urlInteraction.png" width="400" />
 
 What it does: Collects a learner URL submission, optionally validates/rewrites the URL, optionally grades with criteria, and can sync results to gradebook.
 
@@ -472,7 +472,7 @@ Parameters:
 
 ### 7.8 Teaching
 
-<img src="teachingInteraction.png" width="400" />
+<img src="../learnerTutorial/teachingInteraction.png" width="400" />
 
 What it does: Runs an AI-assisted teaching dialogue where learner messages are evaluated and submitted as an instructional interaction outcome.
 
@@ -536,7 +536,7 @@ You can use the Web Page interaction to create interactive demos in your content
 
 ### 7.11 AI web page
 
-<img src="aiWebPageInteraction.png" width="400" />
+<img src="../learnerTutorial/aiWebPageInteraction.png" width="400" />
 
 What it does: Provides an AI-assisted workflow to generate/edit HTML, then submit for rubric-based evaluation.
 
@@ -648,7 +648,7 @@ Open: sidebar `Settings`.
 
 Open from user menu `Metrics`.
 
-<img src="metrics.png" width="600" />
+<img src="../learnerTutorial/metrics.png" width="600" />
 
 Metrics supports:
 
@@ -662,7 +662,7 @@ Use it to identify engagement drop-offs, outlier activity, and timing patterns.
 
 ## 10) Activity (Progress View)
 
-<img src="activity.png" width="600" />
+<img src="../learnerTutorial/activity.png" width="600" />
 
 Open from user menu `Activity`.
 
@@ -680,7 +680,7 @@ Use it for user-level audit trails and behavior debugging.
 
 Open from user menu or classroom toolbar.
 
-<img src="masteryView.png" width="600" />
+<img src="../learnerTutorial/masteryView.png" width="600" />
 
 Features:
 

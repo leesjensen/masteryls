@@ -121,4 +121,4 @@ In order for a GitHub repo to function as the source for a Mastery LS course it 
 
 ## Supabase Database
 
-See the [Database Technology](technologyDb.md) document for a complete description of the database schema and design.
+See the [Database Technology](../technologyDb/technologyDb.md) document for a complete description of the database schema and design.

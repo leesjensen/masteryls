@@ -35,7 +35,7 @@ const Start = ({ courseOps }) => {
             <button onClick={() => navigate('/about')} className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
               About
             </button>
-            <a href="https://github.com/leesjensen/masteryls/blob/main/docs/learnerTutorial.md" className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
+            <a href="https://github.com/leesjensen/masteryls/blob/main/docs/learnerTutorial/learnerTutorial.md" className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
               Docs
             </a>
           </div>

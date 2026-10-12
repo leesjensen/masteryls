@@ -5,15 +5,15 @@ async function mockAboutReadme(page: any) {
   const readmeFiles = {
     'README.md': `# MasteryLS README
 
-- [Learner tutorial](docs/learnerTutorial.md)
-- [Editor tutorial](docs/editorTutorial.md)
-- [Deploying your own instance of MasteryLS](docs/deploying.md)
-- [MasteryLS software architecture](docs/architecture.md)
+- [Learner tutorial](docs/learnerTutorial/learnerTutorial.md)
+- [Editor tutorial](docs/editorTutorial/editorTutorial.md)
+- [Deploying your own instance of MasteryLS](docs/deploying/deploying.md)
+- [MasteryLS software architecture](docs/architecture/architecture.md)
 `,
-    'docs/learnerTutorial.md': '# Learner Tutorial\n\nLearner tutorial content.',
-    'docs/editorTutorial.md': '# Editor Tutorial\n\nEditor tutorial content.',
-    'docs/deploying.md': '# Deploying MasteryLS\n\nDeployment content.',
-    'docs/architecture.md': '# MasteryLS Architecture\n\nArchitecture content.',
+    'docs/learnerTutorial/learnerTutorial.md': '# Learner Tutorial\n\nLearner tutorial content.',
+    'docs/editorTutorial/editorTutorial.md': '# Editor Tutorial\n\nEditor tutorial content.',
+    'docs/deploying/deploying.md': '# Deploying MasteryLS\n\nDeployment content.',
+    'docs/architecture/architecture.md': '# MasteryLS Architecture\n\nArchitecture content.',
   };
 
   for (const [path, body] of Object.entries(readmeFiles)) {

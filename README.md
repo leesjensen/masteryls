@@ -28,10 +28,10 @@ Learn more about MasteryLS:
 - [Introductory Video](https://youtu.be/HXNx_Gp0jyM)
 - [MasteryLS application features](docs/features/features.md)
 - [Demonstration course](https://masteryls.com/course/51a72d23-50ab-4147-a1db-27a062aed771) - _Register to access AI features_
-- [Learner tutorial](docs/learnerTutorial.md)
-- [Editor tutorial](docs/editorTutorial.md)
-- [Deploying your own instance of MasteryLS](docs/deploying.md)
-- [MasteryLS software architecture](docs/architecture.md)
+- [Learner tutorial](docs/learnerTutorial/learnerTutorial.md)
+- [Editor tutorial](docs/editorTutorial/editorTutorial.md)
+- [Deploying your own instance of MasteryLS](docs/deploying/deploying.md)
+- [MasteryLS software architecture](docs/architecture/architecture.md)
 
 ---
 

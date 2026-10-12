@@ -1,6 +1,6 @@
 # MasteryLS Database Technology
 
-The database configuration is found in the [Creation SQL Script](supabase/schema.sql) that is used to initialize Supabase for a new installation. This includes the Postgres table schemas, grants, RLS, triggers, and policies.
+The database configuration is found in the [Creation SQL Script](../../install/supabase/schema.sql) that is used to initialize Supabase for a new installation. This includes the Postgres table schemas, grants, RLS, triggers, and policies.
 
 <img width="900" src="databaseSchema.png" />
 

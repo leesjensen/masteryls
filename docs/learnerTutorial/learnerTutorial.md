@@ -2,7 +2,7 @@
 
 This tutorial explains how to use MasteryLS successfully as a learner. It covers the major learner-facing screens, how to move through a course, how to complete activities, and how to track your progress.
 
-<img src="demo.gif" />
+<img src="../demo.gif" />
 
 > [!NOTE]
 >
@@ -24,7 +24,7 @@ This tutorial explains how to use MasteryLS successfully as a learner. It covers
 
 When you first open MasteryLS, you land on the start page.
 
-<img src="features/getstarted.png" width="600" />
+<img src="../features/getstarted.png" width="600" />
 
 - Enter your email to log in or create your account.
 - Use the emailed one-time password if your installation is configured that way.
@@ -36,7 +36,7 @@ After signing in, you will usually be taken to your dashboard.
 
 The dashboard is your home base for courses.
 
-![Dashboard](features/dashboard.png)
+![Dashboard](../features/dashboard.png)
 
 ### What you can do there
 
@@ -63,7 +63,7 @@ The classroom has three main areas:
 
 ## 4. Using the Top Toolbar
 
-<img src="features/content.png" width="600" />
+<img src="../features/content.png" width="600" />
 
 The classroom toolbar gives you quick navigation and course tools.
 
@@ -129,7 +129,7 @@ Some topics are standard reading topics, while others are special topic types su
 
 Most non-schedule learning topics support a side discussion panel.
 
-![Discussion](features/discuss.jpg)
+![Discussion](../features/discuss.jpg)
 
 ### Opening it
 
@@ -179,7 +179,7 @@ When you submit an interaction, MasteryLS may:
 
 While AI grading is running, you may see an evaluation indicator and status message near the submission area. Wait for it to finish before leaving the page if you want to review the feedback immediately.
 
-<img src="features/feedback.jpg" />
+<img src="../features/feedback.jpg" />
 
 ### Multiple choice and multiple select
 
