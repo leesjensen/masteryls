@@ -140,9 +140,11 @@ Choose an answer
     responseFetches += 1;
     await route.fulfill({
       json: [
-        { id: 'bud-old', createdAt: '2026-01-01T00:00:00Z', userId: '15cb92ef-d2d0-4080-8770-999516448960', interactionId, type: 'quizSubmit', details: { type: 'multiple-choice', selected: [1], correct: [1], percentCorrect: 100 } },
-        { id: 'bud-latest', createdAt: '2026-01-02T00:00:00Z', userId: '15cb92ef-d2d0-4080-8770-999516448960', interactionId, type: 'quizSubmit', details: { type: 'multiple-choice', selected: [0], correct: [1], percentCorrect: 0 } },
-        { id: 'sally-latest', createdAt: '2026-01-03T00:00:00Z', userId: 'afcfefde-6cab-4d49-bdf8-375972c6de3e', interactionId, type: 'multiple-choice', details: { type: 'multiple-choice', selected: [1], correct: [1], percentCorrect: 100 } },
+        // Bud answers wrong first, then retries to the correct answer.
+        { id: 'bud-first', createdAt: '2026-01-01T00:00:00Z', userId: '15cb92ef-d2d0-4080-8770-999516448960', interactionId, type: 'quizSubmit', details: { type: 'multiple-choice', selected: [0], correct: [1], percentCorrect: 0 } },
+        { id: 'bud-retry', createdAt: '2026-01-02T00:00:00Z', userId: '15cb92ef-d2d0-4080-8770-999516448960', interactionId, type: 'quizSubmit', details: { type: 'multiple-choice', selected: [1], correct: [1], percentCorrect: 100 } },
+        // Sally gets it right on her only attempt.
+        { id: 'sally-first', createdAt: '2026-01-03T00:00:00Z', userId: 'afcfefde-6cab-4d49-bdf8-375972c6de3e', interactionId, type: 'quizSubmit', details: { type: 'multiple-choice', selected: [1], correct: [1], percentCorrect: 100 } },
       ],
       headers: { 'content-range': '0-2/3' },
     });
@@ -156,10 +158,20 @@ Choose an answer
   await expect(interaction.getByRole('button', { name: 'Hide learner responses' })).toBeVisible();
   await expect.poll(() => responseFetches).toBe(1);
   await expect(interaction.getByText('Choice summary')).toBeVisible();
-  await expect(interaction.getByText('2 responses')).toBeVisible();
+  await expect(interaction.getByText(/2 learners.*first attempt/)).toBeVisible();
+
+  // The distribution is first attempts: Bud's wrong first pick is counted, not his corrected retry.
   await expect(interaction.locator('tbody tr').filter({ hasText: 'Wrong answer' })).toContainText('1');
   await expect(interaction.locator('tbody tr').filter({ hasText: 'Right answer' })).toContainText('1');
   await expect(interaction.locator('tbody tr').filter({ hasText: 'Right answer' })).toContainText('(correct)');
+
+  // Stats computed from the full attempt history.
+  await expect(interaction.getByText('First-try correct')).toBeVisible();
+  await expect(interaction.getByText('1 of 2')).toBeVisible(); // first-try correct: only Sally
+  await expect(interaction.getByText('Eventually correct')).toBeVisible();
+  await expect(interaction.getByText('2 of 2')).toBeVisible(); // both reach correct
+  await expect(interaction.getByText('1.5')).toBeVisible(); // 3 attempts / 2 learners
+
   await expect(interaction.getByRole('button', { name: 'Next' })).toHaveCount(0);
   await expect(interaction.getByText('Bud', { exact: true })).toHaveCount(0);
 

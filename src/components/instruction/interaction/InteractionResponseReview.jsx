@@ -35,37 +35,76 @@ function isChoiceSummaryType(type) {
   return normalized === 'multiple-choice' || normalized === 'multiple-select';
 }
 
-function buildChoiceSummary({ responses, interactionType, body }) {
+function isAttemptCorrect(attempt) {
+  return Number(attempt?.details?.percentCorrect) === 100;
+}
+
+// Summarizes a choice interaction from the FULL attempt history: the choice distribution is taken
+// from each learner's first attempt (revealing real misconceptions), alongside first-try and
+// eventual accuracy and average attempts.
+function buildChoiceSummary({ attempts, interactionType, body }) {
   const choiceLabels = parseChoiceLabels(body);
   const counts = choiceLabels.map((label, index) => ({ index, label: label || `Option ${index + 1}`, count: 0 }));
   const correct = new Set();
 
-  responses.forEach((response) => {
-    const details = response?.details || {};
-    (Array.isArray(details.correct) ? details.correct : []).forEach((index) => correct.add(index));
-    const selected = Array.isArray(details.selected) ? details.selected : [];
+  // Group attempts per learner (ascending by time) so we can read first/last and count tries.
+  const attemptsByUser = new Map();
+  attempts.forEach((attempt) => {
+    if (!attempt?.userId) return;
+    (Array.isArray(attempt?.details?.correct) ? attempt.details.correct : []).forEach((index) => correct.add(index));
+    const list = attemptsByUser.get(attempt.userId) || [];
+    list.push(attempt);
+    attemptsByUser.set(attempt.userId, list);
+  });
+
+  let firstTryCorrect = 0;
+  let eventuallyCorrect = 0;
+
+  attemptsByUser.forEach((list) => {
+    list.sort((a, b) => responseDate(a) - responseDate(b));
+    const firstAttempt = list[0];
+
+    const selected = Array.isArray(firstAttempt?.details?.selected) ? firstAttempt.details.selected : [];
     selected.forEach((index) => {
-      if (!Number.isInteger(index) || index < 0) {
-        return;
-      }
+      if (!Number.isInteger(index) || index < 0) return;
       while (counts.length <= index) {
         counts.push({ index: counts.length, label: `Option ${counts.length + 1}`, count: 0 });
       }
       counts[index].count += 1;
     });
+
+    if (isAttemptCorrect(firstAttempt)) firstTryCorrect += 1;
+    if (list.some(isAttemptCorrect)) eventuallyCorrect += 1;
   });
 
+  const totalLearners = attemptsByUser.size;
+
   return {
-    type: String(interactionType || responses[0]?.details?.type || '').toLowerCase(),
-    totalResponses: responses.length,
+    type: String(interactionType || attempts[0]?.details?.type || '').toLowerCase(),
+    totalLearners,
+    totalAttempts: attempts.length,
+    firstTryCorrect,
+    eventuallyCorrect,
     counts,
     correct,
   };
 }
 
-function ChoiceResponseSummary({ responses, interactionType, body, onRefresh, loading }) {
-  const summary = buildChoiceSummary({ responses, interactionType, body });
-  const denominator = Math.max(1, summary.totalResponses);
+function StatTile({ label, value, hint }) {
+  return (
+    <div className="rounded border border-indigo-100 bg-white px-3 py-2">
+      <div className="text-lg font-semibold tabular-nums text-gray-900">{value}</div>
+      <div className="text-xs font-medium text-gray-600">{label}</div>
+      {hint && <div className="text-[11px] text-gray-400">{hint}</div>}
+    </div>
+  );
+}
+
+function ChoiceResponseSummary({ attempts, interactionType, body, onRefresh, loading }) {
+  const summary = buildChoiceSummary({ attempts, interactionType, body });
+  const denominator = Math.max(1, summary.totalLearners);
+  const pct = (value) => Math.round((value / denominator) * 100);
+  const avgAttempts = summary.totalLearners > 0 ? (summary.totalAttempts / summary.totalLearners).toFixed(1) : '0';
 
   return (
     <div>
@@ -73,36 +112,40 @@ function ChoiceResponseSummary({ responses, interactionType, body, onRefresh, lo
         <div>
           <div className="font-semibold text-gray-900">Choice summary</div>
           <div className="text-xs text-gray-500">
-            {summary.totalResponses} response{summary.totalResponses === 1 ? '' : 's'}
+            {summary.totalLearners} learner{summary.totalLearners === 1 ? '' : 's'} · first attempt
           </div>
         </div>
         <button type="button" onClick={onRefresh} disabled={loading} aria-label="Refresh responses" title="Refresh responses" className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-50">
           <RefreshCw size={14} aria-hidden="true" />
         </button>
       </div>
+
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        <StatTile label="First-try correct" value={`${pct(summary.firstTryCorrect)}%`} hint={`${summary.firstTryCorrect} of ${summary.totalLearners}`} />
+        <StatTile label="Eventually correct" value={`${pct(summary.eventuallyCorrect)}%`} hint={`${summary.eventuallyCorrect} of ${summary.totalLearners}`} />
+        <StatTile label="Avg attempts" value={avgAttempts} hint={`${summary.totalAttempts} total`} />
+      </div>
+
       <div className="overflow-hidden rounded border border-indigo-100 bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-indigo-50 text-left text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-3 py-2 font-semibold">Choice</th>
-              <th className="w-28 px-3 py-2 text-right font-semibold">Count</th>
+              <th className="w-28 px-3 py-2 text-right font-semibold">First pick</th>
               <th className="w-28 px-3 py-2 text-right font-semibold">Percent</th>
             </tr>
           </thead>
           <tbody>
-            {summary.counts.map((choice) => {
-              const percent = Math.round((choice.count / denominator) * 100);
-              return (
-                <tr key={choice.index} className="border-t border-indigo-50">
-                  <td className="px-3 py-2 text-gray-800">
-                    {choice.label}
-                    {summary.correct.has(choice.index) && <span className="ml-2 text-green-700">(correct)</span>}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-gray-800">{choice.count}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-gray-600">{percent}%</td>
-                </tr>
-              );
-            })}
+            {summary.counts.map((choice) => (
+              <tr key={choice.index} className="border-t border-indigo-50">
+                <td className="px-3 py-2 text-gray-800">
+                  {choice.label}
+                  {summary.correct.has(choice.index) && <span className="ml-2 text-green-700">(correct)</span>}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums text-gray-800">{choice.count}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-gray-600">{pct(choice.count)}%</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -251,22 +294,36 @@ export default function InteractionResponseReview({ courseOps, courseId, topicId
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
   const [responses, setResponses] = React.useState([]);
+  // Full attempt history (every quizSubmit), used for the choice summary's first-attempt stats.
+  const [allAttempts, setAllAttempts] = React.useState([]);
   const [learnersById, setLearnersById] = React.useState(new Map());
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [hasLoaded, setHasLoaded] = React.useState(false);
 
   if (!canReview) return null;
 
+  // Page through every attempt so the first-attempt summary isn't truncated for a busy interaction.
+  async function fetchAllAttempts() {
+    const rows = [];
+    for (let page = 1; page <= 50; page += 1) {
+      const result = await courseOps.getProgress({ courseId, topicId, interactionId, types: ['quizSubmit'], page, limit: 1000 });
+      const data = Array.isArray(result?.data) ? result.data : [];
+      rows.push(...data);
+      if (!result?.hasMore || data.length === 0) break;
+    }
+    return rows;
+  }
+
   async function loadResponses() {
     setLoading(true);
     setError(null);
     try {
-      const [progressResult, learners] = await Promise.all([
-        courseOps.getProgress({ courseId, topicId, interactionId, types: ['quizSubmit'], limit: 1000 }),
+      const [attempts, learners] = await Promise.all([
+        fetchAllAttempts(),
         typeof courseOps.service?.getEnrolledUsersForCourse === 'function' ? courseOps.service.getEnrolledUsersForCourse(courseId).catch(() => []) : Promise.resolve([]),
       ]);
 
-      const latest = getLatestResponses(progressResult?.data || []);
+      const latest = getLatestResponses(attempts);
       const userMap = new Map((learners || []).map((learner) => [learner.id, learner]));
       latest.sort((a, b) => {
         const aLearner = userMap.get(a.userId);
@@ -275,6 +332,7 @@ export default function InteractionResponseReview({ courseOps, courseId, topicId
         const bLabel = bLearner?.name || bLearner?.email || b.userId;
         return String(aLabel).localeCompare(String(bLabel));
       });
+      setAllAttempts(attempts);
       setResponses(latest);
       setLearnersById(userMap);
       setSelectedIndex(0);
@@ -301,7 +359,7 @@ export default function InteractionResponseReview({ courseOps, courseId, topicId
   const learnerLabel = currentLearner?.name || currentLearner?.email || currentResponse?.userId || 'Unknown learner';
   const details = currentResponse?.details || {};
   const score = Number(details.percentCorrect);
-  const showChoiceSummary = responses.length > 0 && isChoiceSummaryType(interactionType || responses[0]?.details?.type);
+  const showChoiceSummary = allAttempts.length > 0 && isChoiceSummaryType(interactionType || allAttempts[0]?.details?.type);
 
   return (
     <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/50">
@@ -314,7 +372,7 @@ export default function InteractionResponseReview({ courseOps, courseId, topicId
           {loading && <div className="py-3 text-sm text-gray-600">Loading learner responses…</div>}
           {!loading && error && <div className="py-3 text-sm text-red-700">{error}</div>}
           {!loading && !error && responses.length === 0 && <div className="py-3 text-sm text-gray-600">No learner responses yet.</div>}
-          {!loading && !error && showChoiceSummary && <ChoiceResponseSummary responses={responses} interactionType={interactionType} body={body} onRefresh={loadResponses} loading={loading} />}
+          {!loading && !error && showChoiceSummary && <ChoiceResponseSummary attempts={allAttempts} interactionType={interactionType} body={body} onRefresh={loadResponses} loading={loading} />}
           {!loading && !error && !showChoiceSummary && currentResponse && (
             <div>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
