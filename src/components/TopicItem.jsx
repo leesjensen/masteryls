@@ -5,7 +5,15 @@ import { TopicIcon } from '../utils/Icons';
 import { completedInteractionIds } from '../utils/topicProgress';
 import { useNavigate } from 'react-router-dom';
 
-function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDateLabel = '' }) {
+// Left-border + tint accents that mirror the schedule's orange "today" / blue "next" row
+// highlighting. The orange/blue Tailwind tokens are remapped for dark mode in dark.css, so these
+// adapt automatically.
+const SCHEDULE_STATUS_STYLES = {
+  today: { className: 'border-l-2 border-orange-400 bg-orange-50 pl-1 rounded-sm', title: 'Covered in today’s session' },
+  next: { className: 'border-l-2 border-blue-400 bg-blue-50 pl-1 rounded-sm', title: 'Covered in the next session' },
+};
+
+function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDateLabel = '', scheduleStatus = '' }) {
   const navigate = useNavigate();
   const [progressMeter, setProgressMeter] = React.useState(null);
 
@@ -34,8 +42,10 @@ function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDate
     }
   }
 
+  const scheduleAccent = SCHEDULE_STATUS_STYLES[scheduleStatus];
+
   return (
-    <li className="mb-0.5 flex justify-between items-center group min-w-0 w-full">
+    <li className={`mb-0.5 flex justify-between items-center group min-w-0 w-full ${scheduleAccent ? scheduleAccent.className : ''}`.trim()} title={scheduleAccent?.title || undefined}>
       <div className="flex flex-row items-center min-w-0 w-full">
         {topic.state && topic.state !== 'published' && (
           <span className="text-xs text-white bg-gray-500 rounded px-1 mr-1 shrink-0" title={`This topic is in "${topic.state}" state`}>

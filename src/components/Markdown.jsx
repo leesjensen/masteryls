@@ -14,7 +14,7 @@ import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
 import { resolveMarkdownHref } from '../utils/resolveMarkdownHref';
-import { scheduleDateStatus, getNextScheduleDate, parseScheduleDisplayDate } from '../utils/scheduleMarkdown';
+import { getNextScheduleDate, scheduleRowStatus } from '../utils/scheduleMarkdown';
 import { StickyNote } from 'lucide-react';
 import { markdownSanitizeSchema, sanitizeInlineStyle } from './markdownSanitize';
 
@@ -244,14 +244,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
         const session = learningSessionRef.current;
         const isSchedule = session?.topic?.type === 'schedule';
         const dateText = isSchedule ? scheduleDateTextFromTableRow(node) : '';
-        let dateStatus = isSchedule ? scheduleDateStatus(dateText) : null;
-
-        if (dateStatus === 'future' && nextSessionTimeRef.current != null) {
-          const parsed = parseScheduleDisplayDate(dateText);
-          if (parsed && parsed.getTime() === nextSessionTimeRef.current) {
-            dateStatus = 'next';
-          }
-        }
+        const dateStatus = isSchedule ? scheduleRowStatus(dateText, nextSessionTimeRef.current) : null;
 
         const rowClassName = [className, dateStatus ? `schedule-row-${dateStatus}` : ''].filter(Boolean).join(' ');
 

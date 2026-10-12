@@ -19,7 +19,7 @@ import useClickOutside from '../hooks/useClickOutside';
  * @param {Object} props.topic - Topic data object for this item, should contain at least `title`, `type`, and `state`.
  * @param {Object} props.currentTopic - Currently selected/active topic object.
  */
-export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, course, topic, currentTopic, dueDateLabel = '' }) {
+export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, course, topic, currentTopic, dueDateLabel = '', scheduleStatus = '' }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
@@ -62,7 +62,7 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
       <div className="flex items-start justify-between gap-1 w-full min-w-0">
         <div className="flex flex-row flex-1 items-center min-w-0">
           <div className="flex flex-col min-w-0 w-full">
-            <TopicItem course={course} topic={topic} currentTopic={currentTopic} courseOps={courseOps} dueDateLabel={dueDateLabel} />
+            <TopicItem course={course} topic={topic} currentTopic={currentTopic} courseOps={courseOps} dueDateLabel={dueDateLabel} scheduleStatus={scheduleStatus} />
             {showEditForm && (
               <div ref={editorRef}>
                 <TopicForm topic={topic} onSubmit={handleSubmitForm} onCancel={() => setShowEditForm(false)} isLoading={isLoading} />

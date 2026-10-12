@@ -118,6 +118,24 @@ export function getNextScheduleDate(markdown, referenceDate = new Date()) {
   return next;
 }
 
+// The highlight status for a single schedule row, combining the plain past/today/future reading
+// from scheduleDateStatus with the single "next upcoming session" promotion. Callers that already
+// know the next session's time (computed once across all rows via getNextScheduleDate) pass it in
+// so a strictly-future row that matches it is reported as 'next' rather than 'future'. Shared by
+// the schedule table renderer and the table-of-contents so both label rows/topics identically.
+export function scheduleRowStatus(value, nextSessionTime = null, referenceDate = new Date()) {
+  const status = scheduleDateStatus(value, referenceDate);
+
+  if (status === 'future' && nextSessionTime != null) {
+    const parsed = parseScheduleDisplayDate(value, referenceDate);
+    if (parsed && parsed.getTime() === nextSessionTime) {
+      return 'next';
+    }
+  }
+
+  return status;
+}
+
 function scheduleDayToIso(value, endOfDay) {
   const raw = String(value || '').trim();
   if (!raw) {

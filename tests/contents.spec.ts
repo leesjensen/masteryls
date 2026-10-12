@@ -394,3 +394,52 @@ test('sidebar annotates topics with due dates from selected schedule', async ({ 
   await expect(page.getByText('Topic 1')).toBeVisible();
   await expect(page.getByText('Apr 4')).toBeVisible();
 });
+
+test('sidebar highlights topics covered today and next from selected schedule', async ({ page }) => {
+  await initBasicCourse({
+    page,
+    courseJsonOverride: {
+      schedule: {
+        id: 'a7db85a9-da40-4623-bce2-b99162b416f9',
+        files: [{ id: 'default', title: 'Winter', path: 'instruction/schedule/schedule.md', default: true, state: 'published' }],
+      },
+      modules: [
+        {
+          title: 'Module 1',
+          topics: [
+            { id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e', title: 'Home', path: 'README.md' },
+            { id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f', title: 'Topic 1', type: 'instruction', path: 'instruction/topic-1.md' },
+            { id: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f90', title: 'Topic 2', type: 'instruction', path: 'instruction/topic-2.md' },
+          ],
+        },
+      ],
+    },
+  });
+
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const context = page.context();
+  await context.route(/https:\/\/raw\.githubusercontent\.com\/.*\/instruction\/schedule\/schedule\.md$/, async (route: any) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/plain; charset=utf-8',
+      body: `# Winter 2026 Schedule\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   | ${iso(today)} | Intro |  | Topic 1 | |\n|  1   | ${iso(tomorrow)} | Intro |  | Topic 2 | |\n`,
+    });
+  });
+
+  await navigateToCourseNoLogin(page);
+
+  const topic1Row = page.getByRole('link', { name: 'Topic 1' }).locator('xpath=ancestor::li[1]');
+  const topic2Row = page.getByRole('link', { name: 'Topic 2' }).locator('xpath=ancestor::li[1]');
+
+  await expect(topic1Row).toHaveClass(/bg-orange-50/);
+  await expect(topic2Row).toHaveClass(/bg-blue-50/);
+
+  // The module heading reflects the strongest status among its topics ('today' wins over 'next').
+  const moduleHeading = page.getByRole('button', { name: 'Module 1' });
+  await expect(moduleHeading).toHaveClass(/text-orange-500/);
+  await expect(moduleHeading).toHaveClass(/font-bold/);
+});

@@ -7,7 +7,7 @@ import NewTopicButton from './NewTopicButton';
 import useClickOutside from '../hooks/useClickOutside';
 import ConfirmDialog from '../hooks/confirmDialog.jsx';
 
-function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible, dueDatesByTopicId = {} }) {
+function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible, dueDatesByTopicId = {}, topicStatusByTopicId = {} }) {
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [newTitle, setNewTitle] = React.useState(module.title || '');
@@ -17,6 +17,24 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
   React.useEffect(() => {
     setNewTitle(module.title || '');
   }, [module.title]);
+
+  // Surface the schedule's today/next highlight on the module heading too, so a collapsed module
+  // still signals it holds a topic covered now or next. 'today' wins over 'next'.
+  const moduleStatus = React.useMemo(() => {
+    let status = '';
+    for (const topic of module.topics || []) {
+      const topicStatus = topicStatusByTopicId[topic.id];
+      if (topicStatus === 'today') {
+        return 'today';
+      }
+      if (topicStatus === 'next') {
+        status = 'next';
+      }
+    }
+    return status;
+  }, [module.topics, topicStatusByTopicId]);
+
+  const moduleTitleAccent = moduleStatus === 'today' ? 'text-orange-500 font-bold' : moduleStatus === 'next' ? 'text-blue-500 font-bold' : 'text-gray-500 font-semibold';
 
   useClickOutside(editorRef, () => {
     setShowEditForm(false);
@@ -49,17 +67,18 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
 
   function getTopicItem(topic, topicIndex) {
     const dueDateLabel = dueDatesByTopicId[topic.id] || '';
+    const scheduleStatus = topicStatusByTopicId[topic.id] || '';
     if (editorVisible) {
-      return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} course={learningSession.course} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} dueDateLabel={dueDateLabel} />;
+      return <EditableTopicItem key={topic.id} id={topic.id} courseOps={courseOps} course={learningSession.course} topic={topic} topicIndex={topicIndex} moduleIndex={moduleIndex} currentTopic={currentTopic} editorVisible={editorVisible} dueDateLabel={dueDateLabel} scheduleStatus={scheduleStatus} />;
     }
-    return <TopicItem key={topic.id} course={learningSession.course} topic={topic} currentTopic={currentTopic} enrollment={learningSession.enrollment} courseOps={courseOps} dueDateLabel={dueDateLabel} />;
+    return <TopicItem key={topic.id} course={learningSession.course} topic={topic} currentTopic={currentTopic} enrollment={learningSession.enrollment} courseOps={courseOps} dueDateLabel={dueDateLabel} scheduleStatus={scheduleStatus} />;
   }
 
   return (
     <div>
       <li className="mb-1">
         <div className="flex items-center justify-between gap-1 min-w-0">
-          <button onClick={() => onToggle(moduleIndex)} className="no-underline text-gray-500 font-semibold bg-transparent border-none cursor-pointer p-0 flex flex-1 min-w-0 whitespace-nowrap overflow-hidden items-center" aria-expanded={isOpen} title={module.title}>
+          <button onClick={() => onToggle(moduleIndex)} className={`no-underline ${moduleTitleAccent} bg-transparent border-none cursor-pointer p-0 flex flex-1 min-w-0 whitespace-nowrap overflow-hidden items-center`} aria-expanded={isOpen} title={module.title}>
             <span className="mr-2 shrink-0" aria-hidden="true">{isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</span>
             <span className="truncate min-w-0">{module.title}</span>
           </button>

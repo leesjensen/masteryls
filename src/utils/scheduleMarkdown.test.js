@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildWeeks, calculateGraceDays, formatGraceDaysLine, parseCellItems, parseScheduleMarkdown, scheduleDateStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+import { buildWeeks, calculateGraceDays, formatGraceDaysLine, getNextScheduleDate, parseCellItems, parseScheduleMarkdown, scheduleDateStatus, scheduleRowStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
 
 test('scheduleDateBoundsToIso expands YYYY-MM-DD dates to inclusive start/end of day', () => {
   const bounds = scheduleDateBoundsToIso({ startDate: '2026-01-10', endDate: '2026-05-01' });
@@ -26,6 +26,23 @@ test('scheduleDateStatus identifies past today and future display dates', () => 
   assert.equal(scheduleDateStatus('Sep 9', referenceDate), 'today');
   assert.equal(scheduleDateStatus('2026-12-01', referenceDate), 'future');
   assert.equal(scheduleDateStatus('Date', referenceDate), null);
+});
+
+test('scheduleRowStatus promotes only the nearest future session to next', () => {
+  const referenceDate = new Date('2026-09-09T12:00:00');
+  const markdown = ['# Schedule', '', '| Week | Date | Module | Due | Topics Covered | Slides |', '| :--: | ---- | ------ | --- | -------------- | ------ |', '| 1 | Sep 9 | Intro |  | Variables |  |', '| 1 | Sep 11 | Intro |  | Loops |  |', '| 2 | Sep 16 | Intro |  | Functions |  |'].join('\n');
+  const nextSessionTime = getNextScheduleDate(markdown, referenceDate)?.getTime() ?? null;
+
+  assert.equal(scheduleRowStatus('Sep 9', nextSessionTime, referenceDate), 'today');
+  assert.equal(scheduleRowStatus('Sep 11', nextSessionTime, referenceDate), 'next');
+  assert.equal(scheduleRowStatus('Sep 16', nextSessionTime, referenceDate), 'future');
+  assert.equal(scheduleRowStatus('Tue Jan 6 2026', nextSessionTime, referenceDate), 'past');
+});
+
+test('scheduleRowStatus without a next session time never reports next', () => {
+  const referenceDate = new Date('2026-09-09T12:00:00');
+  assert.equal(scheduleRowStatus('Sep 11', null, referenceDate), 'future');
+  assert.equal(scheduleRowStatus('Sep 9', null, referenceDate), 'today');
 });
 
 test('calculateGraceDays treats Sundays as nonexistent', () => {

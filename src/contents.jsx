@@ -6,7 +6,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
-import { parseScheduleMarkdown } from './utils/scheduleMarkdown.js';
+import { parseScheduleMarkdown, getNextScheduleDate, scheduleRowStatus } from './utils/scheduleMarkdown.js';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, UserCheck, X } from 'lucide-react';
 
@@ -90,6 +90,9 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
   const [dueDatesByTopicId, setDueDatesByTopicId] = React.useState({});
+  // Maps a topic id to 'today' or 'next' when the schedule covers that topic on the current
+  // session or the next upcoming one, so the TOC can mirror the schedule's orange/blue highlight.
+  const [topicStatusByTopicId, setTopicStatusByTopicId] = React.useState({});
   const [optimisticModules, setOptimisticModules] = React.useState(null);
   const [isReordering, setIsReordering] = React.useState(false);
 
@@ -105,6 +108,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
       if (!learningSession?.course || !scheduleTopic || !selectedScheduleFile) {
         if (active) {
           setDueDatesByTopicId({});
+          setTopicStatusByTopicId({});
         }
         return;
       }
@@ -130,7 +134,28 @@ function Contents({ courseOps, learningSession, editorVisible }) {
         }
       });
 
+      // Resolve a schedule cell item (a due assignment or a covered topic) to a course topic id,
+      // preferring an explicit link target and falling back to a title match.
+      const resolveTopicId = (item) => {
+        const href = String(item?.href || '').trim();
+        const text = String(item?.text || '').trim();
+
+        if (href) {
+          const repoPath = resolveRelativeRepoPath(selectedScheduleFile.repoPath, href);
+          const byPath = topicByRepoPath.get(repoPath);
+          if (byPath) {
+            return byPath;
+          }
+        }
+
+        return (text && topicByTitle.get(text.toLowerCase())) || null;
+      };
+
       const dueMap = new Map();
+      // Promote the single nearest future session to 'next' using the same cross-row computation
+      // the schedule table renderer uses, so the TOC and the schedule agree on what "next" is.
+      const nextSessionTime = getNextScheduleDate(markdown || '')?.getTime() ?? null;
+      const statusMap = {};
       const rows = Array.isArray(model?.weeks) ? model.weeks : [];
       rows.forEach((row) => {
         const date = String(row?.date || '').trim();
@@ -140,19 +165,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
 
         const dueItems = Array.isArray(row?.dueItems) ? row.dueItems : [];
         dueItems.forEach((item) => {
-          const href = String(item?.href || '').trim();
-          const text = String(item?.text || '').trim();
-
-          let topicId = null;
-          if (href) {
-            const repoPath = resolveRelativeRepoPath(selectedScheduleFile.repoPath, href);
-            topicId = topicByRepoPath.get(repoPath) || null;
-          }
-
-          if (!topicId && text) {
-            topicId = topicByTitle.get(text.toLowerCase()) || null;
-          }
-
+          const topicId = resolveTopicId(item);
           if (!topicId) {
             return;
           }
@@ -166,6 +179,24 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             existing.push(date);
           }
         });
+
+        const rowStatus = scheduleRowStatus(date, nextSessionTime);
+        if (rowStatus !== 'today' && rowStatus !== 'next') {
+          return;
+        }
+
+        const covered = Array.isArray(row?.topicsCovered) ? row.topicsCovered : [];
+        covered.forEach((item) => {
+          const topicId = resolveTopicId(item);
+          if (!topicId) {
+            return;
+          }
+
+          // 'today' wins if a topic is covered on both today's and the next session's row.
+          if (rowStatus === 'today' || !statusMap[topicId]) {
+            statusMap[topicId] = rowStatus;
+          }
+        });
       });
 
       const nextDueDates = {};
@@ -177,11 +208,13 @@ function Contents({ courseOps, learningSession, editorVisible }) {
       });
 
       setDueDatesByTopicId(nextDueDates);
+      setTopicStatusByTopicId(statusMap);
     }
 
     syncDueDates().catch(() => {
       if (active) {
         setDueDatesByTopicId({});
+        setTopicStatusByTopicId({});
       }
     });
 
@@ -318,7 +351,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const moduleJsx = (
     <ul className="list-none p-0">
       {moduleMap.map((module, moduleIndex) => (
-        <ModuleSection key={moduleIndex} courseOps={courseOps} learningSession={learningSession} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={learningSession.topic} editorVisible={editorVisible} dueDatesByTopicId={dueDatesByTopicId} />
+        <ModuleSection key={moduleIndex} courseOps={courseOps} learningSession={learningSession} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={learningSession.topic} editorVisible={editorVisible} dueDatesByTopicId={dueDatesByTopicId} topicStatusByTopicId={topicStatusByTopicId} />
       ))}
     </ul>
   );
