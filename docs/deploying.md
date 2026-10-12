@@ -13,7 +13,7 @@ You can deploy your own installation of MasteryLS with two simple steps.
 
    **Note**: _The website must be hosted from the root of your domain (not a path on the domain) or the React page routing will not work correctly._
 
-   ![GitHub Actions](docs/githubActions.png)
+   ![GitHub Actions](githubActions.png)
 
 ## Step 2: Configure Supabase
 

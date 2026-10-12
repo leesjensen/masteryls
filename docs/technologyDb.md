@@ -12,3 +12,5 @@ The primary objects include:
 - **Enrollment** - Indicates a learner is participating in a course.
 - **Progress** - All of the actions a user has taken. This includes authentication events as well as enrollment and learning actions.
 - **Topic** - Search index for course content.
+- **Attendance** - Attendance sessions for a course. Each session holds a short check-in code and optional questions. Only course overseers can read these rows; learners check in through the `record_attendance` RPC, which writes a **progress** row of type `attendance` referencing the session.
+- **Log** - Generic append-only event log for key application events. Any registered user can write an entry; only root/editor users can read them back.
