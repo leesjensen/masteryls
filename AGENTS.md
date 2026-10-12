@@ -1,0 +1,112 @@
+# MasteryLS — AI Agent Context
+
+> **Purpose.** This file gives an AI agent (or a new engineer) enough context to work effectively in the MasteryLS codebase without re-deriving it from scratch. Read it first.
+>
+> **Keep this file current.** Any change that alters architecture, conventions, the data model, the testing/deploy workflow, major features, or directory layout **must update this file in the same change**. Treat it as part of "done." If you touch something described here and leave the description stale, the change is incomplete.
+
+---
+
+## What MasteryLS is
+
+MasteryLS is a web-based **learning management / mastery-learning platform**. Instructors author courses as Markdown (stored in GitHub), learners work through topics containing interactive **interactions** (multiple-choice, essays, AI-graded prompts, file/URL submissions, disciplinary-reasoning assessments, interviews, attendance, etc.), and progress/mastery is tracked per enrollment. It integrates with **Canvas** (gradebook, grace days, attendance) and uses the **Google Gemini** API for AI features (feedback, grading, content generation).
+
+Public site: `masteryls.com`. User-facing docs live in `docs/` (see that folder; the in-app **About** page renders the repo README + linked docs by fetching them from GitHub raw `main` at runtime).
+
+## Tech stack
+
+- **Frontend:** React 18 + React Router, Vite, Tailwind CSS, Monaco (editor), TipTap, lucide-react, react-markdown (+ remark/rehype plugins), Chart.js. PWA via `vite-plugin-pwa`.
+- **Backend:** **Supabase** (Postgres + Auth + Storage + Edge Functions). No custom server — the client talks to Supabase directly plus a set of Deno **edge functions** for privileged/aggregated operations.
+- **AI:** Google Gemini (via the `gemini` edge function and `src/ai/aiContentGenerator.js`). Model ids are defined in a few places — see `install/supabase/functions/gemini/index.ts` (`defaultModel`), `install/supabase/functions/githubgrade/handler.js`, and `src/service/service.ts` (image model).
+- **Course content:** authored in Markdown and loaded from **GitHub** repositories at runtime (`src/course.js`, `Course.load`).
+- **Tests:** Playwright (e2e, in `tests/`) and `node:test` unit tests (co-located `*.test.js` under `src/` and `install/supabase/functions/`).
+
+## Directory map (high-value paths)
+
+```
+AGENTS.md               this file — repo-root agent context (CLAUDE.md imports it for Claude Code)
+index.jsx, index.html, config.js / prod.config.js   app entry + config (config.js is gitignored; holds secrets)
+src/
+  app.jsx                 route table + top-level wiring (outlet context passes courseOps/user/etc.)
+  model.ts                User/Role/Catalog/Enrollment models; permissions: isRoot/isEditor/isMentor/canOverseeCourse
+  course.js               Course model; loads course content from GitHub
+  service/service.ts      the Supabase access layer (all DB/storage/edge-function/GitHub calls)
+  hooks/
+    useCourseOperations.jsx   the main "operations API" the UI calls (wraps service, adds logic)
+    useObserveSession.jsx     "observe a learner" mode
+    useProgressTracking.jsx   time-on-task / activity tracking
+    canvas/                   Canvas sync helpers (gradebook, attendance)
+  views/                  page-level screens: about, classroom, dashboard, masteryView, metrics,
+                          progress, courseCreation, courseExport, demoCourses
+  components/
+    instruction/          the interaction system (markdown-embedded `masteryls` blocks render here)
+      interaction/        per-type interaction UIs + InteractionResponseReview (teacher review)
+      dra/ interview/     disciplinary-reasoning & interview assessments
+    attendance/           attendance sessions (code check-in), admin/learner/history/chart
+    charts/               shared chart primitives (barChartSvg)
+    editor/               course/topic/schedule editing (Monaco-based)
+  utils/                  pure helpers (progressSummary, topicProgress, scheduleMarkdown, ...)
+  ai/aiContentGenerator.js  Gemini prompt construction + calls (via the gemini edge function)
+install/supabase/
+  schema.sql              the full DB schema: tables, indexes, RLS, policies, RPC functions
+  functions/<name>/       edge functions. Pattern: handler.js (pure, tested) + handler.test.js + index.ts (Deno wiring)
+tests/                    Playwright e2e specs + fixtures/testInit
+docs/                     user-facing documentation (per-doc subfolders holding their images)
+design/                   feature design notes
+```
+
+## Architecture & conventions
+
+- **Layering:** UI (`views`/`components`) → `useCourseOperations` (operations API) → `service.ts` (Supabase/edge/GitHub) → Supabase. Prefer adding logic to `useCourseOperations`/`service` rather than calling Supabase from components.
+- **Edge functions** handle privileged reads/writes and server-side aggregation. Each is split into a **pure `handler.js`** (unit-tested with a mock Supabase client) and a thin **`index.ts`** that wires Deno + the real client. Add tests to the handler, not the wiring. Examples: `masteryoverview` (course roster), `canvasgradebook`, `githubgrade` (AI grading), `gemini`, `progressrecord`.
+- **Permissions** come from `model.ts`: `isRoot()`, `isEditor(courseId)`, `isMentor(courseId)`, `canOverseeCourse(courseId)` (root OR editor OR mentor). "Overseer" = can view/manage a course's learners.
+- **Interactions** are authored as fenced ```masteryls code blocks inside topic Markdown; `src/components/instruction/` parses and renders them by `type`.
+- **Single source of truth for derived metrics.** Mastery/time/completion are derived from the enrollment's progress blob by **`src/utils/progressSummary.js` (`deriveProgressSummary`)** — on the client, which has the course structure. Do **not** add a second implementation (e.g., server-side) that can drift; that drift was a real bug. If the server must restrict data, do it on stable columns (e.g., `enrollment.createdAt`), not on recomputed values.
+
+## Data model essentials (gotchas)
+
+- **`enrollment.progress` is a cached JSON rollup**, not the source of truth for history. It can be stale (mastery was intentionally moved to runtime derivation to avoid a write race). The **`progress` table is an append-only event log** — every attempt/action is its own row with `createdAt` and `details`. "First attempt vs latest attempt" summaries read the full `progress` history.
+- **MasteryView roster** (`src/views/masteryView/`) fetches a *trimmed* per-enrollment blob from the `masteryoverview` edge function and does **sorting, filtering, and pagination entirely client-side** (so display and ordering always share one computation path). A single-learner drill-down request returns the *full* blob. The "Enrolled between" filter restricts the roster server-side by `enrollment.createdAt`.
+- **Attendance** uses a dedicated `attendance` table + Postgres **RPCs** (`open_attendance`, `close_attendance`, `record_attendance`, `attendance_sessions`) under RLS; a check-in writes a `progress` row of type `attendance` referencing the session.
+- **Course content** is not in the DB — it's Markdown pulled from GitHub. The `topic` table is only a full-text search index.
+
+## Testing
+
+Commands (see `package.json`):
+- `npm run test:unit` — node unit tests (`src/**/*.test.js`), pure logic.
+- `npm run test:edge-auth` — edge-function handler tests (`install/supabase/functions/**`).
+- `npm test` — Playwright e2e (`tests/`). Needs the dev server/browsers; specs mock Supabase/GitHub via route interception (`tests/testInit`, `tests/fixtures`).
+- `npm run build` — `vite build`; use it as an integration smoke check for client changes.
+
+**Expected workflow (not optional):**
+- While developing a feature, **run the tests relevant to what you're touching** (the unit/handler test for the logic, the matching Playwright spec for the UI) and keep them green as you go.
+- On **completion of a feature, run the full suite** (`test:unit`, `test:edge-auth`, and the Playwright specs, plus `vite build`) before considering it done.
+- **New features and bug fixes should add/adjust tests** that raise confidence and guard against regression. Edge-function logic → handler test; pure helpers → `*.test.js`; user-facing behavior → Playwright spec. When a fix is prompted by a bug, add the test that would have caught it.
+
+## Deployment notes
+
+- **Edge functions must be deployed** to take effect (they run on the hosted Supabase project, not from the local tree): `supabase functions deploy <name> --project-ref <ref>`. Changing a `handler.js` without deploying does nothing in production.
+- **Schema changes** (`install/supabase/schema.sql`) — tables/indexes/RLS/RPCs — must be applied to the database separately.
+- **Client/server contract changes ship together.** If an edge function's request/response shape changes, deploy it with the client release that depends on it; there is no backward-compat window unless you build one.
+- The in-app **About page reads docs from GitHub `main` at runtime**, so doc/README path changes only take effect once merged to `main`, and relative image paths in a doc resolve relative to that doc's location in the repo.
+
+## Working principles (how to make changes here)
+
+- **Good design & patterns.** Favor clear, well-factored solutions over quick hacks. Respect the existing layering (UI → operations hook → service → Supabase) and the pure-handler/thin-wiring split for edge functions.
+- **Modularity & clear organization.** Keep responsibilities separated; put pure logic in `utils/` (testable) and keep components focused. Reuse existing helpers (e.g., `deriveProgressSummary`, `scheduleMarkdown`) instead of re-implementing. Avoid duplicated computation paths that can drift.
+- **Testing raises confidence.** Treat coverage as a feature: add tests that make new behavior safe to change and catch regressions. Run relevant tests during development and the full suite at feature completion (see Testing).
+- **Suggest alternatives.** Don't just execute the literal request — when a cleaner design, a better-scaling approach, or a simpler path exists, surface it (with a recommendation) before or alongside doing the work. Flag tradeoffs the requester may not have considered.
+- **Backward compatibility.** When changing existing code, data shapes, APIs, edge-function contracts, or the DB schema, consider existing data and callers. Prefer additive/compatible changes; when a breaking change is warranted, say so explicitly and coordinate the pieces (client + edge function + schema) that must change together.
+- **Keep this file updated.** Reflect any architectural, data-model, workflow, feature, or layout change here as part of the same change.
+
+## Quick reference — if you're looking for…
+
+- Permissions / roles → `src/model.ts`
+- The operations a feature calls → `src/hooks/useCourseOperations.jsx`
+- Raw Supabase/edge/GitHub calls → `src/service/service.ts`
+- Mastery/progress math → `src/utils/progressSummary.js`, `src/utils/topicProgress.js`
+- Course roster screen → `src/views/masteryView/`
+- Interaction rendering/authoring → `src/components/instruction/`
+- Teacher review of responses → `src/components/instruction/interaction/InteractionResponseReview.jsx`
+- DB schema / RLS / RPCs → `install/supabase/schema.sql`
+- AI prompts/calls → `src/ai/aiContentGenerator.js` and the `gemini`/`githubgrade` edge functions
+- User docs → `docs/` (each doc in its own subfolder with its images)
