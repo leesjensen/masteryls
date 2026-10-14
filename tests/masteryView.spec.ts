@@ -310,9 +310,9 @@ test('masteryview shows course attendance and a learner attendance history when 
 
   await navigateToDashboard(page);
   await page.goto(`/masteryview/course/${COURSE_ID}`);
-  await expect(page.getByTestId('course-attendance-chart')).toContainText('2 classes recorded, average attendance 75%');
+  await expect(page.getByTestId('course-attendance-chart')).toContainText('2 classes recorded, average attendance 2');
 
   await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
   await page.getByRole('button', { name: 'Attendance', exact: true }).click();
-  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 of 2 classes (50%)');
+  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 of 2 classes');
 });

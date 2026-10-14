@@ -113,8 +113,14 @@ html.window-blurred .markdown-body ::selection {
     }
   }
 
+  /* `backwards` (not `both`) so the `from` state still applies during the
+     staggered delay, but once the animation finishes each block reverts to its
+     natural state with no lingering `transform: translateY(0)`. A non-`none`
+     transform would create a permanent stacking context on every top-level
+     block, which made markdown content paint above absolutely-positioned
+     siblings outside it (e.g. the note Copy button in the discussion panel). */
   .markdown-body > * {
-    animation: md-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: md-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
 
   .markdown-body > *:nth-child(1) {
