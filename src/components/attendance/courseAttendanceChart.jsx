@@ -1,10 +1,10 @@
 import React from 'react';
 import BarChartSvg from '../charts/barChartSvg.jsx';
 
-// Course-wide attendance rate (attendees / enrolled learners) for each session over time. Used by
-// the instructor Attendance view and the MasteryView course overview. Pass sessions/enrolledCount
-// to render already loaded data, otherwise they are loaded for courseId.
-export default function CourseAttendanceChart({ courseOps, courseId, sessions: providedSessions, enrolledCount: providedEnrolledCount }) {
+// Course-wide attendee counts for each session over time. Used by the instructor Attendance view
+// and the MasteryView course overview. Pass sessions to render already loaded data, otherwise they
+// are loaded for courseId.
+export default function CourseAttendanceChart({ courseOps, courseId, sessions: providedSessions }) {
   const [loaded, setLoaded] = React.useState(null);
   const [error, setError] = React.useState(null);
   const provided = Array.isArray(providedSessions);
@@ -26,14 +26,12 @@ export default function CourseAttendanceChart({ courseOps, courseId, sessions: p
   }, [courseId, provided]);
 
   const sessions = provided ? providedSessions : loaded?.sessions;
-  const enrolledCount = provided ? providedEnrolledCount : loaded?.enrolledCount;
 
   if (error) return <div className="text-sm text-red-600">Unable to load attendance: {error}</div>;
   if (!sessions) return <div className="text-sm text-gray-500 py-4 text-center">Loading attendance...</div>;
   if (sessions.length === 0) return <div className="text-sm text-gray-500 py-4 text-center">No attendance has been taken yet.</div>;
 
   const dateGroups = sessions.map((session) => {
-    const percent = enrolledCount > 0 ? Math.round((session.attendeeCount / enrolledCount) * 100) : 0;
     const label = new Date(session.openedAt).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
@@ -41,8 +39,8 @@ export default function CourseAttendanceChart({ courseOps, courseId, sessions: p
     return {
       day: session.id,
       ts: new Date(session.openedAt).getTime(),
-      count: percent,
-      title: `${label}: ${session.attendeeCount} of ${enrolledCount} learners (${percent}%)`,
+      count: session.attendeeCount,
+      title: `${label}: ${session.attendeeCount} present`,
     };
   });
   const average = Math.round(dateGroups.reduce((sum, group) => sum + group.count, 0) / dateGroups.length);
@@ -50,9 +48,9 @@ export default function CourseAttendanceChart({ courseOps, courseId, sessions: p
   return (
     <div data-testid="course-attendance-chart">
       <div className="text-sm text-gray-700 mb-2">
-        {sessions.length} class{sessions.length !== 1 ? 'es' : ''} recorded, average attendance <strong>{average}%</strong>
+        {sessions.length} class{sessions.length !== 1 ? 'es' : ''} recorded, average attendance <strong>{average}</strong>
       </div>
-      <BarChartSvg dateGroups={dateGroups} maxValue={100} yTicks={[25, 50, 75, 100]} formatTick={(tick) => `${tick}%`} yLabel="Attendance" color="#10b981" ariaLabel="Course attendance chart" showTime />
+      <BarChartSvg dateGroups={dateGroups} yLabel="Attendees" unit="attendee" color="#10b981" ariaLabel="Course attendance chart" showTime />
     </div>
   );
 }

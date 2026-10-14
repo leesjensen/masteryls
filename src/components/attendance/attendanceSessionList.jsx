@@ -4,7 +4,7 @@ import AttendanceResponses from './attendanceResponses.jsx';
 import { formatSessionDate } from './attendanceUtils.js';
 
 // Attendance sessions, newest first. Selecting one shows who checked in and their answers.
-export default function AttendanceSessionList({ courseOps, courseId, sessions, enrolledCount }) {
+export default function AttendanceSessionList({ courseOps, courseId, sessions }) {
   const [selectedId, setSelectedId] = React.useState(null);
   const ordered = [...sessions].sort((a, b) => new Date(b.openedAt) - new Date(a.openedAt));
 
@@ -23,7 +23,7 @@ export default function AttendanceSessionList({ courseOps, courseId, sessions, e
                 {!session.closedAt && <span className="text-xs font-semibold text-emerald-600">Open</span>}
               </span>
               <span className="text-gray-600">
-                {session.attendeeCount} / {enrolledCount} present
+                {session.attendeeCount} present
               </span>
             </button>
             {selected && (

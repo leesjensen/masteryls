@@ -6,7 +6,6 @@ const COUNT_REFRESH_MS = 5000;
 // projected for the class. Refreshes the check-in count while open.
 export default function AttendanceCodeOverlay({ courseOps, session, onClose }) {
   const [attendeeCount, setAttendeeCount] = React.useState(0);
-  const [enrolledCount, setEnrolledCount] = React.useState(null);
   const [closing, setClosing] = React.useState(false);
 
   React.useEffect(() => {
@@ -18,7 +17,6 @@ export default function AttendanceCodeOverlay({ courseOps, session, onClose }) {
         const current = result.sessions.find((candidate) => candidate.id === session.id);
         if (!cancelled) {
           setAttendeeCount(current?.attendeeCount || 0);
-          setEnrolledCount(result.enrolledCount);
         }
       } catch {
         // Keep showing the last count; the next refresh will try again.
@@ -53,8 +51,7 @@ export default function AttendanceCodeOverlay({ courseOps, session, onClose }) {
         </div>
       ))}
       <div className="text-lg text-gray-700">
-        <strong>{attendeeCount}</strong>
-        {enrolledCount != null && ` of ${enrolledCount}`} checked in
+        <strong>{attendeeCount}</strong> checked in
       </div>
       <button type="button" onClick={close} disabled={closing} className="px-6 py-3 rounded-md text-white font-semibold bg-red-600 hover:bg-red-700 disabled:bg-gray-300">
         {closing ? 'Closing...' : 'Close attendance'}

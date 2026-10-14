@@ -85,10 +85,10 @@ export default function AttendanceAdmin({ courseOps, course }) {
 
         <div className="rounded-md border border-gray-200 bg-white p-4">
           <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Attendance over time</div>
-          {summary ? <CourseAttendanceChart courseOps={courseOps} courseId={course.id} sessions={summary.sessions} enrolledCount={summary.enrolledCount} /> : <div className="text-sm text-gray-500">Loading attendance...</div>}
+          {summary ? <CourseAttendanceChart courseOps={courseOps} courseId={course.id} sessions={summary.sessions} /> : <div className="text-sm text-gray-500">Loading attendance...</div>}
         </div>
 
-        {summary && <AttendanceSessionList courseOps={courseOps} courseId={course.id} sessions={summary.sessions} enrolledCount={summary.enrolledCount} />}
+        {summary && <AttendanceSessionList courseOps={courseOps} courseId={course.id} sessions={summary.sessions} />}
       </div>
     </div>
   );

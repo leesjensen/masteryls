@@ -33,7 +33,6 @@ export default function AttendanceHistory({ courseOps, course, userId, refreshKe
   if (history.length === 0) return <div className="text-sm text-gray-500 py-4 text-center">No attendance has been taken yet.</div>;
 
   const attended = history.filter((entry) => entry.present).length;
-  const percent = Math.round((attended / history.length) * 100);
   const gradeSettings = getAttendanceGradeSettings(course);
 
   const dateGroups = history.map(({ session, present }) => {
@@ -54,7 +53,7 @@ export default function AttendanceHistory({ courseOps, course, userId, refreshKe
     <div data-testid="attendance-history">
       <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-2">
         <span>
-          Attended <strong>{attended}</strong> of <strong>{history.length}</strong> classes ({percent}%)
+          Attended <strong>{attended}</strong> of <strong>{history.length}</strong> classes
         </span>
         {gradeSettings && (
           <span>

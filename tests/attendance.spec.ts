@@ -190,7 +190,7 @@ test('an editor takes attendance with a question and reviews the responses', asy
   await expect(overlay).toBeVisible();
   await expect(overlay.getByLabel('Attendance code value')).toHaveText(CODE);
   await expect(overlay).toContainText('How are things going?');
-  await expect(overlay).toContainText('1 of 3 checked in');
+  await expect(overlay).toContainText('1 checked in');
   expect(state.sessions[0].questions).toEqual([
     {
       id: 'q1',
@@ -203,9 +203,9 @@ test('an editor takes attendance with a question and reviews the responses', asy
   await overlay.getByRole('button', { name: 'Close attendance' }).click();
   await expect(overlay).toHaveCount(0);
 
-  await expect(page.getByTestId('course-attendance-chart')).toContainText('average attendance 33%');
+  await expect(page.getByTestId('course-attendance-chart')).toContainText('average attendance 1');
   const sessionList = page.getByTestId('attendance-session-list');
-  await expect(sessionList).toContainText('1 / 3 present');
+  await expect(sessionList).toContainText('1 present');
   await sessionList.getByRole('button').first().click();
   const responses = page.getByTestId('attendance-responses');
   await expect(responses).toContainText('Bud');
@@ -274,7 +274,7 @@ test('a learner checks in with the class code, answers the question, and sees th
     p_code: CODE,
     p_answers: { q1: 'Good' },
   });
-  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 of 1 classes (100%)');
+  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 of 1 classes');
   await expect(page.getByTestId('attendance-history')).toContainText('Points: 2 / 80');
 
   await expect.poll(() => gradePosts.length).toBe(1);
