@@ -214,7 +214,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
               </button>
             </div>
           )}
-          <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
+          <div className={`markdown-body mx-auto max-w-[880px] p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
         </div>
       )}
 
