@@ -49,6 +49,9 @@
   --md-schedule-head-bg: #bfdbfe;
   --md-schedule-head-text: #1e40af;
   --md-schedule-head-border: #60a5fa;
+  /* blue list bullets: solid dot + soft number chip */
+  --md-bullet: #2563eb;
+  --md-bullet-soft: #dbeafe;
   /* elevation */
   --md-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
   --md-shadow-md: 0 4px 12px -2px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.06);
@@ -346,9 +349,8 @@ html.window-blurred .markdown-body ::selection {
   padding-left: 1.6em;
 }
 
-/* Unordered lists echo the ordered chips: a small accent dot with a faint
-   accent halo. Nested levels switch to a hollow ring for hierarchy. Task lists
-   keep their checkboxes untouched. */
+/* Unordered lists use a small, solid accent dot. Nested levels switch to a
+   hollow ring for hierarchy. Task lists keep their checkboxes untouched. */
 .markdown-body ul:not(.contains-task-list) {
   list-style: none;
 }
@@ -360,19 +362,18 @@ html.window-blurred .markdown-body ::selection {
 .markdown-body ul:not(.contains-task-list) > li::before {
   content: '';
   position: absolute;
-  left: -1.3em;
-  top: 0.58em;
-  width: 0.45em;
-  height: 0.45em;
+  left: -1.35em;
+  top: 0.56em;
+  width: 0.55em;
+  height: 0.55em;
   border-radius: 999px;
-  background: var(--md-accent);
-  box-shadow: 0 0 0 0.16em var(--md-accent-soft);
+  background: var(--md-bullet);
 }
 
-/* Nested bullets: a hollow accent ring. */
+/* Nested bullets: a hollow blue ring. */
 .markdown-body ul:not(.contains-task-list) ul:not(.contains-task-list) > li::before {
   background: transparent;
-  box-shadow: inset 0 0 0 0.12em var(--md-accent);
+  box-shadow: inset 0 0 0 0.12em var(--md-bullet);
 }
 
 /* Ordered lists get gradient number "chips" instead of plain decimals, so steps
@@ -393,17 +394,22 @@ html.window-blurred .markdown-body ::selection {
   content: counter(md-ol);
   position: absolute;
   left: -2.4em;
-  top: 0.1em;
+  /* Vertically centre the chip on the item's first text line. */
+  top: 0.35em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.6em;
-  height: 1.6em;
-  padding: 0 0.4em;
+  box-sizing: border-box;
+  min-width: 1.4em;
+  height: 1.4em;
+  /* A hair of top padding pushes the digit down to optical centre: numerals
+     have no descenders, so flex-centring the line box leaves them sitting high
+     in a round badge. */
+  padding: 0.06em 0.35em 0;
   border-radius: 999px;
-  background: var(--md-accent-soft);
-  color: var(--md-accent);
-  font-size: 0.74em;
+  background: var(--md-bullet-soft);
+  color: var(--md-bullet);
+  font-size: 0.72em;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;

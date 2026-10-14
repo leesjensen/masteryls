@@ -286,6 +286,9 @@ html.dark .markdown-body {
   --md-schedule-head-bg: oklch(42% 0.09 262);
   --md-schedule-head-text: oklch(90% 0.05 262);
   --md-schedule-head-border: oklch(55% 0.12 262);
+  /* blue list bullets — brighter so they read on the dark surface */
+  --md-bullet: oklch(72% 0.15 262);
+  --md-bullet-soft: oklch(45% 0.12 262);
   /* code block card */
   --md-pre-bg: var(--mls-snippet-bg);
   --md-pre-bar-bg: oklch(27% 0.01 264);
@@ -296,10 +299,9 @@ html.dark .markdown-body {
   ::placeholder { color: var(--mls-md-muted); }
   .absent { color: var(--mls-fg-red); }
 
-  /* The ordered-list number chip's faint accent tint composites too dark over
-     the near-black page; lift it so it reads as a light pill, not a dark blob. */
+  /* The ordered-list number chip's blue pill composites too dark over the
+     near-black page; keep the digit near-white so it reads on the lifted blue. */
   ol > li::before {
-    background: color-mix(in srgb, var(--md-accent) 42%, transparent);
     color: oklch(96% 0.01 264);
   }
 
