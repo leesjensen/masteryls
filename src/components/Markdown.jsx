@@ -279,7 +279,18 @@ export default function Markdown({ learningSession, content, languagePlugins = [
 
       img({ node, src, ...props }) {
         const resolvedSrc = src && !src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('/') ? resolveTopicUrlRef.current(src) : src;
-        return <img src={resolvedSrc} {...props} />;
+        return (
+          <img
+            src={resolvedSrc}
+            {...props}
+            onClick={(e) => {
+              // A linked image (`[![alt](img)](href)`) should follow its link, so only open the
+              // image itself when it isn't wrapped in an anchor.
+              if (e.target.closest('a') || !resolvedSrc) return;
+              window.open(resolvedSrc, '_blank', 'noopener,noreferrer');
+            }}
+          />
+        );
       },
 
       // Custom link handler for internal navigation

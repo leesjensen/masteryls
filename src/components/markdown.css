@@ -54,7 +54,12 @@
   --md-pre-bar-bg: #f2f3f7;
   --md-pre-border: #e4e7ec;
 
-  font-family: 'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family:
+    'Quicksand',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
   font-size: 16px;
   line-height: 1.55;
   color: var(--md-fg);
@@ -112,13 +117,27 @@ html.window-blurred .markdown-body ::selection {
     animation: md-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .markdown-body > *:nth-child(1) { animation-delay: 0.02s; }
-  .markdown-body > *:nth-child(2) { animation-delay: 0.07s; }
-  .markdown-body > *:nth-child(3) { animation-delay: 0.12s; }
-  .markdown-body > *:nth-child(4) { animation-delay: 0.17s; }
-  .markdown-body > *:nth-child(5) { animation-delay: 0.22s; }
-  .markdown-body > *:nth-child(6) { animation-delay: 0.27s; }
-  .markdown-body > *:nth-child(n + 7) { animation-delay: 0.3s; }
+  .markdown-body > *:nth-child(1) {
+    animation-delay: 0.02s;
+  }
+  .markdown-body > *:nth-child(2) {
+    animation-delay: 0.07s;
+  }
+  .markdown-body > *:nth-child(3) {
+    animation-delay: 0.12s;
+  }
+  .markdown-body > *:nth-child(4) {
+    animation-delay: 0.17s;
+  }
+  .markdown-body > *:nth-child(5) {
+    animation-delay: 0.22s;
+  }
+  .markdown-body > *:nth-child(6) {
+    animation-delay: 0.27s;
+  }
+  .markdown-body > *:nth-child(n + 7) {
+    animation-delay: 0.3s;
+  }
 }
 
 /* --- Headings: tight, bold, crisp rule under the top two levels --------- */
@@ -215,7 +234,9 @@ html.window-blurred .markdown-body ::selection {
   background-size: 0% 1.5px;
   background-position: 0 100%;
   background-repeat: no-repeat;
-  transition: background-size 0.28s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+  transition:
+    background-size 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.2s ease;
 }
 
 .markdown-body a:hover {
@@ -280,12 +301,19 @@ html.window-blurred .markdown-body ::selection {
   border-radius: 12px;
   border: 1px solid var(--md-border);
   box-shadow: var(--md-shadow-md);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease;
 }
 
 .markdown-body img:hover {
   transform: translateY(-3px);
   box-shadow: var(--md-shadow-lg);
+}
+
+/* A linked image follows its link, so keep the link cursor rather than zoom-in. */
+.markdown-body a img {
+  cursor: pointer;
 }
 
 .markdown-body kbd {
@@ -541,7 +569,9 @@ html.window-blurred .markdown-body ::selection {
   color: var(--md-fg);
   box-shadow: var(--md-shadow-sm);
   overflow: hidden;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease;
 }
 
 /* Gradient accent rail down the left edge. */
@@ -691,7 +721,11 @@ html.window-blurred .markdown-body ::selection {
    subtle lift and shadow on hover, a press-down on click, and a brand focus
    ring. Each button keeps its own colour and corner radius. */
 .markdown-body [data-plugin-masteryls-root] button {
-  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .markdown-body [data-plugin-masteryls-root] button:not(:disabled):hover {
