@@ -5,7 +5,6 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { markdownSanitizeSchema } from '../../components/markdownSanitize';
-import 'github-markdown-css/github-markdown-light.css';
 import '../../components/markdown.css';
 
 const readmeUrl = 'https://github.com/leesjensen/masteryls/blob/main/README.md';

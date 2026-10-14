@@ -1,102 +1,696 @@
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap');
+
+/* ==========================================================================
+   MasteryLS rendered course content (`.markdown-body`).
+
+   A self-contained "technical docs" stylesheet (think Stripe / Tailwind docs):
+   crisp hairlines, compact rhythm, boxed callouts, framed code and a rounded,
+   zebra-striped table frame. It replaces github-markdown-css entirely, so
+   everything the renderer emits is styled here rather than inherited.
+
+   Colours are driven by the `--md-*` tokens below. Light values live here;
+   dark.css re-points the same tokens under `html.dark .markdown-body`, so the
+   structural rules never need a dark-specific copy.
+
+   Fenced code blocks with a language are rendered by react-syntax-highlighter
+   (its own inline theme, dark-handled in dark.css §7), so they are intentionally
+   left for that renderer; the rules here cover inline code and the surrounding
+   prose, tables and callouts.
+   ========================================================================== */
 
 .markdown-body {
-  font-family: 'Quicksand', sans-serif;
-}
-.markdown-body ul {
-  list-style: disc;
+  /* text */
+  --md-fg: #24292f;
+  --md-muted: #636c76;
+  --md-heading: #1c2128;
+  --md-link: #0969da;
+  --md-link-hover: #0a4a9a;
+  /* lines + surfaces */
+  --md-border: #e4e7ec;
+  --md-border-strong: #d4d8df;
+  --md-quote-bar: #d4d8df;
+  /* inline code */
+  --md-code-fg: #24292f;
+  --md-code-bg: #f1f3f5;
+  --md-code-border: #e2e5ea;
+  /* tables */
+  --md-table-head-bg: #f6f7f9;
+  --md-table-stripe: #fafbfc;
+  /* search highlight */
+  --md-mark-bg: #fff3b8;
+  /* text selection when the window is inactive (mirrors the browser default) */
+  --md-selection-inactive: #c9ccd1;
+  /* brand accent (headings, links, ornaments) */
+  --md-accent: #4f46e5;
+  --md-accent-2: #0ea5e9;
+  --md-accent-soft: color-mix(in srgb, var(--md-accent) 14%, transparent);
+  /* elevation */
+  --md-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  --md-shadow-md: 0 4px 12px -2px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.06);
+  --md-shadow-lg: 0 18px 40px -12px rgba(16, 24, 40, 0.22);
+  /* code block surface */
+  --md-pre-bg: #fbfbfd;
+  --md-pre-bar-bg: #f2f3f7;
+  --md-pre-border: #e4e7ec;
+
+  font-family: 'Quicksand', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--md-fg);
+  background: transparent;
+  word-wrap: break-word;
+  -webkit-text-size-adjust: 100%;
+  /* Quicksand renders noticeably cleaner with smoothing on. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
+/* Brand-tinted text selection inside rendered content. */
+.markdown-body ::selection {
+  background: color-mix(in srgb, var(--md-accent) 24%, transparent);
+  color: var(--md-fg);
+}
+
+/* When the window loses focus, fall back to a neutral grey like the browser
+   default (index.jsx toggles `window-blurred` on <html>). */
+html.window-blurred .markdown-body ::selection {
+  background: var(--md-selection-inactive);
+  color: var(--md-fg);
+}
+
+.markdown-body * {
+  box-sizing: border-box;
+}
+
+.markdown-body > *:first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-body > *:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* --- Entrance choreography ----------------------------------------------
+   Top-level blocks rise and fade in on mount, lightly staggered, so a topic
+   assembles itself like a polished landing page rather than snapping in.
+   Fully disabled under prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes md-rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .markdown-body > * {
+    animation: md-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .markdown-body > *:nth-child(1) { animation-delay: 0.02s; }
+  .markdown-body > *:nth-child(2) { animation-delay: 0.07s; }
+  .markdown-body > *:nth-child(3) { animation-delay: 0.12s; }
+  .markdown-body > *:nth-child(4) { animation-delay: 0.17s; }
+  .markdown-body > *:nth-child(5) { animation-delay: 0.22s; }
+  .markdown-body > *:nth-child(6) { animation-delay: 0.27s; }
+  .markdown-body > *:nth-child(n + 7) { animation-delay: 0.3s; }
+}
+
+/* --- Headings: tight, bold, crisp rule under the top two levels --------- */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 1.6em 0 0.6em;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.011em;
+  color: var(--md-heading);
+}
+
+.markdown-body h1 {
+  position: relative;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding-bottom: 0.4em;
+  margin-top: 0.2em;
+}
+
+/* Gradient accent rule under the page title — sits on top of a faint full-width
+   hairline for a framed, intentional masthead. */
+.markdown-body h1::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--md-border);
+}
+
+.markdown-body h1::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 3.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--md-accent), var(--md-accent-2));
+}
+
+.markdown-body h2 {
+  font-size: 1.5rem;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--md-border);
+}
+
+/* A short accent tick before each H2 gives sections a crisp, docs-site anchor. */
+.markdown-body h2::before {
+  content: '';
+  display: inline-block;
+  width: 0.55rem;
+  height: 1.05em;
+  margin-right: 0.55rem;
+  vertical-align: -0.16em;
+  border-radius: 3px;
+  background: linear-gradient(180deg, var(--md-accent), var(--md-accent-2));
+}
+
+.markdown-body h3 {
+  font-size: 1.2rem;
+}
+
+.markdown-body h4 {
+  font-size: 1.02rem;
+}
+
+.markdown-body h5 {
+  font-size: 0.9rem;
+}
+
+.markdown-body h6 {
+  font-size: 0.85rem;
+  color: var(--md-muted);
+}
+
+/* --- Text blocks -------------------------------------------------------- */
+.markdown-body p {
+  margin: 0 0 1rem;
+}
+
+.markdown-body a {
+  color: var(--md-link);
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.28s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+}
+
+.markdown-body a:hover {
+  color: var(--md-link-hover);
+  background-size: 100% 1.5px;
+}
+
+/* Links that wrap an image shouldn't draw a sweep line under the picture. */
+.markdown-body a:has(> img) {
+  background-image: none;
+}
+
+.markdown-body strong {
+  font-weight: 700;
+}
+
+.markdown-body em {
+  font-style: italic;
+}
+
+.markdown-body del {
+  color: var(--md-muted);
+}
+
+.markdown-body sub,
+.markdown-body sup {
+  font-size: 0.75em;
+}
+
+.markdown-body hr {
+  position: relative;
+  height: 1px;
+  margin: 2.5rem 0;
+  border: 0;
+  overflow: visible;
+  background: linear-gradient(90deg, transparent, var(--md-border-strong) 18%, var(--md-border-strong) 82%, transparent);
+}
+
+.markdown-body hr::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 2px;
+  background: linear-gradient(135deg, var(--md-accent), var(--md-accent-2));
+  box-shadow: 0 0 0 4px var(--md-bg, transparent);
+}
+
+.markdown-body mark {
+  background: var(--md-mark-bg);
+  color: inherit;
+  padding: 0 0.12em;
+  border-radius: 3px;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid var(--md-border);
+  box-shadow: var(--md-shadow-md);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+
+.markdown-body img:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--md-shadow-lg);
+}
+
+.markdown-body kbd {
+  display: inline-block;
+  padding: 0.1em 0.45em;
+  font-family: 'Fira Code', ui-monospace, monospace;
+  font-size: 0.8em;
+  line-height: 1.4;
+  color: var(--md-code-fg);
+  background: var(--md-code-bg);
+  border: 1px solid var(--md-code-border);
+  border-radius: 6px;
+  box-shadow: inset 0 -1px 0 var(--md-border-strong);
+}
+
+/* --- Lists -------------------------------------------------------------- */
+.markdown-body ul,
 .markdown-body ol {
-  list-style: decimal;
+  margin: 0 0 1rem;
+  padding-left: 1.6em;
 }
 
-.markdown-body code {
-  font-family: 'Fira Code', 'Courier New', Courier, monospace;
+/* Unordered lists echo the ordered chips: a small accent dot with a faint
+   accent halo. Nested levels switch to a hollow ring for hierarchy. Task lists
+   keep their checkboxes untouched. */
+.markdown-body ul:not(.contains-task-list) {
+  list-style: none;
+}
+
+.markdown-body ul:not(.contains-task-list) > li {
+  position: relative;
+}
+
+.markdown-body ul:not(.contains-task-list) > li::before {
+  content: '';
+  position: absolute;
+  left: -1.3em;
+  top: 0.58em;
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: 999px;
+  background: var(--md-accent);
+  box-shadow: 0 0 0 0.16em var(--md-accent-soft);
+}
+
+/* Nested bullets: a hollow accent ring. */
+.markdown-body ul:not(.contains-task-list) ul:not(.contains-task-list) > li::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 0.12em var(--md-accent);
+}
+
+/* Ordered lists get gradient number "chips" instead of plain decimals, so steps
+   in a procedure read as distinct, clickable-looking stages. Built with a CSS
+   counter so nesting and arbitrary digit counts just work. */
+.markdown-body ol {
+  list-style: none;
+  counter-reset: md-ol;
+  padding-left: 2.4em;
+}
+
+.markdown-body ol > li {
+  position: relative;
+  counter-increment: md-ol;
+}
+
+.markdown-body ol > li::before {
+  content: counter(md-ol);
+  position: absolute;
+  left: -2.4em;
+  top: 0.1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6em;
+  height: 1.6em;
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: var(--md-accent-soft);
+  color: var(--md-accent);
+  font-size: 0.74em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.markdown-body li {
+  margin: 0.25em 0;
+}
+
+.markdown-body li > ul,
+.markdown-body li > ol {
+  margin: 0.25em 0;
+}
+
+/* GFM task lists */
+.markdown-body ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.3em;
+}
+
+.markdown-body li.task-list-item {
+  list-style: none;
+}
+
+.markdown-body li.task-list-item input[type='checkbox'] {
+  margin: 0 0.5em 0 0;
+  vertical-align: middle;
+}
+
+/* --- Inline code -------------------------------------------------------- */
+.markdown-body code,
+.markdown-body tt {
+  font-family: 'Fira Code', ui-monospace, 'Courier New', Courier, monospace;
+  font-size: 0.88em;
+  color: var(--md-code-fg);
+  background: var(--md-code-bg);
+  border: 1px solid var(--md-code-border);
+  border-radius: 6px;
+  padding: 0.12em 0.36em;
+}
+
+/* Code inside a fenced block is painted by its own renderer; strip the inline
+   pill treatment so it doesn't draw a band behind every line. */
+.markdown-body pre code,
+.markdown-body pre tt {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Fenced code blocks are rendered inside a `.md-codeblock` card (see
+   HighlightedText.jsx) with a window-chrome header. The live renderer also
+   wraps that card in a transparent <pre>; neutralise its frame so the card
+   stands alone, and give any bare <pre> (About page, raw HTML) a matching
+   card as a fallback.
+
+   `masteryls` interaction blocks are *also* fenced, so they too arrive wrapped
+   in a <pre>. They bring their own card (InteractionCard), so their wrapper is
+   neutralised alongside the code-block one — otherwise the fallback below would
+   draw a second box around the interaction. */
+.markdown-body pre:has(.md-codeblock),
+.markdown-body pre:has([data-plugin-masteryls-root]) {
+  margin: 0 0 1.25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.markdown-body pre:not(:has(.md-codeblock)):not(:has([data-plugin-masteryls-root])) {
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: var(--md-pre-bg);
+  border: 1px solid var(--md-pre-border);
+  border-radius: 12px;
+  box-shadow: var(--md-shadow-sm);
+  overflow-x: auto;
+}
+
+.markdown-body .md-codeblock {
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--md-pre-border);
+  border-radius: 12px;
+  background: var(--md-pre-bg);
+  box-shadow: var(--md-shadow-md);
+  overflow: hidden;
+}
+
+.markdown-body .md-codeblock-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.45rem;
+  background: var(--md-pre-bar-bg);
+  border-bottom: 1px solid var(--md-pre-border);
+}
+
+.markdown-body .md-codeblock-icon {
+  flex: none;
+  color: var(--md-muted);
+}
+
+.markdown-body .md-codeblock-lang {
+  font-family: 'Fira Code', ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--md-muted);
+}
+
+/* Keep the copy control from inflating the compact header. */
+.markdown-body .md-codeblock-bar button {
+  padding: 0.22rem;
+}
+
+/* The copy control (CopyToClipboard position="inline") is the bar's last child;
+   push it to the far right. */
+.markdown-body .md-codeblock-bar > :last-child {
+  margin-left: auto;
+}
+
+.markdown-body .md-codeblock > div:last-child {
+  overflow-x: auto;
 }
 
 .markdown-body div[data-plugin-masteryls-root] {
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Quicksand', system-ui, sans-serif;
 }
 
-/* GitHub-style alert styling */
-.markdown-alert {
-  padding: 0.5rem 1rem;
-  margin-bottom: 1rem;
-  border-left: 0.25rem solid;
+/* --- Blockquotes -------------------------------------------------------- */
+.markdown-body blockquote {
+  position: relative;
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.2rem 0.9rem 1.5rem;
+  color: var(--md-muted);
+  background: color-mix(in srgb, var(--md-accent) 4%, transparent);
+  border: 1px solid var(--md-border);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-.markdown-alert-note {
-  color: #0969da;
-  border-left-color: #0969da;
+.markdown-body blockquote::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--md-accent), var(--md-accent-2));
 }
 
-.markdown-alert-tip {
-  color: #1a7f37;
-  border-left-color: #1a7f37;
+.markdown-body blockquote > *:last-child {
+  margin-bottom: 0;
 }
 
-.markdown-alert-important {
-  color: #8250df;
-  border-left-color: #8250df;
+/* --- GitHub-style alerts: fully boxed callouts with an accent -----------
+   Each type sets `--alert` to its accent; the box, title and a faint fill all
+   derive from it. dark.css re-points `--alert` to the brighter dark accents. */
+.markdown-body .markdown-alert {
+  --alert: var(--md-border-strong);
+  position: relative;
+  margin: 0 0 1.25rem;
+  padding: 0.95rem 1.15rem 0.95rem 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--alert) 42%, var(--md-border));
+  border-radius: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--alert) 11%, transparent), color-mix(in srgb, var(--alert) 5%, transparent));
+  color: var(--md-fg);
+  box-shadow: var(--md-shadow-sm);
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
 }
 
-.markdown-alert-warning {
-  color: #9a6700;
-  border-left-color: #9a6700;
+/* Gradient accent rail down the left edge. */
+.markdown-body .markdown-alert::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--alert), color-mix(in srgb, var(--alert) 55%, #ffffff));
 }
 
-.markdown-alert-caution {
-  color: #d1242f;
-  border-left-color: #d1242f;
+.markdown-body .markdown-alert:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-shadow-md);
 }
 
-.markdown-alert-title {
+.markdown-body .markdown-alert > *:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body .markdown-alert-note {
+  --alert: #0969da;
+}
+
+.markdown-body .markdown-alert-tip {
+  --alert: #1a7f37;
+}
+
+.markdown-body .markdown-alert-important {
+  --alert: #8250df;
+}
+
+.markdown-body .markdown-alert-warning {
+  --alert: #9a6700;
+}
+
+.markdown-body .markdown-alert-caution {
+  --alert: #d1242f;
+}
+
+.markdown-body .markdown-alert-title {
   display: flex;
-  font-weight: 600;
   align-items: center;
+  gap: 0.55rem;
   line-height: 1;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--alert);
 }
 
-.markdown-alert-title .octicon {
-  margin-right: 0.5rem;
+/* The alert's octicon sits in a soft tinted chip for a product-grade header. */
+.markdown-body .markdown-alert-title .octicon {
+  box-sizing: content-box;
   display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  padding: 0.3rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--alert) 18%, transparent);
   overflow: visible !important;
-  vertical-align: text-bottom;
-  fill: currentColor;
+  fill: var(--alert);
 }
 
-.markdown-body pre {
-  padding: 0.5rem;
-  font-size: 1rem;
-}
-
-/* Keep markdown tables unwrapped and horizontally scrollable. */
+/* --- Tables: rounded, framed, zebra-striped ----------------------------- */
+/* The live renderer wraps tables in `.markdown-table-scroll`; the frame + the
+   rounded corners live on that wrapper so overflow scrolling clips cleanly.
+   Bare tables (e.g. static export) fall back to a square self-border. */
 .markdown-body .markdown-table-scroll {
   width: 100%;
+  margin: 0 0 1.25rem;
   overflow-x: auto;
   overflow-y: hidden;
+  border: 1px solid var(--md-border-strong);
+  border-radius: 12px;
+  box-shadow: var(--md-shadow-md);
 }
 
-.markdown-body .markdown-table-scroll table {
+.markdown-body table {
   width: max-content;
   min-width: 100%;
+  margin: 0 0 1.25rem;
+  border-collapse: collapse;
+  border: 1px solid var(--md-border-strong);
+  border-radius: 12px;
+  font-size: 0.92rem;
+}
+
+.markdown-body .markdown-table-scroll > table {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.markdown-body thead th {
+  background: linear-gradient(180deg, var(--md-table-head-bg), color-mix(in srgb, var(--md-table-head-bg) 60%, var(--md-bg, #fff)));
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  color: var(--md-muted);
+  border-bottom: 2px solid var(--md-border-strong);
 }
 
 .markdown-body th,
 .markdown-body td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--md-border);
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
 }
 
-/* The [data-schedule-date-status] attribute selector is tacked on purely to out-specificity
-   github-markdown-css's `.markdown-body table tr:nth-child(2n)` zebra striping - without it,
-   the stripe's background wins on even rows and the highlight silently disappears every other
-   row. */
+.markdown-body tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown-body tbody tr:nth-child(2n) {
+  background: var(--md-table-stripe);
+}
+
+.markdown-body tbody tr {
+  transition: background-color 0.18s ease;
+}
+
+.markdown-body tbody tr:hover {
+  background: var(--md-accent-soft);
+}
+
+/* --- Footnotes (GFM) ---------------------------------------------------- */
+.markdown-body .footnotes {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--md-border);
+  font-size: 0.85rem;
+  color: var(--md-muted);
+}
+
+/* ==========================================================================
+   Schedule highlighting (unchanged).
+
+   The [data-schedule-date-status] attribute selector out-specifies the zebra
+   stripe above so the highlight survives on even rows; the matching dark
+   values live in dark.css.
+   ========================================================================== */
 .markdown-body tr.schedule-row-past[data-schedule-date-status] {
   background: #f8fafc;
   color: #64748b;
@@ -173,4 +767,22 @@
   line-height: 1.25;
   text-transform: uppercase;
   vertical-align: middle;
+}
+
+/* ==========================================================================
+   Accessibility: honour reduced-motion by stilling every entrance animation,
+   transition and hover transform the stylesheet adds.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .markdown-body *,
+  .markdown-body *::before,
+  .markdown-body *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .markdown-body img:hover,
+  .markdown-body .markdown-alert:hover {
+    transform: none !important;
+  }
 }

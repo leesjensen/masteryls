@@ -6,7 +6,6 @@ import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
-import 'github-markdown-css/github-markdown-light.css';
 import './markdown.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';

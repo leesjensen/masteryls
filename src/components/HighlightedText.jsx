@@ -1,4 +1,5 @@
 import React from 'react';
+import { Code2 } from 'lucide-react';
 import CopyToClipboard from './CopyToClipboard';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { ghcolors } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -92,18 +93,29 @@ export function renderHighlightedCodeBlock(codeText, language, searchTerms, prop
   };
 
   return (
-    <div style={{ position: 'relative' }}>
-      <CopyToClipboard text={codeText} />
+    <div className="md-codeblock">
+      <div className="md-codeblock-bar">
+        <Code2 size={13} className="md-codeblock-icon" aria-hidden="true" />
+        {language ? <span className="md-codeblock-lang">{language}</span> : null}
+        <CopyToClipboard text={codeText} position="inline" />
+      </div>
       <SyntaxHighlighter
         language={language}
         style={ghcolors}
         PreTag="div"
         wrapLongLines
         customStyle={{
-          margin: 0, // optional: removes default margin that can mess with layout
+          margin: 0,
+          background: 'transparent', // the .md-codeblock card supplies the surface (and dark bg)
+          border: 0,
+          padding: '0.85rem 1.1rem',
+          fontSize: '0.9rem',
+          lineHeight: 1.5,
         }}
         codeTagProps={{
           style: {
+            background: 'transparent',
+            fontFamily: "'Fira Code', ui-monospace, 'Courier New', monospace",
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word', // wrap long words/tokens
             overflowWrap: 'anywhere', // extra help for super-long tokens

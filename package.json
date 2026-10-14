@@ -44,7 +44,6 @@
     "@tiptap/react": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
     "chart.js": "^4.5.0",
-    "github-markdown-css": "^5.8.1",
     "lucide-react": "^0.563.0",
     "playwright": "^1.55.0",
     "react": "^19.1.1",

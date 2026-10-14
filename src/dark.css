@@ -253,67 +253,58 @@ html.dark {
 /* --------------------------------------------------------------------------
    5. Rendered course content (`.markdown-body`).
 
-   This part of the page is github-markdown-css, which predates the variable
-   approach and hard-codes its light hex values, so each one needs an
-   explicit override. The replacements follow GitHub's own dark theme.
+   markdown.css styles the content structurally through `--md-*` tokens with
+   light values. Dark mode is just those tokens re-pointed here (mostly to the
+   shared `--mls-md-*`/`--mls-fg-*` palette), so the structural rules need no
+   dark-specific copy. Only the few things tokens can't express — the search
+   mark, the per-type alert accents and the schedule-row highlight — are set
+   explicitly below.
    -------------------------------------------------------------------------- */
 html.dark .markdown-body {
   color-scheme: dark;
-  color: var(--mls-md-fg);
-  background-color: transparent;
 
-  a { color: var(--mls-md-link); }
-  h1, h2 { border-bottom-color: var(--mls-md-border); }
-  h6 { color: var(--mls-md-muted); }
-  hr { background-color: var(--mls-md-border); border-bottom-color: var(--mls-md-border); }
-  blockquote { color: var(--mls-md-muted); border-left-color: var(--mls-md-border); }
-  mark { background-color: oklch(40% 0.09 86); color: var(--mls-md-fg); }
+  --md-fg: var(--mls-md-fg);
+  --md-muted: var(--mls-md-muted);
+  --md-heading: var(--mls-md-fg);
+  --md-link: var(--mls-md-link);
+  --md-link-hover: var(--mls-md-link);
+  --md-border: var(--mls-md-border);
+  --md-border-strong: oklch(38% 0.012 264);
+  --md-quote-bar: var(--mls-md-border);
+  --md-code-fg: var(--mls-md-fg);
+  --md-code-bg: var(--mls-md-code-bg);
+  --md-code-border: oklch(38% 0.010 264);
+  --md-table-head-bg: var(--mls-md-code-bg);
+  --md-table-stripe: oklch(100% 0 0 / 0.03);
+  --md-mark-bg: oklch(40% 0.09 86);
+  --md-selection-inactive: oklch(42% 0.008 264);
+  /* brand accent — brighter for dark surfaces */
+  --md-accent: oklch(74% 0.14 280);
+  --md-accent-2: oklch(76% 0.12 230);
+  --md-accent-soft: color-mix(in srgb, var(--md-accent) 20%, transparent);
+  /* code block card */
+  --md-pre-bg: var(--mls-snippet-bg);
+  --md-pre-bar-bg: oklch(27% 0.01 264);
+  --md-pre-border: var(--mls-snippet-border);
+  /* page background, used by ornament rings and header gradients */
+  --md-bg: var(--color-gray-50);
+
   ::placeholder { color: var(--mls-md-muted); }
   .absent { color: var(--mls-fg-red); }
 
-  code, tt { background-color: oklch(70% 0.02 264 / 0.18); }
-  pre, .highlight pre { color: var(--mls-md-fg); background-color: var(--mls-md-code-bg); }
-  kbd { color: var(--mls-md-fg); background-color: var(--mls-md-code-bg); border-color: var(--mls-md-border); box-shadow: inset 0 -1px 0 var(--mls-md-border); }
+  /* The ordered-list number chip's faint accent tint composites too dark over
+     the near-black page; lift it so it reads as a light pill, not a dark blob. */
+  ol > li::before {
+    background: color-mix(in srgb, var(--md-accent) 42%, transparent);
+    color: oklch(96% 0.01 264);
+  }
 
-  table tr { background-color: transparent; border-top-color: var(--mls-md-border); }
-  table tr:nth-child(2n) { background-color: oklch(100% 0 0 / 0.03); }
-  table th, table td { border-color: var(--mls-md-border); }
-  .csv-data .blob-num { background: transparent; }
-  .csv-data th { background: var(--mls-md-code-bg); }
-
-  span.frame > span { border-color: var(--mls-md-border); }
-  span.frame span span { color: var(--mls-md-fg); }
-  h1 .octicon-link, h2 .octicon-link, h3 .octicon-link,
-  h4 .octicon-link, h5 .octicon-link, h6 .octicon-link { color: var(--mls-md-fg); }
-
-  .footnotes { color: var(--mls-md-muted); border-top-color: var(--mls-md-border); }
-  .footnotes li:target { color: var(--mls-md-fg); }
-  .footnotes li:target::before { border-color: var(--mls-md-link); }
-
-  .markdown-alert { border-left-color: var(--mls-md-border); }
-  .markdown-alert-note, .markdown-alert-note .markdown-alert-title { border-left-color: var(--mls-fg-blue); color: var(--mls-fg-blue); }
-  .markdown-alert-important, .markdown-alert-important .markdown-alert-title { border-left-color: var(--mls-fg-purple); color: var(--mls-fg-purple); }
-  .markdown-alert-warning, .markdown-alert-warning .markdown-alert-title { border-left-color: var(--mls-fg-amber); color: var(--mls-fg-amber); }
-  .markdown-alert-tip, .markdown-alert-tip .markdown-alert-title { border-left-color: var(--mls-fg-green); color: var(--mls-fg-green); }
-  .markdown-alert-caution, .markdown-alert-caution .markdown-alert-title { border-left-color: var(--mls-fg-red); color: var(--mls-fg-red); }
-
-  /* Syntax highlighting — GitHub's dark token colours. */
-  .pl-c, .pl-ba, .pl-sg { color: #8b949e; }
-  .pl-c1, .pl-s .pl-v, .pl-ent { color: #79c0ff; }
-  .pl-e, .pl-en, .pl-mdr { color: #d2a8ff; }
-  .pl-smi, .pl-s .pl-s1, .pl-mi, .pl-mb { color: #c9d1d9; }
-  .pl-k { color: #ff7b72; }
-  .pl-s, .pl-pds, .pl-s .pl-pse .pl-s1,
-  .pl-sr, .pl-sr .pl-sre, .pl-sr .pl-sra, .pl-corl { color: #a5d6ff; }
-  .pl-v, .pl-smw, .pl-ml { color: #ffa657; }
-  .pl-bu { color: #f85149; }
-  .pl-c2 { color: #f0f6fc; background-color: #8e1519; }
-  .pl-sr .pl-cce { color: #7ee787; }
-  .pl-mh, .pl-mh .pl-en, .pl-ms { color: #79c0ff; }
-  .pl-md { color: #ffa198; background-color: #490202; }
-  .pl-mi1 { color: #aff5b4; background-color: #04260f; }
-  .pl-mc { color: #ffdfb6; background-color: #5a1e02; }
-  .pl-mi2 { color: #c9d1d9; background-color: #1158c7; }
+  /* Alert accents — brighter dark-mode hues for the box, title and fill. */
+  .markdown-alert-note { --alert: var(--mls-fg-blue); }
+  .markdown-alert-important { --alert: var(--mls-fg-purple); }
+  .markdown-alert-warning { --alert: var(--mls-fg-amber); }
+  .markdown-alert-tip { --alert: var(--mls-fg-green); }
+  .markdown-alert-caution { --alert: var(--mls-fg-red); }
 
   /* The [data-schedule-date-status] attribute selector is tacked on purely to out-specificity
      the `table tr:nth-child(2n)` zebra stripe above - without it, the stripe's background wins
@@ -388,27 +379,17 @@ html.dark code[style*="background"]:not([style*="transparent"]) {
   color: var(--mls-md-fg) !important;
 }
 
-/* Fenced blocks tagged with a language are rendered by
-   react-syntax-highlighter, configured with a *light* Prism theme (`cse`) that
-   it applies as inline styles — a white slab with a pale grey border.
-
-   The library only labels the markup when the caller leaves `codeTagProps`
-   alone; MasteryLS passes its own, so both the wrapper and the `<code>` come
-   out with no class at all. The slab therefore has to be recognised by the two
-   inline declarations the theme always writes: `background-color: white` (the
-   keyword survives serialisation) and the `1px solid #dddddd` border. */
-html.dark [class*="language-"][style],
-html.dark div[style*="background-color: white"][style*="border: 1px solid rgb(221, 221, 221)"] {
-  background-color: var(--mls-snippet-bg) !important;
-  border-color: var(--mls-snippet-border) !important;
+/* Fenced code blocks are rendered by react-syntax-highlighter inside the
+   `.md-codeblock` card (HighlightedText.jsx + markdown.css). The card supplies
+   the dark surface via the `--md-pre-*` tokens in section 5, and the syntax
+   highlighter's inner slab is set transparent inline, so here we only keep its
+   text legible and clear the per-line code fill that section 5's
+   `.markdown-body code` would otherwise paint behind each line. */
+html.dark .markdown-body .md-codeblock [class*="language-"] {
   color: var(--mls-snippet-fg) !important;
 }
 
-/* That `<code>` is inline, not a block, so section 5's `.markdown-body code`
-   fill painted a band behind each line of text instead of filling the slab.
-   Inside a snippet the slab supplies the background, so clear it. */
-html.dark [class*="language-"][style] > code,
-html.dark div[style*="background-color: white"][style*="border: 1px solid rgb(221, 221, 221)"] > code {
+html.dark .markdown-body .md-codeblock [class*="language-"] > code {
   background: none !important;
   padding: 0 !important;
 }

@@ -10,6 +10,16 @@ import { registerSW } from 'virtual:pwa-register';
 const container = document.getElementById('root');
 const root = createRoot(container);
 
+// Mirror the window's focus state onto <html> so CSS can grey out custom text
+// selection when the window is inactive (the default ::selection does this for
+// free, but a custom ::selection colour overrides it in Blink/WebKit).
+function syncWindowFocusClass() {
+  document.documentElement.classList.toggle('window-blurred', !document.hasFocus());
+}
+window.addEventListener('focus', syncWindowFocusClass);
+window.addEventListener('blur', syncWindowFocusClass);
+syncWindowFocusClass();
+
 // Show a loading page if loading the app is delayed
 root.render(null);
 const loadingTimer = setTimeout(() => {
