@@ -45,6 +45,10 @@
   --md-accent: #4f46e5;
   --md-accent-2: #0ea5e9;
   --md-accent-soft: color-mix(in srgb, var(--md-accent) 14%, transparent);
+  /* blue, for the locked schedule header — flat solid colours */
+  --md-schedule-head-bg: #bfdbfe;
+  --md-schedule-head-text: #1e40af;
+  --md-schedule-head-border: #60a5fa;
   /* elevation */
   --md-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
   --md-shadow-md: 0 4px 12px -2px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.06);
@@ -709,6 +713,39 @@ html.window-blurred .markdown-body ::selection {
 
 .markdown-body tbody tr:hover {
   background: var(--md-accent-soft);
+}
+
+/* --- Schedule tables: header row stays locked while scrolling ----------- */
+/* A wrapper that scrolls horizontally forces overflow-y to a scroll container
+   too, which would trap a sticky <thead> inside it. Schedule tables instead
+   drop the wrapper clipping so the header pins against the reading-pane scroll
+   container. Because the wrapper no longer clips, its own frame would sit at
+   the container's width and cut a stray vertical line across the wider,
+   horizontally-scrolled table - so the frame moves onto the table itself,
+   which is only as wide as its content. A collapsed-border table can't round
+   its corners, so this is a clean square frame. */
+.markdown-body .markdown-table-scroll--sticky-head {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.markdown-body .markdown-table-scroll--sticky-head > table {
+  border: 1px solid var(--md-border-strong);
+  box-shadow: var(--md-shadow-md);
+}
+
+.markdown-body .markdown-table-scroll--sticky-head > table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* A flat sky header so the locked row stays distinct from the light grey
+     "past" rows it scrolls over, with a sky hairline for separation. */
+  background: var(--md-schedule-head-bg);
+  color: var(--md-schedule-head-text);
+  border-bottom: 2px solid var(--md-schedule-head-border);
+  box-shadow: 0 1px 0 var(--md-schedule-head-border);
 }
 
 /* --- Footnotes (GFM) ---------------------------------------------------- */

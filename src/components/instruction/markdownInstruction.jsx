@@ -29,6 +29,10 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const location = useLocation();
   const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
   const canDiscuss = user && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule';
+  // Schedule tables read best edge-to-edge: drop the centered reading-column cap
+  // so a wide schedule fills the available width and large screens avoid
+  // horizontal scrolling. Other topic prose keeps the comfortable 880px measure.
+  const isSchedule = learningSession?.topic?.type === 'schedule';
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -214,7 +218,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
               </button>
             </div>
           )}
-          <div className={`markdown-body mx-auto max-w-[880px] p-4 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
+          <div className={`markdown-body p-4 transition-all duration-300 ease-in-out ${isSchedule ? 'w-full' : 'mx-auto max-w-[880px]'} ${isLoading ? 'opacity-0 bg-black' : 'opacity-100 bg-transparent'}`}>{markdownComponent}</div>
         </div>
       )}
 

@@ -199,6 +199,27 @@ test('a stale in-flight schedule fetch cannot silently overwrite a newer explici
   await expect(page.locator('select').first()).toHaveValue('joe');
 });
 
+test('schedule table keeps its header row locked while scrolling', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
+  installScheduleRoutes(page);
+
+  await navigateToCourse(page);
+  await page.getByText('Schedule').click();
+
+  // The schedule table wrapper opts out of overflow clipping so the sticky
+  // header can pin against the reading-pane scroll container.
+  const wrapper = page.locator('.markdown-table-scroll--sticky-head');
+  await expect(wrapper).toBeVisible();
+
+  const headerCell = wrapper.locator('thead th').first();
+  await expect(headerCell).toHaveCSS('position', 'sticky');
+
+  // Schedules drop the centered 880px reading-column cap so the table fills the
+  // full width and wide screens avoid horizontal scrolling.
+  const body = page.locator('[data-editor-preview-scroll-container] .markdown-body');
+  await expect(body).toHaveCSS('max-width', 'none');
+});
+
 test('schedule form editor commits and can create additional schedule files', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
   const { schedulePuts } = installScheduleRoutes(page);

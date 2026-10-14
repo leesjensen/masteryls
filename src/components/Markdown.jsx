@@ -233,8 +233,13 @@ export default function Markdown({ learningSession, content, languagePlugins = [
       h6: createHighlightedComponent('h6', searchTerms),
       li: createHighlightedComponent('li', searchTerms),
       table({ node, children, ...props }) {
+        // Schedule tables get a sticky header row: the wrapper drops its own
+        // overflow clipping (see markdown.css) so the <thead> can pin against
+        // the reading-pane scroll container as the learner scrolls the schedule.
+        const isSchedule = learningSessionRef.current?.topic?.type === 'schedule';
+        const wrapperClass = `markdown-table-scroll${isSchedule ? ' markdown-table-scroll--sticky-head' : ''}`;
         return (
-          <div className="markdown-table-scroll" role="region" aria-label="Scrollable table">
+          <div className={wrapperClass} role="region" aria-label="Scrollable table">
             <table {...props}>{children}</table>
           </div>
         );
