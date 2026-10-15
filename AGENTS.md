@@ -38,6 +38,9 @@ src/
   views/                  page-level screens: about, classroom, dashboard, masteryView, metrics,
                           progress, courseCreation, courseExport, demoCourses
   components/
+    Markdown.jsx            live react-markdown renderer for topic content (click-to-open images, schedule-aware sticky-header tables, code-block cards)
+    MarkdownStatic.jsx      static/export renderer (server-rendered HTML, e.g. Canvas pages)
+    markdown.css            self-contained token-based (`--md-*`) prose styles; replaced github-markdown-css
     instruction/          the interaction system (markdown-embedded `masteryls` blocks render here)
       interaction/        per-type interaction UIs + InteractionResponseReview (teacher review)
       dra/ interview/     disciplinary-reasoning & interview assessments
@@ -60,6 +63,7 @@ design/                   feature design notes
 - **Edge functions** handle privileged reads/writes and server-side aggregation. Each is split into a **pure `handler.js`** (unit-tested with a mock Supabase client) and a thin **`index.ts`** that wires Deno + the real client. Add tests to the handler, not the wiring. Examples: `masteryoverview` (course roster), `canvasgradebook`, `githubgrade` (AI grading), `gemini`, `progressrecord`.
 - **Permissions** come from `model.ts`: `isRoot()`, `isEditor(courseId)`, `isMentor(courseId)`, `canOverseeCourse(courseId)` (root OR editor OR mentor). "Overseer" = can view/manage a course's learners.
 - **Interactions** are authored as fenced ```masteryls code blocks inside topic Markdown; `src/components/instruction/` parses and renders them by `type`.
+- **Markdown rendering & styling.** Topic prose is styled by a self-contained, token-based `src/components/markdown.css` (`--md-*` tokens for color/elevation/tables/etc.); `github-markdown-css` was removed. Dark mode re-points those tokens in `src/dark.css` (keep the two in sync when adding a token). `Markdown.jsx` is the live renderer and `MarkdownStatic.jsx` the static/export one. `MarkdownInstruction` caps normal topics to a centered `max-w` reading column but renders **schedule** topics full-width with a locked (sticky) header row — schedule tables carry the `markdown-table-scroll--sticky-head` wrapper, whose styles live in `markdown.css`.
 - **Single source of truth for derived metrics.** Mastery/time/completion are derived from the enrollment's progress blob by **`src/utils/progressSummary.js` (`deriveProgressSummary`)** — on the client, which has the course structure. Do **not** add a second implementation (e.g., server-side) that can drift; that drift was a real bug. If the server must restrict data, do it on stable columns (e.g., `enrollment.createdAt`), not on recomputed values.
 
 ## Data model essentials (gotchas)
@@ -106,6 +110,7 @@ Commands (see `package.json`):
 - Mastery/progress math → `src/utils/progressSummary.js`, `src/utils/topicProgress.js`
 - Course roster screen → `src/views/masteryView/`
 - Interaction rendering/authoring → `src/components/instruction/`
+- Markdown content rendering/styling → `src/components/Markdown.jsx` + `src/components/markdown.css` (dark tokens in `src/dark.css`)
 - Teacher review of responses → `src/components/instruction/interaction/InteractionResponseReview.jsx`
 - DB schema / RLS / RPCs → `install/supabase/schema.sql`
 - AI prompts/calls → `src/ai/aiContentGenerator.js` and the `gemini`/`githubgrade` edge functions

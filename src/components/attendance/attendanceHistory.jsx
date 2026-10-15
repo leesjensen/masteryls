@@ -8,7 +8,9 @@ const ABSENT_COLOR = '#e5e7eb';
 
 // A learner's attendance across every session held in the course. Used by the learner's
 // Attendance view and the MasteryView learner drill-down. Change refreshKey to reload.
-export default function AttendanceHistory({ courseOps, course, userId, refreshKey = 0 }) {
+// presentOnly charts just the sessions the learner attended (the learner-facing view
+// hides absences); the overseer drill-down leaves it off so absences stay visible.
+export default function AttendanceHistory({ courseOps, course, userId, refreshKey = 0, presentOnly = false }) {
   const [history, setHistory] = React.useState(null);
   const [error, setError] = React.useState(null);
 
@@ -34,8 +36,9 @@ export default function AttendanceHistory({ courseOps, course, userId, refreshKe
 
   const attended = history.filter((entry) => entry.present).length;
   const gradeSettings = getAttendanceGradeSettings(course);
+  const chartEntries = presentOnly ? history.filter((entry) => entry.present) : history;
 
-  const dateGroups = history.map(({ session, present }) => {
+  const dateGroups = chartEntries.map(({ session, present }) => {
     const label = new Date(session.openedAt).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
@@ -53,23 +56,37 @@ export default function AttendanceHistory({ courseOps, course, userId, refreshKe
     <div data-testid="attendance-history">
       <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-2">
         <span>
-          Attended <strong>{attended}</strong> of <strong>{history.length}</strong> classes
+          {presentOnly ? (
+            <>
+              Attended <strong>{attended}</strong> class{attended !== 1 ? 'es' : ''}
+            </>
+          ) : (
+            <>
+              Attended <strong>{attended}</strong> of <strong>{history.length}</strong> classes
+            </>
+          )}
         </span>
         {gradeSettings && (
           <span>
             Points: <strong>{calculateAttendancePoints(attended, gradeSettings)}</strong> / {gradeSettings.pointsPossible}
           </span>
         )}
-        <span className="flex items-center gap-3 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ background: PRESENT_COLOR }} /> Present
+        {!presentOnly && (
+          <span className="flex items-center gap-3 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-sm" style={{ background: PRESENT_COLOR }} /> Present
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-sm" style={{ background: ABSENT_COLOR }} /> Absent
+            </span>
           </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ background: ABSENT_COLOR }} /> Absent
-          </span>
-        </span>
+        )}
       </div>
-      <BarChartSvg dateGroups={dateGroups} maxValue={1} yTicks={[]} yLabel="" ariaLabel="Attendance history chart" showTime />
+      {dateGroups.length > 0 ? (
+        <BarChartSvg dateGroups={dateGroups} maxValue={1} yTicks={[]} yLabel="" ariaLabel="Attendance history chart" showTime />
+      ) : (
+        <div className="text-sm text-gray-500 py-4 text-center">No classes attended yet.</div>
+      )}
     </div>
   );
 }

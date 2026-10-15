@@ -12,7 +12,7 @@ export default function AttendanceLearner({ courseOps, course, user }) {
         <AttendanceCodeEntry courseOps={courseOps} courseId={course.id} onRecorded={() => setRefreshKey((key) => key + 1)} />
         <div className="rounded-md border border-gray-200 bg-white p-4">
           <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Your attendance</div>
-          <AttendanceHistory courseOps={courseOps} course={course} userId={user.id} refreshKey={refreshKey} />
+          <AttendanceHistory courseOps={courseOps} course={course} userId={user.id} refreshKey={refreshKey} presentOnly />
         </div>
       </div>
     </div>
