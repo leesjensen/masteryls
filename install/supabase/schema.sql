@@ -498,6 +498,24 @@ begin
           where p."catalogId" = a."catalogId"
             and p.type = 'attendance'
             and p."interactionId" = a.id
+        ),
+        -- Per-question answer counts for this session: { [questionId]: { [choice]: count } }.
+        -- Lets the attendance charts show how the class answered the wellness question.
+        'answerTally', (
+          select coalesce(jsonb_object_agg(per_q.qid, per_q.counts), '{}'::jsonb)
+          from (
+            select ans.qid, jsonb_object_agg(ans.answer, ans.c) as counts
+            from (
+              select kv.key as qid, kv.value as answer, count(*)::int as c
+              from public.progress p
+              cross join lateral jsonb_each_text(coalesce(p.details -> 'answers', '{}'::jsonb)) as kv(key, value)
+              where p."catalogId" = a."catalogId"
+                and p.type = 'attendance'
+                and p."interactionId" = a.id
+              group by kv.key, kv.value
+            ) ans
+            group by ans.qid
+          ) per_q
         )
       ) order by a."openedAt")
       from public.attendance a

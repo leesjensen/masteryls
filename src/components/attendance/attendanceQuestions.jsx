@@ -20,19 +20,3 @@ export function AttendanceQuestions({ questions, answers, onChange }) {
     </div>
   );
 }
-
-// Edit a single multiple-choice question before opening attendance.
-export function AttendanceQuestionEditor({ question, onChange }) {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm text-gray-600">
-        Question
-        <input type="text" aria-label="Attendance question" value={question.prompt} onChange={(e) => onChange({ ...question, prompt: e.target.value })} className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
-      </label>
-      <label className="block text-sm text-gray-600">
-        Choices (one per line)
-        <textarea aria-label="Attendance question choices" rows={4} value={question.choices.join('\n')} onChange={(e) => onChange({ ...question, choices: e.target.value.split('\n') })} className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1 text-sm" />
-      </label>
-    </div>
-  );
-}

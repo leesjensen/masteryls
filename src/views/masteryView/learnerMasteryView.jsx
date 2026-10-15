@@ -75,6 +75,10 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
 
   const user = courseOps?.user;
   const canObserve = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId) && typeof startObserveSession === 'function'), [user, selectedCourseId, startObserveSession]);
+  // Only an overseer (root/editor/mentor) sees the full attendance picture - the total
+  // number of classes and which were missed. A learner viewing their own page gets the
+  // same present-only view as the learner Attendance page.
+  const isOverseer = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
   const selectedLearnerSummary = React.useMemo(() => deriveProgressSummary(selectedLearner?.progress, selectedCourse), [selectedCourse, selectedLearner]);
 
   function onObserveLearner() {
@@ -497,7 +501,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               ? <div className="text-sm text-gray-500 py-4 text-center">Loading activity...</div>
               : <DailyActivityChart records={activityRecords} />
           )}
-          {chartMode === 'attendance' && selectedCourse?.settings?.attendance && <AttendanceHistory courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} />}
+          {chartMode === 'attendance' && selectedCourse?.settings?.attendance && <AttendanceHistory courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} presentOnly={!isOverseer} />}
         </div>
       )}
 

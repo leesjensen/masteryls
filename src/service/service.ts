@@ -790,7 +790,8 @@ class Service {
   /**
    * Returns the course's attendance sessions (without codes) and the enrolled learner count.
    * @param catalogId - The course catalog ID.
-   * @returns { enrolledCount, sessions: [{ id, openedAt, closedAt, questions, attendeeCount }] }
+   * @returns { enrolledCount, sessions: [{ id, openedAt, closedAt, questions, attendeeCount, answerTally }] }
+   *          answerTally is { [questionId]: { [choice]: count } } for charting the question results.
    */
   async getAttendanceSessions(catalogId: string): Promise<{ enrolledCount: number; sessions: any[] }> {
     const { data, error } = await this.supabase.rpc('attendance_sessions', { p_catalog_id: catalogId });

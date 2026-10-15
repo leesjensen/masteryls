@@ -1,5 +1,5 @@
 import React from 'react';
-import { tallyAttendanceAnswers } from './attendanceUtils.js';
+import { Link } from 'react-router-dom';
 
 // Who checked in to a session and how they answered its questions.
 export default function AttendanceResponses({ courseOps, courseId, session }) {
@@ -26,35 +26,11 @@ export default function AttendanceResponses({ courseOps, courseId, session }) {
   if (responses.length === 0) return <div className="text-sm text-gray-500">No one checked in to this class.</div>;
 
   const questions = session.questions || [];
-  const tally = tallyAttendanceAnswers(questions, responses);
 
+  // The aggregate answer distribution is shown by the course "attendance over time"
+  // chart, so here we only list who checked in and how each learner answered.
   return (
     <div className="space-y-3" data-testid="attendance-responses">
-      {questions.map((question) => {
-        const counts = tally[question.id] || {};
-        const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-        return (
-          <div key={question.id} className="max-w-md">
-            <div className="text-sm font-medium text-gray-700 mb-1">{question.prompt}</div>
-            {Object.entries(counts).map(([choice, count]) => {
-              const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-              return (
-                <div key={choice} className="text-xs mb-1">
-                  <div className="flex justify-between text-gray-600">
-                    <span>{choice}</span>
-                    <span>
-                      {count} ({percent}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                    <div className="bg-amber-400 h-full" style={{ width: `${percent}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
       <table className="min-w-full text-sm">
         <thead className="bg-gray-50 text-gray-700">
           <tr>
@@ -70,7 +46,11 @@ export default function AttendanceResponses({ courseOps, courseId, session }) {
         <tbody>
           {responses.map((response) => (
             <tr key={response.id} className="border-t border-gray-100">
-              <td className="px-3 py-1 text-gray-800">{response.user?.name || response.user?.email || response.userId}</td>
+              <td className="px-3 py-1">
+                <Link to={`/masteryview/learner/${response.userId}/course/${courseId}`} className="text-blue-600 hover:underline">
+                  {response.user?.name || response.user?.email || response.userId}
+                </Link>
+              </td>
               <td className="px-3 py-1 text-gray-600">
                 {new Date(response.createdAt).toLocaleTimeString(undefined, {
                   hour: 'numeric',

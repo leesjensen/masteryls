@@ -2,15 +2,12 @@ import React from 'react';
 import AttendanceCodeOverlay from './attendanceCodeOverlay.jsx';
 import AttendanceSessionList from './attendanceSessionList.jsx';
 import CourseAttendanceChart from './courseAttendanceChart.jsx';
-import { AttendanceQuestionEditor } from './attendanceQuestions.jsx';
-import { DEFAULT_ATTENDANCE_QUESTION, normalizeQuestion } from './attendanceUtils.js';
+import { DEFAULT_ATTENDANCE_QUESTION } from './attendanceUtils.js';
 
 // Instructor (root/editor/mentor) Attendance view: take attendance, or review past sessions.
 export default function AttendanceAdmin({ courseOps, course }) {
   const [openSession, setOpenSession] = React.useState(null);
   const [summary, setSummary] = React.useState(null);
-  const [askQuestion, setAskQuestion] = React.useState(false);
-  const [question, setQuestion] = React.useState(DEFAULT_ATTENDANCE_QUESTION);
   const [error, setError] = React.useState(null);
   const [opening, setOpening] = React.useState(false);
 
@@ -44,9 +41,9 @@ export default function AttendanceAdmin({ courseOps, course }) {
     setOpening(true);
     setError(null);
     try {
-      const normalized = normalizeQuestion(question);
-      const questions = askQuestion && normalized.prompt && normalized.choices.length > 0 ? [normalized] : [];
-      setOpenSession(await courseOps.openAttendance(course.id, questions));
+      // The standard wellness question is always asked so every session's results
+      // can be charted consistently over time.
+      setOpenSession(await courseOps.openAttendance(course.id, [DEFAULT_ATTENDANCE_QUESTION]));
     } catch (ex) {
       setError(ex.message);
     } finally {
@@ -75,11 +72,9 @@ export default function AttendanceAdmin({ courseOps, course }) {
               {opening ? 'Opening...' : 'Take attendance'}
             </button>
           </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-            <input type="checkbox" checked={askQuestion} onChange={(e) => setAskQuestion(e.target.checked)} />
-            Ask a question when learners check in
-          </label>
-          {askQuestion && <AttendanceQuestionEditor question={question} onChange={setQuestion} />}
+          <div className="text-sm text-gray-600">
+            Learners are asked <span className="font-medium text-gray-700">“{DEFAULT_ATTENDANCE_QUESTION.prompt}”</span> when they check in.
+          </div>
           {error && <div className="text-sm text-red-600">{error}</div>}
         </div>
 

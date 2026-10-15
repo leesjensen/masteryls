@@ -4,9 +4,16 @@ function defaultTitle(group, label, unit) {
   return `${label}: ${group.count} ${unit}${group.count !== 1 ? 's' : ''}`;
 }
 
+// A group's total height: the sum of its stacked segments, or its plain count.
+function groupTotal(group) {
+  return group.segments ? group.segments.reduce((sum, segment) => sum + segment.count, 0) : group.count;
+}
+
 // Simple date-ordered SVG bar chart.
-//   dateGroups: [{ day, ts, count, color? , title? }] sorted by ts. `day` is the unique key.
-//   maxValue:   value at the top of the chart (defaults to the largest count).
+//   dateGroups: [{ day, ts, count, color?, title?, segments? }] sorted by ts. `day` is the
+//               unique key. A `segments: [{ key, count, color, label? }]` array renders a
+//               stacked bar (bottom -> top) instead of a single `count` bar.
+//   maxValue:   value at the top of the chart (defaults to the largest total).
 //   yTicks:     tick values for the y axis (defaults to a few integer ticks).
 //   formatTick: formats y tick labels.
 //   yLabel/unit: axis label and the noun used in the default bar tooltip.
@@ -19,7 +26,7 @@ export default function BarChartSvg({ dateGroups, maxValue, yTicks, formatTick =
   const ch = H - PAD.top - PAD.bottom;
   const n = dateGroups.length;
 
-  const maxCount = maxValue || Math.max(1, ...dateGroups.map((g) => g.count));
+  const maxCount = maxValue || Math.max(1, ...dateGroups.map((g) => groupTotal(g)));
   const slotW = cw / n;
   const barW = Math.max(4, Math.min(slotW * 0.6, 60));
 
@@ -49,16 +56,23 @@ export default function BarChartSvg({ dateGroups, maxValue, yTicks, formatTick =
       )}
       {dateGroups.map((group, i) => {
         const x = xOf(i);
-        const bh = Math.max(1, (group.count / maxCount) * ch);
-        const y = PAD.top + ch - bh;
         const label = new Date(group.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         const timeLabel = showTime ? new Date(group.ts).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : null;
         const showLabel = i % labelStep === 0 || i === n - 1;
+        // Segments stack from the baseline up; a plain bar is a single full-height segment.
+        const segments = group.segments || [{ key: group.day, count: group.count, color: group.color || color, label: null }];
+        let cursorY = PAD.top + ch;
         return (
           <g key={group.day}>
-            <rect x={x - barW / 2} y={y} width={barW} height={bh} fill={group.color || color} rx={2} opacity={0.85}>
-              <title>{group.title || defaultTitle(group, label, unit)}</title>
-            </rect>
+            {segments.map((segment) => {
+              const sh = Math.max(segment.count > 0 ? 1 : 0, (segment.count / maxCount) * ch);
+              cursorY -= sh;
+              return (
+                <rect key={segment.key} x={x - barW / 2} y={cursorY} width={barW} height={sh} fill={segment.color} rx={2} opacity={0.85}>
+                  <title>{group.segments ? `${label}${segment.label ? ` — ${segment.label}` : ''}: ${segment.count}` : group.title || defaultTitle(group, label, unit)}</title>
+                </rect>
+              );
+            })}
             {showLabel && (
               <text x={x} y={PAD.top + ch + 14} textAnchor="middle" fontSize={10} fill="#9ca3af">
                 {label}

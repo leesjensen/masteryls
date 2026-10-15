@@ -41,13 +41,24 @@ async function mockAttendance(page: any, { learner = false } = {}) {
 
   const sessionsResponse = () => ({
     enrolledCount: state.enrolledCount,
-    sessions: state.sessions.map((session: any) => ({
-      id: session.id,
-      openedAt: session.openedAt,
-      closedAt: session.closedAt,
-      questions: session.questions,
-      attendeeCount: state.progress.filter((row: any) => row.interactionId === session.id).length,
-    })),
+    sessions: state.sessions.map((session: any) => {
+      const rows = state.progress.filter((row: any) => row.interactionId === session.id);
+      const answerTally: any = {};
+      for (const row of rows) {
+        for (const [qid, answer] of Object.entries(row.details?.answers || {})) {
+          answerTally[qid] = answerTally[qid] || {};
+          answerTally[qid][answer as string] = (answerTally[qid][answer as string] || 0) + 1;
+        }
+      }
+      return {
+        id: session.id,
+        openedAt: session.openedAt,
+        closedAt: session.closedAt,
+        questions: session.questions,
+        attendeeCount: rows.length,
+        answerTally,
+      };
+    }),
   });
 
   await page.route(/.*supabase.co\/rest\/v1\/rpc\/(open_attendance|close_attendance|record_attendance|attendance_sessions)(\?.+)?/, async (route: any) => {
@@ -182,8 +193,8 @@ test('an editor takes attendance with a question and reviews the responses', asy
   await openAttendanceView(page);
   await expect(page.getByText('No attendance has been taken yet.')).toBeVisible();
 
-  await page.getByLabel('Ask a question when learners check in').check();
-  await expect(page.getByLabel('Attendance question', { exact: true })).toHaveValue('How are things going?');
+  // The standard wellness question is always asked — there is no opt-in toggle.
+  await expect(page.getByText('Learners are asked')).toBeVisible();
   await page.getByRole('button', { name: 'Take attendance' }).click();
 
   const overlay = page.getByTestId('attendance-code-overlay');
@@ -204,12 +215,16 @@ test('an editor takes attendance with a question and reviews the responses', asy
   await expect(overlay).toHaveCount(0);
 
   await expect(page.getByTestId('course-attendance-chart')).toContainText('average attendance 1');
+  // The aggregate chart carries the wellness-question sentiment legend.
+  await expect(page.getByTestId('course-attendance-chart')).toContainText('Great');
   const sessionList = page.getByTestId('attendance-session-list');
   await expect(sessionList).toContainText('1 present');
   await sessionList.getByRole('button').first().click();
   const responses = page.getByTestId('attendance-responses');
   await expect(responses).toContainText('Bud');
   await expect(responses).toContainText('Good');
+  // The learner name links to their MasteryView page for this course.
+  await expect(responses.getByRole('link', { name: /Bud/ })).toHaveAttribute('href', `/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
 });
 
 test('a learner checks in with the class code, answers the question, and sees their history', async ({ page }) => {
@@ -279,6 +294,8 @@ test('a learner checks in with the class code, answers the question, and sees th
     p_answers: { q1: 'Good' },
   });
   await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 class');
+  // The learner's own graph reflects the answer they gave for that class.
+  await expect(page.getByTestId('attendance-history')).toContainText('Good');
   await expect(page.getByTestId('attendance-history')).toContainText('Points: 2 / 80');
 
   await expect.poll(() => gradePosts.length).toBe(1);

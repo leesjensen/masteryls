@@ -1,6 +1,6 @@
 import React from 'react';
 import BarChartSvg from '../charts/barChartSvg.jsx';
-import { buildAttendanceHistory } from './attendanceUtils.js';
+import { buildAttendanceHistory, sentimentColor, ATTENDANCE_SENTIMENTS, NO_RESPONSE_COLOR } from './attendanceUtils.js';
 import { getAttendanceGradeSettings, calculateAttendancePoints } from '../../hooks/canvas/attendanceCanvasSync.js';
 
 const PRESENT_COLOR = '#10b981';
@@ -38,19 +38,29 @@ export default function AttendanceHistory({ courseOps, course, userId, refreshKe
   const gradeSettings = getAttendanceGradeSettings(course);
   const chartEntries = presentOnly ? history.filter((entry) => entry.present) : history;
 
-  const dateGroups = chartEntries.map(({ session, present }) => {
+  // In the learner's own view each attended bar is coloured by their answer to that
+  // session's wellness question; the overseer drill-down keeps the present/absent colours.
+  const dateGroups = chartEntries.map(({ session, present, answer }) => {
     const label = new Date(session.openedAt).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
     });
+    const color = presentOnly ? sentimentColor(answer) : present ? PRESENT_COLOR : ABSENT_COLOR;
+    const titleState = presentOnly ? answer || 'No response' : present ? 'Present' : 'Absent';
     return {
       day: session.id,
       ts: new Date(session.openedAt).getTime(),
       count: 1,
-      color: present ? PRESENT_COLOR : ABSENT_COLOR,
-      title: `${label}: ${present ? 'Present' : 'Absent'}`,
+      color,
+      title: `${label}: ${titleState}`,
     };
   });
+
+  // Legend reflects the answers the learner actually gave (ordered best -> worst),
+  // plus "No response" when any attended session had no answer (e.g. legacy sessions).
+  const usedAnswers = new Set(chartEntries.map((entry) => entry.answer).filter(Boolean));
+  const hasNoResponse = chartEntries.some((entry) => !entry.answer);
+  const sentimentLegend = [...ATTENDANCE_SENTIMENTS.filter((sentiment) => usedAnswers.has(sentiment.value)), ...(hasNoResponse ? [{ value: 'No response', color: NO_RESPONSE_COLOR }] : [])];
 
   return (
     <div data-testid="attendance-history">
@@ -79,6 +89,15 @@ export default function AttendanceHistory({ courseOps, course, userId, refreshKe
             <span className="flex items-center gap-1">
               <span className="inline-block h-2 w-2 rounded-sm" style={{ background: ABSENT_COLOR }} /> Absent
             </span>
+          </span>
+        )}
+        {presentOnly && sentimentLegend.length > 0 && (
+          <span className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+            {sentimentLegend.map((item) => (
+              <span key={item.value} className="flex items-center gap-1">
+                <span className="inline-block h-2 w-2 rounded-sm" style={{ background: item.color }} /> {item.value}
+              </span>
+            ))}
           </span>
         )}
       </div>
