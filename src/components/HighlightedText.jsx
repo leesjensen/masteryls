@@ -113,6 +113,7 @@ export function renderHighlightedCodeBlock(codeText, language, searchTerms, prop
           lineHeight: 1.5,
         }}
         codeTagProps={{
+          className: language ? `language-${language}` : undefined,
           style: {
             background: 'transparent',
             fontFamily: "'Fira Code', ui-monospace, 'Courier New', monospace",
