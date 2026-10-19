@@ -3,6 +3,7 @@ import { BadgeCheck, StickyNote } from 'lucide-react';
 
 import { TopicIcon } from '../utils/Icons';
 import { completedInteractionIds } from '../utils/topicProgress';
+import { handleSidebarLinkClick } from '../utils/sidebarNavigation';
 import { useNavigate } from 'react-router-dom';
 
 // Left-border + tint accents that mirror the schedule's orange "today" / blue "next" row
@@ -29,17 +30,12 @@ function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDate
   }, [enrollment?.progress[topic.id]?.scores, enrollment?.progress[topic.id]?.interactions]);
 
   function navigateToTopic(e, anchor) {
-    if (!e.metaKey && !e.ctrlKey && !e.shiftKey) {
-      e.preventDefault();
-      if (courseOps?.getEnrollmentUiSettings && courseOps?.saveEnrollmentUiSettings) {
-        const settings = courseOps.getEnrollmentUiSettings(course.id);
-        const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
-        if ((isMobileViewport && settings?.sidebarVisible !== 'start') || settings?.sidebarVisible === 'end') {
-          courseOps.saveEnrollmentUiSettings(course.id, { sidebarVisible: 'start' });
-        }
-      }
-      navigate(`/course/${course.id}/topic/${topic.id}${anchor ? `#${anchor}` : ''}`);
-    }
+    handleSidebarLinkClick(e, {
+      courseOps,
+      courseId: course.id,
+      navigate,
+      to: `/course/${course.id}/topic/${topic.id}${anchor ? `#${anchor}` : ''}`,
+    });
   }
 
   const scheduleAccent = SCHEDULE_STATUS_STYLES[scheduleStatus];
