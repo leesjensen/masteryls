@@ -215,7 +215,7 @@ export function formatGraceDaysLine(graceDays) {
     return '';
   }
   const rounded = Math.trunc(value);
-  return `Grace days ${rounded > 0 ? '+' : ''}${rounded}`;
+  return `Due date delta ${rounded > 0 ? '+' : ''}${rounded}`;
 }
 
 export function parseScheduleMarkdown(markdown = '', options = {}) {

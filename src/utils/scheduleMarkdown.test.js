@@ -53,9 +53,9 @@ test('calculateGraceDays treats Sundays as nonexistent', () => {
 });
 
 test('formatGraceDaysLine includes explicit positive sign', () => {
-  assert.equal(formatGraceDaysLine(3), 'Grace days +3');
-  assert.equal(formatGraceDaysLine(0), 'Grace days 0');
-  assert.equal(formatGraceDaysLine(-1), 'Grace days -1');
+  assert.equal(formatGraceDaysLine(3), 'Due date delta +3');
+  assert.equal(formatGraceDaysLine(0), 'Due date delta 0');
+  assert.equal(formatGraceDaysLine(-1), 'Due date delta -1');
   assert.equal(formatGraceDaysLine(null), '');
 });
 

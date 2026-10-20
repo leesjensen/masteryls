@@ -2,15 +2,18 @@ import { test, expect } from './fixtures';
 import { initBasicCourse, navigateToCourse, navigateToCourseNoLogin } from './testInit';
 
 async function setMonacoModelValue(page: any, matcherText: string, nextValue: string) {
-  await page.evaluate(({ matcherText, nextValue }) => {
-    const monaco = (window as any).monaco;
-    const models = monaco?.editor?.getModels?.() || [];
-    const model = models.find((candidate: any) => String(candidate.getValue()).includes(matcherText));
-    if (!model) {
-      throw new Error(`Unable to find Monaco model containing: ${matcherText}`);
-    }
-    model.setValue(nextValue);
-  }, { matcherText, nextValue });
+  await page.evaluate(
+    ({ matcherText, nextValue }) => {
+      const monaco = (window as any).monaco;
+      const models = monaco?.editor?.getModels?.() || [];
+      const model = models.find((candidate: any) => String(candidate.getValue()).includes(matcherText));
+      if (!model) {
+        throw new Error(`Unable to find Monaco model containing: ${matcherText}`);
+      }
+      model.setValue(nextValue);
+    },
+    { matcherText, nextValue },
+  );
 }
 
 test('interaction multiple choice', async ({ page }) => {
@@ -901,7 +904,7 @@ Submit your project URL.
   expect(payload.autoGrade).toBe(false);
   expect(payload.submissionUrl).toBe('https://example.com/my-project');
   expect(typeof payload.feedback).toBe('string');
-  expect(payload.feedback).toMatch(/^Grace days [+-]?\d+/);
+  expect(payload.feedback).toMatch(/^Due date delta [+-]?\d+/);
   expect(payload.feedback).toContain('Submission received.');
   expect(payload.feedback.length).toBeGreaterThan(0);
 
