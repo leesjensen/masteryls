@@ -507,7 +507,7 @@ test('schedule editor can set default schedule used as fallback selection', asyn
   });
 
   await page.getByRole('link', { name: 'Home' }).click();
-  await page.getByRole('link', { name: 'Schedule' }).click();
+  await page.getByText('Schedule', { exact: true }).click();
 
   const readSelect = page.locator('select:has(option[value="default"])').first();
   await expect(readSelect).toHaveValue('joe');

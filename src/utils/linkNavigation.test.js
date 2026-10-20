@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { collapseSidebarForNavigation, handleSidebarLinkClick } from './sidebarNavigation.js';
+import { collapseSidebarForNavigation, handleInAppLinkClick, handleSidebarLinkClick } from './linkNavigation.js';
 
 function makeCourseOps(sidebarVisible) {
   const saved = [];
@@ -61,6 +61,23 @@ test('handleSidebarLinkClick collapses the sidebar and navigates on a plain clic
   assert.equal(defaultPrevented, true);
   assert.equal(navigatedTo, '/course/c1/schedule');
   assert.deepEqual(courseOps.saved, [{ courseId: 'c1', settings: { sidebarVisible: 'start' } }]);
+});
+
+test('handleInAppLinkClick navigates on a plain primary click', () => {
+  let navigated = false;
+  let defaultPrevented = false;
+  handleInAppLinkClick({ button: 0, preventDefault: () => (defaultPrevented = true) }, () => (navigated = true));
+  assert.equal(defaultPrevented, true);
+  assert.equal(navigated, true);
+});
+
+test('handleInAppLinkClick leaves modifier-clicks, non-primary buttons, and prevented events to the browser', () => {
+  const cases = [{ metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }, { button: 1 }, { defaultPrevented: true }];
+  for (const extra of cases) {
+    let navigated = false;
+    handleInAppLinkClick({ preventDefault: () => {}, ...extra }, () => (navigated = true));
+    assert.equal(navigated, false, JSON.stringify(extra));
+  }
 });
 
 test('handleSidebarLinkClick lets a modifier-click fall through to the browser', () => {

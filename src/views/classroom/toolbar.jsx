@@ -6,6 +6,7 @@ import { useAlert } from '../../contexts/AlertContext.jsx';
 import { getCanvasTopicUrl, getCanvasCourseUrl, hasCanvasTopicLink } from '../../hooks/canvas/canvasSync.js';
 import MasteryPie from '../../components/MasteryPie.jsx';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
+import { handleInAppLinkClick } from '../../utils/linkNavigation.js';
 
 export default function Toolbar({ courseOps, user, learningSession, settings, editing, toggleEditor }) {
   const navigate = useNavigate();
@@ -15,25 +16,16 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
     return url.replace(learningSession.course.links.gitHub.rawUrl, learningSession.course.links.gitHub.url);
   }
 
-  function navigateToTopic(direction) {
-    const newTopic = courseOps.getAdjacentTopic(direction);
-    if (newTopic) {
-      navigate(`/course/${learningSession.course.id}/topic/${newTopic.id}`);
-    }
-  }
+  const courseId = learningSession.course.id;
 
-  function navigateToSchedule() {
-    navigate(`/course/${learningSession.course.id}/schedule`);
-  }
-
-  function navigateToMasteryView() {
-    const courseId = learningSession.course.id;
-    if (user && !user.canOverseeCourse?.(courseId)) {
-      navigate(`/masteryview/learner/${user.id}/course/${courseId}`);
-    } else {
-      navigate(`/masteryview/course/${courseId}`);
-    }
-  }
+  // Precompute route targets so the toolbar icons can render as real anchors with an
+  // href (enabling the browser's right-click "Open in new tab/window"); a plain click is
+  // still handled in-app by the shared link handler.
+  const prevTopic = courseOps.getAdjacentTopic('prev');
+  const nextTopic = courseOps.getAdjacentTopic('next');
+  const topicPath = (topic) => (topic ? `/course/${courseId}/topic/${topic.id}` : undefined);
+  const schedulePath = `/course/${courseId}/schedule`;
+  const masteryViewPath = user && !user.canOverseeCourse?.(courseId) ? `/masteryview/learner/${user.id}/course/${courseId}` : `/masteryview/course/${courseId}`;
 
   async function linkCanvasTopic() {
     await courseOps.updateCanvasPage(learningSession.course, learningSession.topic, learningSession.course.externalRefs.canvasCourseId);
@@ -56,24 +48,48 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && <EditorToggleSlider editing={editing} onToggle={toggleEditor} />}
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
-        {canvasCourseId && <ToolBarButton title={courseOps.canSubmitToCanvasGradebook ? 'Canvas — your grades submit here' : canvasTopicUrl ? 'Canvas topic' : 'Canvas course site'} onClick={() => window.open(canvasUrl, '_blank')} icon={Canvas} badge={courseOps.canSubmitToCanvasGradebook} />}
-        {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" onClick={navigateToSchedule} icon={CalendarDays} />}
-        <ToolBarButton title="GitHub repository" onClick={() => window.open(gitHubUrl(learningSession.topic.path), '_blank')} icon={GitHub} />
-        {hasMastery ? <MasteryPie percent={masteryPercent} title={`Mastery ${Math.round(Number(masteryPercent))}% — open MasteryView`} onClick={navigateToMasteryView} /> : <ToolBarButton title="MasteryView" onClick={navigateToMasteryView} icon={ChartArea} />}
-        <ToolBarButton title="Previous topic" onClick={() => navigateToTopic('prev')} icon={SquareChevronLeft} />
-        <ToolBarButton title="Next topic" onClick={() => navigateToTopic('next')} icon={SquareChevronRight} />
+        {canvasCourseId && <ToolBarButton title={courseOps.canSubmitToCanvasGradebook ? 'Canvas — your grades submit here' : canvasTopicUrl ? 'Canvas topic' : 'Canvas course site'} href={canvasUrl} external icon={Canvas} badge={courseOps.canSubmitToCanvasGradebook} />}
+        {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" href={schedulePath} onClick={() => navigate(schedulePath)} icon={CalendarDays} />}
+        <ToolBarButton title="GitHub repository" href={gitHubUrl(learningSession.topic.path)} external icon={GitHub} />
+        {hasMastery ? <MasteryPie percent={masteryPercent} title={`Mastery ${Math.round(Number(masteryPercent))}% — open MasteryView`} href={masteryViewPath} onClick={() => navigate(masteryViewPath)} /> : <ToolBarButton title="MasteryView" href={masteryViewPath} onClick={() => navigate(masteryViewPath)} icon={ChartArea} />}
+        <ToolBarButton title="Previous topic" href={topicPath(prevTopic)} onClick={() => prevTopic && navigate(topicPath(prevTopic))} icon={SquareChevronLeft} />
+        <ToolBarButton title="Next topic" href={topicPath(nextTopic)} onClick={() => nextTopic && navigate(topicPath(nextTopic))} icon={SquareChevronRight} />
       </div>
     </div>
   );
 }
 
-export function ToolBarButton({ icon: Icon, onClick, title = undefined, size = 24, badge = false }) {
-  return (
-    <span className="relative inline-flex">
-      <button title={title} onClick={onClick} className=" hover:text-amber-600 transition-all duration-200 ease-in-out  filter grayscale hover:grayscale-0">
+// A toolbar icon. Given an `href` it renders as a real anchor so the browser offers
+// "Open in new tab/window" on a right/modifier-click; `external` links (Canvas, GitHub)
+// open in a new tab natively, while in-app links navigate through `onClick` on a plain
+// click (via the shared link handler) and fall through to the browser otherwise. Without
+// an href it is a plain action button.
+export function ToolBarButton({ icon: Icon, onClick, href, external = false, title = undefined, size = 24, badge = false }) {
+  const className = 'hover:text-amber-600 transition-all duration-200 ease-in-out filter grayscale hover:grayscale-0';
+  let control;
+  if (href && external) {
+    control = (
+      <a href={href} target="_blank" rel="noopener noreferrer" title={title} className={className}>
+        <Icon size={size} />
+      </a>
+    );
+  } else if (href) {
+    control = (
+      <a href={href} title={title} onClick={(e) => handleInAppLinkClick(e, () => onClick?.())} className={className}>
+        <Icon size={size} />
+      </a>
+    );
+  } else {
+    control = (
+      <button title={title} onClick={onClick} className={className}>
         <Icon size={size} />
       </button>
-      {/* Status dot rendered outside the grayscale-filtered button so it stays colored. */}
+    );
+  }
+  return (
+    <span className="relative inline-flex">
+      {control}
+      {/* Status dot rendered outside the grayscale-filtered control so it stays colored. */}
       {badge && <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-green-500 ring-1 ring-white pointer-events-none" aria-hidden="true" />}
     </span>
   );

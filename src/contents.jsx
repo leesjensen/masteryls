@@ -7,7 +7,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 import { parseScheduleMarkdown, getNextScheduleDate, scheduleRowStatus } from './utils/scheduleMarkdown.js';
-import { handleSidebarLinkClick } from './utils/sidebarNavigation.js';
+import { handleSidebarLinkClick } from './utils/linkNavigation.js';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, UserCheck, X } from 'lucide-react';
 

@@ -135,7 +135,7 @@ Question B?
   expect(masteryPosts.length).toBe(0);
 
   // Leaving the topic flushes the pending post — a single, coalesced, grade-only mastery post.
-  await page.getByRole('button', { name: 'Next topic' }).click();
+  await page.getByRole('link', { name: 'Next topic' }).click();
 
   await expect.poll(() => masteryPosts.length).toBe(1);
   const post = masteryPosts[0];

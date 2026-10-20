@@ -3,7 +3,7 @@ import { BadgeCheck, StickyNote } from 'lucide-react';
 
 import { TopicIcon } from '../utils/Icons';
 import { completedInteractionIds } from '../utils/topicProgress';
-import { handleSidebarLinkClick } from '../utils/sidebarNavigation';
+import { handleSidebarLinkClick } from '../utils/linkNavigation';
 import { useNavigate } from 'react-router-dom';
 
 // Left-border + tint accents that mirror the schedule's orange "today" / blue "next" row
