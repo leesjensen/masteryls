@@ -12,6 +12,7 @@ import rehypeSanitize from 'rehype-sanitize';
 import { rehypeMermaid, MermaidBlock } from 'react-markdown-mermaid';
 import './markdown.css';
 import { scrollToAnchor } from '../utils/utils';
+import { headingSlug } from '../utils/headingSlug';
 import { resolveMarkdownHref } from '../utils/resolveMarkdownHref';
 import { getNextScheduleDate, scheduleRowStatus } from '../utils/scheduleMarkdown';
 import { StickyNote } from 'lucide-react';
@@ -372,10 +373,7 @@ export default function Markdown({ learningSession, content, languagePlugins = [
         acc[tag] = ({ node, children, className, ...props }) => {
           const HeadingTag = tag;
           const headingText = extractPlainText(children);
-          const headingId = headingText
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^\w-]/g, '');
+          const headingId = headingSlug(headingText);
 
           const existingNote = noteMessagesRef.current.find((note) => note.section === headingText);
 

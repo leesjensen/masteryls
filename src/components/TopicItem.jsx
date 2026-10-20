@@ -14,7 +14,7 @@ const SCHEDULE_STATUS_STYLES = {
   next: { className: 'border-l-2 border-blue-400 bg-blue-50 pl-1 rounded-sm', title: 'Covered in the next session' },
 };
 
-function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDateLabel = '', scheduleStatus = '' }) {
+function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDateLabel = '', scheduleStatus = '', headings = [] }) {
   const navigate = useNavigate();
   const [progressMeter, setProgressMeter] = React.useState(null);
 
@@ -39,9 +39,10 @@ function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDate
   }
 
   const scheduleAccent = SCHEDULE_STATUS_STYLES[scheduleStatus];
+  const isCurrent = topic.path === currentTopic?.path;
 
   return (
-    <li className={`mb-0.5 flex justify-between items-center group min-w-0 w-full ${scheduleAccent ? scheduleAccent.className : ''}`.trim()} title={scheduleAccent?.title || undefined}>
+    <li className={`mb-0.5 group min-w-0 w-full ${scheduleAccent ? scheduleAccent.className : ''}`.trim()} title={scheduleAccent?.title || undefined}>
       <div className="flex flex-row items-center min-w-0 w-full">
         {topic.state && topic.state !== 'published' && (
           <span className="text-xs text-white bg-gray-500 rounded px-1 mr-1 shrink-0" title={`This topic is in "${topic.state}" state`}>
@@ -78,6 +79,24 @@ function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDate
           </span>
         )}
       </div>
+      {/* Jump-list of the current topic's level-2 headings, so the learner can hop around
+          within the topic. Only rendered for the topic being viewed. */}
+      {isCurrent && headings.length > 0 && (
+        <ul className="list-none mt-0.5 mb-1 ml-5 pl-2 border-l border-gray-200">
+          {headings.map((heading, index) => (
+            <li key={`${heading.slug}-${index}`} className="mb-0.5 min-w-0">
+              <a
+                href={`/course/${course.id}/topic/${topic.id}#${heading.slug}`}
+                onClick={(e) => handleSidebarLinkClick(e, { courseOps, courseId: course.id, navigate, to: `/course/${course.id}/topic/${topic.id}#${heading.slug}` })}
+                className="block truncate no-underline cursor-pointer text-xs text-gray-400 hover:text-amber-500"
+                title={heading.text}
+              >
+                {heading.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </li>
   );
 }

@@ -7,6 +7,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import Course from './course.js';
 import { useProgress } from './contexts/ProgressContext.jsx';
 import { parseScheduleMarkdown, getNextScheduleDate, scheduleRowStatus } from './utils/scheduleMarkdown.js';
+import { parseTopicHeadings } from './utils/topicHeadings.js';
 import { handleSidebarLinkClick } from './utils/linkNavigation.js';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, UserCheck, X } from 'lucide-react';
@@ -96,6 +97,45 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const [topicStatusByTopicId, setTopicStatusByTopicId] = React.useState({});
   const [optimisticModules, setOptimisticModules] = React.useState(null);
   const [isReordering, setIsReordering] = React.useState(false);
+  // Level-2 headings of the currently-viewed topic, shown indented under it in the TOC so the
+  // learner can jump around within the topic. Only markdown topics have them (schedule renders
+  // a table, attendance is its own view, video/embedded have no markdown body). The headings are
+  // tagged with the topic they were parsed from so that, during the async fetch after a topic
+  // switch, the previous topic's headings are never shown under the new topic — the tag won't
+  // match the now-current topic until its own headings arrive.
+  const [topicHeadings, setTopicHeadings] = React.useState({ topicId: null, items: [] });
+  const currentTopic = learningSession?.topic;
+
+  React.useEffect(() => {
+    let active = true;
+    const topic = currentTopic;
+    const nonMarkdown = ['schedule', 'attendance', 'video', 'embedded'];
+    if (!topic || !topic.path || nonMarkdown.includes(topic.type)) {
+      setTopicHeadings({ topicId: topic?.id ?? null, items: [] });
+      return undefined;
+    }
+
+    courseOps
+      .getTopic(topic)
+      .then((markdown) => {
+        if (active) {
+          setTopicHeadings({ topicId: topic.id, items: parseTopicHeadings(markdown) });
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setTopicHeadings({ topicId: topic.id, items: [] });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [courseOps, currentTopic?.id, currentTopic?.path, currentTopic?.type]);
+
+  // Only surface the headings while they still belong to the current topic; a mismatch (mid-switch)
+  // renders nothing rather than the previous topic's list.
+  const currentTopicHeadings = topicHeadings.topicId === currentTopic?.id ? topicHeadings.items : [];
 
   const scheduleTopic = courseOps.getScheduleTopic(learningSession?.course);
   const attendanceTopic = courseOps.getAttendanceTopic(learningSession?.course);
@@ -352,7 +392,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const moduleJsx = (
     <ul className="list-none p-0">
       {moduleMap.map((module, moduleIndex) => (
-        <ModuleSection key={moduleIndex} courseOps={courseOps} learningSession={learningSession} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={learningSession.topic} editorVisible={editorVisible} dueDatesByTopicId={dueDatesByTopicId} topicStatusByTopicId={topicStatusByTopicId} />
+        <ModuleSection key={moduleIndex} courseOps={courseOps} learningSession={learningSession} module={module} moduleIndex={moduleIndex} isOpen={openModuleIndexes.includes(moduleIndex)} onToggle={toggleModule} currentTopic={learningSession.topic} editorVisible={editorVisible} dueDatesByTopicId={dueDatesByTopicId} topicStatusByTopicId={topicStatusByTopicId} currentTopicHeadings={currentTopicHeadings} />
       ))}
     </ul>
   );
