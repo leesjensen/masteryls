@@ -244,6 +244,57 @@ test('masteryview loads learner overview for accessible course', async ({ page }
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
 });
 
+test('overseer gets a Canvas grades link to the learner on a Canvas-linked course', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: { externalRefs: { canvasCourseId: '12345' } } });
+  await mockGradebookOverview(page);
+
+  // Resolve the learner's numeric Canvas user id for the grades link.
+  let lookupPayload: any = null;
+  await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    const payload = await route.request().postDataJSON();
+    if (payload?.mode === 'userLookup') {
+      lookupPayload = payload;
+      await route.fulfill({ status: 200, json: { ok: true, canvasUserId: 777 } });
+      return;
+    }
+    await route.fulfill({ status: 200, json: { ok: true, eligible: false } });
+  });
+
+  await navigateToDashboard(page);
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
+
+  // The link is a real anchor (right-clickable / opens in a new tab) to the learner's Canvas grades.
+  const gradesLink = page.getByRole('link', { name: 'Canvas grades' });
+  await expect(gradesLink).toHaveAttribute('href', 'https://byu.instructure.com/courses/12345/grades/777');
+  await expect(gradesLink).toHaveAttribute('target', '_blank');
+
+  // The lookup identified the learner by email and was scoped to the MasteryLS course (catalogId).
+  expect(lookupPayload?.courseId).toBe('12345');
+  expect(lookupPayload?.catalogId).toBe(COURSE_ID);
+  expect(lookupPayload?.learnerEmail).toBe('krobin37@byu.edu');
+});
+
+test('no Canvas grades link when the course is not linked to Canvas', async ({ page }) => {
+  await initBasicCourse({ page });
+  await mockGradebookOverview(page);
+
+  await navigateToDashboard(page);
+  await page.getByRole('button', { name: 'User Menu' }).click();
+  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'Kyle Robinson' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Canvas grades' })).toHaveCount(0);
+});
+
 test('mentor can view course mastery and observe learners without edit controls', async ({ page }) => {
   await initBasicCourse({ page });
   await page.context().route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {

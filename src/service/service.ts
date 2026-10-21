@@ -1213,6 +1213,24 @@ class Service {
   }
 
   /**
+   * Resolves a learner's numeric Canvas user id (via the canvasgradebook edge function) so the
+   * client can link to their Canvas grades page. Returns canvasUserId: null when the learner is
+   * not found in the Canvas course. Restricted server-side to course overseers (root/editor/mentor).
+   */
+  async getCanvasLearnerId(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ canvasUserId: number | null; error?: string }> {
+    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+      body: { mode: 'userLookup', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
+    });
+
+    if (error) {
+      const edgeMessage = await extractEdgeFunctionErrorMessage(error, data);
+      throw new Error(edgeMessage || error.message);
+    }
+
+    return { canvasUserId: data?.canvasUserId ?? null, error: data?.error };
+  }
+
+  /**
    * Invokes the Gradebook overview edge function for course-level learner summaries.
    */
   async makeMasteryOverviewRequest(params: { courseId: string; learnerId?: string; startDate?: string; endDate?: string }) {

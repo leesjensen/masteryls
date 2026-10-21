@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCanvasGradebookHandler, buildCanvasComment } from './handler.js';
+import { createCanvasGradebookHandler, buildCanvasComment, findCanvasLearner } from './handler.js';
 
 function createMockSupabase({ user, roles }) {
   return {
@@ -466,4 +466,91 @@ test('canvasgradebook search_users only matches students (TAs/teachers excluded)
   const checkSearchCall = calls.find((c) => c.url.includes('/search_users?search_term='));
   assert.ok(checkSearchCall, 'expected a search_users call in check mode');
   assert.ok(checkSearchCall.url.includes('enrollment_type[]=student'), 'check mode search_users should filter to students only');
+});
+
+test('findCanvasLearner matches on email or login id, case-insensitively, and returns null otherwise', () => {
+  const users = [
+    { id: 1, email: 'OTHER@test.com', login_id: 'other' },
+    { id: 2, email: 'Learner@Test.com', login_id: 'netid42' },
+  ];
+  assert.equal(findCanvasLearner(users, 'learner@test.com')?.id, 2);
+  assert.equal(findCanvasLearner([{ id: 3, email: '', login_id: 'NetID42' }], 'netid42')?.id, 3);
+  assert.equal(findCanvasLearner(users, 'nobody@test.com'), null);
+  assert.equal(findCanvasLearner(null, 'learner@test.com'), null);
+  assert.equal(findCanvasLearner(users, ''), null);
+});
+
+test('canvasgradebook userLookup returns the learner Canvas user id for a mentor overseer', async () => {
+  const { fetchFn, calls } = buildFetchStub(); // search_users returns id 77
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'm1', email: 'mentor@test.com' },
+        roles: [{ user: 'm1', right: 'mentor', object: 'catalog-uuid-this-course' }],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({
+      mode: 'userLookup',
+      courseId: '12345',
+      catalogId: 'catalog-uuid-this-course',
+      learnerEmail: 'learner@test.com',
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.canvasUserId, 77);
+  const searchCall = calls.find((c) => c.url.includes('/search_users?search_term='));
+  assert.ok(searchCall && searchCall.url.includes('enrollment_type[]=student'), 'userLookup should search students only');
+});
+
+test('canvasgradebook userLookup returns null when the learner is not in the Canvas course', async () => {
+  const calls = [];
+  const fetchFn = async (url, init) => {
+    calls.push({ url, init });
+    return new Response(JSON.stringify([]), { status: 200 }); // no matching students
+  };
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'e1', email: 'editor@test.com' },
+        roles: [{ user: 'e1', right: 'editor', object: 'catalog-uuid-this-course' }],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({ mode: 'userLookup', courseId: '12345', catalogId: 'catalog-uuid-this-course', learnerEmail: 'learner@test.com' }),
+  );
+
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.canvasUserId, null);
+});
+
+test('canvasgradebook userLookup denies a non-overseer (plain learner self)', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u9', email: 'learner@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(
+    makeRequest({ mode: 'userLookup', courseId: '12345', catalogId: 'catalog-uuid-this-course', learnerEmail: 'learner@test.com' }),
+  );
+
+  assert.equal(response.status, 403);
+  assert.equal(calls.length, 0);
 });

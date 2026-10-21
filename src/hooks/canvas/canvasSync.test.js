@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getCanvasCourseUrl, getCanvasTopicUrl, hasCanvasTopicLink } from './canvasSync.js';
+import { getCanvasCourseUrl, getCanvasTopicUrl, getCanvasGradesUrl, hasCanvasTopicLink } from './canvasSync.js';
 
 test('getCanvasCourseUrl builds the course page url', () => {
   assert.equal(getCanvasCourseUrl('12345'), 'https://byu.instructure.com/courses/12345');
@@ -16,6 +16,13 @@ test('getCanvasTopicUrl links a linked page, quiz, or assignment topic', () => {
   assert.equal(getCanvasTopicUrl('12345', { externalRefs: { canvasPageId: 'intro' } }), 'https://byu.instructure.com/courses/12345/pages/intro');
   assert.equal(getCanvasTopicUrl('12345', { externalRefs: { canvasQuizId: 55 } }), 'https://byu.instructure.com/courses/12345/quizzes/55');
   assert.equal(getCanvasTopicUrl('12345', { externalRefs: { canvasAssignmentId: 77 } }), 'https://byu.instructure.com/courses/12345/assignments/77');
+});
+
+test('getCanvasGradesUrl builds a learner grades url and needs both ids', () => {
+  assert.equal(getCanvasGradesUrl('12345', 777), 'https://byu.instructure.com/courses/12345/grades/777');
+  assert.equal(getCanvasGradesUrl('12345', null), null);
+  assert.equal(getCanvasGradesUrl('', 777), null);
+  assert.equal(getCanvasGradesUrl(undefined, undefined), null);
 });
 
 test('getCanvasTopicUrl returns null for an unlinked topic or missing course id', () => {

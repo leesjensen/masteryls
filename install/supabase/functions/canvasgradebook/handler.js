@@ -11,6 +11,32 @@ function normalizePercent(percentCorrect) {
   return Math.max(0, Math.min(100, parsed));
 }
 
+// Match a Canvas search_users result to a learner by email or login id (case-insensitive).
+// Canvas may return several near-matches for a search term, so we require an exact match on
+// either field. Returns the matching user entry, or null.
+export function findCanvasLearner(users, learnerEmail) {
+  if (!Array.isArray(users)) {
+    return null;
+  }
+  const target = String(learnerEmail || '')
+    .trim()
+    .toLowerCase();
+  if (!target) {
+    return null;
+  }
+  return (
+    users.find((entry) => {
+      const email = String(entry?.email || '')
+        .trim()
+        .toLowerCase();
+      const login = String(entry?.login_id || '')
+        .trim()
+        .toLowerCase();
+      return email === target || login === target;
+    }) || null
+  );
+}
+
 // Canvas collapses plain-text newlines in submission comments, so the header
 // lines are joined with <br>. The feedback is already simplified HTML produced
 // by the client (markdownToHtml), so it is appended as-is rather than escaped.
@@ -86,8 +112,23 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       isEditor = Array.isArray(editorRole) && editorRole.length > 0;
     }
 
+    let isMentor = false;
+    if (!isRoot && !isEditor && payload.catalogId) {
+      const { data: mentorRole } = await supabase.from('role').select('id').eq('user', userId).eq('right', 'mentor').eq('object', payload.catalogId).limit(1);
+      isMentor = Array.isArray(mentorRole) && mentorRole.length > 0;
+    }
+
     const isLearnerSelf = authEmail !== '' && authEmail === requestedLearnerEmail;
-    if (!isRoot && !isEditor && !isLearnerSelf) {
+    const isOverseer = isRoot || isEditor || isMentor;
+
+    // `userLookup` is a read-only overseer action (resolve a learner's Canvas user id so the
+    // client can link to their Canvas grades), so it also admits mentors. Grade submission and
+    // eligibility checks stay restricted to root/editor/self - a mentor must not post grades.
+    if (mode === 'userLookup') {
+      if (!isOverseer) {
+        return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    } else if (!isRoot && !isEditor && !isLearnerSelf) {
       return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -123,22 +164,27 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     if (mode === 'check') {
       try {
         const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}&enrollment_type[]=student`);
-        const eligible =
-          Array.isArray(users) &&
-          users.some((entry) => {
-            const email = String(entry?.email || '')
-              .trim()
-              .toLowerCase();
-            const login = String(entry?.login_id || '')
-              .trim()
-              .toLowerCase();
-            return email === requestedLearnerEmail || login === requestedLearnerEmail;
-          });
+        const eligible = !!findCanvasLearner(users, requestedLearnerEmail);
         return new Response(JSON.stringify({ ok: true, eligible }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (error) {
         // Treat Canvas lookup failures as "not eligible" so the UI hides the button; surface the
         // reason so the client can log it.
         return new Response(JSON.stringify({ ok: true, eligible: false, error: error?.message || String(error) }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // User-lookup mode: resolve the learner's numeric Canvas user id so the client can build a
+    // link to their Canvas grades page. Returns canvasUserId: null when the learner isn't found
+    // in the Canvas course (or the lookup fails), so the UI simply hides the link.
+    if (mode === 'userLookup') {
+      try {
+        const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}&enrollment_type[]=student`);
+        const learner = findCanvasLearner(users, requestedLearnerEmail);
+        return new Response(JSON.stringify({ ok: true, canvasUserId: learner?.id ?? null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (error) {
+        return new Response(JSON.stringify({ ok: true, canvasUserId: null, error: error?.message || String(error) }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -183,15 +229,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
         return new Response(JSON.stringify({ error: 'Unable to find Canvas user for learner email' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      const learner = users.find((entry) => {
-        const email = String(entry?.email || '')
-          .trim()
-          .toLowerCase();
-        const login = String(entry?.login_id || '')
-          .trim()
-          .toLowerCase();
-        return email === requestedLearnerEmail || login === requestedLearnerEmail;
-      });
+      const learner = findCanvasLearner(users, requestedLearnerEmail);
 
       if (!learner?.id) {
         return new Response(JSON.stringify({ error: 'No exact Canvas user match for learner email' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

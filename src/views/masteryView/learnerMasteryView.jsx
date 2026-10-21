@@ -7,6 +7,7 @@ import { completedInteractionIds } from '../../utils/topicProgress';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import BarChartSvg from '../../components/charts/barChartSvg.jsx';
 import AttendanceHistory from '../../components/attendance/attendanceHistory.jsx';
+import { getCanvasGradesUrl } from '../../hooks/canvas/canvasSync.js';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -69,6 +70,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   const [activityRecords, setActivityRecords] = React.useState([]);
   const [activityLoading, setActivityLoading] = React.useState(false);
   const [activityLoaded, setActivityLoaded] = React.useState(false);
+  const [canvasGradesUrl, setCanvasGradesUrl] = React.useState(null);
 
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
@@ -226,6 +228,41 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     setActivityRecords([]);
     setActivityLoaded(false);
   }, [selectedCourseId, routeLearnerId]);
+
+  // When an overseer views a learner in a Canvas-linked course, resolve the learner's Canvas
+  // user id (server-side) so we can link straight to their Canvas grades page. Hidden when the
+  // course isn't linked, the viewer isn't an overseer, or the learner isn't in the Canvas course.
+  React.useEffect(() => {
+    let cancelled = false;
+    const canvasCourseId = selectedCourse?.externalRefs?.canvasCourseId;
+    const learnerEmail = selectedLearner?.learnerEmail;
+
+    if (!isOverseer || !canvasCourseId || !learnerEmail) {
+      setCanvasGradesUrl(null);
+      return undefined;
+    }
+
+    (async () => {
+      try {
+        const { canvasUserId } = await courseOpsRef.current.service.getCanvasLearnerId({
+          courseId: canvasCourseId,
+          catalogId: selectedCourseId,
+          learnerEmail,
+        });
+        if (!cancelled) {
+          setCanvasGradesUrl(getCanvasGradesUrl(canvasCourseId, canvasUserId));
+        }
+      } catch {
+        if (!cancelled) {
+          setCanvasGradesUrl(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOverseer, selectedCourse?.externalRefs?.canvasCourseId, selectedLearner?.learnerEmail, selectedCourseId]);
 
   React.useEffect(() => {
     if (chartMode !== 'dailyActivity' || !selectedCourseId || !routeLearnerId || activityLoaded) return;
@@ -432,6 +469,11 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               <button type="button" onClick={onObserveLearner} className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs">
                 Observe
               </button>
+            )}
+            {canvasGradesUrl && (
+              <a href={canvasGradesUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs no-underline">
+                Canvas grades
+              </a>
             )}
           </div>
           <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">

@@ -51,6 +51,15 @@ export function getCanvasCourseUrl(canvasCourseId) {
   return `https://byu.instructure.com/courses/${canvasCourseId}`;
 }
 
+// A learner's Canvas grades page for a course. Canvas's web route needs the numeric Canvas
+// user id (resolved server-side via the canvasgradebook `userLookup` mode).
+export function getCanvasGradesUrl(canvasCourseId, canvasUserId) {
+  if (!canvasCourseId || !canvasUserId) {
+    return null;
+  }
+  return `https://byu.instructure.com/courses/${canvasCourseId}/grades/${canvasUserId}`;
+}
+
 export function getCanvasTopicUrl(canvasCourseId, topic) {
   if (!canvasCourseId || !topic?.externalRefs) {
     return null;
