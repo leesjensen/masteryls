@@ -117,7 +117,7 @@ test('canvasgradebook allows root user', async () => {
   assert.equal(submissionRequest.submission.posted_grade, 90);
   assert.ok(typeof submissionRequest.comment?.text_comment === 'string');
   assert.ok(submissionRequest.comment.text_comment.includes('MasteryLS feedback'));
-  assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 90/100 (90%)'));
+  assert.ok(submissionRequest.comment.text_comment.includes('Feedback result: 90/100 (90%)'));
 });
 
 test('canvasgradebook allows learner self-match', async () => {
@@ -153,7 +153,7 @@ test('canvasgradebook allows learner self-match', async () => {
   assert.equal(calls.length, 3);
   const submissionRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(submissionRequest.submission.posted_grade, 160);
-  assert.ok(submissionRequest.comment.text_comment.includes('Suggested grade: 160/200 (80%)'));
+  assert.ok(submissionRequest.comment.text_comment.includes('Feedback result: 160/200 (80%)'));
 });
 
 test('canvasgradebook denies learner mismatch', async () => {
@@ -218,7 +218,7 @@ test('canvasgradebook can submit comment and url without posting grade when auto
 
   const updateRequest = getSubmissionRequest(calls, 'PUT');
   assert.equal(updateRequest.submission, undefined);
-  assert.ok(updateRequest.comment.text_comment.includes('Suggested grade: 75/100 (75%)'));
+  assert.ok(updateRequest.comment.text_comment.includes('Feedback result: 75/100 (75%)'));
   assert.ok(updateRequest.comment.text_comment.includes('Strong progress.'));
 });
 
@@ -259,7 +259,7 @@ test('canvasgradebook accepts dra and interview topicType, posts a text-entry su
 
     const updateRequest = getSubmissionRequest(calls, 'PUT');
     assert.equal(updateRequest.submission, undefined, `${topicType} should not post a grade`);
-    assert.ok(updateRequest.comment.text_comment.includes('Suggested grade: 82/100 (82%)'));
+    assert.ok(updateRequest.comment.text_comment.includes('Feedback result: 82/100 (82%)'));
   }
 });
 
@@ -361,7 +361,7 @@ test('canvasgradebook rejects an unsupported topicType', async () => {
 test('buildCanvasComment separates the header lines with <br> line breaks', () => {
   const comment = buildCanvasComment({ feedback: '', normalizedPercent: 90, normalizedPoints: 100, postedGrade: 90, autoGrade: true });
   assert.ok(comment.includes('MasteryLS feedback<br>'));
-  assert.ok(comment.includes('Suggested grade: 90/100 (90%)<br>'));
+  assert.ok(comment.includes('Feedback result: 90/100 (90%)<br>'));
   assert.ok(!comment.includes('Feedback:')); // no feedback section when feedback is empty
 });
 

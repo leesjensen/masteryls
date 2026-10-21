@@ -1574,7 +1574,7 @@ Requirements:
         // and shows its "needs grading" indicator in the gradebook - without this, autoGrade:
         // false plus no submission leaves no visible signal that the learner completed the
         // assessment (see canvasSync.js's submissionTypesForTopic).
-        submissionText: 'Completed in MasteryLS. See the feedback comment below for the AI-generated evaluation and suggested score.',
+        submissionText: 'Completed in MasteryLS. See the feedback comment below for the AI-generated evaluation and feedback result.',
       });
     } catch (error) {
       console.error(`Unable to sync Canvas grade for topic '${topic.title}': ${error.message}`);

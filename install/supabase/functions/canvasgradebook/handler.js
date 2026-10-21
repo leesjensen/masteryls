@@ -67,11 +67,11 @@ export function buildCanvasComment({ feedback, normalizedPercent, normalizedPoin
   const lines = [];
   const suggestedGrade = Math.round(((normalizedPercent / 100) * normalizedPoints + Number.EPSILON) * 100) / 100;
   lines.push('MasteryLS feedback');
-  lines.push(`Suggested grade: ${suggestedGrade}/${normalizedPoints} (${normalizedPercent}%)`);
-  lines.push(`Auto grade: ${autoGrade ? 'enabled' : 'disabled'}`);
+  lines.push(`Feedback result: ${suggestedGrade}/${normalizedPoints} (${normalizedPercent}%)`);
+  lines.push(`Auto score sync: ${autoGrade ? 'enabled' : 'disabled'}`);
   lines.push(`Submitted at: ${new Date().toISOString()}`);
   if (typeof postedGrade === 'number') {
-    lines.push(`Posted grade: ${postedGrade}`);
+    lines.push(`Posted score: ${postedGrade}`);
   }
 
   let comment = lines.join('<br>\n');
