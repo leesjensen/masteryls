@@ -1,5 +1,6 @@
 import React from 'react';
 import BarChartSvg from '../charts/barChartSvg.jsx';
+import SentimentLegend from './sentimentLegend.jsx';
 import { ATTENDANCE_SENTIMENTS, NO_RESPONSE_COLOR, sentimentSegments } from './attendanceUtils.js';
 
 // Course-wide attendance over time. Each session's bar stacks the learners' answers to the
@@ -62,13 +63,7 @@ export default function CourseAttendanceChart({ courseOps, courseId, sessions: p
       <div className="text-sm text-gray-700 mb-2">
         {sessions.length} class{sessions.length !== 1 ? 'es' : ''} recorded, average attendance <strong>{average}</strong>
       </div>
-      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-2">
-        {legend.map((item) => (
-          <span key={item.value} className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ background: item.color }} /> {item.value}
-          </span>
-        ))}
-      </div>
+      <SentimentLegend items={legend} className="mb-2" />
       <BarChartSvg dateGroups={dateGroups} yLabel="Attendees" unit="attendee" ariaLabel="Course attendance chart" showTime />
     </div>
   );

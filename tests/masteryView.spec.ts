@@ -365,5 +365,5 @@ test('masteryview shows course attendance and a learner attendance history when 
 
   await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
   await page.getByRole('button', { name: 'Attendance', exact: true }).click();
-  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 of 2 classes');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 1 class');
 });

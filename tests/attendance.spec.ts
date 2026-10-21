@@ -267,11 +267,11 @@ test('a learner checks in with the class code, answers the question, and sees th
 
   await openAttendanceView(page);
   await expect(page.getByRole('button', { name: 'Take attendance' })).toHaveCount(0);
-  await expect(page.getByTestId('attendance-history')).toContainText('Attended 0 classes');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 0 classes');
   // Learners only see the classes they attended — no total, no Present/Absent legend.
-  await expect(page.getByTestId('attendance-history')).not.toContainText('Absent');
-  await expect(page.getByTestId('attendance-history')).not.toContainText('Present');
-  await expect(page.getByTestId('attendance-history')).toContainText('No classes attended yet.');
+  await expect(page.getByTestId('learner-attendance-chart')).not.toContainText('Absent');
+  await expect(page.getByTestId('learner-attendance-chart')).not.toContainText('Present');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('No classes attended yet.');
 
   // A wrong code records nothing.
   await page.getByLabel('Attendance code').fill('1111');
@@ -293,10 +293,10 @@ test('a learner checks in with the class code, answers the question, and sees th
     p_code: CODE,
     p_answers: { q1: 'Good' },
   });
-  await expect(page.getByTestId('attendance-history')).toContainText('Attended 1 class');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 1 class');
   // The learner's own graph reflects the answer they gave for that class.
-  await expect(page.getByTestId('attendance-history')).toContainText('Good');
-  await expect(page.getByTestId('attendance-history')).toContainText('Points: 2 / 80');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Good');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Points: 2 / 80');
 
   await expect.poll(() => gradePosts.length).toBe(1);
   expect(gradePosts[0]).toMatchObject({

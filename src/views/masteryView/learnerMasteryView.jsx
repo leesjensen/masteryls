@@ -6,7 +6,7 @@ import { TopicIcon } from '../../utils/Icons';
 import { completedInteractionIds } from '../../utils/topicProgress';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import BarChartSvg from '../../components/charts/barChartSvg.jsx';
-import AttendanceHistory from '../../components/attendance/attendanceHistory.jsx';
+import LearnerAttendanceChart from '../../components/attendance/learnerAttendanceChart.jsx';
 import { getCanvasGradesUrl } from '../../hooks/canvas/canvasSync.js';
 
 function formatDuration(seconds) {
@@ -77,9 +77,8 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
 
   const user = courseOps?.user;
   const canObserve = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId) && typeof startObserveSession === 'function'), [user, selectedCourseId, startObserveSession]);
-  // Only an overseer (root/editor/mentor) sees the full attendance picture - the total
-  // number of classes and which were missed. A learner viewing their own page gets the
-  // same present-only view as the learner Attendance page.
+  // Overseers (root/editor/mentor) get overseer-only affordances here, e.g. the Canvas
+  // grades link. The attendance chart itself is the same learner view everyone sees.
   const isOverseer = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
   const selectedLearnerSummary = React.useMemo(() => deriveProgressSummary(selectedLearner?.progress, selectedCourse), [selectedCourse, selectedLearner]);
 
@@ -543,7 +542,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               ? <div className="text-sm text-gray-500 py-4 text-center">Loading activity...</div>
               : <DailyActivityChart records={activityRecords} />
           )}
-          {chartMode === 'attendance' && selectedCourse?.settings?.attendance && <AttendanceHistory courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} presentOnly={!isOverseer} />}
+          {chartMode === 'attendance' && selectedCourse?.settings?.attendance && <LearnerAttendanceChart courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} />}
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import AttendanceCodeEntry from './attendanceCodeEntry.jsx';
-import AttendanceHistory from './attendanceHistory.jsx';
+import LearnerAttendanceChart from './learnerAttendanceChart.jsx';
 
 // Learner Attendance view: check in with the class code and see attendance history.
 export default function AttendanceLearner({ courseOps, course, user }) {
@@ -12,7 +12,7 @@ export default function AttendanceLearner({ courseOps, course, user }) {
         <AttendanceCodeEntry courseOps={courseOps} courseId={course.id} onRecorded={() => setRefreshKey((key) => key + 1)} />
         <div className="rounded-md border border-gray-200 bg-white p-4">
           <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Your attendance</div>
-          <AttendanceHistory courseOps={courseOps} course={course} userId={user.id} refreshKey={refreshKey} presentOnly />
+          <LearnerAttendanceChart courseOps={courseOps} course={course} userId={user.id} refreshKey={refreshKey} />
         </div>
       </div>
     </div>
