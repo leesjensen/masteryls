@@ -61,6 +61,9 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   const { learnerId: routeLearnerId, courseId: routeCourseId } = useParams();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [selectedLearner, setSelectedLearner] = React.useState(null);
+  // Remembered across course switches so the "not enrolled" empty state can name the learner
+  // even for a course they have no enrollment in (the route only carries the learner id).
+  const [learnerLabel, setLearnerLabel] = React.useState(null);
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
@@ -184,6 +187,11 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     };
   }, [selectedCourseId]);
 
+  // A new learner in the route invalidates the remembered name from the previous one.
+  React.useEffect(() => {
+    setLearnerLabel(null);
+  }, [routeLearnerId]);
+
   React.useEffect(() => {
     let cancelled = false;
 
@@ -203,6 +211,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         if (!cancelled) {
           const rows = Array.isArray(result?.rows) ? result.rows : [];
           setSelectedLearner(rows.length > 0 ? rows[0] : null);
+          if (rows.length > 0) setLearnerLabel(rows[0].learnerName || rows[0].learnerEmail || null);
         }
       } catch (loadError) {
         if (!cancelled) {
@@ -501,7 +510,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
       )}
 
       {!loading && !selectedLearner && !error && selectedCourseId && (
-        <div className="text-sm text-gray-500">No enrollment data found for this learner in this course.</div>
+        <div className="text-sm text-gray-500">{learnerLabel ? `${learnerLabel} is not enrolled in this course.` : 'This learner is not enrolled in this course.'}</div>
       )}
 
       {!loading && instructionTopicSummaries.length > 0 && (
