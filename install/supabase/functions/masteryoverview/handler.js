@@ -47,6 +47,20 @@ function trimProgress(progress) {
   return trimmed;
 }
 
+// Count attendance check-ins per learner. Each attendance progress row is one class the learner
+// checked in to, so the tally is just the number of rows per userId: { [userId]: count }. There is
+// deliberately no "of N" total - a course can span multiple sections whose sessions aren't all
+// classes a given learner was expected at, so only the attended count is meaningful.
+export function tallyAttendanceByLearner(progressRows) {
+  const counts = new Map();
+  for (const row of progressRows || []) {
+    const userId = row?.userId == null ? null : String(row.userId);
+    if (!userId) continue;
+    counts.set(userId, (counts.get(userId) || 0) + 1);
+  }
+  return counts;
+}
+
 // Decode the JWT payload without signature verification to extract the userId (sub claim).
 // Used only to fire auth queries in parallel with getUser(). The verified userId from
 // getUser() must match before any data is returned.
@@ -96,6 +110,9 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     // for overseer roster requests only - never to a single-learner drill-down or a self view.
     const startDate = String(payload?.startDate || '').trim() || null;
     const endDate = String(payload?.endDate || '').trim() || null;
+    // Roster-only: when attendance is enabled for the course the client asks for each learner's
+    // attended-class count so the table can show it. Skipped otherwise to avoid an extra query.
+    const includeAttendance = payload?.includeAttendance === true;
 
     if (!courseId) {
       return new Response(JSON.stringify({ error: 'courseId is required' }), {
@@ -196,6 +213,17 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
 
       const learnersById = new Map(learners.map((entry) => [String(entry.id), entry]));
 
+      // Per-learner attended-class count (only when the roster asked for it). Each attendance
+      // progress row is one check-in; scoped to the same learners the roster already resolved.
+      let attendanceCounts = new Map();
+      if (includeAttendance && learnerIds.length > 0) {
+        const { data: attendanceRows, error: attendanceError } = await supabase.from('progress').select('userId').eq('catalogId', courseId).eq('type', 'attendance').in('userId', learnerIds);
+        if (attendanceError) {
+          throw attendanceError;
+        }
+        attendanceCounts = tallyAttendanceByLearner(attendanceRows);
+      }
+
       // A single-learner request (the drill-down) returns the FULL progress blob because the
       // learner detail view needs per-interaction scores and DRA/interview fields. The list
       // returns a TRIMMED blob; the client derives mastery/time and sorts/paginates/searches
@@ -212,6 +240,7 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
           learnerName: learner.name || null,
           learnerEmail: learner.email || null,
           progress: isSingleLearner ? progress : trimProgress(progress),
+          ...(includeAttendance ? { attendedCount: attendanceCounts.get(String(enrollment.learnerId || '')) || 0 } : {}),
         };
       });
 

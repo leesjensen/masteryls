@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMasteryOverviewHandler } from './handler.js';
+import { createMasteryOverviewHandler, tallyAttendanceByLearner } from './handler.js';
 
 function buildQuery(table, dataMap) {
   const filters = [];
@@ -124,6 +124,55 @@ function makeRequest(body, auth = 'Bearer token') {
     body: JSON.stringify(body),
   });
 }
+
+test('tallyAttendanceByLearner counts one check-in per row and ignores blank user ids', () => {
+  const counts = tallyAttendanceByLearner([{ userId: 'u1' }, { userId: 'u1' }, { userId: 'u2' }, { userId: null }, {}]);
+  assert.equal(counts.get('u1'), 2);
+  assert.equal(counts.get('u2'), 1);
+  assert.equal(counts.size, 2);
+  assert.deepEqual(tallyAttendanceByLearner(null), new Map());
+});
+
+test('gradebookoverview includes per-learner attendedCount only when requested', async () => {
+  const buildHandler = () =>
+    createMasteryOverviewHandler({
+      createSupabaseClientFromAuthHeader: () =>
+        createMockSupabase({
+          user: { id: 'root-user', email: 'root@test.com' },
+          dataMap: {
+            role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
+            enrollment: [
+              { id: 'e1', learnerId: 'u1', catalogId: 'course-1', progress: { mastery: 80 } },
+              { id: 'e2', learnerId: 'u2', catalogId: 'course-1', progress: { mastery: 50 } },
+            ],
+            user: [
+              { id: 'u1', name: 'Learner One', email: 'learner1@test.com' },
+              { id: 'u2', name: 'Learner Two', email: 'learner2@test.com' },
+            ],
+            progress: [
+              // u1 attended three classes; a row from another course and another type are ignored.
+              { userId: 'u1', catalogId: 'course-1', type: 'attendance' },
+              { userId: 'u1', catalogId: 'course-1', type: 'attendance' },
+              { userId: 'u1', catalogId: 'course-1', type: 'attendance' },
+              { userId: 'u1', catalogId: 'course-2', type: 'attendance' },
+              { userId: 'u1', catalogId: 'course-1', type: 'instructionView' },
+              // u2 attended one class.
+              { userId: 'u2', catalogId: 'course-1', type: 'attendance' },
+            ],
+          },
+        }),
+      getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+    });
+
+  // Without the flag no attendance query runs and the field is absent.
+  const plain = await (await buildHandler()(makeRequest({ courseId: 'course-1' }))).json();
+  assert.equal(plain.rows[0].attendedCount, undefined);
+
+  // With the flag each row carries its own course's attendance count.
+  const withAttendance = await (await buildHandler()(makeRequest({ courseId: 'course-1', includeAttendance: true }))).json();
+  const byLearner = Object.fromEntries(withAttendance.rows.map((row) => [row.learnerId, row.attendedCount]));
+  assert.deepEqual(byLearner, { u1: 3, u2: 1 });
+});
 
 test('gradebookoverview returns identity plus a trimmed progress blob for the list', async () => {
   const handler = createMasteryOverviewHandler({

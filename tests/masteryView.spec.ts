@@ -22,6 +22,8 @@ function mockGradebookOverview(page: any) {
     const payload = await route.request().postDataJSON();
     requests.push(payload);
     const learnerId = String(payload?.learnerId || '');
+    // Mirror the edge function: attendedCount is only returned when the roster asks for it.
+    const attendance = payload?.includeAttendance === true ? { [LEARNER_ID]: 3, [KYLE_LEARNER_ID]: 0 } : null;
     const allRows = [
       {
         enrollmentId: 'enroll-bud',
@@ -37,7 +39,7 @@ function mockGradebookOverview(page: any) {
         learnerEmail: 'krobin37@byu.edu',
         progress: {},
       },
-    ];
+    ].map((row) => (attendance ? { ...row, attendedCount: attendance[row.learnerId] ?? 0 } : row));
     const rows = learnerId ? allRows.filter((row) => row.learnerId === learnerId) : allRows;
 
     await route.fulfill({
@@ -362,6 +364,10 @@ test('masteryview shows course attendance and a learner attendance history when 
   await navigateToDashboard(page);
   await page.goto(`/masteryview/course/${COURSE_ID}`);
   await expect(page.getByTestId('course-attendance-chart')).toContainText('2 classes recorded, average attendance 2');
+
+  // The roster carries a per-learner attended-class count column when attendance is enabled.
+  await expect(page.getByRole('columnheader', { name: 'Classes Attended' })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Bud/ })).toContainText('3');
 
   await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
   await page.getByRole('button', { name: 'Attendance', exact: true }).click();

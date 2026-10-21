@@ -137,6 +137,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
           projectSubmittedCount: summary.projectSubmittedCount,
           totalTimeSpent: summary.totalTimeSpent,
           lastActivityAt: summary.lastActivityAt,
+          attendedCount: row.attendedCount,
         };
       }),
     [allRows, selectedCourse],
@@ -284,7 +285,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, startDate: rangeStartIso, endDate: rangeEndIso });
+        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, startDate: rangeStartIso, endDate: rangeEndIso, includeAttendance: Boolean(selectedCourse?.settings?.attendance) });
         if (!cancelled) {
           setAllRows(Array.isArray(result?.rows) ? result.rows : []);
         }
@@ -418,7 +419,9 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     );
   }
 
-  const colSpan = hasActions ? 9 : 8;
+  // Show a per-learner attended-class count only when attendance is enabled for the course.
+  const showAttendance = Boolean(selectedCourse?.settings?.attendance);
+  const colSpan = (hasActions ? 9 : 8) + (showAttendance ? 1 : 0);
   const isFiltering = filterText.trim().length > 0;
   const invalidRange = Boolean(range.start && range.end && range.start > range.end);
   const scheduleFiles = Array.isArray(selectedCourse?.schedule?.files) ? selectedCourse.schedule.files : [];
@@ -572,6 +575,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                 ['completedTopics', 'Completed Topics'],
                 ['examCompletedCount', 'Exams Completed'],
                 ['projectSubmittedCount', 'Project Submits'],
+                ...(showAttendance ? [['attendedCount', 'Classes Attended']] : []),
                 ['totalTimeSpent', 'Time Spent'],
                 ['lastActivityAt', 'Last Activity'],
               ].map(([key, label]) => (
@@ -608,6 +612,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                   <td className="px-3 py-2">{Number(row.completedTopics || 0)}</td>
                   <td className="px-3 py-2">{Number(row.examCompletedCount || 0)}</td>
                   <td className="px-3 py-2">{Number(row.projectSubmittedCount || 0)}</td>
+                  {showAttendance && <td className="px-3 py-2">{Number(row.attendedCount || 0)}</td>}
                   <td className="px-3 py-2">{formatDuration(row.totalTimeSpent)}</td>
                   <td className="px-3 py-2">{row.lastActivityAt ? new Date(row.lastActivityAt).toLocaleString() : '-'}</td>
                   {hasActions && (

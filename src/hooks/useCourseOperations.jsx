@@ -1931,12 +1931,13 @@ Requirements:
   // trimmed progress blob (the client derives metrics and sorts/filters/paginates locally),
   // optionally restricted to enrollments created within [startDate, endDate]. With learnerId:
   // that one learner's full progress blob (the drill-down needs the detail; date range ignored).
-  async function getMasteryOverview({ courseId, learnerId = '', startDate = '', endDate = '' }) {
+  async function getMasteryOverview({ courseId, learnerId = '', startDate = '', endDate = '', includeAttendance = false }) {
     return service.makeMasteryOverviewRequest({
       courseId,
       ...(learnerId ? { learnerId } : {}),
       ...(startDate ? { startDate } : {}),
       ...(endDate ? { endDate } : {}),
+      ...(includeAttendance ? { includeAttendance: true } : {}),
     });
   }
 
