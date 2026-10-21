@@ -34,6 +34,31 @@ test('parseMultipleChoiceBody preserves multiple feedback paragraphs', () => {
   assert.equal(parsed.choices[1].feedback, '');
 });
 
+test('parseMultipleChoiceBody extracts the precomputed per-choice feedback the AI quiz generator emits', () => {
+  // Mirrors the format aiQuizGenerator is prompted to produce: a two-space-indented feedback
+  // paragraph under every choice, including the correct one.
+  const body = [
+    'What does the `const` keyword declare in JavaScript?',
+    '',
+    '- [ ] A variable that can be reassigned',
+    '  Not quite - that describes `let`. `const` creates a binding that cannot be reassigned after it is initialized.',
+    '- [x] A binding that cannot be reassigned',
+    '  Correct! A `const` binding cannot be reassigned, though the value it points to may still be mutable.',
+    '- [ ] A function declaration',
+    '  Good try, but functions are declared with `function` or assigned to a binding. `const` declares a non-reassignable binding.',
+    '- [ ] A global-only variable',
+    '  Close, but scope is not what `const` controls - it is block-scoped like `let` and simply prevents reassignment.',
+  ].join('\n');
+
+  const parsed = parseMultipleChoiceBody(body);
+
+  assert.equal(parsed.prompt, 'What does the `const` keyword declare in JavaScript?');
+  assert.equal(parsed.choices.length, 4);
+  assert.equal(parsed.choices[1].correct, true);
+  assert.ok(parsed.choices.every((choice) => choice.feedback.length > 0));
+  assert.match(parsed.choices[1].feedback, /^Correct!/);
+});
+
 test('parseMultipleChoiceBody ignores unindented lines after a choice', () => {
   const body = ['- [x] Yes', 'stray unindented line', '- [ ] No'].join('\n');
 

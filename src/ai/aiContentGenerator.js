@@ -1019,9 +1019,13 @@ Multiple paragraphs of section content. Examples, lists, mermaid diagrams, and c
 question text
 
 - [ ] This is **not** the right answer
+  Feedback shown to a learner who selects this choice, explaining why it is incorrect and pointing to the correct idea.
 - [x] This is _the_ right answer
+  Feedback shown to a learner who selects this choice, confirming it and reinforcing why it is correct.
 - [ ] This is also wrong
+  Feedback shown to a learner who selects this choice, explaining why it is incorrect and pointing to the correct idea.
 - [ ] This one is close but wrong
+  Feedback shown to a learner who selects this choice, explaining why it is incorrect and pointing to the correct idea.
 \`\`\`
 
 
@@ -1034,6 +1038,7 @@ Requirements:
 - The section title should be concise and descriptive
 - The section body should be clear and unambiguous
 - Ensure that the section is educational and reinforces key concepts from the topic
+- If the section includes a multiple choice question, immediately under each choice include precomputed feedback (indented by exactly two spaces) that will be shown to a learner who selects that choice: address the student directly, confirm the correct choice or explain why an incorrect choice is wrong and give the correct answer briefly, and keep each feedback supportive and under 150 words
 - If you include a Mermaid diagram, the first line INSIDE the \`\`\`mermaid code fence (immediately after the opening \`\`\`mermaid, on the line before the diagram type declaration) must be this exact directive so it renders with a white background and black lines/text for ANY diagram type (flowchart, classDiagram, sequenceDiagram, stateDiagram, etc.). Put it inside the code fence, never on a line above or outside the fence. ${mermaidTheme}
 `;
 
@@ -1057,9 +1062,13 @@ Generate a multiple choice quiz that uses the following format:
 question text
 
 - [ ] This is **not** the right answer
+  Feedback shown to a learner who selects this choice, explaining why it is incorrect and pointing to the correct idea.
 - [x] This is _the_ right answer
+  Feedback shown to a learner who selects this choice, confirming it and reinforcing why it is correct.
 - [ ] This is also wrong
+  Feedback shown to a learner who selects this choice, explaining why it is incorrect and pointing to the correct idea.
 - [ ] This one is close but wrong
+  Feedback shown to a learner who selects this choice, explaining why it is incorrect and pointing to the correct idea.
 \`\`\`
 
 Instructional topic: ${topic}
@@ -1077,6 +1086,15 @@ Requirements:
 - Ensure that the quiz is educational and reinforces key concepts from the topic
 - The quiz should be challenging but fair, suitable for learners who have studied the topic
 - The answer choices must be in a random order
+
+Immediately under each choice, include precomputed feedback that will be shown to a learner who selects that choice. This feedback replaces a feedback response that would otherwise be generated on demand, so write it the same way:
+- Indent every feedback line by exactly two spaces so it attaches to the choice directly above it
+- Write a separate feedback paragraph for every choice, including the correct one
+- Address the student directly, as part of a conversation that is already occurring
+- For the correct choice, confirm the answer and briefly explain why it is correct
+- For each incorrect choice, start with a brief positive comment about the student's effort, clearly explain why that specific choice is incorrect, and provide the correct answer with a short explanation
+- Keep each feedback supportive and encouraging, and limit each one to 150 words or less
+- Use markdown formatting in the feedback where appropriate to highlight key concepts, terms, or code snippets
 `;
 
   return makeSimpleAiRequest(prompt);
@@ -1684,7 +1702,9 @@ Return a raw JSON object (no markdown fence):
 }`;
 
   const response = await makeSimpleAiRequest(prompt);
-  const text = String(response || '').trim().replace(/,(\s*[}\]])/g, '$1');
+  const text = String(response || '')
+    .trim()
+    .replace(/,(\s*[}\]])/g, '$1');
   try {
     return JSON.parse(text);
   } catch {

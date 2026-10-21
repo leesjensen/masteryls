@@ -873,9 +873,13 @@ const defaultMultipleChoiceInteractionTemplate = `
 Simple **multiple choice** question
 
 - [ ] This is **not** the right answer
+  This is incorrect because it does not align with the correct understanding of the concept.
 - [x] This is _the_ right answer
+  This is correct because it aligns with the correct understanding of the concept.
 - [ ] This one has a [link](https://cow.com)
+  This is incorrect because the link is not relevant to the question.
 - [ ] This one has an image ![Stock Photo](https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80)
+  This is incorrect because the image is not relevant to the question.
 \`\`\`
 `;
 const defaultEssayInteractionTemplate = `
