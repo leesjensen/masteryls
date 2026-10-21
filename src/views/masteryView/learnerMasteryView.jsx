@@ -480,7 +480,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
             )}
             {canvasGradesUrl && (
               <a href={canvasGradesUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs no-underline">
-                Canvas grades
+                Canvas
               </a>
             )}
           </div>

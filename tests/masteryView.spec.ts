@@ -273,7 +273,7 @@ test('overseer gets a Canvas grades link to the learner on a Canvas-linked cours
   await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
 
   // The link is a real anchor (right-clickable / opens in a new tab) to the learner's Canvas grades.
-  const gradesLink = page.getByRole('link', { name: 'Canvas grades' });
+  const gradesLink = page.getByRole('link', { name: 'Canvas', exact: true });
   await expect(gradesLink).toHaveAttribute('href', 'https://byu.instructure.com/courses/12345/grades/777');
   await expect(gradesLink).toHaveAttribute('target', '_blank');
 
@@ -294,7 +294,7 @@ test('no Canvas grades link when the course is not linked to Canvas', async ({ p
   await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
 
   await expect(page.getByRole('heading', { name: 'Kyle Robinson' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Canvas grades' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Canvas', exact: true })).toHaveCount(0);
 });
 
 test('mentor can view course mastery and observe learners without edit controls', async ({ page }) => {
