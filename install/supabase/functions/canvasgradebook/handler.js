@@ -37,6 +37,29 @@ export function findCanvasLearner(users, learnerEmail) {
   );
 }
 
+// Reduce Canvas's submission + enrollment responses to the trimmed grade summary the client shows:
+// an overall current course grade and a per-assignment breakdown. Submissions with no assignment
+// name are skipped; an excused submission has no numeric score but is labelled "Excused". Scores
+// and points are passed through as numbers or null so the client can render "-" for the unknowns.
+export function buildGradeSummary(submissions, enrollments) {
+  const assignments = (Array.isArray(submissions) ? submissions : [])
+    .filter((sub) => sub?.assignment && sub.assignment.name)
+    .map((sub) => ({
+      name: String(sub.assignment.name),
+      score: sub.excused ? null : typeof sub.score === 'number' ? sub.score : null,
+      pointsPossible: typeof sub.assignment.points_possible === 'number' ? sub.assignment.points_possible : null,
+      grade: sub.excused ? 'Excused' : sub.grade ?? null,
+    }));
+  // The student enrollment carries the computed course grade; take the first one that has grades.
+  const studentEnrollment = (Array.isArray(enrollments) ? enrollments : []).find((entry) => entry?.grades) || null;
+  const grades = studentEnrollment?.grades || {};
+  const overall = {
+    score: typeof grades.current_score === 'number' ? grades.current_score : null,
+    grade: grades.current_grade ?? null,
+  };
+  return { overall, assignments };
+}
+
 // Canvas collapses plain-text newlines in submission comments, so the header
 // lines are joined with <br>. The feedback is already simplified HTML produced
 // by the client (markdownToHtml), so it is appended as-is rather than escaped.
@@ -128,6 +151,12 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       if (!isOverseer) {
         return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+    } else if (mode === 'grades') {
+      // Reading a learner's Canvas grades is a read-only overseer action (mentors included), or a
+      // learner viewing their own grades. It never writes to Canvas.
+      if (!isOverseer && !isLearnerSelf) {
+        return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     } else if (!isRoot && !isEditor && !isLearnerSelf) {
       return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -185,6 +214,28 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
         return new Response(JSON.stringify({ ok: true, canvasUserId: learner?.id ?? null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (error) {
         return new Response(JSON.stringify({ ok: true, canvasUserId: null, error: error?.message || String(error) }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Grades mode: read a learner's current Canvas grades (overall + per-assignment) for display.
+    // Returns found: false (not an error) when the learner isn't in the Canvas course so the UI can
+    // say so; a Canvas failure returns ok: false with the reason for the client to surface.
+    if (mode === 'grades') {
+      try {
+        const users = await canvasApi(`/courses/${courseId}/search_users?search_term=${encodeURIComponent(requestedLearnerEmail)}&enrollment_type[]=student`);
+        const learner = findCanvasLearner(users, requestedLearnerEmail);
+        if (!learner) {
+          return new Response(JSON.stringify({ ok: true, found: false, overall: null, assignments: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        const [submissions, enrollments] = await Promise.all([
+          canvasApi(`/courses/${courseId}/students/submissions?student_ids[]=${learner.id}&include[]=assignment&per_page=100`),
+          canvasApi(`/courses/${courseId}/enrollments?user_id=${learner.id}&type[]=StudentEnrollment`),
+        ]);
+        return new Response(JSON.stringify({ ok: true, found: true, ...buildGradeSummary(submissions, enrollments) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (error) {
+        return new Response(JSON.stringify({ ok: false, found: false, overall: null, assignments: [], error: error?.message || String(error) }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }

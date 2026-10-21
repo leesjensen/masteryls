@@ -1231,6 +1231,23 @@ class Service {
   }
 
   /**
+   * Reads a learner's current Canvas grades for display: an overall course grade plus a
+   * per-assignment breakdown. `found` is false when the learner isn't in the Canvas course.
+   */
+  async getCanvasGrades(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ found: boolean; overall: { score: number | null; grade: string | null } | null; assignments: { name: string; score: number | null; pointsPossible: number | null; grade: string | null }[]; error?: string }> {
+    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+      body: { mode: 'grades', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
+    });
+
+    if (error) {
+      const edgeMessage = await extractEdgeFunctionErrorMessage(error, data);
+      throw new Error(edgeMessage || error.message);
+    }
+
+    return { found: Boolean(data?.found), overall: data?.overall ?? null, assignments: Array.isArray(data?.assignments) ? data.assignments : [], error: data?.error };
+  }
+
+  /**
    * Invokes the Gradebook overview edge function for course-level learner summaries.
    */
   async makeMasteryOverviewRequest(params: { courseId: string; learnerId?: string; startDate?: string; endDate?: string; includeAttendance?: boolean }) {

@@ -297,6 +297,59 @@ test('no Canvas grades link when the course is not linked to Canvas', async ({ p
   await expect(page.getByRole('link', { name: 'Canvas', exact: true })).toHaveCount(0);
 });
 
+test('overseer opens the Canvas tab to see the learner Canvas grade breakdown', async ({ page }) => {
+  await initBasicCourse({ page, courseJsonOverride: { externalRefs: { canvasCourseId: '12345' } } });
+  await mockGradebookOverview(page);
+
+  let gradesPayload: any = null;
+  await page.route(/.*supabase.co\/functions\/v1\/canvasgradebook(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    const payload = await route.request().postDataJSON();
+    if (payload?.mode === 'userLookup') {
+      await route.fulfill({ status: 200, json: { ok: true, canvasUserId: 777 } });
+      return;
+    }
+    if (payload?.mode === 'grades') {
+      gradesPayload = payload;
+      await route.fulfill({
+        status: 200,
+        json: {
+          ok: true,
+          found: true,
+          overall: { score: 88, grade: 'B+' },
+          assignments: [
+            { name: 'HTML lab', score: 18, pointsPossible: 20, grade: '18' },
+            { name: 'Midterm', score: 72, pointsPossible: 100, grade: '72' },
+          ],
+        },
+      });
+      return;
+    }
+    await route.fulfill({ status: 200, json: { ok: true } });
+  });
+
+  await navigateToDashboard(page);
+  await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
+
+  // The Canvas tab appears once the learner resolves in Canvas; opening it lazy-loads the grades.
+  await page.getByRole('button', { name: 'Canvas', exact: true }).click();
+  const panel = page.getByTestId('canvas-grades-panel');
+  await expect(panel).toContainText('Overall:');
+  await expect(panel).toContainText('88%');
+  await expect(panel).toContainText('B+');
+  await expect(panel).toContainText('HTML lab');
+  await expect(panel).toContainText('18 / 20');
+  await expect(panel).toContainText('Midterm');
+
+  // The grades request is scoped to the Canvas course and identifies the learner by email.
+  expect(gradesPayload?.courseId).toBe('12345');
+  expect(gradesPayload?.catalogId).toBe(COURSE_ID);
+  expect(gradesPayload?.learnerEmail).toBe('bud@cow.com');
+});
+
 test('mentor can view course mastery and observe learners without edit controls', async ({ page }) => {
   await initBasicCourse({ page });
   await page.context().route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {

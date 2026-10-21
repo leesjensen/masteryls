@@ -8,6 +8,7 @@ import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import BarChartSvg from '../../components/charts/barChartSvg.jsx';
 import LearnerAttendanceChart from '../../components/attendance/learnerAttendanceChart.jsx';
 import { getCanvasGradesUrl } from '../../hooks/canvas/canvasSync.js';
+import CanvasGradesPanel from './canvasGradesPanel.jsx';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -74,6 +75,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   const [activityLoading, setActivityLoading] = React.useState(false);
   const [activityLoaded, setActivityLoaded] = React.useState(false);
   const [canvasGradesUrl, setCanvasGradesUrl] = React.useState(null);
+  const [canvasGrades, setCanvasGrades] = React.useState({ loading: false, loaded: false, found: false, overall: null, assignments: [], error: null });
 
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
@@ -235,6 +237,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   React.useEffect(() => {
     setActivityRecords([]);
     setActivityLoaded(false);
+    setCanvasGrades({ loading: false, loaded: false, found: false, overall: null, assignments: [], error: null });
   }, [selectedCourseId, routeLearnerId]);
 
   // When an overseer views a learner in a Canvas-linked course, resolve the learner's Canvas
@@ -304,6 +307,35 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     loadActivity();
     return () => { cancelled = true; };
   }, [chartMode, selectedCourseId, routeLearnerId, activityLoaded]);
+
+  // Lazy-load the learner's Canvas grades the first time the Canvas tab is opened. Only reachable
+  // when the course is Canvas-linked and the learner resolved in Canvas (canvasGradesUrl is set).
+  React.useEffect(() => {
+    if (chartMode !== 'canvasGrades' || canvasGrades.loaded) return undefined;
+    const canvasCourseId = selectedCourse?.externalRefs?.canvasCourseId;
+    const learnerEmail = selectedLearner?.learnerEmail;
+    if (!canvasCourseId || !learnerEmail) return undefined;
+
+    let cancelled = false;
+    setCanvasGrades((prev) => ({ ...prev, loading: true, error: null }));
+    courseOpsRef.current.service
+      .getCanvasGrades({ courseId: canvasCourseId, catalogId: selectedCourseId, learnerEmail })
+      .then((result) => {
+        if (cancelled) return;
+        setCanvasGrades({ loading: false, loaded: true, found: result.found, overall: result.overall, assignments: result.assignments, error: result.error || null });
+      })
+      .catch((ex) => {
+        if (!cancelled) setCanvasGrades({ loading: false, loaded: true, found: false, overall: null, assignments: [], error: ex.message || String(ex) });
+      });
+    return () => { cancelled = true; };
+  }, [chartMode, canvasGrades.loaded, selectedCourse?.externalRefs?.canvasCourseId, selectedLearner?.learnerEmail, selectedCourseId]);
+
+  // If the selected tab is no longer offered for this course (switched to a course without
+  // attendance, or without a Canvas link for this learner), fall back to the always-present tab.
+  React.useEffect(() => {
+    if (chartMode === 'attendance' && !selectedCourse?.settings?.attendance) setChartMode('lastInteraction');
+    if (chartMode === 'canvasGrades' && !canvasGradesUrl) setChartMode('lastInteraction');
+  }, [chartMode, canvasGradesUrl, selectedCourse?.settings?.attendance]);
 
   function onCourseChange(value) {
     if (value && routeLearnerId) {
@@ -517,7 +549,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         <div className="border border-gray-200 rounded-md p-3 bg-white">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              {chartMode === 'lastInteraction' ? 'Last Interaction Timeline' : chartMode === 'attendance' ? 'Attendance' : 'Daily Activity'}
+              {chartMode === 'lastInteraction' ? 'Last Interaction Timeline' : chartMode === 'attendance' ? 'Attendance' : chartMode === 'canvasGrades' ? 'Canvas Grades' : 'Daily Activity'}
             </span>
             <div className="flex text-xs border border-gray-200 rounded-md overflow-hidden">
               <button
@@ -543,6 +575,15 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
                   Attendance
                 </button>
               )}
+              {canvasGradesUrl && (
+                <button
+                  type="button"
+                  onClick={() => setChartMode('canvasGrades')}
+                  className={`px-3 py-1 transition-colors border-l border-gray-200 ${chartMode === 'canvasGrades' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                >
+                  Canvas
+                </button>
+              )}
             </div>
           </div>
           {chartMode === 'lastInteraction' && <LastInteractionChart summaries={instructionTopicSummaries} />}
@@ -552,6 +593,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               : <DailyActivityChart records={activityRecords} />
           )}
           {chartMode === 'attendance' && selectedCourse?.settings?.attendance && <LearnerAttendanceChart courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} />}
+          {chartMode === 'canvasGrades' && canvasGradesUrl && <CanvasGradesPanel loading={canvasGrades.loading} error={canvasGrades.error} found={canvasGrades.found} overall={canvasGrades.overall} assignments={canvasGrades.assignments} />}
         </div>
       )}
 

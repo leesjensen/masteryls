@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCanvasGradebookHandler, buildCanvasComment, findCanvasLearner } from './handler.js';
+import { createCanvasGradebookHandler, buildCanvasComment, findCanvasLearner, buildGradeSummary } from './handler.js';
 
 function createMockSupabase({ user, roles }) {
   return {
@@ -47,6 +47,19 @@ function buildFetchStub() {
     }
     if (url.includes('/quizzes/')) {
       return new Response(JSON.stringify({ assignment_id: 555 }), { status: 200 });
+    }
+    if (url.includes('/students/submissions')) {
+      return new Response(
+        JSON.stringify([
+          { score: 18, grade: '18', assignment: { name: 'HTML lab', points_possible: 20 } },
+          { score: 72, grade: '72', assignment: { name: 'Midterm', points_possible: 100 } },
+          { excused: true, score: null, assignment: { name: 'Bonus', points_possible: 5 } },
+        ]),
+        { status: 200 },
+      );
+    }
+    if (url.includes('/enrollments?')) {
+      return new Response(JSON.stringify([{ type: 'StudentEnrollment', grades: { current_score: 88, current_grade: 'B+' } }]), { status: 200 });
     }
     if (url.includes('/submissions') && method === 'POST') {
       return new Response(JSON.stringify({ id: 321, submission_type: 'online_url' }), { status: 200 });
@@ -551,6 +564,87 @@ test('canvasgradebook userLookup denies a non-overseer (plain learner self)', as
     makeRequest({ mode: 'userLookup', courseId: '12345', catalogId: 'catalog-uuid-this-course', learnerEmail: 'learner@test.com' }),
   );
 
+  assert.equal(response.status, 403);
+  assert.equal(calls.length, 0);
+});
+
+test('buildGradeSummary trims submissions and reads the overall course grade', () => {
+  const summary = buildGradeSummary(
+    [
+      { score: 18, grade: '18', assignment: { name: 'HTML lab', points_possible: 20 } },
+      { excused: true, score: null, assignment: { name: 'Bonus', points_possible: 5 } },
+      { score: 10, assignment: null }, // no assignment -> skipped
+    ],
+    [{ type: 'StudentEnrollment', grades: { current_score: 88, current_grade: 'B+' } }],
+  );
+  assert.deepEqual(summary.overall, { score: 88, grade: 'B+' });
+  assert.deepEqual(summary.assignments, [
+    { name: 'HTML lab', score: 18, pointsPossible: 20, grade: '18' },
+    { name: 'Bonus', score: null, pointsPossible: 5, grade: 'Excused' },
+  ]);
+});
+
+test('buildGradeSummary defaults missing grades to null', () => {
+  const summary = buildGradeSummary([], []);
+  assert.deepEqual(summary, { overall: { score: null, grade: null }, assignments: [] });
+});
+
+test('canvasgradebook grades mode returns overall and per-assignment breakdown for a mentor', async () => {
+  const { fetchFn } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u-mentor', email: 'mentor@test.com' },
+        roles: [{ user: 'u-mentor', right: 'mentor', object: 'catalog-1' }],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(makeRequest({ mode: 'grades', courseId: '12345', catalogId: 'catalog-1', learnerEmail: 'learner@test.com' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.found, true);
+  assert.deepEqual(body.overall, { score: 88, grade: 'B+' });
+  assert.equal(body.assignments.length, 3);
+  assert.equal(body.assignments[0].name, 'HTML lab');
+  assert.equal(body.assignments[2].grade, 'Excused');
+});
+
+test('canvasgradebook grades mode returns found:false when the learner is not in the Canvas course', async () => {
+  const { fetchFn } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u-root', email: 'root@test.com' },
+        roles: [{ user: 'u-root', right: 'root', object: null }],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  // The search stub only knows learner@test.com, so a different email resolves to no Canvas user.
+  const response = await handler(makeRequest({ mode: 'grades', courseId: '12345', learnerEmail: 'nobody@test.com' }));
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.found, false);
+  assert.deepEqual(body.assignments, []);
+});
+
+test('canvasgradebook grades mode denies a non-overseer viewing another learner', async () => {
+  const { fetchFn, calls } = buildFetchStub();
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () =>
+      createMockSupabase({
+        user: { id: 'u-other', email: 'other@test.com' },
+        roles: [],
+      }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(makeRequest({ mode: 'grades', courseId: '12345', catalogId: 'catalog-1', learnerEmail: 'learner@test.com' }));
   assert.equal(response.status, 403);
   assert.equal(calls.length, 0);
 });
