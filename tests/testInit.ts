@@ -473,6 +473,18 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
 
+  // Supabase - Term / Schedule / Section tables (Term/Schedule/Section model). Default to empty so
+  // course loads resolve without hitting the throwing catch-all; specific tests override as needed.
+  await context.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route) => {
+    await route.fulfill({ json: [] });
+  });
+  await context.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, async (route) => {
+    await route.fulfill({ json: [] });
+  });
+  await context.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route) => {
+    await route.fulfill({ json: [] });
+  });
+
   // Supabase - Gemini function access
   await context.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
     switch (route.request().method()) {

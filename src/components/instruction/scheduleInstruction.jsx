@@ -54,13 +54,17 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
       <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
         <label className="text-sm text-gray-700 flex items-center gap-2">
           Schedule
-          <select value={selectedFileId} onChange={handleSelectionChange} className="border border-gray-300 rounded px-2 py-1 text-sm">
-            {files.map((file) => (
-              <option key={file.id} value={file.id}>
-                {file.title}
-              </option>
-            ))}
-          </select>
+          {files.length > 1 ? (
+            <select value={selectedFileId} onChange={handleSelectionChange} className="border border-gray-300 rounded px-2 py-1 text-sm">
+              {files.map((file) => (
+                <option key={file.id} value={file.id}>
+                  {file.title}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="font-medium text-gray-900">{files[0]?.title || ''}</span>
+          )}
         </label>
       </div>
       <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden">

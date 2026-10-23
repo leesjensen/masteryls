@@ -19,25 +19,6 @@ function formatDuration(seconds) {
   return `${sec}s`;
 }
 
-// Normalizes a schedule date (YYYY-MM-DD or any parseable date) to a YYYY-MM-DD value for a
-// native date input, or '' when absent/unparseable.
-function toDateInputValue(value) {
-  if (!value) return '';
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? new Date(`${value}T00:00:00`) : new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// The active/default schedule's inclusive span as date-input values (empty when undated).
-function scheduleDefaultRange(course) {
-  const files = Array.isArray(course?.schedule?.files) ? course.schedule.files : [];
-  const schedule = files.find((file) => file.default) || files[0];
-  return { start: toDateInputValue(schedule?.startDate), end: toDateInputValue(schedule?.endDate) };
-}
-
 // Compares two already-derived rows by a column. Names/emails are trimmed so a stray leading
 // space (invisible in the table, but significant to localeCompare) can't push a learner to an
 // extreme; dates and the numeric columns compare naturally.
@@ -69,18 +50,11 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [allRows, setAllRows] = React.useState([]);
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
   const [filterText, setFilterText] = React.useState('');
-  // Inclusive "enrolled between" window (YYYY-MM-DD strings; '' means unbounded). Defaults to the
-  // selected schedule's span. The server restricts the roster to enrollments created in this
-  // window, so changing it refetches.
-  const [range, setRange] = React.useState({ start: '', end: '' });
-  // The schedule file whose span currently drives the range ('' = a manual/custom range).
-  const [selectedScheduleId, setSelectedScheduleId] = React.useState('');
+  // The section the roster is scoped to ('' = all sections in the course). The server restricts the
+  // roster to enrollments in this section, so changing it refetches. Reset to '' on a course switch.
+  const [selectedSectionId, setSelectedSectionId] = React.useState('');
   const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
   const [selectedCourse, setSelectedCourse] = React.useState(null);
-  // The courseId whose schedule window is currently applied to `range`. The roster fetch waits
-  // until this matches selectedCourseId, so the first request already carries the schedule window
-  // (and never fires with a stale/empty window during a course switch).
-  const [rangeCourseId, setRangeCourseId] = React.useState(null);
 
   const [feedbackModal, setFeedbackModal] = React.useState(null);
 
@@ -218,9 +192,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     }
   }, [availableCourses, routeCourseId, selectedCourseId]);
 
-  // Load the course and seed the date window from its default schedule in one step, so the first
-  // roster fetch already carries the schedule window. rangeCourseId is set only once the window is
-  // ready, which gates the roster fetch below until then.
+  // Load the selected course (its sections drive the section filter) and reset the section scope.
   React.useEffect(() => {
     let cancelled = false;
 
@@ -228,9 +200,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       if (!selectedCourseId) {
         if (!cancelled) {
           setSelectedCourse(null);
-          setRange({ start: '', end: '' });
-          setSelectedScheduleId('');
-          setRangeCourseId('');
+          setSelectedSectionId('');
         }
         return;
       }
@@ -238,19 +208,13 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       try {
         const course = await courseOpsRef.current.getCourse(selectedCourseId);
         if (cancelled) return;
-        const files = Array.isArray(course?.schedule?.files) ? course.schedule.files : [];
-        const defaultSchedule = files.find((file) => file.default) || files[0];
         setSelectedCourse(course || null);
-        setSelectedScheduleId(defaultSchedule?.id || '');
-        setRange(scheduleDefaultRange(course));
+        setSelectedSectionId('');
         setPage(1);
-        setRangeCourseId(selectedCourseId);
       } catch {
         if (!cancelled) {
           setSelectedCourse(null);
-          setRange({ start: '', end: '' });
-          setSelectedScheduleId('');
-          setRangeCourseId(selectedCourseId);
+          setSelectedSectionId('');
         }
       }
     }
@@ -262,20 +226,14 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     };
   }, [selectedCourseId]);
 
-  // The enrolled-between window as inclusive ISO bounds for the server (local day boundaries).
-  const rangeStartIso = range.start ? new Date(`${range.start}T00:00:00`).toISOString() : '';
-  const rangeEndIso = range.end ? new Date(`${range.end}T23:59:59.999`).toISOString() : '';
-
-  // Fetch the roster, scoped to the enrolled-between window. Refetches when the window changes;
-  // sorting, text filtering and pagination all happen client-side against the returned set. Waits
-  // for the course to resolve so the first fetch already carries the schedule-default window.
+  // Fetch the roster, scoped to the selected section ('' = all sections). Refetches when the section
+  // changes; sorting, text filtering and pagination all happen client-side against the returned set.
+  // Waits for the selected course object to resolve so sections and the attendance flag are ready.
   React.useEffect(() => {
     let cancelled = false;
 
     async function loadOverview() {
-      // Wait until the schedule window for THIS course is applied (rangeCourseId === selectedCourseId),
-      // so the first request carries the right window and a course switch never fires a stale fetch.
-      if (!selectedCourseId || !hasCourseAccess || rangeCourseId !== selectedCourseId) {
+      if (!selectedCourseId || !hasCourseAccess || !selectedCourse || selectedCourse.id !== selectedCourseId) {
         if (!cancelled && (!selectedCourseId || !hasCourseAccess)) {
           setAllRows([]);
         }
@@ -285,7 +243,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, startDate: rangeStartIso, endDate: rangeEndIso, includeAttendance: Boolean(selectedCourse?.settings?.attendance) });
+        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, sectionId: selectedSectionId, includeAttendance: Boolean(selectedCourse?.settings?.attendance) });
         if (!cancelled) {
           setAllRows(Array.isArray(result?.rows) ? result.rows : []);
         }
@@ -306,7 +264,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     return () => {
       cancelled = true;
     };
-  }, [hasCourseAccess, selectedCourseId, rangeCourseId, rangeStartIso, rangeEndIso]);
+  }, [hasCourseAccess, selectedCourseId, selectedCourse, selectedSectionId]);
 
   function toggleSort(key) {
     setSort((prev) => (prev.key === key ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' }));
@@ -389,25 +347,9 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     return courseOpsRef.current.generateLearnerFeedbackEmail(learnerData, selectedCourse, senderName);
   }
 
-  // Pick a schedule from the dropdown: its span becomes the enrolled-between window.
-  function onScheduleSelect(scheduleId) {
-    setSelectedScheduleId(scheduleId);
-    const files = Array.isArray(selectedCourse?.schedule?.files) ? selectedCourse.schedule.files : [];
-    const file = files.find((entry) => entry.id === scheduleId);
-    setRange(file ? { start: toDateInputValue(file.startDate), end: toDateInputValue(file.endDate) } : { start: '', end: '' });
-    setPage(1);
-  }
-
-  // Manual edit of a From/To field detaches the window from any schedule (custom range).
-  function onRangeFieldChange(field, value) {
-    setRange((prev) => ({ ...prev, [field]: value }));
-    setSelectedScheduleId('');
-    setPage(1);
-  }
-
-  function onClearRange() {
-    setRange({ start: '', end: '' });
-    setSelectedScheduleId('');
+  // Pick a section from the dropdown to scope the roster ('' = all sections).
+  function onSectionSelect(sectionId) {
+    setSelectedSectionId(sectionId);
     setPage(1);
   }
 
@@ -423,10 +365,9 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const showAttendance = Boolean(selectedCourse?.settings?.attendance);
   const colSpan = (hasActions ? 9 : 8) + (showAttendance ? 1 : 0);
   const isFiltering = filterText.trim().length > 0;
-  const invalidRange = Boolean(range.start && range.end && range.start > range.end);
-  const scheduleFiles = Array.isArray(selectedCourse?.schedule?.files) ? selectedCourse.schedule.files : [];
-  // Also show the loading row while the course (and its schedule window) is still resolving.
-  const showLoading = loading || (Boolean(selectedCourseId) && hasCourseAccess && rangeCourseId !== selectedCourseId);
+  const courseSections = Array.isArray(selectedCourse?.sections) ? selectedCourse.sections : [];
+  // Also show the loading row while the selected course is still resolving.
+  const showLoading = loading || (Boolean(selectedCourseId) && hasCourseAccess && (!selectedCourse || selectedCourse.id !== selectedCourseId));
 
   function renderPagination() {
     return (
@@ -491,65 +432,27 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
         )}
       </div>
 
-      {canViewLearnerFilters && (
+      {canViewLearnerFilters && courseSections.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="text-sm font-medium text-gray-700">Enrolled between</span>
-          {scheduleFiles.length > 0 && (
-            <div className="flex items-center gap-1">
-              <label htmlFor="masteryview-schedule" className="text-sm text-gray-600">
-                Schedule
-              </label>
-              <select
-                id="masteryview-schedule"
-                value={selectedScheduleId}
-                onChange={(e) => onScheduleSelect(e.target.value)}
-                className="px-2 py-1 border border-gray-200 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
-                aria-label="Schedule"
-              >
-                <option value="">Custom</option>
-                {scheduleFiles.map((file) => (
-                  <option key={file.id} value={file.id}>
-                    {file.title || 'Schedule'}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
           <div className="flex items-center gap-1">
-            <label htmlFor="masteryview-start" className="text-sm text-gray-600">
-              From
+            <label htmlFor="masteryview-section" className="text-sm font-medium text-gray-700">
+              Section
             </label>
-            <input
-              id="masteryview-start"
-              type="date"
-              value={range.start}
-              onChange={(e) => onRangeFieldChange('start', e.target.value)}
+            <select
+              id="masteryview-section"
+              value={selectedSectionId}
+              onChange={(e) => onSectionSelect(e.target.value)}
               className="px-2 py-1 border border-gray-200 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
-              aria-label="Enrolled start date"
-            />
+              aria-label="Section"
+            >
+              <option value="">All sections</option>
+              {courseSections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.title || 'Section'}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="flex items-center gap-1">
-            <label htmlFor="masteryview-end" className="text-sm text-gray-600">
-              To
-            </label>
-            <input
-              id="masteryview-end"
-              type="date"
-              value={range.end}
-              onChange={(e) => onRangeFieldChange('end', e.target.value)}
-              className="px-2 py-1 border border-gray-200 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
-              aria-label="Enrolled end date"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={onClearRange}
-            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 text-xs"
-            title="Clear the date range (all enrollments)"
-          >
-            All dates
-          </button>
-          {invalidRange && <span className="text-xs text-red-600">Start date must be before end date</span>}
         </div>
       )}
 

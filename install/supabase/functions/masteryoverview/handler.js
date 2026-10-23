@@ -110,6 +110,10 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     // for overseer roster requests only - never to a single-learner drill-down or a self view.
     const startDate = String(payload?.startDate || '').trim() || null;
     const endDate = String(payload?.endDate || '').trim() || null;
+    // Overseer roster scoping by section (Term/Schedule/Section model). When provided, the roster is
+    // restricted to enrollments in this section. The legacy startDate/endDate window is still honored
+    // for backward compatibility; a request normally sends one or the other.
+    const sectionId = String(payload?.sectionId || '').trim() || null;
     // Roster-only: when attendance is enabled for the course the client asks for each learner's
     // attended-class count so the table can show it. Skipped otherwise to avoid an extra query.
     const includeAttendance = payload?.includeAttendance === true;
@@ -166,15 +170,16 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
     try {
       // Scope the enrollment read to what the requester may see:
       // - non-overseer: only their own enrollment (also serves as the authorization check below);
-      // - overseer drill-down (learnerId): that one learner, no date scope;
-      // - overseer roster: enrollments created within the "enrolled between" window, so
-      //   out-of-window cohorts are never fetched.
+      // - overseer drill-down (learnerId): that one learner, no section/date scope;
+      // - overseer roster: enrollments in the requested section (Term/Schedule/Section model), and/or
+      //   the legacy "enrolled between" window, so out-of-scope cohorts are never fetched.
       let query = supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId);
       if (!canOverseeCourse) {
         query = query.eq('learnerId', userId);
       } else if (learnerId) {
         query = query.eq('learnerId', learnerId);
       } else {
+        if (sectionId) query = query.eq('sectionId', sectionId);
         if (startDate) query = query.gte('createdAt', startDate);
         if (endDate) query = query.lte('createdAt', endDate);
       }

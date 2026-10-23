@@ -154,11 +154,20 @@ test('masteryview numeric sort spans all pages and resets to page one', async ({
   await expect(page.locator('tbody tr').first()).toContainText('Aaron Aardvark');
 });
 
-// Three learners enrolled on distinct dates; the mock emulates the edge function's server-side
-// createdAt window by filtering on the startDate/endDate the client sends.
-function mockCohortOverview(page: any) {
+// The course has two sections; the overview mock emulates the edge function's server-side section
+// scope by filtering on the sectionId the client sends. Registers the section-table read (so the
+// Section dropdown appears) and the roster edge function. Returns the captured roster requests.
+async function mockSectionRoster(page: any) {
   const requests: any[] = [];
-  return page.route(/.*supabase.co\/functions\/v1\/masteryoverview(\?.+)?/, async (route: any) => {
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route: any) => {
+    await route.fulfill({
+      json: [
+        { id: 'sec-a', title: 'Section A', scheduleId: 'sch-a' },
+        { id: 'sec-b', title: 'Section B', scheduleId: 'sch-b' },
+      ],
+    });
+  });
+  await page.route(/.*supabase.co\/functions\/v1\/masteryoverview(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
       return;
@@ -166,58 +175,39 @@ function mockCohortOverview(page: any) {
     const payload = await route.request().postDataJSON();
     requests.push(payload);
     const allRows = [
-      { enrollmentId: 'e-early', learnerId: 'l-early', learnerName: 'Early Learner', learnerEmail: 'early@test.edu', createdAt: '2026-01-10T12:00:00Z', progress: {} },
-      { enrollmentId: 'e-mid', learnerId: 'l-mid', learnerName: 'Mid Learner', learnerEmail: 'mid@test.edu', createdAt: '2026-03-15T12:00:00Z', progress: {} },
-      { enrollmentId: 'e-late', learnerId: 'l-late', learnerName: 'Late Learner', learnerEmail: 'late@test.edu', createdAt: '2026-06-20T12:00:00Z', progress: {} },
+      { enrollmentId: 'e-a', learnerId: 'l-a', learnerName: 'Alpha Learner', learnerEmail: 'alpha@test.edu', sectionId: 'sec-a', progress: {} },
+      { enrollmentId: 'e-b', learnerId: 'l-b', learnerName: 'Beta Learner', learnerEmail: 'beta@test.edu', sectionId: 'sec-b', progress: {} },
     ];
     let rows = allRows;
-    if (payload?.startDate) rows = rows.filter((r) => r.createdAt >= payload.startDate);
-    if (payload?.endDate) rows = rows.filter((r) => r.createdAt <= payload.endDate);
+    if (payload?.sectionId) rows = rows.filter((r) => r.sectionId === payload.sectionId);
     await route.fulfill({ status: 200, json: { rows, totalCount: rows.length } });
-  }).then(() => requests);
+  });
+  return requests;
 }
 
-test('masteryview filters the roster by enrollment date range (server-side)', async ({ page }) => {
+test('masteryview filters the roster by section (server-side)', async ({ page }) => {
   await initBasicCourse({ page });
-  const requests = await mockCohortOverview(page);
+  const requests = await mockSectionRoster(page);
 
   await navigateToDashboard(page);
   await page.getByRole('button', { name: 'User Menu' }).click();
   await page.getByRole('button', { name: 'MasteryView' }).click();
 
-  // The test course's schedule has no dates, so the window defaults to "all dates": everyone shows.
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
-  await expect(page.getByText('Total learners: 3')).toBeVisible();
+  // Default is "All sections": both learners show.
+  await expect(page.getByText('Total learners: 2')).toBeVisible();
 
-  // A March window: the server returns only the learner enrolled in March, and the client sends
-  // the date bounds (refetch), rather than filtering locally.
-  await page.getByLabel('Enrolled start date').fill('2026-03-01');
-  await page.getByLabel('Enrolled end date').fill('2026-04-01');
+  // Scope to Section B: the server returns only that section's learner, and the client sends the
+  // sectionId (refetch) rather than filtering locally.
+  await page.getByLabel('Section').selectOption({ label: 'Section B' });
   await expect(page.getByText('Total learners: 1')).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Mid Learner', exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Early Learner', exact: true })).toHaveCount(0);
-  await expect.poll(() => requests.some((r) => r.startDate && r.endDate)).toBe(true);
+  await expect(page.getByRole('cell', { name: 'Beta Learner', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Alpha Learner', exact: true })).toHaveCount(0);
+  await expect.poll(() => requests.some((r) => r.sectionId === 'sec-b')).toBe(true);
 
-  // Clearing the range refetches the whole roster.
-  await page.getByRole('button', { name: 'All dates' }).click();
-  await expect(page.getByText('Total learners: 3')).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Late Learner', exact: true })).toBeVisible();
-});
-
-test('masteryview schedule dropdown drives the enrolled-between window', async ({ page }) => {
-  await initBasicCourse({ page });
-  await mockCohortOverview(page);
-
-  await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
-
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
-  // The schedule picker defaults to the course's default schedule file ("Schedule").
-  await expect(page.getByLabel('Schedule')).toHaveValue('default');
-  // Editing a date detaches the window to "Custom".
-  await page.getByLabel('Enrolled start date').fill('2026-03-01');
-  await expect(page.getByLabel('Schedule')).toHaveValue('');
+  // Back to all sections refetches the whole roster.
+  await page.getByLabel('Section').selectOption({ label: 'All sections' });
+  await expect(page.getByText('Total learners: 2')).toBeVisible();
 });
 
 test('masteryview loads learner overview for accessible course', async ({ page }) => {

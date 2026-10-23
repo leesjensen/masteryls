@@ -589,7 +589,7 @@ class Service {
    * @returns A Map where keys are catalog IDs and values are Enrollment objects.
    */
   async enrollments(learnerId: string): Promise<Map<string, Enrollment>> {
-    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', learnerId);
+    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress, sectionId').eq('learnerId', learnerId);
 
     if (error) {
       throw new Error(error.message);
@@ -612,7 +612,7 @@ class Service {
    * @returns An array of enrollment records.
    */
   async allEnrollments(catalogId: string): Promise<any> {
-    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('catalogId', catalogId);
+    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress, sectionId').eq('catalogId', catalogId);
 
     if (error) {
       throw new Error(error.message);
@@ -628,13 +628,53 @@ class Service {
    * @returns The Enrollment object or null if not found.
    */
   async enrollment(learnerId: string, catalogId: string): Promise<Enrollment | null> {
-    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress').eq('learnerId', learnerId).eq('catalogId', catalogId);
+    const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress, sectionId').eq('learnerId', learnerId).eq('catalogId', catalogId);
 
     if (error || data.length === 0) {
       return null;
     }
 
     return { ...data[0], catalogEntry: this.catalogEntry(catalogId) };
+  }
+
+  /**
+   * Retrieves the sections defined for a course (Term/Schedule/Section model). Publicly readable;
+   * used to resolve a learner's schedule and for overseer section filtering.
+   * @param catalogId - The course catalog ID.
+   */
+  async getCourseSections(catalogId: string): Promise<any[]> {
+    const { data, error } = await this.supabase
+      .from('section')
+      .select('id, catalogId, termId, scheduleId, title, state, attendanceEnabled, legacyFileId, createdAt')
+      .eq('catalogId', catalogId)
+      .order('createdAt', { ascending: true });
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  /**
+   * Retrieves the schedules defined for a course (Term/Schedule/Section model). Publicly readable.
+   * @param catalogId - The course catalog ID.
+   */
+  async getCourseSchedules(catalogId: string): Promise<any[]> {
+    const { data, error } = await this.supabase
+      .from('schedule')
+      .select('id, catalogId, termId, title, state, startDate, endDate, contentPath, legacyFileId, createdAt')
+      .eq('catalogId', catalogId)
+      .order('createdAt', { ascending: true });
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  /**
+   * Assigns an enrollment to a section. RLS restricts this to course editors/root (and a learner
+   * for their own enrollment at enroll time). Immutability enforcement is a later phase.
+   * @param enrollmentId - The enrollment ID.
+   * @param sectionId - The section ID, or null to clear.
+   */
+  async setEnrollmentSection(enrollmentId: string, sectionId: string | null): Promise<void> {
+    const { error } = await this.supabase.from('enrollment').update({ sectionId }).eq('id', enrollmentId);
+    if (error) throw new Error(error.message);
   }
 
   /**
@@ -659,18 +699,30 @@ class Service {
    * @returns The created Enrollment object.
    */
   async createEnrollment(learnerId: string, catalogEntry: CatalogEntry, settings: Record<string, any> = {}): Promise<Enrollment> {
-    const { data, error } = await this.supabase
-      .from('enrollment')
-      .insert([
-        {
-          catalogId: catalogEntry.id,
-          learnerId,
-          settings,
-          progress: { mastery: 0 },
-        },
-      ])
-      .select()
-      .single();
+    // Interim section assignment: when the course has exactly one section, enroll into it so the
+    // learner's schedule resolves from their section. Multi-section selection is handled by the
+    // enrollment picker (later phase); zero sections leaves sectionId null (schedule-less/fallback).
+    let sectionId: string | null = null;
+    try {
+      const { data: sections } = await this.supabase.from('section').select('id').eq('catalogId', catalogEntry.id).limit(2);
+      if (Array.isArray(sections) && sections.length === 1) {
+        sectionId = sections[0].id;
+      }
+    } catch {
+      // Leave sectionId null on any failure - the dual-read fallback still resolves a schedule.
+    }
+
+    const insertRow: Record<string, any> = {
+      catalogId: catalogEntry.id,
+      learnerId,
+      settings,
+      progress: { mastery: 0 },
+    };
+    if (sectionId) {
+      insertRow.sectionId = sectionId;
+    }
+
+    const { data, error } = await this.supabase.from('enrollment').insert([insertRow]).select().single();
 
     if (error) {
       throw new Error(error.message);
@@ -1250,7 +1302,7 @@ class Service {
   /**
    * Invokes the Gradebook overview edge function for course-level learner summaries.
    */
-  async makeMasteryOverviewRequest(params: { courseId: string; learnerId?: string; startDate?: string; endDate?: string; includeAttendance?: boolean }) {
+  async makeMasteryOverviewRequest(params: { courseId: string; learnerId?: string; sectionId?: string; startDate?: string; endDate?: string; includeAttendance?: boolean }) {
     const { data, error } = await this.supabase.functions.invoke('masteryoverview', {
       body: params,
     });

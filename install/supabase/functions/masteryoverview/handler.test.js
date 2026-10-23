@@ -174,6 +174,44 @@ test('gradebookoverview includes per-learner attendedCount only when requested',
   assert.deepEqual(byLearner, { u1: 3, u2: 1 });
 });
 
+test('gradebookoverview roster scopes to a section when sectionId is provided', async () => {
+  const buildHandler = () =>
+    createMasteryOverviewHandler({
+      createSupabaseClientFromAuthHeader: () =>
+        createMockSupabase({
+          user: { id: 'root-user', email: 'root@test.com' },
+          dataMap: {
+            role: [{ id: 'r1', user: 'root-user', right: 'root', object: null }],
+            enrollment: [
+              { id: 'e1', learnerId: 'u1', catalogId: 'course-1', sectionId: 'sec-a', progress: { mastery: 80 } },
+              { id: 'e2', learnerId: 'u2', catalogId: 'course-1', sectionId: 'sec-b', progress: { mastery: 50 } },
+              { id: 'e3', learnerId: 'u3', catalogId: 'course-1', sectionId: null, progress: { mastery: 10 } },
+            ],
+            user: [
+              { id: 'u1', name: 'Learner One', email: 'learner1@test.com' },
+              { id: 'u2', name: 'Learner Two', email: 'learner2@test.com' },
+              { id: 'u3', name: 'Learner Three', email: 'learner3@test.com' },
+            ],
+          },
+        }),
+      getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y' })[key],
+    });
+
+  // Scoped to section sec-a -> only that learner.
+  const scoped = await (await buildHandler()(makeRequest({ courseId: 'course-1', sectionId: 'sec-a' }))).json();
+  assert.deepEqual(
+    scoped.rows.map((row) => row.learnerId),
+    ['u1']
+  );
+
+  // No section -> the whole course roster (all three).
+  const all = await (await buildHandler()(makeRequest({ courseId: 'course-1' }))).json();
+  assert.deepEqual(
+    all.rows.map((row) => row.learnerId).sort(),
+    ['u1', 'u2', 'u3']
+  );
+});
+
 test('gradebookoverview returns identity plus a trimmed progress blob for the list', async () => {
   const handler = createMasteryOverviewHandler({
     createSupabaseClientFromAuthHeader: () =>

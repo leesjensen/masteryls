@@ -7,6 +7,7 @@ import { generateId } from '../utils/utils';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
 import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown, scheduleDateStatus } from '../utils/scheduleMarkdown';
+import { resolveLearnerSchedule } from '../utils/scheduleResolution';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
@@ -182,6 +183,17 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         snapshotRefResolver: async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }),
       });
       if (course) {
+        // Attach the DB-backed Term/Schedule/Section rows so schedule resolution can derive a
+        // learner's schedule from their section. Best-effort: a failure leaves these empty and the
+        // legacy course.json schedule-file path is used (dual-read fallback).
+        try {
+          const [sections, schedules] = await Promise.all([service.getCourseSections(courseId), service.getCourseSchedules(courseId)]);
+          course.sections = sections;
+          course.schedules = schedules;
+        } catch {
+          course.sections = [];
+          course.schedules = [];
+        }
         courseCache.current.set(courseId, course);
       }
       return course;
@@ -702,6 +714,24 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return { id: 'attendance', title: 'Attendance', type: 'attendance', path: 'attendance', state: 'published' };
   }
 
+  // Returns the legacy schedule-file id a LEARNER is locked to via their section, or null when the
+  // viewer should see the full schedule picker (overseers, or no resolvable section). The learner's
+  // section maps (via schedule.legacyFileId) to exactly one course.json schedule file; locking to it
+  // reuses the existing file-descriptor/content-fetch machinery during the dual-read period.
+  function getLockedScheduleFileId(course) {
+    if (!course?.id) return null;
+    // When observing a learner, lock to that learner's section schedule (learningSession.enrollment is
+    // the observed learner's enrollment). Otherwise overseers keep the picker to inspect sections, and
+    // a learner is locked to their own section.
+    const observing = Boolean(observeSession?.active && observeSession?.courseId === course.id);
+    if (!observing && user?.canOverseeCourse?.(course.id)) return null;
+    const sectionId = learningSession?.enrollment?.sectionId;
+    if (!sectionId) return null;
+    const cached = courseCache.current.get(course.id) || course;
+    const resolved = resolveLearnerSchedule({ sectionId, sections: cached.sections || [], schedules: cached.schedules || [] });
+    return resolved?.source === 'section' ? resolved.schedule.legacyFileId || null : null;
+  }
+
   function getScheduleTopic(course = learningSession?.course) {
     if (!course) return null;
     if (!course.schedule?.id) {
@@ -713,7 +743,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       return null;
     }
 
-    const defaultFile = files.find((file) => file.default) || files[0];
+    const lockedId = getLockedScheduleFileId(course);
+    const defaultFile = (lockedId && files.find((file) => file.id === lockedId)) || files.find((file) => file.default) || files[0];
 
     return {
       id: course.schedule.id,
@@ -737,7 +768,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       course.schedule.files = files;
     }
 
-    return files
+    const resolvedFiles = files
       .filter((file) => file && file.path)
       .map((file, index) => {
         if (!file.id) {
@@ -745,6 +776,18 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         }
         return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default), { startDate: file.startDate, endDate: file.endDate });
       });
+
+    // A learner is locked to their section's schedule: expose only that one file so the read view
+    // and due-date sync use it and the picker cannot switch away. Overseers see all files.
+    const lockedId = getLockedScheduleFileId(course);
+    if (lockedId) {
+      const locked = resolvedFiles.find((file) => file.id === lockedId);
+      if (locked) {
+        return [locked];
+      }
+    }
+
+    return resolvedFiles;
   }
 
   function getSelectedScheduleFile(topic = learningSession?.topic, scheduleFiles = null) {
@@ -1931,10 +1974,11 @@ Requirements:
   // trimmed progress blob (the client derives metrics and sorts/filters/paginates locally),
   // optionally restricted to enrollments created within [startDate, endDate]. With learnerId:
   // that one learner's full progress blob (the drill-down needs the detail; date range ignored).
-  async function getMasteryOverview({ courseId, learnerId = '', startDate = '', endDate = '', includeAttendance = false }) {
+  async function getMasteryOverview({ courseId, learnerId = '', sectionId = '', startDate = '', endDate = '', includeAttendance = false }) {
     return service.makeMasteryOverviewRequest({
       courseId,
       ...(learnerId ? { learnerId } : {}),
+      ...(sectionId ? { sectionId } : {}),
       ...(startDate ? { startDate } : {}),
       ...(endDate ? { endDate } : {}),
       ...(includeAttendance ? { includeAttendance: true } : {}),

@@ -97,6 +97,56 @@ create table if not exists public.attendance (
   "closedAt" timestamp with time zone
 );
 
+-- Term: a course-scoped, time-bounded period of instruction (semester/quarter/short block).
+-- Schedules and sections live under a term. See the Term/Schedule/Section operational model.
+create table if not exists public.term (
+  id uuid primary key default gen_random_uuid(),
+  "catalogId" uuid not null references public.catalog(id) on delete cascade,
+  "createdBy" uuid references public."user"(id) on delete set null default auth.uid(),
+  "createdAt" timestamp with time zone default now(),
+  title text,
+  "startDate" date,
+  "endDate" date
+);
+
+-- Schedule: the content/delivery calendar (topics, deliverables, lectures). Metadata lives here;
+-- the markdown content stays in GitHub at contentPath. legacyFileId maps a migrated
+-- course.json schedule.files[] entry to its row (used by the one-time section backfill).
+create table if not exists public.schedule (
+  id uuid primary key default gen_random_uuid(),
+  "catalogId" uuid not null references public.catalog(id) on delete cascade,
+  "termId" uuid references public.term(id) on delete cascade,
+  "createdBy" uuid references public."user"(id) on delete set null default auth.uid(),
+  "createdAt" timestamp with time zone default now(),
+  title text,
+  state text default 'published',
+  "startDate" date,
+  "endDate" date,
+  "contentPath" text,
+  "legacyFileId" text
+);
+
+-- Section: a group of learners taking one schedule within a term. Attendance is enabled per
+-- section (some sections are online / not in-person). A schedule may back many sections.
+create table if not exists public.section (
+  id uuid primary key default gen_random_uuid(),
+  "catalogId" uuid not null references public.catalog(id) on delete cascade,
+  "termId" uuid references public.term(id) on delete cascade,
+  "scheduleId" uuid references public.schedule(id) on delete set null,
+  "createdBy" uuid references public."user"(id) on delete set null default auth.uid(),
+  "createdAt" timestamp with time zone default now(),
+  title text,
+  state text default 'active',
+  "attendanceEnabled" boolean not null default false,
+  "legacyFileId" text
+);
+
+-- Associate each enrollment with a section (nullable: a course may have no sections, and legacy
+-- enrollments are backfilled). The learner's schedule is derived via section -> schedule. Added
+-- after the section table so the FK resolves on a fresh install.
+alter table public.enrollment
+  add column if not exists "sectionId" uuid references public.section(id) on delete set null;
+
 -- Generic append-only application event log. Any registered user can write an entry;
 -- only root/editor can read them back.
 create table if not exists public.log (
@@ -138,6 +188,16 @@ create unique index if not exists "attendanceOneOpenIdx" on public.attendance ("
 create index if not exists "attendanceCatalogOpenedIdx" on public.attendance ("catalogId", "openedAt");
 -- Attendance: a learner checks in to a session at most once (progress.interactionId = attendance.id)
 create unique index if not exists "progressAttendanceOnceIdx" on public.progress ("enrollmentId", "interactionId") where type = 'attendance';
+
+-- Term/Schedule/Section lookups by course; section by schedule; enrollment by section
+create index if not exists "termCatalogIdx" on public.term ("catalogId");
+create index if not exists "scheduleCatalogIdx" on public.schedule ("catalogId");
+create index if not exists "sectionCatalogIdx" on public.section ("catalogId");
+create index if not exists "sectionScheduleIdx" on public.section ("scheduleId");
+create index if not exists "enrollmentSectionIdx" on public.enrollment ("sectionId");
+-- Idempotent section backfill: one schedule/section per migrated course.json schedule file
+create unique index if not exists "scheduleCatalogLegacyFileIdx" on public.schedule ("catalogId", "legacyFileId") where "legacyFileId" is not null;
+create unique index if not exists "sectionCatalogLegacyFileIdx" on public.section ("catalogId", "legacyFileId") where "legacyFileId" is not null;
 
 -- Log queries: recent events ordered by newest first, optionally filtered by event type
 create index if not exists "logCreatedAtIdx" on public.log ("createdAt" desc);
@@ -721,6 +781,9 @@ revoke all on table public.topic from public, anon, authenticated;
 revoke all on table public.progress from public, anon, authenticated;
 revoke all on table public.log from public, anon, authenticated;
 revoke all on table public.attendance from public, anon, authenticated;
+revoke all on table public.term from public, anon, authenticated;
+revoke all on table public.schedule from public, anon, authenticated;
+revoke all on table public.section from public, anon, authenticated;
 
 -- Catalog grants
 grant select on table public.catalog to anon, authenticated;
@@ -748,6 +811,15 @@ grant select, insert on table public.log to authenticated;
 -- Attendance sessions are created and closed through RPCs; RLS narrows reads to overseers.
 grant select on table public.attendance to authenticated;
 
+-- Term/Schedule/Section are publicly readable (pre-enrollment learners pick a section; anyone can
+-- view a schedule). Writes are narrowed to course editors/root by RLS.
+grant select on table public.term to anon, authenticated;
+grant insert, update, delete on table public.term to authenticated;
+grant select on table public.schedule to anon, authenticated;
+grant insert, update, delete on table public.schedule to authenticated;
+grant select on table public.section to anon, authenticated;
+grant insert, update, delete on table public.section to authenticated;
+
 
 ----------------------- Row Level Security
 
@@ -761,6 +833,9 @@ alter table public.topic enable row level security;
 alter table public.progress enable row level security;
 alter table public.log enable row level security;
 alter table public.attendance enable row level security;
+alter table public.term enable row level security;
+alter table public.schedule enable row level security;
+alter table public.section enable row level security;
 
 
 ----------------------- Policies
@@ -796,6 +871,15 @@ drop policy if exists "Root manages all" on public.progress;
 drop policy if exists "Registered user inserts log" on public.log;
 drop policy if exists "Root or editor reads log" on public.log;
 drop policy if exists "Course overseer reads attendance" on public.attendance;
+drop policy if exists "World read all" on public.term;
+drop policy if exists "Course editor manages term" on public.term;
+drop policy if exists "Root manages all" on public.term;
+drop policy if exists "World read all" on public.schedule;
+drop policy if exists "Course editor manages schedule" on public.schedule;
+drop policy if exists "Root manages all" on public.schedule;
+drop policy if exists "World read all" on public.section;
+drop policy if exists "Course editor manages section" on public.section;
+drop policy if exists "Root manages all" on public.section;
 
 
 ----------------------- Policies: Catalog
@@ -1027,6 +1111,33 @@ on public.attendance
 for select
 to authenticated
 using (public.auth_oversees_course(auth.uid(), "catalogId"));
+
+
+----------------------- Policies: Term / Schedule / Section
+
+
+-- Publicly readable so pre-enrollment learners can see selectable sections and anyone can view a
+-- schedule. Writes are restricted to course editors (and root).
+create policy "World read all" on public.term for select to public using (true);
+create policy "Course editor manages term" on public.term for all to authenticated
+  using (public.auth_manages_course(auth.uid(), "catalogId"))
+  with check (public.auth_manages_course(auth.uid(), "catalogId"));
+create policy "Root manages all" on public.term for all to authenticated
+  using (public.auth_is_root(auth.uid())) with check (public.auth_is_root(auth.uid()));
+
+create policy "World read all" on public.schedule for select to public using (true);
+create policy "Course editor manages schedule" on public.schedule for all to authenticated
+  using (public.auth_manages_course(auth.uid(), "catalogId"))
+  with check (public.auth_manages_course(auth.uid(), "catalogId"));
+create policy "Root manages all" on public.schedule for all to authenticated
+  using (public.auth_is_root(auth.uid())) with check (public.auth_is_root(auth.uid()));
+
+create policy "World read all" on public.section for select to public using (true);
+create policy "Course editor manages section" on public.section for all to authenticated
+  using (public.auth_manages_course(auth.uid(), "catalogId"))
+  with check (public.auth_manages_course(auth.uid(), "catalogId"));
+create policy "Root manages all" on public.section for all to authenticated
+  using (public.auth_is_root(auth.uid())) with check (public.auth_is_root(auth.uid()));
 
 
 ----------------------- Policies: Log
