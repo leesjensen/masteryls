@@ -4,6 +4,7 @@ import ConfirmDialog from '../../hooks/confirmDialog.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { GraduationCap, BookSearch, Eye, EyeOff } from 'lucide-react';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
+import { enrollableSections } from '../../utils/sectionEnrollment.js';
 
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
@@ -14,6 +15,10 @@ export default function DashboardView({ courseOps, service, user }) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [enrollmentSummaries, setEnrollmentSummaries] = useState(new Map());
   const dialogRef = useRef(null);
+  // Section picker shown when enrolling in a course that has more than one section.
+  const [sectionEnroll, setSectionEnroll] = useState(null); // { catalogEntry, sections }
+  const [selectedSectionId, setSelectedSectionId] = useState('');
+  const sectionDialogRef = useRef(null);
 
   React.useEffect(() => {
     if (user) {
@@ -59,15 +64,65 @@ export default function DashboardView({ courseOps, service, user }) {
     };
   }, [courseOps, enrollments]);
 
-  const addEnrollment = async (catalogEntry) => {
-    if (!enrollments.has(catalogEntry.id)) {
-      const cardColor = pickEnrollmentCardColor(enrollments);
-      const newEnrollment = await service.createEnrollment(user.id, catalogEntry, { cardColor });
-      if (!newEnrollment) throw new Error('Failed to create enrollment');
+  const enrollInCourse = async (catalogEntry, sectionId) => {
+    const cardColor = pickEnrollmentCardColor(enrollments);
+    const newEnrollment = await service.createEnrollment(user.id, catalogEntry, { cardColor }, sectionId);
+    if (!newEnrollment) throw new Error('Failed to create enrollment');
 
-      setEnrollments((prev) => new Map(prev).set(catalogEntry.id, newEnrollment));
-      await service.logEvent('createEnrollment', { learnerId: user.id, courseId: catalogEntry.id });
+    setEnrollments((prev) => new Map(prev).set(catalogEntry.id, newEnrollment));
+    await service.logEvent('createEnrollment', { learnerId: user.id, courseId: catalogEntry.id });
+  };
+
+  const addEnrollment = async (catalogEntry) => {
+    if (enrollments.has(catalogEntry.id)) return;
+
+    let sections = [];
+    let schedules = [];
+    try {
+      [sections, schedules] = await Promise.all([service.getCourseSections(catalogEntry.id), service.getCourseSchedules(catalogEntry.id)]);
+    } catch {
+      sections = [];
+      schedules = [];
     }
+
+    // A course with no sections is schedule-less: enroll unsectioned.
+    if (sections.length === 0) {
+      await enrollInCourse(catalogEntry, null);
+      return;
+    }
+
+    // Only offer sections whose scheduled term includes today (a section with no schedule, or an
+    // undated schedule, is always open). The chosen section is fixed after enrolling.
+    const open = enrollableSections(sections, schedules);
+
+    if (open.length === 0) {
+      // The course has sections but none are currently open for enrollment.
+      setSectionEnroll({ catalogEntry, sections: [] });
+      setSelectedSectionId('');
+      sectionDialogRef.current?.showModal();
+      return;
+    }
+    if (open.length === 1) {
+      await enrollInCourse(catalogEntry, open[0].id);
+      return;
+    }
+    setSectionEnroll({ catalogEntry, sections: open });
+    setSelectedSectionId(open[0].id);
+    sectionDialogRef.current?.showModal();
+  };
+
+  const confirmSectionEnroll = async () => {
+    const pending = sectionEnroll;
+    sectionDialogRef.current?.close();
+    setSectionEnroll(null);
+    if (pending && selectedSectionId) {
+      await enrollInCourse(pending.catalogEntry, selectedSectionId);
+    }
+  };
+
+  const cancelSectionEnroll = () => {
+    sectionDialogRef.current?.close();
+    setSectionEnroll(null);
   };
 
   const requestedEnrollmentRemoval = async (enrollment) => {
@@ -205,6 +260,45 @@ export default function DashboardView({ courseOps, service, user }) {
           </p>
         }
       />
+      <dialog ref={sectionDialogRef} className="rounded-lg p-0 shadow-lg mx-auto mt-24 backdrop:bg-black/40" onCancel={cancelSectionEnroll}>
+        <div className="p-5 w-80 max-w-[90vw]">
+          {(sectionEnroll?.sections?.length || 0) === 0 ? (
+            <>
+              <h2 className="text-base font-semibold text-gray-800 mb-1">No open sections</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                <b>{sectionEnroll?.catalogEntry?.title || sectionEnroll?.catalogEntry?.name}</b> has no sections currently open for enrollment. Please check back when a section’s schedule is active.
+              </p>
+              <div className="flex justify-end">
+                <button type="button" onClick={cancelSectionEnroll} className="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                  Close
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="text-base font-semibold text-gray-800 mb-1">Choose a section</h2>
+              <p className="text-sm text-gray-600 mb-3">
+                <b>{sectionEnroll?.catalogEntry?.title || sectionEnroll?.catalogEntry?.name}</b> has more than one section. Pick the one you are taking — this can’t be changed after you enroll.
+              </p>
+              <select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-4">
+                {(sectionEnroll?.sections || []).map((section) => (
+                  <option key={section.id} value={section.id}>
+                    {section.title || 'Section'}
+                  </option>
+                ))}
+              </select>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={cancelSectionEnroll} className="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button type="button" onClick={confirmSectionEnroll} disabled={!selectedSectionId} className="px-3 py-1.5 rounded-md bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:bg-gray-300">
+                  Enroll
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </dialog>
     </>
   );
 }

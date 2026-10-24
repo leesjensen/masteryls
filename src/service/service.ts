@@ -698,18 +698,20 @@ class Service {
    * @param catalogEntry - The course catalog entry.
    * @returns The created Enrollment object.
    */
-  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry, settings: Record<string, any> = {}): Promise<Enrollment> {
-    // Interim section assignment: when the course has exactly one section, enroll into it so the
-    // learner's schedule resolves from their section. Multi-section selection is handled by the
-    // enrollment picker (later phase); zero sections leaves sectionId null (schedule-less/fallback).
-    let sectionId: string | null = null;
-    try {
-      const { data: sections } = await this.supabase.from('section').select('id').eq('catalogId', catalogEntry.id).limit(2);
-      if (Array.isArray(sections) && sections.length === 1) {
-        sectionId = sections[0].id;
+  async createEnrollment(learnerId: string, catalogEntry: CatalogEntry, settings: Record<string, any> = {}, sectionId: string | null = null): Promise<Enrollment> {
+    // The caller may pass an explicit section (the enrollment picker, for multi-section courses).
+    // Otherwise, when the course has exactly one section, enroll into it so the learner's schedule
+    // resolves from their section. Zero sections (schedule-less) leaves sectionId null (fallback).
+    let resolvedSectionId: string | null = sectionId || null;
+    if (!resolvedSectionId) {
+      try {
+        const { data: sections } = await this.supabase.from('section').select('id').eq('catalogId', catalogEntry.id).limit(2);
+        if (Array.isArray(sections) && sections.length === 1) {
+          resolvedSectionId = sections[0].id;
+        }
+      } catch {
+        // Leave sectionId null on any failure - the dual-read fallback still resolves a schedule.
       }
-    } catch {
-      // Leave sectionId null on any failure - the dual-read fallback still resolves a schedule.
     }
 
     const insertRow: Record<string, any> = {
@@ -718,8 +720,8 @@ class Service {
       settings,
       progress: { mastery: 0 },
     };
-    if (sectionId) {
-      insertRow.sectionId = sectionId;
+    if (resolvedSectionId) {
+      insertRow.sectionId = resolvedSectionId;
     }
 
     const { data, error } = await this.supabase.from('enrollment').insert([insertRow]).select().single();
