@@ -709,8 +709,28 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   // Synthetic topic for the course Attendance view. Only available when attendance is enabled
   // in the course settings.
+  // Attendance is enabled per section. True when any section of the course has it enabled - used by
+  // overseer views (roster/export) to decide whether to surface attendance at all.
+  function courseHasAttendance(course = learningSession?.course) {
+    const cached = course?.id ? courseCache.current.get(course.id) || course : course;
+    const sections = Array.isArray(cached?.sections) ? cached.sections : [];
+    return sections.some((section) => section?.attendanceEnabled);
+  }
+
   function getAttendanceTopic(course = learningSession?.course) {
-    if (!course?.settings?.attendance) return null;
+    if (!course?.id) return null;
+    const observing = Boolean(observeSession?.active && observeSession?.courseId === course.id);
+    // Overseers (when not observing) always see the attendance affordance so they can reach the admin
+    // view to enable/open attendance per section. A learner - or an overseer observing a learner -
+    // sees it only when the (observed) learner's section has attendance enabled.
+    if (!observing && user?.canOverseeCourse?.(course.id)) {
+      return { id: 'attendance', title: 'Attendance', type: 'attendance', path: 'attendance', state: 'published' };
+    }
+    const sectionId = learningSession?.enrollment?.sectionId;
+    if (!sectionId) return null;
+    const cached = courseCache.current.get(course.id) || course;
+    const section = (Array.isArray(cached?.sections) ? cached.sections : []).find((s) => s.id === sectionId);
+    if (!section?.attendanceEnabled) return null;
     return { id: 'attendance', title: 'Attendance', type: 'attendance', path: 'attendance', state: 'published' };
   }
 
@@ -1852,21 +1872,34 @@ Requirements:
     });
   }
 
-  // Open a new attendance session for the course. Returns the session including its code.
-  async function openAttendance(courseId, questions = []) {
-    return service.openAttendance(courseId, questions);
+  // Open a new attendance session for a section. Returns the session including its code.
+  async function openAttendance(courseId, sectionId, questions = []) {
+    return service.openAttendance(courseId, sectionId, questions);
   }
 
   async function closeAttendance(sessionId) {
     return service.closeAttendance(sessionId);
   }
 
-  async function getOpenAttendance(courseId) {
-    return service.getOpenAttendance(courseId);
+  async function getOpenAttendance(courseId, sectionId) {
+    return service.getOpenAttendance(courseId, sectionId);
   }
 
-  async function getAttendanceSessions(courseId) {
-    return service.getAttendanceSessions(courseId);
+  // Attendance sessions for a course; pass a sectionId to scope sessions + the enrolledCount
+  // denominator to that section (so the learner chart can show an honest "attended N of M").
+  async function getAttendanceSessions(courseId, sectionId = null) {
+    return service.getAttendanceSessions(courseId, sectionId);
+  }
+
+  // Enable/disable attendance for a section (editor/root only, enforced by RLS).
+  async function setSectionAttendanceEnabled(sectionId, enabled) {
+    await service.setSectionAttendanceEnabled(sectionId, enabled);
+  }
+
+  // The section of the enrollment in the current session (the learner's own, or the observed
+  // learner's during observe). Lets the learner attendance chart scope to "attended N of M".
+  function getCurrentSectionId() {
+    return learningSession?.enrollment?.sectionId || null;
   }
 
   // Attendance progress rows for a learner in a course (one per attended session).
@@ -2568,6 +2601,9 @@ Requirements:
     createMasteryAssignment,
     createAttendanceAssignment,
     getAttendanceTopic,
+    courseHasAttendance,
+    setSectionAttendanceEnabled,
+    getCurrentSectionId,
     openAttendance,
     closeAttendance,
     getOpenAttendance,

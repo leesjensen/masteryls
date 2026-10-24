@@ -5,21 +5,25 @@ import { buildAttendanceHistory, sentimentColor, ATTENDANCE_SENTIMENTS, NO_RESPO
 import { getAttendanceGradeSettings, calculateAttendancePoints } from '../../hooks/canvas/attendanceCanvasSync.js';
 
 // One learner's attended classes, each bar coloured by their answer to that session's
-// wellness question ("How are things going?"). Only classes the learner attended are
-// drawn — there is no absent/total reckoning, because a course can span multiple sections
-// whose sessions aren't all classes this learner was expected at. Used by the learner's
-// own Attendance page and the MasteryView learner drill-down. Change refreshKey to reload.
-export default function LearnerAttendanceChart({ courseOps, course, userId, refreshKey = 0 }) {
+// wellness question ("How are things going?"). When a sectionId is given (attendance is now taken
+// per section), the chart scopes to that section's sessions and can show an honest "attended N of M".
+// Without one it falls back to the attended-only view (no total). Used by the learner's own Attendance
+// page and the MasteryView learner drill-down. Change refreshKey to reload.
+export default function LearnerAttendanceChart({ courseOps, course, userId, sectionId = null, refreshKey = 0 }) {
   const [history, setHistory] = React.useState(null);
+  const [totalSessions, setTotalSessions] = React.useState(0);
   const [error, setError] = React.useState(null);
 
   React.useEffect(() => {
     if (!course?.id || !userId) return undefined;
     let cancelled = false;
     setError(null);
-    Promise.all([courseOps.getAttendanceSessions(course.id), courseOps.getLearnerAttendance(course.id, userId)])
+    Promise.all([courseOps.getAttendanceSessions(course.id, sectionId || null), courseOps.getLearnerAttendance(course.id, userId)])
       .then(([{ sessions }, rows]) => {
-        if (!cancelled) setHistory(buildAttendanceHistory(sessions, rows));
+        if (!cancelled) {
+          setHistory(buildAttendanceHistory(sessions, rows));
+          setTotalSessions(Array.isArray(sessions) ? sessions.length : 0);
+        }
       })
       .catch((ex) => {
         if (!cancelled) setError(ex.message);
@@ -27,7 +31,7 @@ export default function LearnerAttendanceChart({ courseOps, course, userId, refr
     return () => {
       cancelled = true;
     };
-  }, [course?.id, userId, refreshKey]);
+  }, [course?.id, userId, sectionId, refreshKey]);
 
   if (error) return <div className="text-sm text-red-600">Unable to load attendance: {error}</div>;
   if (!history) return <div className="text-sm text-gray-500 py-4 text-center">Loading attendance...</div>;
@@ -62,7 +66,8 @@ export default function LearnerAttendanceChart({ courseOps, course, userId, refr
     <div data-testid="learner-attendance-chart">
       <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 mb-2">
         <span>
-          Attended <strong>{attended}</strong> class{attended !== 1 ? 'es' : ''}
+          Attended <strong>{attended}</strong>
+          {sectionId ? <> of <strong>{totalSessions}</strong></> : null} class{(sectionId ? totalSessions : attended) !== 1 ? 'es' : ''}
         </span>
         {gradeSettings && (
           <span>

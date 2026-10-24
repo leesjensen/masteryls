@@ -330,12 +330,16 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     return () => { cancelled = true; };
   }, [chartMode, canvasGrades.loaded, selectedCourse?.externalRefs?.canvasCourseId, selectedLearner?.learnerEmail, selectedCourseId]);
 
+  // Attendance is enabled per section; the drill-down offers the tab when any section of the course
+  // has it enabled (the chart itself scopes to the viewed learner's section).
+  const hasAttendance = courseOps.courseHasAttendance(selectedCourse);
+
   // If the selected tab is no longer offered for this course (switched to a course without
   // attendance, or without a Canvas link for this learner), fall back to the always-present tab.
   React.useEffect(() => {
-    if (chartMode === 'attendance' && !selectedCourse?.settings?.attendance) setChartMode('lastInteraction');
+    if (chartMode === 'attendance' && !hasAttendance) setChartMode('lastInteraction');
     if (chartMode === 'canvasGrades' && !canvasGradesUrl) setChartMode('lastInteraction');
-  }, [chartMode, canvasGradesUrl, selectedCourse?.settings?.attendance]);
+  }, [chartMode, canvasGradesUrl, hasAttendance]);
 
   function onCourseChange(value) {
     if (value && routeLearnerId) {
@@ -566,7 +570,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               >
                 Daily Activity
               </button>
-              {selectedCourse?.settings?.attendance && (
+              {hasAttendance && (
                 <button
                   type="button"
                   onClick={() => setChartMode('attendance')}
@@ -592,7 +596,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
               ? <div className="text-sm text-gray-500 py-4 text-center">Loading activity...</div>
               : <DailyActivityChart records={activityRecords} />
           )}
-          {chartMode === 'attendance' && selectedCourse?.settings?.attendance && <LearnerAttendanceChart courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} />}
+          {chartMode === 'attendance' && hasAttendance && <LearnerAttendanceChart courseOps={courseOps} course={selectedCourse} userId={routeLearnerId} />}
           {chartMode === 'canvasGrades' && canvasGradesUrl && <CanvasGradesPanel loading={canvasGrades.loading} error={canvasGrades.error} found={canvasGrades.found} overall={canvasGrades.overall} assignments={canvasGrades.assignments} />}
         </div>
       )}

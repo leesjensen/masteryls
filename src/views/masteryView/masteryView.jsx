@@ -243,7 +243,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       setLoading(true);
       setError(null);
       try {
-        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, sectionId: selectedSectionId, includeAttendance: Boolean(selectedCourse?.settings?.attendance) });
+        const result = await courseOpsRef.current.getMasteryOverview({ courseId: selectedCourseId, sectionId: selectedSectionId, includeAttendance: courseOpsRef.current.courseHasAttendance(selectedCourse) });
         if (!cancelled) {
           setAllRows(Array.isArray(result?.rows) ? result.rows : []);
         }
@@ -362,7 +362,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }
 
   // Show a per-learner attended-class count only when attendance is enabled for the course.
-  const showAttendance = Boolean(selectedCourse?.settings?.attendance);
+  const showAttendance = courseOps.courseHasAttendance(selectedCourse);
   const colSpan = (hasActions ? 9 : 8) + (showAttendance ? 1 : 0);
   const isFiltering = filterText.trim().length > 0;
   const courseSections = Array.isArray(selectedCourse?.sections) ? selectedCourse.sections : [];
@@ -458,7 +458,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-      {hasCourseAccess && selectedCourse?.id === selectedCourseId && selectedCourse?.settings?.attendance && (
+      {hasCourseAccess && selectedCourse?.id === selectedCourseId && showAttendance && (
         <div className="border border-gray-200 rounded-md p-3 bg-white">
           <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Attendance</div>
           <CourseAttendanceChart courseOps={courseOps} courseId={selectedCourseId} />

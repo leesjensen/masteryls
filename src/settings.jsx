@@ -32,7 +32,6 @@ export default function Settings({ courseOps, user, course }) {
     gitHubToken: user?.getSetting('gitHubToken', course.id) || '',
     state: course.settings.state,
     deleteProtected: course.settings.deleteProtected || false,
-    attendance: course.settings.attendance || false,
   });
 
   const moduleCount = course.modules.length || 0;
@@ -152,7 +151,7 @@ export default function Settings({ courseOps, user, course }) {
   };
 
   const compareCourse = (data) => {
-    return data.name !== course.name || data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository || data.state !== course.settings.state || data.deleteProtected !== (course.settings?.deleteProtected || false) || data.attendance !== (course.settings?.attendance || false);
+    return data.name !== course.name || data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository || data.state !== course.settings.state || data.deleteProtected !== (course.settings?.deleteProtected || false);
   };
 
   const compareMentors = (newSelected) => {
@@ -214,7 +213,6 @@ export default function Settings({ courseOps, user, course }) {
           ...course.settings,
           state: formData.state,
           deleteProtected: formData.deleteProtected,
-          attendance: formData.attendance,
         },
       };
       courseOps.service.saveCatalogEntry(catalogEntry);
@@ -516,12 +514,6 @@ export default function Settings({ courseOps, user, course }) {
                   <label className="flex items-center cursor-pointer">
                     <input type="checkbox" checked={formData.deleteProtected} onChange={(e) => handleInputChange('deleteProtected', e.target.checked)} className="mr-2 cursor-pointer" />
                     <span className="text-sm font-medium text-gray-700">Delete Protected</span>
-                  </label>
-                </div>
-                <div>
-                  <label className="flex items-center cursor-pointer">
-                    <input type="checkbox" checked={formData.attendance} onChange={(e) => handleInputChange('attendance', e.target.checked)} className="mr-2 cursor-pointer" />
-                    <span className="text-sm font-medium text-gray-700">Attendance</span>
                   </label>
                 </div>
               </>

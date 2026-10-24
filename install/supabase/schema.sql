@@ -147,6 +147,11 @@ create table if not exists public.section (
 alter table public.enrollment
   add column if not exists "sectionId" uuid references public.section(id) on delete set null;
 
+-- Attendance sessions are taken per section (some sections are online / not in-person). Added after
+-- the section table so the FK resolves on a fresh install. Legacy sessions keep sectionId null.
+alter table public.attendance
+  add column if not exists "sectionId" uuid references public.section(id) on delete set null;
+
 -- Generic append-only application event log. Any registered user can write an entry;
 -- only root/editor can read them back.
 create table if not exists public.log (
@@ -183,9 +188,11 @@ create index if not exists "progressCatalogTopicIdx" on public.progress ("catalo
 -- Progress queries: course-scoped activity pages ordered by newest first
 create index if not exists "progressCatalogCreatedAtIdx" on public.progress ("catalogId", "createdAt" desc);
 
--- Attendance: at most one open session per course, and session history by course
-create unique index if not exists "attendanceOneOpenIdx" on public.attendance ("catalogId") where "closedAt" is null;
+-- Attendance: at most one open session per section (sections meet independently, so a course can
+-- hold several concurrent open sessions). Legacy sessions with a null sectionId are not constrained.
+create unique index if not exists "attendanceOneOpenSectionIdx" on public.attendance ("sectionId") where "closedAt" is null and "sectionId" is not null;
 create index if not exists "attendanceCatalogOpenedIdx" on public.attendance ("catalogId", "openedAt");
+create index if not exists "attendanceSectionOpenedIdx" on public.attendance ("sectionId", "openedAt");
 -- Attendance: a learner checks in to a session at most once (progress.interactionId = attendance.id)
 create unique index if not exists "progressAttendanceOnceIdx" on public.progress ("enrollmentId", "interactionId") where type = 'attendance';
 
@@ -430,6 +437,41 @@ begin
 end;
 $$;
 
+-- RPC: open an attendance session for a specific SECTION with a new random 4 digit code. Any session
+-- still open for that section is closed first (sections meet independently, so other sections' open
+-- sessions are left untouched). This is the current path; the course-only form above is legacy.
+create or replace function public.open_attendance(p_catalog_id uuid, p_section_id uuid, p_questions jsonb default '[]'::jsonb)
+returns public.attendance
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_session public.attendance%rowtype;
+begin
+  if not public.auth_oversees_course(auth.uid(), p_catalog_id) then
+    raise exception 'User is not authorized to take attendance for this course';
+  end if;
+
+  update public.attendance
+  set "closedAt" = now()
+  where "sectionId" = p_section_id
+    and "closedAt" is null;
+
+  insert into public.attendance ("catalogId", "sectionId", "createdBy", code, questions)
+  values (
+    p_catalog_id,
+    p_section_id,
+    auth.uid(),
+    lpad(floor(random() * 10000)::int::text, 4, '0'),
+    case when jsonb_typeof(p_questions) = 'array' then p_questions else '[]'::jsonb end
+  )
+  returning * into v_session;
+
+  return v_session;
+end;
+$$;
+
 -- RPC: close an attendance session
 create or replace function public.close_attendance(p_session_id uuid)
 returns public.attendance
@@ -526,8 +568,11 @@ end;
 $$;
 
 -- RPC: attendance sessions for a course (without codes) with attendee counts. Available to
--- enrolled learners and course overseers so attendance history can be graphed.
-create or replace function public.attendance_sessions(p_catalog_id uuid)
+-- enrolled learners and course overseers so attendance history can be graphed. When p_section_id is
+-- given the result is scoped to that section (sessions and the enrolledCount denominator), so the
+-- learner chart can show an honest "attended N of M"; null returns the whole course.
+drop function if exists public.attendance_sessions(uuid);
+create or replace function public.attendance_sessions(p_catalog_id uuid, p_section_id uuid default null)
 returns jsonb
 language plpgsql
 stable
@@ -545,7 +590,7 @@ begin
   end if;
 
   return jsonb_build_object(
-    'enrolledCount', (select count(*) from public.enrollment where "catalogId" = p_catalog_id),
+    'enrolledCount', (select count(*) from public.enrollment where "catalogId" = p_catalog_id and (p_section_id is null or "sectionId" = p_section_id)),
     'sessions', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', a.id,
@@ -580,6 +625,7 @@ begin
       ) order by a."openedAt")
       from public.attendance a
       where a."catalogId" = p_catalog_id
+        and (p_section_id is null or a."sectionId" = p_section_id)
     ), '[]'::jsonb)
   );
 end;
@@ -768,9 +814,10 @@ grant execute on function public.auth_oversees_course(uuid, uuid) to authenticat
 grant execute on function public.auth_oversees_enrolled_user(uuid, uuid) to authenticated;
 grant execute on function public.record_progress_event(uuid, uuid, uuid, uuid, uuid, text, integer, jsonb, jsonb, boolean) to authenticated;
 grant execute on function public.open_attendance(uuid, jsonb) to authenticated;
+grant execute on function public.open_attendance(uuid, uuid, jsonb) to authenticated;
 grant execute on function public.close_attendance(uuid) to authenticated;
 grant execute on function public.record_attendance(uuid, text, jsonb) to authenticated;
-grant execute on function public.attendance_sessions(uuid) to authenticated;
+grant execute on function public.attendance_sessions(uuid, uuid) to authenticated;
 
 -- Define table grants by first revoking everything
 revoke all on table public.catalog from public, anon, authenticated;

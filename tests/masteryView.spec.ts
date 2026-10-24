@@ -387,7 +387,11 @@ test('learner masteryview shows learner summary and topic detail', async ({ page
 });
 
 test('masteryview shows course attendance and a learner attendance history when attendance is enabled', async ({ page }) => {
-  await initBasicCourse({ page, catalogSettingsOverride: { attendance: true } });
+  await initBasicCourse({ page });
+  // Attendance is enabled per section now (not course.settings.attendance).
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [{ id: 'b1111111-0000-4000-8000-000000000001', catalogId: COURSE_ID, title: 'Section A', scheduleId: null, attendanceEnabled: true }] });
+  });
   await mockGradebookOverview(page);
   const sessions = [
     { id: 'a77e0da7-0000-4000-8000-000000000001', openedAt: '2026-10-06T15:00:00Z', closedAt: '2026-10-06T15:10:00Z', questions: [], attendeeCount: 2 },

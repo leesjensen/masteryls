@@ -4,7 +4,16 @@ import { initBasicCourse, navigateToCourse, navigateToDashboard } from './testIn
 const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
 const LEARNER_ID = '15cb92ef-d2d0-4080-8770-999516448960';
 const SESSION_ID = 'a77e0da7-0000-4000-8000-000000000001';
+const SECTION_ID = 'b1111111-0000-4000-8000-000000000001';
+const ENROLLMENT_ID = '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5';
 const CODE = '4821';
+
+// One section with attendance enabled, for the course load (getCourseSections).
+async function mockAttendanceEnabledSection(page: any) {
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [{ id: SECTION_ID, catalogId: COURSE_ID, title: 'Section A', scheduleId: null, attendanceEnabled: true }] });
+  });
+}
 
 // Stateful mock of the attendance RPCs, the attendance table, and attendance progress rows.
 async function mockAttendance(page: any, { learner = false } = {}) {
@@ -16,10 +25,19 @@ async function mockAttendance(page: any, { learner = false } = {}) {
     enrolledCount: 3,
   };
 
+  await mockAttendanceEnabledSection(page);
+
   if (learner) {
-    // No roles: the user is a plain enrolled learner. Start with an open session that has a question.
+    // No roles: the user is a plain enrolled learner whose section has attendance enabled.
     await page.route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {
       await route.fulfill({ json: [] });
+    });
+    await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route: any) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({ json: [{ id: ENROLLMENT_ID, catalogId: COURSE_ID, learnerId: LEARNER_ID, settings: {}, progress: { mastery: 0 }, sectionId: SECTION_ID }] });
+        return;
+      }
+      await route.fallback();
     });
     state.openSession = {
       id: SESSION_ID,
@@ -72,6 +90,7 @@ async function mockAttendance(page: any, { learner = false } = {}) {
         state.openSession = {
           id: SESSION_ID,
           catalogId: body.p_catalog_id,
+          sectionId: body.p_section_id || null,
           code: CODE,
           questions: body.p_questions || [],
           openedAt: new Date().toISOString(),
@@ -176,18 +195,36 @@ async function openAttendanceView(page: any) {
   await expect(page).toHaveURL(new RegExp(`/course/${COURSE_ID}/attendance$`));
 }
 
-test('attendance is hidden from the table of contents unless enabled for the course', async ({ page }) => {
+test('attendance is hidden from the TOC for a learner whose section has no attendance', async ({ page }) => {
   await initBasicCourse({ page });
+  // Plain learner; their section exists but attendance is not enabled for it.
+  await page.route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [] });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [{ id: SECTION_ID, catalogId: COURSE_ID, title: 'Section A', scheduleId: null, attendanceEnabled: false }] });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [{ id: ENROLLMENT_ID, catalogId: COURSE_ID, learnerId: LEARNER_ID, settings: {}, progress: { mastery: 0 }, sectionId: SECTION_ID }] });
+      return;
+    }
+    await route.fallback();
+  });
   await navigateToCourse(page);
   await expect(page.getByRole('link', { name: 'Home' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Attendance' })).toHaveCount(0);
 });
 
+test('attendance is always available in the TOC for an editor', async ({ page }) => {
+  await initBasicCourse({ page });
+  await mockAttendance(page);
+  await navigateToCourse(page);
+  await expect(page.getByRole('link', { name: 'Attendance' })).toBeVisible();
+});
+
 test('an editor takes attendance with a question and reviews the responses', async ({ page }) => {
-  await initBasicCourse({
-    page,
-    catalogSettingsOverride: { attendance: true },
-  });
+  await initBasicCourse({ page });
   const state = await mockAttendance(page);
 
   await openAttendanceView(page);
@@ -230,7 +267,6 @@ test('an editor takes attendance with a question and reviews the responses', asy
 test('a learner checks in with the class code, answers the question, and sees their history', async ({ page }) => {
   await initBasicCourse({
     page,
-    catalogSettingsOverride: { attendance: true },
     courseJsonOverride: {
       externalRefs: {
         canvasCourseId: '12345',
@@ -267,7 +303,7 @@ test('a learner checks in with the class code, answers the question, and sees th
 
   await openAttendanceView(page);
   await expect(page.getByRole('button', { name: 'Take attendance' })).toHaveCount(0);
-  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 0 classes');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 0 of 1 class');
   // Learners only see the classes they attended — no total, no Present/Absent legend.
   await expect(page.getByTestId('learner-attendance-chart')).not.toContainText('Absent');
   await expect(page.getByTestId('learner-attendance-chart')).not.toContainText('Present');
@@ -293,7 +329,7 @@ test('a learner checks in with the class code, answers the question, and sees th
     p_code: CODE,
     p_answers: { q1: 'Good' },
   });
-  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 1 class');
+  await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 1 of 1 class');
   // The learner's own graph reflects the answer they gave for that class.
   await expect(page.getByTestId('learner-attendance-chart')).toContainText('Good');
   await expect(page.getByTestId('learner-attendance-chart')).toContainText('Points: 2 / 80');
@@ -311,9 +347,9 @@ test('a learner checks in with the class code, answers the question, and sees th
 test('creating the attendance assignment posts the configured points and stores them on the course', async ({ page }) => {
   await initBasicCourse({
     page,
-    catalogSettingsOverride: { attendance: true },
     courseJsonOverride: { externalRefs: { canvasCourseId: '12345' } },
   });
+  await mockAttendanceEnabledSection(page);
   await page.route('https://api.github.com/user', async (route: any) => {
     await route.fulfill({ status: 200, json: { login: 'mock-user' } });
   });

@@ -791,12 +791,24 @@ class Service {
    * @param catalogId - The course catalog ID.
    * @param questions - Questions to ask when learners check in: [{ id, type, prompt, choices }].
    */
-  async openAttendance(catalogId: string, questions: object[] = []): Promise<any> {
-    const { data, error } = await this.supabase.rpc('open_attendance', { p_catalog_id: catalogId, p_questions: questions });
+  async openAttendance(catalogId: string, sectionId: string, questions: object[] = []): Promise<any> {
+    const { data, error } = await this.supabase.rpc('open_attendance', { p_catalog_id: catalogId, p_section_id: sectionId, p_questions: questions });
     if (error) {
       throw new Error(error.message);
     }
     return data;
+  }
+
+  /**
+   * Enables or disables attendance for a section. RLS restricts this to course editors/root.
+   * @param sectionId - The section ID.
+   * @param enabled - Whether attendance is enabled for the section.
+   */
+  async setSectionAttendanceEnabled(sectionId: string, enabled: boolean): Promise<void> {
+    const { error } = await this.supabase.from('section').update({ attendanceEnabled: enabled }).eq('id', sectionId);
+    if (error) {
+      throw new Error(error.message);
+    }
   }
 
   /**
@@ -816,8 +828,8 @@ class Service {
    * by course overseers.
    * @param catalogId - The course catalog ID.
    */
-  async getOpenAttendance(catalogId: string): Promise<any> {
-    const { data, error } = await this.supabase.from('attendance').select('*').eq('catalogId', catalogId).is('closedAt', null).maybeSingle();
+  async getOpenAttendance(catalogId: string, sectionId: string): Promise<any> {
+    const { data, error } = await this.supabase.from('attendance').select('*').eq('catalogId', catalogId).eq('sectionId', sectionId).is('closedAt', null).maybeSingle();
     if (error) {
       throw new Error(error.message);
     }
@@ -845,8 +857,8 @@ class Service {
    * @returns { enrolledCount, sessions: [{ id, openedAt, closedAt, questions, attendeeCount, answerTally }] }
    *          answerTally is { [questionId]: { [choice]: count } } for charting the question results.
    */
-  async getAttendanceSessions(catalogId: string): Promise<{ enrolledCount: number; sessions: any[] }> {
-    const { data, error } = await this.supabase.rpc('attendance_sessions', { p_catalog_id: catalogId });
+  async getAttendanceSessions(catalogId: string, sectionId: string | null = null): Promise<{ enrolledCount: number; sessions: any[] }> {
+    const { data, error } = await this.supabase.rpc('attendance_sessions', { p_catalog_id: catalogId, p_section_id: sectionId });
     if (error) {
       throw new Error(error.message);
     }

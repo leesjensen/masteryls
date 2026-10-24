@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { DEFAULT_ATTENDANCE_POINTS_PER_SESSION, DEFAULT_ATTENDANCE_POINTS_POSSIBLE } from '../../hooks/canvas/attendanceCanvasSync.js';
 
 // Course link section for the Canvas "Attendance" assignment. Shown only when attendance is enabled
-// in the course settings. Learners earn pointsPerSession for each class attended, up to pointsPossible.
+// for at least one of the course's sections. Learners earn pointsPerSession for each class attended,
+// up to pointsPossible.
 export default function AttendanceAssignmentSection({ course, onCreate }) {
   const [pointsPerSession, setPointsPerSession] = useState(DEFAULT_ATTENDANCE_POINTS_PER_SESSION);
   const [pointsPossible, setPointsPossible] = useState(DEFAULT_ATTENDANCE_POINTS_POSSIBLE);
 
-  if (!course?.settings?.attendance) {
+  const hasAttendance = Array.isArray(course?.sections) && course.sections.some((section) => section?.attendanceEnabled);
+  if (!hasAttendance) {
     return null;
   }
 
