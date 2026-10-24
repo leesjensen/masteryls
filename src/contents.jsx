@@ -10,7 +10,7 @@ import { parseScheduleMarkdown, getNextScheduleDate, scheduleRowStatus } from '.
 import { parseTopicHeadings } from './utils/topicHeadings.js';
 import { handleSidebarLinkClick } from './utils/linkNavigation.js';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, UserCheck, X } from 'lucide-react';
+import { CalendarDays, UserCheck, Layers, X } from 'lucide-react';
 
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
@@ -109,7 +109,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   React.useEffect(() => {
     let active = true;
     const topic = currentTopic;
-    const nonMarkdown = ['schedule', 'attendance', 'video', 'embedded'];
+    const nonMarkdown = ['schedule', 'attendance', 'sections', 'video', 'embedded'];
     if (!topic || !topic.path || nonMarkdown.includes(topic.type)) {
       setTopicHeadings({ topicId: topic?.id ?? null, items: [] });
       return undefined;
@@ -139,6 +139,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
 
   const scheduleTopic = courseOps.getScheduleTopic(learningSession?.course);
   const attendanceTopic = courseOps.getAttendanceTopic(learningSession?.course);
+  const sectionsTopic = courseOps.getSectionsTopic(learningSession?.course);
   const scheduleFiles = scheduleTopic ? courseOps.getScheduleFiles(scheduleTopic) : [];
   const selectedScheduleFile = scheduleTopic ? courseOps.getSelectedScheduleFile(scheduleTopic, scheduleFiles) : null;
 
@@ -426,6 +427,18 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             >
               <UserCheck size={14} />
               Attendance
+            </a>
+          </div>
+        )}
+        {sectionsTopic && (
+          <div className="mb-2 flex items-center gap-2">
+            <a
+              href={`/course/${learningSession.course.id}/sections`}
+              onClick={(e) => handleSidebarLinkClick(e, { courseOps, courseId: learningSession.course.id, navigate, to: `/course/${learningSession.course.id}/sections` })}
+              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'sections' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
+            >
+              <Layers size={14} />
+              Terms &amp; Sections
             </a>
           </div>
         )}

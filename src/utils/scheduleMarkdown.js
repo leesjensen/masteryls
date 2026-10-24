@@ -223,10 +223,10 @@ export function parseScheduleMarkdown(markdown = '', options = {}) {
   const lines = markdown.split(/\r?\n/);
   const warnings = [];
 
+  // The name is not part of the markdown anymore (it lives in the DB schedule row). We still
+  // detect a leading `# ` heading so legacy content that was authored with one parses cleanly
+  // (the heading line is skipped, not treated as data), but its absence is no longer a warning.
   const { docTitle, titleLineIndex } = parseTitle(lines);
-  if (!docTitle) {
-    warnings.push({ code: SCHEDULE_WARNING.MISSING_TITLE });
-  }
 
   const tableStart = findScheduleTableStart(lines);
   if (tableStart === -1) {
@@ -270,9 +270,10 @@ export function parseScheduleMarkdown(markdown = '', options = {}) {
 }
 
 export function serializeScheduleMarkdown(model) {
+  // The schedule's name lives in the DB `schedule` row (edited in the Terms & Sections view),
+  // not in the markdown. We no longer write a `# ` title heading here; the markdown is content
+  // only (links, the week table, special days).
   const lines = [];
-  lines.push(`# ${model.docTitle || 'Schedule'}`);
-  lines.push('');
 
   if (model.links?.length) {
     model.links.forEach((link) => {

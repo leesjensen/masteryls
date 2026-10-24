@@ -92,7 +92,6 @@ test('parseScheduleMarkdown extracts title links table and special days', () => 
 
 test('serializeScheduleMarkdown round-trips core schedule structure', () => {
   const source = {
-    docTitle: 'Winter 2027 Schedule',
     links: [{ id: 'l1', label: 'Calendar', url: 'https://example.com/calendar' }],
     weeks: [
       {
@@ -111,7 +110,12 @@ test('serializeScheduleMarkdown round-trips core schedule structure', () => {
   const markdown = serializeScheduleMarkdown(source);
   const parsed = parseScheduleMarkdown(markdown);
 
-  assert.equal(parsed.docTitle, source.docTitle);
+  // The schedule name lives in the DB, not the markdown: no `# ` title heading is written.
+  assert.ok(
+    !markdown.split('\n').some((line) => /^#\s+/.test(line)),
+    'serialized schedule markdown should not contain a title heading',
+  );
+  assert.equal(parsed.docTitle, '');
   assert.equal(parsed.links[0].label, 'Calendar');
   assert.equal(parsed.weeks.length, 1);
   assert.equal(parsed.weeks[0].week, 1);
@@ -184,7 +188,6 @@ Extra trailing notes
   const parsed = parseScheduleMarkdown(md);
   const warningCodes = parsed.warnings.map((w) => w.code);
 
-  assert.ok(warningCodes.includes(SCHEDULE_WARNING.MISSING_TITLE));
   assert.ok(warningCodes.includes(SCHEDULE_WARNING.UNMAPPED_PRETABLE_LINE));
   assert.ok(warningCodes.includes(SCHEDULE_WARNING.NON_BULLET_SPECIAL_DAYS_LINE));
   assert.ok(parsed.optionalTail.content.includes('Extra trailing notes'));

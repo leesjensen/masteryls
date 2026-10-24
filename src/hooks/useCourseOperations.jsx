@@ -371,9 +371,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
                 path: String(file.path || '').replace(`${course.links.gitHub.rawUrl}/`, ''),
                 default: Boolean(file.default),
                 state: file.state,
-                // Optional metadata labeling which term/dates this schedule covers - purely
-                // informational (see setScheduleDateRange), left undefined (and so omitted
-                // from the serialized JSON) when not set.
+                // Legacy, read-only metadata that older course.json schedule files may carry
+                // (which term/dates a schedule covers). Date ranges are now owned by the DB
+                // `schedule` row and edited in the Terms & Sections view; this only preserves
+                // any pre-existing values so a course.json rewrite never drops them.
                 startDate: file.startDate || undefined,
                 endDate: file.endDate || undefined,
               }))
@@ -734,10 +735,28 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return { id: 'attendance', title: 'Attendance', type: 'attendance', path: 'attendance', state: 'published' };
   }
 
+  // Terms & Sections is an editor/root-only management surface that renders in the classroom
+  // content pane (like Schedule/Attendance) so it reads as part of the course. Learners never
+  // see it. Synthetic topic - no GitHub content, so it carries a sentinel path.
+  function getSectionsTopic(course = learningSession?.course) {
+    if (!course?.id) return null;
+    if (!(user?.isRoot?.() || user?.isEditor?.(course.id))) return null;
+    return { id: 'sections', title: 'Terms & Sections', type: 'sections', path: 'sections', state: 'published' };
+  }
+
   // Returns the legacy schedule-file id a LEARNER is locked to via their section, or null when the
   // viewer should see the full schedule picker (overseers, or no resolvable section). The learner's
   // section maps (via schedule.legacyFileId) to exactly one course.json schedule file; locking to it
   // reuses the existing file-descriptor/content-fetch machinery during the dual-read period.
+  // The course's DB-backed schedule rows (the source of truth). When present, they drive schedule
+  // resolution; otherwise the legacy course.json schedule.files are used (dual-read during migration).
+  function _courseScheduleRows(course) {
+    const cached = course?.id ? courseCache.current.get(course.id) || course : course;
+    return Array.isArray(cached?.schedules) ? cached.schedules.filter((row) => row && row.contentPath) : [];
+  }
+
+  // The descriptor id a LEARNER is locked to via their section (null for an overseer picker). In DB
+  // mode this is the schedule row's id; in legacy mode it is the matching course.json file id.
   function getLockedScheduleFileId(course) {
     if (!course?.id) return null;
     // When observing a learner, lock to that learner's section schedule (learningSession.enrollment is
@@ -749,29 +768,35 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (!sectionId) return null;
     const cached = courseCache.current.get(course.id) || course;
     const resolved = resolveLearnerSchedule({ sectionId, sections: cached.sections || [], schedules: cached.schedules || [] });
-    return resolved?.source === 'section' ? resolved.schedule.legacyFileId || null : null;
+    if (resolved?.source !== 'section') return null;
+    return _courseScheduleRows(course).length > 0 ? resolved.scheduleId || resolved.schedule.id : resolved.schedule.legacyFileId || null;
   }
 
   function getScheduleTopic(course = learningSession?.course) {
     if (!course) return null;
-    if (!course.schedule?.id) {
-      return null;
-    }
-
-    const files = Array.isArray(course.schedule.files) ? course.schedule.files.filter((file) => file && file.path) : [];
-    if (!files.length) {
-      return null;
-    }
+    const dbRows = _courseScheduleRows(course);
+    const legacyFiles = Array.isArray(course.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
+    if (dbRows.length === 0 && legacyFiles.length === 0) return null;
 
     const lockedId = getLockedScheduleFileId(course);
-    const defaultFile = (lockedId && files.find((file) => file.id === lockedId)) || files.find((file) => file.default) || files[0];
+    let title;
+    let path;
+    if (dbRows.length > 0) {
+      const defaultRow = (lockedId && dbRows.find((row) => row.id === lockedId)) || dbRows[0];
+      title = defaultRow.title || 'Schedule';
+      path = defaultRow.contentPath;
+    } else {
+      const defaultFile = (lockedId && legacyFiles.find((file) => file.id === lockedId)) || legacyFiles.find((file) => file.default) || legacyFiles[0];
+      title = defaultFile.title || 'Schedule';
+      path = defaultFile.path;
+    }
 
     return {
-      id: course.schedule.id,
-      title: defaultFile.title || 'Schedule',
+      id: course.schedule?.id || 'schedule',
+      title,
       type: 'schedule',
-      path: defaultFile.path,
-      state: defaultFile.state || 'published',
+      path,
+      state: 'published',
     };
   }
 
@@ -781,21 +806,26 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const scheduleTopic = getScheduleTopic(course);
     if (!scheduleTopic) return [];
 
-    let files = Array.isArray(course.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
-    if (!files.length) return [];
-    if (!files.some((file) => file.default)) {
-      files[0] = { ...files[0], default: true };
-      course.schedule.files = files;
-    }
-
-    const resolvedFiles = files
-      .filter((file) => file && file.path)
-      .map((file, index) => {
+    const dbRows = _courseScheduleRows(course);
+    let resolvedFiles;
+    if (dbRows.length > 0) {
+      // DB schedules: the first (oldest) is treated as the default. contentPath is a GitHub URL, so
+      // resolveScheduleFile derives the rawUrl/repoPath the same way it does for legacy files.
+      resolvedFiles = dbRows.map((row, index) => resolveScheduleFile(scheduleTopic, row.contentPath, row.id, row.title || 'Schedule', index === 0, { startDate: row.startDate, endDate: row.endDate }));
+    } else {
+      let files = Array.isArray(course.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
+      if (!files.length) return [];
+      if (!files.some((file) => file.default)) {
+        files[0] = { ...files[0], default: true };
+        course.schedule.files = files;
+      }
+      resolvedFiles = files.map((file, index) => {
         if (!file.id) {
           file.id = generateId();
         }
         return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default), { startDate: file.startDate, endDate: file.endDate });
       });
+    }
 
     // A learner is locked to their section's schedule: expose only that one file so the read view
     // and due-date sync use it and the picker cannot switch away. Overseers see all files.
@@ -1043,39 +1073,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return fileId;
   }
 
-  // Sets (or clears, when passed empty strings) the informational start/end date range for a
-  // schedule file - purely metadata for editors managing multiple term schedules. It does not
-  // affect which schedule is selected/shown by default.
-  async function setScheduleDateRange(topic, fileId, { startDate = '', endDate = '' } = {}) {
-    const course = getWorkingCourse();
-    if (!course || !fileId) {
-      return null;
-    }
-    const token = user.getSetting('gitHubToken', course.id);
-    if (!user.isEditor(course.id) || !token) {
-      throw new Error('You do not have permission to update schedules for this course.');
-    }
-    if (!course.schedule?.id) {
-      throw new Error('No schedule exists for this course.');
-    }
-
-    const updatedCourse = Course.copy(course);
-    const scheduleTopic = getScheduleTopic(updatedCourse);
-    let schedules = Array.isArray(updatedCourse.schedule.files) ? [...updatedCourse.schedule.files] : [];
-
-    const index = schedules.findIndex((entry) => entry.id === fileId);
-    if (index === -1) {
-      throw new Error('Unable to find selected schedule file.');
-    }
-
-    schedules[index] = { ...schedules[index], startDate: startDate || undefined, endDate: endDate || undefined };
-    updatedCourse.schedule.files = schedules;
-
-    await _updateCourseStructure(token, updatedCourse, `update(course) schedule date range ${fileId}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
-
-    return fileId;
-  }
 
   function sanitizeSchedulePath(rawPath) {
     let normalized = String(rawPath || '')
@@ -1102,13 +1099,11 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return `${parts.join('/')}.md`;
   }
 
-  function createInitialScheduleMarkdown(title) {
-    return `# ${title}\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n`;
-  }
-
-  function extractScheduleTitleFromMarkdown(markdown = '') {
-    const match = String(markdown).match(/^\s*#\s+(.+)$/m);
-    return match ? match[1].trim() : '';
+  // The schedule's name lives in the DB `schedule` row (or legacy course.json metadata), not in
+  // the markdown, so the initial content is just an empty week table - no `# ` title heading.
+  // The `title` argument is kept for call-site compatibility but is intentionally not written.
+  function createInitialScheduleMarkdown(_title) {
+    return `| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n`;
   }
 
   function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false, { startDate, endDate } = {}) {
@@ -1192,26 +1187,11 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const commitSha = await service.updateGitHubFile(selectedFile.apiUrl, content, token, commitMessage);
     invalidateCourseReadCache(course, commitSha);
 
-    const updatedCourse = Course.copy(course);
-    const updatedScheduleTopic = getScheduleTopic(updatedCourse);
-    let structureChanged = false;
-
-    const nextTitle = extractScheduleTitleFromMarkdown(content);
-    if (nextTitle && Array.isArray(updatedCourse.schedule.files)) {
-      const existingEntry = updatedCourse.schedule.files.find((entry) => entry?.id === selectedFile.id);
-      const existingTitle = String(existingEntry?.title || '').trim();
-      if (existingTitle !== nextTitle) {
-        updatedCourse.schedule.files = updatedCourse.schedule.files.map((entry) => (entry?.id === selectedFile.id ? { ...entry, title: nextTitle } : entry));
-        structureChanged = true;
-      }
-    }
-
-    updatedCourse.markdownCache.set(selectedFile.rawUrl, content);
-    if (structureChanged) {
-      await _updateCourseStructure(token, updatedCourse, `update(course) schedule ${topic.title}`);
-      setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedScheduleTopic });
-    }
-    setSelectedScheduleFile(updatedScheduleTopic, selectedFile.id);
+    // The schedule's name is owned by the DB `schedule` row and edited in the Terms & Sections
+    // view - it is no longer derived from the markdown's `# ` heading, so committing content
+    // never rewrites course structure. Just refresh the cached content for this schedule.
+    course.markdownCache.set(selectedFile.rawUrl, content);
+    setSelectedScheduleFile(topic, selectedFile.id);
   }
 
   async function deleteTopicFiles(topic, files) {
@@ -1896,6 +1876,108 @@ Requirements:
     await service.setSectionAttendanceEnabled(sectionId, enabled);
   }
 
+  // ---- Term / Schedule / Section management (editor/root) ----
+  async function getCourseTerms(courseId) {
+    return service.getCourseTerms(courseId);
+  }
+  async function createTerm(courseId, values) {
+    return service.createTerm(courseId, values);
+  }
+  async function updateTerm(id, patch) {
+    await service.updateTerm(id, patch);
+  }
+  async function createSection(courseId, values) {
+    return service.createSection(courseId, values);
+  }
+  async function updateSection(id, patch) {
+    await service.updateSection(id, patch);
+  }
+  async function deleteSection(id) {
+    await service.deleteSection(id);
+  }
+  async function deleteTerm(id) {
+    await service.deleteTerm(id);
+  }
+  async function setEnrollmentSection(enrollmentId, sectionId) {
+    await service.setEnrollmentSection(enrollmentId, sectionId);
+  }
+  async function getCourseSectionsAndSchedules(courseId) {
+    const [sections, schedules, terms] = await Promise.all([service.getCourseSections(courseId), service.getCourseSchedules(courseId), service.getCourseTerms(courseId)]);
+    return { sections, schedules, terms };
+  }
+  async function updateSchedule(id, patch) {
+    await service.updateScheduleRow(id, patch);
+  }
+
+  // Keep the cached course's sections/schedules in sync after a change, so schedule resolution and
+  // the management view see the latest without a full course reload.
+  async function _refreshCourseSchedules(course) {
+    try {
+      const [sections, schedules] = await Promise.all([service.getCourseSections(course.id), service.getCourseSchedules(course.id)]);
+      const cached = courseCache.current.get(course.id);
+      if (cached) {
+        cached.sections = sections;
+        cached.schedules = schedules;
+      }
+    } catch {
+      // Non-fatal; the view reloads its own copy.
+    }
+  }
+
+  // Create a new DB-backed schedule for a course: commit an initial markdown file to GitHub and
+  // insert a schedule row whose contentPath points at it. Takes courseId explicitly because this is
+  // callable from the management view (outside the classroom/learningSession context).
+  async function createCourseSchedule(courseId, { title, termId = null, startDate = null, endDate = null } = {}) {
+    const course = await getCourse(courseId);
+    if (!course) throw new Error('Course not found.');
+    const cleanTitle = (title || '').trim();
+    if (!cleanTitle) throw new Error('Schedule title is required.');
+    const token = user.getSetting('gitHubToken', courseId);
+    if (!(user.isEditor(courseId) || user.isRoot()) || !token) throw new Error('You do not have permission (and a GitHub token) to create schedules for this course.');
+
+    const path = sanitizeSchedulePath(`${cleanTitle}-${Math.random().toString(36).slice(2, 6)}`);
+    const rawUrl = `${course.links.gitHub.rawUrl}/${path}`;
+    const apiUrl = `${course.links.gitHub.apiUrl}/${path}`;
+    const initialMarkdown = createInitialScheduleMarkdown(cleanTitle);
+    await service.commitGitHubFile(apiUrl, initialMarkdown, token, `add(schedule) ${cleanTitle}`);
+    course.markdownCache?.set?.(rawUrl, initialMarkdown);
+
+    const row = await service.createScheduleRow(courseId, { title: cleanTitle, termId, startDate, endDate, contentPath: rawUrl });
+    await _refreshCourseSchedules(course);
+    return row;
+  }
+
+  // Copy an existing schedule (its content + dates/term) into a new DB schedule + GitHub file.
+  async function copyCourseSchedule(courseId, sourceScheduleId, { title } = {}) {
+    const course = await getCourse(courseId);
+    if (!course) throw new Error('Course not found.');
+    const token = user.getSetting('gitHubToken', courseId);
+    if (!(user.isEditor(courseId) || user.isRoot()) || !token) throw new Error('You do not have permission (and a GitHub token) to copy schedules for this course.');
+
+    const schedules = await service.getCourseSchedules(courseId);
+    const source = schedules.find((s) => s.id === sourceScheduleId);
+    if (!source) throw new Error('Source schedule not found.');
+    const cleanTitle = (title || `${source.title || 'Schedule'} copy`).trim();
+
+    let content;
+    try {
+      const res = await fetch(source.contentPath, { cache: 'no-store' });
+      content = await res.text();
+    } catch {
+      content = createInitialScheduleMarkdown(cleanTitle);
+    }
+
+    const path = sanitizeSchedulePath(`${cleanTitle}-${Math.random().toString(36).slice(2, 6)}`);
+    const rawUrl = `${course.links.gitHub.rawUrl}/${path}`;
+    const apiUrl = `${course.links.gitHub.apiUrl}/${path}`;
+    await service.commitGitHubFile(apiUrl, content, token, `copy(schedule) ${cleanTitle}`);
+    course.markdownCache?.set?.(rawUrl, content);
+
+    const row = await service.createScheduleRow(courseId, { title: cleanTitle, termId: source.termId || null, startDate: source.startDate || null, endDate: source.endDate || null, contentPath: rawUrl });
+    await _refreshCourseSchedules(course);
+    return row;
+  }
+
   // The section of the enrollment in the current session (the learner's own, or the observed
   // learner's during observe). Lets the learner attendance chart scope to "attended N of M".
   function getCurrentSectionId() {
@@ -2547,7 +2629,6 @@ Requirements:
     deleteScheduleFile,
     deleteCourseSchedule,
     setDefaultScheduleFile,
-    setScheduleDateRange,
     getScheduleTopicContent,
     updateScheduleTopicContent,
     addTopicFiles,
@@ -2601,8 +2682,21 @@ Requirements:
     createMasteryAssignment,
     createAttendanceAssignment,
     getAttendanceTopic,
+    getSectionsTopic,
     courseHasAttendance,
     setSectionAttendanceEnabled,
+    getCourseTerms,
+    createTerm,
+    updateTerm,
+    createSection,
+    updateSection,
+    deleteSection,
+    deleteTerm,
+    setEnrollmentSection,
+    getCourseSectionsAndSchedules,
+    updateSchedule,
+    createCourseSchedule,
+    copyCourseSchedule,
     getCurrentSectionId,
     openAttendance,
     closeAttendance,

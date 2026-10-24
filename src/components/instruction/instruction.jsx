@@ -4,6 +4,7 @@ import ExamInstruction from './examInstruction';
 import InteractionInstruction from './interaction/interactionInstruction';
 import ScheduleInstruction from './scheduleInstruction';
 import AttendanceInstruction from '../attendance/attendanceInstruction';
+import SectionsAdminView from '../../views/sectionsAdmin/sectionsAdminView';
 import DraInstruction from './dra/draInstruction';
 import InterviewInstruction from './interview/interviewInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
@@ -25,8 +26,8 @@ export default function Instruction({ courseOps, learningSession, user, content 
     // quick succession) before this fetch resolves, a stale response must not overwrite the
     // interaction store with the wrong learner's answers.
     let cancelled = false;
-    // The attendance view is a synthetic topic with no interactions of its own.
-    if (learningSession.topic?.type === 'attendance') {
+    // The attendance and Terms & Sections views are synthetic topics with no interactions.
+    if (learningSession.topic?.type === 'attendance' || learningSession.topic?.type === 'sections') {
       setLoadingProgress(false);
       return;
     }
@@ -52,7 +53,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
   useProgressTracking({
     progressType: `${learningSession.topic.type || 'instruction'}View`,
     onProgress: courseOps?.addProgress,
-    enabled: !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && !!courseOps?.addProgress,
+    enabled: !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && !!courseOps?.addProgress,
     minDuration: 10,
     dependencies: [learningSession.topic?.path],
   });
@@ -80,6 +81,9 @@ export default function Instruction({ courseOps, learningSession, user, content 
       break;
     case 'schedule':
       instructionComponent = <ScheduleInstruction courseOps={courseOps} learningSession={learningSession} user={user} instructionState={instructionState} />;
+      break;
+    case 'sections':
+      instructionComponent = <SectionsAdminView courseOps={courseOps} />;
       break;
     case 'dra':
       instructionComponent = <DraInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;

@@ -230,8 +230,10 @@ test('schedule form editor commits and can create additional schedule files', as
 
   await expect(page.getByRole('heading', { name: 'Editor' })).toBeVisible();
 
-  const titleInput = page.locator('section').first().locator('input').first();
-  await titleInput.fill('Edited Winter Schedule');
+  // Edit the actual schedule content (a module name). The editor no longer edits the title -
+  // that lives in the Terms & Sections view - so the H1 round-trips unchanged on commit.
+  const moduleInput = page.getByPlaceholder('Module').first();
+  await moduleInput.fill('Edited Module');
 
   await page.getByRole('button', { name: 'Commit', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Discard' })).toBeDisabled();
@@ -239,7 +241,9 @@ test('schedule form editor commits and can create additional schedule files', as
   await expect.poll(() => schedulePuts.length).toBeGreaterThan(0);
   const latest = schedulePuts[schedulePuts.length - 1];
   expect(latest.path).toContain('instruction/schedule/');
-  expect(latest.markdown).toContain('# Edited Winter Schedule');
+  expect(latest.markdown).toContain('Edited Module');
+  // The schedule name lives in the DB now, so no `# ` title heading is written to the markdown.
+  expect(latest.markdown).not.toMatch(/^#\s+/m);
 
   const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   page.once('dialog', async (dialog) => {
@@ -270,7 +274,9 @@ test('schedule editor can create a new schedule by copying an existing schedule'
   const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await fileSelect.selectOption('joe');
   await expect(fileSelect).toHaveValue('joe');
-  await expect(page.locator('section').first().locator('input').first()).toHaveValue("Joe's schedule");
+  // The editor has no title field and the markdown no longer carries a title heading; confirm
+  // joe's content loaded via a distinctive content item in the preview.
+  await expect(page.locator('.markdown-body').getByText('Joe Intro')).toBeVisible();
   await fileSelect.selectOption('__new_schedule__');
 
   const dialog = page.locator('dialog:has-text("New schedule")');
@@ -299,7 +305,7 @@ test('schedule editor can create a new schedule by copying an existing schedule'
 
   await fileSelect.selectOption(copiedOptionValue);
   await expect(fileSelect).toHaveValue(copiedOptionValue);
-  await expect(page.locator('section').first().locator('input').first()).toHaveValue('Copied Joe Schedule');
+  await expect(page.locator('.markdown-body').getByText('Joe Intro')).toBeVisible();
 
   expect(markdownByRepoPath.get('instruction/schedule/joe-s-schedule.md')).toContain("# Joe's schedule");
 });
@@ -402,7 +408,8 @@ test('schedule editor creates blank schedules with schedule markdown template', 
   await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/blank-section-a.md'))).toBeTruthy();
 
   const created = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('/blank-section-a.md'));
-  expect(created?.markdown || '').toContain('# Blank Section A');
+  // The name lives in the DB schedule row; the template markdown carries no `# ` title heading.
+  expect(created?.markdown || '').not.toMatch(/^#\s+/m);
   expect(created?.markdown || '').toContain('| Week | Date | Module | Due | Topics Covered | Slides |');
   expect(created?.markdown || '').toContain('|  1   |      |        |     |                |        |');
 });
@@ -419,7 +426,7 @@ test('adding a schedule creates schedule template markdown and course schedule m
   await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('schedule/schedule.md'))).toBeTruthy();
 
   const createdScheduleMd = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('schedule/schedule.md'));
-  expect(createdScheduleMd?.markdown || '').toContain('# Schedule');
+  expect(createdScheduleMd?.markdown || '').not.toMatch(/^#\s+/m);
   expect(createdScheduleMd?.markdown || '').toContain('| Week | Date | Module | Due | Topics Covered | Slides |');
 
   await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
@@ -445,8 +452,11 @@ test('schedule editor confirms before switching files with unsaved changes', asy
   const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await expect(fileSelect).toHaveValue('default');
 
-  const titleInput = page.locator('section').first().locator('input').first();
-  await titleInput.fill('Unsaved Title Change');
+  // Make a schedule-content edit (the editor no longer edits title/dates - those live in the
+  // Terms & Sections view - so dirty state comes from the actual schedule, e.g. a module name).
+  const moduleInput = page.getByPlaceholder('Module').first();
+  await expect(moduleInput).toHaveValue('Intro');
+  await moduleInput.fill('Unsaved Module Change');
 
   page.once('dialog', async (dialog) => {
     await dialog.dismiss();
@@ -454,7 +464,7 @@ test('schedule editor confirms before switching files with unsaved changes', asy
   await fileSelect.selectOption('joe');
 
   await expect(fileSelect).toHaveValue('default');
-  await expect(titleInput).toHaveValue('Unsaved Title Change');
+  await expect(moduleInput).toHaveValue('Unsaved Module Change');
 
   page.once('dialog', async (dialog) => {
     await dialog.accept();
@@ -462,7 +472,7 @@ test('schedule editor confirms before switching files with unsaved changes', asy
   await fileSelect.selectOption('joe');
 
   await expect(fileSelect).toHaveValue('joe');
-  await expect(titleInput).toHaveValue("Joe's schedule");
+  await expect(moduleInput).toHaveValue('Intro');
 });
 
 test('schedule editor can rename and delete non-default schedule files', async ({ page }) => {
@@ -513,43 +523,3 @@ test('schedule editor can set default schedule used as fallback selection', asyn
   await expect(readSelect).toHaveValue('joe');
 });
 
-test('schedule editor date range only marks the schedule dirty and persists on commit', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  const { courseJsonPuts } = installScheduleRoutes(page);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('joe');
-
-  await page.locator('#schedule-start-date').fill('2026-01-05');
-  await page.locator('#schedule-end-date').fill('2026-04-24');
-
-  // Setting the dates should only mark the schedule dirty, not persist anything yet - a
-  // native date input fires onChange per segment edit (e.g. each digit of the year), so
-  // saving on every change previously caused a network request (and course.json PUT) per
-  // keystroke, interrupting the picker.
-  await expect(page.getByRole('heading', { name: 'Editor' })).toContainText('*');
-  expect(courseJsonPuts.length).toBe(0);
-
-  await page.getByRole('button', { name: 'Commit' }).click();
-  await expect.poll(() => courseJsonPuts.length).toBeGreaterThan(0);
-
-  const joeFile = courseJsonPuts[courseJsonPuts.length - 1].schedule.files.find((file: any) => file.id === 'joe');
-  expect(joeFile.startDate).toBe('2026-01-05');
-  expect(joeFile.endDate).toBe('2026-04-24');
-  // The other schedule file must be untouched.
-  const winterFile = courseJsonPuts[courseJsonPuts.length - 1].schedule.files.find((file: any) => file.id === 'default');
-  expect(winterFile.startDate).toBeUndefined();
-  expect(winterFile.endDate).toBeUndefined();
-
-  // Switching away and back should show the saved values, confirming they round-trip through
-  // the in-memory course (not just the last commit payload).
-  await fileSelect.selectOption('default');
-  await expect(page.locator('#schedule-start-date')).toHaveValue('');
-  await fileSelect.selectOption('joe');
-  await expect(page.locator('#schedule-start-date')).toHaveValue('2026-01-05');
-  await expect(page.locator('#schedule-end-date')).toHaveValue('2026-04-24');
-});

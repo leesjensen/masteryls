@@ -644,6 +644,20 @@ export default function Settings({ courseOps, user, course }) {
           </>
         )}
 
+        {editorVisible && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-1">
+            <div>
+              <h2 className="text-lg font-semibold mb-3 text-gray-800">Terms &amp; sections</h2>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-700">Manage the course's terms, sections, and which section each learner is in.</div>
+                <button type="button" onClick={() => navigate(`/course/${course.id}/sections`)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                  Manage terms &amp; sections
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {(editorVisible || canManageMentors || canManageEnrollments) && (
           <>
             <div>

@@ -79,8 +79,9 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   }
 
   let content = null;
-  // The attendance view has no editable content, so it always renders its instruction view.
-  if (editorVisible && learningSession.topic?.type !== 'attendance') {
+  // The attendance and Terms & Sections views have no editable content, so they always render
+  // their own instruction view rather than the Monaco editor.
+  if (editorVisible && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections') {
     content = <Editor courseOps={courseOps} user={user} learningSession={learningSession} />;
   } else {
     content = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} />;

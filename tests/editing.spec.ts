@@ -86,6 +86,221 @@ test('settings', async ({ page }) => {
   await expect(page.getByRole('textbox', { name: 'Course Title' })).toHaveValue('Rocket Science');
 });
 
+test('terms & sections view creates a term with its first section', async ({ page }) => {
+  const terms: any[] = [];
+  const sections: any[] = [];
+  const termPosts: any[] = [];
+  const sectionPosts: any[] = [];
+
+  await initAndOpenBasicCourse({ page });
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route) => {
+    const method = route.request().method();
+    if (method === 'POST') {
+      const row = { id: 'new-term', ...firstRow(route.request().postDataJSON()) };
+      termPosts.push(row);
+      terms.push(row);
+      await route.fulfill({ status: 201, json: row });
+      return;
+    }
+    if (method === 'PATCH') {
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ json: terms });
+  });
+
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route) => {
+    const method = route.request().method();
+    if (method === 'POST') {
+      const row = { id: 'new-section', ...firstRow(route.request().postDataJSON()) };
+      sectionPosts.push(row);
+      sections.push(row);
+      await route.fulfill({ status: 201, json: row });
+      return;
+    }
+    if (method === 'PATCH') {
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ json: sections });
+  });
+
+  // No enrolled learners needed; counts come from enrollment GET.
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.getByText('Settings').click();
+  await page.getByRole('button', { name: 'Manage terms & sections' }).click();
+  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+
+  // A term is always created together with its first section.
+  await page.getByRole('button', { name: '+ New term' }).click();
+  await page.getByPlaceholder('Term title').fill('Fall 2027');
+  await page.getByPlaceholder('Section title').fill('Section A');
+  await page.getByRole('button', { name: 'Create term & section' }).click();
+
+  // The term is created with its title, then its first section is created under that term.
+  await expect.poll(() => termPosts.length).toBeGreaterThan(0);
+  expect(termPosts.at(-1).title).toBe('Fall 2027');
+  await expect.poll(() => sectionPosts.length).toBeGreaterThan(0);
+  expect(sectionPosts.at(-1).title).toBe('Section A');
+  expect(sectionPosts.at(-1).termId).toBe('new-term');
+});
+
+function firstRow(body: any) {
+  return Array.isArray(body) ? body[0] : body;
+}
+
+function idFromDeleteUrl(url: string): string {
+  const match = /[?&]id=eq\.([^&]+)/.exec(url);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+test('terms & sections view deletes empty sections and whole terms', async ({ page }) => {
+  // Seeded: one term with two empty sections. Both sections are deletable (0 learners, >1 in the
+  // term); once one is gone the last keeps no trash and the term itself is deletable.
+  const terms: any[] = [{ id: 'term-1', catalogId: 'c', title: 'Fall 2026', startDate: null, endDate: null }];
+  const sections: any[] = [
+    { id: 'sec-1', catalogId: 'c', termId: 'term-1', scheduleId: null, title: 'Section A', attendanceEnabled: false },
+    { id: 'sec-2', catalogId: 'c', termId: 'term-1', scheduleId: null, title: 'Section B', attendanceEnabled: false },
+  ];
+  const sectionDeletes: string[] = [];
+  const termDeletes: string[] = [];
+  const scheduleDetachPatches: string[] = [];
+
+  page.on('dialog', (dialog) => dialog.accept());
+
+  await initAndOpenBasicCourse({ page });
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route) => {
+    const method = route.request().method();
+    if (method === 'DELETE') {
+      termDeletes.push(idFromDeleteUrl(route.request().url()));
+      const idx = terms.findIndex((t) => t.id === idFromDeleteUrl(route.request().url()));
+      if (idx >= 0) terms.splice(idx, 1);
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ json: terms });
+  });
+
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route) => {
+    const method = route.request().method();
+    if (method === 'DELETE') {
+      const id = idFromDeleteUrl(route.request().url());
+      sectionDeletes.push(id);
+      const idx = sections.findIndex((s) => s.id === id);
+      if (idx >= 0) sections.splice(idx, 1);
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ json: sections });
+  });
+
+  // Term delete detaches schedules (termId -> null) before deleting the term.
+  await page.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, async (route) => {
+    if (route.request().method() === 'PATCH') {
+      scheduleDetachPatches.push(route.request().url());
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ json: [] });
+  });
+
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.getByText('Settings').click();
+  await page.getByRole('button', { name: 'Manage terms & sections' }).click();
+  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+
+  // Two sections, each with a delete control. Delete one.
+  await expect(page.getByLabel('Delete section Section A')).toBeVisible();
+  await expect(page.getByLabel('Delete section Section B')).toBeVisible();
+  await page.getByLabel('Delete section Section B').click();
+
+  await expect.poll(() => sectionDeletes).toContain('sec-2');
+  // The lone remaining section can't be individually deleted - you delete the term.
+  await expect(page.getByLabel('Delete section Section A')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Delete term' }).click();
+  await expect.poll(() => termDeletes).toContain('term-1');
+  await expect.poll(() => scheduleDetachPatches.length).toBeGreaterThan(0);
+  await expect(page.getByText('No terms yet.', { exact: false })).toBeVisible();
+});
+
+test('terms & sections schedules panel View opens the selected schedule', async ({ page }) => {
+  const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  await initAndOpenBasicCourse({ page });
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, (route) =>
+    route.fulfill({ json: [{ id: 'sch-1', catalogId: COURSE_ID, termId: null, title: 'Winter 2026', state: 'published', startDate: null, endDate: null, contentPath: 'https://example.com/schedule/winter.md' }] }),
+  );
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.getByText('Settings').click();
+  await page.getByRole('button', { name: 'Manage terms & sections' }).click();
+  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+
+  // The Schedules panel lists the schedule with a View button (next to Copy).
+  await expect(page.locator('input[value="Winter 2026"]')).toBeVisible();
+  await page.getByRole('button', { name: 'View' }).click();
+
+  // View records which schedule to open and navigates away from the structural view toward
+  // the schedule route.
+  await expect.poll(() => page.url()).not.toContain('/sections');
+  const selected = await page.evaluate((id) => {
+    const raw = localStorage.getItem(`uiSettings-${id}`);
+    return raw ? JSON.parse(raw).selectedScheduleFile : null;
+  }, COURSE_ID);
+  expect(selected).toBe('sch-1');
+});
+
+test('terms & sections is reachable from the course TOC and renders in the content pane', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  // An editor sees the Terms & Sections entry in the sidebar (alongside Schedule/Attendance).
+  const tocLink = page.getByRole('link', { name: 'Terms & Sections' });
+  await expect(tocLink).toBeVisible();
+  await tocLink.click();
+
+  // It opens in the classroom content pane (not a separate full-screen view), so the course
+  // sidebar stays visible next to it.
+  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('button', { name: '+ New term' })).toBeVisible();
+  await expect(tocLink).toBeVisible();
+});
+
 test('settings editing', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 

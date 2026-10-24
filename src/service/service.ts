@@ -677,6 +677,79 @@ class Service {
     if (error) throw new Error(error.message);
   }
 
+  // ---- Term / Schedule / Section management (editor/root, enforced by RLS). ----
+
+  /** Terms defined for a course, oldest first. */
+  async getCourseTerms(catalogId: string): Promise<any[]> {
+    const { data, error } = await this.supabase.from('term').select('id, catalogId, title, startDate, endDate, createdAt').eq('catalogId', catalogId).order('createdAt', { ascending: true });
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  async createTerm(catalogId: string, values: { title?: string; startDate?: string | null; endDate?: string | null }): Promise<any> {
+    const { data, error } = await this.supabase
+      .from('term')
+      .insert([{ catalogId, title: values.title || null, startDate: values.startDate || null, endDate: values.endDate || null }])
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async updateTerm(id: string, patch: Record<string, any>): Promise<void> {
+    const { error } = await this.supabase.from('term').update(patch).eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
+  /** Inserts a schedule row (the markdown content lives in GitHub at contentPath). */
+  async createScheduleRow(catalogId: string, values: { termId?: string | null; title?: string; state?: string; startDate?: string | null; endDate?: string | null; contentPath?: string | null }): Promise<any> {
+    const { data, error } = await this.supabase
+      .from('schedule')
+      .insert([{ catalogId, termId: values.termId || null, title: values.title || null, state: values.state || 'published', startDate: values.startDate || null, endDate: values.endDate || null, contentPath: values.contentPath || null }])
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async updateScheduleRow(id: string, patch: Record<string, any>): Promise<void> {
+    const { error } = await this.supabase.from('schedule').update(patch).eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
+  async createSection(catalogId: string, values: { termId?: string | null; scheduleId?: string | null; title?: string; state?: string; attendanceEnabled?: boolean }): Promise<any> {
+    const { data, error } = await this.supabase
+      .from('section')
+      .insert([{ catalogId, termId: values.termId || null, scheduleId: values.scheduleId || null, title: values.title || null, state: values.state || 'active', attendanceEnabled: values.attendanceEnabled || false }])
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async updateSection(id: string, patch: Record<string, any>): Promise<void> {
+    const { error } = await this.supabase.from('section').update(patch).eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
+  /** Deletes a section. Enrollments/attendance referencing it are set null by the FK (callers gate on 0 learners). */
+  async deleteSection(id: string): Promise<void> {
+    const { error } = await this.supabase.from('section').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
+  /**
+   * Deletes a term and its sections (section.termId cascades). Schedules are first detached
+   * (termId -> null) so they are NOT cascade-deleted - schedules are managed independently and
+   * may back sections in other terms. Callers gate on the term having no learners in any section.
+   */
+  async deleteTerm(id: string): Promise<void> {
+    const { error: detachError } = await this.supabase.from('schedule').update({ termId: null }).eq('termId', id);
+    if (detachError) throw new Error(detachError.message);
+    const { error } = await this.supabase.from('term').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
   /**
    * Sets the current course in local storage.
    * @param catalogId - The course catalog ID.
