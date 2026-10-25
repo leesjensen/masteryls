@@ -244,7 +244,7 @@ The schedule editor edits Markdown content only: weeks and sessions, external li
 
 ### Attendance
 
-Attendance is enabled separately for each section in the Terms & Sections view. Open **Attendance** from the classroom table of contents to choose a section, view its status and sessions, and start or close a session. Share the displayed four-digit check-in code with learners. Learners see Attendance only when their section has it enabled; the Attendance view does not change the enable setting.
+Attendance is enabled separately for each section in the Terms & Sections view. Open **Attendance** from the classroom table of contents to choose among sections with attendance enabled, review their sessions, and start or close a session. Choose **All sections** to review sessions across the course; this view does not offer the option to start a session. Sections without attendance enabled are not listed individually. Share the displayed four-digit check-in code with learners. Learners see Attendance only when their section has it enabled; the Attendance view does not change the enable setting.
 
 ## 7) Interactions: Format, Parameters, and Examples
 

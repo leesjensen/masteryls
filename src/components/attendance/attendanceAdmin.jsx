@@ -4,33 +4,38 @@ import AttendanceSessionList from './attendanceSessionList.jsx';
 import CourseAttendanceChart from './courseAttendanceChart.jsx';
 import { DEFAULT_ATTENDANCE_QUESTION } from './attendanceUtils.js';
 
+const ALL_SECTIONS_ID = '__all_sections__';
+
 // Instructor (root/editor/mentor) Attendance view: attendance is taken per SECTION. The instructor
 // picks a section, takes attendance when it is enabled in Terms & Sections, and reviews that
-// section's past sessions.
+// section's past sessions. The all-sections option is for reviewing history only.
 export default function AttendanceAdmin({ courseOps, course }) {
-  const [sections, setSections] = React.useState(() => (Array.isArray(course?.sections) ? course.sections : []));
-  const [selectedSectionId, setSelectedSectionId] = React.useState(() => (Array.isArray(course?.sections) && course.sections[0] ? course.sections[0].id : ''));
+  const allSections = Array.isArray(course?.sections) ? course.sections : [];
+  const sections = React.useMemo(() => allSections.filter((section) => section.attendanceEnabled), [course?.sections]);
+  const [selectedSectionId, setSelectedSectionId] = React.useState(() => sections[0]?.id || ALL_SECTIONS_ID);
   const [openSession, setOpenSession] = React.useState(null);
   const [summary, setSummary] = React.useState(null);
   const [error, setError] = React.useState(null);
   const [opening, setOpening] = React.useState(false);
+  const viewingAllSections = selectedSectionId === ALL_SECTIONS_ID;
   const selectedSection = sections.find((section) => section.id === selectedSectionId) || null;
   const attendanceEnabled = Boolean(selectedSection?.attendanceEnabled);
 
   React.useEffect(() => {
-    const next = Array.isArray(course?.sections) ? course.sections : [];
-    setSections(next);
-    setSelectedSectionId((prev) => (next.some((section) => section.id === prev) ? prev : next[0]?.id || ''));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course?.id]);
+    setSelectedSectionId((prev) => (
+      prev === ALL_SECTIONS_ID || sections.some((section) => section.id === prev)
+        ? prev
+        : sections[0]?.id || ALL_SECTIONS_ID
+    ));
+  }, [course?.id, sections]);
 
   async function loadSummary() {
-    if (!selectedSectionId) {
+    if (!viewingAllSections && !selectedSectionId) {
       setSummary(null);
       return;
     }
     try {
-      setSummary(await courseOps.getAttendanceSessions(course.id, selectedSectionId));
+      setSummary(await courseOps.getAttendanceSessions(course.id, viewingAllSections ? null : selectedSectionId));
     } catch (ex) {
       setError(ex.message);
     }
@@ -40,6 +45,12 @@ export default function AttendanceAdmin({ courseOps, course }) {
     if (!selectedSectionId) {
       setOpenSession(null);
       setSummary(null);
+      return undefined;
+    }
+    if (viewingAllSections) {
+      setOpenSession(null);
+      setError(null);
+      loadSummary();
       return undefined;
     }
     let cancelled = false;
@@ -61,6 +72,7 @@ export default function AttendanceAdmin({ courseOps, course }) {
   }, [course.id, selectedSectionId]);
 
   async function takeAttendance() {
+    if (!selectedSection || !attendanceEnabled) return;
     setOpening(true);
     setError(null);
     try {
@@ -83,11 +95,13 @@ export default function AttendanceAdmin({ courseOps, course }) {
     await loadSummary();
   }
 
-  if (sections.length === 0) {
+  if (allSections.length === 0) {
     return (
       <div className="relative h-full w-full overflow-auto">
         <div className="max-w-4xl mx-auto p-4">
-          <div className="rounded-md border border-gray-200 bg-white p-4 text-sm text-gray-600">Attendance is taken per section. This course has no sections yet — add a schedule/section to enable attendance.</div>
+          <div className="rounded-md border border-gray-200 bg-white p-4 text-sm text-gray-600">
+            Attendance is taken per section. This course has no sections yet — add a schedule/section to enable attendance.
+          </div>
         </div>
       </div>
     );
@@ -95,13 +109,14 @@ export default function AttendanceAdmin({ courseOps, course }) {
 
   return (
     <div className="relative h-full w-full overflow-auto">
-      {openSession && <AttendanceCodeOverlay courseOps={courseOps} session={openSession} onClose={closeAttendance} />}
+      {openSession && !viewingAllSections && <AttendanceCodeOverlay courseOps={courseOps} session={openSession} onClose={closeAttendance} />}
       <div className="max-w-4xl mx-auto p-4 space-y-4">
         <div className="rounded-md border border-gray-200 bg-white p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="text-sm text-gray-700 flex items-center gap-2">
               Section
               <select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-sm">
+                <option value={ALL_SECTIONS_ID}>All sections</option>
                 {sections.map((section) => (
                   <option key={section.id} value={section.id}>
                     {section.title || 'Section'}
@@ -109,19 +124,22 @@ export default function AttendanceAdmin({ courseOps, course }) {
                 ))}
               </select>
             </label>
-            <span className={`text-sm ${attendanceEnabled ? 'text-green-700' : 'text-gray-500'}`}>
-              {attendanceEnabled ? 'Attendance enabled' : 'Attendance disabled'}
-            </span>
+            {viewingAllSections && <span className="text-sm text-gray-600">Viewing all sections</span>}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-gray-600">
-              Learners are asked <span className="font-medium text-gray-700">“{DEFAULT_ATTENDANCE_QUESTION.prompt}”</span> when they check in.
+              {viewingAllSections
+                ? sections.length > 0
+                  ? 'Showing attendance sessions across all sections.'
+                  : 'Showing attendance sessions across all sections. Enable attendance in Terms & Sections to take new attendance.'
+                : <>Learners are asked <span className="font-medium text-gray-700">“{DEFAULT_ATTENDANCE_QUESTION.prompt}”</span> when they check in.</>}
             </div>
-            <button type="button" onClick={takeAttendance} disabled={opening || !attendanceEnabled} className="px-4 py-2 rounded-md text-white font-semibold text-sm bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300">
-              {opening ? 'Opening...' : 'Take attendance'}
-            </button>
+            {!viewingAllSections && (
+              <button type="button" onClick={takeAttendance} disabled={opening || !attendanceEnabled} className="px-4 py-2 rounded-md text-white font-semibold text-sm bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300">
+                {opening ? 'Opening...' : 'Take attendance'}
+              </button>
+            )}
           </div>
-          {!attendanceEnabled && <div className="text-xs text-gray-500">Enable attendance for this section in Terms &amp; Sections to take attendance.</div>}
           {error && <div className="text-sm text-red-600">{error}</div>}
         </div>
 

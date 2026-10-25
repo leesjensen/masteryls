@@ -173,7 +173,7 @@ If due dates are connected to topics, you may also see abbreviated due-date mark
 
 ## 9. Attendance
 
-If attendance is enabled for your section, open **Attendance** from the course table of contents. Enter the four-digit code provided by your instructor and answer the check-in question. The page shows your attendance history and responses for your section's sessions.
+If attendance is enabled for your section, open **Attendance** from the course table of contents. The check-in panel shows your assigned section. Enter the four-digit code provided by your instructor and answer the check-in question. The page shows your attendance history and responses for your section's sessions.
 
 ## 10. Completing Interactions
 
