@@ -3,8 +3,10 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
+import { RefreshCw } from 'lucide-react';
 import { updateAppBar } from '../../hooks/useAppBarState';
 import { markdownSanitizeSchema } from '../../components/markdownSanitize';
+import { applyPwaUpdate } from '../../utils/pwaUpdate.js';
 import '../../components/markdown.css';
 
 const readmeUrl = 'https://github.com/leesjensen/masteryls/blob/main/README.md';
@@ -51,8 +53,31 @@ function isMarkdownPath(path) {
   return /\.md(?:own)?$/i.test(path);
 }
 
+function waitForWaitingWorker(registration, worker, timeoutMs = 15000) {
+  if (registration.waiting) return Promise.resolve(registration.waiting);
+  if (!worker) return Promise.resolve(null);
+
+  return new Promise((resolve) => {
+    let timeoutId;
+    const finish = (waitingWorker) => {
+      clearTimeout(timeoutId);
+      worker.removeEventListener('statechange', onStateChange);
+      resolve(waitingWorker || null);
+    };
+    const onStateChange = () => {
+      if (registration.waiting) finish(registration.waiting);
+      else if (worker.state === 'activated' || worker.state === 'redundant') finish(null);
+    };
+    worker.addEventListener('statechange', onStateChange);
+    timeoutId = setTimeout(() => finish(registration.waiting), timeoutMs);
+    onStateChange();
+  });
+}
+
 function AboutView() {
   const [version, setVersion] = useState('Unavailable');
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState('');
   const [readme, setReadme] = useState(null);
   const [readmeError, setReadmeError] = useState(false);
   const [readmePath, setReadmePath] = useState(initialReadmePath);
@@ -78,6 +103,53 @@ function AboutView() {
       isMounted = false;
     };
   }, []);
+
+  async function checkForUpdates() {
+    if (!navigator.onLine) {
+      setUpdateStatus('Connect to the internet to check for updates.');
+      return;
+    }
+
+    setCheckingUpdate(true);
+    setUpdateStatus('Checking for updates…');
+    try {
+      const response = await fetch(`/version.json?check=${Date.now()}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Unable to check the latest version (${response.status})`);
+      const latestVersion = (await response.json())?.version;
+      const registration = await navigator.serviceWorker?.getRegistration('/');
+
+      if (registration) {
+        await registration.update();
+        let waitingWorker = registration.waiting;
+        if (!waitingWorker && registration.installing) {
+          setUpdateStatus(`Version ${latestVersion || 'latest'} found. Preparing the update…`);
+          waitingWorker = await waitForWaitingWorker(registration, registration.installing);
+        }
+
+        if (waitingWorker) {
+          setUpdateStatus(`Version ${latestVersion || 'latest'} found. Updating now…`);
+          if (await applyPwaUpdate()) return;
+          setUpdateStatus('The update is ready. Reload this page to use it.');
+          return;
+        }
+        if (registration.installing) {
+          setUpdateStatus('The latest version is downloading. It will be ready to apply shortly.');
+          return;
+        }
+      }
+
+      if (latestVersion && version !== 'Unavailable' && latestVersion !== version) {
+        setUpdateStatus(`Version ${latestVersion} is available. Reloading to update…`);
+        window.location.reload();
+        return;
+      }
+      setUpdateStatus(`You’re up to date${latestVersion ? ` (version ${latestVersion})` : ''}.`);
+    } catch (error) {
+      setUpdateStatus(error?.message || 'Unable to check for updates.');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -163,6 +235,11 @@ function AboutView() {
       </div>
       <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
         <span>Version {version}</span>
+        <button type="button" onClick={checkForUpdates} disabled={checkingUpdate} className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-600 hover:underline disabled:cursor-wait disabled:opacity-60">
+          <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
+          {checkingUpdate ? 'Checking…' : 'Check for updates'}
+        </button>
+        {updateStatus && <span role="status" className="w-full text-center text-xs text-gray-500">{updateStatus}</span>}
         <a href={readmeUrl} target="_blank" rel="noreferrer" className="text-amber-700 hover:text-amber-600 hover:underline">
           Open README in GitHub
         </a>

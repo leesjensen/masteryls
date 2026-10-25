@@ -6,6 +6,7 @@ import service from './src/service/service.js';
 import { AlertProvider } from './src/contexts/AlertContext.jsx';
 import { ProgressProvider } from './src/contexts/ProgressContext.jsx';
 import { registerSW } from 'virtual:pwa-register';
+import { setPwaUpdateServiceWorker } from './src/utils/pwaUpdate.js';
 
 const container = document.getElementById('root');
 const root = createRoot(container);
@@ -57,6 +58,7 @@ const updateSW = registerSW({
     window.dispatchEvent(new CustomEvent('pwa-update-available', { detail: { updateSW } }));
   },
 });
+setPwaUpdateServiceWorker(updateSW);
 
 function LoadingPage() {
   return (

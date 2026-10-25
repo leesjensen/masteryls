@@ -8,6 +8,8 @@ MasteryLS combines GitHub-based course authoring, interactive learning, progress
 
 MasteryLS works in modern desktop and mobile browsers. It can also be installed as a progressive web app (PWA) from a supported browser. Installation adds an app-style shortcut; offline access depends on the page and files already cached on the device.
 
+The **About** page shows the deployed version and includes **Check for updates**. When a newer version is available, the app applies the service-worker update and reloads.
+
 | `Install` | `Open` | `Learn` |
 | :---: | :---: | :---: |
 | <img src="mobileInstall.png" width="300" /> | <img src="mobileHome.png" width="300" /> | <img src="mobile.png" width="300" /> |
