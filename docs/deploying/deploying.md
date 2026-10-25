@@ -1,69 +1,52 @@
 # Deploying MasteryLS
 
-You can deploy your own installation of MasteryLS with two simple steps.
+MasteryLS runs as a frontend hosted on GitHub Pages with Supabase as its backend. The repository's GitHub Actions workflow builds and deploys the frontend when code is pushed to `main` (or when the workflow is run manually).
 
-**① Configure GitHub** - Fork the MasteryLS GitHub Repository and configure GitHub Pages to serve as your _MasteryLS frontend_
+## 1. Fork and configure the frontend
 
-**② Configure Supabase** - Run the MasteryLS CLI to configure your Supabase as your _MasteryLS backend_.
+1. Fork the [MasteryLS repository](https://github.com/leesjensen/masteryls).
+2. In the fork's Settings → Pages, select **GitHub Actions** as the build and deployment source.
+3. In the repository's Actions secrets, add:
+   - `SUPABASE_URL`: the Supabase project URL.
+   - `SUPABASE_KEY`: the project's publishable/anon key.
+4. Push to `main` or run the Pages workflow manually. The workflow creates `config.js` during the build; do not commit local Supabase credentials.
 
-## Step 1: Configure GitHub
+MasteryLS uses root-relative app routes and assets. Host it at the root of a domain or on a custom domain; a GitHub Pages project subpath such as `/masteryls/` is not configured by the current build.
 
-1. Fork the [MasteryLS Repository](https://github.com/leesjensen/masteryls) to your GitHub account.
-1. Enable **GitHub Pages** for your fork of the MasteryLS repository. Make sure you specify `GitHub Actions` as your deployment source, enforce HTTPS, and provide a custom domain.
+## 2. Create and configure Supabase
 
-   **Note**: _The website must be hosted from the root of your domain (not a path on the domain) or the React page routing will not work correctly._
+Install the project dependencies from the repository root so the bundled Supabase CLI is available:
 
-   ![GitHub Actions](githubActions.png)
+```sh
+npm install
+```
 
-## Step 2: Configure Supabase
+Create a Supabase Management API access token, then run the initializer from the repository root:
 
-1. Clone your fork of MasteryLS to your development environment.
-1. Create a [Supabase](https://supabase.com) account. A free Supabase account will work fine to start.
-1. Obtain a Supabase Auth Token. In the Supabase account dashboard, access the user profile menu and select **Account preferences**. Select **Access tokens** from the **Account settings** sidebar. Press **Generate new token**.
+```sh
+node install/initproject.js \
+  --token "$SUPABASE_ACCESS_TOKEN" \
+  --org "your-organization-id" \
+  --project "masteryls-production" \
+  --password "$SUPABASE_DATABASE_PASSWORD" \
+  --root-email "root@example.com" \
+  --root-name "Root User" \
+  --secrets "GEMINI_API_KEY=your-gemini-key,CANVAS_API_KEY=your-canvas-key"
+```
 
-   ![Generate token](generateToken.png)
+The initializer creates the Supabase project if it does not exist. For a newly created project, it applies `install/supabase/schema.sql`, deploys every function under `install/supabase/functions/`, registers any supplied secrets, updates the auth confirmation email template, creates the root user/role, and writes a local root-level `config.js`.
 
-1. Run the MasteryLS CLI to configure your Supabase account.
-   - **root-name"**: Your root user name (e.g. "Root User")
-   - **root-email**: Your root user email address (e.g. "root@example.com")
-   - **token**: Supabase API token
-   - **org**: Supabase organization ID
-   - **project**: Supabase project name
-   - **password**: Supabase database password.
-   - **secrets**: Secrets used in edge functions. You must provide your Gemini API key.
+The CLI requires `--token`, `--org`, `--project`, `--password`, `--root-email`, and `--root-name`. `--region`, `--api`, and `--secrets` are optional. Add `--help` to display the current CLI usage.
 
-   ```sh
-   npm install
-   cd install
-   node initproject.js --token "supabaseAPItoken" --root-email "root@example.com" --root-name" "Root User" --org "vttahitjcyknhkrpfaks" --project "nameOfProject" --password "databasePassword" --secrets "GEMINI_API_KEY=geminiKey"
-   ```
+> [!IMPORTANT]
+>
+> If the project already exists, the initializer does **not** apply schema changes, deploy function updates, or create a root role. It only retrieves the existing project config and writes `config.js`. Apply later schema changes separately and deploy changed Edge Functions with the Supabase CLI.
 
-   ```sh
-   🟢 Looking up project "nameOfProject" in organization "vttahitjcyknhkrpfaks"...
-   🟢 Project "nameOfProject" not found. Creating it in us-east-1...
-   🟢 Waiting for project zzacyakwalcrqdoovbgm to become ready...
-   🟢 Applying schema SQL...
-   🟢 Deploying edge function source at canvas
-   🟢 Deploying edge function source at gemini
-   🟢 Registered 2 project secret(s).
-   🟢 Updating auth confirmation email template from confirmationEmail.html...
-   🟢 Created root role for masteryls@mailinator.com.
-   🟢 Wrote Supabase config to masteryls/config.js
+## 3. Keep frontend and backend in sync
 
-   ⭐ Initialization complete for project nameOfProject (zzacyakwalcrqdoovbgm).
-   ```
+- **Frontend:** add `SUPABASE_URL` and `SUPABASE_KEY` as GitHub Actions secrets; the `main` workflow builds, runs Edge Function and Playwright checks, and publishes `dist/` to GitHub Pages.
+- **Edge Functions:** deploy changed functions with `supabase functions deploy <function-name> --project-ref <project-ref>`. Set required Edge Function secrets in Supabase.
+- **Database:** apply changes to `install/supabase/schema.sql` to the hosted project separately. The initializer only applies the schema during first-time project creation.
+- **Contract changes:** release client and Edge Function changes together when request or response shapes change.
 
-1. The MasteryLS CLI will create the configuration file named `config.js` in the root of the project. This should look like the following:
-
-   ```js
-   export default {
-     supabase: {
-       project: 'nameOfProject
-       url: 'https://yyy.supabase.co',
-       key: 'xxx',
-     },
-   };
-   ```
-
-1. Commit and push the `config.js` file that was generated by the MasteryLS CLI to your fork of MasteryLS. This will trigger a GitHub Action workflow that will publish the frontend code to GitHub Pages.
-1. Wait until the frontend is available with GitHub Pages with your custom domain name.
+For local development, keep the generated root-level `config.js` out of Git. It is ignored by the repository because it contains installation-specific configuration.

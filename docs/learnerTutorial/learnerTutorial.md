@@ -44,6 +44,7 @@ The dashboard is your home base for courses.
 - See your overall progress percentage on each enrolled course card.
 - Search the course catalog by title or description.
 - Join a published course you are not yet enrolled in.
+- Choose a section during enrollment when the course has multiple sections currently open for enrollment.
 - Hide or show completed courses.
 - Remove an enrollment if you no longer want the course on your dashboard.
 
@@ -96,6 +97,7 @@ Use the `Topics` tab to browse the course outline.
 - Click a module title to expand or collapse it.
 - Click a topic to open it.
 - The current topic is highlighted.
+- Level-two headings in the current topic appear nested below it as jump links.
 - Some topics may show due-date labels if the course schedule maps dates to them.
 - A check icon or progress bar may appear beside topics you have already worked on.
 - A note icon appears when you have notes saved for that topic.
@@ -124,6 +126,8 @@ Content may include:
 - Interactions and submissions
 
 Some topics are standard reading topics, while others are special topic types such as schedules, embedded content, projects, or exams.
+
+DRA and Interview topics are interactive assessments with their own learner workspaces. Authors may provide practice mode and a final assessment; follow the instructions shown in the topic.
 
 ## 7. Using the Discussion and Notes Panel
 
@@ -161,12 +165,17 @@ If the course includes a schedule, you can open it from the toolbar.
 ### What you can do
 
 - View the course pacing plan.
-- Switch between schedule files if the course provides more than one schedule.
+- Follow the schedule assigned to your section. The schedule selector is locked for learners in section-based courses.
+- In older courses that still use legacy schedule files, a selector may be available.
 - Follow due dates and recommended sequence.
 
 If due dates are connected to topics, you may also see abbreviated due-date markers in the topic list.
 
-## 9. Completing Interactions
+## 9. Attendance
+
+If attendance is enabled for your section, open **Attendance** from the course table of contents. Enter the four-digit code provided by your instructor and answer the check-in question. The page shows your attendance history and responses for your section's sessions.
+
+## 10. Completing Interactions
 
 Many topics contain embedded interactions. These are how you practice, submit work, and receive feedback.
 
@@ -256,7 +265,7 @@ These interactions may ask you to inspect, build, or revise HTML content directl
 
 <img src="aiWebPageInteraction.png" width="500" alt="AI web page interaction" />
 
-## 10. Understanding Feedback and Scores
+## 11. Understanding Feedback and Scores
 
 After a submission, you may see:
 
@@ -269,7 +278,7 @@ Use the feedback first, and the score second.
 
 The score tells you how you did. The feedback tells you how to improve.
 
-## 11. Exams and Projects
+## 12. Exams and Projects
 
 Some topics are more formal than standard practice interactions.
 
@@ -289,7 +298,7 @@ Projects may ask you to submit a file, URL, GitHub repository, or another artifa
 - Double-check that you submitted the correct artifact.
 - If the course uses Canvas gradebook integration, some project workflows may also support gradebook submission.
 
-## 12. Tracking Your Progress
+## 13. Tracking Your Progress
 
 MasteryLS gives you two main learner-facing tracking views: `MasteryView` and `Progress`.
 
@@ -323,7 +332,7 @@ Use it to:
 
 This is useful when you need a detailed record of what you have done.
 
-## 13. Metrics
+## 14. Metrics
 
 Some installations make a `Metrics` view available.
 
@@ -337,7 +346,7 @@ Use it to visualize:
 
 This is especially helpful for self-management across multiple courses.
 
-## 14. Tips for Succeeding in MasteryLS
+## 15. Tips for Succeeding in MasteryLS
 
 - Use the sidebar topic list to stay oriented in the course structure.
 - Check the schedule regularly instead of waiting until a due date is close.
@@ -347,7 +356,7 @@ This is especially helpful for self-management across multiple courses.
 - Use MasteryView weekly to monitor whether your progress matches the course pace.
 - Use Progress if you need a record of exactly what you completed.
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 ### I submitted something and nothing seems to happen
 

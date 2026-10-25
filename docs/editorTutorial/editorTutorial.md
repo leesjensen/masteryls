@@ -109,7 +109,7 @@ In `Topics` sidebar (edit mode):
 - Add, rename, and delete topics.
 - Drag-and-drop topics to reorder.
 - Generate all stubbed topics with AI (`state: stub` + description).
-- Create/delete schedule topic and schedule files.
+- Open the **Terms & Sections** TOC entry to create and manage database-backed schedules; legacy schedule files remain available for older courses.
 
 <img src="editingContents.png" width="200" />
 
@@ -223,70 +223,28 @@ In edit mode commit/history tools:
 
 Use this to recover from mistakes, compare revisions, and audit changes.
 
-## 6) Create and Manage Schedules
+## 6) Manage Terms, Sections, Schedules, and Attendance
 
 <img src="../learnerTutorial/schedule.png" width="700" />
 
-A course has at most one schedule, but that schedule can hold several **schedule files** - for example one per term, section, or meeting pattern (MW vs. TTh). Each schedule file is its own markdown document with a session table, and only one of them is ever the "default."
+The classroom table of contents has a **Terms & Sections** entry for root users and course editors. Open it to manage the course's terms, sections, and schedules. Course Settings no longer contains a separate Terms & Sections link.
 
-### Creating the schedule topic
+### Terms and sections
 
-- A course starts with no schedule. In edit mode, if none exists yet, a **+ Create schedule** link appears at the bottom of the Topics list (below **+ Add New Module**).
-- Creating it adds a pinned **📅 Schedule** entry above the module list in the Topics sidebar (learners see this too) and creates a first schedule file titled "Schedule" at `schedule/schedule.md`, seeded with an empty session table.
-- The whole schedule (all files) can be removed with the **X** next to **📅 Schedule** in the sidebar (edit mode only) - this deletes every schedule file's underlying markdown from the repository and confirms before doing so.
+- Create terms to organize instruction periods. Sections are listed beneath their term.
+- A section groups learners, can be assigned a schedule, and can have attendance enabled.
+- Learners with multiple sections available choose one while enrolling. The enrollment is tied to that section, which determines the learner's schedule. Section availability is based on its schedule date range; sections without a schedule or date range remain available.
+- Use the section controls to assign learners from the roster views. A section with learners cannot be deleted, and a term can only be deleted when its sections have no learners.
 
-### The schedule editor
+### Schedule metadata and content
 
-Open **📅 Schedule** and toggle edit mode to reach the schedule editor. Its toolbar has:
+The **Schedules** panel manages schedule records independently from terms. Create a schedule, copy an existing schedule, edit its title or date range, and assign it to sections. A schedule can be shared by sections in different terms. **View** opens the schedule in the classroom.
 
-- **File dropdown** - switches between schedule files; the last option, **+ New schedule...**, opens the create dialog (below).
-- **Discard / Commit** - like the regular topic editor, changes to the form (title, links, weeks, special days, dates covered) are local until you click Commit. An asterisk next to "Editor" means there are unsaved changes.
-- **Default** - marks the currently selected file as the default (see below); disabled when it's already the default.
-- **Delete** - deletes the currently selected file; disabled for the default file (a schedule always needs a default, and it can't be removed this way).
-- **Dates covered / Start / End** - optional informational start and end dates for the file (e.g. the term it covers). These are purely descriptive metadata, not used for auto-selecting a schedule, and are saved together with the rest of the form when you click Commit.
+The schedule editor edits Markdown content only: weeks and sessions, external links, and special days. Its title and date range are managed in the Schedules panel. Session due items can provide due-date labels in the topic list. A section-assigned schedule is locked for learners; older courses without database schedule records can continue to use legacy `course.json` schedule files.
 
-Below the toolbar is a split view: an editable form on the left (**Title**, **External links**, **Weeks** with sessions you can add/remove/drag-reorder and link to due items/topics covered/slides by picking existing course topics or typing a custom entry, and **Special days**) and a live rendered preview on the right.
+### Attendance
 
-Note the **Title** field edits the markdown document's own `# heading` (what learners see as the page title when that file is open) - it's a different thing from the file's name shown in the dropdown, which is fixed once the file is created (see below).
-
-### Creating additional schedule files
-
-Use **+ New schedule...** in the dropdown to open the create dialog:
-
-- Enter a **title** for the new file.
-- Choose **Create from**: either a blank schedule, or copy the weeks/links/special days from an existing schedule file (its content, not just the currently open one).
-- When copying, an optional **First session date** shifts every session's date by the same offset needed to move the source's first dated session to that date - useful for reusing a Fall schedule's structure for a new Spring one.
-
-The new file's path is generated from its title (lower-cased, non-alphanumeric characters collapsed to dashes, always placed under `schedule/`) - e.g. "Fall 2026 MW Schedule" becomes `schedule/fall-2026-mw-schedule.md`. Creation fails if a file with that same generated path already exists.
-
-Schedule files cannot be renamed after creation - the dropdown label and file path are fixed at creation time; only the in-document **Title** field can be edited afterward, and editing it does not change the dropdown label.
-
-### Setting the default schedule
-
-Select a file and click **Default**. This:
-
-- Marks that file as the default (clearing the flag from every other file).
-- Immediately switches your own current selection to it.
-- Cannot be undone by deleting the file - the default file is protected from deletion until another file is made default instead.
-
-The default file is what a learner sees when they have no stored preference (see below), and is also what supplies the schedule topic's own title/breadcrumb.
-
-### How a learner selects a schedule
-
-On the learner-facing schedule page, a dropdown above the content lists all published schedule files. Picking one:
-
-- Immediately swaps in that file's content.
-- Persists the choice in that learner's per-course UI settings (stored in the browser), so the same file is shown again on later visits.
-
-If nothing is stored yet, or the stored choice no longer matches an existing file, the view falls back to the default file (or the first file if none is marked default). Selection is purely a manual, remembered preference - there is no date-based or calendar-aware auto-selection of the "current" schedule.
-
-### Deleting a schedule file
-
-With a non-default file selected, click **Delete** in the editor toolbar and confirm. This removes that file's markdown from the repository and switches your selection to the default file. The default file itself can't be deleted this way, and since a schedule always needs at least one file, that also means the last remaining file can't be deleted - delete the whole schedule instead (see above) if you no longer need it.
-
-### Due dates and Canvas
-
-Each schedule file's session table (`Due` column) drives the due-date badges shown next to topics in the Topics sidebar, based on whichever schedule file the current viewer has selected. Schedule content itself is not exported to Canvas, but the due dates it encodes are informational context editors can use when planning a Canvas link.
+Attendance is enabled separately for each section in the Terms & Sections view. Open **Attendance** from the classroom table of contents to choose a section, view its status and sessions, and start or close a session. Share the displayed four-digit check-in code with learners. Learners see Attendance only when their section has it enabled; the Attendance view does not change the enable setting.
 
 ## 7) Interactions: Format, Parameters, and Examples
 
@@ -716,8 +674,9 @@ Behavior:
 
 MasteryLS course content is GitHub-backed:
 
-- Course structure and metadata are stored in course files (including topic paths and schedule files).
+- `course.json` stores modules, topics, and their metadata. During course registration, a missing `course.json` can be generated from `instruction/modules.md`.
 - Topic markdown is the primary authored content.
+- New schedule records store title, date range, section links, and GitHub `contentPath` in Supabase; schedule Markdown remains in GitHub. Legacy courses can still read `course.json` schedule files.
 - Interaction definitions live directly inside topic markdown as `masteryls` fences.
 - Added assets (images/files) are stored in repo and referenced by relative markdown paths.
 - Editor commits update files in GitHub and commit history is visible from the editor.
@@ -736,8 +695,10 @@ Supabase stores operational data and app state, including:
 
 - **catalog**: course catalog entries and settings.
 - **user/role**: users, permissions, editor/root rights.
-- **enrollment**: learner-course enrollment and progress summary.
-- **progress**: event/activity records (`instructionView`, `quizSubmit`, `note`, `exam`, etc.).
+- **enrollment**: learner-course enrollment, optional section assignment, UI settings, and cached progress summary.
+- **term**, **schedule**, and **section**: course periods, schedule metadata, section rosters, schedule assignments, and per-section attendance settings.
+- **attendance**: section sessions and check-in configuration.
+- **progress**: append-only event/activity records, including submissions and attendance check-ins.
 - **topic search index**: searchable topic content index data.
 - **edge function workflows**: secure Canvas sync, URL validation, gradebook overview aggregation.
 
@@ -747,3 +708,4 @@ Storage split model:
 
 - **GitHub** = canonical course content/files.
 - **Supabase** = users, permissions, enrollments, analytics, submissions, sync metadata.
+- Schedule Markdown and other course authored content stay in GitHub; Supabase stores schedule records and their content paths.

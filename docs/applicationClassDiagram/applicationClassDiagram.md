@@ -20,6 +20,10 @@ class App {
 class AppBar
 class DashboardView
 class ClassroomView
+class SectionsAdminView
+class AttendanceAdmin
+class AttendanceLearner
+class MasteryView
 class MetricsView
 class ProgressView
 class CourseCreationView
@@ -27,6 +31,8 @@ class CourseExportView
 class CourseExportForm
 class Instruction
 class InteractionInstruction
+class DRAInstruction
+class InterviewInstruction
 class useCourseOperations
 class useProgressTracking
 class useMarkdownLocation
@@ -55,12 +61,18 @@ Index --> App : boots
 App --> AppBar : renders
 App --> DashboardView : routes
 App --> ClassroomView : routes
+App --> MasteryView : routes
 App --> MetricsView : routes
 App --> ProgressView : routes
 App --> CourseCreationView : routes
 App --> CourseExportView : routes
 
 ClassroomView --> Instruction : uses
+ClassroomView --> SectionsAdminView : Terms & Sections TOC entry
+ClassroomView --> AttendanceAdmin : Attendance for overseers
+ClassroomView --> AttendanceLearner : Attendance for learners
+Instruction --> DRAInstruction : DRA topic
+Instruction --> InterviewInstruction : Interview topic
 Instruction --> InteractionInstruction : for topic type
 InteractionInstruction --> MarkdownInstruction : renders content
 MarkdownInstruction --> DiscussionPanel : composes
@@ -165,7 +177,51 @@ class Enrollment {
   +id
   +learnerId
   +catalogId
+  +sectionId
   +progress
+}
+
+class Term {
+  +id
+  +catalogId
+  +title
+  +startDate
+  +endDate
+}
+
+class Schedule {
+  +id
+  +catalogId
+  +termId
+  +title
+  +startDate
+  +endDate
+  +contentPath
+}
+
+class Section {
+  +id
+  +catalogId
+  +termId
+  +scheduleId
+  +attendanceEnabled
+}
+
+class AttendanceSession {
+  +id
+  +catalogId
+  +sectionId
+  +openedAt
+  +closedAt
+}
+
+class ProgressEvent {
+  +id
+  +enrollmentId
+  +topicId
+  +interactionId
+  +type
+  +details
 }
 
 class LearningSession {
@@ -196,6 +252,15 @@ LearningSession --> Course
 LearningSession --> Enrollment
 CatalogEntry "1" --> "*" Enrollment : enrollments
 User "1" --> "*" Enrollment : learner
+CatalogEntry "1" --> "*" Term
+CatalogEntry "1" --> "*" Schedule
+CatalogEntry "1" --> "*" Section
+Term "0..1" --> "*" Section
+Term "0..1" --> "*" Schedule
+Schedule "0..1" --> "*" Section
+Section "0..1" --> "*" Enrollment
+Section "0..1" --> "*" AttendanceSession
+Enrollment "0..1" --> "*" ProgressEvent
 
 Service --> Supabase : auth/db
 Service --> GitHubAPI : content/versioning
