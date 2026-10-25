@@ -228,19 +228,18 @@ export default function SectionsAdminView({ courseOps }) {
         </div>
       )}
 
-      {/* Schedules: the content/delivery calendars a section can follow. Editing content is done in the
-          schedule editor; here you manage the list, titles, date ranges, and copies. */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <div className="text-base font-semibold text-gray-800 mb-3">Schedules</div>
-        <div className="space-y-2">
-          {schedules.map((s) => (
-            <div key={s.id} className="flex flex-wrap items-center gap-2 text-sm">
-              <input defaultValue={s.title || ''} onBlur={(e) => e.target.value !== (s.title || '') && run(() => courseOps.updateSchedule(s.id, { title: e.target.value }))} placeholder="Schedule title" className="border border-gray-300 rounded px-2 py-1 w-56 font-medium" />
-              <label className="flex items-center gap-1 text-gray-600">
+      {/* Schedules are peer items to terms; editing their content is done in the schedule editor. */}
+      <div className="space-y-4">
+        <div className="text-xl font-semibold text-gray-800">Schedules</div>
+        {schedules.map((s) => (
+          <div key={s.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <input defaultValue={s.title || ''} onBlur={(e) => e.target.value !== (s.title || '') && run(() => courseOps.updateSchedule(s.id, { title: e.target.value }))} placeholder="Schedule title" className="border border-gray-300 rounded px-2 py-1 w-56 text-base font-semibold" />
+              <label className="flex items-center gap-1 text-sm text-gray-600">
                 Start
                 <input type="date" defaultValue={s.startDate || ''} onBlur={(e) => e.target.value !== (s.startDate || '') && run(() => courseOps.updateSchedule(s.id, { startDate: e.target.value || null }))} className="border border-gray-300 rounded px-2 py-1" />
               </label>
-              <label className="flex items-center gap-1 text-gray-600">
+              <label className="flex items-center gap-1 text-sm text-gray-600">
                 End
                 <input type="date" defaultValue={s.endDate || ''} onBlur={(e) => e.target.value !== (s.endDate || '') && run(() => courseOps.updateSchedule(s.id, { endDate: e.target.value || null }))} className="border border-gray-300 rounded px-2 py-1" />
               </label>
@@ -251,11 +250,11 @@ export default function SectionsAdminView({ courseOps }) {
                 Copy
               </button>
             </div>
-          ))}
-          {schedules.length === 0 && <div className="text-sm text-gray-500">No schedules yet.</div>}
-        </div>
+          </div>
+        ))}
+        {schedules.length === 0 && <div className="text-sm text-gray-500">No schedules yet.</div>}
         {addingSchedule ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm rounded-md border border-blue-300 bg-blue-50 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 text-sm rounded-md border border-blue-300 bg-blue-50 px-3 py-2">
             <input autoFocus value={newSchedule.title} onChange={(e) => setNewSchedule({ ...newSchedule, title: e.target.value })} placeholder="New schedule title" className="border border-gray-300 rounded px-2 py-1 w-56" />
             <label className="flex items-center gap-1 text-gray-600">
               Start
@@ -273,7 +272,7 @@ export default function SectionsAdminView({ courseOps }) {
             </button>
           </div>
         ) : (
-          <button type="button" onClick={() => { setAddingSchedule(true); setNewSchedule({ title: '', startDate: '', endDate: '' }); }} className="mt-3 text-sm text-blue-700 border border-dashed border-blue-300 rounded-md px-4 py-2 hover:bg-blue-50">
+          <button type="button" onClick={() => { setAddingSchedule(true); setNewSchedule({ title: '', startDate: '', endDate: '' }); }} className="text-sm text-blue-700 border border-dashed border-blue-300 rounded-md px-4 py-2 hover:bg-blue-50">
             + New schedule
           </button>
         )}

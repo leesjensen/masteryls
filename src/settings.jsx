@@ -392,17 +392,6 @@ export default function Settings({ courseOps, user, course }) {
       });
   };
 
-  const unpinContent = () => {
-    courseOps.unpinAllContent(course);
-    showAlert({
-      message: (
-        <div className="text-xs">
-          <div>Unpinning all content in {course.title}</div>
-        </div>
-      ),
-    });
-  };
-
   const repairProgressCache = () => {
     setProgressRepairing(true);
     showAlert({
@@ -580,9 +569,6 @@ export default function Settings({ courseOps, user, course }) {
                   <button type="button" onClick={repairProgressCache} disabled={progressRepairing} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" title="Rebuild enrollment progress summaries from durable progress records">
                     {progressRepairing ? 'Repairing progress…' : 'Repair progress cache'}
                   </button>
-                  <button type="button" onClick={unpinContent} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
-                    Unpin content
-                  </button>
                 </div>
               </div>
             </div>
@@ -642,20 +628,6 @@ export default function Settings({ courseOps, user, course }) {
               </div>
             </div>
           </>
-        )}
-
-        {editorVisible && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-1">
-            <div>
-              <h2 className="text-lg font-semibold mb-3 text-gray-800">Terms &amp; sections</h2>
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">Manage the course's terms, sections, and which section each learner is in.</div>
-                <button type="button" onClick={() => navigate(`/course/${course.id}/sections`)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
-                  Manage terms &amp; sections
-                </button>
-              </div>
-            </div>
-          </div>
         )}
 
         {(editorVisible || canManageMentors || canManageEnrollments) && (

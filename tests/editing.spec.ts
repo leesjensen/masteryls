@@ -135,8 +135,7 @@ test('terms & sections view creates a term with its first section', async ({ pag
     await route.fallback();
   });
 
-  await page.getByText('Settings').click();
-  await page.getByRole('button', { name: 'Manage terms & sections' }).click();
+  await page.getByRole('link', { name: 'Terms & Sections' }).click();
   await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
 
   // A term is always created together with its first section.
@@ -221,8 +220,7 @@ test('terms & sections view deletes empty sections and whole terms', async ({ pa
     await route.fallback();
   });
 
-  await page.getByText('Settings').click();
-  await page.getByRole('button', { name: 'Manage terms & sections' }).click();
+  await page.getByRole('link', { name: 'Terms & Sections' }).click();
   await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
 
   // Two sections, each with a delete control. Delete one.
@@ -257,8 +255,7 @@ test('terms & sections schedules panel View opens the selected schedule', async 
     await route.fallback();
   });
 
-  await page.getByText('Settings').click();
-  await page.getByRole('button', { name: 'Manage terms & sections' }).click();
+  await page.getByRole('link', { name: 'Terms & Sections' }).click();
   await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
 
   // The Schedules panel lists the schedule with a View button (next to Copy).
@@ -308,6 +305,8 @@ test('settings editing', async ({ page }) => {
   await page.getByText('Settings').click();
 
   await expect(page.getByRole('textbox', { name: 'Course Title' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Manage terms & sections' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Unpin content' })).toHaveCount(0);
 
   await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Enter course title' }).click();

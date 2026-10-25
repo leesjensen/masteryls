@@ -5,8 +5,8 @@ import CourseAttendanceChart from './courseAttendanceChart.jsx';
 import { DEFAULT_ATTENDANCE_QUESTION } from './attendanceUtils.js';
 
 // Instructor (root/editor/mentor) Attendance view: attendance is taken per SECTION. The instructor
-// picks a section, enables attendance for it (so its learners get the check-in affordance), takes
-// attendance, and reviews that section's past sessions.
+// picks a section, takes attendance when it is enabled in Terms & Sections, and reviews that
+// section's past sessions.
 export default function AttendanceAdmin({ courseOps, course }) {
   const [sections, setSections] = React.useState(() => (Array.isArray(course?.sections) ? course.sections : []));
   const [selectedSectionId, setSelectedSectionId] = React.useState(() => (Array.isArray(course?.sections) && course.sections[0] ? course.sections[0].id : ''));
@@ -14,8 +14,6 @@ export default function AttendanceAdmin({ courseOps, course }) {
   const [summary, setSummary] = React.useState(null);
   const [error, setError] = React.useState(null);
   const [opening, setOpening] = React.useState(false);
-  const [savingEnabled, setSavingEnabled] = React.useState(false);
-
   const selectedSection = sections.find((section) => section.id === selectedSectionId) || null;
   const attendanceEnabled = Boolean(selectedSection?.attendanceEnabled);
 
@@ -85,20 +83,6 @@ export default function AttendanceAdmin({ courseOps, course }) {
     await loadSummary();
   }
 
-  async function toggleEnabled(enabled) {
-    if (!selectedSection) return;
-    setSavingEnabled(true);
-    setError(null);
-    try {
-      await courseOps.setSectionAttendanceEnabled(selectedSection.id, enabled);
-      setSections((prev) => prev.map((section) => (section.id === selectedSection.id ? { ...section, attendanceEnabled: enabled } : section)));
-    } catch (ex) {
-      setError(ex.message);
-    } finally {
-      setSavingEnabled(false);
-    }
-  }
-
   if (sections.length === 0) {
     return (
       <div className="relative h-full w-full overflow-auto">
@@ -125,10 +109,9 @@ export default function AttendanceAdmin({ courseOps, course }) {
                 ))}
               </select>
             </label>
-            <label className="text-sm text-gray-700 flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={attendanceEnabled} disabled={savingEnabled} onChange={(e) => toggleEnabled(e.target.checked)} className="cursor-pointer" />
-              Attendance enabled for this section
-            </label>
+            <span className={`text-sm ${attendanceEnabled ? 'text-green-700' : 'text-gray-500'}`}>
+              {attendanceEnabled ? 'Attendance enabled' : 'Attendance disabled'}
+            </span>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-gray-600">
@@ -138,7 +121,7 @@ export default function AttendanceAdmin({ courseOps, course }) {
               {opening ? 'Opening...' : 'Take attendance'}
             </button>
           </div>
-          {!attendanceEnabled && <div className="text-xs text-gray-500">Enable attendance for this section to take attendance.</div>}
+          {!attendanceEnabled && <div className="text-xs text-gray-500">Enable attendance for this section in Terms &amp; Sections to take attendance.</div>}
           {error && <div className="text-sm text-red-600">{error}</div>}
         </div>
 

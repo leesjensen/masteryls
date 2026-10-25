@@ -625,9 +625,9 @@ Open: sidebar `Settings`.
    - Rebuilds topic search index from current course markdown.
    - Use after large content edits if search appears stale/incomplete.
 
-2. **Unpin content**
-   - Clears pinned/forced UI content state across topics.
-   - Use if pinned items are stuck or inconsistent.
+2. **Repair progress cache**
+   - Rebuilds enrollment progress summaries from durable progress records.
+   - Use if displayed progress does not match the recorded learner activity.
 
 ### People management
 

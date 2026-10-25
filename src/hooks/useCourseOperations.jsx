@@ -472,27 +472,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     await updateCourseStructure(updatedCourse, null, `remove(module) ${mod.title}`);
   }
 
-  async function unpinAllContent(course) {
-    const updatedCourse = Course.copy(learningSession.course);
-    updatedCourse.modules.forEach((mod) => {
-      mod.topics.forEach((topic) => {
-        if (topic.commit) {
-          delete topic.commit;
-        }
-      });
-    });
-
-    if (Array.isArray(updatedCourse.schedule?.files)) {
-      updatedCourse.schedule.files.forEach((file) => {
-        if (file?.commit) {
-          delete file.commit;
-        }
-      });
-    }
-
-    await updateCourseStructure(updatedCourse, null, `unpin(all) ${course.title} commits`);
-  }
-
   async function generateTopic(topicId, prompt) {
     if (!learningSession?.course) return;
     const course = learningSession.course;
@@ -2610,7 +2589,6 @@ Requirements:
     addModule,
     renameModule,
     removeModule,
-    unpinAllContent,
     addTopic,
     generateTopic,
     generateTopics,
