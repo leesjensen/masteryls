@@ -85,7 +85,7 @@ function Login({ courseOps }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center relative bg-white bg-opacity-90 shadow-lg rounded-lg overflow-hidden max-w-md w-full min-h-[300px] px-8 py-2">
+    <div className="flex flex-col items-center justify-center relative bg-white bg-opacity-90 shadow-lg rounded-lg overflow-hidden max-w-md w-full min-h-[300px] px-8 py-[72px]">
       <InputDialog dialogRef={otpDialogRef} />
       <form className="space-y-4  max-w-md w-full" onSubmit={handleLogin}>
         {showSignup && (
@@ -100,8 +100,8 @@ function Login({ courseOps }) {
           <label className="block text-gray-700 mb-1" htmlFor="email">
             Email
           </label>
-          <input id="email" type="email" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERNS[0].example : 'you@example.com'} autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} pattern={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERN_ATTR : undefined} title={showSignup ? `Enter an allowed email address (e.g. ${ALLOWED_SIGNUP_EMAIL_EXAMPLES})` : undefined} />
-          {showSignup && <p className={`text-red-600 text-sm mt-1 ${emailNeedsAllowedDomain ? '' : 'invisible'}`}>You must use an allowed email address to create an account (e.g. {ALLOWED_SIGNUP_EMAIL_EXAMPLES}).</p>}
+          <input id="email" type="email" autoFocus className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERNS[0].example : 'you@example.com'} autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} pattern={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERN_ATTR : undefined} title={showSignup ? `Enter an allowed email address (e.g. ${ALLOWED_SIGNUP_EMAIL_EXAMPLES})` : undefined} />
+          {emailNeedsAllowedDomain && <p className="text-red-600 text-sm mt-1">You must use an allowed email address to create an account (e.g. {ALLOWED_SIGNUP_EMAIL_EXAMPLES}).</p>}
         </div>
         <div className="flex space-x-2">
           <button type="submit" className="flex-1 disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || (showSignup && !name) || (showSignup && !emailMatchesAllowedDomain)}>
