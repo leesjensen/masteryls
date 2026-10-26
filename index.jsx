@@ -65,7 +65,7 @@ function LoadingPage() {
     <div className="mt-16 flex min-h-dvh items-center justify-center bg-gradient-to-br from-gray-50to-gray-200">
       <div className="text-center">
         <div className="inline-block">
-          <div className="w-16 h-16 border-8 border-amber-200 border-t-amber-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-8 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
         </div>
         <h2 className="text-2xl font-semibold text-gray-800 mb-2">Mastery LS is Loading</h2>
         <p className="text-gray-600">

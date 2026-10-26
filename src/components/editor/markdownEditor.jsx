@@ -8,6 +8,7 @@ import TopicLinkDialog from './topicLinkDialog';
 import ImageInsertDialog from './imageInsertDialog';
 import { createTopicLinkMarkdown } from './topicLinkUtils';
 import { cleanFilename, extensionFromMimeType, toUploadDescriptor } from './fileUploadUtils';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 
 const defaultImagePlaceholderUrl = 'https://images.unsplash.com/photo-1767597186218-813e8e6c44d6?q=80&w=400';
 const PASTE_HANDLED_FLAG = '__masterylsPasteHandled';
@@ -241,6 +242,7 @@ function computeChangedLineMarkers(baseText, currentText) {
 }
 
 const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, contentEpoch, committedContent, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames }, ref) {
+  const { showAlert } = useAlert();
   const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on', changedLines: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
   const [generatingContent, setGeneratingContent] = React.useState(false);
@@ -474,7 +476,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     const topics = Array.isArray(course?.allTopics) ? course.allTopics : [];
 
     if (topics.length === 0) {
-      window.alert('No topics available to link.');
+      showAlert({ message: 'No topics available to link.', type: 'error' });
       return;
     }
 
@@ -588,7 +590,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     const selectedMarkdown = selection && model ? model.getValueInRange(selection) : '';
 
     if (!selectedMarkdown.trim()) {
-      window.alert('Select markdown in the editor before using AI modify.');
+      showAlert({ message: 'Select markdown in the editor before using AI modify.', type: 'error' });
       editor?.focus();
       return;
     }
@@ -623,7 +625,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       editor.pushUndoStop?.();
       editor.focus();
     } catch (error) {
-      window.alert(`Failed to modify selection: ${error.message}`);
+      showAlert({ message: `Failed to modify selection: ${error.message}`, type: 'error' });
     } finally {
       setGeneratingContent(false);
     }
@@ -695,7 +697,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       insertFiles([uploadDescriptor.name]);
       existingNames.add(uploadDescriptor.name);
     } catch (error) {
-      window.alert(`Failed to generate image: ${error.message}`);
+      showAlert({ message: `Failed to generate image: ${error.message}`, type: 'error' });
     } finally {
       if (previewObjectUrl) {
         URL.revokeObjectURL(previewObjectUrl);
@@ -712,7 +714,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     const currentMarkdown = model?.getValue?.() ?? String(content || '');
 
     if (!currentMarkdown.trim()) {
-      window.alert('Add markdown content before running topic review.');
+      showAlert({ message: 'Add markdown content before running topic review.', type: 'error' });
       editor?.focus();
       return;
     }
@@ -741,7 +743,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       editor.pushUndoStop?.();
       editor.focus();
     } catch (error) {
-      window.alert(`Failed to review topic: ${error.message}`);
+      showAlert({ message: `Failed to review topic: ${error.message}`, type: 'error' });
     } finally {
       setGeneratingContent(false);
     }

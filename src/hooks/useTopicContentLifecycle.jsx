@@ -1,7 +1,9 @@
 import React from 'react';
 import useLatest from './useLatest';
+import { useAlert } from '../contexts/AlertContext.jsx';
 
 export default function useTopicContentLifecycle({ courseOps, learningSession, contentAvailable, onTopicLoaded }) {
+  const { showAlert } = useAlert();
   const [content, setContentState] = React.useState('');
   // Bumped only when `content` is replaced from a NON-keystroke source (topic load,
   // discard, apply-commit). The editor uses this signal to know when to re-apply text
@@ -30,7 +32,7 @@ export default function useTopicContentLifecycle({ courseOps, learningSession, c
       setCommittedContent(contentRef.current);
       setDirty(false);
     } catch (error) {
-      alert('Failed to commit changes. Please try again.');
+      showAlert({ message: 'Failed to commit changes. Please try again.', type: 'error' });
     } finally {
       setCommitting(false);
     }

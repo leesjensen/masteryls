@@ -246,13 +246,6 @@ test('schedule form editor commits and can create additional schedule files', as
   expect(latest.markdown).not.toMatch(/^#\s+/m);
 
   const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  page.once('dialog', async (dialog) => {
-    if (dialog.message().includes('Discard unsaved schedule changes')) {
-      await dialog.accept();
-      return;
-    }
-    await dialog.dismiss();
-  });
   await fileSelect.selectOption('__new_schedule__');
   const dialog = page.locator('dialog:has-text("New schedule")');
   await expect(dialog).toBeVisible();
@@ -458,18 +451,14 @@ test('schedule editor confirms before switching files with unsaved changes', asy
   await expect(moduleInput).toHaveValue('Intro');
   await moduleInput.fill('Unsaved Module Change');
 
-  page.once('dialog', async (dialog) => {
-    await dialog.dismiss();
-  });
   await fileSelect.selectOption('joe');
+  await page.locator('dialog:has-text("Discard unsaved schedule changes")').getByRole('button', { name: 'Cancel' }).click();
 
   await expect(fileSelect).toHaveValue('default');
   await expect(moduleInput).toHaveValue('Unsaved Module Change');
 
-  page.once('dialog', async (dialog) => {
-    await dialog.accept();
-  });
   await fileSelect.selectOption('joe');
+  await page.locator('dialog:has-text("Discard unsaved schedule changes")').getByRole('button', { name: 'Discard', exact: true }).click();
 
   await expect(fileSelect).toHaveValue('joe');
   await expect(moduleInput).toHaveValue('Intro');
@@ -486,10 +475,8 @@ test('schedule editor can rename and delete non-default schedule files', async (
   const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
   await fileSelect.selectOption('joe');
 
-  page.once('dialog', async (dialog) => {
-    await dialog.accept();
-  });
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.locator('dialog:has-text("Delete schedule file")').getByRole('button', { name: 'Delete', exact: true }).click();
 
   await expect(fileSelect).toHaveValue('default');
   await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-s-schedule.md'))).toBeTruthy();

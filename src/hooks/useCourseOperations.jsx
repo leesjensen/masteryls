@@ -18,6 +18,7 @@ import { completedInteractionIds } from '../utils/topicProgress';
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
+import { useAlert } from '../contexts/AlertContext.jsx';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
 import { buildAttendanceGradeRequest, DEFAULT_ATTENDANCE_POINTS_PER_SESSION, DEFAULT_ATTENDANCE_POINTS_POSSIBLE } from './canvas/attendanceCanvasSync.js';
@@ -37,6 +38,7 @@ import { calculateProgressMastery } from '../utils/progressSummary.js';
  * @param {Function} setLearningSession - Function to update learning session state
  */
 function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings, observeSession = null) {
+  const { showAlert } = useAlert();
   const courseCache = React.useRef(new Map());
   const discussionToggleHandler = React.useRef(null);
   const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ checkLearnerEligibility: (params) => service.checkCanvasGradebookEligibility(params) }));
@@ -563,7 +565,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
         await updateCourseStructure(updatedCourse, newTopic, `add(course) topic '${newTopic.title}'`);
       } catch (error) {
-        alert(`Failed to add topic: ${error.message}`);
+        showAlert({ message: `Failed to add topic: ${error.message}`, type: 'error' });
       }
     }
   }

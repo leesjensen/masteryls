@@ -15,7 +15,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingTitle, setLoadingTitle] = useState('Linking Your Course');
   const [updateMessage, setUpdateMessage] = useState('Initializing');
-  const { showAlert } = useAlert();
+  const { showAlert, showConfirm } = useAlert();
 
   function topicsForCourse(candidateCourse) {
     if (!candidateCourse?.modules) {
@@ -82,7 +82,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
       return;
     }
 
-    if (!window.confirm(`Unlink '${course.title}' from Canvas?`)) {
+    if (!(await showConfirm({ title: 'Unlink course', message: `Unlink '${course.title}' from Canvas?`, confirmButtonText: 'Unlink', danger: true }))) {
       return;
     }
 

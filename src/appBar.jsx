@@ -5,6 +5,7 @@ import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, 
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 import UserProfileDialog from './components/UserProfileDialog.jsx';
 import { useTheme } from './hooks/useTheme.jsx';
+import { useAlert } from './contexts/AlertContext.jsx';
 
 export function AppBar({ user, courseOps }) {
   const { title, subTitle, tools } = useAppBarState();
@@ -124,6 +125,7 @@ function UserMenu({ user, courseOps }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { preference, setPreference } = useTheme();
+  const { showPrompt, showAlert } = useAlert();
   const menuRef = useRef(null);
 
   function getUserInitials(value) {
@@ -203,13 +205,13 @@ function UserMenu({ user, courseOps }) {
                   icon={UserCog}
                   onClick={() =>
                     handleMenuItemClick(async () => {
-                      const email = window.prompt('Email of user to log in as:');
+                      const email = await showPrompt({ title: 'Login as user', message: 'Email of user to log in as:', placeholder: 'user@example.com', confirmButtonText: 'Login' });
                       if (!email || !email.trim()) return;
                       try {
                         await courseOps.service.impersonateLogin(email.trim());
                         window.location.assign('/');
                       } catch (error) {
-                        window.alert(`Impersonation failed: ${error?.message || error}`);
+                        showAlert({ message: `Impersonation failed: ${error?.message || error}`, type: 'error' });
                       }
                     })
                   }

@@ -10,6 +10,7 @@ import Button from '../ui/Button.jsx';
 import Input from '../ui/Input.jsx';
 import Select from '../ui/Select.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
 const NEW_SCHEDULE_OPTION = '__new_schedule__';
@@ -456,6 +457,7 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
 }
 
 export default function ScheduleEditor({ courseOps, learningSession }) {
+  const { showAlert, showConfirm } = useAlert();
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
   const [selectedFile, setSelectedFile] = React.useState(null);
@@ -675,7 +677,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       return;
     }
 
-    if (dirty && !window.confirm('Discard unsaved schedule changes?')) {
+    if (dirty && !(await showConfirm({ title: 'Discard changes', message: 'Discard unsaved schedule changes?', confirmButtonText: 'Discard', danger: true }))) {
       return;
     }
 
@@ -689,7 +691,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       return;
     }
 
-    if (dirty && !window.confirm('Discard unsaved schedule changes before creating another schedule?')) {
+    if (dirty && !(await showConfirm({ title: 'Discard changes', message: 'Discard unsaved schedule changes before creating another schedule?', confirmButtonText: 'Discard', danger: true }))) {
       return;
     }
 
@@ -719,7 +721,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         setSelectedFileId(createdFile.id);
       }
     } catch (error) {
-      alert(error.message || 'Unable to create schedule file.');
+      showAlert({ message: error.message || 'Unable to create schedule file.', type: 'error' });
     } finally {
       setCreatingSchedule(false);
     }
@@ -754,11 +756,11 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       return;
     }
 
-    if (dirty && !window.confirm('Discard unsaved schedule content changes before deleting this schedule file?')) {
+    if (dirty && !(await showConfirm({ title: 'Discard changes', message: 'Discard unsaved schedule content changes before deleting this schedule file?', confirmButtonText: 'Discard', danger: true }))) {
       return;
     }
 
-    if (!window.confirm(`Delete schedule file '${selectedFile.title}'?`)) {
+    if (!(await showConfirm({ title: 'Delete schedule', message: `Delete schedule file '${selectedFile.title}'?`, confirmButtonText: 'Delete', danger: true }))) {
       return;
     }
 
@@ -769,7 +771,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         setSelectedFileId(nextFileId);
       }
     } catch (error) {
-      alert(error.message || 'Unable to delete schedule file.');
+      showAlert({ message: error.message || 'Unable to delete schedule file.', type: 'error' });
     } finally {
       setDeletingSchedule(false);
     }
@@ -784,7 +786,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     try {
       await courseOps.setDefaultScheduleFile(learningSession.topic, selectedFile.id);
     } catch (error) {
-      alert(error.message || 'Unable to set default schedule file.');
+      showAlert({ message: error.message || 'Unable to set default schedule file.', type: 'error' });
     } finally {
       setSettingDefault(false);
     }

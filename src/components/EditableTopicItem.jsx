@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import TopicItem from './TopicItem';
 import TopicForm from './TopicForm';
 import useClickOutside from '../hooks/useClickOutside';
+import { useAlert } from '../contexts/AlertContext.jsx';
 
 /**
  * EditableTopicItem is a draggable and editable topic item component for a module.
@@ -24,6 +25,7 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
   const editorRef = React.useRef(null);
   const [showEditForm, setShowEditForm] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const { showConfirm } = useAlert();
 
   async function handleSubmitForm(title, description, type, points) {
     setIsLoading(true);
@@ -42,8 +44,8 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
     }
   }
 
-  function removeTopic() {
-    if (!confirm(`Are you sure you want to remove "${topic.title}"?`)) return;
+  async function removeTopic() {
+    if (!(await showConfirm({ title: 'Remove topic', message: `Are you sure you want to remove "${topic.title}"?`, confirmButtonText: 'Remove', danger: true }))) return;
 
     courseOps.removeTopic(moduleIndex, topicIndex, course, topic);
   }

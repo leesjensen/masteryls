@@ -162,7 +162,7 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
             <X size={16} />
           </button>
         </div>
-        <Tabs tabs={tabs} activeTab={discussionContext.mode} onChange={toggleMode} />
+        <Tabs tabs={tabs} active={discussionContext.mode} onChange={toggleMode} />
         {discussionContext.section && (
           <div className={`m-2 flex items-center gap-2 text-xs border rounded px-2 py-1 ${modeConfig.filterColor}`}>
             <span className={`text-sm flex-1 truncate`}>{`${modeConfig.filterDescriptionPrefix}: ${discussionContext.section}`}</span>

@@ -31,7 +31,7 @@ function Sidebar({ courseOps, user, learningSession, editorVisible }) {
   return (
     <div className="flex flex-col bg-white overflow-hidden w-full">
       <div className=" bg-gray-50 ">
-        <Tabs tabs={tabs} activeTab={display} onChange={handleTabChange} />
+        <Tabs tabs={tabs} active={display} onChange={handleTabChange} />
       </div>
       <aside className="flex-1 overflow-auto">
         {display === 'topics' && <Contents courseOps={courseOps} learningSession={learningSession} editorVisible={editorVisible} />}

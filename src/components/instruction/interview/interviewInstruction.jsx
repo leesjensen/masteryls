@@ -2,7 +2,7 @@ import React from 'react';
 import { BadgeCheck, CircleDashed } from 'lucide-react';
 import { parseInterviewMarkdown } from '../../../utils/interviewMarkdown';
 import Markdown from '../../Markdown';
-import TabBar from '../../shared/TabBar';
+import Tabs from '../../Tabs';
 import CoachPanel from '../../shared/CoachPanel';
 import InterviewWorkspace from './interviewWorkspace';
 import InterviewEvaluation from './interviewEvaluation';
@@ -602,7 +602,7 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
           <h1 className="text-2xl font-semibold text-gray-900 m-0">{params.title || learningSession?.topic?.title || 'Interview Assessment'}</h1>
           {(runInProgress || runComplete) && renderActionButtons()}
         </div>
-        {tabs.length > 1 && <TabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
+        {tabs.length > 1 && <Tabs tabs={tabs} active={safeActiveTab} onChange={selectTab} variant="scroll" />}
       </div>
 
       {safeActiveTab === 'interview' ? (

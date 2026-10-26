@@ -5,7 +5,7 @@ import { summarizeDraRun } from './draScore';
 import DraInvestigation from './draInvestigation';
 import DraEvaluation from './draEvaluation';
 import CoachPanel from '../../shared/CoachPanel';
-import TabBar from '../../shared/TabBar';
+import Tabs from '../../Tabs';
 import Splitter from '../../Splitter';
 import useSplitPaneState from '../../../hooks/useSplitPaneState';
 import DraAssessment from './DraAssessment';
@@ -13,6 +13,7 @@ import Spinner from '../../Spinner';
 import { FileText, MessageSquare, Search, Network, Play, CheckCircle2, RefreshCcw, Lightbulb, BadgeCheck, CircleDashed } from 'lucide-react';
 import DraMobilePicker from './DraMobilePicker';
 import ConfirmDialog from '../../../hooks/confirmDialog.jsx';
+import { useAlert } from '../../../contexts/AlertContext.jsx';
 import { DRA_FIXED_STAGES, createDraStageNotes, getDraStageDefinition, getFirstDraStage, getDraStageNames, normalizeDraProcessAttributeName, normalizeDraStageName } from '../../../utils/draStages';
 
 // Difficulty (1 easiest .. 5 hardest) gates how much of the scenario is revealed up
@@ -326,6 +327,7 @@ function getStageIcon(stage) {
 }
 
 export default function DraInstruction({ courseOps, learningSession, user, content = null, instructionState = 'learning' }) {
+  const { showAlert, showConfirm } = useAlert();
   const [markdown, setMarkdown] = React.useState(content || '');
   const [draState, setDraState] = React.useState(createEmptyDraState());
   const [loading, setLoading] = React.useState(true);
@@ -550,7 +552,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       await syncDraProgress(draState);
       setIsDirty(false);
     } catch {
-      alert('Unable to save. Please try again.');
+      showAlert({ message: 'Unable to save. Please try again.', type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -712,7 +714,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           },
         },
       });
-      alert('The interview partner could not respond. Please try again.');
+      showAlert({ message: 'The interview partner could not respond. Please try again.', type: 'error' });
     }
   }
 
@@ -750,7 +752,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       };
       await autoSaveDetails(nextDetails, { selectPracticeScenarioId: runMode === 'practice' ? scenarioRunId : selectedPracticeScenarioId, forceProgressRow: true });
     } catch (ex) {
-      alert(`Unable to generate a scenario. Please try again. ${ex.message || ''}`);
+      showAlert({ message: `Unable to generate a scenario. Please try again. ${ex.message || ''}`, type: 'error' });
     } finally {
       setBusyAction(null);
     }
@@ -758,7 +760,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
 
   async function startFinal() {
     if (draReadOnly || busy) return;
-    if (!window.confirm('Start the final assessment? Once it begins the scenario is locked and must be completed.')) return;
+    if (!(await showConfirm({ title: 'Start final assessment', message: 'Start the final assessment? Once it begins the scenario is locked and must be completed.', confirmButtonText: 'Start' }))) return;
     await generateScenario('final');
   }
 
@@ -835,7 +837,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       const result = await courseOps.getDraCoaching(details.scenario, buildTranscripts(details), details.stageNotes || {}, activeStage, details.difficulty ?? params.difficulty, details.evaluation);
       await autoSaveDetails({ ...details, coaching: result });
     } catch {
-      alert('Unable to get coaching right now. Please try again.');
+      showAlert({ message: 'Unable to get coaching right now. Please try again.', type: 'error' });
     } finally {
       setCoaching(false);
     }
@@ -848,7 +850,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
       const evaluation = await computeEvaluation(details);
       await autoSaveDetails({ ...details, evaluation });
     } catch {
-      alert('Unable to evaluate progress right now. Please try again.');
+      showAlert({ message: 'Unable to evaluate progress right now. Please try again.', type: 'error' });
     } finally {
       setEvaluating(false);
     }
@@ -1340,7 +1342,7 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
           <h1 className="text-2xl font-semibold text-gray-900 m-0">{params.title || 'Disciplinary Reasoning Assessment'}</h1>
           {(details.state === 'inProgress' || details.state === 'completed') && renderActionButtons()}
         </div>
-        {tabs.length > 1 && <TabBar tabs={tabs} active={safeActiveTab} onChange={selectTab} />}
+        {tabs.length > 1 && <Tabs tabs={tabs} active={safeActiveTab} onChange={selectTab} variant="scroll" />}
       </div>
 
       {safeActiveTab === 'investigation' ? (

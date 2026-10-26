@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 
 // Editor/root management of a course's terms and sections. Rendered in the classroom content pane
 // (as the synthetic `sections` topic) so it reads as part of the course, reachable from the TOC, the
@@ -12,6 +13,7 @@ export default function SectionsAdminView({ courseOps }) {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const user = courseOps?.user;
+  const { showConfirm } = useAlert();
 
   const [terms, setTerms] = React.useState([]);
   const [schedules, setSchedules] = React.useState([]);
@@ -98,7 +100,9 @@ export default function SectionsAdminView({ courseOps }) {
             type="button"
             title="Delete section"
             aria-label={`Delete section ${sec.title || ''}`}
-            onClick={() => window.confirm(`Delete section "${sec.title || 'Untitled'}"?`) && run(() => courseOps.deleteSection(sec.id))}
+            onClick={async () => {
+              if (await showConfirm({ title: 'Delete section', message: `Delete section "${sec.title || 'Untitled'}"?`, confirmButtonText: 'Delete', danger: true })) run(() => courseOps.deleteSection(sec.id));
+            }}
             className="text-gray-400 hover:text-red-600"
           >
             <Trash2 size={16} />
@@ -166,7 +170,9 @@ export default function SectionsAdminView({ courseOps }) {
                   type="button"
                   title="Delete term"
                   aria-label={`Delete term ${t.title || ''}`}
-                  onClick={() => window.confirm(`Delete term "${t.title || 'Untitled'}" and its ${termSections.length} section${termSections.length === 1 ? '' : 's'}? Schedules are kept.`) && run(() => courseOps.deleteTerm(t.id))}
+                  onClick={async () => {
+                    if (await showConfirm({ title: 'Delete term', message: `Delete term "${t.title || 'Untitled'}" and its ${termSections.length} section${termSections.length === 1 ? '' : 's'}? Schedules are kept.`, confirmButtonText: 'Delete', danger: true })) run(() => courseOps.deleteTerm(t.id));
+                  }}
                   className="ml-auto flex items-center gap-1 text-xs text-gray-500 hover:text-red-600"
                 >
                   <Trash2 size={14} /> Delete term

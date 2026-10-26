@@ -293,10 +293,8 @@ test('dra final mode confirms start and locks the scenario', async ({ page }) =>
   await navigateToCourse(page);
   await page.getByText('Reasoning Lab').click();
 
-  page.once('dialog', async (dialog) => {
-    await dialog.accept();
-  });
   await page.getByRole('button', { name: 'Start final assessment' }).click();
+  await page.locator('dialog:has-text("Once it begins the scenario is locked")').getByRole('button', { name: 'Start', exact: true }).click();
 
   await expect(page.getByRole('heading', { name: 'Tax System Modernization', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
@@ -453,10 +451,8 @@ test('dra final mode does not offer coaching during the run', async ({ page }) =
 
   await navigateToCourse(page);
   await page.getByText('Reasoning Lab').click();
-  page.once('dialog', async (dialog) => {
-    await dialog.accept();
-  });
   await page.getByRole('button', { name: 'Start final assessment' }).click();
+  await page.locator('dialog:has-text("Once it begins the scenario is locked")').getByRole('button', { name: 'Start', exact: true }).click();
 
   await page.getByRole('button', { name: 'Workspace', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Get coaching' })).toHaveCount(0);
@@ -527,10 +523,8 @@ test('dra final assessment completion posts a non-autograded suggestion to canva
   await navigateToCourse(page);
   await page.getByText('Reasoning Lab').click();
 
-  page.once('dialog', async (dialog) => {
-    await dialog.accept();
-  });
   await page.getByRole('button', { name: 'Start final assessment' }).click();
+  await page.locator('dialog:has-text("Once it begins the scenario is locked")').getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Complete assessment' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Complete assessment' }).click();

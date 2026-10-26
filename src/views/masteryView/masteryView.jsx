@@ -8,6 +8,7 @@ import FeedbackEmailModal from './FeedbackEmailModal.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
 import Select from '../../components/ui/Select.jsx';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 
 const PAGE_SIZE = 50;
 
@@ -44,6 +45,7 @@ function compareRows(a, b, key) {
 export default function MasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
+  const { showConfirm } = useAlert();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [page, setPage] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
@@ -327,7 +329,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       return;
     }
     const learnerLabel = row.learnerName || row.learnerEmail || 'this learner';
-    if (!window.confirm(`Unenroll ${learnerLabel} from this course? Their progress and submissions will no longer be accessible.`)) {
+    if (!(await showConfirm({ title: 'Unenroll learner', message: `Unenroll ${learnerLabel} from this course? Their progress and submissions will no longer be accessible.`, confirmButtonText: 'Unenroll', danger: true }))) {
       return;
     }
     try {

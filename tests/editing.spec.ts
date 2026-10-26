@@ -173,8 +173,6 @@ test('terms & sections view deletes empty sections and whole terms', async ({ pa
   const termDeletes: string[] = [];
   const scheduleDetachPatches: string[] = [];
 
-  page.on('dialog', (dialog) => dialog.accept());
-
   await initAndOpenBasicCourse({ page });
 
   await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route) => {
@@ -227,12 +225,14 @@ test('terms & sections view deletes empty sections and whole terms', async ({ pa
   await expect(page.getByLabel('Delete section Section A')).toBeVisible();
   await expect(page.getByLabel('Delete section Section B')).toBeVisible();
   await page.getByLabel('Delete section Section B').click();
+  await page.locator('dialog:has-text("Delete section")').getByRole('button', { name: 'Delete', exact: true }).click();
 
   await expect.poll(() => sectionDeletes).toContain('sec-2');
   // The lone remaining section can't be individually deleted - you delete the term.
   await expect(page.getByLabel('Delete section Section A')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Delete term' }).click();
+  await page.locator('dialog:has-text("Schedules are kept")').getByRole('button', { name: 'Delete', exact: true }).click();
   await expect.poll(() => termDeletes).toContain('term-1');
   await expect.poll(() => scheduleDetachPatches.length).toBeGreaterThan(0);
   await expect(page.getByText('No terms yet.', { exact: false })).toBeVisible();

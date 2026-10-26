@@ -9,6 +9,7 @@ import { useProgress } from './contexts/ProgressContext.jsx';
 import { parseScheduleMarkdown, getNextScheduleDate, scheduleRowStatus } from './utils/scheduleMarkdown.js';
 import { parseTopicHeadings } from './utils/topicHeadings.js';
 import { handleSidebarLinkClick } from './utils/linkNavigation.js';
+import { useAlert } from './contexts/AlertContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, UserCheck, Layers, X } from 'lucide-react';
 
@@ -89,6 +90,7 @@ function formatDueLabel(dates) {
 
 function Contents({ courseOps, learningSession, editorVisible }) {
   const navigate = useNavigate();
+  const { showAlert, showConfirm } = useAlert();
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
   const { showProgress, updateProgress, hideProgress } = useProgress();
   const [dueDatesByTopicId, setDueDatesByTopicId] = React.useState({});
@@ -309,7 +311,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
       await courseOps.updateCourseStructure(updatedCourse, null, `move topic '${moved.title}' to module '${updatedCourse.modules[toModuleIdx].title}'`);
     } catch (error) {
       setOptimisticModules(null);
-      alert(error?.message || 'Unable to reorder topic.');
+      showAlert({ message: error?.message || 'Unable to reorder topic.', type: 'error' });
     } finally {
       setIsReordering(false);
     }
@@ -372,20 +374,20 @@ function Contents({ courseOps, learningSession, editorVisible }) {
       await courseOps.createSchedule('Schedule');
       navigate(`/course/${learningSession.course.id}/schedule`);
     } catch (error) {
-      alert(error.message || 'Unable to create schedule.');
+      showAlert({ message: error.message || 'Unable to create schedule.', type: 'error' });
     }
   }
 
   async function deleteSchedule() {
     if (!learningSession?.course) return;
-    if (!window.confirm('Delete the course schedule and all schedule files?')) {
+    if (!(await showConfirm({ title: 'Delete schedule', message: 'Delete the course schedule and all schedule files?', confirmButtonText: 'Delete', danger: true }))) {
       return;
     }
 
     try {
       await courseOps.deleteCourseSchedule();
     } catch (error) {
-      alert(error.message || 'Unable to delete schedule.');
+      showAlert({ message: error.message || 'Unable to delete schedule.', type: 'error' });
     }
   }
 
