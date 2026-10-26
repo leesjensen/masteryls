@@ -220,7 +220,7 @@ test('schedule table keeps its header row locked while scrolling', async ({ page
   await expect(body).toHaveCSS('max-width', 'none');
 });
 
-test('schedule form editor commits and can create additional schedule files', async ({ page }) => {
+test('schedule form editor commits content edits', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
   const { schedulePuts } = installScheduleRoutes(page);
 
@@ -244,167 +244,6 @@ test('schedule form editor commits and can create additional schedule files', as
   expect(latest.markdown).toContain('Edited Module');
   // The schedule name lives in the DB now, so no `# ` title heading is written to the markdown.
   expect(latest.markdown).not.toMatch(/^#\s+/m);
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('__new_schedule__');
-  const dialog = page.locator('dialog:has-text("New schedule")');
-  await expect(dialog).toBeVisible();
-  await dialog.getByPlaceholder('Schedule title').fill('Evening Schedule');
-  await dialog.locator('select').selectOption('');
-  await dialog.getByRole('button', { name: 'Create' }).click();
-
-  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/evening-schedule.md'))).toBeTruthy();
-});
-
-test('schedule editor can create a new schedule by copying an existing schedule', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  const { schedulePuts, markdownByRepoPath } = installScheduleRoutes(page);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('joe');
-  await expect(fileSelect).toHaveValue('joe');
-  // The editor has no title field and the markdown no longer carries a title heading; confirm
-  // joe's content loaded via a distinctive content item in the preview.
-  await expect(page.locator('.markdown-body').getByText('Joe Intro')).toBeVisible();
-  await fileSelect.selectOption('__new_schedule__');
-
-  const dialog = page.locator('dialog:has-text("New schedule")');
-  await expect(dialog).toBeVisible();
-  await dialog.getByPlaceholder('Schedule title').fill('Copied Joe Schedule');
-  const sourceSelect = dialog.locator('select');
-  await sourceSelect.selectOption('joe');
-  await expect(sourceSelect).toHaveValue('joe');
-  await dialog.getByRole('button', { name: 'Create' }).click();
-
-  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/copied-joe-schedule.md') && entry.markdown.includes('[Joe Intro](../instruction/introduction.md)'))).toBeTruthy();
-
-  const copiedContentWrite = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('/copied-joe-schedule.md') && entry.markdown.includes('[Joe Intro](../instruction/introduction.md)'));
-  expect(copiedContentWrite?.path || '').toContain('/copied-joe-schedule.md');
-
-  await expect(fileSelect.locator('option[value="default"]')).toHaveCount(1);
-  await expect(fileSelect.locator('option[value="joe"]')).toHaveCount(1);
-
-  const copiedOption = fileSelect.locator('option').filter({ hasText: 'Copied Joe Schedule' });
-  await expect(copiedOption).toHaveCount(1);
-  const copiedOptionValue = await copiedOption.first().getAttribute('value');
-  expect(copiedOptionValue).toBeTruthy();
-  if (!copiedOptionValue) {
-    throw new Error('Expected copied schedule option to have a value.');
-  }
-
-  await fileSelect.selectOption(copiedOptionValue);
-  await expect(fileSelect).toHaveValue(copiedOptionValue);
-  await expect(page.locator('.markdown-body').getByText('Joe Intro')).toBeVisible();
-
-  expect(markdownByRepoPath.get('instruction/schedule/joe-s-schedule.md')).toContain("# Joe's schedule");
-});
-
-test('schedule editor can copy a schedule and remap dates to a first session date', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  const { schedulePuts } = installScheduleRoutes(page);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('joe');
-  await fileSelect.selectOption('__new_schedule__');
-
-  const dialog = page.locator('dialog:has-text("New schedule")');
-  await expect(dialog).toBeVisible();
-  await dialog.getByPlaceholder('Schedule title').fill('Fall Copy');
-  await dialog.locator('select').selectOption('joe');
-  await dialog.locator('#new-schedule-start-date').fill('2026-04-01');
-  await dialog.getByRole('button', { name: 'Create' }).click();
-
-  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/fall-copy.md') && entry.markdown.includes('Wed Apr 1') && entry.markdown.includes('[Joe Intro](../instruction/introduction.md)'))).toBeTruthy();
-});
-
-test('schedule copy shifts all sessions to previous weekday when first session date is earlier in the week', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  const { schedulePuts, markdownByRepoPath } = installScheduleRoutes(page);
-
-  markdownByRepoPath.set('instruction/schedule/joe-s-schedule.md', `# Joe's schedule\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   | Tue Jan 6 2026 | Intro | | [Joe Intro](../instruction/introduction.md) | |\n|  1   | Thu Jan 8 2026 | Intro 2 | | [Joe Followup](../instruction/introduction.md) | |\n`);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('joe');
-  await fileSelect.selectOption('__new_schedule__');
-
-  const dialog = page.locator('dialog:has-text("New schedule")');
-  await expect(dialog).toBeVisible();
-  await dialog.getByPlaceholder('Schedule title').fill('Shift Earlier');
-  await dialog.locator('select').selectOption('joe');
-  await dialog.locator('#new-schedule-start-date').fill('2026-03-02');
-  await dialog.getByRole('button', { name: 'Create' }).click();
-
-  await expect
-    .poll(() => {
-      return schedulePuts.some((entry) => entry.path.endsWith('/shift-earlier.md') && entry.markdown.includes('Mon Mar 2') && entry.markdown.includes('Wed Mar 4'));
-    })
-    .toBeTruthy();
-});
-
-test('schedule copy shifts all sessions to next weekday when first session date is later in the week', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  const { schedulePuts, markdownByRepoPath } = installScheduleRoutes(page);
-
-  markdownByRepoPath.set('instruction/schedule/joe-s-schedule.md', `# Joe's schedule\n\n| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   | Tue Jan 6 2026 | Intro | | [Joe Intro](../instruction/introduction.md) | |\n|  1   | Thu Jan 8 2026 | Intro 2 | | [Joe Followup](../instruction/introduction.md) | |\n`);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('joe');
-  await fileSelect.selectOption('__new_schedule__');
-
-  const dialog = page.locator('dialog:has-text("New schedule")');
-  await expect(dialog).toBeVisible();
-  await dialog.getByPlaceholder('Schedule title').fill('Shift Later');
-  await dialog.locator('select').selectOption('joe');
-  await dialog.locator('#new-schedule-start-date').fill('2026-03-04');
-  await dialog.getByRole('button', { name: 'Create' }).click();
-
-  await expect
-    .poll(() => {
-      return schedulePuts.some((entry) => entry.path.endsWith('/shift-later.md') && entry.markdown.includes('Wed Mar 4') && entry.markdown.includes('Fri Mar 6'));
-    })
-    .toBeTruthy();
-});
-
-test('schedule editor creates blank schedules with schedule markdown template', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  const { schedulePuts } = installScheduleRoutes(page);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('__new_schedule__');
-
-  const dialog = page.locator('dialog:has-text("New schedule")');
-  await expect(dialog).toBeVisible();
-  await dialog.getByPlaceholder('Schedule title').fill('Blank Section A');
-  await dialog.locator('select').selectOption('');
-  await dialog.getByRole('button', { name: 'Create' }).click();
-
-  await expect.poll(() => schedulePuts.some((entry) => entry.path.endsWith('/blank-section-a.md'))).toBeTruthy();
-
-  const created = [...schedulePuts].reverse().find((entry) => entry.path.endsWith('/blank-section-a.md'));
-  // The name lives in the DB schedule row; the template markdown carries no `# ` title heading.
-  expect(created?.markdown || '').not.toMatch(/^#\s+/m);
-  expect(created?.markdown || '').toContain('| Week | Date | Module | Due | Topics Covered | Slides |');
-  expect(created?.markdown || '').toContain('|  1   |      |        |     |                |        |');
 });
 
 test('adding a schedule creates schedule template markdown and course schedule metadata', async ({ page }) => {
@@ -442,7 +281,7 @@ test('schedule editor confirms before switching files with unsaved changes', asy
   await page.getByText('Schedule').click();
   await page.locator('.absolute.left-0\\.5').click();
 
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
+  const fileSelect = page.locator('select:has(option[value="joe"])').first();
   await expect(fileSelect).toHaveValue('default');
 
   // Make a schedule-content edit (the editor no longer edits title/dates - those live in the
@@ -462,51 +301,5 @@ test('schedule editor confirms before switching files with unsaved changes', asy
 
   await expect(fileSelect).toHaveValue('joe');
   await expect(moduleInput).toHaveValue('Intro');
-});
-
-test('schedule editor can rename and delete non-default schedule files', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  const { schedulePuts, scheduleDeletes } = installScheduleRoutes(page);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('joe');
-
-  await page.getByRole('button', { name: 'Delete', exact: true }).click();
-  await page.locator('dialog:has-text("Delete schedule file")').getByRole('button', { name: 'Delete', exact: true }).click();
-
-  await expect(fileSelect).toHaveValue('default');
-  await expect.poll(() => scheduleDeletes.some((path) => path.endsWith('/joe-s-schedule.md'))).toBeTruthy();
-});
-
-test('schedule editor can set default schedule used as fallback selection', async ({ page }) => {
-  await initBasicCourse({ page, courseJsonOverride: scheduleCourseOverride() });
-  installScheduleRoutes(page);
-
-  await navigateToCourse(page);
-  await page.getByText('Schedule').click();
-  await page.locator('.absolute.left-0\\.5').click();
-
-  const fileSelect = page.locator('select:has(option[value="__new_schedule__"])').first();
-  await fileSelect.selectOption('joe');
-  await page.getByRole('button', { name: 'Default' }).click();
-
-  await page.evaluate(() => {
-    const key = 'uiSettings-14602d77-0ff3-4267-b25e-4a7c3c47848b';
-    const raw = localStorage.getItem(key);
-    if (!raw) return;
-    const settings = JSON.parse(raw);
-    delete settings.selectedScheduleFile;
-    localStorage.setItem(key, JSON.stringify(settings));
-  });
-
-  await page.getByRole('link', { name: 'Home' }).click();
-  await page.getByText('Schedule', { exact: true }).click();
-
-  const readSelect = page.locator('select:has(option[value="default"])').first();
-  await expect(readSelect).toHaveValue('joe');
 });
 

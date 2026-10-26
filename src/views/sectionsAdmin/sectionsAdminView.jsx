@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Eye, Copy } from 'lucide-react';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
 // Editor/root management of a course's terms and sections. Rendered in the classroom content pane
@@ -165,19 +165,19 @@ export default function SectionsAdminView({ courseOps }) {
                 End
                 <input type="date" defaultValue={t.endDate || ''} onBlur={(e) => e.target.value !== (t.endDate || '') && run(() => courseOps.updateTerm(t.id, { endDate: e.target.value || null }))} className="border border-gray-300 rounded px-2 py-1" />
               </label>
-              {!termHasLearners && (
-                <button
-                  type="button"
-                  title="Delete term"
-                  aria-label={`Delete term ${t.title || ''}`}
-                  onClick={async () => {
-                    if (await showConfirm({ title: 'Delete term', message: `Delete term "${t.title || 'Untitled'}" and its ${termSections.length} section${termSections.length === 1 ? '' : 's'}? Schedules are kept.`, confirmButtonText: 'Delete', danger: true })) run(() => courseOps.deleteTerm(t.id));
-                  }}
-                  className="ml-auto flex items-center gap-1 text-xs text-gray-500 hover:text-red-600"
-                >
-                  <Trash2 size={14} /> Delete term
-                </button>
-              )}
+              {/* Shown for every term for consistency; disabled while any of its sections still has learners. */}
+              <button
+                type="button"
+                disabled={termHasLearners}
+                title={termHasLearners ? 'Term has learners — unenroll them before deleting' : 'Delete term'}
+                aria-label={`Delete term ${t.title || ''}`}
+                onClick={async () => {
+                  if (await showConfirm({ title: 'Delete term', message: `Delete term "${t.title || 'Untitled'}" and its ${termSections.length} section${termSections.length === 1 ? '' : 's'}? Schedules are kept.`, confirmButtonText: 'Delete', danger: true })) run(() => courseOps.deleteTerm(t.id));
+                }}
+                className="ml-auto text-gray-400 hover:text-red-600 disabled:text-gray-300 disabled:hover:text-gray-300 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
             <div className="space-y-2 pl-3 border-l-2 border-gray-200">
               {sectionsForTerm(t.id).map(renderSectionRow)}
@@ -237,27 +237,51 @@ export default function SectionsAdminView({ courseOps }) {
       {/* Schedules are peer items to terms; editing their content is done in the schedule editor. */}
       <div className="space-y-4">
         <div className="text-xl font-semibold text-gray-800">Schedules</div>
-        {schedules.map((s) => (
-          <div key={s.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <input defaultValue={s.title || ''} onBlur={(e) => e.target.value !== (s.title || '') && run(() => courseOps.updateSchedule(s.id, { title: e.target.value }))} placeholder="Schedule title" className="border border-gray-300 rounded px-2 py-1 w-56 text-base font-semibold" />
-              <label className="flex items-center gap-1 text-sm text-gray-600">
-                Start
-                <input type="date" defaultValue={s.startDate || ''} onBlur={(e) => e.target.value !== (s.startDate || '') && run(() => courseOps.updateSchedule(s.id, { startDate: e.target.value || null }))} className="border border-gray-300 rounded px-2 py-1" />
-              </label>
-              <label className="flex items-center gap-1 text-sm text-gray-600">
-                End
-                <input type="date" defaultValue={s.endDate || ''} onBlur={(e) => e.target.value !== (s.endDate || '') && run(() => courseOps.updateSchedule(s.id, { endDate: e.target.value || null }))} className="border border-gray-300 rounded px-2 py-1" />
-              </label>
-              <button type="button" onClick={() => { courseOps.saveEnrollmentUiSettings(courseId, { selectedScheduleFile: s.id }); navigate(`/course/${courseId}/schedule`); }} className="ml-auto text-xs text-blue-700 hover:underline" title="Open this schedule">
-                View
-              </button>
-              <button type="button" disabled={busy} onClick={async () => { setBusy(true); await run(() => courseOps.copyCourseSchedule(courseId, s.id, {})); setBusy(false); }} className="text-xs text-blue-700 hover:underline disabled:text-gray-400">
-                Copy
-              </button>
+        {schedules.map((s) => {
+          const usedBy = sections.filter((sec) => sec.scheduleId === s.id).length;
+          return (
+            <div key={s.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <input defaultValue={s.title || ''} onBlur={(e) => e.target.value !== (s.title || '') && run(() => courseOps.updateSchedule(s.id, { title: e.target.value }))} placeholder="Schedule title" className="border border-gray-300 rounded px-2 py-1 w-56 text-base font-semibold" />
+                <label className="flex items-center gap-1 text-sm text-gray-600">
+                  Start
+                  <input type="date" defaultValue={s.startDate || ''} onBlur={(e) => e.target.value !== (s.startDate || '') && run(() => courseOps.updateSchedule(s.id, { startDate: e.target.value || null }))} className="border border-gray-300 rounded px-2 py-1" />
+                </label>
+                <label className="flex items-center gap-1 text-sm text-gray-600">
+                  End
+                  <input type="date" defaultValue={s.endDate || ''} onBlur={(e) => e.target.value !== (s.endDate || '') && run(() => courseOps.updateSchedule(s.id, { endDate: e.target.value || null }))} className="border border-gray-300 rounded px-2 py-1" />
+                </label>
+                <span className="ml-auto text-xs text-gray-500" title="Sections assigned to this schedule">
+                  {usedBy} section{usedBy === 1 ? '' : 's'}
+                </span>
+                <button type="button" title="View this schedule" aria-label={`View schedule ${s.title || ''}`} onClick={() => { courseOps.saveEnrollmentUiSettings(courseId, { selectedScheduleFile: s.id }); navigate(`/course/${courseId}/schedule`); }} className="text-gray-400 hover:text-blue-600">
+                  <Eye size={16} />
+                </button>
+                <button type="button" title="Copy this schedule" aria-label={`Copy schedule ${s.title || ''}`} disabled={busy} onClick={async () => { setBusy(true); await run(() => courseOps.copyCourseSchedule(courseId, s.id, {})); setBusy(false); }} className="text-gray-400 hover:text-blue-600 disabled:text-gray-300 disabled:hover:text-gray-300 disabled:cursor-not-allowed">
+                  <Copy size={16} />
+                </button>
+                {/* The delete control stays visible but is disabled while any section still points at this
+                    schedule, so a schedule in use can't be removed and no section is left schedule-less. */}
+                <button
+                  type="button"
+                  disabled={busy || usedBy > 0}
+                  title={usedBy > 0 ? `In use by ${usedBy} section${usedBy === 1 ? '' : 's'} — reassign them before deleting` : 'Delete schedule'}
+                  aria-label={`Delete schedule ${s.title || ''}`}
+                  onClick={async () => {
+                    if (await showConfirm({ title: 'Delete schedule', message: `Delete schedule "${s.title || 'Untitled'}"? This removes the schedule and its content.`, confirmButtonText: 'Delete', danger: true })) {
+                      setBusy(true);
+                      await run(() => courseOps.deleteCourseScheduleById(courseId, s.id));
+                      setBusy(false);
+                    }
+                  }}
+                  className="text-gray-400 hover:text-red-600 disabled:text-gray-300 disabled:hover:text-gray-300 disabled:cursor-not-allowed"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {schedules.length === 0 && <div className="text-sm text-gray-500">No schedules yet.</div>}
         {addingSchedule ? (
           <div className="flex flex-wrap items-center gap-2 text-sm rounded-md border border-blue-300 bg-blue-50 px-3 py-2">

@@ -238,6 +238,60 @@ test('terms & sections view deletes empty sections and whole terms', async ({ pa
   await expect(page.getByText('No terms yet.', { exact: false })).toBeVisible();
 });
 
+test('terms & sections schedules panel deletes only an unreferenced schedule', async ({ page }) => {
+  // Two schedules: one assigned to a section (no delete control), one free (deletable). A non-repo
+  // contentPath keeps the delete to the DB row only, so no GitHub file mock is needed.
+  const terms: any[] = [{ id: 'term-1', catalogId: 'c', title: 'Fall 2026', startDate: null, endDate: null }];
+  const sections: any[] = [{ id: 'sec-1', catalogId: 'c', termId: 'term-1', scheduleId: 'sched-used', title: 'Section A', attendanceEnabled: false }];
+  const schedules: any[] = [
+    { id: 'sched-used', catalogId: 'c', termId: 'term-1', title: 'Used Schedule', startDate: null, endDate: null, contentPath: 'https://example.com/used.md' },
+    { id: 'sched-free', catalogId: 'c', termId: 'term-1', title: 'Free Schedule', startDate: null, endDate: null, contentPath: 'https://example.com/free.md' },
+  ];
+  const scheduleDeletes: string[] = [];
+
+  await initAndOpenBasicCourse({ page });
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route) => {
+    await route.fulfill({ json: terms });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route) => {
+    await route.fulfill({ json: sections });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, async (route) => {
+    if (route.request().method() === 'DELETE') {
+      const id = idFromDeleteUrl(route.request().url());
+      scheduleDeletes.push(id);
+      const idx = schedules.findIndex((s) => s.id === id);
+      if (idx >= 0) schedules.splice(idx, 1);
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fulfill({ json: schedules });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.getByRole('link', { name: 'Terms & Sections' }).click();
+  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+
+  // The delete control is shown for both, but disabled (with a usage count) for the one a section uses.
+  await expect(page.getByText('1 section', { exact: true })).toBeVisible();
+  await expect(page.getByText('0 sections', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Delete schedule Used Schedule')).toBeDisabled();
+  await expect(page.getByLabel('Delete schedule Free Schedule')).toBeEnabled();
+
+  await page.getByLabel('Delete schedule Free Schedule').click();
+  await page.locator('dialog:has-text("Delete schedule")').getByRole('button', { name: 'Delete', exact: true }).click();
+
+  await expect.poll(() => scheduleDeletes).toContain('sched-free');
+  await expect(page.getByLabel('Delete schedule Free Schedule')).toHaveCount(0);
+});
+
 test('terms & sections schedules panel View opens the selected schedule', async ({ page }) => {
   const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
   await initAndOpenBasicCourse({ page });

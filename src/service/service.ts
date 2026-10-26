@@ -717,6 +717,12 @@ class Service {
     if (error) throw new Error(error.message);
   }
 
+  /** Deletes a schedule row. Callers gate on the schedule not being referenced by any section. */
+  async deleteScheduleRow(id: string): Promise<void> {
+    const { error } = await this.supabase.from('schedule').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  }
+
   async createSection(catalogId: string, values: { termId?: string | null; scheduleId?: string | null; title?: string; state?: string; attendanceEnabled?: boolean }): Promise<any> {
     const { data, error } = await this.supabase
       .from('section')

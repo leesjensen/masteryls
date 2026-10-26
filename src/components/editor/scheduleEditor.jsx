@@ -5,15 +5,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { Check, GripVertical, X } from 'lucide-react';
 import Markdown from '../../components/Markdown';
 import Splitter from '../Splitter.jsx';
-import Modal from '../ui/Modal.jsx';
-import Button from '../ui/Button.jsx';
-import Input from '../ui/Input.jsx';
-import Select from '../ui/Select.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
-const NEW_SCHEDULE_OPTION = '__new_schedule__';
 const ADD_ITEM_MENU_OPTION = '__add_item_menu__';
 const NEW_MANUAL_ITEM_OPTION = '__new_manual_item__';
 
@@ -203,83 +198,6 @@ function textDateFromPickerValue(value) {
     .replace(',', '');
 }
 
-function parseScheduleDateTextToDate(value) {
-  const iso = pickerValueFromTextDate(value);
-  if (!iso) {
-    return null;
-  }
-
-  const parsed = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  parsed.setHours(0, 0, 0, 0);
-  return parsed;
-}
-
-function formatScheduleDateFromDate(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-    .format(date)
-    .replace(',', '');
-}
-
-function addDays(date, days) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  next.setHours(0, 0, 0, 0);
-  return next;
-}
-
-function remapScheduleDatesForStartDate(sourceModel, startDateIso) {
-  const rawStart = String(startDateIso || '').trim();
-  if (!rawStart) {
-    return sourceModel;
-  }
-
-  const startDate = new Date(`${rawStart}T00:00:00`);
-  if (Number.isNaN(startDate.getTime())) {
-    return sourceModel;
-  }
-  startDate.setHours(0, 0, 0, 0);
-
-  const rows = Array.isArray(sourceModel?.weeks) ? sourceModel.weeks : [];
-  const parsedRows = rows.map((row) => ({ row, parsedDate: parseScheduleDateTextToDate(row?.date) }));
-  const anchor = parsedRows.find((entry) => entry.parsedDate);
-
-  if (!anchor?.parsedDate) {
-    return sourceModel;
-  }
-
-  const dayShift = Math.round((startDate.getTime() - anchor.parsedDate.getTime()) / (24 * 60 * 60 * 1000));
-
-  const nextWeeks = rows.map((row) => {
-    const originalDate = parseScheduleDateTextToDate(row?.date);
-    if (!originalDate) {
-      return row;
-    }
-
-    return {
-      ...row,
-      date: formatScheduleDateFromDate(addDays(originalDate, dayShift)),
-    };
-  });
-
-  return {
-    ...sourceModel,
-    weeks: nextWeeks,
-  };
-}
-
 function SortableTopicItem({ item, field, row, learningSession, getLinkedTopic, editingItemKey, setEditingItemKey, updateItem, removeItem }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -457,20 +375,13 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
 }
 
 export default function ScheduleEditor({ courseOps, learningSession }) {
-  const { showAlert, showConfirm } = useAlert();
+  const { showConfirm } = useAlert();
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
   const [selectedFile, setSelectedFile] = React.useState(null);
-  const [creatingSchedule, setCreatingSchedule] = React.useState(false);
-  const [deletingSchedule, setDeletingSchedule] = React.useState(false);
-  const [settingDefault, setSettingDefault] = React.useState(false);
   const [model, setModel] = React.useState(createEmptyModel());
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
-  const [newScheduleTitle, setNewScheduleTitle] = React.useState('');
-  const [newScheduleSourceId, setNewScheduleSourceId] = React.useState('');
-  const [newScheduleStartDate, setNewScheduleStartDate] = React.useState('');
-  const newScheduleDialogRef = React.useRef(null);
   const { panePercent: editorPanePercent, splitContainerRef, onPaneMoved: onEditorPaneMoved, onPaneResized: onEditorPaneResized } = useSplitPaneState(55);
   const previewMarkdown = React.useMemo(() => serializeScheduleMarkdown(model), [model]);
 
@@ -672,10 +583,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
   async function handleFileChange(event) {
     const nextId = event.target.value;
-    if (nextId === NEW_SCHEDULE_OPTION) {
-      await promptAndCreateSchedule();
-      return;
-    }
 
     if (dirty && !(await showConfirm({ title: 'Discard changes', message: 'Discard unsaved schedule changes?', confirmButtonText: 'Discard', danger: true }))) {
       return;
@@ -683,113 +590,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
 
     setSelectedFileId(nextId);
     courseOps.setSelectedScheduleFile(learningSession.topic, nextId);
-  }
-
-  async function createSchedule(title, sourceFileId = '', startDateIso = '') {
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle || creatingSchedule) {
-      return;
-    }
-
-    if (dirty && !(await showConfirm({ title: 'Discard changes', message: 'Discard unsaved schedule changes before creating another schedule?', confirmButtonText: 'Discard', danger: true }))) {
-      return;
-    }
-
-    let copiedMarkdown = '';
-    if (sourceFileId) {
-      let sourceModel = null;
-      if (sourceFileId === selectedFileId) {
-        sourceModel = { ...createEmptyModel(), ...model };
-      } else {
-        const sourceMarkdown = await courseOps.getScheduleTopicContent(learningSession.topic, sourceFileId, true);
-        const parsed = parseScheduleMarkdown(sourceMarkdown || '');
-        sourceModel = { ...createEmptyModel(), ...parsed };
-      }
-
-      const remappedModel = remapScheduleDatesForStartDate(sourceModel, startDateIso);
-      copiedMarkdown = serializeScheduleMarkdown(remappedModel);
-    }
-
-    setCreatingSchedule(true);
-    try {
-      const createdFile = await courseOps.createScheduleFile(learningSession.topic, trimmedTitle);
-      if (createdFile) {
-        if (copiedMarkdown) {
-          await courseOps.updateScheduleTopicContent(learningSession.topic, createdFile.id, copiedMarkdown, `copy(schedule) ${trimmedTitle}`);
-        }
-        setFiles((prev) => dedupeScheduleFiles([...prev, createdFile]));
-        setSelectedFileId(createdFile.id);
-      }
-    } catch (error) {
-      showAlert({ message: error.message || 'Unable to create schedule file.', type: 'error' });
-    } finally {
-      setCreatingSchedule(false);
-    }
-  }
-
-  async function promptAndCreateSchedule() {
-    setNewScheduleTitle('');
-    setNewScheduleSourceId(selectedFileId || '');
-    setNewScheduleStartDate('');
-    newScheduleDialogRef.current?.showModal();
-  }
-
-  function cancelNewScheduleDialog() {
-    newScheduleDialogRef.current?.close();
-    setNewScheduleTitle('');
-    setNewScheduleSourceId('');
-    setNewScheduleStartDate('');
-  }
-
-  async function confirmNewScheduleDialog() {
-    const title = newScheduleTitle.trim();
-    if (!title || creatingSchedule) {
-      return;
-    }
-
-    await createSchedule(title, newScheduleSourceId, newScheduleStartDate);
-    cancelNewScheduleDialog();
-  }
-
-  async function deleteSchedule() {
-    if (!selectedFile || deletingSchedule) {
-      return;
-    }
-
-    if (dirty && !(await showConfirm({ title: 'Discard changes', message: 'Discard unsaved schedule content changes before deleting this schedule file?', confirmButtonText: 'Discard', danger: true }))) {
-      return;
-    }
-
-    if (!(await showConfirm({ title: 'Delete schedule', message: `Delete schedule file '${selectedFile.title}'?`, confirmButtonText: 'Delete', danger: true }))) {
-      return;
-    }
-
-    setDeletingSchedule(true);
-    try {
-      const nextFileId = await courseOps.deleteScheduleFile(learningSession.topic, selectedFile.id);
-      if (nextFileId) {
-        setSelectedFileId(nextFileId);
-      }
-    } catch (error) {
-      showAlert({ message: error.message || 'Unable to delete schedule file.', type: 'error' });
-    } finally {
-      setDeletingSchedule(false);
-    }
-  }
-
-  async function setDefaultSchedule() {
-    if (!selectedFile || settingDefault) {
-      return;
-    }
-
-    setSettingDefault(true);
-    try {
-      await courseOps.setDefaultScheduleFile(learningSession.topic, selectedFile.id);
-    } catch (error) {
-      showAlert({ message: error.message || 'Unable to set default schedule file.', type: 'error' });
-    } finally {
-      setSettingDefault(false);
-    }
   }
 
   const weekGroups = groupSessionsByWeek(model.weeks || []);
@@ -888,7 +688,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
                 {file.title}
               </option>
             ))}
-            <option value={NEW_SCHEDULE_OPTION}>+ New schedule...</option>
           </select>
           <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs" onClick={discard} disabled={!dirty || committing}>
             Discard
@@ -896,12 +695,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           <button className="w-[96px] px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 text-xs inline-flex items-center justify-center gap-2" onClick={commit} disabled={!dirty || committing}>
             {committing && <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
             <span>Commit</span>
-          </button>
-          <button className="px-3 py-1 bg-blue-400 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 text-xs" onClick={setDefaultSchedule} disabled={!selectedFile || selectedFile.default || settingDefault}>
-            {settingDefault ? 'Updating...' : 'Default'}
-          </button>
-          <button className="px-3 py-1 bg-red-700 text-white rounded hover:bg-red-800 disabled:bg-gray-400 text-xs" onClick={deleteSchedule} disabled={!selectedFile || selectedFile.default || deletingSchedule}>
-            {deletingSchedule ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
@@ -994,39 +787,6 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           </div>
         </div>
       </div>
-
-      <Modal dialogRef={newScheduleDialogRef} title="New schedule">
-        <div className="mb-2 text-gray-700">Enter a title for the new schedule.</div>
-        <Input type="text" value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="Schedule title" className="mb-4" />
-
-        <div className="mb-2 text-gray-700">Create from</div>
-        <Select value={newScheduleSourceId} onChange={(e) => setNewScheduleSourceId(e.target.value)} className="mb-4">
-          <option value="">Blank schedule</option>
-          {files.map((file) => (
-            <option key={file.id} value={file.id}>
-              {file.title}
-            </option>
-          ))}
-        </Select>
-
-        {newScheduleSourceId && (
-          <>
-            <label htmlFor="new-schedule-start-date" className="mb-2 block text-gray-700">
-              First session date (optional)
-            </label>
-            <Input id="new-schedule-start-date" type="date" value={newScheduleStartDate} onChange={(e) => setNewScheduleStartDate(e.target.value)} className="mb-4" />
-          </>
-        )}
-
-        <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={cancelNewScheduleDialog} disabled={creatingSchedule}>
-            Cancel
-          </Button>
-          <Button onClick={confirmNewScheduleDialog} disabled={!newScheduleTitle.trim() || creatingSchedule}>
-            {creatingSchedule ? 'Creating...' : 'Create'}
-          </Button>
-        </div>
-      </Modal>
     </div>
   );
 }

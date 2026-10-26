@@ -887,113 +887,8 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return resolved;
   }
 
-  async function createScheduleFile(topic, scheduleTitle) {
-    const course = getWorkingCourse();
-    if (!course) {
-      return null;
-    }
-
-    const title = (scheduleTitle || '').trim();
-    if (!title) {
-      throw new Error('Schedule title is required.');
-    }
-
-    if (!course.schedule?.id) {
-      return createSchedule(title);
-    }
-    const token = user.getSetting('gitHubToken', course.id);
-    if (!user.isEditor(course.id) || !token) {
-      throw new Error('You do not have permission to create schedules for this course.');
-    }
-
-    const updatedCourse = Course.copy(course);
-    const updatedSchedule = updatedCourse.schedule;
-    let existingSchedules = Array.isArray(updatedSchedule.files) ? [...updatedSchedule.files] : [];
-
-    const path = sanitizeSchedulePath(title);
-    if (existingSchedules.some((entry) => sanitizeSchedulePath(entry.path) === path)) {
-      throw new Error(`A schedule file already exists for '${path}'.`);
-    }
-
-    const newSchedule = {
-      id: generateId(),
-      title,
-      path,
-      default: false,
-    };
-
-    updatedSchedule.files = [...existingSchedules, newSchedule];
-
-    const scheduleTopic = getScheduleTopic(updatedCourse);
-    const resolved = resolveScheduleFile(scheduleTopic, newSchedule.path, newSchedule.id, newSchedule.title, newSchedule.default);
-    const initialMarkdown = createInitialScheduleMarkdown(title);
-
-    await service.commitGitHubFile(resolved.apiUrl, initialMarkdown, token, `add(schedule) ${title}`);
-    updatedCourse.markdownCache.set(resolved.rawUrl, initialMarkdown);
-
-    await _updateCourseStructure(token, updatedCourse, `update(course) add schedule ${title}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
-    setSelectedScheduleFile(scheduleTopic, newSchedule.id);
-
-    return resolved;
-  }
-
   async function renameScheduleFile() {
     throw new Error('Renaming schedule files is not supported. File names are generated from the original schedule title.');
-  }
-
-  async function deleteScheduleFile(topic, fileId) {
-    const course = getWorkingCourse();
-    if (!course) {
-      return null;
-    }
-    const token = user.getSetting('gitHubToken', course.id);
-    if (!user.isEditor(course.id) || !token) {
-      throw new Error('You do not have permission to delete schedules for this course.');
-    }
-    if (!course.schedule?.id) {
-      throw new Error('No schedule exists for this course.');
-    }
-
-    const updatedCourse = Course.copy(course);
-    let schedules = Array.isArray(updatedCourse.schedule.files) ? [...updatedCourse.schedule.files] : [];
-
-    if (schedules.length <= 1) {
-      throw new Error('At least one schedule file is required.');
-    }
-
-    const index = schedules.findIndex((entry) => entry.id === fileId);
-    if (index === -1) {
-      throw new Error('Unable to find selected schedule file.');
-    }
-
-    const removing = schedules[index];
-    if (removing.default) {
-      throw new Error('The default schedule file cannot be deleted.');
-    }
-
-    const scheduleTopic = getScheduleTopic(updatedCourse);
-    const resolved = resolveScheduleFile(scheduleTopic, removing.path, removing.id, removing.title, Boolean(removing.default));
-    await service.deleteGitHubFile(resolved.apiUrl, token, `remove(schedule) ${removing.title || removing.path}`);
-
-    updatedCourse.markdownCache.delete(resolved.rawUrl);
-    schedules.splice(index, 1);
-
-    if (!schedules.some((entry) => entry.default)) {
-      schedules[0] = { ...schedules[0], default: true };
-    }
-
-    updatedCourse.schedule.files = schedules;
-
-    const nextSelection = schedules.find((entry) => entry.default) || schedules[0];
-
-    await _updateCourseStructure(token, updatedCourse, `update(course) delete schedule ${removing.title || removing.path}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
-    if (nextSelection?.id) {
-      setSelectedScheduleFile(scheduleTopic, nextSelection.id);
-    }
-
-    return nextSelection?.id || null;
   }
 
   async function deleteCourseSchedule() {
@@ -1022,38 +917,6 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     await _updateCourseStructure(token, updatedCourse, `update(course) delete schedule`);
     setLearningSession({ ...learningSession, course: updatedCourse, topic: nextTopic });
   }
-
-  async function setDefaultScheduleFile(topic, fileId) {
-    const course = getWorkingCourse();
-    if (!course || !fileId) {
-      return null;
-    }
-    const token = user.getSetting('gitHubToken', course.id);
-    if (!user.isEditor(course.id) || !token) {
-      throw new Error('You do not have permission to update default schedules for this course.');
-    }
-    if (!course.schedule?.id) {
-      throw new Error('No schedule exists for this course.');
-    }
-
-    const updatedCourse = Course.copy(course);
-    const scheduleTopic = getScheduleTopic(updatedCourse);
-    let schedules = Array.isArray(updatedCourse.schedule.files) ? [...updatedCourse.schedule.files] : [];
-
-    if (!schedules.some((entry) => entry.id === fileId)) {
-      throw new Error('Unable to find selected schedule file.');
-    }
-
-    schedules = schedules.map((entry) => ({ ...entry, default: entry.id === fileId }));
-    updatedCourse.schedule.files = schedules;
-
-    await _updateCourseStructure(token, updatedCourse, `update(course) default schedule ${fileId}`);
-    setLearningSession({ ...learningSession, course: updatedCourse, topic: scheduleTopic });
-    setSelectedScheduleFile(scheduleTopic, fileId);
-
-    return fileId;
-  }
-
 
   function sanitizeSchedulePath(rawPath) {
     let normalized = String(rawPath || '')
@@ -1959,6 +1822,36 @@ Requirements:
     return row;
   }
 
+  // Delete a DB-backed schedule: its backing GitHub markdown file and the schedule row. Refuses if
+  // any section still references the schedule (reassign or remove those sections first). Callable
+  // from the Terms & Sections view, so it takes courseId explicitly.
+  async function deleteCourseScheduleById(courseId, scheduleId) {
+    const course = await getCourse(courseId);
+    if (!course) throw new Error('Course not found.');
+    const token = user.getSetting('gitHubToken', courseId);
+    if (!(user.isEditor(courseId) || user.isRoot()) || !token) throw new Error('You do not have permission (and a GitHub token) to delete schedules for this course.');
+
+    const [schedules, sections] = await Promise.all([service.getCourseSchedules(courseId), service.getCourseSections(courseId)]);
+    const target = schedules.find((s) => s.id === scheduleId);
+    if (!target) throw new Error('Schedule not found.');
+    if ((sections || []).some((sec) => sec.scheduleId === scheduleId)) {
+      throw new Error('This schedule is assigned to one or more sections. Reassign or remove those sections before deleting it.');
+    }
+
+    if (target.contentPath && target.contentPath.startsWith(course.links.gitHub.rawUrl)) {
+      const apiUrl = target.contentPath.replace(course.links.gitHub.rawUrl, course.links.gitHub.apiUrl);
+      try {
+        await service.deleteGitHubFile(apiUrl, token, `remove(schedule) ${target.title || scheduleId}`);
+      } catch {
+        // The markdown file may already be gone; removing the DB row is what matters.
+      }
+      course.markdownCache?.delete?.(target.contentPath);
+    }
+
+    await service.deleteScheduleRow(scheduleId);
+    await _refreshCourseSchedules(course);
+  }
+
   // The section of the enrollment in the current session (the learner's own, or the observed
   // learner's during observe). Lets the learner attendance chart scope to "attended N of M".
   function getCurrentSectionId() {
@@ -2604,11 +2497,8 @@ Requirements:
     getSelectedScheduleFile,
     setSelectedScheduleFile,
     createSchedule,
-    createScheduleFile,
     renameScheduleFile,
-    deleteScheduleFile,
     deleteCourseSchedule,
-    setDefaultScheduleFile,
     getScheduleTopicContent,
     updateScheduleTopicContent,
     addTopicFiles,
@@ -2677,6 +2567,7 @@ Requirements:
     updateSchedule,
     createCourseSchedule,
     copyCourseSchedule,
+    deleteCourseScheduleById,
     getCurrentSectionId,
     openAttendance,
     closeAttendance,
