@@ -1,24 +1,25 @@
 import React from 'react';
+import Modal from '../components/ui/Modal.jsx';
+import Button from '../components/ui/Button.jsx';
 
-export default function ConfirmDialog({ dialogRef, confirmed, title, message, confirmButtonText }) {
+export default function ConfirmDialog({ dialogRef, confirmed, title, message, confirmButtonText, danger = false }) {
   const closeDialog = () => {
     dialogRef.current.close();
   };
 
   return (
-    <dialog ref={dialogRef} className="p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
-      {title && <h2 className="text-xl font-bold text-blue-500 mb-4">{title}</h2>}
+    <Modal dialogRef={dialogRef} title={title}>
       <div className="mb-6 text-gray-700">{message}</div>
       <div className="flex justify-end gap-3">
-        <button onClick={closeDialog} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors">
+        <Button variant="secondary" onClick={closeDialog}>
           Cancel
-        </button>
+        </Button>
         {confirmed && (
-          <button onClick={confirmed} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+          <Button variant={danger ? 'danger' : 'primary'} onClick={confirmed}>
             {confirmButtonText || 'OK'}
-          </button>
+          </Button>
         )}
       </div>
-    </dialog>
+    </Modal>
   );
 }

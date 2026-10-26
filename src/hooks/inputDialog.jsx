@@ -1,4 +1,8 @@
 import React from 'react';
+import Modal from '../components/ui/Modal.jsx';
+import Button from '../components/ui/Button.jsx';
+import Input from '../components/ui/Input.jsx';
+import Textarea from '../components/ui/Textarea.jsx';
 
 export default function InputDialog({ dialogRef, title: defaultTitle, description: defaultDescription, placeholder: defaultPlaceholder, confirmButtonText: defaultConfirmButtonText = 'OK', cancelButtonText: defaultCancelButtonText = 'Cancel' }) {
   const [inputValue, setInputValue] = React.useState('');
@@ -68,24 +72,23 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
   }, [dialogRef]);
 
   return (
-    <dialog ref={dialogRef} className="w-full p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
-      {currentTitle && <h2 className="text-xl font-bold text-blue-500 mb-4">{currentTitle}</h2>}
+    <Modal dialogRef={dialogRef} title={currentTitle}>
       {currentDescription && <div className="mb-4 text-gray-700">{currentDescription}</div>}
 
       {currentMultiline ? (
-        <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={currentPlaceholder} rows={currentRows} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4 resize-y" onKeyDown={handleKeyDown} />
+        <Textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={currentPlaceholder} rows={currentRows} className="mb-4" onKeyDown={handleKeyDown} />
       ) : (
-        <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={currentPlaceholder} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4" onKeyDown={handleKeyDown} />
+        <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={currentPlaceholder} className="mb-4" onKeyDown={handleKeyDown} />
       )}
 
       <div className="flex justify-end gap-3">
-        <button onClick={() => closeDialog(null)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors">
+        <Button variant="secondary" onClick={() => closeDialog(null)}>
           {currentCancelButtonText}
-        </button>
-        <button onClick={() => closeDialog(inputValue)} disabled={!inputValue.trim()} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+        </Button>
+        <Button onClick={() => closeDialog(inputValue)} disabled={!inputValue.trim()}>
           {currentConfirmButtonText}
-        </button>
+        </Button>
       </div>
-    </dialog>
+    </Modal>
   );
 }

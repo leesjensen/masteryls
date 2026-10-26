@@ -1,4 +1,7 @@
 import React from 'react';
+import Modal from './ui/Modal.jsx';
+import Button from './ui/Button.jsx';
+import Input from './ui/Input.jsx';
 
 export default function UserProfileDialog({ user, courseOps, isOpen, onClose }) {
   const dialogRef = React.useRef(null);
@@ -71,7 +74,7 @@ export default function UserProfileDialog({ user, courseOps, isOpen, onClose }) 
   }
 
   return (
-    <dialog ref={dialogRef} className="w-full max-w-md p-6 rounded-lg shadow-xl mt-20 mx-auto" onCancel={handleClose}>
+    <Modal dialogRef={dialogRef} onCancel={handleClose}>
       <form onSubmit={handleSave} className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-lg font-semibold text-gray-800">Edit profile</h3>
@@ -82,12 +85,12 @@ export default function UserProfileDialog({ user, courseOps, isOpen, onClose }) 
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-gray-700">Name</span>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" required autoFocus />
+          <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-gray-700">Email</span>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" required />
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <span className="text-xs text-gray-500">Changing your email sends a confirmation link to the new address.</span>
         </label>
 
@@ -95,14 +98,14 @@ export default function UserProfileDialog({ user, courseOps, isOpen, onClose }) 
         {info && <div className="text-sm text-blue-800 bg-blue-50 border border-blue-200 rounded-md px-3 py-2">{info}</div>}
 
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={handleClose} className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50" disabled={saving}>
+          <Button type="button" variant="secondary" size="sm" onClick={handleClose} disabled={saving}>
             Cancel
-          </button>
-          <button type="submit" className="px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:hover:bg-gray-400" disabled={saving}>
+          </Button>
+          <Button type="submit" size="sm" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
         </div>
       </form>
-    </dialog>
+    </Modal>
   );
 }

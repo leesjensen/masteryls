@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
 import CourseCard from './courseCard.jsx';
 import ConfirmDialog from '../../hooks/confirmDialog.jsx';
+import Modal from '../../components/ui/Modal.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Select from '../../components/ui/Select.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { GraduationCap, BookSearch, Eye, EyeOff } from 'lucide-react';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
@@ -260,45 +263,43 @@ export default function DashboardView({ courseOps, service, user }) {
           </p>
         }
       />
-      <dialog ref={sectionDialogRef} className="rounded-lg p-0 shadow-lg mx-auto mt-24 backdrop:bg-black/40" onCancel={cancelSectionEnroll}>
-        <div className="p-5 w-80 max-w-[90vw]">
-          {(sectionEnroll?.sections?.length || 0) === 0 ? (
-            <>
-              <h2 className="text-base font-semibold text-gray-800 mb-1">No open sections</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                <b>{sectionEnroll?.catalogEntry?.title || sectionEnroll?.catalogEntry?.name}</b> has no sections currently open for enrollment. Please check back when a section’s schedule is active.
-              </p>
-              <div className="flex justify-end">
-                <button type="button" onClick={cancelSectionEnroll} className="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
-                  Close
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 className="text-base font-semibold text-gray-800 mb-1">Choose a section</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                <b>{sectionEnroll?.catalogEntry?.title || sectionEnroll?.catalogEntry?.name}</b> has more than one section. Pick the one you are taking — this can’t be changed after you enroll.
-              </p>
-              <select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm mb-4">
-                {(sectionEnroll?.sections || []).map((section) => (
-                  <option key={section.id} value={section.id}>
-                    {section.title || 'Section'}
-                  </option>
-                ))}
-              </select>
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={cancelSectionEnroll} className="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
-                  Cancel
-                </button>
-                <button type="button" onClick={confirmSectionEnroll} disabled={!selectedSectionId} className="px-3 py-1.5 rounded-md bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:bg-gray-300">
-                  Enroll
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </dialog>
+      <Modal dialogRef={sectionDialogRef} size="sm" onCancel={cancelSectionEnroll}>
+        {(sectionEnroll?.sections?.length || 0) === 0 ? (
+          <>
+            <h2 className="text-base font-semibold text-gray-800 mb-1">No open sections</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              <b>{sectionEnroll?.catalogEntry?.title || sectionEnroll?.catalogEntry?.name}</b> has no sections currently open for enrollment. Please check back when a section’s schedule is active.
+            </p>
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={cancelSectionEnroll}>
+                Close
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-base font-semibold text-gray-800 mb-1">Choose a section</h2>
+            <p className="text-sm text-gray-600 mb-3">
+              <b>{sectionEnroll?.catalogEntry?.title || sectionEnroll?.catalogEntry?.name}</b> has more than one section. Pick the one you are taking — this can’t be changed after you enroll.
+            </p>
+            <Select value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} className="mb-4">
+              {(sectionEnroll?.sections || []).map((section) => (
+                <option key={section.id} value={section.id}>
+                  {section.title || 'Section'}
+                </option>
+              ))}
+            </Select>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={cancelSectionEnroll}>
+                Cancel
+              </Button>
+              <Button type="button" size="sm" onClick={confirmSectionEnroll} disabled={!selectedSectionId}>
+                Enroll
+              </Button>
+            </div>
+          </>
+        )}
+      </Modal>
     </>
   );
 }

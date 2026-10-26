@@ -5,6 +5,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { Check, GripVertical, X } from 'lucide-react';
 import Markdown from '../../components/Markdown';
 import Splitter from '../Splitter.jsx';
+import Modal from '../ui/Modal.jsx';
+import Button from '../ui/Button.jsx';
+import Input from '../ui/Input.jsx';
+import Select from '../ui/Select.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
 import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
@@ -989,39 +993,38 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
         </div>
       </div>
 
-      <dialog ref={newScheduleDialogRef} className="w-full p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold text-blue-500 mb-4">New schedule</h2>
+      <Modal dialogRef={newScheduleDialogRef} title="New schedule">
         <div className="mb-2 text-gray-700">Enter a title for the new schedule.</div>
-        <input type="text" value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="Schedule title" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4" />
+        <Input type="text" value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="Schedule title" className="mb-4" />
 
         <div className="mb-2 text-gray-700">Create from</div>
-        <select value={newScheduleSourceId} onChange={(e) => setNewScheduleSourceId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
+        <Select value={newScheduleSourceId} onChange={(e) => setNewScheduleSourceId(e.target.value)} className="mb-4">
           <option value="">Blank schedule</option>
           {files.map((file) => (
             <option key={file.id} value={file.id}>
               {file.title}
             </option>
           ))}
-        </select>
+        </Select>
 
         {newScheduleSourceId && (
           <>
             <label htmlFor="new-schedule-start-date" className="mb-2 block text-gray-700">
               First session date (optional)
             </label>
-            <input id="new-schedule-start-date" type="date" value={newScheduleStartDate} onChange={(e) => setNewScheduleStartDate(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4" />
+            <Input id="new-schedule-start-date" type="date" value={newScheduleStartDate} onChange={(e) => setNewScheduleStartDate(e.target.value)} className="mb-4" />
           </>
         )}
 
         <div className="flex justify-end gap-3">
-          <button onClick={cancelNewScheduleDialog} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors" disabled={creatingSchedule}>
+          <Button variant="secondary" onClick={cancelNewScheduleDialog} disabled={creatingSchedule}>
             Cancel
-          </button>
-          <button onClick={confirmNewScheduleDialog} disabled={!newScheduleTitle.trim() || creatingSchedule} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+          </Button>
+          <Button onClick={confirmNewScheduleDialog} disabled={!newScheduleTitle.trim() || creatingSchedule}>
             {creatingSchedule ? 'Creating...' : 'Create'}
-          </button>
+          </Button>
         </div>
-      </dialog>
+      </Modal>
     </div>
   );
 }

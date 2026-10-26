@@ -6,6 +6,8 @@ import TopicItem from './TopicItem';
 import NewTopicButton from './NewTopicButton';
 import useClickOutside from '../hooks/useClickOutside';
 import ConfirmDialog from '../hooks/confirmDialog.jsx';
+import Button from './ui/Button.jsx';
+import Input from './ui/Input.jsx';
 
 function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen, onToggle, currentTopic, editorVisible, dueDatesByTopicId = {}, topicStatusByTopicId = {}, currentTopicHeadings = [] }) {
   const editorRef = React.useRef(null);
@@ -97,20 +99,21 @@ function ModuleSection({ courseOps, learningSession, module, moduleIndex, isOpen
 
         {showEditForm && (
           <div ref={editorRef} className="mt-1 mb-1 p-2 bg-gray-50 border rounded">
-            <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="px-2 py-1 border rounded text-sm w-full" autoFocus />
+            <Input size="sm" type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} autoFocus />
             <div className="mt-2 flex gap-2">
-              <button onClick={handleSubmitRename} className="px-2 py-1 bg-blue-600 text-white rounded text-xs">
+              <Button size="xs" onClick={handleSubmitRename}>
                 Save
-              </button>
-              <button
+              </Button>
+              <Button
+                size="xs"
+                variant="secondary"
                 onClick={() => {
                   setShowEditForm(false);
                   setNewTitle(module.title || '');
                 }}
-                className="px-2 py-1 bg-gray-600 text-white rounded text-xs"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}

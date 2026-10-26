@@ -5,6 +5,9 @@ import { updateAppBar } from '../../hooks/useAppBarState';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import CourseAttendanceChart from '../../components/attendance/courseAttendanceChart.jsx';
 import FeedbackEmailModal from './FeedbackEmailModal.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Select from '../../components/ui/Select.jsx';
 
 const PAGE_SIZE = 50;
 
@@ -372,13 +375,13 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   function renderPagination() {
     return (
       <div className="flex items-center justify-end gap-2">
-        <button type="button" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1 || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
+        <Button type="button" variant="outline" size="sm" onClick={() => setPage((prev) => Math.max(1, prev - 1))} disabled={page <= 1 || loading}>
           Previous
-        </button>
+        </Button>
         <span className="text-sm text-gray-600">Page {page}</span>
-        <button type="button" onClick={() => setPage((prev) => prev + 1)} disabled={!hasMore || loading} className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50">
+        <Button type="button" variant="outline" size="sm" onClick={() => setPage((prev) => prev + 1)} disabled={!hasMore || loading}>
           Next
-        </button>
+        </Button>
       </div>
     );
   }
@@ -395,14 +398,14 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
           <label htmlFor="masteryview-course" className="block text-sm font-medium text-gray-700 mb-1">
             Course
           </label>
-          <select id="masteryview-course" value={selectedCourseId} onChange={(e) => onCourseChange(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+          <Select id="masteryview-course" value={selectedCourseId} onChange={(e) => onCourseChange(e.target.value)}>
             {availableCourses.length === 0 && <option value="">No accessible courses</option>}
             {availableCourses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.title}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {canViewLearnerFilters && (
@@ -410,7 +413,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
             <label htmlFor="masteryview-filter" className="block text-sm font-medium text-gray-700 mb-1">
               Filter learner
             </label>
-            <input
+            <Input
               id="masteryview-filter"
               value={filterText}
               onChange={(e) => {
@@ -419,7 +422,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
               }}
               placeholder="Name or email"
               autoComplete="off"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
               aria-label="Filter learner"
             />
           </div>
@@ -438,13 +440,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
             <label htmlFor="masteryview-section" className="text-sm font-medium text-gray-700">
               Section
             </label>
-            <select
-              id="masteryview-section"
-              value={selectedSectionId}
-              onChange={(e) => onSectionSelect(e.target.value)}
-              className="px-2 py-1 border border-gray-200 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              aria-label="Section"
-            >
+            <select id="masteryview-section" value={selectedSectionId} onChange={(e) => onSectionSelect(e.target.value)} className="px-2 py-1 border border-gray-300 rounded-md text-sm shadow-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Section">
               <option value="">All sections</option>
               {courseSections.map((section) => (
                 <option key={section.id} value={section.id}>

@@ -1,4 +1,8 @@
 import React from 'react';
+import Button from './ui/Button.jsx';
+import Input from './ui/Input.jsx';
+import Select from './ui/Select.jsx';
+import Textarea from './ui/Textarea.jsx';
 
 // Topic types that submit a score to a Canvas gradebook assignment (see canvasSync.js's
 // ASSIGNMENT_TOPIC_TYPES) need a points-possible value; everything else doesn't.
@@ -36,36 +40,25 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
       )}
 
       <div className="flex flex-col gap-2">
-        <input type="text" placeholder="Topic title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" autoFocus disabled={isLoading} />
-        <select value={newType} onChange={(e) => setNewType(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isLoading}>
+        <Input size="sm" type="text" placeholder="Topic title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} autoFocus disabled={isLoading} />
+        <Select size="sm" value={newType} onChange={(e) => setNewType(e.target.value)} disabled={isLoading}>
           <option value="instruction">Instruction</option>
           <option value="embedded">Embedded</option>
           <option value="exam">Exam</option>
           <option value="project">Project</option>
           <option value="dra">Disciplinary Reasoning</option>
           <option value="interview">Interview</option>
-        </select>
-        {POINTS_TOPIC_TYPES.includes(newType) && (
-          <input
-            type="number"
-            min={0}
-            step={1}
-            value={newPoints}
-            onChange={(e) => setNewPoints(e.target.value === '' ? '' : Number(e.target.value))}
-            className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-            placeholder="Points"
-            disabled={isLoading}
-          />
-        )}
-        <textarea placeholder={newType === 'embedded' ? 'Embedded URL' : 'Description'} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} className="px-2 py-1 border rounded text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" rows={3} disabled={isLoading} />
+        </Select>
+        {POINTS_TOPIC_TYPES.includes(newType) && <Input size="sm" type="number" min={0} step={1} value={newPoints} onChange={(e) => setNewPoints(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Points" disabled={isLoading} />}
+        <Textarea size="sm" placeholder={newType === 'embedded' ? 'Embedded URL' : 'Description'} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} rows={3} disabled={isLoading} />
         <div className="flex gap-2">
-          <button onClick={() => onSubmit(newTitle, newDescription, newType, newPoints === '' ? undefined : Number(newPoints))} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1" disabled={!newTitle.trim() || isLoading}>
+          <Button size="xs" onClick={() => onSubmit(newTitle, newDescription, newType, newPoints === '' ? undefined : Number(newPoints))} disabled={!newTitle.trim() || isLoading}>
             {isLoading && <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>}
             {isLoading ? 'Adding...' : submitButtonText || 'Add'}
-          </button>
-          <button onClick={onCancel} className="px-2 py-1 bg-gray-600 text-white rounded text-xs disabled:bg-gray-400 disabled:cursor-not-allowed" disabled={isLoading}>
+          </Button>
+          <Button size="xs" variant="secondary" onClick={onCancel} disabled={isLoading}>
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>

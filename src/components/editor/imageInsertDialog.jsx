@@ -1,4 +1,7 @@
 import React from 'react';
+import Modal from '../ui/Modal.jsx';
+import Button from '../ui/Button.jsx';
+import Input from '../ui/Input.jsx';
 
 function clampDimension(value) {
   const parsed = Number(value);
@@ -67,8 +70,7 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
   }, [closeDialog]);
 
   return (
-    <dialog ref={dialogRef} className="w-[92vw] max-w-6xl p-6 rounded-lg shadow-lg mt-20 mx-auto" onClick={(event) => event.stopPropagation()}>
-      <h2 className="text-xl font-bold text-blue-500 mb-2">{title}</h2>
+    <Modal dialogRef={dialogRef} size="wide" title={title} titleClassName="text-xl font-bold text-blue-600 mb-2">
       <p className="mb-4 text-gray-700">{description}</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] gap-6">
@@ -76,12 +78,12 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
           <label className="text-sm font-medium text-gray-700" htmlFor="image-file-name">
             File name
           </label>
-          <input id="image-file-name" type="text" value={fileName} onChange={(event) => setFileName(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="pasted-image.png" />
+          <Input id="image-file-name" type="text" value={fileName} onChange={(event) => setFileName(event.target.value)} placeholder="pasted-image.png" />
 
           <label className="text-sm font-medium text-gray-700" htmlFor="image-width">
             Width (px)
           </label>
-          <input id="image-width" type="number" min="1" value={width} onChange={(event) => setWidth(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          <Input id="image-width" type="number" min="1" value={width} onChange={(event) => setWidth(event.target.value)} />
 
           <p className="text-xs text-gray-500">
             Original: {originalWidth}x{originalHeight}
@@ -97,10 +99,10 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
       </div>
 
       <div className="flex justify-end gap-3 mt-6">
-        <button onClick={() => closeDialog(null)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors">
+        <Button variant="secondary" onClick={() => closeDialog(null)}>
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() =>
             closeDialog({
               fileName: String(fileName || '').trim(),
@@ -108,12 +110,11 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
             })
           }
           disabled={!canCommit}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
         >
           {confirmButtonText}
-        </button>
+        </Button>
       </div>
-    </dialog>
+    </Modal>
   );
 });
 

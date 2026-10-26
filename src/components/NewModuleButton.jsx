@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Button from './ui/Button.jsx';
+import Input from './ui/Input.jsx';
 
 export default function NewModuleButton({ courseOps }) {
   const [showForm, setShowForm] = useState(false);
@@ -32,14 +34,14 @@ export default function NewModuleButton({ courseOps }) {
   return (
     <div className="mb-0.5 ml-4 p-2 bg-gray-50 border rounded">
       <div className="flex flex-col gap-2">
-        <input type="text" placeholder="Topic title" onChange={(e) => setTitle(e.target.value)} onKeyDown={handleKeyDown} className="px-2 py-1 border rounded text-sm" autoFocus />
+        <Input size="sm" type="text" placeholder="Topic title" onChange={(e) => setTitle(e.target.value)} onKeyDown={handleKeyDown} autoFocus />
         <div className="flex gap-2">
-          <button onClick={() => handleCreate()} className="px-2 py-1 bg-blue-600 text-white rounded text-xs disabled:bg-gray-300" disabled={!title.trim()}>
+          <Button size="xs" onClick={() => handleCreate()} disabled={!title.trim()}>
             Add
-          </button>
-          <button onClick={() => handleCancel()} className="px-2 py-1 bg-gray-600 text-white rounded text-xs">
+          </Button>
+          <Button size="xs" variant="secondary" onClick={() => handleCancel()}>
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>

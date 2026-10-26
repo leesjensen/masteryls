@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ConfirmDialog from './hooks/confirmDialog.jsx';
 import UserSelectionDialog from './components/UserSelectionDialog.jsx';
+import Button from './components/ui/Button.jsx';
+import Input from './components/ui/Input.jsx';
+import Textarea from './components/ui/Textarea.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
 import { useNavigate } from 'react-router-dom';
 
@@ -472,15 +475,15 @@ export default function Settings({ courseOps, user, course }) {
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Name</label>
-              {editorVisible ? <input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.name}</div>}
+              {editorVisible ? <Input type="text" value={formData.name} onChange={(e) => handleInputChange('name', e.target.value)} placeholder="Enter course name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.name}</div>}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
-              {editorVisible ? <input type="text" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter course title" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.title}</div>}
+              {editorVisible ? <Input type="text" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} placeholder="Enter course title" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.title}</div>}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
-              {editorVisible ? <textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white min-h-[120px]" placeholder="Enter course description" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md min-h-[120px] text-sm">{formData.description || <span className="text-gray-400">No description set</span>}</div>}
+              {editorVisible ? <Textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} className="min-h-[120px]" placeholder="Enter course description" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md min-h-[120px] text-sm">{formData.description || <span className="text-gray-400">No description set</span>}</div>}
             </div>
 
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Settings</h2>
@@ -509,19 +512,19 @@ export default function Settings({ courseOps, user, course }) {
             )}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">GitHub account</label>
-              {editorVisible ? <input type="text" value={formData.githubAccount} onChange={(e) => handleInputChange('githubAccount', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub username" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubAccount}</div>}
+              {editorVisible ? <Input type="text" value={formData.githubAccount} onChange={(e) => handleInputChange('githubAccount', e.target.value)} placeholder="Enter GitHub username" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubAccount}</div>}
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Repository name</label>
-              {editorVisible ? <input type="text" value={formData.githubRepository} onChange={(e) => handleInputChange('githubRepository', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter repository name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubRepository}</div>}
+              {editorVisible ? <Input type="text" value={formData.githubRepository} onChange={(e) => handleInputChange('githubRepository', e.target.value)} placeholder="Enter repository name" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md text-sm">{formData.githubRepository}</div>}
             </div>
 
             {user.isEditor(course.id) && (
               <>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">GitHub token</label>
-                  <input type="text" value={formData.gitHubToken} onChange={(e) => handleInputChange('gitHubToken', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 text-sm bg-white" placeholder="Enter GitHub token" />
+                  <Input type="text" value={formData.gitHubToken} onChange={(e) => handleInputChange('gitHubToken', e.target.value)} placeholder="Enter GitHub token" />
                 </div>
               </>
             )}
@@ -563,12 +566,12 @@ export default function Settings({ courseOps, user, course }) {
               <div>
                 <h2 className="text-lg font-semibold mb-3 text-gray-800">Repair</h2>
                 <div className="flex items-center justify-between gap-2">
-                  <button type="button" onClick={reindexCourse} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100" title="Rebuild the topic search index and repair the interaction manifests in course.json">
+                  <Button type="button" variant="outline" onClick={reindexCourse} title="Rebuild the topic search index and repair the interaction manifests in course.json">
                     Reindex course
-                  </button>
-                  <button type="button" onClick={repairProgressCache} disabled={progressRepairing} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" title="Rebuild enrollment progress summaries from durable progress records">
+                  </Button>
+                  <Button type="button" variant="outline" onClick={repairProgressCache} disabled={progressRepairing} title="Rebuild enrollment progress summaries from durable progress records">
                     {progressRepairing ? 'Repairing progress…' : 'Repair progress cache'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -581,9 +584,9 @@ export default function Settings({ courseOps, user, course }) {
                       {editorsCount} editor{editorsCount === 1 ? '' : 's'} assigned
                     </div>
                   </div>
-                  <button type="button" onClick={() => setEditorsDialogOpen(true)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                  <Button type="button" variant="outline" onClick={() => setEditorsDialogOpen(true)}>
                     Manage editors
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -601,9 +604,9 @@ export default function Settings({ courseOps, user, course }) {
                       {mentorsCount} mentor{mentorsCount === 1 ? '' : 's'} assigned
                     </div>
                   </div>
-                  <button type="button" onClick={() => setMentorsDialogOpen(true)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                  <Button type="button" variant="outline" onClick={() => setMentorsDialogOpen(true)}>
                     Manage mentors
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -621,9 +624,9 @@ export default function Settings({ courseOps, user, course }) {
                       {learnersCount} learner{learnersCount === 1 ? '' : 's'} enrolled
                     </div>
                   </div>
-                  <button type="button" onClick={() => setLearnersDialogOpen(true)} className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-100">
+                  <Button type="button" variant="outline" onClick={() => setLearnersDialogOpen(true)}>
                     Manage learners
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -634,13 +637,13 @@ export default function Settings({ courseOps, user, course }) {
           <>
             <div>
               <div className="flex flex-col justify-end w-[200px]">
-                <button disabled={!settingsDirty} onClick={handleSave} className="m-2 px-4 py-2 bg-blue-600 text-white rounded-md disabled:bg-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors">
+                <Button disabled={!settingsDirty} onClick={handleSave} className="m-2">
                   Save changes
-                </button>
+                </Button>
                 {user?.isEditor(course.id) && user?.isRoot() && (
-                  <button disabled={course.settings?.deleteProtected} onClick={() => deleteDialogRef.current.showModal()} className="m-2 px-4 py-2 disabled:bg-gray-300 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition-colors">
+                  <Button variant="danger" disabled={course.settings?.deleteProtected} onClick={() => deleteDialogRef.current.showModal()} className="m-2">
                     Delete course
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 import { TopicIcon } from '../../utils/Icons.jsx';
 import AttendanceAssignmentSection from './attendanceAssignmentSection.jsx';
+import Button from '../../components/ui/Button.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Select from '../../components/ui/Select.jsx';
 
 export default function CourseLinkForm({ courseOps, onClose }) {
   const [canvasCourseId, setCanvasCourseId] = useState('');
@@ -219,23 +222,23 @@ export default function CourseLinkForm({ courseOps, onClose }) {
           <label htmlFor="course-title" className="block text-lg font-medium text-gray-700 mb-1">
             Course
           </label>
-          <select id="course-title" name="title" required onChange={(e) => selectCourse(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+          <Select id="course-title" name="title" required onChange={(e) => selectCourse(e.target.value)}>
             <option value="">Select a course</option>
             {courseOps.courseCatalog().map((course) => (
               <option key={course.id} value={course.id}>
                 {course.title}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <div>
           <label htmlFor="course-name" className="block text-lg font-medium text-gray-700 mb-1">
             Canvas course ID
           </label>
-          <input id="course-name" name="name" value={canvasCourseId} onChange={(e) => setCanvasCourseId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Canvas course ID (e.g. 12345)" />
+          <Input id="course-name" name="name" value={canvasCourseId} onChange={(e) => setCanvasCourseId(e.target.value)} placeholder="Canvas course ID (e.g. 12345)" />
           <div className="mt-3 flex items-center space-x-2">
-            <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-blue-500 focus:ring-blue-300" />
+            <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
             <label htmlFor="delete-existing" className="text-sm text-gray-700">
               Delete existing pages, quizzes, assignments, and modules
             </label>
@@ -269,7 +272,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
                       const checked = !!topicId && selectedTopicIds.includes(topicId);
                       return (
                         <label key={topic.id || `${module.title}-${topic.title}`} className="flex items-center gap-2 text-sm text-gray-700">
-                          <input type="checkbox" checked={checked} onChange={() => toggleTopic(topicId)} className="rounded border-gray-300 text-blue-500 focus:ring-blue-300" />
+                          <input type="checkbox" checked={checked} onChange={() => toggleTopic(topicId)} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                           <TopicIcon type={topic.type || 'instruction'} />
                           <span>{topic.title}</span>
                         </label>
@@ -287,13 +290,13 @@ export default function CourseLinkForm({ courseOps, onClose }) {
             <label htmlFor="schedule-file" className="block text-lg font-medium text-gray-700 mb-1">
               Schedule for due dates
             </label>
-            <select id="schedule-file" value={selectedScheduleFileId} onChange={(e) => setSelectedScheduleFileId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <Select id="schedule-file" value={selectedScheduleFileId} onChange={(e) => setSelectedScheduleFileId(e.target.value)}>
               {scheduleFiles.map((file) => (
                 <option key={file.id || file.path} value={file.id || ''}>
                   {file.title || file.path}
                 </option>
               ))}
-            </select>
+            </Select>
             <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
               <span>
@@ -356,13 +359,13 @@ export default function CourseLinkForm({ courseOps, onClose }) {
         {course && <AttendanceAssignmentSection course={course} onCreate={createAttendanceAssignment} />}
 
         <div className="flex items-center justify-end space-x-3 pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
 
-          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-blue-400 hover:bg-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginLink}>
+          <Button disabled={!course || !canvasCourseId} onClick={beginLink}>
             {course?.externalRefs?.canvasCourseId ? 'Re-link course' : 'Link course'}
-          </button>
+          </Button>
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={repairRefs}>
             Repair
           </button>

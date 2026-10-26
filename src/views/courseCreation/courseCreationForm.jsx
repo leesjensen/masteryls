@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import Button from '../../components/ui/Button.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Select from '../../components/ui/Select.jsx';
+import Textarea from '../../components/ui/Textarea.jsx';
 
 export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
   const [title, setTitle] = useState('');
@@ -79,26 +83,26 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
           <label htmlFor="course-name" className="block text-sm font-medium text-gray-700 mb-1">
             Name
           </label>
-          <input id="course-name" name="name" value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Display name for the course (e.g. cs260)" />
+          <Input id="course-name" name="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name for the course (e.g. cs260)" />
         </div>
 
         <div>
           <label htmlFor="course-title" className="block text-sm font-medium text-gray-700 mb-1">
             Title
           </label>
-          <input id="course-title" name="title" required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="e.g. Intro to React" />
+          <Input id="course-title" name="title" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Intro to React" />
         </div>
 
         <div>
           <label htmlFor="course-description" className="block text-sm font-medium text-gray-700 mb-1">
             Description
           </label>
-          <textarea id="course-description" name="description" required rows={5} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-y" placeholder="Short summary of what learners will accomplish" />
+          <Textarea id="course-description" name="description" required rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short summary of what learners will accomplish" />
           <div className="flex items-center mt-2">
             <input
               id="generate-ai"
               type="checkbox"
-              className="mr-2 h-4 w-4 text-blue-400 border-gray-300 rounded focus:ring-blue-300"
+              className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               checked={generateWithAi}
               onChange={(e) => {
                 setGenerateWithAi(e.target.checked);
@@ -116,7 +120,7 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
               <label htmlFor="source-gitHub-account" className="block text-sm font-medium text-gray-700 mb-1">
                 Source GitHub Account
               </label>
-              <input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubSourceAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              <Input id="source-gitHub-account" name="gitHubAccount" value={gitHubSourceAccount} onChange={(e) => setGitHubSourceAccount(e.target.value)} />
               <p className="text-xs text-gray-400 mt-1">Only accounts with public template repositories are eligible.</p>
             </div>
 
@@ -124,23 +128,14 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
               <label htmlFor="source-gitHub-template" className="block text-sm font-medium text-gray-700 mb-1">
                 Source GitHub Template
               </label>
-              <select
-                id="source-gitHub-template"
-                disabled={gitHubTemplates.length === 0}
-                name="gitHubTemplate"
-                value={gitHubSourceRepo}
-                onChange={(e) => setGitHubSourceRepo(e.target.value)}
-                className="w-full rounded-md border px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300
-                  disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed bg-white text-gray-700 border-gray-200
-                "
-              >
+              <Select id="source-gitHub-template" disabled={gitHubTemplates.length === 0} name="gitHubTemplate" value={gitHubSourceRepo} onChange={(e) => setGitHubSourceRepo(e.target.value)} className="text-gray-700 disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200">
                 <option value="">Select a template...</option>
                 {gitHubTemplates.map((template) => (
                   <option key={template} value={template}>
                     {template}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
         )}
@@ -150,21 +145,21 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
             <label htmlFor="gitHub-account" className="block text-sm font-medium text-gray-700 mb-1">
               Course GitHub Account
             </label>
-            <input id="gitHub-account" name="gitHubAccount" value={gitHubAccount} onChange={(e) => setGitHubAccount(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="your-gitHub-username" />
+            <Input id="gitHub-account" name="gitHubAccount" value={gitHubAccount} onChange={(e) => setGitHubAccount(e.target.value)} placeholder="your-gitHub-username" />
           </div>
 
           <div>
             <label htmlFor="gitHub-repo" className="block text-sm font-medium text-gray-700 mb-1">
               Course GitHub Repo
             </label>
-            <input id="gitHub-repo" name="gitHubRepo" value={gitHubRepo} onChange={(e) => setGitHubRepo(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="repo-name" />
+            <Input id="gitHub-repo" name="gitHubRepo" value={gitHubRepo} onChange={(e) => setGitHubRepo(e.target.value)} placeholder="repo-name" />
           </div>
 
           <div>
             <label htmlFor="gitHub-token" className="block text-sm font-medium text-gray-700 mb-1">
               GitHub Token
             </label>
-            <input id="gitHub-token" name="gitHubToken" value={gitHubToken} onChange={(e) => setGitHubToken(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Personal access token" />
+            <Input id="gitHub-token" name="gitHubToken" value={gitHubToken} onChange={(e) => setGitHubToken(e.target.value)} placeholder="Personal access token" />
             <p className="text-xs text-gray-400 mt-1">
               The token must be a fine-grained Personal Access Token with <b>Administration</b> and <b>Contents</b> read/write rights.
             </p>
@@ -172,13 +167,13 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
         </div>
 
         <div className="flex items-center justify-end space-x-3 pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
 
-          <button type="submit" disabled={!isValid} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-blue-400 hover:bg-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed`}>
+          <Button type="submit" disabled={!isValid}>
             Create Course
-          </button>
+          </Button>
         </div>
       </form>
     </>
