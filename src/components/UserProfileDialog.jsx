@@ -82,12 +82,12 @@ export default function UserProfileDialog({ user, courseOps, isOpen, onClose }) 
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-gray-700">Name</span>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-300" required autoFocus />
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" required autoFocus />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-gray-700">Email</span>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-300" required />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" required />
           <span className="text-xs text-gray-500">Changing your email sends a confirmation link to the new address.</span>
         </label>
 

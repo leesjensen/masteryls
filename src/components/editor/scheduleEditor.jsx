@@ -346,7 +346,7 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
           <button type="button" className="inline-flex items-center justify-center text-blue-700 hover:text-red-600 transition-colors" onClick={() => removeSession(row.id)} title="Remove session" aria-label="Remove session">
             <X size={14} />
           </button>
-          <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-500 hover:text-amber-600" title="Drag to reorder session" aria-label="Drag to reorder session">
+          <button type="button" {...attributes} {...listeners} className="inline-flex items-center justify-center rounded border border-gray-300 bg-white p-1 text-gray-500 hover:text-blue-600" title="Drag to reorder session" aria-label="Drag to reorder session">
             <GripVertical size={14} />
           </button>
         </div>
@@ -990,9 +990,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
       </div>
 
       <dialog ref={newScheduleDialogRef} className="w-full p-6 rounded-lg shadow-lg max-w-md mt-20 mx-auto" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-xl font-bold text-amber-500 mb-4">New schedule</h2>
+        <h2 className="text-xl font-bold text-blue-500 mb-4">New schedule</h2>
         <div className="mb-2 text-gray-700">Enter a title for the new schedule.</div>
-        <input type="text" value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="Schedule title" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent mb-4" />
+        <input type="text" value={newScheduleTitle} onChange={(e) => setNewScheduleTitle(e.target.value)} placeholder="Schedule title" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4" />
 
         <div className="mb-2 text-gray-700">Create from</div>
         <select value={newScheduleSourceId} onChange={(e) => setNewScheduleSourceId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4">
@@ -1017,7 +1017,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
           <button onClick={cancelNewScheduleDialog} className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors" disabled={creatingSchedule}>
             Cancel
           </button>
-          <button onClick={confirmNewScheduleDialog} disabled={!newScheduleTitle.trim() || creatingSchedule} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
+          <button onClick={confirmNewScheduleDialog} disabled={!newScheduleTitle.trim() || creatingSchedule} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
             {creatingSchedule ? 'Creating...' : 'Create'}
           </button>
         </div>

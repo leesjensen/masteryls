@@ -406,7 +406,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             <a
               href={`/course/${learningSession.course.id}/schedule`}
               onClick={(e) => handleSidebarLinkClick(e, { courseOps, courseId: learningSession.course.id, navigate, to: `/course/${learningSession.course.id}/schedule` })}
-              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'schedule' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
+              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'schedule' ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'}`}
             >
               <CalendarDays size={14} />
               Schedule
@@ -423,7 +423,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             <a
               href={`/course/${learningSession.course.id}/attendance`}
               onClick={(e) => handleSidebarLinkClick(e, { courseOps, courseId: learningSession.course.id, navigate, to: `/course/${learningSession.course.id}/attendance` })}
-              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'attendance' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
+              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'attendance' ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'}`}
             >
               <UserCheck size={14} />
               Attendance
@@ -435,7 +435,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             <a
               href={`/course/${learningSession.course.id}/sections`}
               onClick={(e) => handleSidebarLinkClick(e, { courseOps, courseId: learningSession.course.id, navigate, to: `/course/${learningSession.course.id}/sections` })}
-              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'sections' ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`}
+              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'sections' ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'}`}
             >
               <Layers size={14} />
               Terms &amp; Sections
@@ -451,12 +451,12 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             </DndContext>
             <NewModuleButton courseOps={courseOps} />
             {!scheduleTopic && (
-              <div onClick={createSchedule} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
+              <div onClick={createSchedule} className="text-gray-400 hover:text-blue-600 text-sm py-1 cursor-pointer">
                 + Create schedule
               </div>
             )}
             {hasStubbedTopics && (
-              <div onClick={generateAllTopics} className="text-gray-400 hover:text-amber-600 text-sm py-1 cursor-pointer">
+              <div onClick={generateAllTopics} className="text-gray-400 hover:text-blue-600 text-sm py-1 cursor-pointer">
                 + Generate all stubbed topics
               </div>
             )}

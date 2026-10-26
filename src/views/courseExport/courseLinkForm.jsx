@@ -188,8 +188,8 @@ export default function CourseLinkForm({ courseOps, onClose }) {
         <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
           {/* Spinner */}
           <div className="relative mb-6">
-            <div className="w-16 h-16 border-4 border-gray-200 border-t-amber-500 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-amber-300 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-blue-300 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
 
           {/* Loading Message */}
@@ -200,9 +200,9 @@ export default function CourseLinkForm({ courseOps, onClose }) {
 
           {/* Progress Dots */}
           <div className="flex justify-center space-x-2 mt-4">
-            <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-2 h-2 bg-amber-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           </div>
         </div>
       )}
@@ -219,7 +219,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
           <label htmlFor="course-title" className="block text-lg font-medium text-gray-700 mb-1">
             Course
           </label>
-          <select id="course-title" name="title" required onChange={(e) => selectCourse(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+          <select id="course-title" name="title" required onChange={(e) => selectCourse(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
             <option value="">Select a course</option>
             {courseOps.courseCatalog().map((course) => (
               <option key={course.id} value={course.id}>
@@ -233,9 +233,9 @@ export default function CourseLinkForm({ courseOps, onClose }) {
           <label htmlFor="course-name" className="block text-lg font-medium text-gray-700 mb-1">
             Canvas course ID
           </label>
-          <input id="course-name" name="name" value={canvasCourseId} onChange={(e) => setCanvasCourseId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Canvas course ID (e.g. 12345)" />
+          <input id="course-name" name="name" value={canvasCourseId} onChange={(e) => setCanvasCourseId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Canvas course ID (e.g. 12345)" />
           <div className="mt-3 flex items-center space-x-2">
-            <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
+            <input id="delete-existing" type="checkbox" checked={deleteExisting} onChange={(e) => setDeleteExisting(e.target.checked)} className="rounded border-gray-300 text-blue-500 focus:ring-blue-300" />
             <label htmlFor="delete-existing" className="text-sm text-gray-700">
               Delete existing pages, quizzes, assignments, and modules
             </label>
@@ -252,7 +252,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
               <button type="button" onClick={setPresetSelectNone} className="px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">
                 Select none
               </button>
-              <button type="button" onClick={setPresetProjectsAndExams} className="px-3 py-1 rounded-md text-xs font-semibold bg-amber-100 text-amber-800 hover:bg-amber-200">
+              <button type="button" onClick={setPresetProjectsAndExams} className="px-3 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 hover:bg-blue-200">
                 Select gradable topics
               </button>
             </div>
@@ -269,7 +269,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
                       const checked = !!topicId && selectedTopicIds.includes(topicId);
                       return (
                         <label key={topic.id || `${module.title}-${topic.title}`} className="flex items-center gap-2 text-sm text-gray-700">
-                          <input type="checkbox" checked={checked} onChange={() => toggleTopic(topicId)} className="rounded border-gray-300 text-amber-500 focus:ring-amber-300" />
+                          <input type="checkbox" checked={checked} onChange={() => toggleTopic(topicId)} className="rounded border-gray-300 text-blue-500 focus:ring-blue-300" />
                           <TopicIcon type={topic.type || 'instruction'} />
                           <span>{topic.title}</span>
                         </label>
@@ -287,7 +287,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
             <label htmlFor="schedule-file" className="block text-lg font-medium text-gray-700 mb-1">
               Schedule for due dates
             </label>
-            <select id="schedule-file" value={selectedScheduleFileId} onChange={(e) => setSelectedScheduleFileId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+            <select id="schedule-file" value={selectedScheduleFileId} onChange={(e) => setSelectedScheduleFileId(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
               {scheduleFiles.map((file) => (
                 <option key={file.id || file.path} value={file.id || ''}>
                   {file.title || file.path}
@@ -360,7 +360,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
             Cancel
           </button>
 
-          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginLink}>
+          <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-blue-400 hover:bg-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={beginLink}>
             {course?.externalRefs?.canvasCourseId ? 'Re-link course' : 'Link course'}
           </button>
           <button disabled={!course || !canvasCourseId} className={`px-4 py-2 rounded-md text-white font-semibold text-sm shadow bg-slate-400 hover:bg-slate-500 disabled:bg-gray-300 disabled:cursor-not-allowed`} onClick={repairRefs}>

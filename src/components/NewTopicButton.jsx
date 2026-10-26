@@ -26,7 +26,7 @@ export default function NewTopicButton({ moduleIndex, courseOps }) {
 
   if (!showForm) {
     return (
-      <button className="text-gray-400 hover:text-amber-600 text-sm py-1 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => setShowForm(true)} disabled={isLoading}>
+      <button className="text-gray-400 hover:text-blue-600 text-sm py-1 disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => setShowForm(true)} disabled={isLoading}>
         + Add New Topic
       </button>
     );

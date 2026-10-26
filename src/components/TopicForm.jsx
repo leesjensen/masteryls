@@ -29,7 +29,7 @@ function TopicForm({ topic = { state: 'stub' }, onSubmit, onCancel, isLoading })
       {isLoading && (
         <div className="absolute inset-0 bg-gray-50 bg-opacity-80 flex items-center justify-center rounded z-10">
           <div className="flex items-center gap-2 text-gray-600">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-amber-600"></div>
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
             <span className="text-sm">Adding topic...</span>
           </div>
         </div>

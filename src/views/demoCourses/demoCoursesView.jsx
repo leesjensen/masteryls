@@ -16,14 +16,14 @@ function DemoCoursesView({ courseOps }) {
   }, [courseOps]);
 
   return (
-    <section id="catalog-section" className="py-16 bg-amber-50 min-h-full">
+    <section id="catalog-section" className="py-16 bg-blue-50 min-h-full">
       <div className="max-w-7xl mx-auto px-8">
         <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Try a course</h2>
 
         <div className="max-w-xl mx-auto">
           <label className="block text-xl font-medium text-gray-800 mb-4">
             Browse a course without creating an account.{' '}
-            <a onClick={() => navigate('/')} className="text-amber-600 hover:text-amber-800 cursor-pointer">
+            <a onClick={() => navigate('/')} className="text-blue-600 hover:text-blue-800 cursor-pointer">
               Register
             </a>{' '}
             to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
@@ -48,10 +48,10 @@ function CourseEntry({ entry }) {
       onClick={() => {
         navigate(`/course/${entry.id}`);
       }}
-      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-amber-200'}
+      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-blue-200'}
     >
       <div className="flex items-center justify-between">
-        <div className="font-semibold text-amber-600">{entry.title}</div>
+        <div className="font-semibold text-blue-600">{entry.title}</div>
         <div className="text-sm text-gray-500">{entry.duration || ''}</div>
       </div>
       {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}

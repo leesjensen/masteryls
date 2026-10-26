@@ -24,7 +24,7 @@ export default function NewModuleButton({ courseOps }) {
 
   if (!showForm) {
     return (
-      <button className="text-gray-400 hover:text-amber-600 text-sm py-1" onClick={() => setShowForm(true)}>
+      <button className="text-gray-400 hover:text-blue-600 text-sm py-1" onClick={() => setShowForm(true)}>
         + Add New Module
       </button>
     );

@@ -68,7 +68,7 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
 
   return (
     <dialog ref={dialogRef} className="w-[92vw] max-w-6xl p-6 rounded-lg shadow-lg mt-20 mx-auto" onClick={(event) => event.stopPropagation()}>
-      <h2 className="text-xl font-bold text-amber-500 mb-2">{title}</h2>
+      <h2 className="text-xl font-bold text-blue-500 mb-2">{title}</h2>
       <p className="mb-4 text-gray-700">{description}</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] gap-6">
@@ -76,12 +76,12 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
           <label className="text-sm font-medium text-gray-700" htmlFor="image-file-name">
             File name
           </label>
-          <input id="image-file-name" type="text" value={fileName} onChange={(event) => setFileName(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent" placeholder="pasted-image.png" />
+          <input id="image-file-name" type="text" value={fileName} onChange={(event) => setFileName(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="pasted-image.png" />
 
           <label className="text-sm font-medium text-gray-700" htmlFor="image-width">
             Width (px)
           </label>
-          <input id="image-width" type="number" min="1" value={width} onChange={(event) => setWidth(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent" />
+          <input id="image-width" type="number" min="1" value={width} onChange={(event) => setWidth(event.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
 
           <p className="text-xs text-gray-500">
             Original: {originalWidth}x{originalHeight}
@@ -108,7 +108,7 @@ const ImageInsertDialog = React.forwardRef(function ImageInsertDialog(_, ref) {
             })
           }
           disabled={!canCommit}
-          className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
         >
           {confirmButtonText}
         </button>

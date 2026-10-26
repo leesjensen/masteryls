@@ -10,7 +10,7 @@ export default function ErrorPage({ user, message }) {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center p-4 text-center">
-      <h1 className="text-3xl font-bold text-amber-500 mb-4">{displayMessage}</h1>
+      <h1 className="text-3xl font-bold text-blue-500 mb-4">{displayMessage}</h1>
       <p className="text-lg text-gray-500 mb-6">{typeof navigator !== 'undefined' && !navigator.onLine ? 'Reconnect to continue learning, submitting work, and using AI features.' : 'Head back home and start again.'}</p>
 
       <div className="space-x-4">

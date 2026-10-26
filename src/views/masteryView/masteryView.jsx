@@ -395,7 +395,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
           <label htmlFor="masteryview-course" className="block text-sm font-medium text-gray-700 mb-1">
             Course
           </label>
-          <select id="masteryview-course" value={selectedCourseId} onChange={(e) => onCourseChange(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300">
+          <select id="masteryview-course" value={selectedCourseId} onChange={(e) => onCourseChange(e.target.value)} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
             {availableCourses.length === 0 && <option value="">No accessible courses</option>}
             {availableCourses.map((course) => (
               <option key={course.id} value={course.id}>
@@ -419,7 +419,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
               }}
               placeholder="Name or email"
               autoComplete="off"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
               aria-label="Filter learner"
             />
           </div>
@@ -442,7 +442,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
               id="masteryview-section"
               value={selectedSectionId}
               onChange={(e) => onSectionSelect(e.target.value)}
-              className="px-2 py-1 border border-gray-200 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+              className="px-2 py-1 border border-gray-200 rounded text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
               aria-label="Section"
             >
               <option value="">All sections</option>
@@ -542,7 +542,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                         {canGenerateFeedback && (
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs"
+                            className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
                             onClick={(event) => onGenerateFeedback(row, event)}
                           >
                             Feedback

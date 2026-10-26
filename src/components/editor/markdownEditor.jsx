@@ -767,7 +767,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     setEditorOptions(options);
   };
 
-  const getToggleColor = (state) => (state === 'on' ? 'text-amber-600' : 'text-gray-500');
+  const getToggleColor = (state) => (state === 'on' ? 'text-blue-600' : 'text-gray-500');
   const getToggleText = (state) => (state === 'on' ? 'On' : 'Off');
 
   return (
@@ -838,7 +838,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
 export default MarkdownEditor;
 
 export function EditorButton({ icon: Icon, onClick, title = undefined, size = 16, className = '' }) {
-  const buttonClassName = ['bg-transparent border border-gray-50 hover:text-amber-600 transition-all duration-200 ease-in-out', className].filter(Boolean).join(' ');
+  const buttonClassName = ['bg-transparent border border-gray-50 hover:text-blue-600 transition-all duration-200 ease-in-out', className].filter(Boolean).join(' ');
 
   return (
     <button title={title} onMouseDown={(event) => event.preventDefault()} onClick={onClick} className={buttonClassName}>

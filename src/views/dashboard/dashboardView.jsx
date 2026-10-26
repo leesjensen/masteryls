@@ -236,7 +236,7 @@ export default function DashboardView({ courseOps, service, user }) {
               <DashboardStat label="Catalog" value={catalog.length} />
             </div>
             <div className="my-5">
-              <input id="course-search" type="search" value={userSearch} onChange={(event) => setUserSearch(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200" placeholder="Search by title or description" />
+              <input id="course-search" type="search" value={userSearch} onChange={(event) => setUserSearch(event.target.value)} className="h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Search by title or description" />
             </div>
             {visibleAvailable.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -291,7 +291,7 @@ export default function DashboardView({ courseOps, service, user }) {
                 <button type="button" onClick={cancelSectionEnroll} className="px-3 py-1.5 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
                   Cancel
                 </button>
-                <button type="button" onClick={confirmSectionEnroll} disabled={!selectedSectionId} className="px-3 py-1.5 rounded-md bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:bg-gray-300">
+                <button type="button" onClick={confirmSectionEnroll} disabled={!selectedSectionId} className="px-3 py-1.5 rounded-md bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:bg-gray-300">
                   Enroll
                 </button>
               </div>

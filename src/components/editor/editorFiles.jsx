@@ -235,7 +235,7 @@ export default function EditorFiles({ courseOps, course, currentTopic, onInsertF
             {files.map((file, idx) => {
               const selected = selectedFiles.includes(file.name);
               return (
-                <button key={file.name + idx} onClick={(e) => handleItemClick(e, idx, file)} className={`text-left px-1 border rounded shadow-sm flex items-center gap-2 hover:border-blue-400 focus:outline-none ${selected ? 'bg-amber-100 border-amber-400' : 'bg-white'}`}>
+                <button key={file.name + idx} onClick={(e) => handleItemClick(e, idx, file)} className={`text-left px-1 border rounded shadow-sm flex items-center gap-2 hover:border-blue-400 focus:outline-none ${selected ? 'bg-blue-100 border-blue-400' : 'bg-white'}`}>
                   <input type="checkbox" readOnly checked={selected} className="w-4 h-4" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm truncate">{file.name}</div>

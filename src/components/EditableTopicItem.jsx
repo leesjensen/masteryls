@@ -77,7 +77,7 @@ export function EditableTopicItem({ courseOps, id, moduleIndex, topicIndex, cour
           <button onClick={removeTopic} className="font-semibold text-gray-400 hover:text-red-600 p-0.5" title="Remove this topic">
             <X size={12} />
           </button>
-          <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-amber-500 p-0.5" title="Drag to reorder">
+          <span {...listeners} className="select-none font-semibold text-gray-400 hover:text-blue-500 p-0.5" title="Drag to reorder">
             <GripVertical size={12} />
           </span>
         </div>

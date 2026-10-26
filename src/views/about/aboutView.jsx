@@ -179,7 +179,7 @@ function AboutView() {
         <div className="markdown-body mx-auto min-h-full max-w-5xl rounded border border-gray-200 p-4 sm:p-8">
           {readmePath !== initialReadmePath && (
             <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-gray-200 pb-4 text-sm">
-              <button type="button" onClick={() => setReadmePath(initialReadmePath)} className="text-amber-700 hover:text-amber-600 hover:underline">
+              <button type="button" onClick={() => setReadmePath(initialReadmePath)} className="text-blue-700 hover:text-blue-600 hover:underline">
                 ← Back to README
               </button>
               <span className="text-gray-500">{readmePath}</span>
@@ -224,7 +224,7 @@ function AboutView() {
           ) : readmeError ? (
             <div className="py-8 text-center text-gray-600">
               <p>Unable to load the README here.</p>
-              <a href={readmeUrl} target="_blank" rel="noreferrer" className="text-amber-700 hover:text-amber-600 hover:underline">
+              <a href={readmeUrl} target="_blank" rel="noreferrer" className="text-blue-700 hover:text-blue-600 hover:underline">
                 Open README in GitHub
               </a>
             </div>
@@ -235,12 +235,12 @@ function AboutView() {
       </div>
       <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
         <span>Version {version}</span>
-        <button type="button" onClick={checkForUpdates} disabled={checkingUpdate} className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-600 hover:underline disabled:cursor-wait disabled:opacity-60">
+        <button type="button" onClick={checkForUpdates} disabled={checkingUpdate} className="inline-flex items-center gap-1 text-blue-700 hover:text-blue-600 hover:underline disabled:cursor-wait disabled:opacity-60">
           <RefreshCw size={14} className={checkingUpdate ? 'animate-spin' : ''} />
           {checkingUpdate ? 'Checking…' : 'Check for updates'}
         </button>
         {updateStatus && <span role="status" className="w-full text-center text-xs text-gray-500">{updateStatus}</span>}
-        <a href={readmeUrl} target="_blank" rel="noreferrer" className="text-amber-700 hover:text-amber-600 hover:underline">
+        <a href={readmeUrl} target="_blank" rel="noreferrer" className="text-blue-700 hover:text-blue-600 hover:underline">
           Open README in GitHub
         </a>
       </footer>

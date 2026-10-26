@@ -66,17 +66,17 @@ export default function EditorCommits({ currentTopic, course, user, courseOps, s
                   active diff so it can always be cleared, even after the edits are discarded. */}
               {(commit.sha !== currentCommit || dirty || diffCommit === commit.sha) &&
                 (diffCommit === commit.sha ? (
-                  <button className="mr-2 px-2 py-1 text-xs bg-amber-200 hover:bg-amber-300 rounded text-amber-900 border border-amber-300" onClick={() => clearDiff()}>
+                  <button className="mr-2 px-2 py-1 text-xs bg-blue-200 hover:bg-blue-300 rounded text-blue-900 border border-blue-300" onClick={() => clearDiff()}>
                     Diff
                   </button>
                 ) : (
-                  <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-amber-50 rounded text-gray-900 border border-gray-300" onClick={() => handleDiffCommit(commit)}>
+                  <button className="mr-2 px-2 py-1 text-xs bg-gray-100 hover:bg-blue-50 rounded text-gray-900 border border-gray-300" onClick={() => handleDiffCommit(commit)}>
                     Diff
                   </button>
                 ))}
               <div className="flex flex-col">
                 <div className="flex flex-row">
-                  <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pr-1 text-amber-600 underline">
+                  <a href={commit.html_url} target="_blank" rel="noopener noreferrer" className="pr-1 text-blue-600 underline">
                     {commit.sha.slice(0, 7)}
                   </a>
                   <span className="font-bold pr-1">{commit.commit.author.name}</span>

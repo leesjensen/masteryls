@@ -29,13 +29,13 @@ const Start = ({ courseOps }) => {
             <Login courseOps={courseOps} />
           </div>
           <div className="mt-5 w-full max-w-md flex items-center justify-center gap-6 text-sm sm:text-base">
-            <button onClick={() => navigate('/demo-courses')} className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
+            <button onClick={() => navigate('/demo-courses')} className="text-blue-700 font-semibold hover:text-blue-600 hover:underline">
               Demo
             </button>
-            <button onClick={() => navigate('/about')} className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
+            <button onClick={() => navigate('/about')} className="text-blue-700 font-semibold hover:text-blue-600 hover:underline">
               About
             </button>
-            <a href="https://github.com/leesjensen/masteryls/blob/main/docs/learnerTutorial/learnerTutorial.md" className="text-amber-700 font-semibold hover:text-amber-600 hover:underline">
+            <a href="https://github.com/leesjensen/masteryls/blob/main/docs/learnerTutorial/learnerTutorial.md" className="text-blue-700 font-semibold hover:text-blue-600 hover:underline">
               Docs
             </a>
           </div>

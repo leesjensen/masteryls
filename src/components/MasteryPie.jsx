@@ -30,7 +30,7 @@ export default function MasteryPie({ percent, size = 24, title, onClick, href, s
   // Shrink the label for 3 digits (100) so it still fits the center well.
   const fontSize = size * (pct >= 100 ? 0.34 : 0.42);
 
-  const className = 'text-gray-400 hover:text-amber-600 transition-all duration-200 ease-in-out filter grayscale hover:grayscale-0';
+  const className = 'text-gray-400 hover:text-blue-600 transition-all duration-200 ease-in-out filter grayscale hover:grayscale-0';
   const svg = (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-hidden="true">
       <circle cx={cx} cy={cy} r={r} fill="currentColor" fillOpacity="0.2" />

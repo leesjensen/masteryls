@@ -52,7 +52,7 @@ function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDate
         <span className="mr-2 shrink-0">
           <TopicIcon type={topic.type} />
         </span>
-        <a href={`/course/${course.id}/topic/${topic.id}`} onClick={navigateToTopic} className={`mr-1 no-underline cursor-pointer truncate min-w-0 max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-amber-500' : 'text-gray-500 hover:text-amber-500'}`} title={topic.title}>
+        <a href={`/course/${course.id}/topic/${topic.id}`} onClick={navigateToTopic} className={`mr-1 no-underline cursor-pointer truncate min-w-0 max-w-full block whitespace-nowrap overflow-hidden text-ellipsis flex-1 ${topic.path === currentTopic?.path ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'}`} title={topic.title}>
           {topic.title}
         </a>
         {enrollment?.progress[topic.id]?.notes && (
@@ -88,7 +88,7 @@ function TopicItem({ course, topic, currentTopic, enrollment, courseOps, dueDate
               <a
                 href={`/course/${course.id}/topic/${topic.id}#${heading.slug}`}
                 onClick={(e) => handleSidebarLinkClick(e, { courseOps, courseId: course.id, navigate, to: `/course/${course.id}/topic/${topic.id}#${heading.slug}` })}
-                className="block truncate no-underline cursor-pointer text-xs text-gray-400 hover:text-amber-500"
+                className="block truncate no-underline cursor-pointer text-xs text-gray-400 hover:text-blue-500"
                 title={heading.text}
               >
                 {heading.text}

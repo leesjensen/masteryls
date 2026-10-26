@@ -93,29 +93,29 @@ function Login({ courseOps }) {
             <label className="block text-gray-700 mb-1" htmlFor="name">
               Name
             </label>
-            <input id="name" type="text" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="Your Name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+            <input id="name" type="text" className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Your Name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
         )}
         <div>
           <label className="block text-gray-700 mb-1" htmlFor="email">
             Email
           </label>
-          <input id="email" type="email" autoFocus className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERNS[0].example : 'you@example.com'} autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} pattern={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERN_ATTR : undefined} title={showSignup ? `Enter an allowed email address (e.g. ${ALLOWED_SIGNUP_EMAIL_EXAMPLES})` : undefined} />
+          <input id="email" type="email" autoFocus className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERNS[0].example : 'you@example.com'} autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} pattern={showSignup ? ALLOWED_SIGNUP_EMAIL_PATTERN_ATTR : undefined} title={showSignup ? `Enter an allowed email address (e.g. ${ALLOWED_SIGNUP_EMAIL_EXAMPLES})` : undefined} />
           {emailNeedsAllowedDomain && <p className="text-red-600 text-sm mt-1">You must use an allowed email address to create an account (e.g. {ALLOWED_SIGNUP_EMAIL_EXAMPLES}).</p>}
         </div>
         <div className="flex space-x-2">
-          <button type="submit" className="flex-1 disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-amber-400 hover:bg-amber-500 text-white font-semibold py-2 rounded transition" disabled={!email || (showSignup && !name) || (showSignup && !emailMatchesAllowedDomain)}>
+          <button type="submit" className="flex-1 disabled:bg-gray-300 disabled:hover:bg-gray-300 bg-blue-400 hover:bg-blue-500 text-white font-semibold py-2 rounded transition" disabled={!email || (showSignup && !name) || (showSignup && !emailMatchesAllowedDomain)}>
             Send Code
           </button>
         </div>
       </form>
       <div className="mt-2 text-center">
         {showSignup ? (
-          <button type="button" className="text-amber-600 hover:underline text-sm" onClick={() => setShowSignup(false)}>
+          <button type="button" className="text-blue-600 hover:underline text-sm" onClick={() => setShowSignup(false)}>
             Already have an account? Log in
           </button>
         ) : (
-          <button type="button" className="text-amber-600 hover:underline text-sm" onClick={() => setShowSignup(true)}>
+          <button type="button" className="text-blue-600 hover:underline text-sm" onClick={() => setShowSignup(true)}>
             Don't have an account? Create one
           </button>
         )}

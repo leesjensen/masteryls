@@ -83,7 +83,7 @@ export default function FeedbackEmailModal({ learnerName, learnerEmail, senderNa
         <button type="button" onClick={handleClose} className="px-3 py-1.5 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">
           Close
         </button>
-        <button type="button" onClick={handleGenerate} disabled={generating} className="px-3 py-1.5 text-sm rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50">
+        <button type="button" onClick={handleGenerate} disabled={generating} className="px-3 py-1.5 text-sm rounded-md bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50">
           {generating ? 'Generating...' : generated ? 'Regenerate' : 'Generate'}
         </button>
         {generated && !generating && <CopyToClipboard position="inline" text={copyText} />}

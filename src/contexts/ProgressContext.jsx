@@ -103,7 +103,7 @@ function ProgressOverlay({ title, currentItem, current, total, onCancel }) {
               <span>{percentage}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-amber-600 h-2 rounded-full transition-all duration-300 ease-out" style={{ width: `${percentage}%` }}></div>
+              <div className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out" style={{ width: `${percentage}%` }}></div>
             </div>
           </div>
 
@@ -114,7 +114,7 @@ function ProgressOverlay({ title, currentItem, current, total, onCancel }) {
 
           {/* Loading spinner */}
           <div className="flex justify-center mt-6">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-amber-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600"></div>
           </div>
 
           {/* Cancel button */}

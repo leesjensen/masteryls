@@ -135,7 +135,7 @@ export default function AttendanceAdmin({ courseOps, course }) {
                 : <>Learners are asked <span className="font-medium text-gray-700">“{DEFAULT_ATTENDANCE_QUESTION.prompt}”</span> when they check in.</>}
             </div>
             {!viewingAllSections && (
-              <button type="button" onClick={takeAttendance} disabled={opening || !attendanceEnabled} className="px-4 py-2 rounded-md text-white font-semibold text-sm bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300">
+              <button type="button" onClick={takeAttendance} disabled={opening || !attendanceEnabled} className="px-4 py-2 rounded-md text-white font-semibold text-sm bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300">
                 {opening ? 'Opening...' : 'Take attendance'}
               </button>
             )}

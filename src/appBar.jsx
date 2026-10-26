@@ -69,7 +69,7 @@ export function AppBar({ user, courseOps }) {
 
 export function AppBarButton({ icon: Icon, onClick, title = undefined, size = 18 }) {
   return (
-    <button title={title} onClick={onClick} className="bg-transparent border border-gray-50  hover:text-amber-600 transition-all duration-200 ease-in-out">
+    <button title={title} onClick={onClick} className="bg-transparent border border-gray-50  hover:text-blue-600 transition-all duration-200 ease-in-out">
       <Icon size={size} />
     </button>
   );
@@ -77,7 +77,7 @@ export function AppBarButton({ icon: Icon, onClick, title = undefined, size = 18
 
 function AppBarMenuItem({ icon: Icon, onClick, title }) {
   return (
-    <button type="button" onClick={onClick} className="w-full text-left px-4 py-1 text-sm text-gray-700 hover:text-amber-600 flex items-center gap-2 touch-manipulation">
+    <button type="button" onClick={onClick} className="w-full text-left px-4 py-1 text-sm text-gray-700 hover:text-blue-600 flex items-center gap-2 touch-manipulation">
       <Icon size={16} />
       {title}
     </button>
@@ -108,7 +108,7 @@ function ThemeMenuItem({ preference, setPreference }) {
               aria-label={label}
               title={value === 'system' ? 'Match system' : label}
               onClick={() => setPreference(value)}
-              className={`p-1 touch-manipulation transition-colors duration-200 ${selected ? 'bg-amber-600 text-white' : 'hover:text-amber-600'}`}
+              className={`p-1 touch-manipulation transition-colors duration-200 ${selected ? 'bg-blue-600 text-white' : 'hover:text-blue-600'}`}
             >
               <Icon size={16} />
             </button>
@@ -166,7 +166,7 @@ function UserMenu({ user, courseOps }) {
 
     return (
       <div className="relative" ref={menuRef}>
-        <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-7 h-7 bg-white rounded-full border-1 border-gray-600 hover:border-amber-600 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200 ease-in-out flex items-center justify-center touch-manipulation" title="User Menu" aria-label="User Menu">
+        <button type="button" onClick={() => setIsMenuOpen(!isMenuOpen)} className="w-7 h-7 bg-white rounded-full border-1 border-gray-600 hover:border-blue-600 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 ease-in-out flex items-center justify-center touch-manipulation" title="User Menu" aria-label="User Menu">
           <span className="text-xs font-medium leading-none select-none">{initials}</span>
         </button>
 
@@ -177,7 +177,7 @@ function UserMenu({ user, courseOps }) {
             <button
               type="button"
               onClick={() => handleMenuItemClick(() => setIsProfileOpen(true))}
-              className="flex items-center gap-2 w-full text-left px-4 py-2 text-md font-medium text-amber-600 hover:bg-amber-50 touch-manipulation"
+              className="flex items-center gap-2 w-full text-left px-4 py-2 text-md font-medium text-blue-600 hover:bg-blue-50 touch-manipulation"
               title="Edit profile"
             >
               {user.name}

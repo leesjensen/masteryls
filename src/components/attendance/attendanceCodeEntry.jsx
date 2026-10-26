@@ -56,7 +56,7 @@ export default function AttendanceCodeEntry({ courseOps, courseId, sectionName, 
       <input type="text" inputMode="numeric" autoComplete="off" maxLength={4} aria-label="Attendance code" placeholder="0000" value={code} disabled={!!questions} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))} className="w-32 rounded-md border border-gray-300 px-3 py-2 text-center text-2xl tracking-[0.4em] font-mono disabled:bg-gray-100" />
       {questions && questions.length > 0 && <AttendanceQuestions questions={questions} answers={answers} onChange={setAnswers} />}
       <div className="flex items-center gap-2">
-        <button type="submit" disabled={!canSubmit} className="px-4 py-2 rounded-md text-white font-semibold text-sm bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+        <button type="submit" disabled={!canSubmit} className="px-4 py-2 rounded-md text-white font-semibold text-sm bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
           {submitting ? 'Submitting...' : 'Submit'}
         </button>
         {questions && (

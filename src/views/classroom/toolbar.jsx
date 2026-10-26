@@ -42,7 +42,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
 
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
-      <div className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium items-center hover:text-amber-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.toggleSidebar()}>
+      <div className="flex gap-1 w-12 m-1 p-1.5 text-xs font-medium items-center hover:text-blue-600 transition-all duration-200 ease-in-out" onClick={() => courseOps.toggleSidebar()}>
         {settings.sidebarVisible !== 'start' ? <ToolBarButton icon={ArrowLeftFromLine} title="Collapse sidebar" size={16} aria-hidden="true" /> : <ToolBarButton icon={ArrowRightFromLine} title="Expand sidebar" size={16} aria-hidden="true" />}
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
@@ -65,7 +65,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
 // click (via the shared link handler) and fall through to the browser otherwise. Without
 // an href it is a plain action button.
 export function ToolBarButton({ icon: Icon, onClick, href, external = false, title = undefined, size = 24, badge = false }) {
-  const className = 'hover:text-amber-600 transition-all duration-200 ease-in-out filter grayscale hover:grayscale-0';
+  const className = 'hover:text-blue-600 transition-all duration-200 ease-in-out filter grayscale hover:grayscale-0';
   let control;
   if (href && external) {
     control = (

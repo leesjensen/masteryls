@@ -34,5 +34,5 @@ export default function Splitter({ onMove, onResized, minPosition = 0, maxPositi
     };
   }, [minPosition, maxPosition]);
 
-  return <div className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-amber-300 transition-colors touch-none" onMouseDown={handleMouseDown} />;
+  return <div className="w-[6px] cursor-col-resize bg-gray-200 z-10 hover:bg-blue-300 transition-colors touch-none" onMouseDown={handleMouseDown} />;
 }
