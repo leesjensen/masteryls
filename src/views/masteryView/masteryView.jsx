@@ -342,8 +342,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
   if (!user) {
     return (
-      <div className="flex-1 min-w-0 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
-        <p className="text-gray-700">Please log in to view MasteryView.</p>
+      <div className="w-full min-w-0 max-w-7xl mx-auto p-4">
+        <p className="text-gray-700">Please log in to view mastery.</p>
       </div>
     );
   }
@@ -372,11 +372,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
   return (
     <>
-    <div className="flex-1 min-w-0 self-start m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-800">Course MasteryView</h2>
-      </div>
-
+    <div className="w-full min-w-0 max-w-7xl mx-auto p-4 flex flex-col gap-4">
       <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3`}>
         {canViewLearnerFilters && (
           <div className="relative">

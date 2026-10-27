@@ -463,6 +463,9 @@ function Contents({ courseOps, learningSession, editorVisible }) {
             </a>
           </div>
         )}
+        {(masteryTopic || scheduleTopic || attendanceTopic || sectionsTopic) && (
+          <div className="mb-2 border-b border-gray-200 dark:border-gray-700" />
+        )}
         {editorVisible ? (
           <>
             <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

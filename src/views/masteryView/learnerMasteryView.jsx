@@ -463,14 +463,14 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
 
   if (!user) {
     return (
-      <div className="flex-1 min-w-0 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
-        <p className="text-gray-700">Please log in to view MasteryView.</p>
+      <div className="w-full min-w-0 max-w-7xl mx-auto p-4">
+        <p className="text-gray-700">Please log in to view mastery.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 min-w-0 self-start m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
+    <div className="w-full min-w-0 max-w-7xl mx-auto p-4 flex flex-col gap-4">
       {isOverseer && (
         <div>
           <a
@@ -538,7 +538,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
       {!loading && instructionTopicSummaries.length > 0 && (
         <div className="border border-gray-200 rounded-md p-3 bg-white">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            <span className="text-base font-semibold text-gray-800">
               {chartMode === 'lastInteraction' ? 'Last Interaction Timeline' : chartMode === 'attendance' ? 'Attendance' : chartMode === 'canvasGrades' ? 'Canvas Grades' : 'Daily Activity'}
             </span>
             <div className="flex text-xs border border-gray-200 rounded-md overflow-hidden">

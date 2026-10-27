@@ -97,8 +97,8 @@ export default function AttendanceAdmin({ courseOps, course }) {
 
   if (allSections.length === 0) {
     return (
-      <div className="relative h-full w-full overflow-auto">
-        <div className="max-w-4xl mx-auto p-4">
+      <div className="relative h-full w-full overflow-auto p-4">
+        <div className="w-full max-w-7xl mx-auto">
           <div className="rounded-md border border-gray-200 bg-white p-4 text-sm text-gray-600">
             Attendance is taken per section. This course has no sections yet — add a schedule/section to enable attendance.
           </div>
@@ -108,9 +108,9 @@ export default function AttendanceAdmin({ courseOps, course }) {
   }
 
   return (
-    <div className="relative h-full w-full overflow-auto">
+    <div className="relative h-full w-full overflow-auto p-4">
       {openSession && !viewingAllSections && <AttendanceCodeOverlay courseOps={courseOps} session={openSession} onClose={closeAttendance} />}
-      <div className="max-w-4xl mx-auto p-4 space-y-4">
+      <div className="w-full max-w-7xl mx-auto space-y-4">
         <div className="rounded-md border border-gray-200 bg-white p-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="text-sm text-gray-700 flex items-center gap-2">
@@ -144,7 +144,7 @@ export default function AttendanceAdmin({ courseOps, course }) {
         </div>
 
         <div className="rounded-md border border-gray-200 bg-white p-4">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Attendance over time</div>
+          <h2 className="text-base font-semibold text-gray-800 mb-2">Attendance over time</h2>
           {summary ? <CourseAttendanceChart courseOps={courseOps} courseId={course.id} sessions={summary.sessions} /> : <div className="text-sm text-gray-500">Loading attendance...</div>}
         </div>
 

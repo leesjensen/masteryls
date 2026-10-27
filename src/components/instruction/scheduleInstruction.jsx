@@ -51,22 +51,18 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
 
   return (
     <div className="h-full w-full min-h-0 min-w-0 flex flex-col">
-      <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
-        <label className="text-sm text-gray-700 flex items-center gap-2">
-          Schedule
-          {files.length > 1 ? (
-            <select value={selectedFileId} onChange={handleSelectionChange} className="border border-gray-300 rounded px-2 py-1 text-sm">
-              {files.map((file) => (
-                <option key={file.id} value={file.id}>
-                  {file.title}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="font-medium text-gray-900">{files[0]?.title || ''}</span>
-          )}
-        </label>
-      </div>
+      {files.length > 1 && (
+        <div className="flex justify-end px-4 py-2 border-b border-gray-200 bg-gray-50">
+          <label className="sr-only" htmlFor="schedule-file-select">Choose schedule</label>
+          <select id="schedule-file-select" aria-label="Choose schedule" value={selectedFileId} onChange={handleSelectionChange} className="border border-gray-300 rounded px-2 py-1 text-sm">
+            {files.map((file) => (
+              <option key={file.id} value={file.id}>
+                {file.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden">
         <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden">
           <InteractionInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />

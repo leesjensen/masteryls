@@ -70,8 +70,8 @@ export default function SectionsAdminView({ courseOps }) {
 
   const sectionsForTerm = (termId) => sections.filter((s) => s.termId === termId);
 
-  if (loading) return <div className="p-6 text-sm text-gray-500">Loading…</div>;
-  if (!canEdit) return <div className="p-6 text-sm text-red-600">You do not have permission to manage this course's sections.</div>;
+  if (loading) return <div className="w-full max-w-7xl mx-auto p-4 text-sm text-gray-500">Loading…</div>;
+  if (!canEdit) return <div className="w-full max-w-7xl mx-auto p-4 text-sm text-red-600">You do not have permission to manage this course's sections.</div>;
 
   function renderSectionRow(sec) {
     const count = sectionCounts.get(sec.id) || 0;
@@ -147,13 +147,13 @@ export default function SectionsAdminView({ courseOps }) {
   }
 
   return (
-    <div className="flex-1 min-w-0 p-6 flex flex-col gap-5 overflow-auto">
-      <h2 className="text-xl font-semibold text-gray-800">Terms &amp; Sections</h2>
+    <div className="w-full min-w-0 max-w-7xl mx-auto p-4 flex flex-col gap-4 overflow-auto">
 
       {error && <div className="text-sm text-red-600">{error}</div>}
 
       {/* Terms, each with its sections nested underneath. */}
       <div className="space-y-4">
+        <h2 className="text-base font-semibold text-gray-800">Terms</h2>
         {terms.map((t) => {
           const termSections = sectionsForTerm(t.id);
           const termHasLearners = termSections.some((s) => (sectionCounts.get(s.id) || 0) > 0);
@@ -240,7 +240,7 @@ export default function SectionsAdminView({ courseOps }) {
 
       {/* Schedules are peer items to terms; editing their content is done in the schedule editor. */}
       <div className="space-y-4">
-        <div className="text-xl font-semibold text-gray-800">Schedules</div>
+        <h2 className="text-base font-semibold text-gray-800">Schedules</h2>
         {schedules.map((s) => {
           const usedBy = sections.filter((sec) => sec.scheduleId === s.id).length;
           return (
