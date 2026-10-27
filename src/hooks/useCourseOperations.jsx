@@ -4,7 +4,7 @@ import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteract
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
-import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
+import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot, replaceRawGitHubRef } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
 import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown, remapScheduleToStartDate, scheduleDateStatus, serializeScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { resolveLearnerSchedule } from '../utils/scheduleResolution';
@@ -1783,8 +1783,14 @@ Requirements:
     const rawUrl = `${course.links.gitHub.rawUrl}/${path}`;
     const apiUrl = `${course.links.gitHub.apiUrl}/${path}`;
     const initialMarkdown = createInitialScheduleMarkdown(cleanTitle);
-    await service.commitGitHubFile(apiUrl, initialMarkdown, token, `add(schedule) ${cleanTitle}`);
-    course.markdownCache?.set?.(rawUrl, initialMarkdown);
+    const commitSha = await service.commitGitHubFile(apiUrl, initialMarkdown, token, `add(schedule) ${cleanTitle}`);
+    // The read snapshot is pinned to the pre-commit SHA, which does not contain this new file - advance
+    // it to the new commit (and drop stale cached reads) so an immediate View resolves the right commit.
+    // Pre-seed the new content under its snapshot URL so the View doesn't race GitHub's raw CDN either.
+    invalidateCourseReadCache(course, commitSha);
+    if (commitSha) {
+      course.markdownCache?.set?.(replaceRawGitHubRef(rawUrl, commitSha), initialMarkdown);
+    }
 
     const row = await service.createScheduleRow(courseId, { title: cleanTitle, termId, startDate, endDate, contentPath: rawUrl });
     await _refreshCourseSchedules(course);
@@ -1820,8 +1826,13 @@ Requirements:
     const path = sanitizeSchedulePath(`${cleanTitle}-${Math.random().toString(36).slice(2, 6)}`);
     const rawUrl = `${course.links.gitHub.rawUrl}/${path}`;
     const apiUrl = `${course.links.gitHub.apiUrl}/${path}`;
-    await service.commitGitHubFile(apiUrl, content, token, `copy(schedule) ${cleanTitle}`);
-    course.markdownCache?.set?.(rawUrl, content);
+    const commitSha = await service.commitGitHubFile(apiUrl, content, token, `copy(schedule) ${cleanTitle}`);
+    // Advance the read snapshot to the new commit (and drop stale cached reads), then pre-seed the new
+    // content under its snapshot URL so an immediate View resolves the right commit without racing the CDN.
+    invalidateCourseReadCache(course, commitSha);
+    if (commitSha) {
+      course.markdownCache?.set?.(replaceRawGitHubRef(rawUrl, commitSha), content);
+    }
 
     const row = await service.createScheduleRow(courseId, { title: cleanTitle, termId: source.termId || null, startDate: source.startDate || null, endDate: source.endDate || null, contentPath: rawUrl });
     await _refreshCourseSchedules(course);

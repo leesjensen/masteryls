@@ -392,6 +392,68 @@ test('terms & sections schedules panel copies a schedule and remaps dates to a f
   await expect.poll(() => schedulePuts.some((p) => p.markdown.includes('Jan 15 2026'))).toBeTruthy();
 });
 
+test('creating a schedule then viewing it shows the content (snapshot advances past the new commit)', async ({ page }) => {
+  // Regression: a newly committed schedule file is not in the session's pinned GitHub snapshot, so
+  // viewing it used to 404 until a refresh. Creating must advance the snapshot to the new commit and
+  // pre-seed its content, so an immediate View renders without a failed GitHub read.
+  const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  const COMMIT_SHA = '1111111111111111111111111111111111111111';
+  const schedules: any[] = [];
+
+  await initAndOpenBasicCourse({ page });
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON();
+      const row = { id: 'sch-new', termId: null, state: 'published', startDate: null, endDate: null, ...(Array.isArray(body) ? body[0] : body) };
+      schedules.push(row);
+      await route.fulfill({ status: 201, json: [row] });
+      return;
+    }
+    await route.fulfill({ json: schedules });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  // The GitHub commit returns the new commit SHA; the snapshot should advance to it.
+  await page.context().route(/https:\/\/api\.github\.com\/repos\/.*\/contents\/schedule\/.*\.md$/, async (route) => {
+    if (route.request().method() === 'PUT') {
+      await route.fulfill({ status: 201, json: { commit: { sha: COMMIT_SHA } } });
+      return;
+    }
+    await route.continue();
+  });
+  // The new file only exists at the new commit, so a raw read pinned to any other ref 404s (as it does
+  // in production). With the fix the snapshot advances to COMMIT_SHA and the content is pre-seeded, so
+  // the View either hits cache or reads the right commit; without it, the stale snapshot ref 404s.
+  await page.context().route(/https:\/\/raw\.githubusercontent\.com\/.*\/schedule\/.*\.md$/, (route) => {
+    if (route.request().url().includes(`/${COMMIT_SHA}/`)) {
+      route.fulfill({ status: 200, contentType: 'text/plain; charset=utf-8', body: `| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n` });
+    } else {
+      route.fulfill({ status: 404, body: '404: Not Found' });
+    }
+  });
+
+  await page.getByRole('link', { name: 'Terms & Sections' }).click();
+  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+
+  await page.getByRole('button', { name: '+ New schedule' }).click();
+  await page.getByPlaceholder('New schedule title').fill('Spring 2027');
+  await page.getByRole('button', { name: 'Create schedule' }).click();
+
+  // The new schedule appears; viewing it immediately renders its content. Before the fix the stale
+  // snapshot resolved to a commit without this file, so the content read 404'd and nothing rendered.
+  await page.getByLabel('View schedule Spring 2027').click();
+  await expect(page.locator('.markdown-body').getByText('Topics Covered')).toBeVisible();
+});
+
 test('terms & sections is reachable from the course TOC and renders in the content pane', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
