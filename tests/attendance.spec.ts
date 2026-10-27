@@ -260,8 +260,8 @@ test('an editor takes attendance with a question and reviews the responses', asy
   const responses = page.getByTestId('attendance-responses');
   await expect(responses).toContainText('Bud');
   await expect(responses).toContainText('Good');
-  // The learner name links to their MasteryView page for this course.
-  await expect(responses.getByRole('link', { name: /Bud/ })).toHaveAttribute('href', `/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
+  // The learner name links to their mastery view for this course (rendered in the content pane).
+  await expect(responses.getByRole('link', { name: /Bud/ })).toHaveAttribute('href', `/course/${COURSE_ID}/mastery/learner/${LEARNER_ID}`);
 });
 
 test('a learner checks in with the class code, answers the question, and sees their history', async ({ page }) => {

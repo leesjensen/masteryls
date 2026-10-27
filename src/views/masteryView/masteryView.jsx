@@ -1,13 +1,10 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
-import { updateAppBar } from '../../hooks/useAppBarState';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
-import CourseAttendanceChart from '../../components/attendance/courseAttendanceChart.jsx';
 import FeedbackEmailModal from './FeedbackEmailModal.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
-import Select from '../../components/ui/Select.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 
 const PAGE_SIZE = 50;
@@ -141,10 +138,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }, [sortedRows, page]);
 
   const hasMore = page * PAGE_SIZE < sortedRows.length;
-
-  React.useEffect(() => {
-    updateAppBar({ title: 'MasteryView', tools: null });
-  }, []);
 
   // Keep the current page in range as the filtered/sorted set shrinks (e.g. filtering or unenroll).
   React.useEffect(() => {
@@ -293,20 +286,9 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     );
   }
 
-  function onCourseChange(value) {
-    if (value) {
-      navigate(`/masteryview/course/${value}`);
-    } else {
-      navigate('/masteryview');
-    }
-    setPage(1);
-    setFilterText('');
-    setSort({ key: null, direction: 'asc' });
-  }
-
   function onSelectLearner(row) {
     if (!selectedCourseId || !row?.learnerId) return;
-    navigate(`/masteryview/learner/${row.learnerId}/course/${selectedCourseId}`);
+    navigate(`/course/${selectedCourseId}/mastery/learner/${row.learnerId}`);
   }
 
   function onObserveLearner(row, event) {
@@ -360,7 +342,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
   if (!user) {
     return (
-      <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
+      <div className="flex-1 min-w-0 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
         <p className="text-gray-700">Please log in to view MasteryView.</p>
       </div>
     );
@@ -390,26 +372,12 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
   return (
     <>
-    <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
+    <div className="flex-1 min-w-0 self-start m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
       <div>
         <h2 className="text-xl font-semibold text-gray-800">Course MasteryView</h2>
       </div>
 
-      <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-3`}>
-        <div>
-          <label htmlFor="masteryview-course" className="block text-sm font-medium text-gray-700 mb-1">
-            Course
-          </label>
-          <Select id="masteryview-course" value={selectedCourseId} onChange={(e) => onCourseChange(e.target.value)}>
-            {availableCourses.length === 0 && <option value="">No accessible courses</option>}
-            {availableCourses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.title}
-              </option>
-            ))}
-          </Select>
-        </div>
-
+      <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3`}>
         {canViewLearnerFilters && (
           <div className="relative">
             <label htmlFor="masteryview-filter" className="block text-sm font-medium text-gray-700 mb-1">
@@ -456,16 +424,9 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-      {hasCourseAccess && selectedCourse?.id === selectedCourseId && showAttendance && (
-        <div className="border border-gray-200 rounded-md p-3 bg-white">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Attendance</div>
-          <CourseAttendanceChart courseOps={courseOps} courseId={selectedCourseId} />
-        </div>
-      )}
-
       {renderPagination()}
 
-      <div className="overflow-auto border border-gray-200 rounded-md">
+      <div className="overflow-x-auto border border-gray-200 rounded-md">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr>

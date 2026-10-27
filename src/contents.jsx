@@ -11,7 +11,9 @@ import { parseTopicHeadings } from './utils/topicHeadings.js';
 import { handleSidebarLinkClick } from './utils/linkNavigation.js';
 import { useAlert } from './contexts/AlertContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, UserCheck, Layers, X } from 'lucide-react';
+import { CalendarDays, UserCheck, Layers, ChartArea, X } from 'lucide-react';
+import { MasteryPieIcon } from './components/MasteryPie.jsx';
+import { deriveProgressSummary } from './utils/progressSummary.js';
 
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
@@ -111,7 +113,7 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   React.useEffect(() => {
     let active = true;
     const topic = currentTopic;
-    const nonMarkdown = ['schedule', 'attendance', 'sections', 'video', 'embedded'];
+    const nonMarkdown = ['schedule', 'attendance', 'sections', 'mastery', 'video', 'embedded'];
     if (!topic || !topic.path || nonMarkdown.includes(topic.type)) {
       setTopicHeadings({ topicId: topic?.id ?? null, items: [] });
       return undefined;
@@ -142,6 +144,11 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const scheduleTopic = courseOps.getScheduleTopic(learningSession?.course);
   const attendanceTopic = courseOps.getAttendanceTopic(learningSession?.course);
   const sectionsTopic = courseOps.getSectionsTopic(learningSession?.course);
+  const masteryTopic = courseOps.getMasteryTopic(learningSession?.course);
+  // Mirror the toolbar's dynamic mastery affordance: show the filling pie when the viewer has a
+  // mastery value (a learner), otherwise the generic chart icon (e.g. an overseer with no enrollment).
+  const masteryPercent = deriveProgressSummary(learningSession?.enrollment?.progress, learningSession?.course).mastery;
+  const masteryHasValue = Number.isFinite(Number(masteryPercent));
   const scheduleFiles = scheduleTopic ? courseOps.getScheduleFiles(scheduleTopic) : [];
   const selectedScheduleFile = scheduleTopic ? courseOps.getSelectedScheduleFile(scheduleTopic, scheduleFiles) : null;
 
@@ -403,6 +410,18 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   return (
     <div id="content" className="h-full overflow-auto p-2 text-sm">
       <nav>
+        {masteryTopic && (
+          <div className="mb-2 flex items-center gap-2">
+            <a
+              href={`/course/${learningSession.course.id}/mastery`}
+              onClick={(e) => handleSidebarLinkClick(e, { courseOps, courseId: learningSession.course.id, navigate, to: `/course/${learningSession.course.id}/mastery` })}
+              className={`mr-1 no-underline cursor-pointer truncate max-w-full whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2 ${learningSession.topic?.type === 'mastery' ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'}`}
+            >
+              {masteryHasValue ? <MasteryPieIcon percent={masteryPercent} size={14} showNumber={false} /> : <ChartArea size={14} />}
+              Mastery
+            </a>
+          </div>
+        )}
         {scheduleTopic && (
           <div className="mb-2 flex items-center justify-between gap-2">
             <a

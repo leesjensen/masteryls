@@ -5,6 +5,7 @@ import InteractionInstruction from './interaction/interactionInstruction';
 import ScheduleInstruction from './scheduleInstruction';
 import AttendanceInstruction from '../attendance/attendanceInstruction';
 import SectionsAdminView from '../../views/sectionsAdmin/sectionsAdminView';
+import MasteryInstruction from './masteryInstruction';
 import DraInstruction from './dra/draInstruction';
 import InterviewInstruction from './interview/interviewInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
@@ -27,7 +28,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
     // interaction store with the wrong learner's answers.
     let cancelled = false;
     // The attendance and Terms & Sections views are synthetic topics with no interactions.
-    if (learningSession.topic?.type === 'attendance' || learningSession.topic?.type === 'sections') {
+    if (learningSession.topic?.type === 'attendance' || learningSession.topic?.type === 'sections' || learningSession.topic?.type === 'mastery') {
       setLoadingProgress(false);
       return;
     }
@@ -53,7 +54,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
   useProgressTracking({
     progressType: `${learningSession.topic.type || 'instruction'}View`,
     onProgress: courseOps?.addProgress,
-    enabled: !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && !!courseOps?.addProgress,
+    enabled: !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && learningSession.topic?.type !== 'mastery' && !!courseOps?.addProgress,
     minDuration: 10,
     dependencies: [learningSession.topic?.path],
   });
@@ -84,6 +85,9 @@ export default function Instruction({ courseOps, learningSession, user, content 
       break;
     case 'sections':
       instructionComponent = <SectionsAdminView courseOps={courseOps} />;
+      break;
+    case 'mastery':
+      instructionComponent = <MasteryInstruction courseOps={courseOps} />;
       break;
     case 'dra':
       instructionComponent = <DraInstruction courseOps={courseOps} learningSession={learningSession} user={user} content={content} instructionState={instructionState} />;

@@ -12,8 +12,6 @@ import ClassroomView from './views/classroom/classroomView.jsx';
 import MetricsView from './views/metrics/metricsView.jsx';
 import CourseCreationView from './views/courseCreation/courseCreationView.jsx';
 import CourseLinkView from './views/courseExport/courseLinkView.jsx';
-import MasteryView from './views/masteryView/masteryView.jsx';
-import LearnerMasteryView from './views/masteryView/learnerMasteryView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
 import AboutView from './views/about/aboutView.jsx';
 import DemoCoursesView from './views/demoCourses/demoCoursesView.jsx';
@@ -37,13 +35,11 @@ export function createAppRouter(user) {
         { path: 'course/:courseId/schedule', element: <ClassroomPage /> },
         { path: 'course/:courseId/attendance', element: <ClassroomPage /> },
         { path: 'course/:courseId/sections', element: <ClassroomPage /> },
+        { path: 'course/:courseId/mastery', element: <ClassroomPage /> },
+        { path: 'course/:courseId/mastery/learner/:learnerId', element: <ClassroomPage /> },
         { path: 'metrics', element: <MetricsPage /> },
         { path: 'courseCreation', element: <CourseCreationPage /> },
         { path: 'courseLink', element: <CourseLinkPage /> },
-        { path: 'masteryview', element: <MasteryViewPage /> },
-        { path: 'masteryview/course/:courseId', element: <MasteryViewPage /> },
-        { path: 'masteryview/learner/:learnerId', element: <LearnerMasteryViewPage /> },
-        { path: 'masteryview/learner/:learnerId/course/:courseId', element: <LearnerMasteryViewPage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: '*', element: <ErrorPage user={user} message="It seems we have gotten lost." /> },
       ],
@@ -155,16 +151,6 @@ function CourseLinkPage() {
   return <CourseLinkView courseOps={courseOps} />;
 }
 
-function MasteryViewPage() {
-  const { courseOps, startObserveSession } = useOutletContext();
-  return <MasteryView courseOps={courseOps} startObserveSession={startObserveSession} />;
-}
-
-function LearnerMasteryViewPage() {
-  const { courseOps, startObserveSession } = useOutletContext();
-  return <LearnerMasteryView courseOps={courseOps} startObserveSession={startObserveSession} />;
-}
-
 function ProgressPage() {
   const { courseOps, service, user } = useOutletContext();
   return <ProgressView courseOps={courseOps} service={service} user={user} />;
@@ -194,6 +180,7 @@ function ClassroomPage() {
           const isScheduleRoute = location.pathname.endsWith('/schedule');
           const isAttendanceRoute = location.pathname.endsWith('/attendance');
           const isSectionsRoute = location.pathname.endsWith('/sections');
+          const isMasteryRoute = location.pathname.endsWith('/mastery') || location.pathname.includes('/mastery/learner/');
           let course = learningSession?.course;
           if (!course || course.id !== courseId) {
             course = await courseOps.getCourse(courseId);
@@ -234,6 +221,13 @@ function ClassroomPage() {
               // Editor/root-only management surface. Not persisted as the landing topic (an
               // editor should not reopen into it), so no saveEnrollmentUiSettings here.
               topic = courseOps.getSectionsTopic(course);
+              if (!topic) {
+                redirectToDefaultTopic();
+                return;
+              }
+            } else if (isMasteryRoute) {
+              // Mastery roster (overseer) or per-learner view. Not persisted as the landing topic.
+              topic = courseOps.getMasteryTopic(course);
               if (!topic) {
                 redirectToDefaultTopic();
                 return;

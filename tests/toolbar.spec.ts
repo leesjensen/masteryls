@@ -9,8 +9,8 @@ test('classroom toolbar navigation icons are links with hrefs and still navigate
   await navigateToCourse(page);
   await page.getByText('topic 1').click();
 
-  // MasteryView: an in-app anchor pointing at the course MasteryView route.
-  await expect(page.getByRole('link', { name: 'MasteryView' })).toHaveAttribute('href', /\/masteryview\/course\//);
+  // MasteryView: an in-app anchor pointing at the in-course mastery route (rendered in the content pane).
+  await expect(page.getByRole('link', { name: 'MasteryView' })).toHaveAttribute('href', /\/course\/[^/]+\/mastery$/);
 
   // GitHub: an external anchor that opens the repo in a new tab.
   const github = page.getByRole('link', { name: 'GitHub repository' });

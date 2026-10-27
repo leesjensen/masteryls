@@ -8,7 +8,9 @@ import { handleInAppLinkClick } from '../utils/linkNavigation.js';
 // navigates in-app through `onClick`. It is drawn in `currentColor` and wrapped in the same
 // classes as ToolBarButton so its size and default/hover colors match the other toolbar icons
 // exactly: the filled wedge is the icon color, the remaining track is a faded version of it.
-export default function MasteryPie({ percent, size = 24, title, onClick, href, showNumber = true }) {
+// Just the pie graphic (drawn in `currentColor`), with no wrapping anchor/button - so it can be used
+// as an icon inside another link (e.g. the sidebar Mastery affordance) as well as inside MasteryPie.
+export function MasteryPieIcon({ percent, size = 24, showNumber = true }) {
   const pct = Math.max(0, Math.min(100, Math.round(Number(percent) || 0)));
   const r = size / 2;
   const cx = r;
@@ -30,8 +32,7 @@ export default function MasteryPie({ percent, size = 24, title, onClick, href, s
   // Shrink the label for 3 digits (100) so it still fits the center well.
   const fontSize = size * (pct >= 100 ? 0.34 : 0.42);
 
-  const className = 'text-gray-400 hover:text-blue-600 transition-all duration-200 ease-in-out filter grayscale hover:grayscale-0';
-  const svg = (
+  return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-hidden="true">
       <circle cx={cx} cy={cy} r={r} fill="currentColor" fillOpacity="0.2" />
       {wedge}
@@ -44,6 +45,11 @@ export default function MasteryPie({ percent, size = 24, title, onClick, href, s
       )}
     </svg>
   );
+}
+
+export default function MasteryPie({ percent, size = 24, title, onClick, href, showNumber = true }) {
+  const className = 'text-gray-400 hover:text-blue-600 transition-all duration-200 ease-in-out filter grayscale hover:grayscale-0';
+  const svg = <MasteryPieIcon percent={percent} size={size} showNumber={showNumber} />;
 
   if (href) {
     return (

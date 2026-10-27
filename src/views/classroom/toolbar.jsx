@@ -25,7 +25,9 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   const nextTopic = courseOps.getAdjacentTopic('next');
   const topicPath = (topic) => (topic ? `/course/${courseId}/topic/${topic.id}` : undefined);
   const schedulePath = `/course/${courseId}/schedule`;
-  const masteryViewPath = user && !user.canOverseeCourse?.(courseId) ? `/masteryview/learner/${user.id}/course/${courseId}` : `/masteryview/course/${courseId}`;
+  // Mastery renders in the content pane now; the roster-vs-own-view choice is made there, so one path
+  // serves overseers and learners alike (same target as the sidebar Mastery affordance).
+  const masteryViewPath = `/course/${courseId}/mastery`;
 
   async function linkCanvasTopic() {
     await courseOps.updateCanvasPage(learningSession.course, learningSession.topic, learningSession.course.externalRefs.canvasCourseId);
@@ -49,9 +51,9 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && <EditorToggleSlider editing={editing} onToggle={toggleEditor} />}
         {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
         {canvasCourseId && <ToolBarButton title={courseOps.canSubmitToCanvasGradebook ? 'Canvas — your grades submit here' : canvasTopicUrl ? 'Canvas topic' : 'Canvas course site'} href={canvasUrl} external icon={Canvas} badge={courseOps.canSubmitToCanvasGradebook} />}
+        {hasMastery ? <MasteryPie percent={masteryPercent} title={`Mastery ${Math.round(Number(masteryPercent))}% — open MasteryView`} href={masteryViewPath} onClick={() => navigate(masteryViewPath)} /> : <ToolBarButton title="MasteryView" href={masteryViewPath} onClick={() => navigate(masteryViewPath)} icon={ChartArea} />}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" href={schedulePath} onClick={() => navigate(schedulePath)} icon={CalendarDays} />}
         <ToolBarButton title="GitHub repository" href={gitHubUrl(learningSession.topic.path)} external icon={GitHub} />
-        {hasMastery ? <MasteryPie percent={masteryPercent} title={`Mastery ${Math.round(Number(masteryPercent))}% — open MasteryView`} href={masteryViewPath} onClick={() => navigate(masteryViewPath)} /> : <ToolBarButton title="MasteryView" href={masteryViewPath} onClick={() => navigate(masteryViewPath)} icon={ChartArea} />}
         <ToolBarButton title="Previous topic" href={topicPath(prevTopic)} onClick={() => prevTopic && navigate(topicPath(prevTopic))} icon={SquareChevronLeft} />
         <ToolBarButton title="Next topic" href={topicPath(nextTopic)} onClick={() => nextTopic && navigate(topicPath(nextTopic))} icon={SquareChevronRight} />
       </div>

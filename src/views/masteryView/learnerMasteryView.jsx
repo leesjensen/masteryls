@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown, FileClock } from 'lucide-react';
-import { updateAppBar } from '../../hooks/useAppBarState';
 import { TopicIcon } from '../../utils/Icons';
 import { completedInteractionIds } from '../../utils/topicProgress';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
@@ -59,7 +58,10 @@ function DailyActivityChart({ records }) {
 
 export default function LearnerMasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
-  const { learnerId: routeLearnerId, courseId: routeCourseId } = useParams();
+  const { learnerId: paramLearnerId, courseId: routeCourseId } = useParams();
+  // The roster drill-down carries the learner id in the route; a learner viewing their own progress
+  // has none, so fall back to themselves.
+  const routeLearnerId = paramLearnerId || courseOps?.user?.id || '';
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [selectedLearner, setSelectedLearner] = React.useState(null);
   // Remembered across course switches so the "not enrolled" empty state can name the learner
@@ -115,10 +117,6 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     if (user.isRoot()) return catalog;
     return catalog.filter((entry) => user.canOverseeCourse?.(entry.id) || enrolledCourseIds.has(entry.id));
   }, [enrolledCourseIds, user]);
-
-  React.useEffect(() => {
-    updateAppBar({ title: 'Learner MasteryView', tools: null });
-  }, []);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -341,12 +339,6 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     if (chartMode === 'canvasGrades' && !canvasGradesUrl) setChartMode('lastInteraction');
   }, [chartMode, canvasGradesUrl, hasAttendance]);
 
-  function onCourseChange(value) {
-    if (value && routeLearnerId) {
-      navigate(`/masteryview/learner/${routeLearnerId}/course/${value}`);
-    }
-  }
-
   const instructionTopicSummaries = React.useMemo(() => {
     if (!selectedCourse || !selectedLearner?.progress) return [];
 
@@ -471,34 +463,28 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
 
   if (!user) {
     return (
-      <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
+      <div className="flex-1 min-w-0 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6">
         <p className="text-gray-700">Please log in to view MasteryView.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div className="flex-1 min-w-0 self-start m-6 flex flex-col bg-white border border-gray-200 rounded-md p-6 gap-4">
+      {isOverseer && (
         <div>
-          <label htmlFor="learner-masteryview-course" className="block text-sm font-medium text-gray-700 mb-1">
-            Course
-          </label>
-          <select
-            id="learner-masteryview-course"
-            value={selectedCourseId}
-            onChange={(e) => onCourseChange(e.target.value)}
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          <a
+            href={`/course/${selectedCourseId}/mastery`}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(`/course/${selectedCourseId}/mastery`);
+            }}
+            className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1"
           >
-            {availableCourses.length === 0 && <option value="">No accessible courses</option>}
-            {availableCourses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.title}
-              </option>
-            ))}
-          </select>
+            ← Back to roster
+          </a>
         </div>
-      </div>
+      )}
 
       {error && <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
@@ -602,7 +588,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
       )}
 
       {!loading && instructionTopicSummaries.length > 0 && (
-        <div className="overflow-auto border border-gray-200 rounded-md">
+        <div className="overflow-x-auto border border-gray-200 rounded-md">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 text-gray-700">
               <tr>

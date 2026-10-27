@@ -725,6 +725,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return { id: 'sections', title: 'Terms & Sections', type: 'sections', path: 'sections', state: 'published' };
   }
 
+  // Mastery renders in the classroom content pane (like Schedule/Sections). An overseer sees the
+  // course roster; an enrolled learner sees their own progress. Synthetic topic - no GitHub content.
+  function getMasteryTopic(course = learningSession?.course) {
+    if (!course?.id || !user) return null;
+    if (!user.canOverseeCourse?.(course.id) && !learningSession?.enrollment) return null;
+    return { id: 'mastery', title: 'Mastery', type: 'mastery', path: 'mastery', state: 'published' };
+  }
+
   // Returns the legacy schedule-file id a LEARNER is locked to via their section, or null when the
   // viewer should see the full schedule picker (overseers, or no resolvable section). The learner's
   // section maps (via schedule.legacyFileId) to exactly one course.json schedule file; locking to it
@@ -2570,6 +2578,7 @@ Requirements:
     createAttendanceAssignment,
     getAttendanceTopic,
     getSectionsTopic,
+    getMasteryTopic,
     courseHasAttendance,
     setSectionAttendanceEnabled,
     getCourseTerms,

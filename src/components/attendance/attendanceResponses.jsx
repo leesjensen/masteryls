@@ -47,7 +47,7 @@ export default function AttendanceResponses({ courseOps, courseId, session }) {
           {responses.map((response) => (
             <tr key={response.id} className="border-t border-gray-100">
               <td className="px-3 py-1">
-                <Link to={`/masteryview/learner/${response.userId}/course/${courseId}`} className="text-blue-600 hover:underline">
+                <Link to={`/course/${courseId}/mastery/learner/${response.userId}`} className="text-blue-600 hover:underline">
                   {response.user?.name || response.user?.email || response.userId}
                 </Link>
               </td>

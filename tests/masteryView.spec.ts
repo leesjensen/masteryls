@@ -101,8 +101,7 @@ test('masteryview sorts across the full dataset, not just the current page', asy
   const overviewRequests = await mockSortableOverview(page);
 
   await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await page.goto(`/course/${COURSE_ID}/mastery`);
 
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
 
@@ -134,8 +133,7 @@ test('masteryview numeric sort spans all pages and resets to page one', async ({
   await mockSortableOverview(page);
 
   await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await page.goto(`/course/${COURSE_ID}/mastery`);
 
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Zelda Zimmerman', exact: true })).toBeVisible();
@@ -190,8 +188,7 @@ test('masteryview filters the roster by section (server-side)', async ({ page })
   const requests = await mockSectionRoster(page);
 
   await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await page.goto(`/course/${COURSE_ID}/mastery`);
 
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
   // Default is "All sections": both learners show.
@@ -215,8 +212,7 @@ test('masteryview loads learner overview for accessible course', async ({ page }
   const overviewRequests = await mockGradebookOverview(page);
 
   await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await page.goto(`/course/${COURSE_ID}/mastery`);
 
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
   // The whole roster arrives in one request; both learners are listed and counted locally.
@@ -257,8 +253,7 @@ test('overseer gets a Canvas grades link to the learner on a Canvas-linked cours
   });
 
   await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await page.goto(`/course/${COURSE_ID}/mastery`);
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
   await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
 
@@ -278,8 +273,7 @@ test('no Canvas grades link when the course is not linked to Canvas', async ({ p
   await mockGradebookOverview(page);
 
   await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await page.goto(`/course/${COURSE_ID}/mastery`);
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
   await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
 
@@ -322,7 +316,7 @@ test('overseer opens the Canvas tab to see the learner Canvas grade breakdown', 
   });
 
   await navigateToDashboard(page);
-  await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
+  await page.goto(`/course/${COURSE_ID}/mastery/learner/${LEARNER_ID}`);
 
   // The Canvas tab appears once the learner resolves in Canvas; opening it lazy-loads the grades.
   await page.getByRole('button', { name: 'Canvas', exact: true }).click();
@@ -361,8 +355,7 @@ test('mentor can view course mastery and observe learners without edit controls'
   await mockGradebookOverview(page);
 
   await navigateToDashboard(page);
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'MasteryView' }).click();
+  await page.goto(`/course/${COURSE_ID}/mastery`);
 
   await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Observe' }).first()).toBeVisible();
@@ -376,7 +369,7 @@ test('learner masteryview shows learner summary and topic detail', async ({ page
   await mockGradebookOverview(page);
 
   await navigateToDashboard(page);
-  await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
+  await page.goto(`/course/${COURSE_ID}/mastery/learner/${LEARNER_ID}`);
 
   await expect(page.getByText('bud@cow.com')).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
@@ -409,14 +402,15 @@ test('masteryview shows course attendance and a learner attendance history when 
   });
 
   await navigateToDashboard(page);
-  await page.goto(`/masteryview/course/${COURSE_ID}`);
-  await expect(page.getByTestId('course-attendance-chart')).toContainText('2 classes recorded, average attendance 2');
+  await page.goto(`/course/${COURSE_ID}/mastery`);
 
-  // The roster carries a per-learner attended-class count column when attendance is enabled.
+  // The course attendance chart is NOT duplicated here - it lives on the Attendance view. The roster
+  // still carries a per-learner attended-class count column when attendance is enabled.
+  await expect(page.getByTestId('course-attendance-chart')).toHaveCount(0);
   await expect(page.getByRole('columnheader', { name: 'Classes Attended' })).toBeVisible();
   await expect(page.getByRole('row', { name: /Bud/ })).toContainText('3');
 
-  await page.goto(`/masteryview/learner/${LEARNER_ID}/course/${COURSE_ID}`);
+  await page.goto(`/course/${COURSE_ID}/mastery/learner/${LEARNER_ID}`);
   await page.getByRole('button', { name: 'Attendance', exact: true }).click();
   await expect(page.getByTestId('learner-attendance-chart')).toContainText('Attended 1 class');
 });

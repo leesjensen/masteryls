@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, Users, LogOut, Info, UserCog, Moon, Sun, Monitor } from 'lucide-react';
+import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, LogOut, Info, UserCog, Moon, Sun, Monitor } from 'lucide-react';
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 import UserProfileDialog from './components/UserProfileDialog.jsx';
 import { useTheme } from './hooks/useTheme.jsx';
@@ -188,7 +188,6 @@ function UserMenu({ user, courseOps }) {
             <AppBarMenuItem icon={SquareStar} onClick={() => handleMenuItemClick(() => navigate('/dashboard'))} title="Dashboard" />
             <AppBarMenuItem icon={Columns3Cog} onClick={() => handleMenuItemClick(() => navigate('/metrics'))} title="Metrics" />
             <AppBarMenuItem icon={ChartArea} onClick={() => handleMenuItemClick(() => navigate('/progress'))} title="Activity" />
-            <AppBarMenuItem icon={Users} onClick={() => handleMenuItemClick(() => navigate(user && !user.isRoot() && !user.isEditor() && !user.isMentor?.() ? `/masteryview/learner/${user.id}` : '/masteryview'))} title="MasteryView" />
 
             {(user.isRoot() || user.isEditor()) && (
               <>
