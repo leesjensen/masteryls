@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import ConfirmDialog from './hooks/confirmDialog.jsx';
 import UserSelectionDialog from './components/UserSelectionDialog.jsx';
 import Button from './components/ui/Button.jsx';
@@ -9,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 
 export default function Settings({ courseOps, user, course }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
+  const [showToken, setShowToken] = useState(false);
   const deleteDialogRef = useRef(null);
   const navigate = useNavigate();
   const { showAlert } = useAlert();
@@ -447,29 +449,8 @@ export default function Settings({ courseOps, user, course }) {
   const isOriginalLearner = (userId) => ogSelectedLearnersRef.current.includes(userId);
 
   return (
-    <div className="h-full overflow-auto p-4">
+    <div className="@container h-full overflow-auto p-4">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-gray-50 rounded-lg p-4 mb-1">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Overview</h2>
-          <div className="mb-2">
-            <span className="text-xs text-gray-500">Course ID:</span>
-            <span className="ml-2 text-xs font-mono text-gray-700 max-w-full truncate block">{course.id}</span>
-          </div>
-          <div className="grid grid-cols-1 gap-3 max-w-[180px]">
-            <div className="bg-white rounded-lg p-2 shadow-sm border">
-              <div className="text-xl font-bold text-gray-800">{moduleCount}</div>
-              <div className="text-sm text-gray-600">Modules</div>
-            </div>
-            <div className="bg-white rounded-lg p-2 shadow-sm border">
-              <div className="text-xl font-bold text-gray-800">{topicCount}</div>
-              <div className="text-sm text-gray-600">Topics</div>
-            </div>
-            <div className="bg-white rounded-lg p-2 shadow-sm border">
-              <div className="text-xl font-bold text-gray-800">{enrollmentCount}</div>
-              <div className="text-sm text-gray-600">Enrollments</div>
-            </div>
-          </div>
-        </div>
         <div className="bg-gray-50 rounded-lg p-4 mb-1">
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Information</h2>
           <div className="space-y-3">
@@ -484,6 +465,22 @@ export default function Settings({ courseOps, user, course }) {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
               {editorVisible ? <Textarea value={formData.description} onChange={(e) => handleInputChange('description', e.target.value)} className="min-h-[120px]" placeholder="Enter course description" /> : <div className="px-3 py-2 bg-gray-100 border border-gray-200 rounded-md min-h-[120px] text-sm">{formData.description || <span className="text-gray-400">No description set</span>}</div>}
+            </div>
+
+            {/* Hidden when the sidebar is too narrow to render the three cards without clipping. */}
+            <div className="grid grid-cols-3 gap-2 text-center @max-[260px]:hidden">
+              <div className="bg-white rounded-md px-1 py-1.5 shadow-sm border">
+                <div className="text-base font-bold text-gray-800 leading-tight">{moduleCount}</div>
+                <div className="text-[11px] text-gray-600 leading-tight">Modules</div>
+              </div>
+              <div className="bg-white rounded-md px-1 py-1.5 shadow-sm border">
+                <div className="text-base font-bold text-gray-800 leading-tight">{topicCount}</div>
+                <div className="text-[11px] text-gray-600 leading-tight">Topics</div>
+              </div>
+              <div className="bg-white rounded-md px-1 py-1.5 shadow-sm border">
+                <div className="text-base font-bold text-gray-800 leading-tight">{enrollmentCount}</div>
+                <div className="text-[11px] text-gray-600 leading-tight">Enrolled</div>
+              </div>
             </div>
 
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Settings</h2>
@@ -524,7 +521,12 @@ export default function Settings({ courseOps, user, course }) {
               <>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1">GitHub token</label>
-                  <Input type="text" value={formData.gitHubToken} onChange={(e) => handleInputChange('gitHubToken', e.target.value)} placeholder="Enter GitHub token" />
+                  <div className="relative">
+                    <Input type={showToken ? 'text' : 'password'} value={formData.gitHubToken} onChange={(e) => handleInputChange('gitHubToken', e.target.value)} placeholder="Enter GitHub token" className="pr-10" autoComplete="off" />
+                    <button type="button" onClick={() => setShowToken((v) => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600" title={showToken ? 'Hide token' : 'Show token'} aria-label={showToken ? 'Hide token' : 'Show token'}>
+                      {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
               </>
             )}
