@@ -6,7 +6,7 @@ import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
-import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown, scheduleDateStatus } from '../utils/scheduleMarkdown';
+import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown, remapScheduleToStartDate, scheduleDateStatus, serializeScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { resolveLearnerSchedule } from '../utils/scheduleResolution';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
@@ -1791,8 +1791,10 @@ Requirements:
     return row;
   }
 
-  // Copy an existing schedule (its content + dates/term) into a new DB schedule + GitHub file.
-  async function copyCourseSchedule(courseId, sourceScheduleId, { title } = {}) {
+  // Copy an existing schedule (its content + dates/term) into a new DB schedule + GitHub file. When
+  // `firstSessionDate` (YYYY-MM-DD) is given, every dated row in the copied content is shifted so the
+  // first session lands on that date, keeping the spacing between sessions (see remapScheduleToStartDate).
+  async function copyCourseSchedule(courseId, sourceScheduleId, { title, firstSessionDate = null } = {}) {
     const course = await getCourse(courseId);
     if (!course) throw new Error('Course not found.');
     const token = user.getSetting('gitHubToken', courseId);
@@ -1809,6 +1811,10 @@ Requirements:
       content = await res.text();
     } catch {
       content = createInitialScheduleMarkdown(cleanTitle);
+    }
+
+    if (firstSessionDate) {
+      content = serializeScheduleMarkdown(remapScheduleToStartDate(parseScheduleMarkdown(content || ''), firstSessionDate));
     }
 
     const path = sanitizeSchedulePath(`${cleanTitle}-${Math.random().toString(36).slice(2, 6)}`);

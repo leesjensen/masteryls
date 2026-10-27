@@ -78,6 +78,52 @@ export function parseScheduleDisplayDate(value, referenceDate = new Date()) {
   return null;
 }
 
+// Formats a Date into the schedule's display date text, e.g. "Mon Aug 25 2026".
+function formatScheduleDisplayDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(date).replace(/,/g, '');
+}
+
+// Shift every dated row of a parsed schedule model so its first dated row lands on
+// `firstSessionDateIso` (a YYYY-MM-DD string), preserving the spacing between all dates. Used when
+// copying a schedule into a new term/start. Rows without a parseable date are left unchanged; a blank
+// or invalid target date (or one that produces no shift) returns the model unchanged.
+export function remapScheduleToStartDate(model, firstSessionDateIso) {
+  const raw = String(firstSessionDateIso || '').trim();
+  if (!raw) {
+    return model;
+  }
+  const target = startOfLocalDay(`${raw}T00:00:00`);
+  if (!target) {
+    return model;
+  }
+
+  const weeks = Array.isArray(model?.weeks) ? model.weeks : [];
+  const anchor = weeks.map((week) => parseScheduleDisplayDate(week?.date)).find((date) => date instanceof Date && !Number.isNaN(date.getTime()));
+  if (!anchor) {
+    return model;
+  }
+
+  const dayShift = Math.round((target.getTime() - anchor.getTime()) / 86400000);
+  if (dayShift === 0) {
+    return model;
+  }
+
+  const weeksShifted = weeks.map((week) => {
+    const parsed = parseScheduleDisplayDate(week?.date);
+    if (!(parsed instanceof Date) || Number.isNaN(parsed.getTime())) {
+      return week;
+    }
+    const next = new Date(parsed);
+    next.setDate(next.getDate() + dayShift);
+    return { ...week, date: formatScheduleDisplayDate(next) };
+  });
+
+  return { ...model, weeks: weeksShifted };
+}
+
 export function scheduleDateStatus(value, referenceDate = new Date()) {
   const parsedDate = parseScheduleDisplayDate(value, referenceDate);
   const today = startOfLocalDay(referenceDate);

@@ -1,7 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildWeeks, calculateGraceDays, formatGraceDaysLine, getNextScheduleDate, parseCellItems, parseScheduleMarkdown, scheduleDateStatus, scheduleRowStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+import { buildWeeks, calculateGraceDays, formatGraceDaysLine, getNextScheduleDate, parseCellItems, parseScheduleMarkdown, remapScheduleToStartDate, scheduleDateStatus, scheduleRowStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+
+test('remapScheduleToStartDate shifts every dated row so the first lands on the target start', () => {
+  const model = {
+    weeks: [
+      { date: 'Mon Aug 25 2026', module: 'Intro' },
+      { date: 'Wed Aug 27 2026', module: 'Week 1' },
+      { date: '', module: 'No date' },
+      { date: 'Mon Sep 1 2026', module: 'Week 2' },
+    ],
+  };
+  // Anchor Aug 25 -> Sep 1 is a +7 day shift applied to every dated row.
+  const out = remapScheduleToStartDate(model, '2026-09-01');
+  assert.equal(out.weeks[0].date, 'Tue Sep 1 2026');
+  assert.equal(out.weeks[1].date, 'Thu Sep 3 2026');
+  assert.equal(out.weeks[2].date, ''); // undated rows are left untouched
+  assert.equal(out.weeks[3].date, 'Tue Sep 8 2026');
+  // The source model is not mutated.
+  assert.equal(model.weeks[0].date, 'Mon Aug 25 2026');
+});
+
+test('remapScheduleToStartDate shifts backwards when the target is earlier than the anchor', () => {
+  const model = { weeks: [{ date: 'Mon Sep 7 2026' }, { date: 'Mon Sep 14 2026' }] };
+  const out = remapScheduleToStartDate(model, '2026-08-31');
+  assert.equal(out.weeks[0].date, 'Mon Aug 31 2026');
+  assert.equal(out.weeks[1].date, 'Mon Sep 7 2026');
+});
+
+test('remapScheduleToStartDate returns the model unchanged for a blank/invalid/no-op target', () => {
+  const model = { weeks: [{ date: 'Mon Aug 25 2026' }] };
+  assert.equal(remapScheduleToStartDate(model, ''), model);
+  assert.equal(remapScheduleToStartDate(model, 'not-a-date'), model);
+  assert.equal(remapScheduleToStartDate(model, null), model);
+  // Target equal to the anchor produces no shift, so the same object is returned.
+  assert.equal(remapScheduleToStartDate(model, '2026-08-25'), model);
+});
+
+test('remapScheduleToStartDate returns the model unchanged when no row has a parseable date', () => {
+  const model = { weeks: [{ date: '' }, { module: 'x' }] };
+  assert.equal(remapScheduleToStartDate(model, '2026-09-01'), model);
+});
 
 test('scheduleDateBoundsToIso expands YYYY-MM-DD dates to inclusive start/end of day', () => {
   const bounds = scheduleDateBoundsToIso({ startDate: '2026-01-10', endDate: '2026-05-01' });

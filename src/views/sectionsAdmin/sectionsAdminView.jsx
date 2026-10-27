@@ -2,6 +2,9 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Trash2, Eye, Copy } from 'lucide-react';
 import { useAlert } from '../../contexts/AlertContext.jsx';
+import Modal from '../../components/ui/Modal.jsx';
+import Input from '../../components/ui/Input.jsx';
+import Button from '../../components/ui/Button.jsx';
 
 // Editor/root management of a course's terms and sections. Rendered in the classroom content pane
 // (as the synthetic `sections` topic) so it reads as part of the course, reachable from the TOC, the
@@ -28,6 +31,7 @@ export default function SectionsAdminView({ courseOps }) {
   const [newSection, setNewSection] = React.useState({ title: '', scheduleId: '' });
   const [addingSchedule, setAddingSchedule] = React.useState(false);
   const [newSchedule, setNewSchedule] = React.useState({ title: '', startDate: '', endDate: '' });
+  const [copySchedule, setCopySchedule] = React.useState(null); // the schedule being copied (opens the copy dialog)
   const [busy, setBusy] = React.useState(false);
 
   const canEdit = Boolean(user?.isRoot?.() || user?.isEditor?.(courseId));
@@ -257,7 +261,7 @@ export default function SectionsAdminView({ courseOps }) {
                 <button type="button" title="View this schedule" aria-label={`View schedule ${s.title || ''}`} onClick={() => { courseOps.saveEnrollmentUiSettings(courseId, { selectedScheduleFile: s.id }); navigate(`/course/${courseId}/schedule`); }} className="text-gray-400 hover:text-blue-600">
                   <Eye size={16} />
                 </button>
-                <button type="button" title="Copy this schedule" aria-label={`Copy schedule ${s.title || ''}`} disabled={busy} onClick={async () => { setBusy(true); await run(() => courseOps.copyCourseSchedule(courseId, s.id, {})); setBusy(false); }} className="text-gray-400 hover:text-blue-600 disabled:text-gray-300 disabled:hover:text-gray-300 disabled:cursor-not-allowed">
+                <button type="button" title="Copy this schedule" aria-label={`Copy schedule ${s.title || ''}`} disabled={busy} onClick={() => setCopySchedule(s)} className="text-gray-400 hover:text-blue-600 disabled:text-gray-300 disabled:hover:text-gray-300 disabled:cursor-not-allowed">
                   <Copy size={16} />
                 </button>
                 {/* The delete control stays visible but is disabled while any section still points at this
@@ -307,6 +311,53 @@ export default function SectionsAdminView({ courseOps }) {
           </button>
         )}
       </div>
+
+      {copySchedule && (
+        <CopyScheduleDialog
+          schedule={copySchedule}
+          busy={busy}
+          onCancel={() => setCopySchedule(null)}
+          onConfirm={async ({ title, firstSessionDate }) => {
+            setBusy(true);
+            await run(() => courseOps.copyCourseSchedule(courseId, copySchedule.id, { title, firstSessionDate }));
+            setBusy(false);
+            setCopySchedule(null);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+// Copy-a-schedule dialog: a title and an optional first-session date. When the date is set, the
+// copied schedule's rows are shifted so the first session lands on it (remapScheduleToStartDate,
+// applied in courseOps.copyCourseSchedule).
+function CopyScheduleDialog({ schedule, busy, onCancel, onConfirm }) {
+  const dialogRef = React.useRef(null);
+  const [title, setTitle] = React.useState(`${schedule.title || 'Schedule'} copy`);
+  const [firstSessionDate, setFirstSessionDate] = React.useState('');
+
+  React.useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  return (
+    <Modal dialogRef={dialogRef} title="Copy schedule" onClose={onCancel}>
+      <div className="mb-2 text-gray-700">Enter a title for the copied schedule.</div>
+      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Schedule title" className="mb-4" autoFocus />
+      <label htmlFor="copy-first-session-date" className="mb-2 block text-gray-700">
+        First session date (optional)
+      </label>
+      <Input id="copy-first-session-date" type="date" value={firstSessionDate} onChange={(e) => setFirstSessionDate(e.target.value)} className="mb-1" />
+      <div className="mb-4 text-xs text-gray-500">If set, every session date shifts so the first session lands on this date.</div>
+      <div className="flex justify-end gap-3">
+        <Button variant="secondary" onClick={onCancel} disabled={busy}>
+          Cancel
+        </Button>
+        <Button onClick={() => onConfirm({ title: title.trim(), firstSessionDate: firstSessionDate || null })} disabled={!title.trim() || busy}>
+          {busy ? 'Copying…' : 'Copy'}
+        </Button>
+      </div>
+    </Modal>
   );
 }

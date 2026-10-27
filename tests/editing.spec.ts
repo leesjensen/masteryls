@@ -326,6 +326,72 @@ test('terms & sections schedules panel View opens the selected schedule', async 
   expect(selected).toBe('sch-1');
 });
 
+test('terms & sections schedules panel copies a schedule and remaps dates to a first session date', async ({ page }) => {
+  const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  const schedules: any[] = [
+    { id: 'sch-1', catalogId: COURSE_ID, termId: null, title: 'Winter', state: 'published', startDate: null, endDate: null, contentPath: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/instruction/schedule/schedule.md' },
+  ];
+  const schedulePosts: any[] = [];
+  const schedulePuts: Array<{ path: string; markdown: string }> = [];
+
+  await initAndOpenBasicCourse({ page });
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, (route) => route.fulfill({ json: [] }));
+  await page.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON();
+      const row = { id: 'sch-copy', ...(Array.isArray(body) ? body[0] : body) };
+      schedulePosts.push(row);
+      schedules.push(row);
+      await route.fulfill({ status: 201, json: [row] });
+      return;
+    }
+    await route.fulfill({ json: schedules });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fallback();
+  });
+
+  // The source schedule's content: a single dated row ("Thu Jan 8").
+  await page.context().route(/https:\/\/raw\.githubusercontent\.com\/.*\/instruction\/schedule\/schedule\.md$/, (route) =>
+    route.fulfill({ status: 200, contentType: 'text/plain; charset=utf-8', body: `| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   | Thu Jan 8 | Intro | | [Introduction](../instruction/introduction.md) | |\n` }),
+  );
+  // Capture the committed markdown for the new copied schedule file.
+  await page.context().route(/https:\/\/api\.github\.com\/repos\/.*\/contents\/schedule\/.*\.md$/, async (route) => {
+    const method = route.request().method();
+    const repoPath = (route.request().url().match(/\/contents\/(schedule\/[^?]+)/) || [])[1] || '';
+    if (method === 'GET') {
+      await route.fulfill({ status: 200, json: { path: repoPath, sha: 'fake-sha', download_url: `https://raw.githubusercontent.com/ghAccount/ghRepo/main/${repoPath}`, type: 'file' } });
+      return;
+    }
+    if (method === 'PUT') {
+      const body = route.request().postDataJSON();
+      schedulePuts.push({ path: repoPath, markdown: Buffer.from(body.content, 'base64').toString('utf8') });
+      await route.fulfill({ status: 201, json: { commit: { sha: 'copy-sha' } } });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.getByRole('link', { name: 'Terms & Sections' }).click();
+  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+
+  await page.getByLabel('Copy schedule Winter').click();
+  const dialog = page.locator('dialog:has-text("Copy schedule")');
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel('First session date (optional)').fill('2026-01-15');
+  await dialog.getByRole('button', { name: 'Copy', exact: true }).click();
+
+  // A new schedule row is created and the committed markdown has the first session shifted to Jan 15.
+  await expect.poll(() => schedulePosts.length).toBeGreaterThan(0);
+  await expect.poll(() => schedulePuts.some((p) => p.markdown.includes('Jan 15 2026'))).toBeTruthy();
+});
+
 test('terms & sections is reachable from the course TOC and renders in the content pane', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 
