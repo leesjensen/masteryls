@@ -103,7 +103,7 @@ test('masteryview sorts across the full dataset, not just the current page', asy
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
 
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
 
   // The whole roster is fetched in a single request; sorting and paging never fetch again.
   await expect.poll(() => overviewRequests.length).toBe(1);
@@ -135,7 +135,7 @@ test('masteryview numeric sort spans all pages and resets to page one', async ({
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
 
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Zelda Zimmerman', exact: true })).toBeVisible();
 
   // Pagination controls appear both above and below the list.
@@ -190,7 +190,7 @@ test('masteryview filters the roster by section (server-side)', async ({ page })
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
 
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
   // Default is "All sections": both learners show.
   await expect(page.getByText('Total learners: 2')).toBeVisible();
 
@@ -214,7 +214,7 @@ test('masteryview loads learner overview for accessible course', async ({ page }
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
 
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
   // The whole roster arrives in one request; both learners are listed and counted locally.
   await expect(page.getByText('bud@cow.com')).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Kyle Robinson', exact: true })).toBeVisible();
@@ -254,7 +254,7 @@ test('overseer gets a Canvas grades link to the learner on a Canvas-linked cours
 
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
   await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
 
   // The link is a real anchor (right-clickable / opens in a new tab) to the learner's Canvas grades.
@@ -274,7 +274,7 @@ test('no Canvas grades link when the course is not linked to Canvas', async ({ p
 
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
   await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
 
   await expect(page.getByRole('heading', { name: 'Kyle Robinson' })).toBeVisible();
@@ -357,7 +357,7 @@ test('mentor can view course mastery and observe learners without edit controls'
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
 
-  await expect(page.getByRole('heading', { name: 'Course MasteryView' })).toBeVisible();
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Observe' }).first()).toBeVisible();
   await page.getByRole('button', { name: 'User Menu' }).click();
   await expect(page.getByRole('button', { name: 'New course' })).not.toBeVisible();
