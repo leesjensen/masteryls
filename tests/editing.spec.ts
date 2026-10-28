@@ -136,7 +136,7 @@ test('terms & sections view creates a term with its first section', async ({ pag
   });
 
   await page.getByRole('link', { name: 'Terms & Sections' }).click();
-  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Terms', level: 2 })).toBeVisible();
 
   // A term is always created together with its first section.
   await page.getByRole('button', { name: '+ New term' }).click();
@@ -219,7 +219,7 @@ test('terms & sections view deletes empty sections and whole terms', async ({ pa
   });
 
   await page.getByRole('link', { name: 'Terms & Sections' }).click();
-  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Terms', level: 2 })).toBeVisible();
 
   // Two sections, each with a delete control. Delete one.
   await expect(page.getByLabel('Delete section Section A')).toBeVisible();
@@ -277,7 +277,7 @@ test('terms & sections schedules panel deletes only an unreferenced schedule', a
   });
 
   await page.getByRole('link', { name: 'Terms & Sections' }).click();
-  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Terms', level: 2 })).toBeVisible();
 
   // The delete control is shown for both, but disabled (with a usage count) for the one a section uses.
   await expect(page.getByText('1 section', { exact: true })).toBeVisible();
@@ -310,7 +310,7 @@ test('terms & sections schedules panel View opens the selected schedule', async 
   });
 
   await page.getByRole('link', { name: 'Terms & Sections' }).click();
-  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Terms', level: 2 })).toBeVisible();
 
   // The Schedules panel lists the schedule with a View button (next to Copy).
   await expect(page.locator('input[value="Winter 2026"]')).toBeVisible();
@@ -379,7 +379,7 @@ test('terms & sections schedules panel copies a schedule and remaps dates to a f
   });
 
   await page.getByRole('link', { name: 'Terms & Sections' }).click();
-  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Terms', level: 2 })).toBeVisible();
 
   await page.getByLabel('Copy schedule Winter').click();
   const dialog = page.locator('dialog:has-text("Copy schedule")');
@@ -442,7 +442,7 @@ test('creating a schedule then viewing it shows the content (snapshot advances p
   });
 
   await page.getByRole('link', { name: 'Terms & Sections' }).click();
-  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Terms', level: 2 })).toBeVisible();
 
   await page.getByRole('button', { name: '+ New schedule' }).click();
   await page.getByPlaceholder('New schedule title').fill('Spring 2027');
@@ -475,7 +475,7 @@ test('terms & sections is reachable from the course TOC and renders in the conte
 
   // It opens in the classroom content pane (not a separate full-screen view), so the course
   // sidebar stays visible next to it.
-  await expect(page.getByRole('heading', { name: /Terms & Sections/, level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Terms', level: 2 })).toBeVisible();
   await expect(page.getByRole('button', { name: '+ New term' })).toBeVisible();
   await expect(tocLink).toBeVisible();
 });
