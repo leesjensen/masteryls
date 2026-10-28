@@ -98,7 +98,9 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
         })
         .sort((a, b) => a.timestamp - b.timestamp);
       setNoteMessages(loadedMessages);
-      setDiscussionContext((prev) => ({ ...prev, topicTitle: learningSession.topic.title, topicContent: content, section: null }));
+      // topicContent is owned by load() (the loaded markdown); don't reset it to the `content` prop
+      // here, which is null in normal viewing and would wipe the Discuss AI's topic context.
+      setDiscussionContext((prev) => ({ ...prev, topicTitle: learningSession.topic.title, section: null }));
     })();
   }, [learningSession.topic.id, learningSession.enrollment?.id]);
 
@@ -134,6 +136,10 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   function load(content, path) {
     const md = processRelativeImagePaths(content, path);
     setMarkdown(md);
+    // The Discuss AI reads topicContent from discussionContext. In normal viewing `content` (the prop)
+    // is null and the topic markdown lives only in this loaded `md`, so populate topicContent here -
+    // otherwise the assistant runs with no topic content at all.
+    setDiscussionContext((prev) => ({ ...prev, topicContent: md }));
     setIsLoading(false);
   }
 

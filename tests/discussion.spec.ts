@@ -55,6 +55,29 @@ test('discussion panel supports AI discussion and clearing conversation', async 
   await expect(page.getByText("Ask questions about this topic! I'll help explain concepts and provide additional insights.")).toBeVisible();
 });
 
+test('discussion AI request includes the current topic content as context', async ({ page }) => {
+  // Regression: the Discuss assistant used to send no topic content in normal viewing (topicContent
+  // was read from a prop that is null then). Capture the gemini request and confirm the loaded topic
+  // markdown is in it. A page route takes precedence over the harness's context route.
+  let geminiBody = '';
+  await page.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
+      return;
+    }
+    geminiBody = route.request().postData() || '';
+    await route.fulfill({ json: { candidates: [{ content: { parts: [{ text: 'ok' }], role: 'model' }, finishReason: 'STOP', index: 0 }] } });
+  });
+
+  await openDiscussionPanel(page);
+
+  await page.locator('#discussion-input').fill('Summarize this topic');
+  await page.locator('form').getByRole('button', { name: 'Discuss', exact: true }).click();
+  await expect(page.getByText('Summarize this topic')).toBeVisible();
+
+  await expect.poll(() => geminiBody).toContain('This is a blockquote.'); // a distinctive line from the topic markdown
+});
+
 test('discussion panel can save AI response as note', async ({ page }) => {
   await openDiscussionPanel(page);
 

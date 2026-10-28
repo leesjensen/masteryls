@@ -47,6 +47,39 @@ export function isSubmittableInteractionType(type) {
   return SUBMITTABLE_INTERACTION_TYPES.has((type || '').toLowerCase().trim());
 }
 
+// Prepares topic markdown for use as AI context (essay grading, the Discuss assistant). Removes
+// interaction (`masteryls`) activity blocks and images (noisy long URLs) but KEEPS the rest as
+// markdown, so structure - headings, emphasis, code, lists - still carries meaning to the model.
+// Pure (no DOM).
+export function topicContentForAi(markdown) {
+  return String(markdown || '')
+    .replace(/```masteryls\s*\n?[\s\S]*?```/g, '') // interaction activities are not instruction prose
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // markdown images
+    .replace(/<img\b[^>]*>/gi, '') // html images
+    .replace(/[ \t]+\n/g, '\n') // trailing spaces
+    .replace(/\n{3,}/g, '\n\n') // collapse blank runs
+    .trim();
+}
+
+// Returns the topic content that appears BEFORE a given interaction's `masteryls` block, as markdown
+// (cleaned by topicContentForAi), for use as the AI "topic instruction" context when grading. Returns
+// '' if not found.
+export function getInteractionPrecedingContent(content, interactionId) {
+  const source = String(content || '');
+  if (!source || !interactionId) {
+    return '';
+  }
+  const regex = /```masteryls\s*\n?([\s\S]*?)```/g;
+  let match;
+  while ((match = regex.exec(source)) !== null) {
+    const { meta } = parseInteractionMeta(match[1]);
+    if (meta.id === interactionId) {
+      return topicContentForAi(source.slice(0, match.index));
+    }
+  }
+  return '';
+}
+
 export function normalizeInteractionIds(markdown, generateId = () => crypto.randomUUID(), existingIds = new Set()) {
   const source = String(markdown || '');
   if (!source.trim()) {

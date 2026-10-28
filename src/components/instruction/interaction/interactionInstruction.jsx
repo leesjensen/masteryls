@@ -14,8 +14,8 @@ import AiWebPageInteraction from './aiWebPageInteraction';
 import InteractionFeedback from './interactionFeedback';
 import InteractionResponseReview from './InteractionResponseReview.jsx';
 import { updateInteractionProgress, getInteractionProgress, useInteractionProgressStore } from './interactionProgressStore';
-import { formatFileSize, getPrecedingContent } from '../../../utils/utils';
-import { isSubmittableInteractionType, parseInteractionMeta } from '../../../utils/interactionMeta';
+import { formatFileSize } from '../../../utils/utils';
+import { isSubmittableInteractionType, parseInteractionMeta, getInteractionPrecedingContent } from '../../../utils/interactionMeta';
 import { validateSubmittedUrl } from '../../../utils/urlValidation';
 import { resolveInteractionHref } from './interactionHrefResolver';
 import { InteractionLinkResolverContext } from './interactionLinkResolver.jsx';
@@ -279,7 +279,11 @@ export default function InteractionInstruction({ courseOps, learningSession, use
         } else if (type === 'essay') {
           const interactionElement = interactionRoot.querySelector('textarea');
           if (interactionElement && interactionElement.value && interactionElement.validity.valid) {
-            const precedingContent = getPrecedingContent(interactionRoot);
+            // The essay "question context" is the topic content preceding this interaction, taken from
+            // the topic markdown source (robust, unlike walking the rendered DOM). `content` is set only
+            // in preview; in normal viewing it is null, so read the (cached) topic markdown.
+            const topicMarkdown = content || (await courseOps.getTopic(learningSession.topic));
+            const precedingContent = getInteractionPrecedingContent(topicMarkdown, id);
             const percentCorrect = await onEssayInteraction({ id, title, type, body, gradingCriteria, precedingContent, essay: interactionElement.value, syncGrade, autoGrade });
             displayGrade(interactionRoot, percentCorrect);
           }
@@ -427,12 +431,12 @@ export default function InteractionInstruction({ courseOps, learningSession, use
     if (!essay) return false;
     const normalizedCriteria = String(gradingCriteria || '').trim();
     const data = {
-      title,
-      type,
+      topicTitle: learningSession?.topic?.title || '',
+      questionTitle: title,
       question: body,
-      'question context': precedingContent,
+      topicInstruction: precedingContent,
       essay,
-      ...(normalizedCriteria ? { gradingCriteria: normalizedCriteria } : {}),
+      gradingCriteria: normalizedCriteria,
     };
     const { feedback, percentCorrect } = await courseOps.getEssayInteractionFeedback(data);
     const details = { type, essay, percentCorrect, feedback, gradingCriteria: normalizedCriteria || undefined, syncGrade, autoGrade };

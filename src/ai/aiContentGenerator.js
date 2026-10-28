@@ -1,5 +1,5 @@
 import service from '../service/service';
-import { normalizeInteractionIds } from '../utils/interactionMeta';
+import { normalizeInteractionIds, topicContentForAi } from '../utils/interactionMeta';
 import { normalizeDraProcessAttributeName } from '../utils/draStages';
 
 const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
@@ -1317,8 +1317,7 @@ export async function aiDiscussionResponseGenerator(topicTitle, topicContent, me
   const headingInfo = section
     ? `
 
-The student is currently studying the section titled "${section}."
-    `
+The student is currently studying the section titled "${section}."`
     : '';
 
   // If the user has any saved notes for the topic + section, include that information
@@ -1329,22 +1328,23 @@ The student is currently studying the section titled "${section}."
       ? `
 
 The student has saved the following notes related to the topic, which may contain parts of previous discussions with you:
-
+[START OF NOTES]
 ${noteText.join('\n\n')}
-
-[END OF NOTES]
-    `
+[END OF NOTES]`
       : '';
 
   const fullInstructionText = `
-You are a knowledgeable teaching assistant helping a student understand course material. 
-You have access to the following topic content that the student is currently studying:
+You are a knowledgeable teaching assistant helping a student understand course material.
 
-TOPIC: ${topicTitle}
+The student is studying the course topic below. "Topic title" is its title and "Topic content" is its
+instructional material (markdown). Treat the topic content as the authoritative source for your answers.
 
-CONTENT: ${topicContent}
+Topic title: ${topicTitle}
 
-[END OF CONTENT]${headingInfo}${notesInfo}
+Topic content:
+[START OF TOPIC CONTENT]
+${topicContentForAi(topicContent)}
+[END OF TOPIC CONTENT]${headingInfo}${notesInfo}
 
 Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
@@ -1424,18 +1424,40 @@ Requirements:
 }
 
 export async function aiEssayInteractionFeedbackGenerator(data, user) {
-  const hasGradingCriteria = Boolean(String(data?.gradingCriteria || '').trim());
+  const topicTitle = String(data?.topicTitle ?? data?.['topic title'] ?? '').trim();
+  const questionTitle = String(data?.questionTitle ?? data?.['question title'] ?? '').trim();
+  const topicInstruction = String(data?.topicInstruction ?? data?.['topic instruction'] ?? '').trim();
+  const question = String(data?.question ?? '').trim();
+  const essay = String(data?.essay ?? '').trim();
+  const gradingCriteria = String(data?.gradingCriteria ?? '').trim();
+  const hasGradingCriteria = Boolean(gradingCriteria);
+
+  // Each multi-line field is delimited with its own fenced block so the model can tell exactly where
+  // the (often long, multi-paragraph) topic instruction ends and the question/essay begin, rather
+  // than everything running together under one list bullet.
   const prompt = `You are an expert educational content creator.
 Generate constructive feedback for a student's essay response.
 Focus on clear explanations, encouragement, and guidance for improvement.
 
-${Object.entries(data)
-  .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}
+${topicTitle ? `Topic title: ${topicTitle}\n` : ''}${questionTitle ? `Question title: ${questionTitle}\n` : ''}
+Topic instruction — the course topic's instructional content that this question is drawn from. Treat it as the authoritative source of truth for what a correct answer should contain:
+[START OF TOPIC INSTRUCTION]
+${topicInstruction || '(no topic instruction provided)'}
+[END OF TOPIC INSTRUCTION]
 
+Question — the essay prompt the student answered:
+[START OF QUESTION]
+${question}
+[END OF QUESTION]
+
+Student essay — the student's response to grade:
+[START OF STUDENT ESSAY]
+${essay}
+[END OF STUDENT ESSAY]
+${hasGradingCriteria ? `\nGrading criteria — required scoring criteria to apply:\n[START OF GRADING CRITERIA]\n${gradingCriteria}\n[END OF GRADING CRITERIA]\n` : ''}
 Requirements:
 - Start the response with json that indicates the percentage correct in the format: {"percentCorrect": XX}
-- Score the response using the essay prompt and question context${hasGradingCriteria ? ', and apply the provided gradingCriteria as required scoring criteria' : ''}
+- Score the response against the question using the topic instruction as the source of truth${hasGradingCriteria ? ', and apply the grading criteria as required scoring criteria' : ''}
 - Address the student directly
 - The feedback to be part of a larger conversation that is already occurring
 - Acknowledge any correct aspects of the student's answer
