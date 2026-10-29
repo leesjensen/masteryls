@@ -736,7 +736,7 @@ export default function InteractionInstruction({ courseOps, learningSession, use
 
     let ringClass = 'ring-blue-400';
     if (instructionState !== 'exam' && percentCorrect >= 0) {
-      if (percentCorrect === 100) ringClass = 'ring-green-500';
+      if (percentCorrect >= 80) ringClass = 'ring-green-500';
       else if (percentCorrect === 0) ringClass = 'ring-red-500';
       else ringClass = 'ring-yellow-400';
     }
