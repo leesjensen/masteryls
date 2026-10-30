@@ -1,7 +1,48 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildWeeks, calculateGraceDays, formatGraceDaysLine, getNextScheduleDate, parseCellItems, parseScheduleMarkdown, remapScheduleToStartDate, scheduleDateStatus, scheduleRowStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+import { buildWeeks, calculateGraceDays, delimitScheduleTopLinks, formatGraceDaysLine, getNextScheduleDate, parseCellItems, parseScheduleMarkdown, remapScheduleToStartDate, scheduleDateStatus, scheduleRowStatus, serializeScheduleMarkdown, scheduleDateBoundsToIso, SCHEDULE_LINK_DELIMITER, SCHEDULE_WARNING } from './scheduleMarkdown.js';
+
+const D = SCHEDULE_LINK_DELIMITER;
+const TABLE = '| Week | Date |\n| :--: | ---- |\n| 1 | Thu Jan 8 |';
+
+test('delimitScheduleTopLinks joins adjacent one-per-line links with a delimiter', () => {
+  const md = `[BYU Academic Calendar](https://academiccalendar.byu.edu/)\n[CS Department](https://cs.byu.edu)\n\n${TABLE}`;
+  const out = delimitScheduleTopLinks(md);
+  assert.ok(out.includes(`[BYU Academic Calendar](https://academiccalendar.byu.edu/)${D}[CS Department](https://cs.byu.edu)`));
+  assert.ok(out.includes(TABLE)); // the week table is untouched
+});
+
+test('delimitScheduleTopLinks delimits links already on one line or separated by <br>', () => {
+  assert.ok(delimitScheduleTopLinks(`[A](x) [B](y)\n\n${TABLE}`).startsWith(`[A](x)${D}[B](y)`));
+  assert.ok(delimitScheduleTopLinks(`[A](x)</br>[B](y)\n\n${TABLE}`).startsWith(`[A](x)${D}[B](y)`));
+});
+
+test('delimitScheduleTopLinks drops list markers while delimiting', () => {
+  const out = delimitScheduleTopLinks(`- [A](x)\n- [B](y)\n\n${TABLE}`);
+  assert.ok(out.startsWith(`[A](x)${D}[B](y)`));
+});
+
+test('delimitScheduleTopLinks leaves blank-line-separated links as separate paragraphs', () => {
+  const md = `[A](x)\n\n[B](y)\n\n${TABLE}`;
+  const out = delimitScheduleTopLinks(md);
+  assert.ok(!out.includes(`[A](x)${D}[B](y)`)); // a blank line breaks the run, so the links aren't merged
+  assert.ok(out.includes('[A](x)\n\n[B](y)')); // they stay as separate paragraphs
+});
+
+test('delimitScheduleTopLinks does not touch table cells that contain links', () => {
+  const md = `[A](x)\n[B](y)\n\n| Week | Topics |\n| :--: | ------ |\n| 1 | [T1](a.md) [T2](b.md) |`;
+  const out = delimitScheduleTopLinks(md);
+  assert.ok(out.includes('| 1 | [T1](a.md) [T2](b.md) |')); // table row links are left as-is
+  assert.ok(out.includes(`[A](x)${D}[B](y)`));
+});
+
+test('delimitScheduleTopLinks preserves a pre-table note/blockquote and still delimits the links', () => {
+  const md = `[A](x)\n[B](y)\n\n> [!NOTE]\n> read this\n\n${TABLE}`;
+  const out = delimitScheduleTopLinks(md);
+  assert.ok(out.includes(`[A](x)${D}[B](y)`));
+  assert.ok(out.includes('> [!NOTE]'));
+});
 
 test('remapScheduleToStartDate shifts every dated row so the first lands on the target start', () => {
   const model = {

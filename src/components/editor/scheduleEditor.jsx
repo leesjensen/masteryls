@@ -7,7 +7,7 @@ import Markdown from '../../components/Markdown';
 import Splitter from '../Splitter.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
-import { buildWeeks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
+import { buildWeeks, delimitScheduleTopLinks, parseScheduleMarkdown, serializeScheduleMarkdown } from '../../utils/scheduleMarkdown';
 
 const ADD_ITEM_MENU_OPTION = '__add_item_menu__';
 const NEW_MANUAL_ITEM_OPTION = '__new_manual_item__';
@@ -383,7 +383,9 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
   const [dirty, setDirty] = React.useState(false);
   const [committing, setCommitting] = React.useState(false);
   const { panePercent: editorPanePercent, splitContainerRef, onPaneMoved: onEditorPaneMoved, onPaneResized: onEditorPaneResized } = useSplitPaneState(55);
-  const previewMarkdown = React.useMemo(() => serializeScheduleMarkdown(model), [model]);
+  // Delimit the top links for the preview the same way the read view does (display-only; the committed
+  // markdown from serializeScheduleMarkdown keeps the canonical one-link-per-line form).
+  const previewMarkdown = React.useMemo(() => delimitScheduleTopLinks(serializeScheduleMarkdown(model)), [model]);
 
   React.useEffect(() => {
     const topic = learningSession?.topic;

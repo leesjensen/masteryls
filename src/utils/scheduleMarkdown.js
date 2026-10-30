@@ -442,6 +442,56 @@ function parseTopLinks(lines, endIndex, titleLineIndex) {
   return { links, preTableNotes, preTableWarnings, consumedLines };
 }
 
+// Visible separator placed between the schedule's top-of-page links so adjacent links don't render
+// as one run of text (e.g. "BYU Academic Calendar CS Department").
+export const SCHEDULE_LINK_DELIMITER = ' | ';
+
+const SCHEDULE_LINK_PATTERN = /\[[^\]]+\]\([^)]+\)/g;
+
+// True when a line is nothing but markdown links (ignoring list markers and <br> separators), so it
+// is safe to merge/delimit without disturbing prose, notes, or the week table.
+function isScheduleLinkOnlyLine(line) {
+  const stripped = String(line || '')
+    .replace(/^\s*[-*]\s+/, '')
+    .replace(/<\/?br\s*\/?>/gi, ' ')
+    .trim();
+  if (!stripped) return false;
+  const withoutLinks = stripped.replace(SCHEDULE_LINK_PATTERN, '').trim();
+  // Use .match (stateless for a /g regex) rather than .test (which mutates lastIndex).
+  return Boolean(stripped.match(SCHEDULE_LINK_PATTERN)) && withoutLinks === '';
+}
+
+// Display-time transform: before the week table, collapse each run of adjacent link-only lines into a
+// single line whose links are separated by SCHEDULE_LINK_DELIMITER. Normalizes the formats links can
+// be stored in (one per line, several on a line, <br>- or list-marker-separated) into one delimited
+// row so they read as distinct links. Leaves the table, special days, notes, and blank-line-separated
+// links untouched. Does not change stored content - callers apply it only when rendering.
+export function delimitScheduleTopLinks(markdown) {
+  const lines = String(markdown || '').split('\n');
+  const tableStart = lines.findIndex((line) => /^\s*\|/.test(line));
+  const end = tableStart === -1 ? lines.length : tableStart;
+
+  const out = [];
+  let i = 0;
+  while (i < end) {
+    if (isScheduleLinkOnlyLine(lines[i])) {
+      const links = [];
+      while (i < end && isScheduleLinkOnlyLine(lines[i])) {
+        links.push(...(lines[i].match(SCHEDULE_LINK_PATTERN) || []));
+        i += 1;
+      }
+      out.push(links.join(SCHEDULE_LINK_DELIMITER));
+    } else {
+      out.push(lines[i]);
+      i += 1;
+    }
+  }
+  for (let j = end; j < lines.length; j += 1) {
+    out.push(lines[j]);
+  }
+  return out.join('\n');
+}
+
 function parseScheduleTable(lines, tableStart) {
   if (tableStart === -1) {
     return { weeks: [], tableEnd: -1, tableWarnings: [] };

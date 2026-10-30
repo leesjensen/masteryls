@@ -1,5 +1,6 @@
 import React from 'react';
 import InteractionInstruction from './interaction/interactionInstruction';
+import { delimitScheduleTopLinks } from '../../utils/scheduleMarkdown';
 
 export default function ScheduleInstruction({ courseOps, learningSession, user, instructionState = 'learning' }) {
   const [files, setFiles] = React.useState([]);
@@ -36,7 +37,8 @@ export default function ScheduleInstruction({ courseOps, learningSession, user, 
     let cancelled = false;
     courseOps.getScheduleTopicContent(topic, selectedFileId).then((markdown) => {
       if (cancelled) return;
-      setContent(markdown || '');
+      // Display-time only: delimit the adjacent top-of-schedule links so they read as distinct links.
+      setContent(delimitScheduleTopLinks(markdown || ''));
     });
     return () => {
       cancelled = true;
