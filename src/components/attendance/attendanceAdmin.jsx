@@ -12,7 +12,7 @@ const ALL_SECTIONS_ID = '__all_sections__';
 export default function AttendanceAdmin({ courseOps, course }) {
   const allSections = Array.isArray(course?.sections) ? course.sections : [];
   const sections = React.useMemo(() => allSections.filter((section) => section.attendanceEnabled), [course?.sections]);
-  const [selectedSectionId, setSelectedSectionId] = React.useState(() => sections[0]?.id || ALL_SECTIONS_ID);
+  const [selectedSectionId, setSelectedSectionId] = React.useState(ALL_SECTIONS_ID);
   const [openSession, setOpenSession] = React.useState(null);
   const [summary, setSummary] = React.useState(null);
   const [error, setError] = React.useState(null);

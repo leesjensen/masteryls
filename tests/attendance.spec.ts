@@ -228,8 +228,12 @@ test('an editor takes attendance with a question and reviews the responses', asy
   const state = await mockAttendance(page);
 
   await openAttendanceView(page);
+  const sectionPicker = page.getByRole('combobox', { name: 'Section' });
+  await expect(sectionPicker).toHaveValue('__all_sections__');
+  await expect(page.getByText('Viewing all sections')).toBeVisible();
   await expect(page.getByText('No attendance has been taken yet.')).toBeVisible();
 
+  await sectionPicker.selectOption({ label: 'Section A' });
   // The standard wellness question is always asked — there is no opt-in toggle.
   await expect(page.getByText('Learners are asked')).toBeVisible();
   await page.getByRole('button', { name: 'Take attendance' }).click();
