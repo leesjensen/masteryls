@@ -427,38 +427,26 @@ export default function InterviewInstruction({ courseOps, learningSession, user,
               <div className="mb-3 text-lg font-semibold text-gray-600">How It Works</div>
               <div className="rounded-lg border border-blue-200 bg-blue-50 pb-4">
                 <div className="px-4 pt-4 space-y-4">
-                  <ol className="list-none !pl-0 space-y-3 text-sm text-gray-700">
-                    <li className="flex gap-3">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
-                      <div>
-                        <strong>Start an interview.</strong>{' '}
-                        {canPractice && canFinal
-                          ? 'Choose practice to explore freely, or start the final assessment when you are ready.'
-                          : canPractice
-                            ? 'Click "Start practice interview" to generate a unique scenario and session schedule. You can start new practice runs as many times as you like.'
-                            : 'Click "Start final interview" to begin. The scenario is locked once started and must be completed.'}
-                      </div>
+                  <ol className="space-y-3 text-sm text-gray-700">
+                    <li>
+                      <strong>Start an interview.</strong>{' '}
+                      {canPractice && canFinal
+                        ? 'Choose practice to explore freely, or start the final assessment when you are ready.'
+                        : canPractice
+                          ? 'Click "Start practice interview" to generate a unique scenario and session schedule. You can start new practice runs as many times as you like.'
+                          : 'Click "Start final interview" to begin. The scenario is locked once started and must be completed.'}
                     </li>
-                    <li className="flex gap-3">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">2</span>
-                      <div>
-                        <strong>Read the Scenario tab.</strong> Review the company context, the role you are interviewing for, and your interview schedule. You will see who will be interviewing you and what each session is designed to assess.
-                      </div>
+                    <li>
+                      <strong>Read the Scenario tab.</strong> Review the company context, the role you are interviewing for, and your interview schedule. You will see who will be interviewing you and what each session is designed to assess.
                     </li>
-                    <li className="flex gap-3">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
-                      <div>
-                        <strong>Work through the Interview tab.</strong> Participate in each session. The AI interviewers will ask questions and follow up on your answers. The sidebar shows your progress through the schedule.
-                        {canPractice && (
-                          <span> In practice mode, the <strong>Coaching</strong> tab provides AI feedback, and you can view your <strong>Evaluation</strong> at any time.</span>
-                        )}
-                      </div>
+                    <li>
+                      <strong>Work through the Interview tab.</strong> Participate in each session. The AI interviewers will ask questions and follow up on your answers. The sidebar shows your progress through the schedule.
+                      {canPractice && (
+                        <span> In practice mode, the <strong>Coaching</strong> tab provides AI feedback, and you can view your <strong>Evaluation</strong> at any time.</span>
+                      )}
                     </li>
-                    <li className="flex gap-3">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">4</span>
-                      <div>
-                        <strong>Complete and review.</strong> Click "Complete assessment" when you are done. A final AI evaluation of your performance will appear on the Evaluation tab.
-                      </div>
+                    <li>
+                      <strong>Complete and review.</strong> Click "Complete assessment" when you are done. A final AI evaluation of your performance will appear on the Evaluation tab.
                     </li>
                   </ol>
 

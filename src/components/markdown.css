@@ -389,7 +389,7 @@ html.window-blurred .markdown-body ::selection {
 .markdown-body ol {
   list-style: none;
   counter-reset: md-ol;
-  padding-left: 2.4em;
+  padding-left: 2.5em;
 }
 
 .markdown-body ol > li {
@@ -400,23 +400,23 @@ html.window-blurred .markdown-body ::selection {
 .markdown-body ol > li::before {
   content: counter(md-ol);
   position: absolute;
-  left: -2.4em;
+  left: -2.5em;
   /* Vertically centre the chip on the item's first text line. */
-  top: 0.35em;
+  top: 0.18em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  min-width: 1.4em;
-  height: 1.4em;
+  min-width: 1.6em;
+  height: 1.6em;
   /* A hair of top padding pushes the digit down to optical centre: numerals
      have no descenders, so flex-centring the line box leaves them sitting high
      in a round badge. */
-  padding: 0.06em 0.35em 0;
+  padding: 0.04em 0.3em 0;
   border-radius: 999px;
-  background: var(--md-bullet-soft);
-  color: var(--md-bullet);
-  font-size: 0.72em;
+  background: var(--md-bullet);
+  color: #fff;
+  font-size: 0.8em;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;

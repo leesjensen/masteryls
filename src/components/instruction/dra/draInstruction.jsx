@@ -1118,36 +1118,24 @@ export default function DraInstruction({ courseOps, learningSession, user, conte
             <div className="mb-3 text-lg font-semibold text-gray-600">How It Works</div>
             <div className="rounded-lg border border-blue-200 bg-blue-50 pb-4">
               <div className="px-4 pt-4 space-y-4">
-                <ol className="list-none !pl-0 space-y-3 text-sm text-gray-700">
-                  <li className="flex gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">1</span>
-                    <div>
-                      <strong>Start a scenario.</strong> {canPractice && canFinal ? 'Choose practice to explore freely or start the final assessment when you are ready.' : canPractice ? 'Click "Generate scenario" to create a unique case. You can cancel and generate a new one until you are happy with it.' : 'Click "Start final assessment" to begin. The scenario is locked once started and must be completed.'}
-                    </div>
+                <ol className="space-y-3 text-sm text-gray-700">
+                  <li>
+                    <strong>Start a scenario.</strong> {canPractice && canFinal ? 'Choose practice to explore freely or start the final assessment when you are ready.' : canPractice ? 'Click "Generate scenario" to create a unique case. You can cancel and generate a new one until you are happy with it.' : 'Click "Start final assessment" to begin. The scenario is locked once started and must be completed.'}
                   </li>
-                  <li className="flex gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">2</span>
-                    <div>
-                      <strong>Read the Scenario tab.</strong> Review the situation, constraints, and any stakeholders revealed to you. On harder difficulty settings some details are intentionally withheld for you to discover.
-                    </div>
+                  <li>
+                    <strong>Read the Scenario tab.</strong> Review the situation, constraints, and any stakeholders revealed to you. On harder difficulty settings some details are intentionally withheld for you to discover.
                   </li>
-                  <li className="flex gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
-                    <div>
-                      <strong>Work through the Workspace tab.</strong> The workspace is where you conduct your investigation and build your solution. Use the stage pills to move through the six stages of the assessment. The workspace has two sides: on the <strong>left</strong>, chat with stakeholders to gather information; on the <strong>right</strong>, use the reasoning record to document your work on each stage.
-                      {canPractice && (
-                        <span>
-                          {' '}
-                          In practice mode, the <strong>Coaching</strong> tab provides AI feedback on your approach at any point, and you can open the <strong>Evaluation</strong> tab to score your progress as many times as you like before finishing.
-                        </span>
-                      )}
-                    </div>
+                  <li>
+                    <strong>Work through the Workspace tab.</strong> The workspace is where you conduct your investigation and build your solution. Use the stage pills to move through the six stages of the assessment. The workspace has two sides: on the <strong>left</strong>, chat with stakeholders to gather information; on the <strong>right</strong>, use the reasoning record to document your work on each stage.
+                    {canPractice && (
+                      <span>
+                        {' '}
+                        In practice mode, the <strong>Coaching</strong> tab provides AI feedback on your approach at any point, and you can open the <strong>Evaluation</strong> tab to score your progress as many times as you like before finishing.
+                      </span>
+                    )}
                   </li>
-                  <li className="flex gap-3">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">4</span>
-                    <div>
-                      <strong>Complete and review.</strong> When you have worked through all stages, click "Complete assessment." A final AI evaluation of your reasoning and process will appear on the Evaluation tab.
-                    </div>
+                  <li>
+                    <strong>Complete and review.</strong> When you have worked through all stages, click "Complete assessment." A final AI evaluation of your reasoning and process will appear on the Evaluation tab.
                   </li>
                 </ol>
 
