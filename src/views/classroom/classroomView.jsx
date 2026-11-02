@@ -33,26 +33,23 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
     }
   }, [learningSession, appBarSubTitle]);
 
-  useHotkeys(
-    {
-      'meta+ArrowRight': (e) => {
-        navigateToTopic('next');
-      },
-      'meta+ArrowLeft': (e) => {
-        navigateToTopic('prev');
-      },
-      'meta+b': (e) => {
-        courseOps.toggleSidebar();
-      },
-      'meta+i': () => {
-        courseOps.toggleDiscussion();
-      },
-      'ctrl+i': () => {
-        courseOps.toggleDiscussion();
-      },
+  useHotkeys({
+    'meta+ArrowRight': (e) => {
+      navigateToTopic('next');
     },
-    { target: undefined, allowInInputs: ['meta+i', 'ctrl+i'] },
-  );
+    'meta+ArrowLeft': (e) => {
+      navigateToTopic('prev');
+    },
+    'meta+b': (e) => {
+      courseOps.toggleSidebar();
+    },
+    'meta+i': () => {
+      courseOps.toggleDiscussion();
+    },
+    'ctrl+i': () => {
+      courseOps.toggleDiscussion();
+    },
+  });
 
   function navigateToTopic(direction) {
     const newTopic = courseOps.getAdjacentTopic(direction);
