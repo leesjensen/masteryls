@@ -96,6 +96,13 @@ html.window-blurred .markdown-body ::selection {
   box-sizing: border-box;
 }
 
+/* Mermaid diagrams keep their authored colors in both app themes. Give the
+   SVG canvas a fixed light surface so transparent regions do not inherit the
+   page's dark-mode background. */
+.markdown-body .react-markdown-mermaid svg {
+  background-color: #fff;
+}
+
 .markdown-body > *:first-child {
   margin-top: 0 !important;
 }

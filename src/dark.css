@@ -400,6 +400,14 @@ html.dark .markdown-body .md-codeblock [class*="language-"] > code {
   padding: 0 !important;
 }
 
+/* Untyped fences have no language-* class, so the syntax highlighter leaves
+   its light-theme plain-text color inline. Make those blocks legible on the
+   dark code-card surface without changing syntax colors in typed blocks. */
+html.dark .markdown-body .md-codeblock:not(:has(.md-codeblock-lang)) > div:last-child,
+html.dark .markdown-body .md-codeblock:not(:has(.md-codeblock-lang)) > div:last-child * {
+  color: var(--mls-snippet-fg) !important;
+}
+
 /* The theme also strips the semantic class off every token — they all end up
    as plain `.token` with the colour inline — so a token can only be reached by
    the colour it was given. `cse` uses exactly seven, mapped here to brighter
