@@ -7,6 +7,7 @@ import Splitter from '../../components/Splitter.jsx';
 import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { useNavigate } from 'react-router-dom';
 import useHotkeys from '../../hooks/useHotKeys';
+import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings, onExitObserve = null, observedLearnerName = '' }) {
   const [editorVisible, setEditorVisible] = useState(false);
@@ -34,12 +35,10 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   }, [learningSession, appBarSubTitle]);
 
   useHotkeys({
-    'meta+ArrowRight': (e) => {
-      navigateToTopic('next');
-    },
-    'meta+ArrowLeft': (e) => {
-      navigateToTopic('prev');
-    },
+    'ctrl+alt+meta+ArrowRight': () => navigateToTopic('next'),
+    'ctrl+alt+meta+ArrowLeft': () => navigateToTopic('prev'),
+    'ctrl+alt+shift+ArrowRight': () => navigateToTopic('next'),
+    'ctrl+alt+shift+ArrowLeft': () => navigateToTopic('prev'),
     'meta+b': (e) => {
       courseOps.toggleSidebar();
     },
@@ -50,6 +49,12 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
       courseOps.toggleDiscussion();
     },
   });
+
+  const swipeNavigationRef = useSwipeNavigation(
+    () => navigateToTopic('next'),
+    () => navigateToTopic('prev'),
+    { enabled: isMobile && effectiveSidebarVisible !== 'end' && !editorVisible }
+  );
 
   function navigateToTopic(direction) {
     const newTopic = courseOps.getAdjacentTopic(direction);
@@ -110,7 +115,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
         )}
         {effectiveSidebarVisible === 'split' && <Splitter onMove={sidebarMoved} onResized={sidebarResized} minPosition={150} maxPosition={window.innerWidth - 150} />}
         {effectiveSidebarVisible !== 'end' && (
-          <div id="content" className={`flex flex-1 h-full overflow-auto`}>
+          <div id="content" ref={swipeNavigationRef} className="flex flex-1 h-full overflow-auto">
             {content}
           </div>
         )}

@@ -81,9 +81,11 @@ The classroom toolbar gives you quick navigation and course tools.
 ### Keyboard shortcuts
 
 - `Cmd/Ctrl + b`: toggle the sidebar.
-- `Cmd + Left Arrow`: previous topic.
-- `Cmd + Right Arrow`: next topic.
+- `Ctrl + Option + Cmd + Left Arrow` (Mac) or `Ctrl + Alt + Shift + Left Arrow` (Windows): previous topic.
+- `Ctrl + Option + Cmd + Right Arrow` (Mac) or `Ctrl + Alt + Shift + Right Arrow` (Windows): next topic.
 - `Cmd/Ctrl + i`: toggle the discussion panel.
+
+On a mobile device, swipe left to open the next topic or right to return to the previous topic.
 
 ## 5. Using the Sidebar
 
