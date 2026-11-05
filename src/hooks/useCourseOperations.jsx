@@ -18,6 +18,7 @@ import { completedInteractionIds } from '../utils/topicProgress';
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
+import { recordTopicView, recordInteraction } from '../observability/observability.js';
 import { useAlert } from '../contexts/AlertContext.jsx';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
@@ -1566,6 +1567,19 @@ Requirements:
           percentCorrect: details?.masteryScore,
           feedback: markdownToHtml(formatInterviewFeedbackForCanvas(details?.evaluation)),
         });
+      }
+
+      // Log the important learner actions (no-op unless observability is enabled). Only reached
+      // when a history row was actually written (the throttled-skip path returned earlier).
+      // Engagement is tracked as metrics only (recordTopicView/recordInteraction). We deliberately
+      // do NOT also log these per-event to Loki: that audit trail already lives in the Supabase
+      // `progress` records (append-only, with course/topic ids, duration, and details).
+      const courseName = learningSession?.course?.title || learningSession?.course?.name;
+      const topicName = learningSession?.topic?.title;
+      if (type === 'quizSubmit') {
+        recordInteraction(courseName, topicName);
+      } else if (typeof type === 'string' && type.endsWith('View')) {
+        recordTopicView(courseName, topicName);
       }
 
       return saved;

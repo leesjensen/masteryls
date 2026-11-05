@@ -1356,3 +1356,105 @@ using (
       and (e."learnerId" = auth.uid() or public.auth_manages_course(auth.uid(), e."catalogId"))
   )
 );
+
+-- ---------------------------------------------------------------------------------------------
+-- Client observability metrics (server-side aggregation)
+--
+-- The browser accumulates DELTAS (see src/observability/observability.js) and POSTs them to the
+-- `telemetry` edge function, which calls record_client_metrics() to atomically add them into this
+-- table. A scheduled `telemetryflush` edge function then reads the table and pushes ONE cumulative
+-- OTLP payload to Grafana. Keeping the running totals server-side means the exported metrics carry
+-- only aggregate labels (op/status/result) - no per-session id - so cardinality is fixed regardless
+-- of how many browsers are online.
+-- ---------------------------------------------------------------------------------------------
+create table if not exists public.client_metric (
+  metric text not null,              -- e.g. 'masteryls_client_call_duration_ms'
+  labels jsonb not null,             -- e.g. {"op":"edge:gemini","status":"ok"} (jsonb normalizes key order)
+  kind text not null,                -- 'histogram' | 'counter'
+  count bigint not null default 0,   -- cumulative sample count (histogram) / total (counter)
+  sum double precision not null default 0, -- cumulative sum of observed values (histogram only)
+  buckets bigint[],                  -- cumulative per-bucket counts (histogram only; len = bounds+1)
+  "createdAt" timestamp with time zone not null default now(), -- series start (cumulative start time)
+  "updatedAt" timestamp with time zone not null default now(),
+  primary key (metric, labels)
+);
+
+-- Internal table: no client access. The telemetry edge functions use the service role, which
+-- bypasses RLS; enabling RLS with no policies blocks anon/authenticated entirely.
+alter table public.client_metric enable row level security;
+
+-- Atomically fold a batch of client deltas into the cumulative totals. Called only by the
+-- `telemetry` edge function (service role); not exposed to anon/authenticated. `counters` is a
+-- generic list of { metric, labels, count } (login + course/topic engagement). A per-metric cap on
+-- distinct series bounds Prometheus cardinality even though the ingest is anon-reachable and the
+-- course/topic label values are free-form.
+--
+-- The signature changed from (calls, logins) to (calls, counters); drop the old one first because
+-- CREATE OR REPLACE cannot change parameter names when the argument types are unchanged.
+drop function if exists public.record_client_metrics(jsonb, jsonb);
+create function public.record_client_metrics(calls jsonb, counters jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  item jsonb;
+  delta bigint[];
+  max_series_per_metric constant int := 2000;
+begin
+  for item in select value from jsonb_array_elements(coalesce(calls, '[]'::jsonb)) as t(value)
+  loop
+    delta := array(select x::bigint from jsonb_array_elements_text(item->'buckets') as x);
+    insert into public.client_metric as m (metric, labels, kind, count, sum, buckets)
+    values (
+      'masteryls_client_call_duration_ms',
+      jsonb_build_object('op', item->>'op', 'status', item->>'status'),
+      'histogram',
+      coalesce((item->>'count')::bigint, 0),
+      coalesce((item->>'sum')::double precision, 0),
+      delta
+    )
+    on conflict (metric, labels) do update
+      set count = m.count + excluded.count,
+          sum = m.sum + excluded.sum,
+          buckets = (
+            select array_agg(coalesce(m.buckets[i], 0) + coalesce(excluded.buckets[i], 0) order by i)
+            from generate_subscripts(
+              case when coalesce(array_length(m.buckets, 1), 0) >= coalesce(array_length(excluded.buckets, 1), 0)
+                   then m.buckets else excluded.buckets end, 1) as i
+          ),
+          "updatedAt" = now();
+  end loop;
+
+  for item in select value from jsonb_array_elements(coalesce(counters, '[]'::jsonb)) as t(value)
+  loop
+    -- Update an existing series; otherwise insert a new one only while under the cardinality cap.
+    if exists (select 1 from public.client_metric where metric = item->>'metric' and labels = item->'labels') then
+      update public.client_metric
+        set count = count + coalesce((item->>'count')::bigint, 0),
+            "updatedAt" = now()
+        where metric = item->>'metric' and labels = item->'labels';
+    elsif (select count(*) from public.client_metric where metric = item->>'metric') < max_series_per_metric then
+      insert into public.client_metric (metric, labels, kind, count, sum, buckets)
+      values (item->>'metric', item->'labels', 'counter', coalesce((item->>'count')::bigint, 0), 0, null);
+    end if;
+  end loop;
+end;
+$$;
+
+revoke all on function public.record_client_metrics(jsonb, jsonb) from public;
+grant execute on function public.record_client_metrics(jsonb, jsonb) to service_role;
+
+-- Scheduled push to Grafana: run the `telemetryflush` edge function every minute. Requires the
+-- pg_cron + pg_net extensions. Fill in <PROJECT_REF> and <ANON_KEY>, then run once:
+--
+--   create extension if not exists pg_cron;
+--   create extension if not exists pg_net;
+--   select cron.schedule('telemetry-flush', '* * * * *', $$
+--     select net.http_post(
+--       url := 'https://<PROJECT_REF>.supabase.co/functions/v1/telemetryflush',
+--       headers := jsonb_build_object('Content-Type', 'application/json', 'apikey', '<ANON_KEY>'),
+--       body := '{}'::jsonb
+--     );
+--   $$);

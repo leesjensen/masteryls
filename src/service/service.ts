@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import config from '../../config';
 import { User, CatalogEntry, Enrollment, Role } from '../model';
 import { extractEdgeFunctionErrorMessage } from './edgeFunctionErrors';
+import { instrument, logAction, recordLogin, recordEnrollment, httpClass } from '../observability/observability.js';
 
 class Service {
   catalog: CatalogEntry[] = [];
@@ -458,10 +459,14 @@ class Service {
   async verifyOtp(email: string, token: string): Promise<User | null> {
     const { data, error } = await this.supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error || !data.user) {
+      // Failures are recorded at the login UI boundary (login.jsx) so they also cover requestOtp
+      // (bad email / signups-not-allowed) failures that never reach verifyOtp.
       throw new Error(error?.message || 'Unable to verify code');
     }
     await this._ensureUserRecord(data.user, { email, name: data.user.user_metadata?.name });
-    return this._loadUser({ id: data.user.id });
+    const loaded = await this._loadUser({ id: data.user.id });
+    recordLogin('success', loaded);
+    return loaded;
   }
 
   /**
@@ -509,7 +514,7 @@ class Service {
   // TEMPORARY debug backdoor — paired with the `loginas` edge function and the
   // "Login as user (debug)" item in the AppBar user menu. Delete all three when done.
   async impersonateLogin(targetEmail: string): Promise<User | null> {
-    const { data, error } = await this.supabase.functions.invoke('loginas', { body: { email: targetEmail } });
+    const { data, error } = await this.invokeEdge('loginas', { body: { email: targetEmail } });
     if (error) {
       throw new Error(extractEdgeFunctionErrorMessage(error) || error.message);
     }
@@ -809,6 +814,9 @@ class Service {
       throw new Error(error.message);
     }
 
+    logAction('enroll', { courseId: catalogEntry.id, learnerId, sectionId: resolvedSectionId });
+    recordEnrollment(catalogEntry.title || catalogEntry.name);
+
     return { ...data, catalogEntry };
   }
 
@@ -833,6 +841,7 @@ class Service {
     if (error) {
       throw new Error(error.message);
     }
+    logAction('unenroll', { courseId: enrollment.catalogId, learnerId: enrollment.learnerId });
   }
 
   /**
@@ -960,7 +969,7 @@ class Service {
   }
 
   async recordProgress(params: { catalogId: string; enrollmentId: string; topicId: string; interactionId?: string | null; type?: string; duration?: number; details?: object; cacheUpdate?: object; insertProgress?: boolean }): Promise<any> {
-    const { data, error } = await this.supabase.functions.invoke('progressrecord', {
+    const { data, error } = await this.invokeEdge('progressrecord', {
       body: params,
     });
 
@@ -1276,6 +1285,37 @@ class Service {
   }
 
   /**
+   * Single choke point for all Supabase edge-function calls, so every one is observed
+   * (latency/throughput/errors) in one place. Returns the same `{ data, error }` shape as
+   * `supabase.functions.invoke`; a no-op wrapper when observability is disabled. The optional
+   * `context` adds metric tags (e.g. `{ kind: 'ai' }` for Gemini calls).
+   */
+  private async invokeEdge(name: string, body: any) {
+    const op = `edge:${name}`;
+    try {
+      return await instrument(
+        op,
+        { fn: name },
+        async () => {
+          const result = await this.supabase.functions.invoke(name, body);
+          // Supabase reports edge errors in-band rather than throwing; rethrow (carrying the HTTP
+          // status, when present, for 4xx/5xx classification) so the error is recorded, then
+          // recover the original shape below so callers are unaffected.
+          if (result?.error) {
+            const httpStatus = result.error?.context?.status;
+            throw Object.assign(new Error(result.error.message || 'edge function error'), { __edgeResult: result, httpStatus });
+          }
+          return result;
+        },
+        (_result: any, err: any) => (err ? httpClass(err?.httpStatus) : 'ok'),
+      );
+    } catch (err: any) {
+      if (err && err.__edgeResult) return err.__edgeResult;
+      throw err;
+    }
+  }
+
+  /**
    * Helper method to make requests to the GitHub API.
    * @param token - GitHub token.
    * @param url - Request URL.
@@ -1296,7 +1336,12 @@ class Service {
       headers,
       ...(body ? { body: JSON.stringify(body) } : {}),
     };
-    return fetch(url, request);
+    return instrument(
+      'github',
+      { method },
+      () => fetch(url, request),
+      (res: any, err: any) => (err ? 'error' : httpClass(res?.status)),
+    );
   }
 
   /**
@@ -1312,7 +1357,7 @@ class Service {
       throw new Error('Canvas endpoint must include a course id prefix like /courses/{courseId}/...');
     }
 
-    const { data, error } = await this.supabase.functions.invoke('canvas', {
+    const { data, error } = await this.invokeEdge('canvas', {
       body: { courseId: courseMatch[1], catalogId, endpoint, method, body },
     });
 
@@ -1327,7 +1372,7 @@ class Service {
    * Invokes the Canvas gradebook edge function for secure grade passback.
    */
   async makeCanvasGradebookRequest(params: { courseId: string; catalogId?: string; topicType: 'exam' | 'project' | 'dra' | 'interview' | 'mastery' | 'attendance'; percentCorrect: number; pointsPossible: number; canvasAssignmentId?: number | string; canvasQuizId?: number | string; learnerEmail?: string; autoGrade?: boolean; feedback?: string; submissionUrl?: string; submissionText?: string }) {
-    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+    const { data, error } = await this.invokeEdge('canvasgradebook', {
       body: params,
     });
 
@@ -1345,7 +1390,7 @@ class Service {
    * without granting learners access to the broader Canvas proxy.
    */
   async checkCanvasGradebookEligibility(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ eligible: boolean; error?: string }> {
-    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+    const { data, error } = await this.invokeEdge('canvasgradebook', {
       body: { mode: 'check', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
     });
 
@@ -1363,7 +1408,7 @@ class Service {
    * not found in the Canvas course. Restricted server-side to course overseers (root/editor/mentor).
    */
   async getCanvasLearnerId(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ canvasUserId: number | null; error?: string }> {
-    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+    const { data, error } = await this.invokeEdge('canvasgradebook', {
       body: { mode: 'userLookup', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
     });
 
@@ -1380,7 +1425,7 @@ class Service {
    * per-assignment breakdown. `found` is false when the learner isn't in the Canvas course.
    */
   async getCanvasGrades(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ found: boolean; overall: { score: number | null; grade: string | null } | null; assignments: { name: string; score: number | null; pointsPossible: number | null; grade: string | null }[]; error?: string }> {
-    const { data, error } = await this.supabase.functions.invoke('canvasgradebook', {
+    const { data, error } = await this.invokeEdge('canvasgradebook', {
       body: { mode: 'grades', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
     });
 
@@ -1396,7 +1441,7 @@ class Service {
    * Invokes the Gradebook overview edge function for course-level learner summaries.
    */
   async makeMasteryOverviewRequest(params: { courseId: string; learnerId?: string; sectionId?: string; startDate?: string; endDate?: string; includeAttendance?: boolean }) {
-    const { data, error } = await this.supabase.functions.invoke('masteryoverview', {
+    const { data, error } = await this.invokeEdge('masteryoverview', {
       body: params,
     });
 
@@ -1411,7 +1456,7 @@ class Service {
    * Invokes the URL validation edge function to validate URL reachability server-side.
    */
   async makeUrlValidationRequest(params: { url: string; timeoutMs?: number; includeContent?: boolean; maxChars?: number }) {
-    const { data, error } = await this.supabase.functions.invoke('urlvalidator', {
+    const { data, error } = await this.invokeEdge('urlvalidator', {
       body: params,
     });
 
@@ -1423,7 +1468,7 @@ class Service {
   }
 
   async makeGithubGradeRequest(params: { url: string; title?: string; body?: string; gradingCriteria: string }) {
-    const { data, error } = await this.supabase.functions.invoke('githubgrade', {
+    const { data, error } = await this.invokeEdge('githubgrade', {
       body: params,
     });
 
@@ -1437,7 +1482,7 @@ class Service {
   }
 
   async resolveGitHubSnapshotRef(params: { owner: string; repository: string; ref: string }): Promise<string | null> {
-    const { data, error } = await this.supabase.functions.invoke('githubsnapshot', {
+    const { data, error } = await this.invokeEdge('githubsnapshot', {
       body: params,
     });
 
@@ -1455,9 +1500,7 @@ class Service {
    * @returns The text content of the AI response.
    */
   async makeGeminiApiRequest(body: object) {
-    const { data, error } = await this.supabase.functions.invoke('gemini', {
-      body: { method: 'POST', body },
-    });
+    const { data, error } = await this.invokeEdge('gemini', { body: { method: 'POST', body } });
 
     if (error) {
       throw new Error(error.message);
@@ -1480,9 +1523,7 @@ class Service {
    * @returns The generated image data and mime type.
    */
   async makeGeminiImageApiRequest(body: object): Promise<{ data: string; mimeType: string }> {
-    const { data, error } = await this.supabase.functions.invoke('gemini', {
-      body: { method: 'POST', model: 'gemini-3-pro-image-preview', body },
-    });
+    const { data, error } = await this.invokeEdge('gemini', { body: { method: 'POST', model: 'gemini-3-pro-image-preview', body } });
 
     if (error) {
       throw new Error(error.message);

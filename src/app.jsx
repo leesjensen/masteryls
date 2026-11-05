@@ -18,6 +18,7 @@ import DemoCoursesView from './views/demoCourses/demoCoursesView.jsx';
 import ErrorPage from './components/errorPage.jsx';
 import { PwaStatusToasts } from './components/PwaInstallControls.jsx';
 import service from './service/service.js';
+import { setObservabilityUser } from './observability/observability.js';
 
 export function createAppRouter(user) {
   return createBrowserRouter([
@@ -75,6 +76,8 @@ function App({ initialUser }) {
 
   function setUserInternal(user) {
     setUser(user);
+    // Re-tag telemetry when the user changes (login after an anonymous start, or logout).
+    setObservabilityUser(user);
     if (!user) {
       clearObserveSession();
     }

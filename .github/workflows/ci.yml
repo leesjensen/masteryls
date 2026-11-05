@@ -35,6 +35,12 @@ jobs:
               url: '${{ secrets.SUPABASE_URL }}',
               key: '${{ secrets.SUPABASE_KEY }}',
             },
+            observability: {
+              enabled: true,
+              appName: 'masteryls',
+              logs: { enabled: true },
+              metrics: { enabled: true },
+            },
           };
           EOF
 

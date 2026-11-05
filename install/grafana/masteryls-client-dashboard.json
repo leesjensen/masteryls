@@ -1,0 +1,245 @@
+{
+  "title": "MasteryLS",
+  "uid": "masteryls",
+  "tags": ["masteryls", "observability", "client"],
+  "schemaVersion": 39,
+  "version": 2,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "1m",
+  "templating": {
+    "list": [
+      {
+        "name": "DS_PROM",
+        "type": "datasource",
+        "query": "prometheus",
+        "label": "Metrics",
+        "refresh": 1
+      },
+      {
+        "name": "DS_LOGS",
+        "type": "datasource",
+        "query": "loki",
+        "label": "Logs",
+        "refresh": 1
+      }
+    ]
+  },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total calls (range)",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "blue" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto", "justifyMode": "auto", "orientation": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum(increase(masteryls_client_call_duration_ms_count[$__range]))" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Error rate %",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "area", "textMode": "auto", "justifyMode": "auto", "orientation": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "100 * sum(rate(masteryls_client_call_duration_ms_count{status=~\"4xx|5xx|error\"}[5m])) / clamp_min(sum(rate(masteryls_client_call_duration_ms_count[5m])), 1)" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "AI calls (range)",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "orange" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto", "justifyMode": "auto", "orientation": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum(increase(masteryls_client_call_duration_ms_count{op=\"edge:gemini\"}[$__range]))" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Topic views (total)",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "area", "textMode": "auto", "justifyMode": "auto", "orientation": "auto" },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "instant": true, "expr": "sum(masteryls_client_topic_views_total)" }]
+    },
+
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Top courses by topic views",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 0, "y": 4, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "align": "auto" } }, "overrides": [] },
+      "options": { "showHeader": true, "cellHeight": "sm", "sortBy": [{ "displayName": "Views", "desc": true }] },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "instant": true, "format": "table", "expr": "topk(10, sum by (course) (masteryls_client_topic_views_total))" }],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "Value #A": "Views", "Value": "Views", "course": "Course" } } }]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Top topics by views",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 8, "y": 4, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "align": "auto" } }, "overrides": [] },
+      "options": { "showHeader": true, "cellHeight": "sm", "sortBy": [{ "displayName": "Views", "desc": true }] },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "instant": true, "format": "table", "expr": "topk(15, sum by (course, topic) (masteryls_client_topic_views_total))" }],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "Value #A": "Views", "Value": "Views", "topic": "Topic", "course": "Course" } } }]
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Enrollments by course",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 16, "y": 4, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "align": "auto" } }, "overrides": [] },
+      "options": { "showHeader": true, "cellHeight": "sm", "sortBy": [{ "displayName": "Enrollments", "desc": true }] },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "instant": true, "format": "table", "expr": "sum by (course) (masteryls_client_enrollments_total)" }],
+      "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "Value #A": "Enrollments", "Value": "Enrollments", "course": "Course" } } }]
+    },
+
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Topic views per interval, by course",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "interval": "2m",
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (course) (increase(masteryls_client_topic_views_total[$__interval]))", "legendFormat": "{{course}}" }]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Interactions per interval, by course",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "interval": "2m",
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (course) (increase(masteryls_client_interactions_total[$__interval]))", "legendFormat": "{{course}}" }]
+    },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Request rate by endpoint",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 1, "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (op) (rate(masteryls_client_call_duration_ms_count[5m]))", "legendFormat": "{{op}}" }]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Error rate by endpoint & status",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (op, status) (rate(masteryls_client_call_duration_ms_count{status!=\"ok\"}[5m]))", "legendFormat": "{{op}} {{status}}" }]
+    },
+
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Latency percentiles (overall)",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 0, "y": 28, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 5, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.50, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p50" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.95, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p95" },
+        { "refId": "C", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p99" }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "P99 latency by endpoint",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 16, "y": 28, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 5, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le, op) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "{{op}}" }]
+    },
+    {
+      "id": 18,
+      "type": "heatmap",
+      "title": "Latency distribution",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 8, "y": 28, "w": 8, "h": 8 },
+      "options": { "calculate": false, "cellGap": 1, "color": { "mode": "scheme", "scheme": "Spectral", "steps": 64, "reverse": true }, "yAxis": { "unit": "ms" }, "tooltip": { "show": true, "yHistogram": true }, "legend": { "show": true }, "rowsFrame": { "layout": "auto" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m]))", "format": "heatmap", "legendFormat": "{{le}}" }]
+    },
+
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "AI (Gemini) — P99 latency",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 0, "y": 36, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single", "sort": "none" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le) (rate(masteryls_client_call_duration_ms_bucket{op=\"edge:gemini\"}[5m])))", "legendFormat": "p99" }]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "AI (Gemini) — call rate",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 8, "y": 36, "w": 8, "h": 8 },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 20, "showPoints": "never" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (status) (rate(masteryls_client_call_duration_ms_count{op=\"edge:gemini\"}[5m]))", "legendFormat": "{{status}}" }]
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Logins (success vs failure)",
+      "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
+      "gridPos": { "x": 16, "y": 36, "w": 8, "h": 8 },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 15, "showPoints": "auto" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "failure" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] },
+          { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] }
+        ]
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (result) (rate(masteryls_client_login_total[5m]))", "legendFormat": "{{result}}" }]
+    },
+
+    {
+      "id": 17,
+      "type": "logs",
+      "title": "Recent client errors",
+      "datasource": { "type": "loki", "uid": "$DS_LOGS" },
+      "gridPos": { "x": 0, "y": 44, "w": 24, "h": 9 },
+      "options": { "showTime": true, "showLabels": false, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
+      "targets": [{ "refId": "A", "datasource": { "type": "loki", "uid": "$DS_LOGS" }, "expr": "{app=\"masteryls\", level=\"error\"} | json" }]
+    }
+  ]
+}

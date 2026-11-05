@@ -7,6 +7,7 @@ import { AlertProvider } from './src/contexts/AlertContext.jsx';
 import { ProgressProvider } from './src/contexts/ProgressContext.jsx';
 import { registerSW } from 'virtual:pwa-register';
 import { setPwaUpdateServiceWorker } from './src/utils/pwaUpdate.js';
+import { initObservability } from './src/observability/observability.js';
 
 const container = document.getElementById('root');
 const root = createRoot(container);
@@ -34,6 +35,9 @@ async function loadApp() {
   } catch (err) {
     user = null;
   }
+
+  // Start client-side observability (no-op unless enabled in config).
+  initObservability(user);
 
   const router = createAppRouter(user);
 

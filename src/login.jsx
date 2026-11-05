@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import service from './service/service';
 import { useAlert } from './contexts/AlertContext.jsx';
 import InputDialog from './hooks/inputDialog.jsx';
+import { recordLogin } from './observability/observability.js';
 import Button from './components/ui/Button.jsx';
 import Input from './components/ui/Input.jsx';
 
@@ -53,8 +54,8 @@ function Login({ courseOps }) {
       showAlert({ message: `Please use an allowed email address to create an account (e.g. ${ALLOWED_SIGNUP_EMAIL_EXAMPLES}).`, type: 'error' });
       return;
     }
+    let user = null;
     try {
-      let user = null;
       if (showSignup) {
         await service.requestOtp(email, name, true);
       } else {
@@ -79,6 +80,12 @@ function Login({ courseOps }) {
         courseOps.login(user);
       }
     } catch (error) {
+      // Record a login failure for any attempt that didn't authenticate (covers both requestOtp
+      // failures like bad email / signups-not-allowed and verifyOtp wrong-code failures). Guard on
+      // !user so a throw from the post-success steps isn't miscounted as a failed login.
+      if (!user) {
+        recordLogin('failure', null, { email });
+      }
       const rawMessage = error?.message || '';
       const signupBlockedDuringLogin = !showSignup && rawMessage.toLowerCase().includes('signups not allowed for otp');
       const message = signupBlockedDuringLogin ? 'Login failed. Unknown email. You may need to create an account first.' : `Login failed. Please try again. ${rawMessage}`;
