@@ -66,9 +66,14 @@ function App({ initialUser }) {
           const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
           const currentTopic = enrollmentUiSettings?.currentTopic;
           const topicPath = currentTopic ? (currentTopic === 'schedule' || currentTopic === 'attendance' ? `/${currentTopic}` : `/topic/${currentTopic}`) : '';
+          // Seed history as [dashboard, course]: replace '/' with the dashboard, then push the last
+          // course. Auto-opening the course no longer traps the back button on the redirecting '/',
+          // and pressing back from the course lands on the dashboard. Await the replace so it commits
+          // before the push (a data router can otherwise abort the first navigation with the second).
+          await navigate('/dashboard', { replace: true });
           navigate(`/course/${enrollment.catalogId}${topicPath}`);
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
       }
     })();
@@ -201,7 +206,10 @@ function ClassroomPage() {
               if (saveAsCurrentTopic) {
                 courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: targetTopic.id });
               }
-              navigate(`/course/${courseId}/topic/${targetTopic.id}`);
+              // Replace (not push): this is a redirect from a bare/invalid course URL to the canonical
+              // topic URL. Pushing would leave the bare `/course/:id` entry in history, and pressing
+              // back onto it would just re-redirect here - trapping the back button inside the course.
+              navigate(`/course/${courseId}/topic/${targetTopic.id}`, { replace: true });
             };
 
             if (isScheduleRoute) {
