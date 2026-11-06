@@ -837,15 +837,16 @@ class Service {
    * Deletes an enrollment.
    * @param enrollment - The enrollment to delete.
    */
-  async deleteEnrollment(enrollment: Enrollment): Promise<void> {
+  async deleteEnrollment(enrollment: Enrollment, progressSummary?: { mastery: number; lastActivityAt: string | null; totalTimeSpent: number }): Promise<void> {
     const { error } = await this.supabase.from('enrollment').delete().eq('id', enrollment.id);
     if (error) {
       throw new Error(error.message);
     }
-    // Snapshot the learner's final progress at unenroll time (derived from the cached rollup; the
-    // course structure isn't available here, so mastery uses the cached value - same as the old
-    // Supabase deleteEnrollment log). Captures all unenroll paths (dashboard + editor bulk removal).
-    const summary = deriveProgressSummary(enrollment.progress, null);
+    // Snapshot the learner's final progress at unenroll time for the log. Accurate mastery needs the
+    // course structure, which the service layer doesn't have, so prefer the caller's course-derived
+    // summary; the cached-rollup fallback (course = null) reads progress.mastery, which is often
+    // stale/0 since mastery moved to runtime derivation. See src/utils/progressSummary.js.
+    const summary = progressSummary || deriveProgressSummary(enrollment.progress, null);
     logAction('unenroll', {
       courseId: enrollment.catalogId,
       learnerId: enrollment.learnerId,

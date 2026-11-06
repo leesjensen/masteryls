@@ -134,7 +134,9 @@ export default function DashboardView({ courseOps, service, user }) {
 
   const confirmedEnrollmentRemoval = async () => {
     dialogRef.current.close();
-    await service.deleteEnrollment(pendingEnrollmentRemoval);
+    // Pass the course-derived summary (accurate mastery) for the unenroll telemetry; the service
+    // layer alone would fall back to the often-stale cached progress.mastery.
+    await service.deleteEnrollment(pendingEnrollmentRemoval, enrollmentSummaries.get(pendingEnrollmentRemoval.catalogId));
     setEnrollments((prev) => {
       const newEnrollments = new Map(prev);
       newEnrollments.delete(pendingEnrollmentRemoval.catalogId);
