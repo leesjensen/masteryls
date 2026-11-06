@@ -1,22 +1,11 @@
 import { defineConfig } from 'vite';
-import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import istanbul from 'vite-plugin-istanbul';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// During Playwright e2e (MLS_TEST_CONFIG set by playwright.config.ts's webServer) the app's
-// `config` import is redirected to a committed, deterministic fixture instead of the ambient,
-// environment-specific /config.js. Keeps test behavior independent of whatever config is on disk.
-const testConfigAlias = process.env.MLS_TEST_CONFIG
-  ? [{ find: /^\.\.\/\.\.\/config(\.js)?$/, replacement: fileURLToPath(new URL('./tests/fixtures/config.js', import.meta.url)) }]
-  : [];
-
 export default defineConfig({
   build: {
     sourcemap: true,
-  },
-  resolve: {
-    alias: testConfigAlias,
   },
   plugins: [
     tailwindcss(),

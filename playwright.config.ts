@@ -37,9 +37,6 @@ export default defineConfig({
   webServer: {
     command: process.env.COVERAGE ? 'COVERAGE=true npm run dev' : 'npm run dev',
     url: 'http://localhost:5173',
-    // Redirect the app's `config` import to tests/fixtures/config.js (see vite.config.js) so e2e
-    // runs against a deterministic config (observability off) regardless of the ambient config.js.
-    env: { MLS_TEST_CONFIG: '1' },
     reuseExistingServer: !process.env.CI,
     timeout: 20000,
   },
