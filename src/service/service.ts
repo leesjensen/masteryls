@@ -3,6 +3,7 @@ import config from '../../config';
 import { User, CatalogEntry, Enrollment, Role } from '../model';
 import { extractEdgeFunctionErrorMessage } from './edgeFunctionErrors';
 import { instrument, logAction, recordLogin, recordEnrollment, httpClass } from '../observability/observability.js';
+import { deriveProgressSummary } from '../utils/progressSummary.js';
 
 class Service {
   catalog: CatalogEntry[] = [];
@@ -841,7 +842,17 @@ class Service {
     if (error) {
       throw new Error(error.message);
     }
-    logAction('unenroll', { courseId: enrollment.catalogId, learnerId: enrollment.learnerId });
+    // Snapshot the learner's final progress at unenroll time (derived from the cached rollup; the
+    // course structure isn't available here, so mastery uses the cached value - same as the old
+    // Supabase deleteEnrollment log). Captures all unenroll paths (dashboard + editor bulk removal).
+    const summary = deriveProgressSummary(enrollment.progress, null);
+    logAction('unenroll', {
+      courseId: enrollment.catalogId,
+      learnerId: enrollment.learnerId,
+      mastery: summary.mastery,
+      lastActivityAt: summary.lastActivityAt,
+      totalTimeSpent: summary.totalTimeSpent,
+    });
   }
 
   /**
@@ -953,19 +964,6 @@ class Service {
       throw new Error(error.message);
     }
     return { enrolledCount: data?.enrolledCount || 0, sessions: data?.sessions || [] };
-  }
-
-  /**
-   * Records an application event in the append-only log table. Failures are logged to the
-   * console rather than thrown, so a logging hiccup never blocks the action being logged.
-   * @param event - Short event name, e.g. "createEnrollment" or "deleteEnrollment".
-   * @param data - Arbitrary event details stored as jsonb.
-   */
-  async logEvent(event: string, data: Record<string, any> = {}): Promise<void> {
-    const { error } = await this.supabase.from('log').insert([{ event, data }]);
-    if (error) {
-      console.error(`Failed to record log event "${event}":`, error.message);
-    }
   }
 
   async recordProgress(params: { catalogId: string; enrollmentId: string; topicId: string; interactionId?: string | null; type?: string; duration?: number; details?: object; cacheUpdate?: object; insertProgress?: boolean }): Promise<any> {
