@@ -372,7 +372,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
   return (
     <>
-    <div className="w-full min-w-0 max-w-7xl mx-auto p-4 flex flex-col gap-4">
+    <div className="w-full min-w-0 max-w-7xl mx-auto self-start p-4 flex flex-col gap-4">
       <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3`}>
         {canViewLearnerFilters && (
           <div className="relative">
@@ -422,7 +422,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
 
       {renderPagination()}
 
-      <div className="overflow-x-auto border border-gray-200 rounded-md">
+      <div className="overflow-x-auto overflow-y-clip border border-gray-200 rounded-md">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-gray-700">
             <tr>
@@ -430,15 +430,15 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                 ['learnerName', 'Learner'],
                 ['learnerEmail', 'Email'],
                 ['masteryPercent', 'Mastery'],
-                ['completedTopics', 'Completed Topics'],
-                ['examCompletedCount', 'Exams Completed'],
-                ['projectSubmittedCount', 'Project Submits'],
-                ...(showAttendance ? [['attendedCount', 'Classes Attended']] : []),
-                ['totalTimeSpent', 'Time Spent'],
+                ['completedTopics', 'Topics', 'Completed Topics'],
+                ['examCompletedCount', 'Exams', 'Exams Completed'],
+                ['projectSubmittedCount', 'Projects', 'Project Submits'],
+                ...(showAttendance ? [['attendedCount', 'Classes', 'Classes Attended']] : []),
+                ['totalTimeSpent', 'Time', 'Time Spent'],
                 ['lastActivityAt', 'Last Activity'],
-              ].map(([key, label]) => (
+              ].map(([key, label, accessibleLabel = label]) => (
                 <th key={key} className="text-left px-3 py-2 font-semibold">
-                  <button type="button" className="hover:text-gray-900 whitespace-nowrap" onClick={() => toggleSort(key)}>
+                  <button type="button" aria-label={accessibleLabel} className="hover:text-gray-900 whitespace-nowrap" onClick={() => toggleSort(key)}>
                     {sortLabel(key, label)}
                   </button>
                 </th>
