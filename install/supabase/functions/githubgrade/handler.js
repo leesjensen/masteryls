@@ -1,6 +1,8 @@
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Max-Age': '86400',
 };
 
 const ALLOWED_EXTENSIONS = new Set(['md', 'markdown', 'js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx', 'py', 'rb', 'go', 'rs', 'java', 'kt', 'scala', 'c', 'cc', 'cpp', 'h', 'hpp', 'cs', 'swift', 'html', 'htm', 'css', 'scss', 'json', 'yml', 'yaml', 'toml', 'xml', 'txt', 'sh', 'bash', 'zsh', 'sql', 'env', 'dockerfile']);

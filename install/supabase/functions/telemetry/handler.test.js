@@ -22,6 +22,7 @@ test('OPTIONS returns CORS preflight headers', async () => {
   const res = await handlerWith()(new Request('https://fn.example/telemetry', { method: 'OPTIONS' }));
   assert.equal(res.status, 200);
   assert.equal(res.headers.get('Access-Control-Allow-Origin'), '*');
+  assert.equal(res.headers.get('Access-Control-Max-Age'), '86400'); // preflight cached
 });
 
 test('non-POST methods are rejected', async () => {

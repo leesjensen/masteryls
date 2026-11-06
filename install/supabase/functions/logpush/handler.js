@@ -1,6 +1,10 @@
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  // Cache the CORS preflight so the browser sends OPTIONS at most once per window instead of before
+  // every fire-and-forget batch (Chrome caps at 2h, Firefox honors up to 24h).
+  'Access-Control-Max-Age': '86400',
 };
 
 const APP = 'masteryls';
