@@ -347,6 +347,13 @@ async function blockExternalProviders(page: any) {
     throw new Error(`Unmocked Supabase endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
   });
 
+  // Client observability is enabled in the CI build, so the app POSTs fire-and-forget metric/log
+  // batches to the telemetry/logpush edge functions. Absorb them so they don't trip the unmocked
+  // Supabase guard above. (Registered after the catch-all, so it takes precedence for these URLs.)
+  await context.route(/.*supabase\.co\/functions\/v1\/(telemetry|logpush)(\?.+)?$/, async (route) => {
+    await route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+
   await context.route(/https:\/\/[^/]*instructure\.com\/.*/, async (route) => {
     throw new Error(`Unmocked Canvas endpoint requested: [${route.request().method()}] ${route.request().url()} ${route.request().postData() ? ` with body: ${route.request().postData()}` : ''}`);
   });
@@ -740,15 +747,6 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
           });
         }
         return;
-    }
-    throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
-  });
-
-  // Supabase - Log table (write-only from the client; no test currently reads it back)
-  await context.route(/.*supabase.co\/rest\/v1\/log(\?.+)?/, async (route) => {
-    if (route.request().method() === 'POST') {
-      await route.fulfill({ status: 201, json: {} });
-      return;
     }
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });
