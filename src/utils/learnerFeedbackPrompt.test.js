@@ -8,7 +8,7 @@ test('learner feedback prompt keeps evidence distinct and grounds advice in lear
     feedbackContext: {
       overall: { masteryPercent: 62, publishedTopicCount: 12 },
       canvas: { status: 'available', overall: { score: 74, grade: 'C' } },
-      schedule: { status: 'available', startDate: '2026-08-25', endDate: '2026-12-10', asOfDate: '2026-11-06', percentTimeElapsed: 76, daysRemaining: 34, overdue: [{ date: 'Oct 1', items: [{ title: 'Interfaces', status: 'incomplete' }] }] },
+      schedule: { status: 'available', startDate: '2026-08-25', endDate: '2026-12-10', asOfDate: '2026-11-06', percentScheduleWindowElapsed: 76, deadlines: { latestKnownUpcomingDueDate: '2026-11-17', latestKnownUpcomingDueItems: [{ title: 'Logging assignment', source: 'Canvas' }] }, overdue: [{ date: 'Oct 1', items: [{ title: 'Interfaces', status: 'incomplete' }] }] },
       topicProgress: [{ title: 'Interfaces', completedInteractionCount: 1, interactionCount: 3, timeSpentSeconds: 900 }],
       activity: { status: 'available', eventsLast7Days: 1, eventsOnLatestDay: 1, latestActivityAt: '2026-11-06T18:00:00.000Z', previousActiveDay: '2026-10-23', daysSincePreviousActiveDay: 14, recentEvents: [{ type: 'scheduleView', at: '2026-11-06T18:00:00.000Z' }] },
       attendance: { status: 'available', attendedClosedSessionCount: 4, closedSessionCount: 6, wellnessResponsesByChoice: { Good: 3, Struggling: 1 } },
@@ -21,9 +21,15 @@ test('learner feedback prompt keeps evidence distinct and grounds advice in lear
   assert.match(prompt, /state both without inventing a reason to reconcile them/);
   assert.match(prompt, /do not create a blended score/);
   assert.match(prompt, /say pacing is unclear/);
-  assert.match(prompt, /assigned schedule's start\/end dates, days remaining, and percent of the schedule period elapsed/);
-  assert.match(prompt, /interaction completion percentage and dated work/);
-  assert.match(prompt, /If a small share of tracked work is complete with only a short time left/);
+  assert.match(prompt, /schedule's start\/end dates and elapsed share only as broad calendar context/);
+  assert.match(prompt, /schedule end date can include finals week/);
+  assert.match(prompt, /never calculate or state "days remaining" from that date/);
+  assert.match(prompt, /actual upcoming dates in `schedule.deadlines`/);
+  assert.match(prompt, /latest known due date as the last currently listed deadline/);
+  assert.match(prompt, /overall Canvas percentages as a rounded whole number or a natural band/);
+  assert.match(prompt, /never hundredths or tenths/);
+  assert.match(prompt, /listed deadline is close/);
+  assert.match(prompt, /If a small share of tracked work is complete and a listed deadline is close/);
   assert.match(prompt, /If nearly all tracked work is complete early in the schedule/);
   assert.match(prompt, /Treat elapsed time as context, not a linear expectation/);
   assert.match(prompt, /compact bulleted list of 2 to 4 focus items/);

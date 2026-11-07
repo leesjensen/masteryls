@@ -15,7 +15,7 @@ import { markdownToHtml } from '../utils/markdownToHtml';
 import { formatDraFeedbackForCanvas } from '../components/instruction/dra/draScore';
 import { formatInterviewFeedbackForCanvas } from '../components/instruction/interview/interviewScore';
 import { completedInteractionCount } from '../utils/topicProgress';
-import { buildScheduleTimingContext } from '../utils/scheduleTiming.js';
+import { buildScheduleTimingContext, roundWholePercent, summarizeUpcomingDeadlines } from '../utils/scheduleTiming.js';
 import { summarizeLearnerActivity, summarizeSectionAttendance } from '../utils/learnerFeedbackEvidence.js';
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
@@ -2051,10 +2051,12 @@ Requirements:
     // Fetch Canvas data independently so a missing link, unmatched learner, or API failure does
     // not prevent the email. The model receives an explicit unavailable state instead of zeros.
     let canvasContext = { status: 'not linked' };
+    let canvasDeadlineAssignments = [];
     const canvasCourseId = course?.externalRefs?.canvasCourseId;
     if (canvasCourseId && learnerRow.learnerEmail) {
       try {
         const gradeResult = await service.getCanvasGrades({ courseId: String(canvasCourseId), catalogId: course.id, learnerEmail: learnerRow.learnerEmail });
+        canvasDeadlineAssignments = gradeResult.assignments || [];
         const assignments = [...(gradeResult.assignments || [])].sort((a, b) => {
           if (Boolean(a.missing) !== Boolean(b.missing)) return a.missing ? -1 : 1;
           const percent = (assignment) => Number.isFinite(assignment.score) && Number.isFinite(assignment.pointsPossible) && assignment.pointsPossible > 0
@@ -2068,7 +2070,7 @@ Requirements:
           return String(a.dueAt || '').localeCompare(String(b.dueAt || ''));
         });
         canvasContext = gradeResult.found
-          ? { status: 'available', overall: gradeResult.overall, assignments: assignments.slice(0, 20) }
+          ? { status: 'available', overall: { ...gradeResult.overall, score: roundWholePercent(gradeResult.overall?.score) }, assignments: assignments.slice(0, 20) }
           : { status: 'learner not found in linked Canvas course' };
         if (gradeResult.error) canvasContext = { status: 'unavailable', reason: gradeResult.error };
       } catch (error) {
@@ -2080,6 +2082,7 @@ Requirements:
     // legacy schedule selection. Never compare a learner against another section's calendar.
     let scheduleContext = { status: 'unavailable' };
     let scheduleTiming = {};
+    const scheduleDeadlineItems = [];
     try {
       const resolved = resolveLearnerSchedule({
         sectionId: learnerRow.sectionId || null,
@@ -2128,6 +2131,7 @@ Requirements:
             return { title, status };
           }).filter(Boolean);
           const entry = { date: week.date, items };
+          for (const item of items) scheduleDeadlineItems.push({ date: week.date, title: item.title, status: item.status });
           if (dateStatus === 'past') overdue.push(entry);
           else if (dateStatus === 'today' || dateStatus === 'future') upcoming.push(entry);
         }
@@ -2140,6 +2144,10 @@ Requirements:
     } catch (error) {
       scheduleContext = { status: 'unavailable', ...scheduleTiming, reason: String(error?.message || error).slice(0, 240) };
     }
+    scheduleContext = {
+      ...scheduleContext,
+      deadlines: summarizeUpcomingDeadlines({ scheduleItems: scheduleDeadlineItems, canvasAssignments: canvasDeadlineAssignments }),
+    };
 
     // Use the progress event history for a bounded, exact activity summary and for essay examples.
     // The history is also where section attendance check-ins and their self-reported answers live.
