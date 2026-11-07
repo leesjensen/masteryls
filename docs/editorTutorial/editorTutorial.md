@@ -652,6 +652,8 @@ Features:
   - manual `Submit to Gradebook`
   - `autoGrade` behavior respected.
 
+Pulse archives are available from the MasteryView **Pulses** tab for course or section snapshots, and from the **Pulses** tab in an individual learner mastery view for that learner's **Learner Pulse History**. Select a term to take or review Markdown pulses. Each new pulse receives a database `pulseNumber`; staff edits update that pulse in place. Learner pulses use Canvas grades, the learner's assigned schedule and listed deadlines, mastery and interaction progress, recorded activity, attendance and check-in answers when enabled for their section, and a few recent essays paired with evaluator feedback when available. Course and section pulses summarize roster-wide mastery, completion, activity, attendance counts, and schedule metadata, with a short focus-learner list. Course and section pulses are staff-only and may identify learners. Learners can create and view only their own learner pulses, including pulses written about them by staff. Learner feedback emails use the same learner-evidence collection, so those sources can later support an instructor-authored pulse addressed to a learner.
+
 ## 12) Observe Mode (Root/Editor as Learner)
 
 Start from Mastery View:

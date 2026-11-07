@@ -241,7 +241,7 @@ function computeChangedLineMarkers(baseText, currentText) {
   };
 }
 
-const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, contentEpoch, committedContent, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames }, ref) {
+const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, currentTopic, content, contentEpoch, committedContent, diffContent, onChange, commit, onEditorReady, onPasteFiles, onPasteCommitStateChange, getExistingTopicFileNames, showToolbar = true }, ref) {
   const { showAlert } = useAlert();
   const [editorOptions, setEditorOptions] = React.useState({ wordWrap: 'on', lineNumbers: 'on', changedLines: 'on' });
   const [editorLoaded, setEditorLoaded] = React.useState(false);
@@ -775,7 +775,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
   return (
     <div className="flex-1 min-w-0 flex flex-col relative border border-gray-300">
       {/* Markdown Toolbar */}
-      {editorLoaded && (
+      {editorLoaded && showToolbar && (
         <div className="shrink-0 flex flex-wrap items-center gap-1 px-2 py-1 bg-gray-50 border-b-2 border-gray-300 text-sm">
           <div className="flex shrink-0 items-center gap-1 border border-gray-200 rounded bg-white p-1">
             <EditorButton icon={WrapText} className={getToggleColor(editorOptions.wordWrap)} onClick={toggleWordWrap} title={`Word Wrap: ${getToggleText(editorOptions.wordWrap)}`} />

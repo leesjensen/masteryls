@@ -2022,8 +2022,7 @@ Requirements:
     await service.deleteEnrollment({ id: enrollmentId });
   }
 
-  async function generateLearnerFeedbackEmail(learnerRow, course, senderNameOverride) {
-    const senderName = senderNameOverride || user?.name || 'Your Instructor';
+  async function collectLearnerAnalysisEvidence(learnerRow, course) {
     const publishedTopics = Array.isArray(course?.allTopics) ? course.allTopics.filter((t) => t?.state === 'published') : [];
     const progress = learnerRow.progress && typeof learnerRow.progress === 'object' ? learnerRow.progress : {};
     const topicById = new Map(publishedTopics.map((topic) => [String(topic.id), topic]));
@@ -2264,7 +2263,7 @@ Requirements:
     const totalTimeSpentSeconds = topicSummaries.reduce((sum, topic) => sum + (topic.timeSpentSeconds || 0), 0);
     const hasTrackedInteractions = totalInteractionCount > 0;
     const hasTimeData = topicSummaries.some((topic) => Number.isFinite(topic.timeSpentSeconds));
-    const feedbackContext = {
+    const analysisEvidence = {
       generatedAt: new Date().toISOString(),
       overall: {
         masteryPercent: overallMastery,
@@ -2283,7 +2282,13 @@ Requirements:
       attendance: attendanceContext,
       essayExamples,
     };
-    const result = await aiLearnerFeedbackEmailGenerator(senderName, { ...learnerRow, feedbackContext }, course);
+    return analysisEvidence;
+  }
+
+  async function generateLearnerFeedbackEmail(learnerRow, course, senderNameOverride) {
+    const senderName = senderNameOverride || user?.name || 'Your Instructor';
+    const analysisEvidence = await collectLearnerAnalysisEvidence(learnerRow, course);
+    const result = await aiLearnerFeedbackEmailGenerator(senderName, { ...learnerRow, feedbackContext: analysisEvidence }, course);
     if (typeof result === 'string') {
       return { subject: `Your progress in ${course?.title || 'the course'}`, body: result };
     }
@@ -2760,6 +2765,7 @@ Requirements:
     getProgress,
     getMasteryOverview,
     unenrollLearner,
+    collectLearnerAnalysisEvidence,
     generateLearnerFeedbackEmail,
     getTopicProgress,
     getSurveySummary,

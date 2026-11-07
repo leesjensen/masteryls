@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function useSplitPaneState(initialPercent = 55) {
+export default function useSplitPaneState(initialPercent = 55, { minPercent = 0, maxPercent = 99 } = {}) {
   const [panePercent, setPanePercent] = React.useState(initialPercent);
   const splitContainerRef = React.useRef(null);
 
@@ -13,9 +13,9 @@ export default function useSplitPaneState(initialPercent = 55) {
       const rect = splitContainerRef.current?.getBoundingClientRect();
       if (!rect || rect.width <= 0) return;
       const nextPercent = ((clientX - rect.left) / rect.width) * 100;
-      setPanePercent(clamp(nextPercent, 0, 99));
+      setPanePercent(clamp(nextPercent, minPercent, maxPercent));
     },
-    [clamp],
+    [clamp, maxPercent, minPercent],
   );
 
   const onPaneMoved = React.useCallback(

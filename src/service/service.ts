@@ -685,6 +685,29 @@ class Service {
 
   // ---- Term / Schedule / Section management (editor/root, enforced by RLS). ----
 
+  async getPulses(catalogId: string, termId: string, targetType?: string, targetId?: string): Promise<any[]> {
+    let query = this.supabase.from('pulse').select('*').eq('catalogId', catalogId).eq('termId', termId).order('pulseNumber', { ascending: false });
+    if (targetType) query = query.eq('targetType', targetType);
+    if (targetId) query = query.eq('targetId', targetId);
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
+    return data || [];
+  }
+
+  async createPulse(values: { catalogId: string; termId: string; targetType: string; targetId: string; enrollmentId?: string | null; markdown: string; createdBy: string }): Promise<any> {
+    const { data: pulseNumber, error: numberError } = await this.supabase.rpc('next_pulse_number', { p_catalog_id: values.catalogId, p_term_id: values.termId, p_target_type: values.targetType, p_target_id: values.targetId, p_enrollment_id: values.enrollmentId || null });
+    if (numberError) throw new Error(numberError.message);
+    const { data, error } = await this.supabase.from('pulse').insert([{ ...values, pulseNumber }]).select().single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async updatePulse(pulseId: string, markdown: string): Promise<any> {
+    const { data, error } = await this.supabase.from('pulse').update({ markdown }).eq('id', pulseId).select().single();
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
   /** Terms defined for a course, oldest first. */
   async getCourseTerms(catalogId: string): Promise<any[]> {
     const { data, error } = await this.supabase.from('term').select('id, catalogId, title, startDate, endDate, createdAt').eq('catalogId', catalogId).order('createdAt', { ascending: true });

@@ -2,10 +2,13 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
+import { buildPulseRosterEvidence } from '../../utils/pulseEvidence.js';
 import FeedbackEmailModal from './FeedbackEmailModal.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
+import Tabs from '../../components/Tabs.jsx';
+import PulseArchive from './PulseArchive.jsx';
 
 const PAGE_SIZE = 50;
 
@@ -57,6 +60,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [selectedSectionId, setSelectedSectionId] = React.useState('');
   const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
   const [selectedCourse, setSelectedCourse] = React.useState(null);
+  const [masteryTab, setMasteryTab] = React.useState('roster');
 
   const [feedbackModal, setFeedbackModal] = React.useState(null);
 
@@ -94,6 +98,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
   const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
   const canGenerateFeedback = canObserveLearners;
+  const canManagePulses = Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId)));
   const hasActions = canObserveLearners || canUnenrollLearners || canGenerateFeedback;
 
   // Derive every displayed/sorted metric from the trimmed progress once per course load. This is
@@ -375,6 +380,11 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   return (
     <>
     <div className="w-full min-w-0 max-w-7xl mx-auto self-start p-4 flex flex-col gap-4">
+      <Tabs variant="scroll" active={masteryTab} onChange={setMasteryTab} tabs={[{ id: 'roster', label: 'Roster' }, { id: 'pulses', label: 'Pulses' }]} />
+      {masteryTab === 'pulses' && selectedCourse && canManagePulses && <>
+        <PulseArchive key={`${selectedCourseId}-${selectedSectionId || 'course'}`} courseOps={courseOps} course={selectedCourse} targetType={selectedSectionId ? 'section' : 'course'} targetId={selectedSectionId || selectedCourseId} targetName={selectedSectionId ? courseSections.find((section) => section.id === selectedSectionId)?.title : selectedCourse.title} canEdit extraControls={<label className="text-sm">Pulse target<select className="ml-2 rounded border p-1" value={selectedSectionId || 'course'} onChange={(e) => onSectionSelect(e.target.value === 'course' ? '' : e.target.value)}><option value="course">Course</option>{courseSections.map((section) => <option key={section.id} value={section.id}>Section: {section.title}</option>)}</select></label>} evidence={buildPulseRosterEvidence(derivedRows, { sections: selectedSectionId ? courseSections.filter((section) => section.id === selectedSectionId) : courseSections, schedules: selectedCourse.schedules || [] })} />
+      </>}
+      {masteryTab === 'roster' && <>
       <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3`}>
         {canViewLearnerFilters && (
           <div className="relative">
@@ -515,6 +525,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       </div>
 
       {renderPagination()}
+      </>}
     </div>
 
     {feedbackModal && (

@@ -2,14 +2,8 @@ import service from '../service/service';
 import { normalizeInteractionIds, topicContentForAi } from '../utils/interactionMeta';
 import { normalizeDraProcessAttributeName } from '../utils/draStages';
 import { buildLearnerFeedbackEmailPrompt } from '../utils/learnerFeedbackPrompt.js';
-
-const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
-
-// A theme init directive works for every Mermaid diagram type (flowchart, classDiagram,
-// sequenceDiagram, stateDiagram, ...). We instruct the AI to prepend it so diagrams
-// render with a white background and black text/lines. (A `classDef default fill:...`
-// line only works for flowcharts and breaks other diagram types.)
-const mermaidTheme = "%%{init: { 'theme': 'neutral', 'themeVariables': { 'mainBkg': '#ffffff', 'lineColor': '#000000', 'primaryTextColor': '#000000', 'actorBorder': '#000000', 'participantBorder': '#000000', 'noteBorderColor': '#000000' } }}%%";
+import { buildPulsePrompt } from '../utils/pulsePrompt.js';
+import { MERMAID_PROMPT_GUIDELINES } from '../utils/mermaidPromptGuidelines.js';
 
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
@@ -105,7 +99,7 @@ Requirements:
 - Do not over create bulleted lists with multiple levels
 - Make content educational and engaging
 - Prefer textual prose
-- If you include a Mermaid diagram, the first line INSIDE the \`\`\`mermaid code fence (immediately after the opening \`\`\`mermaid, on the line before the diagram type declaration) must be this exact directive so it renders with a white background and black lines/text for ANY diagram type (flowchart, classDiagram, sequenceDiagram, stateDiagram, etc.). Put it inside the code fence, never on a line above or outside the fence. ${mermaidTheme}
+- ${MERMAID_PROMPT_GUIDELINES}
 - Include practical examples where applicable
 - Include references to external resources if relevant
 - Encourage thoughtful engagement with the material
@@ -1040,7 +1034,7 @@ Requirements:
 - The section body should be clear and unambiguous
 - Ensure that the section is educational and reinforces key concepts from the topic
 - If the section includes a multiple choice question, immediately under each choice include precomputed feedback (indented by exactly two spaces) that will be shown to a learner who selects that choice: address the student directly, confirm the correct choice or explain why an incorrect choice is wrong and give the correct answer briefly, and keep each feedback supportive and under 150 words
-- If you include a Mermaid diagram, the first line INSIDE the \`\`\`mermaid code fence (immediately after the opening \`\`\`mermaid, on the line before the diagram type declaration) must be this exact directive so it renders with a white background and black lines/text for ANY diagram type (flowchart, classDiagram, sequenceDiagram, stateDiagram, etc.). Put it inside the code fence, never on a line above or outside the fence. ${mermaidTheme}
+- ${MERMAID_PROMPT_GUIDELINES}
 `;
 
   return makeSimpleAiRequest(prompt);
@@ -1351,7 +1345,7 @@ Please provide a helpful, educational response that:
 - The response must be valid GitHub-flavored markdown
 - Prefer short responses of less than 200 words with one or two concise paragraphs
 - Prefer to use bullet points, lists, mermaid diagrams, and code examples instead of text
-- If you include a Mermaid diagram, the first line INSIDE the \`\`\`mermaid code fence (immediately after the opening \`\`\`mermaid, on the line before the diagram type declaration) must be this exact directive so it renders with a white background and black lines/text for ANY diagram type (flowchart, classDiagram, sequenceDiagram, stateDiagram, etc.). Put it inside the code fence, never on a line above or outside the fence. ${mermaidTheme}
+- ${MERMAID_PROMPT_GUIDELINES}
 - Directly addresses the student's question or comment
 - References specific parts of the topic content when relevant
 - Provides additional context, examples, or explanations that enhance understanding
@@ -1709,6 +1703,10 @@ export async function aiLearnerFeedbackEmailGenerator(senderName, learnerData, c
     }
     return { subject: `Checking in on your progress`, body: response };
   }
+}
+
+export async function aiPulseGenerator(data) {
+  return makeSimpleAiRequest(buildPulsePrompt(data));
 }
 
 /**

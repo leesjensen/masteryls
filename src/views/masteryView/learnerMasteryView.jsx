@@ -10,6 +10,7 @@ import LearnerAttendanceChart from '../../components/attendance/learnerAttendanc
 import { getCanvasGradesUrl } from '../../hooks/canvas/canvasSync.js';
 import CanvasGradesPanel from './canvasGradesPanel.jsx';
 import FeedbackEmailModal from './FeedbackEmailModal.jsx';
+import PulseArchive from './PulseArchive.jsx';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -340,6 +341,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   // Attendance is enabled per section; the drill-down offers the tab when any section of the course
   // has it enabled (the chart itself scopes to the viewed learner's section).
   const hasAttendance = courseOps.courseHasAttendance(selectedCourse);
+  const learnerSection = selectedCourse?.sections?.find((section) => String(section.id) === String(selectedLearner?.sectionId || ''));
 
   // If the selected tab is no longer offered for this course (switched to a course without
   // attendance, or without a Canvas link for this learner), fall back to the always-present tab.
@@ -396,6 +398,12 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         };
       });
   }, [selectedCourse, selectedLearner]);
+
+  React.useEffect(() => {
+    if (!loading && selectedLearner && instructionTopicSummaries.length === 0 && chartMode === 'topicActivity') {
+      setChartMode('pulses');
+    }
+  }, [loading, selectedLearner, instructionTopicSummaries.length, chartMode]);
 
   const sortedInstructionTopicSummaries = React.useMemo(() => {
     if (detailSort.key === 'topicTitle' && detailSort.direction === 'course') {
@@ -504,6 +512,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
           <h2 className="text-xl font-semibold text-gray-800">{selectedLearner.learnerName || selectedLearner.learnerEmail || 'Unknown learner'}</h2>
           <div data-testid="learner-overview-actions" className="flex flex-wrap items-center gap-2 mt-2">
             {selectedLearner.learnerEmail && <p className="w-full min-w-0 break-words text-sm text-gray-500 sm:w-auto">{selectedLearner.learnerEmail}</p>}
+            {learnerSection?.title && <span data-testid="learner-section" className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-800">{learnerSection.title}</span>}
             {canObserve && (
               <button type="button" onClick={onObserveLearner} className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs">
                 Observe
@@ -545,13 +554,14 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         </div>
       )}
 
-      {!loading && selectedLearner && instructionTopicSummaries.length > 0 && (
+      {!loading && selectedLearner && (
         <Tabs
           tabs={[
-            { id: 'topicActivity', label: 'Topic Activity' },
+            { id: 'topicActivity', label: 'Topic Activity', visible: instructionTopicSummaries.length > 0 },
             { id: 'attendance', label: 'Attendance', visible: hasAttendance },
             { id: 'lastInteraction', label: 'Last Activity' },
             { id: 'dailyActivity', label: 'Daily Activity' },
+            { id: 'pulses', label: 'Pulses' },
             { id: 'canvasGrades', label: 'Canvas', visible: Boolean(canvasGradesUrl) },
           ]}
           active={chartMode}
@@ -564,7 +574,11 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         <div className="text-sm text-gray-500">{learnerLabel ? `${learnerLabel} is not enrolled in this course.` : 'This learner is not enrolled in this course.'}</div>
       )}
 
-      {!loading && instructionTopicSummaries.length > 0 && chartMode !== 'topicActivity' && (
+      {!loading && selectedLearner && chartMode === 'pulses' && (
+        <PulseArchive courseOps={courseOps} course={selectedCourse} targetType="learner" targetId={selectedLearner.learnerId || routeLearnerId} targetName={selectedLearner.learnerName || selectedLearner.learnerEmail || 'Learner'} enrollmentId={selectedLearner.enrollmentId} learnerRow={selectedLearner} canEdit={Boolean(user?.isRoot?.() || user?.isEditor?.(selectedCourseId))} evidence={{ masteryPercent: selectedLearnerDisplaySummary.mastery, completedTopics: selectedLearnerDisplaySummary.completedTopics, examCompleted: selectedLearnerSummary.examCompletedCount, projectSubmits: selectedLearnerSummary.projectSubmittedCount, sectionId: selectedLearner.sectionId, progress: selectedLearner.progress }} />
+      )}
+
+      {!loading && instructionTopicSummaries.length > 0 && chartMode !== 'topicActivity' && chartMode !== 'pulses' && (
         <div className="border border-gray-200 rounded-md p-3 bg-white">
           {chartMode === 'lastInteraction' && <LastInteractionChart summaries={instructionTopicSummaries} />}
           {chartMode === 'dailyActivity' && (
