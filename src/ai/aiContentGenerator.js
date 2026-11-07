@@ -1,6 +1,7 @@
 import service from '../service/service';
 import { normalizeInteractionIds, topicContentForAi } from '../utils/interactionMeta';
 import { normalizeDraProcessAttributeName } from '../utils/draStages';
+import { buildLearnerFeedbackEmailPrompt } from '../utils/learnerFeedbackPrompt.js';
 
 const mermaidDefaultClassDef = 'classDef default fill:#ffffff,stroke:#000000,color:#000000,stroke-width:1px;';
 
@@ -1690,38 +1691,8 @@ Requirements:
   };
 }
 
-export async function aiLearnerFeedbackEmailGenerator(senderName, learnerData, courseData, scheduleContext) {
-  const courseName = courseData?.title || 'the course';
-  const studentName = (learnerData.learnerName || '').split(' ')[0] || 'there';
-  const masteryPct = learnerData.masteryPercent ?? 0;
-  const completed = learnerData.completedTopics ?? 0;
-  const total = learnerData.totalTopics ?? 0;
-
-  const prompt = `You are ${senderName}, writing a short personal note to a student named ${studentName}.
-This is a quick check-in from their mentor, not a formal report.
-
-The course is "${courseName}". Use a short, natural version of the course name in the email body (like you would in casual speech, not the full formal title with course number).
-
-Student progress:
-- Overall mastery: ${masteryPct}%
-- Topics completed: ${completed} of ${total}
-- Last active: ${learnerData.lastActivityAt ? new Date(learnerData.lastActivityAt).toLocaleDateString() : 'unknown'}
-${scheduleContext ? `\nSchedule context:\n${scheduleContext}` : ''}
-
-Writing rules:
-- Sound like a real person wrote this, not a system
-- Do NOT mention specific time-on-task numbers (minutes, hours on individual topics)
-- Do NOT use em dashes (--) or dashes used as parenthetical separators
-- Do NOT use the full formal course title with course number in the body; a short natural reference is fine
-- Give a clear, direct statement of whether the student is on track or falling behind (use the schedule context if available)
-- Keep it to 3-4 short paragraphs
-- Start with "Hi ${studentName}," and end with a warm sign-off using ${senderName}'s name
-
-Return a raw JSON object (no markdown fence):
-{
-  "subject": "a short, natural subject line",
-  "body": "the full email"
-}`;
+export async function aiLearnerFeedbackEmailGenerator(senderName, learnerData, courseData) {
+  const prompt = buildLearnerFeedbackEmailPrompt(senderName, learnerData, courseData);
 
   const response = await makeSimpleAiRequest(prompt);
   const text = String(response || '')
@@ -1731,7 +1702,11 @@ Return a raw JSON object (no markdown fence):
     return JSON.parse(text);
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {}
+    }
     return { subject: `Checking in on your progress`, body: response };
   }
 }

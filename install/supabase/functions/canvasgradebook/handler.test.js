@@ -571,7 +571,7 @@ test('canvasgradebook userLookup denies a non-overseer (plain learner self)', as
 test('buildGradeSummary trims submissions and reads the overall course grade', () => {
   const summary = buildGradeSummary(
     [
-      { score: 18, grade: '18', assignment: { name: 'HTML lab', points_possible: 20 } },
+      { score: 18, grade: '18', submitted_at: '2026-09-15T12:00:00Z', missing: false, late: true, assignment: { name: 'HTML lab', points_possible: 20, due_at: '2026-09-14T23:59:00Z' } },
       { excused: true, score: null, assignment: { name: 'Bonus', points_possible: 5 } },
       { score: 10, assignment: null }, // no assignment -> skipped
     ],
@@ -579,8 +579,8 @@ test('buildGradeSummary trims submissions and reads the overall course grade', (
   );
   assert.deepEqual(summary.overall, { score: 88, grade: 'B+' });
   assert.deepEqual(summary.assignments, [
-    { name: 'HTML lab', score: 18, pointsPossible: 20, grade: '18' },
-    { name: 'Bonus', score: null, pointsPossible: 5, grade: 'Excused' },
+    { name: 'HTML lab', score: 18, pointsPossible: 20, grade: '18', dueAt: '2026-09-14T23:59:00Z', submittedAt: '2026-09-15T12:00:00Z', missing: false, late: true, excused: false },
+    { name: 'Bonus', score: null, pointsPossible: 5, grade: 'Excused', dueAt: null, submittedAt: null, missing: false, late: false, excused: true },
   ]);
 });
 

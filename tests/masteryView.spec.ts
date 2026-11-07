@@ -261,6 +261,10 @@ test('overseer gets a Canvas grades link to the learner on a Canvas-linked cours
   const gradesLink = page.getByRole('link', { name: 'Canvas', exact: true });
   await expect(gradesLink).toHaveAttribute('href', 'https://byu.instructure.com/courses/12345/grades/777');
   await expect(gradesLink).toHaveAttribute('target', '_blank');
+  const feedbackButton = page.getByRole('button', { name: 'Feedback', exact: true });
+  await expect(feedbackButton).toBeVisible();
+  await feedbackButton.click();
+  await expect(page.getByRole('heading', { name: 'Feedback Email for Kyle Robinson' })).toBeVisible();
 
   // The lookup identified the learner by email and was scoped to the MasteryLS course (catalogId).
   expect(lookupPayload?.courseId).toBe('12345');
@@ -279,6 +283,7 @@ test('no Canvas grades link when the course is not linked to Canvas', async ({ p
 
   await expect(page.getByRole('heading', { name: 'Kyle Robinson' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Canvas', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Feedback', exact: true })).toBeVisible();
 });
 
 test('overseer opens the Canvas tab to see the learner Canvas grade breakdown', async ({ page }) => {

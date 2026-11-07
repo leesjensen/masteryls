@@ -105,6 +105,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
         return {
           enrollmentId: row.enrollmentId,
           learnerId: row.learnerId,
+          sectionId: row.sectionId,
+          selectedScheduleFileId: row.selectedScheduleFileId,
           learnerName: row.learnerName,
           learnerEmail: row.learnerEmail,
           masteryPercent: summary.mastery,

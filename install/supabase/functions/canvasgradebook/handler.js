@@ -51,6 +51,11 @@ export function buildGradeSummary(submissions, enrollments) {
       score: sub.excused ? null : typeof sub.score === 'number' ? sub.score : null,
       pointsPossible: typeof sub.assignment.points_possible === 'number' ? sub.assignment.points_possible : null,
       grade: sub.excused ? 'Excused' : sub.grade ?? null,
+      dueAt: sub.assignment.due_at ?? null,
+      submittedAt: sub.submitted_at ?? null,
+      missing: sub.missing === true,
+      late: sub.late === true,
+      excused: sub.excused === true,
     }));
   // The student enrollment carries the computed course grade; take the first one that has grades.
   const studentEnrollment = (Array.isArray(enrollments) ? enrollments : []).find((entry) => entry?.grades) || null;

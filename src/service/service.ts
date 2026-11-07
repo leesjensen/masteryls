@@ -1423,7 +1423,7 @@ class Service {
    * Reads a learner's current Canvas grades for display: an overall course grade plus a
    * per-assignment breakdown. `found` is false when the learner isn't in the Canvas course.
    */
-  async getCanvasGrades(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ found: boolean; overall: { score: number | null; grade: string | null } | null; assignments: { name: string; score: number | null; pointsPossible: number | null; grade: string | null }[]; error?: string }> {
+  async getCanvasGrades(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ found: boolean; overall: { score: number | null; grade: string | null } | null; assignments: { name: string; score: number | null; pointsPossible: number | null; grade: string | null; dueAt?: string | null; submittedAt?: string | null; missing?: boolean; late?: boolean; excused?: boolean }[]; error?: string }> {
     const { data, error } = await this.invokeEdge('canvasgradebook', {
       body: { mode: 'grades', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
     });

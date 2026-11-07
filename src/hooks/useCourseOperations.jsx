@@ -5,7 +5,7 @@ import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot, replaceRawGitHubRef } from '../utils/githubRawSnapshot.js';
-import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds } from '../utils/interactionMeta';
+import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds, parseInteractionMeta } from '../utils/interactionMeta';
 import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown, remapScheduleToStartDate, scheduleDateStatus, serializeScheduleMarkdown } from '../utils/scheduleMarkdown';
 import { resolveLearnerSchedule } from '../utils/scheduleResolution';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
@@ -14,7 +14,9 @@ import { summarizeLikertResponses } from '../utils/likertInteraction';
 import { markdownToHtml } from '../utils/markdownToHtml';
 import { formatDraFeedbackForCanvas } from '../components/instruction/dra/draScore';
 import { formatInterviewFeedbackForCanvas } from '../components/instruction/interview/interviewScore';
-import { completedInteractionIds } from '../utils/topicProgress';
+import { completedInteractionCount } from '../utils/topicProgress';
+import { buildScheduleTimingContext } from '../utils/scheduleTiming.js';
+import { summarizeLearnerActivity, summarizeSectionAttendance } from '../utils/learnerFeedbackEvidence.js';
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
@@ -2023,71 +2025,257 @@ Requirements:
   async function generateLearnerFeedbackEmail(learnerRow, course, senderNameOverride) {
     const senderName = senderNameOverride || user?.name || 'Your Instructor';
     const publishedTopics = Array.isArray(course?.allTopics) ? course.allTopics.filter((t) => t?.state === 'published') : [];
-    const totalTopics = publishedTopics.length;
+    const progress = learnerRow.progress && typeof learnerRow.progress === 'object' ? learnerRow.progress : {};
+    const topicById = new Map(publishedTopics.map((topic) => [String(topic.id), topic]));
+    const topicByTitle = new Map(publishedTopics.map((topic) => [String(topic.title || '').trim().toLowerCase(), topic]).filter(([title]) => title));
+    const topicSummaries = publishedTopics.map((topic) => {
+      const topicProgress = progress[topic.id] || {};
+      const interactionCount = Array.isArray(topic.interactions) ? topic.interactions.length : 0;
+      const completedCount = completedInteractionCount(topicProgress);
+      return {
+        topicId: topic.id,
+        title: topic.title,
+        interactionCount,
+        completedInteractionCount: completedCount,
+        completion: interactionCount > 0 ? (completedCount >= interactionCount ? 'complete' : 'incomplete') : 'not tracked by interactions',
+        ...(Number.isFinite(Number(topicProgress.masteryScore)) ? { masteryPercent: Number(topicProgress.masteryScore) } : {}),
+        ...(Number.isFinite(Number(topicProgress.timeSpent)) && Number(topicProgress.timeSpent) > 0 ? { timeSpentSeconds: Number(topicProgress.timeSpent) } : {}),
+        ...(topicProgress.lastInteractionAt ? { lastInteractionAt: topicProgress.lastInteractionAt } : {}),
+        ...(topicProgress.examCompleted === true ? { examCompleted: true } : {}),
+        ...(topicProgress.projectSubmission === true ? { projectSubmitted: true } : {}),
+      };
+    });
+    const completedTopicCount = topicSummaries.filter((topic) => topic.completion === 'complete').length;
+    const overallMastery = calculateProgressMastery(progress, course);
 
-    // Build title->id map for schedule due-item matching
-    const topicByTitle = new Map();
-    publishedTopics.forEach((t) => { if (t.title) topicByTitle.set(t.title.trim().toLowerCase(), t.id); });
-
-    // Fetch and parse the course schedule if available
-    let scheduleContext = '';
-    try {
-      const schedFiles = Array.isArray(course?.schedule?.files) ? course.schedule.files.filter((f) => f?.path) : [];
-      const defaultFile = schedFiles.find((f) => f.default) || schedFiles[0];
-      if (defaultFile) {
-        const rawRoot = course?.links?.gitHub?.rawUrl;
-        const configuredPath = defaultFile.path;
-        const rawUrl = (configuredPath.startsWith('http://') || configuredPath.startsWith('https://'))
-          ? configuredPath
-          : rawRoot ? `${rawRoot}/${configuredPath.replace(/^\//, '')}` : null;
-        if (rawUrl) {
-          const token = user?.getSetting?.('gitHubToken', course?.id);
-          const fetchUrl = await resolveSnapshotRawUrl(rawUrl, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
-          const response = await fetch(fetchUrl, { cache: 'no-store' });
-          const markdown = await response.text();
-          const model = parseScheduleMarkdown(markdown);
-          const weeks = Array.isArray(model?.weeks) ? model.weeks : [];
-          const progress = learnerRow.progress ?? {};
-
-          const pastLines = [];
-          const upcomingLines = [];
-          for (const week of weeks) {
-            if (!week.date) continue;
-            const status = scheduleDateStatus(week.date);
-            const isPast = status === 'past' || status === 'today';
-
-            const covered = (week.topicsCovered || []).map((i) => String(i.text || '').trim()).filter(Boolean);
-            const dueItems = (week.dueItems || [])
-              .map((item) => {
-                const title = String(item.text || '').trim();
-                if (!title) return null;
-                const topicId = topicByTitle.get(title.toLowerCase());
-                const tp = topicId ? progress[topicId] : null;
-                const done = Boolean(tp && (Number(tp.completedCount) > 0 || tp.examCompleted || tp.projectSubmission));
-                return { title, done };
-              })
-              .filter(Boolean);
-
-            const duePart = dueItems.length ? `due: ${dueItems.map((d) => `${d.title} (${d.done ? 'done' : 'not done'})`).join(', ')}` : '';
-            const coveredPart = covered.length ? `covering ${covered.join(', ')}` : '';
-            const parts = [coveredPart, duePart].filter(Boolean).join(' | ');
-            if (parts) {
-              if (isPast) pastLines.push(`  ${week.date}: ${parts}`);
-              else upcomingLines.push(`  ${week.date}: ${parts}`);
-            }
-          }
-
-          const contextParts = [];
-          if (pastLines.length) contextParts.push(`What should be done by now:\n${pastLines.join('\n')}`);
-          if (upcomingLines.length) contextParts.push(`Coming up next:\n${upcomingLines.slice(0, 3).join('\n')}`);
-          scheduleContext = contextParts.join('\n\n');
-        }
+    // Fetch Canvas data independently so a missing link, unmatched learner, or API failure does
+    // not prevent the email. The model receives an explicit unavailable state instead of zeros.
+    let canvasContext = { status: 'not linked' };
+    const canvasCourseId = course?.externalRefs?.canvasCourseId;
+    if (canvasCourseId && learnerRow.learnerEmail) {
+      try {
+        const gradeResult = await service.getCanvasGrades({ courseId: String(canvasCourseId), catalogId: course.id, learnerEmail: learnerRow.learnerEmail });
+        const assignments = [...(gradeResult.assignments || [])].sort((a, b) => {
+          if (Boolean(a.missing) !== Boolean(b.missing)) return a.missing ? -1 : 1;
+          const percent = (assignment) => Number.isFinite(assignment.score) && Number.isFinite(assignment.pointsPossible) && assignment.pointsPossible > 0
+            ? (assignment.score / assignment.pointsPossible) * 100
+            : null;
+          const aPercent = percent(a);
+          const bPercent = percent(b);
+          if (aPercent != null && bPercent != null && aPercent !== bPercent) return aPercent - bPercent;
+          if (aPercent != null && bPercent == null) return -1;
+          if (aPercent == null && bPercent != null) return 1;
+          return String(a.dueAt || '').localeCompare(String(b.dueAt || ''));
+        });
+        canvasContext = gradeResult.found
+          ? { status: 'available', overall: gradeResult.overall, assignments: assignments.slice(0, 20) }
+          : { status: 'learner not found in linked Canvas course' };
+        if (gradeResult.error) canvasContext = { status: 'unavailable', reason: gradeResult.error };
+      } catch (error) {
+        canvasContext = { status: 'unavailable', reason: String(error?.message || error).slice(0, 240) };
       }
-    } catch {
-      scheduleContext = '';
     }
 
-    const result = await aiLearnerFeedbackEmailGenerator(senderName, { ...learnerRow, totalTopics }, course, scheduleContext);
+    // Select the learner's actual schedule: section-derived schedule first, then their saved
+    // legacy schedule selection. Never compare a learner against another section's calendar.
+    let scheduleContext = { status: 'unavailable' };
+    let scheduleTiming = {};
+    try {
+      const resolved = resolveLearnerSchedule({
+        sectionId: learnerRow.sectionId || null,
+        sections: course?.sections || [],
+        schedules: course?.schedules || [],
+        legacyFiles: course?.schedule?.files || [],
+        selectedScheduleFileId: learnerRow.selectedScheduleFileId || null,
+      });
+      const selectedSchedule = resolved?.source === 'section' ? resolved.schedule : resolved?.legacyFile;
+      if (selectedSchedule) {
+        scheduleTiming = buildScheduleTimingContext({
+          startDate: selectedSchedule.startDate || null,
+          endDate: selectedSchedule.endDate || null,
+          asOf: new Date(),
+        });
+      }
+      if (resolved?.contentPath) {
+        const rawRoot = course?.links?.gitHub?.rawUrl;
+        const configuredPath = resolved.contentPath;
+        const rawUrl = /^https?:\/\//i.test(configuredPath)
+          ? configuredPath
+          : rawRoot ? `${rawRoot}/${configuredPath.replace(/^\//, '')}` : null;
+        if (!rawUrl) throw new Error('Schedule content path could not be resolved');
+        const token = user?.getSetting?.('gitHubToken', course?.id);
+        const fetchUrl = await resolveSnapshotRawUrl(rawUrl, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
+        const response = await fetch(fetchUrl, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Schedule request failed (${response.status})`);
+        const model = parseScheduleMarkdown(await response.text());
+        const overdue = [];
+        const upcoming = [];
+        for (const week of model?.weeks || []) {
+          if (!week.date) continue;
+          const dateStatus = scheduleDateStatus(week.date);
+          const items = (week.dueItems || []).map((item) => {
+            const title = String(item?.text || '').trim();
+            if (!title) return null;
+            const topic = topicByTitle.get(title.toLowerCase());
+            if (!topic) return { title, status: 'unknown' };
+            const topicProgress = progress[topic.id] || {};
+            const interactions = Array.isArray(topic.interactions) ? topic.interactions : [];
+            const interactionTypes = interactions.map((interaction) => String(interaction?.type || '').toLowerCase());
+            let status = 'unknown';
+            if (interactionTypes.includes('exam')) status = topicProgress.examCompleted === true ? 'complete' : 'incomplete';
+            else if (interactionTypes.includes('project')) status = topicProgress.projectSubmission === true ? 'complete' : 'incomplete';
+            else if (interactions.length > 0) status = completedInteractionCount(topicProgress) >= interactions.length ? 'complete' : 'incomplete';
+            return { title, status };
+          }).filter(Boolean);
+          const entry = { date: week.date, items };
+          if (dateStatus === 'past') overdue.push(entry);
+          else if (dateStatus === 'today' || dateStatus === 'future') upcoming.push(entry);
+        }
+        scheduleContext = { status: 'available', ...scheduleTiming, overdue: overdue.slice(-6), upcoming: upcoming.slice(0, 4) };
+      } else if (!resolved) {
+        scheduleContext = { status: 'no schedule available' };
+      } else {
+        scheduleContext = { status: 'schedule content unavailable', ...scheduleTiming };
+      }
+    } catch (error) {
+      scheduleContext = { status: 'unavailable', ...scheduleTiming, reason: String(error?.message || error).slice(0, 240) };
+    }
+
+    // Use the progress event history for a bounded, exact activity summary and for essay examples.
+    // The history is also where section attendance check-ins and their self-reported answers live.
+    let progressRecords = [];
+    let progressHistoryAvailable = false;
+    let progressHistoryTruncated = false;
+    let activityContext = { status: 'unavailable' };
+    try {
+      const recordsResult = await service.getProgress({ courseId: course.id, enrollmentId: learnerRow.enrollmentId, page: 1, limit: 1000 });
+      progressRecords = recordsResult?.data || [];
+      progressHistoryAvailable = true;
+      progressHistoryTruncated = recordsResult?.hasMore === true;
+      activityContext = summarizeLearnerActivity(progressRecords, {
+        topicTitleById: new Map(publishedTopics.map((topic) => [String(topic.id), topic.title])),
+        olderRecordsOmitted: recordsResult?.hasMore === true,
+      });
+    } catch {
+      // The current cached last-activity value remains available, but don't invent a timeline.
+    }
+
+    let attendanceContext = { status: 'not enabled for learner section' };
+    const learnerSection = (course?.sections || []).find((section) => String(section.id) === String(learnerRow.sectionId || ''));
+    if (learnerSection?.attendanceEnabled === true) {
+      if (!progressHistoryAvailable) {
+        attendanceContext = { status: 'unavailable' };
+      } else {
+        try {
+          const attendanceResult = await service.getAttendanceSessions(course.id, learnerSection.id);
+          let attendanceRecords = progressRecords.filter((record) => record.type === 'attendance');
+          // Activity evidence is capped at 1,000 rows. If that window was truncated, retrieve
+          // the learner's complete attendance-only history so old sessions aren't misreported
+          // as absences simply because they fell outside the activity window.
+          if (progressHistoryTruncated) {
+            attendanceRecords = [];
+            let page = 1;
+            let hasMore = true;
+            while (hasMore) {
+              const attendancePage = await service.getProgress({ courseId: course.id, enrollmentId: learnerRow.enrollmentId, types: ['attendance'], page, limit: 1000 });
+              attendanceRecords.push(...(attendancePage?.data || []));
+              hasMore = attendancePage?.hasMore === true;
+              page += 1;
+            }
+          }
+          attendanceContext = summarizeSectionAttendance(
+            attendanceResult?.sessions || [],
+            attendanceRecords,
+          );
+        } catch {
+          attendanceContext = { status: 'unavailable' };
+        }
+      }
+    }
+
+    // Include a few recent essay examples, paired with the prompt where the topic content can be
+    // resolved. Keep excerpts short and treat them as untrusted learner-provided text in the prompt.
+    const essayExamples = [];
+    if (progressHistoryAvailable) {
+      try {
+        const seen = new Set();
+        const essayRows = progressRecords.filter((record) => record?.type === 'quizSubmit' && record?.details?.type === 'essay' && typeof record.details.essay === 'string' && record.details.essay.trim());
+        for (const record of essayRows) {
+          const interactionId = String(record.interactionId || '');
+          if (interactionId && seen.has(interactionId)) continue;
+          if (interactionId) seen.add(interactionId);
+          const topic = topicById.get(String(record.topicId || ''));
+          let question = '';
+          if (topic?.path) {
+            try {
+              let markdownUrl = topic.path;
+              const token = user?.getSetting?.('gitHubToken', course?.id);
+              markdownUrl = await resolveSnapshotRawUrl(markdownUrl, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
+              const topicResponse = await fetch(markdownUrl, { cache: 'no-store' });
+              if (topicResponse.ok) {
+                const markdown = await topicResponse.text();
+                const blocks = markdown.matchAll(/```masteryls\s*\n?([\s\S]*?)```/g);
+                for (const block of blocks) {
+                  const parsed = parseInteractionMeta(block[1]);
+                  if (parsed.meta?.id === interactionId && parsed.meta?.type === 'essay') {
+                    question = String(parsed.body || '').slice(0, 500);
+                    break;
+                  }
+                }
+              }
+            } catch {}
+          }
+          essayExamples.push({
+            topic: topic?.title || 'Unknown topic',
+            question: question || 'Question text unavailable',
+            response: String(record.details.essay).trim().slice(0, 1200),
+            evaluationFeedback: String(record.details.feedback || '').trim().slice(0, 700),
+            submittedAt: record.createdAt || null,
+            ...(Number.isFinite(Number(record.details.percentCorrect)) ? { scorePercent: Number(record.details.percentCorrect) } : {}),
+          });
+          if (essayExamples.length >= 3) break;
+        }
+      } catch {
+        // Essay history is optional evidence; do not block generation if it cannot be read.
+      }
+    }
+
+    const focusTopics = [...topicSummaries]
+      .filter((topic) => topic.completion === 'incomplete' || (Number.isFinite(topic.masteryPercent) && topic.masteryPercent < 80))
+      .sort((a, b) => (a.completion === b.completion ? (a.masteryPercent ?? 101) - (b.masteryPercent ?? 101) : a.completion === 'incomplete' ? -1 : 1))
+      .slice(0, 12);
+    const focusTopicIds = new Set(focusTopics.map((topic) => topic.topicId));
+    for (const topic of [...topicSummaries]
+      .filter((entry) => !focusTopicIds.has(entry.topicId) && Number.isFinite(entry.timeSpentSeconds))
+      .sort((a, b) => b.timeSpentSeconds - a.timeSpentSeconds)) {
+      if (focusTopics.length >= 12) break;
+      focusTopics.push(topic);
+    }
+    const totalInteractionCount = topicSummaries.reduce((sum, topic) => sum + topic.interactionCount, 0);
+    const completedInteractionTotal = topicSummaries.reduce((sum, topic) => sum + topic.completedInteractionCount, 0);
+    const totalTimeSpentSeconds = topicSummaries.reduce((sum, topic) => sum + (topic.timeSpentSeconds || 0), 0);
+    const hasTrackedInteractions = totalInteractionCount > 0;
+    const hasTimeData = topicSummaries.some((topic) => Number.isFinite(topic.timeSpentSeconds));
+    const feedbackContext = {
+      generatedAt: new Date().toISOString(),
+      overall: {
+        masteryPercent: overallMastery,
+        publishedTopicCount: publishedTopics.length,
+        fullyCompletedInteractionTopics: hasTrackedInteractions ? completedTopicCount : null,
+        completedInteractions: hasTrackedInteractions ? completedInteractionTotal : null,
+        totalTrackedInteractions: hasTrackedInteractions ? totalInteractionCount : null,
+        interactionCompletionPercent: hasTrackedInteractions ? Math.round((completedInteractionTotal / totalInteractionCount) * 100) : null,
+        totalTimeSpentSeconds: hasTimeData ? totalTimeSpentSeconds : null,
+        lastActivityAt: activityContext.status === 'available' ? activityContext.latestActivityAt : learnerRow.lastActivityAt || null,
+      },
+      topicProgress: focusTopics,
+      canvas: canvasContext,
+      schedule: scheduleContext,
+      activity: activityContext,
+      attendance: attendanceContext,
+      essayExamples,
+    };
+    const result = await aiLearnerFeedbackEmailGenerator(senderName, { ...learnerRow, feedbackContext }, course);
     if (typeof result === 'string') {
       return { subject: `Your progress in ${course?.title || 'the course'}`, body: result };
     }

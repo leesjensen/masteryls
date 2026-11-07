@@ -175,7 +175,7 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
       // - overseer drill-down (learnerId): that one learner, no section/date scope;
       // - overseer roster: enrollments in the requested section (Term/Schedule/Section model), and/or
       //   the legacy "enrolled between" window, so out-of-scope cohorts are never fetched.
-      let query = supabase.from('enrollment').select('id, learnerId, progress').eq('catalogId', courseId);
+      let query = supabase.from('enrollment').select('id, learnerId, progress, sectionId, settings').eq('catalogId', courseId);
       if (!canOverseeCourse) {
         query = query.eq('learnerId', userId);
       } else if (learnerId) {
@@ -244,6 +244,8 @@ export function createMasteryOverviewHandler({ createSupabaseClientFromAuthHeade
         return {
           enrollmentId: enrollment.id,
           learnerId: enrollment.learnerId,
+          sectionId: enrollment.sectionId || null,
+          selectedScheduleFileId: enrollment.settings?.selectedScheduleFile || null,
           learnerName: learner.name || null,
           learnerEmail: learner.email || null,
           progress: isSingleLearner ? progress : trimProgress(progress),

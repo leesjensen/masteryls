@@ -224,6 +224,8 @@ test('gradebookoverview returns identity plus a trimmed progress blob for the li
               id: 'e1',
               learnerId: 'u1',
               catalogId: 'course-1',
+              sectionId: 'section-1',
+              settings: { selectedScheduleFile: 'legacy-schedule-1', privateSetting: 'not returned' },
               progress: {
                 mastery: 80,
                 lastActivityAt: '2026-05-09T12:20:00Z',
@@ -249,6 +251,9 @@ test('gradebookoverview returns identity plus a trimmed progress blob for the li
   const row = body.rows[0];
   assert.equal(row.learnerName, 'Learner One');
   assert.equal(row.learnerEmail, 'learner1@test.com');
+  assert.equal(row.sectionId, 'section-1');
+  assert.equal(row.selectedScheduleFileId, 'legacy-schedule-1');
+  assert.equal(row.privateSetting, undefined);
 
   // The server no longer computes metrics; the client derives them from the trimmed progress.
   assert.equal(row.masteryPercent, undefined);
