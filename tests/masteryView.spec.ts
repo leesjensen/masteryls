@@ -376,8 +376,13 @@ test('learner masteryview shows learner summary and topic detail', async ({ page
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery/learner/${LEARNER_ID}`);
 
+  const overview = page.getByTestId('learner-overview');
   await expect(page.getByText('bud@cow.com')).toBeVisible();
+  await expect(overview.getByTestId('learner-overview-actions')).toHaveClass(/flex-wrap/);
+  await expect(overview.getByText('bud@cow.com')).toHaveClass(/w-full/);
+  await expect(page.getByRole('button', { name: 'Topic Activity', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
+  await expect(page.getByText('Last Interaction Timeline')).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: /search learner/i })).not.toBeVisible();
 
   // An overseer can jump straight into observing this learner from the drill-down header.

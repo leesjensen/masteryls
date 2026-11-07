@@ -4,6 +4,7 @@ import { ArrowUp, ArrowDown, ArrowUpDown, FileClock } from 'lucide-react';
 import { TopicIcon } from '../../utils/Icons';
 import { completedInteractionIds } from '../../utils/topicProgress';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
+import Tabs from '../../components/Tabs.jsx';
 import BarChartSvg from '../../components/charts/barChartSvg.jsx';
 import LearnerAttendanceChart from '../../components/attendance/learnerAttendanceChart.jsx';
 import { getCanvasGradesUrl } from '../../hooks/canvas/canvasSync.js';
@@ -73,7 +74,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   const [error, setError] = React.useState(null);
   const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'course' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
-  const [chartMode, setChartMode] = React.useState('lastInteraction');
+  const [chartMode, setChartMode] = React.useState('topicActivity');
   const [activityRecords, setActivityRecords] = React.useState([]);
   const [activityLoading, setActivityLoading] = React.useState(false);
   const [activityLoaded, setActivityLoaded] = React.useState(false);
@@ -499,10 +500,10 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
       {loading && <div className="text-sm text-gray-500">Loading...</div>}
 
       {!loading && selectedLearner && (
-        <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
+        <div data-testid="learner-overview" className="border border-gray-200 rounded-md p-4 bg-gray-50">
           <h2 className="text-xl font-semibold text-gray-800">{selectedLearner.learnerName || selectedLearner.learnerEmail || 'Unknown learner'}</h2>
-          <div className="flex items-center gap-3 mt-0.5">
-            {selectedLearner.learnerEmail && <p className="text-sm text-gray-500">{selectedLearner.learnerEmail}</p>}
+          <div data-testid="learner-overview-actions" className="flex flex-wrap items-center gap-2 mt-2">
+            {selectedLearner.learnerEmail && <p className="w-full min-w-0 break-words text-sm text-gray-500 sm:w-auto">{selectedLearner.learnerEmail}</p>}
             {canObserve && (
               <button type="button" onClick={onObserveLearner} className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs">
                 Observe
@@ -544,51 +545,27 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         </div>
       )}
 
+      {!loading && selectedLearner && instructionTopicSummaries.length > 0 && (
+        <Tabs
+          tabs={[
+            { id: 'topicActivity', label: 'Topic Activity' },
+            { id: 'attendance', label: 'Attendance', visible: hasAttendance },
+            { id: 'lastInteraction', label: 'Last Activity' },
+            { id: 'dailyActivity', label: 'Daily Activity' },
+            { id: 'canvasGrades', label: 'Canvas', visible: Boolean(canvasGradesUrl) },
+          ]}
+          active={chartMode}
+          onChange={setChartMode}
+          variant="fill"
+        />
+      )}
+
       {!loading && !selectedLearner && !error && selectedCourseId && (
         <div className="text-sm text-gray-500">{learnerLabel ? `${learnerLabel} is not enrolled in this course.` : 'This learner is not enrolled in this course.'}</div>
       )}
 
-      {!loading && instructionTopicSummaries.length > 0 && (
+      {!loading && instructionTopicSummaries.length > 0 && chartMode !== 'topicActivity' && (
         <div className="border border-gray-200 rounded-md p-3 bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-base font-semibold text-gray-800">
-              {chartMode === 'lastInteraction' ? 'Last Interaction Timeline' : chartMode === 'attendance' ? 'Attendance' : chartMode === 'canvasGrades' ? 'Canvas Grades' : 'Daily Activity'}
-            </span>
-            <div className="flex text-xs border border-gray-200 rounded-md overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setChartMode('lastInteraction')}
-                className={`px-3 py-1 transition-colors ${chartMode === 'lastInteraction' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                Last Interaction
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartMode('dailyActivity')}
-                className={`px-3 py-1 transition-colors border-l border-gray-200 ${chartMode === 'dailyActivity' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                Daily Activity
-              </button>
-              {hasAttendance && (
-                <button
-                  type="button"
-                  onClick={() => setChartMode('attendance')}
-                  className={`px-3 py-1 transition-colors border-l border-gray-200 ${chartMode === 'attendance' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Attendance
-                </button>
-              )}
-              {canvasGradesUrl && (
-                <button
-                  type="button"
-                  onClick={() => setChartMode('canvasGrades')}
-                  className={`px-3 py-1 transition-colors border-l border-gray-200 ${chartMode === 'canvasGrades' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Canvas
-                </button>
-              )}
-            </div>
-          </div>
           {chartMode === 'lastInteraction' && <LastInteractionChart summaries={instructionTopicSummaries} />}
           {chartMode === 'dailyActivity' && (
             activityLoading
@@ -600,7 +577,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         </div>
       )}
 
-      {!loading && instructionTopicSummaries.length > 0 && (
+      {!loading && instructionTopicSummaries.length > 0 && chartMode === 'topicActivity' && (
         <div className="overflow-x-auto overflow-y-clip border border-gray-200 rounded-md">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 text-gray-700">
