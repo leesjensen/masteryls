@@ -110,6 +110,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
         return {
           enrollmentId: row.enrollmentId,
           learnerId: row.learnerId,
+          progress: row.progress,
           sectionId: row.sectionId,
           selectedScheduleFileId: row.selectedScheduleFileId,
           learnerName: row.learnerName,
@@ -382,7 +383,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     <div className="w-full min-w-0 max-w-7xl mx-auto self-start p-4 flex flex-col gap-4">
       <Tabs variant="scroll" active={masteryTab} onChange={setMasteryTab} tabs={[{ id: 'roster', label: 'Roster' }, { id: 'pulses', label: 'Pulses' }]} />
       {masteryTab === 'pulses' && selectedCourse && canManagePulses && <>
-        <PulseArchive key={`${selectedCourseId}-${selectedSectionId || 'course'}`} courseOps={courseOps} course={selectedCourse} targetType={selectedSectionId ? 'section' : 'course'} targetId={selectedSectionId || selectedCourseId} targetName={selectedSectionId ? courseSections.find((section) => section.id === selectedSectionId)?.title : selectedCourse.title} canEdit extraControls={<label className="text-sm">Pulse target<select className="ml-2 rounded border p-1" value={selectedSectionId || 'course'} onChange={(e) => onSectionSelect(e.target.value === 'course' ? '' : e.target.value)}><option value="course">Course</option>{courseSections.map((section) => <option key={section.id} value={section.id}>Section: {section.title}</option>)}</select></label>} evidence={buildPulseRosterEvidence(derivedRows, { sections: selectedSectionId ? courseSections.filter((section) => section.id === selectedSectionId) : courseSections, schedules: selectedCourse.schedules || [] })} />
+        <PulseArchive key={`${selectedCourseId}-${selectedSectionId || 'course'}`} courseOps={courseOps} course={selectedCourse} targetType={selectedSectionId ? 'section' : 'course'} targetId={selectedSectionId || selectedCourseId} targetName={selectedSectionId ? courseSections.find((section) => section.id === selectedSectionId)?.title : selectedCourse.title} canEdit extraControls={<label className="text-sm">Pulse target<select className="ml-2 rounded border p-1" value={selectedSectionId || 'course'} onChange={(e) => onSectionSelect(e.target.value === 'course' ? '' : e.target.value)}><option value="course">Course</option>{courseSections.map((section) => <option key={section.id} value={section.id}>Section: {section.title}</option>)}</select></label>} evidence={buildPulseRosterEvidence(derivedRows, { sections: selectedSectionId ? courseSections.filter((section) => section.id === selectedSectionId) : courseSections, schedules: selectedCourse.schedules || [] })} rosterRows={derivedRows} sections={courseSections} />
       </>}
       {masteryTab === 'roster' && <>
       <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3`}>

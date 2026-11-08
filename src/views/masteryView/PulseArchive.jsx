@@ -1,20 +1,20 @@
 import React from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { aiPulseGenerator } from '../../ai/aiContentGenerator';
 import Markdown from '../../components/Markdown.jsx';
 import MarkdownEditor from '../../components/editor/markdownEditor.jsx';
 import Splitter from '../../components/Splitter.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
 import Button from '../../components/ui/Button.jsx';
+import { normalizePulseMarkdown } from '../../utils/pulseMarkdown.js';
+import { buildPulseRosterEvidence, excludePulseStaffRows } from '../../utils/pulseEvidence.js';
+import { buildPulseTrendHistory, COURSE_LEARNER_COHORT_MARKER } from '../../utils/pulseTrend.js';
 
 function formatDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
-function normalizePulseMarkdown(content) {
-  return String(content || '').replace(/^> .*?\|\s*Snapshot date:\s*(\d{4}-\d{2}-\d{2})\s*$/m, '**Snapshot date:** $1');
-}
-
-export default function PulseArchive({ courseOps, course, targetType, targetId, targetName, enrollmentId = null, learnerRow = null, evidence, canEdit, extraControls = null }) {
+export default function PulseArchive({ courseOps, course, targetType, targetId, targetName, enrollmentId = null, learnerRow = null, evidence, rosterRows = [], sections = [], canEdit, extraControls = null }) {
   const [terms, setTerms] = React.useState([]);
   const [termId, setTermId] = React.useState('');
   const [pulses, setPulses] = React.useState([]);
@@ -22,6 +22,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
   const [markdown, setMarkdown] = React.useState('');
   const [editing, setEditing] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  const [progressMessage, setProgressMessage] = React.useState('');
   const [error, setError] = React.useState('');
   const { panePercent, splitContainerRef, onPaneMoved, onPaneResized } = useSplitPaneState(50, { minPercent: 25, maxPercent: 75 });
   const service = courseOps.service;
@@ -52,21 +53,42 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
 
   async function generate() {
     if (!termId) return;
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setProgressMessage('Preparing pulse…');
     try {
       const previousPulse = pulses[0]?.markdown || '';
-      const currentEvidence = targetType === 'learner' && learnerRow
-        ? await courseOps.collectLearnerAnalysisEvidence(learnerRow, course)
-        : evidence;
-      const body = await aiPulseGenerator({ targetType, targetName, term: terms.find((term) => term.id === termId), currentEvidence, previousPulse });
-      const pulse = await service.createPulse({ catalogId: course.id, termId, targetType, targetId, enrollmentId, markdown: String(body || ''), createdBy: user.id });
+      const pulseTrendHistory = buildPulseTrendHistory(pulses, 8, { requireCourseLearnerCohort: targetType !== 'learner' });
+      let currentEvidence = evidence;
+      if (targetType === 'learner' && learnerRow) {
+        currentEvidence = await courseOps.collectLearnerAnalysisEvidence(learnerRow, course, { onProgress: setProgressMessage });
+      } else if (targetType !== 'learner') {
+        setProgressMessage('Checking course staff roles…');
+        const staffUserIds = await service.getCoursePulseExcludedUserIds(course.id);
+        const filteredRoster = excludePulseStaffRows(rosterRows, staffUserIds);
+        const pulseRosterRows = filteredRoster.rows;
+        currentEvidence = {
+          ...buildPulseRosterEvidence(pulseRosterRows, { sections, schedules: course.schedules || [] }),
+          excludedCourseStaffCount: filteredRoster.excludedCount,
+        };
+        if (courseOps.collectCourseSectionPulseEvidence) {
+          const selectedSections = targetType === 'section' ? sections.filter((section) => String(section.id) === String(targetId)) : sections;
+          const detailedEvidence = await courseOps.collectCourseSectionPulseEvidence({ rows: pulseRosterRows, course, term: terms.find((term) => term.id === termId), sections: selectedSections, sectionId: targetType === 'section' ? targetId : null, onProgress: setProgressMessage });
+          currentEvidence = { ...currentEvidence, ...detailedEvidence };
+        }
+      }
+      setProgressMessage('Generating pulse with AI…');
+      const body = await aiPulseGenerator({ targetType, targetName, term: terms.find((term) => term.id === termId), currentEvidence, previousPulse, pulseTrendHistory });
+      const pulseMarkdown = normalizePulseMarkdown(body);
+      const cohortSafeMarkdown = targetType === 'learner' ? pulseMarkdown : `${pulseMarkdown.trimEnd()}\n\n${COURSE_LEARNER_COHORT_MARKER}\n`;
+      setProgressMessage('Saving pulse…');
+      const pulse = await service.createPulse({ catalogId: course.id, termId, targetType, targetId, enrollmentId, markdown: cohortSafeMarkdown, createdBy: user.id });
+      setProgressMessage('Refreshing pulse history…');
       await load(); setSelected(pulse);
     } catch (e) { setError(e.message || 'Unable to generate pulse.'); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setProgressMessage(''); }
   }
 
   async function save() {
-    setBusy(true); setError('');
+    setBusy(true); setError(''); setProgressMessage('Saving pulse changes…');
     try {
       const updated = await service.updatePulse(selected.id, markdown);
       setPulses((rows) => rows.map((pulse) => pulse.id === updated.id ? updated : pulse));
@@ -74,7 +96,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       setEditing(false);
     }
     catch (e) { setError(e.message); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setProgressMessage(''); }
   }
 
   const topic = { title: `${targetName} Pulse`, type: 'instruction', path: 'pulse.md' };
@@ -85,6 +107,10 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       <label className="text-sm">Term<select aria-label="Pulse term" className="ml-2 rounded border border-gray-300 p-1" value={termId} onChange={(e) => { setTermId(e.target.value); setSelected(null); }}><option value="">Select term</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.title}</option>)}</select></label>
       <Button size="sm" disabled={!termId || busy} onClick={generate}>{busy ? 'Taking pulse…' : 'Take pulse'}</Button>
     </div>
+    {busy && <div role="status" aria-live="polite" className="flex items-center gap-2 text-sm text-gray-600">
+      <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin text-blue-600" />
+      <span>{progressMessage || 'Working on the pulse…'}</span>
+    </div>}
     {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
     {!termId && <p className="text-sm text-gray-500">Create a term before generating a pulse.</p>}
     {termId && <section className="min-w-0 rounded-lg border border-gray-200 bg-white p-4">

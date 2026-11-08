@@ -332,6 +332,13 @@ class Service {
     return users;
   }
 
+  /** Returns course-scoped editor and mentor user IDs for pulse roster exclusions. */
+  async getCoursePulseExcludedUserIds(courseId: string): Promise<string[]> {
+    const { data, error } = await this.supabase.from('role').select('user').eq('object', courseId).in('right', ['editor', 'mentor']);
+    if (error) throw new Error(error.message);
+    return [...new Set((data || []).map((row: any) => row.user).filter(Boolean).map(String))];
+  }
+
   /**
    * Retrieves users currently enrolled in a specific course.
    * @param courseId - The course ID to load enrolled users for.
@@ -982,8 +989,8 @@ class Service {
    * @returns { enrolledCount, sessions: [{ id, openedAt, closedAt, questions, attendeeCount, answerTally }] }
    *          answerTally is { [questionId]: { [choice]: count } } for charting the question results.
    */
-  async getAttendanceSessions(catalogId: string, sectionId: string | null = null): Promise<{ enrolledCount: number; sessions: any[] }> {
-    const { data, error } = await this.supabase.rpc('attendance_sessions', { p_catalog_id: catalogId, p_section_id: sectionId });
+  async getAttendanceSessions(catalogId: string, sectionId: string | null = null, excludeCourseStaff = false): Promise<{ enrolledCount: number; sessions: any[] }> {
+    const { data, error } = await this.supabase.rpc('attendance_sessions', { p_catalog_id: catalogId, p_section_id: sectionId, p_exclude_course_staff: excludeCourseStaff });
     if (error) {
       throw new Error(error.message);
     }
@@ -1181,6 +1188,18 @@ class Service {
       totalCount: count || 0,
       hasMore: (count || 0) > offset + limit,
     };
+  }
+
+  /** Returns a server-side summary and bounded examples for course/section pulse progress. */
+  async getPulseProgressEvidence(params: { catalogId: string; startAt?: string | null; endAt?: string | null; sectionId?: string | null }): Promise<any> {
+    const { data, error } = await this.supabase.rpc('pulse_progress_evidence', {
+      p_catalog_id: params.catalogId,
+      p_start_at: params.startAt || null,
+      p_end_at: params.endAt || null,
+      p_section_id: params.sectionId || null,
+    });
+    if (error) throw new Error(error.message);
+    return data || { status: 'available', eventCount: 0, learnersWithEvents: 0, eventCountsByType: [], recentEvents: [], essayExamples: [] };
   }
 
   /**
@@ -1457,6 +1476,32 @@ class Service {
     }
 
     return { found: Boolean(data?.found), overall: data?.overall ?? null, assignments: Array.isArray(data?.assignments) ? data.assignments : [], error: data?.error };
+  }
+
+  /** Reads current Canvas roster grades in one batched request; term dates use each assignment's base due date. */
+  async getCanvasRosterGrades(params: { courseId: string; catalogId: string; emails: string[]; startDate?: string | null; endDate?: string | null }): Promise<{ gradesByEmail: Record<string, any>; studentCount: number; termAssignmentCount: number; undatedAssignmentsExcluded: number }> {
+    const { data, error } = await this.invokeEdge('canvasgradebook', {
+      body: {
+        mode: 'rosterGrades',
+        courseId: params.courseId,
+        catalogId: params.catalogId,
+        emails: params.emails,
+        startDate: params.startDate || null,
+        endDate: params.endDate || null,
+      },
+    });
+
+    if (error || data?.ok === false) {
+      const edgeMessage = await extractEdgeFunctionErrorMessage(error, data);
+      throw new Error(edgeMessage || data?.error || error?.message || 'Unable to retrieve Canvas roster grades.');
+    }
+
+    return {
+      gradesByEmail: data?.gradesByEmail || {},
+      studentCount: Number(data?.studentCount) || 0,
+      termAssignmentCount: Number(data?.termAssignmentCount) || 0,
+      undatedAssignmentsExcluded: Number(data?.undatedAssignmentsExcluded) || 0,
+    };
   }
 
   /**

@@ -598,7 +598,12 @@ $$;
 -- given the result is scoped to that section (sessions and the enrolledCount denominator), so the
 -- learner chart can show an honest "attended N of M"; null returns the whole course.
 drop function if exists public.attendance_sessions(uuid);
-create or replace function public.attendance_sessions(p_catalog_id uuid, p_section_id uuid default null)
+drop function if exists public.attendance_sessions(uuid, uuid);
+create or replace function public.attendance_sessions(
+  p_catalog_id uuid,
+  p_section_id uuid default null,
+  p_exclude_course_staff boolean default false
+)
 returns jsonb
 language plpgsql
 stable
@@ -616,7 +621,17 @@ begin
   end if;
 
   return jsonb_build_object(
-    'enrolledCount', (select count(*) from public.enrollment where "catalogId" = p_catalog_id and (p_section_id is null or "sectionId" = p_section_id)),
+    'enrolledCount', (
+      select count(*) from public.enrollment e
+      where e."catalogId" = p_catalog_id
+        and (p_section_id is null or e."sectionId" = p_section_id)
+        and (not p_exclude_course_staff or not exists (
+          select 1 from public.role r
+          where r."user" = e."learnerId"
+            and r."right" in ('editor', 'mentor')
+            and r.object = p_catalog_id
+        ))
+    ),
     'sessions', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', a.id,
@@ -629,6 +644,12 @@ begin
           where p."catalogId" = a."catalogId"
             and p.type = 'attendance'
             and p."interactionId" = a.id
+            and (not p_exclude_course_staff or not exists (
+              select 1 from public.role r
+              where r."user" = p."userId"
+                and r."right" in ('editor', 'mentor')
+                and r.object = p_catalog_id
+            ))
         ),
         -- Per-question answer counts for this session: { [questionId]: { [choice]: count } }.
         -- Lets the attendance charts show how the class answered the wellness question.
@@ -643,6 +664,12 @@ begin
               where p."catalogId" = a."catalogId"
                 and p.type = 'attendance'
                 and p."interactionId" = a.id
+                and (not p_exclude_course_staff or not exists (
+                  select 1 from public.role r
+                  where r."user" = p."userId"
+                    and r."right" in ('editor', 'mentor')
+                    and r.object = p_catalog_id
+                ))
               group by kv.key, kv.value
             ) ans
             group by ans.qid
@@ -754,6 +781,150 @@ as $$
   );
 $$;
 
+-- Summarize term-scoped progress for course/section pulses in Postgres. The browser receives only
+-- aggregate event counts plus a small set of recent events and essay examples, never the entire
+-- progress history (which can contain tens of thousands of rows).
+create or replace function public.pulse_progress_evidence(
+  p_catalog_id uuid,
+  p_start_at timestamptz,
+  p_end_at timestamptz,
+  p_section_id uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_event_count bigint := 0;
+  v_learner_count bigint := 0;
+  v_event_counts jsonb := '[]'::jsonb;
+  v_recent_events jsonb := '[]'::jsonb;
+  v_essay_examples jsonb := '[]'::jsonb;
+begin
+  if not public.auth_manages_course(auth.uid(), p_catalog_id) then
+    raise exception 'Not authorized to generate course progress evidence';
+  end if;
+
+  if p_section_id is not null and not exists (
+    select 1 from public.section
+    where id = p_section_id and "catalogId" = p_catalog_id
+  ) then
+    raise exception 'Section does not belong to this course';
+  end if;
+
+  select count(*), count(distinct p."userId")
+    into v_event_count, v_learner_count
+  from public.progress p
+  where p."catalogId" = p_catalog_id
+    and not exists (
+      select 1 from public.role r
+      where r."user" = p."userId"
+        and r."right" in ('editor', 'mentor')
+        and r.object = p_catalog_id
+    )
+    and (p_start_at is null or p."createdAt" >= p_start_at)
+    and (p_end_at is null or p."createdAt" <= p_end_at)
+    and (p_section_id is null or exists (
+      select 1 from public.enrollment e
+      where e.id = p."enrollmentId" and e."sectionId" = p_section_id
+    ));
+
+  select coalesce(jsonb_agg(jsonb_build_object('type', t.event_type, 'count', t.event_count) order by t.event_count desc), '[]'::jsonb)
+    into v_event_counts
+  from (
+    select coalesce(p.type, 'unknown') as event_type, count(*) as event_count
+    from public.progress p
+    where p."catalogId" = p_catalog_id
+      and not exists (
+        select 1 from public.role r
+        where r."user" = p."userId"
+          and r."right" in ('editor', 'mentor')
+          and r.object = p_catalog_id
+      )
+      and (p_start_at is null or p."createdAt" >= p_start_at)
+      and (p_end_at is null or p."createdAt" <= p_end_at)
+      and (p_section_id is null or exists (
+        select 1 from public.enrollment e
+        where e.id = p."enrollmentId" and e."sectionId" = p_section_id
+      ))
+    group by coalesce(p.type, 'unknown')
+  ) t;
+
+  select coalesce(jsonb_agg(to_jsonb(r)), '[]'::jsonb)
+    into v_recent_events
+  from (
+    select p."createdAt", coalesce(p.type, 'unknown') as type,
+      coalesce(u.name, 'Learner') as learner, s.title as section, p."topicId"
+    from public.progress p
+    left join public."user" u on u.id = p."userId"
+    left join public.enrollment e on e.id = p."enrollmentId"
+    left join public.section s on s.id = e."sectionId"
+    where p."catalogId" = p_catalog_id
+      and not exists (
+        select 1 from public.role r
+        where r."user" = p."userId"
+          and r."right" in ('editor', 'mentor')
+          and r.object = p_catalog_id
+      )
+      and (p_start_at is null or p."createdAt" >= p_start_at)
+      and (p_end_at is null or p."createdAt" <= p_end_at)
+      and (p_section_id is null or exists (
+        select 1 from public.enrollment e
+        where e.id = p."enrollmentId" and e."sectionId" = p_section_id
+      ))
+    order by p."createdAt" desc
+    limit 15
+  ) r;
+
+  select coalesce(jsonb_agg(to_jsonb(e)), '[]'::jsonb)
+    into v_essay_examples
+  from (
+    select coalesce(u.name, 'Learner') as learner, s.title as section, p."topicId", p."interactionId",
+      left(p.details->>'essay', 900) as response,
+      left(coalesce(p.details->>'feedback', ''), 500) as "evaluatorFeedback",
+      case when coalesce(p.details->>'percentCorrect', '') ~ '^[+-]?[0-9]+([.][0-9]+)?$'
+        then (p.details->>'percentCorrect')::numeric else null end as "scorePercent",
+      p."createdAt" as "submittedAt"
+    from public.progress p
+    left join public."user" u on u.id = p."userId"
+    left join public.enrollment e on e.id = p."enrollmentId"
+    left join public.section s on s.id = e."sectionId"
+    where p."catalogId" = p_catalog_id
+      and not exists (
+        select 1 from public.role r
+        where r."user" = p."userId"
+          and r."right" in ('editor', 'mentor')
+          and r.object = p_catalog_id
+      )
+      and p.type = 'quizSubmit'
+      and p.details->>'type' = 'essay'
+      and nullif(btrim(p.details->>'essay'), '') is not null
+      and (p_start_at is null or p."createdAt" >= p_start_at)
+      and (p_end_at is null or p."createdAt" <= p_end_at)
+      and (p_section_id is null or exists (
+        select 1 from public.enrollment e
+        where e.id = p."enrollmentId" and e."sectionId" = p_section_id
+      ))
+    order by p."createdAt" desc
+    limit 6
+  ) e;
+
+  return jsonb_build_object(
+    'status', 'available',
+    'eventCount', v_event_count,
+    'recordsLoaded', v_event_count,
+    'truncated', false,
+    'learnersWithEvents', v_learner_count,
+    'eventCountsByType', v_event_counts,
+    'recentEvents', v_recent_events,
+    'essayExamples', v_essay_examples
+  );
+end;
+$$;
+revoke all on function public.pulse_progress_evidence(uuid, timestamptz, timestamptz, uuid) from public, anon;
+grant execute on function public.pulse_progress_evidence(uuid, timestamptz, timestamptz, uuid) to authenticated;
+
 -- Security helper: true when user can oversee a specific course without editing it
 create or replace function public.auth_oversees_course(uid uuid, catalog_id uuid)
 returns boolean
@@ -843,7 +1014,7 @@ grant execute on function public.open_attendance(uuid, jsonb) to authenticated;
 grant execute on function public.open_attendance(uuid, uuid, jsonb) to authenticated;
 grant execute on function public.close_attendance(uuid) to authenticated;
 grant execute on function public.record_attendance(uuid, text, jsonb) to authenticated;
-grant execute on function public.attendance_sessions(uuid, uuid) to authenticated;
+grant execute on function public.attendance_sessions(uuid, uuid, boolean) to authenticated;
 
 -- Define table grants by first revoking everything
 revoke all on table public.catalog from public, anon, authenticated;

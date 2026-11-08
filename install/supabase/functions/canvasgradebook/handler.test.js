@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCanvasGradebookHandler, buildCanvasComment, findCanvasLearner, buildGradeSummary } from './handler.js';
+import { createCanvasGradebookHandler, buildCanvasComment, findCanvasLearner, buildGradeSummary, buildRosterGradeSummaries } from './handler.js';
 
 function createMockSupabase({ user, roles }) {
   return {
@@ -587,6 +587,89 @@ test('buildGradeSummary trims submissions and reads the overall course grade', (
 test('buildGradeSummary defaults missing grades to null', () => {
   const summary = buildGradeSummary([], []);
   assert.deepEqual(summary, { overall: { score: null, grade: null }, assignments: [] });
+});
+
+test('buildRosterGradeSummaries maps batched submissions by email and filters dated assignments to the selected term', () => {
+  const grades = buildRosterGradeSummaries(
+    [{ id: 77, email: 'one@test.com' }, { id: 88, email: 'two@test.com' }],
+    [
+      { user_id: 77, score: 18, grade: '18', assignment: { name: 'Term project', points_possible: 20, due_at: '2026-11-10T00:00:00Z' } },
+      { user_id: 77, score: 10, grade: '10', assignment: { name: 'Old assignment', points_possible: 10, due_at: '2026-03-10T00:00:00Z' } },
+      { user_id: 77, score: 10, grade: '10', assignment: { name: 'Undated assignment', points_possible: 10 } },
+      { user_id: 88, excused: true, assignment: { name: 'Term project', points_possible: 20, due_at: '2026-11-10T00:00:00Z' } },
+    ],
+    [
+      { user_id: 77, grades: { current_score: 90, current_grade: 'A-' } },
+      { user_id: 88, grades: { current_score: 72, current_grade: 'C-' } },
+    ],
+    { emails: ['ONE@test.com', 'two@test.com', 'missing@test.com'], startDate: '2026-09-01', endDate: '2026-12-20' },
+  );
+
+  assert.deepEqual(Object.keys(grades).sort(), ['one@test.com', 'two@test.com']);
+  assert.equal(grades['one@test.com'].overall.score, 90);
+  assert.deepEqual(grades['one@test.com'].assignments.map((assignment) => assignment.name), ['Term project']);
+  assert.equal(grades['one@test.com'].undatedAssignmentsExcluded, 1);
+  assert.equal(grades['two@test.com'].assignments[0].excused, true);
+});
+
+test('canvasgradebook fetches roster grades in a bounded batch for an overseer', async () => {
+  const calls = [];
+  const fetchFn = async (url) => {
+    calls.push(url);
+    if (url.includes('/courses/123/users?')) return new Response(JSON.stringify([{ id: 77, email: 'learner@test.com' }]));
+    if (url.includes('/courses/123/assignments?')) return new Response(JSON.stringify([{ id: 200, name: 'Term project', due_at: '2026-11-15T00:00:00Z', all_dates: [
+      { base: true, due_at: '2026-10-31T23:59:00-06:00' },
+      { id: 55, title: 'Single student', due_at: '2026-11-15T23:59:00-06:00' },
+    ] }]));
+    if (url.includes('/students/submissions?')) return new Response(JSON.stringify([{ user_id: 77, score: 18, assignment: { id: 200, name: 'Term project', points_possible: 20, due_at: '2026-11-15T23:59:00-06:00' } }]));
+    if (url.includes('/enrollments?type[]=StudentEnrollment')) return new Response(JSON.stringify([{ user_id: 77, grades: { current_score: 90, current_grade: 'A-' } }]));
+    return new Response(JSON.stringify({ error: 'unexpected request' }), { status: 500 });
+  };
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () => createMockSupabase({ user: { id: 'root-user', email: 'root@test.com' }, roles: [{ user: 'root-user', right: 'root' }] }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+  const response = await handler(makeRequest({ mode: 'rosterGrades', courseId: '123', catalogId: 'course-id', emails: ['learner@test.com'], startDate: '2026-10-01', endDate: '2026-11-01' }));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.studentCount, 1);
+  assert.equal(body.termAssignmentCount, 1);
+  assert.equal(body.gradesByEmail['learner@test.com'].overall.score, 90);
+  assert.equal(body.gradesByEmail['learner@test.com'].assignments[0].dueAt, '2026-10-31T23:59:00-06:00');
+  assert.equal(calls.length, 4, 'the batch reads course users, assignments, enrollments, and only term-due submissions');
+  const assignmentsUrl = calls.find((url) => url.includes('/courses/123/assignments?')) || '';
+  assert.match(assignmentsUrl, /override_assignment_dates=false/);
+  assert.match(assignmentsUrl, /include\[\]=all_dates/);
+  const submissionsUrl = calls.find((url) => url.includes('/students/submissions')) || '';
+  assert.match(submissionsUrl, /student_ids\[\]=77/);
+  assert.match(submissionsUrl, /assignment_ids\[\]=200/);
+});
+
+test('canvasgradebook follows Canvas pagination links for roster resources', async () => {
+  const calls = [];
+  const fetchFn = async (url) => {
+    calls.push(url);
+    if (url.includes('/courses/123/users?') && !url.includes('page=2')) {
+      return new Response(JSON.stringify([{ id: 77, email: 'one@test.com' }]), { headers: { Link: '<https://byu.instructure.com/api/v1/courses/123/users?page=2>; rel="next"' } });
+    }
+    if (url.includes('/courses/123/users?page=2')) return new Response(JSON.stringify([{ id: 88, email: 'two@test.com' }]));
+    if (url.includes('/courses/123/assignments?')) return new Response('[]');
+    if (url.includes('/enrollments?type[]=StudentEnrollment')) return new Response('[]');
+    return new Response(JSON.stringify({ error: 'unexpected request' }), { status: 500 });
+  };
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () => createMockSupabase({ user: { id: 'root-user', email: 'root@test.com' }, roles: [{ user: 'root-user', right: 'root' }] }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+  const response = await handler(makeRequest({ mode: 'rosterGrades', courseId: '123', catalogId: 'course-id' }));
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.studentCount, 2);
+  assert.equal(calls.length, 4);
 });
 
 test('canvasgradebook grades mode returns overall and per-assignment breakdown for a mentor', async () => {

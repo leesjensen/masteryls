@@ -26,6 +26,7 @@ import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.j
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
 import { buildAttendanceGradeRequest, DEFAULT_ATTENDANCE_POINTS_PER_SESSION, DEFAULT_ATTENDANCE_POINTS_POSSIBLE } from './canvas/attendanceCanvasSync.js';
 import { calculateProgressMastery } from '../utils/progressSummary.js';
+import { decoratePulseProgressEvidence, getPulseScheduleDueItems, reconcilePulseCanvasAssignments, summarizeCanvasRosterGrades, summarizePulseAttendance } from '../utils/pulseEvidence.js';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -1735,8 +1736,8 @@ Requirements:
 
   // Attendance sessions for a course; pass a sectionId to scope sessions + the enrolledCount
   // denominator to that section (so the learner chart can show an honest "attended N of M").
-  async function getAttendanceSessions(courseId, sectionId = null) {
-    return service.getAttendanceSessions(courseId, sectionId);
+  async function getAttendanceSessions(courseId, sectionId = null, excludeCourseStaff = false) {
+    return service.getAttendanceSessions(courseId, sectionId, excludeCourseStaff);
   }
 
   // Enable/disable attendance for a section (editor/root only, enforced by RLS).
@@ -2022,7 +2023,7 @@ Requirements:
     await service.deleteEnrollment({ id: enrollmentId });
   }
 
-  async function collectLearnerAnalysisEvidence(learnerRow, course) {
+  async function collectLearnerAnalysisEvidence(learnerRow, course, { onProgress = () => {} } = {}) {
     const publishedTopics = Array.isArray(course?.allTopics) ? course.allTopics.filter((t) => t?.state === 'published') : [];
     const progress = learnerRow.progress && typeof learnerRow.progress === 'object' ? learnerRow.progress : {};
     const topicById = new Map(publishedTopics.map((topic) => [String(topic.id), topic]));
@@ -2053,6 +2054,7 @@ Requirements:
     let canvasDeadlineAssignments = [];
     const canvasCourseId = course?.externalRefs?.canvasCourseId;
     if (canvasCourseId && learnerRow.learnerEmail) {
+      onProgress('Loading Canvas grades…');
       try {
         const gradeResult = await service.getCanvasGrades({ courseId: String(canvasCourseId), catalogId: course.id, learnerEmail: learnerRow.learnerEmail });
         canvasDeadlineAssignments = gradeResult.assignments || [];
@@ -2082,6 +2084,7 @@ Requirements:
     let scheduleContext = { status: 'unavailable' };
     let scheduleTiming = {};
     const scheduleDeadlineItems = [];
+    onProgress('Reading the learner’s schedule…');
     try {
       const resolved = resolveLearnerSchedule({
         sectionId: learnerRow.sectionId || null,
@@ -2154,6 +2157,7 @@ Requirements:
     let progressHistoryAvailable = false;
     let progressHistoryTruncated = false;
     let activityContext = { status: 'unavailable' };
+    onProgress('Reviewing learning activity…');
     try {
       const recordsResult = await service.getProgress({ courseId: course.id, enrollmentId: learnerRow.enrollmentId, page: 1, limit: 1000 });
       progressRecords = recordsResult?.data || [];
@@ -2170,6 +2174,7 @@ Requirements:
     let attendanceContext = { status: 'not enabled for learner section' };
     const learnerSection = (course?.sections || []).find((section) => String(section.id) === String(learnerRow.sectionId || ''));
     if (learnerSection?.attendanceEnabled === true) {
+      onProgress('Summarizing class attendance…');
       if (!progressHistoryAvailable) {
         attendanceContext = { status: 'unavailable' };
       } else {
@@ -2204,6 +2209,7 @@ Requirements:
     // resolved. Keep excerpts short and treat them as untrusted learner-provided text in the prompt.
     const essayExamples = [];
     if (progressHistoryAvailable) {
+      onProgress('Reviewing essay responses…');
       try {
         const seen = new Set();
         const essayRows = progressRecords.filter((record) => record?.type === 'quizSubmit' && record?.details?.type === 'essay' && typeof record.details.essay === 'string' && record.details.essay.trim());
@@ -2283,6 +2289,171 @@ Requirements:
       essayExamples,
     };
     return analysisEvidence;
+  }
+
+  async function collectCourseSectionPulseEvidence({ rows, course, term, sections = [], sectionId = null, onProgress = () => {} }) {
+    const roster = Array.isArray(rows) ? rows : [];
+    const selectedSections = sections.filter((section) => section?.attendanceEnabled === true);
+    const snapshotAt = new Date();
+    const startDate = term?.startDate ? `${term.startDate}T00:00:00.000Z` : null;
+    const termEnd = term?.endDate ? new Date(`${term.endDate}T23:59:59.999Z`) : null;
+    const endDate = termEnd && termEnd.getTime() < snapshotAt.getTime() ? termEnd.toISOString() : snapshotAt.toISOString();
+    const dateBounds = { startDate, endDate };
+    const evidence = {
+      generatedAt: snapshotAt.toISOString(),
+      term: { title: term?.title || null, startDate: term?.startDate || null, endDate: term?.endDate || null },
+      sources: {},
+    };
+
+    onProgress('Summarizing course activity and essays…');
+    try {
+      const progressSummary = await service.getPulseProgressEvidence({
+        catalogId: course.id,
+        startAt: startDate,
+        endAt: endDate,
+        sectionId,
+      });
+
+      // Essay prompts are read once per topic, even if several learners submitted in that topic.
+      const essayTopicIds = [...new Set(progressSummary.essayExamples.map((essay) => essay.topicId).filter(Boolean))];
+      const essayQuestionByKey = new Map();
+      for (const topicId of essayTopicIds) {
+        const topic = (course.allTopics || []).find((entry) => String(entry.id) === String(topicId));
+        if (!topic?.path) continue;
+        try {
+          const token = user?.getSetting?.('gitHubToken', course.id);
+          const markdownUrl = await resolveSnapshotRawUrl(topic.path, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
+          const response = await fetch(markdownUrl, { cache: 'no-store' });
+          if (!response.ok) continue;
+          const markdown = await response.text();
+          for (const block of markdown.matchAll(/```masteryls\s*\n?([\s\S]*?)```/g)) {
+            const parsed = parseInteractionMeta(block[1]);
+            if (parsed.meta?.type === 'essay') essayQuestionByKey.set(`${topicId}:${parsed.meta.id}`, String(parsed.body || '').slice(0, 500));
+          }
+        } catch {}
+      }
+      evidence.sources.progressActivity = decoratePulseProgressEvidence(progressSummary, course.allTopics || [], essayQuestionByKey);
+    } catch (error) {
+      evidence.sources.progressActivity = { status: 'unavailable', reason: String(error?.message || error).slice(0, 240) };
+    }
+
+    if (selectedSections.length) {
+      onProgress('Summarizing class attendance…');
+      try {
+        const sessionGroups = await Promise.all(selectedSections.map(async (section) => {
+          const attendance = await service.getAttendanceSessions(course.id, section.id, true);
+          return { sectionId: section.id, enrolledCount: attendance.enrolledCount, sessions: attendance.sessions };
+        }));
+        evidence.sources.attendance = summarizePulseAttendance(sessionGroups, sections, dateBounds);
+      } catch (error) {
+        evidence.sources.attendance = { status: 'unavailable', reason: String(error?.message || error).slice(0, 240) };
+      }
+    } else {
+      evidence.sources.attendance = { status: 'not enabled for the selected roster' };
+    }
+
+    onProgress('Reading schedules and deadlines…');
+    try {
+      const rosterSectionIds = new Set(roster.map((row) => String(row.sectionId || '')).filter(Boolean));
+      const sectionById = new Map((course.sections || []).map((section) => [String(section.id), section]));
+      const scheduleIds = new Set([...rosterSectionIds].map((id) => sectionById.get(id)?.scheduleId).filter(Boolean).map(String));
+      const schedules = (course.schedules || []).filter((schedule) => scheduleIds.has(String(schedule.id)));
+      const topicByTitle = new Map((course.allTopics || []).map((topic) => [String(topic.title || '').trim().toLowerCase(), topic]));
+      const deadlineItems = [];
+      const unavailableSchedules = [];
+      const rosterWithoutAssignedSchedule = roster.filter((row) => !sectionById.get(String(row.sectionId || ''))?.scheduleId).length;
+      for (const schedule of schedules) {
+        if (!schedule.contentPath) {
+          unavailableSchedules.push({ title: schedule.title, status: 'content path unavailable' });
+          continue;
+        }
+        try {
+          const rawRoot = course?.links?.gitHub?.rawUrl;
+          const contentPath = schedule.contentPath;
+          const rawUrl = /^https?:\/\//i.test(contentPath) ? contentPath : rawRoot ? `${rawRoot}/${contentPath.replace(/^\//, '')}` : null;
+          if (!rawUrl) throw new Error('Schedule content path could not be resolved');
+          const token = user?.getSetting?.('gitHubToken', course.id);
+          const fetchUrl = await resolveSnapshotRawUrl(rawUrl, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
+          const response = await fetch(fetchUrl, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`Schedule request failed (${response.status})`);
+          const scheduleModel = parseScheduleMarkdown(await response.text());
+          const assignedRows = roster.filter((row) => String(sectionById.get(String(row.sectionId || ''))?.scheduleId || '') === String(schedule.id));
+          const scheduledDueItems = getPulseScheduleDueItems(scheduleModel?.weeks, {
+            startDate: term?.startDate,
+            endDate: term?.endDate,
+            referenceDate: snapshotAt,
+          });
+          for (const dueItem of scheduledDueItems) {
+            const title = dueItem.item;
+            const topic = topicByTitle.get(title.toLowerCase());
+            const interactionTypes = (topic?.interactions || []).map((interaction) => String(interaction?.type || '').toLowerCase());
+            let completeCount = 0;
+            let incompleteCount = 0;
+            let unknownCount = 0;
+            for (const row of assignedRows) {
+              const topicProgress = topic ? row.progress?.[topic.id] || {} : null;
+              if (!topicProgress || interactionTypes.length === 0) {
+                unknownCount += 1;
+              } else if (interactionTypes.includes('exam')) {
+                topicProgress.examCompleted === true ? completeCount++ : incompleteCount++;
+              } else if (interactionTypes.includes('project')) {
+                topicProgress.projectSubmission === true ? completeCount++ : incompleteCount++;
+              } else {
+                const completed = Number(topicProgress.completedCount) || 0;
+                completed >= interactionTypes.length ? completeCount++ : incompleteCount++;
+              }
+            }
+            deadlineItems.push({
+              schedule: schedule.title,
+              date: dueItem.date,
+              displayDate: dueItem.displayDate,
+              item: title,
+              learnersAssigned: assignedRows.length,
+              completed: completeCount,
+              incomplete: incompleteCount,
+              statusUnavailableFor: unknownCount,
+              timing: scheduleDateStatus(dueItem.date, snapshotAt),
+              completionAsOf: snapshotAt.toISOString(),
+            });
+          }
+        } catch (error) {
+          unavailableSchedules.push({ title: schedule.title, status: String(error?.message || error).slice(0, 180) });
+        }
+      }
+      evidence.sources.schedule = {
+        status: schedules.length ? 'available' : 'no schedule assigned to this roster',
+        termStart: term?.startDate || null,
+        termEnd: term?.endDate || null,
+        rosterWithoutAssignedSchedule,
+        deadlines: deadlineItems.sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(0, 40),
+        unavailableSchedules,
+      };
+    } catch (error) {
+      evidence.sources.schedule = { status: 'unavailable', reason: String(error?.message || error).slice(0, 240) };
+    }
+
+    if (course?.externalRefs?.canvasCourseId && roster.some((row) => row.learnerEmail)) {
+      onProgress('Loading Canvas grade summaries…');
+      try {
+        // One edge-function request batches three paginated Canvas API reads for the whole roster;
+        // this avoids one gradebook request per learner.
+        const canvas = await service.getCanvasRosterGrades({
+          courseId: String(course.externalRefs.canvasCourseId),
+          catalogId: course.id,
+          emails: roster.map((row) => row.learnerEmail).filter(Boolean),
+          startDate: term?.startDate || null,
+          endDate: term?.endDate || null,
+        });
+        const canvasSummary = summarizeCanvasRosterGrades(canvas.gradesByEmail, roster, sections, canvas);
+        evidence.sources.canvas = reconcilePulseCanvasAssignments(canvasSummary, evidence.sources.schedule?.deadlines);
+      } catch (error) {
+        evidence.sources.canvas = { status: 'unavailable', reason: String(error?.message || error).slice(0, 240) };
+      }
+    } else {
+      evidence.sources.canvas = { status: 'not linked' };
+    }
+
+    return evidence;
   }
 
   async function generateLearnerFeedbackEmail(learnerRow, course, senderNameOverride) {
@@ -2766,6 +2937,7 @@ Requirements:
     getMasteryOverview,
     unenrollLearner,
     collectLearnerAnalysisEvidence,
+    collectCourseSectionPulseEvidence,
     generateLearnerFeedbackEmail,
     getTopicProgress,
     getSurveySummary,

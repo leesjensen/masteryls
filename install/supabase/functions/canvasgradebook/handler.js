@@ -67,6 +67,68 @@ export function buildGradeSummary(submissions, enrollments) {
   return { overall, assignments };
 }
 
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+export function buildRosterGradeSummaries(users, submissions, enrollments, { emails = [], startDate = null, endDate = null, termAssignmentIds = null, termAssignmentDatesById = null } = {}) {
+  const requested = new Set((emails || []).map(normalizeEmail).filter(Boolean));
+  const emailByUserId = new Map();
+  for (const user of Array.isArray(users) ? users : []) {
+    const email = normalizeEmail(user?.email || user?.login_id);
+    if (user?.id != null && email && (!requested.size || requested.has(email))) emailByUserId.set(String(user.id), email);
+  }
+
+  const inTerm = (dueAt) => {
+    if (!dueAt) return !startDate && !endDate;
+    const time = new Date(dueAt).getTime();
+    if (!Number.isFinite(time)) return true;
+    return (!startDate || time >= new Date(startDate).getTime()) && (!endDate || time <= new Date(endDate).getTime());
+  };
+  const submissionsByEmail = new Map();
+  const undatedByEmail = new Map();
+  const allowedAssignmentIds = Array.isArray(termAssignmentIds) ? new Set(termAssignmentIds.map(String)) : null;
+  const baseDueAtById = termAssignmentDatesById instanceof Map
+    ? termAssignmentDatesById
+    : new Map(Object.entries(termAssignmentDatesById || {}));
+  for (const submission of Array.isArray(submissions) ? submissions : []) {
+    const email = emailByUserId.get(String(submission?.user_id ?? ''));
+    if (!email || !submission?.assignment) continue;
+    const assignmentId = String(submission.assignment.id ?? submission.assignment_id ?? '');
+    if (allowedAssignmentIds) {
+      if (!allowedAssignmentIds.has(assignmentId)) continue;
+    } else {
+      if (!submission.assignment.due_at && (startDate || endDate)) {
+        undatedByEmail.set(email, (undatedByEmail.get(email) || 0) + 1);
+        continue;
+      }
+      if (!inTerm(submission.assignment.due_at)) continue;
+    }
+    if (!submissionsByEmail.has(email)) submissionsByEmail.set(email, []);
+    submissionsByEmail.get(email).push(allowedAssignmentIds
+      ? { ...submission, assignment: { ...submission.assignment, due_at: baseDueAtById.get(assignmentId) ?? null } }
+      : submission);
+  }
+
+  const enrollmentsByEmail = new Map();
+  for (const enrollment of Array.isArray(enrollments) ? enrollments : []) {
+    const email = emailByUserId.get(String(enrollment?.user_id ?? ''));
+    if (!email || !enrollment?.grades) continue;
+    if (!enrollmentsByEmail.has(email)) enrollmentsByEmail.set(email, []);
+    enrollmentsByEmail.get(email).push(enrollment);
+  }
+
+  const result = {};
+  const targetEmails = requested.size
+    ? new Set([...requested].filter((email) => [...emailByUserId.values()].includes(email)))
+    : new Set(emailByUserId.values());
+  for (const email of targetEmails) {
+    const summary = buildGradeSummary(submissionsByEmail.get(email) || [], enrollmentsByEmail.get(email) || []);
+    result[email] = { ...summary, undatedAssignmentsExcluded: undatedByEmail.get(email) || 0 };
+  }
+  return result;
+}
+
 // Canvas collapses plain-text newlines in submission comments, so the header
 // lines are joined with <br>. The feedback is already simplified HTML produced
 // by the client (markdownToHtml), so it is appended as-is rather than escaped.
@@ -129,7 +191,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
     const requestedLearnerEmail = String(payload.learnerEmail || authData.user.email || '')
       .trim()
       .toLowerCase();
-    if (!requestedLearnerEmail) {
+    if (mode !== 'rosterGrades' && !requestedLearnerEmail) {
       return new Response(JSON.stringify({ error: 'A learner email is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -158,7 +220,7 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
       if (!isOverseer) {
         return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-    } else if (mode === 'grades') {
+    } else if (mode === 'grades' || mode === 'rosterGrades') {
       // Reading a learner's Canvas grades is a read-only overseer action (mentors included), or a
       // learner viewing their own grades. It never writes to Canvas.
       if (!isOverseer && !isLearnerSelf) {
@@ -194,6 +256,97 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
 
       return json;
     };
+
+    const canvasApiAllPages = async (endpoint) => {
+      const rows = [];
+      let url = `https://byu.instructure.com/api/v1${endpoint}`;
+      let pageCount = 0;
+      while (url && pageCount < 100) {
+        pageCount += 1;
+        const response = await fetchFn(url, { headers: { Authorization: `Bearer ${canvasToken}`, 'Content-Type': 'application/json' } });
+        const text = await response.text();
+        let json = [];
+        if (text) {
+          try { json = JSON.parse(text); } catch { json = { raw: text }; }
+        }
+        if (!response.ok) throw new Error(`Canvas API error ${response.status}: ${JSON.stringify(json)}`);
+        rows.push(...(Array.isArray(json) ? json : []));
+        const link = response.headers.get('Link') || '';
+        const next = link.match(/<([^>]+)>\s*;\s*rel="next"/i)?.[1];
+        url = next && next.startsWith('https://byu.instructure.com/api/v1/') ? next : null;
+      }
+      if (url) throw new Error('Canvas pagination exceeded the safety limit.');
+      return rows;
+    };
+
+    if (mode === 'rosterGrades') {
+      if (!isOverseer) {
+        return new Response(JSON.stringify({ error: 'User is not authorized for this Canvas action' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      try {
+        const [users, assignments, enrollments] = await Promise.all([
+          canvasApiAllPages(`/courses/${courseId}/users?enrollment_type[]=student&include[]=email&per_page=100`),
+          canvasApiAllPages(`/courses/${courseId}/assignments?override_assignment_dates=false&include[]=all_dates&per_page=100`),
+          canvasApiAllPages(`/courses/${courseId}/enrollments?type[]=StudentEnrollment&per_page=100`),
+        ]);
+        const startTime = payload.startDate ? new Date(payload.startDate).getTime() : -Infinity;
+        const endTime = payload.endDate ? new Date(`${String(payload.endDate).slice(0, 10)}T23:59:59.999Z`).getTime() : Infinity;
+        const baseDueAt = (assignment) => {
+          if (Array.isArray(assignment?.all_dates)) {
+            const baseDate = assignment.all_dates.find((date) => date?.base === true);
+            if (baseDate?.due_at) return baseDate.due_at;
+          }
+          return assignment?.due_at ?? null;
+        };
+        const termAssignments = (assignments || []).filter((assignment) => {
+          const dueAtValue = baseDueAt(assignment);
+          if (!dueAtValue) return startTime === -Infinity && endTime === Infinity;
+          const dueAt = new Date(dueAtValue).getTime();
+          return Number.isFinite(dueAt) && dueAt >= startTime && dueAt <= endTime;
+        });
+        const termAssignmentDatesById = new Map(termAssignments.map((assignment) => [String(assignment.id), baseDueAt(assignment)]));
+        const assignmentIds = termAssignments.map((assignment) => assignment.id).filter((id) => id != null);
+        const requestedEmails = new Set((Array.isArray(payload.emails) ? payload.emails : []).map(normalizeEmail).filter(Boolean));
+        const rosterUserIds = [...new Set((users || [])
+          .filter((canvasUser) => {
+            const email = normalizeEmail(canvasUser?.email || canvasUser?.login_id);
+            return canvasUser?.id != null && (!requestedEmails.size || requestedEmails.has(email));
+          })
+          .map((canvasUser) => String(canvasUser.id)))];
+        const submissions = [];
+        const assignmentChunks = [];
+        const studentChunks = [];
+        for (let index = 0; index < assignmentIds.length; index += 40) assignmentChunks.push(assignmentIds.slice(index, index + 40));
+        for (let index = 0; index < rosterUserIds.length; index += 80) studentChunks.push(rosterUserIds.slice(index, index + 80));
+        const submissionTasks = [];
+        for (const studentChunk of studentChunks) {
+          for (const assignmentChunk of assignmentChunks) {
+            const studentParams = studentChunk.map((id) => `student_ids[]=${encodeURIComponent(id)}`).join('&');
+            const assignmentParams = assignmentChunk.map((id) => `assignment_ids[]=${encodeURIComponent(id)}`).join('&');
+            submissionTasks.push(canvasApiAllPages(`/courses/${courseId}/students/submissions?${studentParams}&${assignmentParams}&include[]=assignment&per_page=100`));
+          }
+        }
+        const submissionPages = await Promise.all(submissionTasks);
+        for (const page of submissionPages) submissions.push(...page);
+        const gradesByEmail = buildRosterGradeSummaries(users, submissions, enrollments, {
+          emails: Array.isArray(payload.emails) ? payload.emails : [],
+          startDate: payload.startDate || null,
+          endDate: payload.endDate || null,
+          termAssignmentIds: assignmentIds,
+          termAssignmentDatesById,
+        });
+        return new Response(JSON.stringify({
+          ok: true,
+          gradesByEmail,
+          studentCount: Object.keys(gradesByEmail).length,
+          requestedCount: Array.isArray(payload.emails) ? payload.emails.length : 0,
+          termAssignmentCount: termAssignments.length,
+          undatedAssignmentsExcluded: (assignments || []).filter((assignment) => !baseDueAt(assignment) && (payload.startDate || payload.endDate)).length,
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      } catch (error) {
+        return new Response(JSON.stringify({ ok: false, error: error?.message || String(error) }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
 
     // Eligibility-check mode: look up the learner in the Canvas course and return whether
     // they exist there. Used by the client to decide whether to show "Submit to Gradebook".
