@@ -701,10 +701,10 @@ class Service {
     return data || [];
   }
 
-  async createPulse(values: { catalogId: string; termId: string; targetType: string; targetId: string; enrollmentId?: string | null; markdown: string; createdBy: string }): Promise<any> {
+  async createPulse(values: { catalogId: string; termId: string; targetType: string; targetId: string; enrollmentId?: string | null; pulseType?: 'pulse' | 'feedback'; markdown: string; createdBy: string }): Promise<any> {
     const { data: pulseNumber, error: numberError } = await this.supabase.rpc('next_pulse_number', { p_catalog_id: values.catalogId, p_term_id: values.termId, p_target_type: values.targetType, p_target_id: values.targetId, p_enrollment_id: values.enrollmentId || null });
     if (numberError) throw new Error(numberError.message);
-    const { data, error } = await this.supabase.from('pulse').insert([{ ...values, pulseNumber }]).select().single();
+    const { data, error } = await this.supabase.from('pulse').insert([{ ...values, pulseType: values.pulseType || 'pulse', pulseNumber }]).select().single();
     if (error) throw new Error(error.message);
     return data;
   }

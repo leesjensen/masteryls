@@ -149,6 +149,7 @@ create table if not exists public.pulse (
   "targetType" text not null check ("targetType" in ('course', 'section', 'learner')),
   "targetId" uuid not null,
   "enrollmentId" uuid references public.enrollment(id) on delete cascade,
+  "pulseType" text not null default 'pulse' check ("pulseType" in ('pulse', 'feedback')),
   "pulseNumber" integer not null check ("pulseNumber" > 0),
   markdown text not null,
   "createdBy" uuid not null references public."user"(id),
@@ -173,7 +174,7 @@ begin
     if p_enrollment_id is null or not exists (select 1 from public.enrollment where id = p_enrollment_id and "catalogId" = p_catalog_id and "learnerId" = p_target_id) then
       raise exception 'Learner enrollment does not match this course';
     end if;
-    if p_target_id <> auth.uid() and not public.auth_manages_course(auth.uid(), p_catalog_id) then raise exception 'Not authorized'; end if;
+    if p_target_id <> auth.uid() and not public.auth_oversees_course(auth.uid(), p_catalog_id) then raise exception 'Not authorized'; end if;
   else
     raise exception 'Invalid pulse target type';
   end if;
@@ -1381,11 +1382,13 @@ create policy "Root manages all" on public.section for all to authenticated
 
 create policy "Pulse readers" on public.pulse for select to authenticated using (
   public.auth_manages_course(auth.uid(), "catalogId")
+  or ("targetType" = 'learner' and public.auth_oversees_course(auth.uid(), "catalogId"))
   or ("targetType" = 'learner' and exists (select 1 from public.enrollment e where e.id = "enrollmentId" and e."learnerId" = auth.uid()))
 );
 create policy "Pulse creators" on public.pulse for insert to authenticated with check (
   "createdBy" = auth.uid() and (
     public.auth_manages_course(auth.uid(), "catalogId")
+    or ("targetType" = 'learner' and public.auth_oversees_course(auth.uid(), "catalogId"))
     or ("targetType" = 'learner' and exists (select 1 from public.enrollment e where e.id = "enrollmentId" and e."catalogId" = "catalogId" and e."learnerId" = auth.uid() and e."learnerId" = "targetId"))
   )
 );

@@ -232,9 +232,35 @@ test('masteryview loads learner overview for accessible course', async ({ page }
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
 });
 
-test('overseer gets a Canvas grades link to the learner on a Canvas-linked course', async ({ page }) => {
+test('overseer gets Canvas grades and can save learner feedback as a pulse', async ({ page }) => {
   await initBasicCourse({ page, courseJsonOverride: { externalRefs: { canvasCourseId: '12345' } } });
   await mockGradebookOverview(page);
+
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [{ id: 'term-fall', catalogId: COURSE_ID, title: 'Fall 2026', startDate: '2026-09-01', endDate: '2026-12-18', createdAt: '2026-09-01T00:00:00Z' }] });
+  });
+  const savedPulses: any[] = [];
+  let insertedPulse: any = null;
+  await page.route(/.*supabase.co\/rest\/v1\/rpc\/next_pulse_number(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: 1 });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: savedPulses });
+      return;
+    }
+    if (route.request().method() === 'POST') {
+      const values = route.request().postDataJSON()[0];
+      insertedPulse = { id: 'feedback-pulse-1', createdAt: '2026-11-07T12:00:00Z', ...values };
+      savedPulses.unshift(insertedPulse);
+      await route.fulfill({ status: 201, json: insertedPulse });
+      return;
+    }
+    throw new Error(`Unexpected pulse request: ${route.request().method()}`);
+  });
+  await page.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: { candidates: [{ content: { parts: [{ text: JSON.stringify({ subject: 'Checking in on your progress', body: 'Hello Kyle,\n\nYou have a clear next step in the course.\n\nBest,\nBud' }) }], role: 'model' } }] } });
+  });
 
   // Resolve the learner's numeric Canvas user id for the grades link.
   let lookupPayload: any = null;
@@ -261,10 +287,18 @@ test('overseer gets a Canvas grades link to the learner on a Canvas-linked cours
   const gradesLink = page.getByRole('link', { name: 'Canvas', exact: true });
   await expect(gradesLink).toHaveAttribute('href', 'https://byu.instructure.com/courses/12345/grades/777');
   await expect(gradesLink).toHaveAttribute('target', '_blank');
+  await expect(page.getByTestId('learner-overview-actions').getByRole('button', { name: 'Feedback' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Pulses', exact: true }).click();
   const feedbackButton = page.getByRole('button', { name: 'Feedback', exact: true });
   await expect(feedbackButton).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Take pulse' })).toBeVisible();
   await feedbackButton.click();
-  await expect(page.getByRole('heading', { name: 'Feedback Email for Kyle Robinson' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Feedback.*Pulse 1/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Checking in on your progress' })).toBeVisible();
+  await expect(page.getByText('You have a clear next step in the course.')).toBeVisible();
+  expect(insertedPulse?.pulseType).toBe('feedback');
+  expect(insertedPulse?.targetType).toBe('learner');
+  expect(insertedPulse?.targetId).toBe(KYLE_LEARNER_ID);
 
   // The lookup identified the learner by email and was scoped to the MasteryLS course (catalogId).
   expect(lookupPayload?.courseId).toBe('12345');
@@ -283,6 +317,7 @@ test('no Canvas grades link when the course is not linked to Canvas', async ({ p
 
   await expect(page.getByRole('heading', { name: 'Kyle Robinson' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Canvas', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Pulses', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Feedback', exact: true })).toBeVisible();
 });
 

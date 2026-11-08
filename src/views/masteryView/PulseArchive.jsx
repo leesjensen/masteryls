@@ -14,7 +14,7 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
-export default function PulseArchive({ courseOps, course, targetType, targetId, targetName, enrollmentId = null, learnerRow = null, evidence, rosterRows = [], sections = [], canEdit, extraControls = null }) {
+export default function PulseArchive({ courseOps, course, targetType, targetId, targetName, enrollmentId = null, learnerRow = null, evidence, rosterRows = [], sections = [], canEdit, canGenerateFeedback = false, extraControls = null }) {
   const [terms, setTerms] = React.useState([]);
   const [termId, setTermId] = React.useState('');
   const [pulses, setPulses] = React.useState([]);
@@ -87,6 +87,23 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
     finally { setBusy(false); setProgressMessage(''); }
   }
 
+  async function generateFeedback() {
+    if (!termId || !learnerRow || !canGenerateFeedback) return;
+    setBusy(true); setError(''); setProgressMessage('Preparing learner feedback…');
+    try {
+      const result = await courseOps.generateLearnerFeedback(learnerRow, course, { onProgress: setProgressMessage });
+      const subject = String(result?.subject || `Your progress in ${course?.title || 'the course'}`).replace(/\s+/g, ' ').trim().slice(0, 200);
+      const body = String(result?.body || '').trim();
+      if (!body) throw new Error('The feedback generator returned an empty message. Please try again.');
+      const feedbackMarkdown = normalizePulseMarkdown(`# ${subject}\n\n${body}`);
+      setProgressMessage('Saving feedback pulse…');
+      const pulse = await service.createPulse({ catalogId: course.id, termId, targetType: 'learner', targetId, enrollmentId, pulseType: 'feedback', markdown: feedbackMarkdown, createdBy: user.id });
+      setProgressMessage('Refreshing pulse history…');
+      await load(); setSelected(pulse);
+    } catch (e) { setError(e.message || 'Unable to generate feedback.'); }
+    finally { setBusy(false); setProgressMessage(''); }
+  }
+
   async function save() {
     setBusy(true); setError(''); setProgressMessage('Saving pulse changes…');
     try {
@@ -106,6 +123,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       {extraControls}
       <label className="text-sm">Term<select aria-label="Pulse term" className="ml-2 rounded border border-gray-300 p-1" value={termId} onChange={(e) => { setTermId(e.target.value); setSelected(null); }}><option value="">Select term</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.title}</option>)}</select></label>
       <Button size="sm" disabled={!termId || busy} onClick={generate}>{busy ? 'Taking pulse…' : 'Take pulse'}</Button>
+      {targetType === 'learner' && canGenerateFeedback && <Button size="sm" variant="outline" disabled={!termId || busy} onClick={generateFeedback}>Feedback</Button>}
     </div>
     {busy && <div role="status" aria-live="polite" className="flex items-center gap-2 text-sm text-gray-600">
       <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin text-blue-600" />
@@ -118,7 +136,10 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
         <div className="min-w-0">
           <nav aria-label="Pulse history" className="max-h-72 space-y-1 overflow-auto">
-            {pulses.map((pulse) => <button key={pulse.id} type="button" onClick={() => setSelected(pulse)} className={`block w-full rounded p-2 text-left text-sm ${selected?.pulseNumber === pulse.pulseNumber ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-50'}`}>Pulse {pulse.pulseNumber}<span className="block text-xs text-gray-500">{formatDate(pulse.createdAt)}</span></button>)}
+            {pulses.map((pulse) => <button key={pulse.id} type="button" onClick={() => setSelected(pulse)} className={`block w-full rounded p-2 text-left text-sm ${selected?.pulseNumber === pulse.pulseNumber ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-50'}`}>
+              {pulse.pulseType === 'feedback' ? <><span className="mr-1 inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">Feedback</span>Pulse {pulse.pulseNumber}</> : `Pulse ${pulse.pulseNumber}`}
+              <span className="block text-xs text-gray-500">{formatDate(pulse.createdAt)}</span>
+            </button>)}
             {!pulses.length && <p className="text-sm text-gray-500">No pulses for this term yet.</p>}
           </nav>
         </div>

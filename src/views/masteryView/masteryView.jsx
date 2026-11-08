@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import { buildPulseRosterEvidence } from '../../utils/pulseEvidence.js';
-import FeedbackEmailModal from './FeedbackEmailModal.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
 import { useAlert } from '../../contexts/AlertContext.jsx';
@@ -62,7 +61,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [masteryTab, setMasteryTab] = React.useState('roster');
 
-  const [feedbackModal, setFeedbackModal] = React.useState(null);
 
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
@@ -97,9 +95,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   }, [enrolledCourseIds, selectedCourseId, user]);
   const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
   const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
-  const canGenerateFeedback = canObserveLearners;
   const canManagePulses = Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId)));
-  const hasActions = canObserveLearners || canUnenrollLearners || canGenerateFeedback;
+  const hasActions = canObserveLearners || canUnenrollLearners;
 
   // Derive every displayed/sorted metric from the trimmed progress once per course load. This is
   // the single source of truth - the table never sorts on values it doesn't display.
@@ -330,18 +327,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     }
   }
 
-  function onGenerateFeedback(row, event) {
-    event?.stopPropagation?.();
-    if (!canGenerateFeedback || !selectedCourse) return;
-    setFeedbackModal({ row });
-  }
-
-  async function onGenerateEmail(row, senderName) {
-    const rawRow = allRows.find((r) => r.enrollmentId === row.enrollmentId);
-    const learnerData = { ...row, progress: rawRow?.progress ?? {} };
-    return courseOpsRef.current.generateLearnerFeedbackEmail(learnerData, selectedCourse, senderName);
-  }
-
   // Pick a section from the dropdown to scope the roster ('' = all sections).
   function onSectionSelect(sectionId) {
     setSelectedSectionId(sectionId);
@@ -507,15 +492,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                             Unenroll
                           </button>
                         )}
-                        {canGenerateFeedback && (
-                          <button
-                            type="button"
-                            className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
-                            onClick={(event) => onGenerateFeedback(row, event)}
-                          >
-                            Feedback
-                          </button>
-                        )}
                       </div>
                     </td>
                   )}
@@ -529,16 +505,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       </>}
     </div>
 
-    {feedbackModal && (
-      <FeedbackEmailModal
-        learnerName={feedbackModal.row.learnerName}
-        learnerEmail={feedbackModal.row.learnerEmail}
-        senderName={user?.name || ''}
-        senderEmail={user?.email || ''}
-        onGenerate={(senderName) => onGenerateEmail(feedbackModal.row, senderName)}
-        onClose={() => setFeedbackModal(null)}
-      />
-    )}
     </>
   );
 }

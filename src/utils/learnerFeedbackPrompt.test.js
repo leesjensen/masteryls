@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLearnerFeedbackEmailPrompt } from '../utils/learnerFeedbackPrompt.js';
+import { buildLearnerFeedbackPrompt } from '../utils/learnerFeedbackPrompt.js';
 
 test('learner feedback prompt keeps evidence distinct and grounds advice in learner data', () => {
-  const prompt = buildLearnerFeedbackEmailPrompt('Instructor Lee', {
+  const prompt = buildLearnerFeedbackPrompt('Instructor Lee', {
     learnerName: 'Avery Student',
     feedbackContext: {
       overall: { masteryPercent: 62, publishedTopicCount: 12 },
@@ -17,6 +17,8 @@ test('learner feedback prompt keeps evidence distinct and grounds advice in lear
   }, { title: 'CS 240 Advanced Software Construction' }, 'curious and conversational');
 
   assert.match(prompt, /Canvas grades, topic mastery, interaction completion, and schedule/);
+  assert.match(prompt, /saved as an instructor-authored learner pulse/);
+  assert.match(prompt, /Do not include To, From, Reply-To, email headers/);
   assert.match(prompt, /Treat Canvas graded assignments as the course's primary checkpoints/);
   assert.match(prompt, /state both without inventing a reason to reconcile them/);
   assert.match(prompt, /do not create a blended score/);
@@ -63,7 +65,7 @@ test('learner feedback prompt keeps evidence distinct and grounds advice in lear
 });
 
 test('learner feedback prompt treats missing values as unknown and does not force a pacing label', () => {
-  const prompt = buildLearnerFeedbackEmailPrompt('Instructor Lee', {
+  const prompt = buildLearnerFeedbackPrompt('Instructor Lee', {
     learnerName: 'Avery Student',
     feedbackContext: { canvas: { status: 'unavailable' }, schedule: { status: 'no schedule available' } },
   }, { title: 'Course' }, 'calm and practical');
@@ -75,8 +77,8 @@ test('learner feedback prompt treats missing values as unknown and does not forc
 });
 
 test('successive feedback drafts rotate through distinct tone cues', () => {
-  const first = buildLearnerFeedbackEmailPrompt('Instructor Lee', { learnerName: 'Avery Student' }, { title: 'Course' });
-  const second = buildLearnerFeedbackEmailPrompt('Instructor Lee', { learnerName: 'Jordan Student' }, { title: 'Course' });
+  const first = buildLearnerFeedbackPrompt('Instructor Lee', { learnerName: 'Avery Student' }, { title: 'Course' });
+  const second = buildLearnerFeedbackPrompt('Instructor Lee', { learnerName: 'Jordan Student' }, { title: 'Course' });
   const styleCue = (prompt) => prompt.match(/tone cue: ([^.]+)\./)?.[1];
 
   assert.ok(styleCue(first));
@@ -85,7 +87,7 @@ test('successive feedback drafts rotate through distinct tone cues', () => {
 });
 
 test('login-like learner identifiers are not used as email greetings', () => {
-  const prompt = buildLearnerFeedbackEmailPrompt('Instructor Lee', { learnerName: 'johnm354' }, { title: 'Course' }, 'calm and practical');
+  const prompt = buildLearnerFeedbackPrompt('Instructor Lee', { learnerName: 'johnm354' }, { title: 'Course' }, 'calm and practical');
 
   assert.match(prompt, /Start with "Hello there,"/);
   assert.doesNotMatch(prompt, /Start with "Hello johnm354,/);

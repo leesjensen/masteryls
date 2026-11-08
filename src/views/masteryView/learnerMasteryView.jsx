@@ -9,7 +9,6 @@ import BarChartSvg from '../../components/charts/barChartSvg.jsx';
 import LearnerAttendanceChart from '../../components/attendance/learnerAttendanceChart.jsx';
 import { getCanvasGradesUrl } from '../../hooks/canvas/canvasSync.js';
 import CanvasGradesPanel from './canvasGradesPanel.jsx';
-import FeedbackEmailModal from './FeedbackEmailModal.jsx';
 import PulseArchive from './PulseArchive.jsx';
 
 function formatDuration(seconds) {
@@ -81,7 +80,6 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   const [activityLoaded, setActivityLoaded] = React.useState(false);
   const [canvasGradesUrl, setCanvasGradesUrl] = React.useState(null);
   const [canvasGrades, setCanvasGrades] = React.useState({ loading: false, loaded: false, found: false, overall: null, assignments: [], error: null });
-  const [feedbackModalOpen, setFeedbackModalOpen] = React.useState(false);
 
   const courseOpsRef = React.useRef(courseOps);
   courseOpsRef.current = courseOps;
@@ -106,10 +104,6 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     navigate(`/course/${selectedCourseId}`);
   }
 
-  async function onGenerateFeedbackEmail(senderName) {
-    if (!selectedLearner || !selectedCourse) return null;
-    return courseOpsRef.current.generateLearnerFeedbackEmail(selectedLearner, selectedCourse, senderName);
-  }
   const selectedLearnerDisplaySummary = React.useMemo(() => {
     const hasTopicProgress = selectedLearnerSummary.completedTopics > 0;
     return {
@@ -245,7 +239,6 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     setActivityRecords([]);
     setActivityLoaded(false);
     setCanvasGrades({ loading: false, loaded: false, found: false, overall: null, assignments: [], error: null });
-    setFeedbackModalOpen(false);
   }, [selectedCourseId, routeLearnerId]);
 
   // When an overseer views a learner in a Canvas-linked course, resolve the learner's Canvas
@@ -523,11 +516,6 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
                 Canvas
               </a>
             )}
-            {isOverseer && (
-              <button type="button" onClick={() => setFeedbackModalOpen(true)} className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs">
-                Feedback
-              </button>
-            )}
           </div>
           <div className="flex flex-wrap gap-6 mt-3 text-sm text-gray-700">
             <span>
@@ -575,7 +563,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
       )}
 
       {!loading && selectedLearner && chartMode === 'pulses' && (
-        <PulseArchive courseOps={courseOps} course={selectedCourse} targetType="learner" targetId={selectedLearner.learnerId || routeLearnerId} targetName={selectedLearner.learnerName || selectedLearner.learnerEmail || 'Learner'} enrollmentId={selectedLearner.enrollmentId} learnerRow={selectedLearner} canEdit={Boolean(user?.isRoot?.() || user?.isEditor?.(selectedCourseId))} evidence={{ masteryPercent: selectedLearnerDisplaySummary.mastery, completedTopics: selectedLearnerDisplaySummary.completedTopics, examCompleted: selectedLearnerSummary.examCompletedCount, projectSubmits: selectedLearnerSummary.projectSubmittedCount, sectionId: selectedLearner.sectionId, progress: selectedLearner.progress }} />
+        <PulseArchive courseOps={courseOps} course={selectedCourse} targetType="learner" targetId={selectedLearner.learnerId || routeLearnerId} targetName={selectedLearner.learnerName || selectedLearner.learnerEmail || 'Learner'} enrollmentId={selectedLearner.enrollmentId} learnerRow={selectedLearner} canEdit={Boolean(user?.isRoot?.() || user?.isEditor?.(selectedCourseId))} canGenerateFeedback={isOverseer} evidence={{ masteryPercent: selectedLearnerDisplaySummary.mastery, completedTopics: selectedLearnerDisplaySummary.completedTopics, examCompleted: selectedLearnerSummary.examCompletedCount, projectSubmits: selectedLearnerSummary.projectSubmittedCount, sectionId: selectedLearner.sectionId, progress: selectedLearner.progress }} />
       )}
 
       {!loading && instructionTopicSummaries.length > 0 && chartMode !== 'topicActivity' && chartMode !== 'pulses' && (
@@ -660,16 +648,6 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
         </div>
       )}
 
-      {feedbackModalOpen && selectedLearner && (
-        <FeedbackEmailModal
-          learnerName={selectedLearner.learnerName || selectedLearner.learnerEmail || 'Learner'}
-          learnerEmail={selectedLearner.learnerEmail || ''}
-          senderName={user?.name || ''}
-          senderEmail={user?.email || ''}
-          onGenerate={onGenerateFeedbackEmail}
-          onClose={() => setFeedbackModalOpen(false)}
-        />
-      )}
     </div>
   );
 }

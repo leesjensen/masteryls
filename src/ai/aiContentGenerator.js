@@ -1,7 +1,7 @@
 import service from '../service/service';
 import { normalizeInteractionIds, topicContentForAi } from '../utils/interactionMeta';
 import { normalizeDraProcessAttributeName } from '../utils/draStages';
-import { buildLearnerFeedbackEmailPrompt } from '../utils/learnerFeedbackPrompt.js';
+import { buildLearnerFeedbackPrompt } from '../utils/learnerFeedbackPrompt.js';
 import { buildPulsePrompt } from '../utils/pulsePrompt.js';
 import { MERMAID_PROMPT_GUIDELINES } from '../utils/mermaidPromptGuidelines.js';
 
@@ -1685,8 +1685,8 @@ Requirements:
   };
 }
 
-export async function aiLearnerFeedbackEmailGenerator(senderName, learnerData, courseData) {
-  const prompt = buildLearnerFeedbackEmailPrompt(senderName, learnerData, courseData);
+export async function aiLearnerFeedbackGenerator(senderName, learnerData, courseData) {
+  const prompt = buildLearnerFeedbackPrompt(senderName, learnerData, courseData);
 
   const response = await makeSimpleAiRequest(prompt);
   const text = String(response || '')

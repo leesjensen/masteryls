@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator, aiInterviewScenarioGenerator, aiInterviewSessionResponseGenerator, aiInterviewEvaluationGenerator, aiInterviewCoachGenerator, aiInterviewJobDescriptionGenerator, aiLearnerFeedbackEmailGenerator } from '../ai/aiContentGenerator';
+import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteractionFeedbackGenerator, aiChoiceInteractionFeedbackGenerator, aiWebPageFeedbackGenerator, aiUrlFeedbackGenerator, aiFileInteractionFeedbackGenerator, aiDraScenarioGenerator, aiDraStakeholderResponseGenerator, aiDraEvaluationGenerator, aiDraCoachGenerator, aiInterviewScenarioGenerator, aiInterviewSessionResponseGenerator, aiInterviewEvaluationGenerator, aiInterviewCoachGenerator, aiInterviewJobDescriptionGenerator, aiLearnerFeedbackGenerator } from '../ai/aiContentGenerator';
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
@@ -2456,10 +2456,11 @@ Requirements:
     return evidence;
   }
 
-  async function generateLearnerFeedbackEmail(learnerRow, course, senderNameOverride) {
-    const senderName = senderNameOverride || user?.name || 'Your Instructor';
-    const analysisEvidence = await collectLearnerAnalysisEvidence(learnerRow, course);
-    const result = await aiLearnerFeedbackEmailGenerator(senderName, { ...learnerRow, feedbackContext: analysisEvidence }, course);
+  async function generateLearnerFeedback(learnerRow, course, { onProgress = () => {} } = {}) {
+    const senderName = user?.name || 'Your Instructor';
+    const analysisEvidence = await collectLearnerAnalysisEvidence(learnerRow, course, { onProgress });
+    onProgress('Drafting learner feedback…');
+    const result = await aiLearnerFeedbackGenerator(senderName, { ...learnerRow, feedbackContext: analysisEvidence }, course);
     if (typeof result === 'string') {
       return { subject: `Your progress in ${course?.title || 'the course'}`, body: result };
     }
@@ -2938,7 +2939,7 @@ Requirements:
     unenrollLearner,
     collectLearnerAnalysisEvidence,
     collectCourseSectionPulseEvidence,
-    generateLearnerFeedbackEmail,
+    generateLearnerFeedback,
     getTopicProgress,
     getSurveySummary,
     getLikertSummary,
