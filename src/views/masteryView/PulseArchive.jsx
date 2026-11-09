@@ -1,5 +1,5 @@
 import React from 'react';
-import { LoaderCircle } from 'lucide-react';
+import { Activity, LoaderCircle } from 'lucide-react';
 import { aiPulseGenerator } from '../../ai/aiContentGenerator';
 import Markdown from '../../components/Markdown.jsx';
 import MarkdownEditor from '../../components/editor/markdownEditor.jsx';
@@ -90,7 +90,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
           currentEvidence = { ...currentEvidence, ...detailedEvidence };
         }
       }
-      setProgressMessage('Generating pulse…');
+      setProgressMessage('Taking pulse…');
       const body = await aiPulseGenerator({ targetType, targetName, term: terms.find((term) => term.id === termId), currentEvidence, previousPulse, pulseTrendHistory });
       const pulseMarkdown = normalizePulseMarkdown(body);
       const cohortSafeMarkdown = targetType === 'learner' ? pulseMarkdown : `${pulseMarkdown.trimEnd()}\n\n${COURSE_LEARNER_COHORT_MARKER}\n`;
@@ -133,45 +133,62 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
 
   const topic = { title: `${targetName} Pulse`, type: 'instruction', path: 'pulse.md' };
 
-  // A learner target with no enrollment term shows nothing (no chooser, controls, or history).
-  const learnerNoTerm = targetType === 'learner' && !termId;
+  const termTitle = terms.find((term) => term.id === termId)?.title || '';
 
   return <div className="flex min-w-0 flex-col gap-3" data-testid="pulse-archive">
-    <div className="flex flex-wrap items-end gap-3">
+    {/* Course/section targets keep the term chooser + generate control up top; a learner target has
+        no chooser — its term is fixed by the enrollment and shown in the sidebar with its actions. */}
+    {targetType !== 'learner' && <div className="flex flex-wrap items-end gap-3">
       {extraControls}
-      {targetType === 'learner'
-        ? termId && <span className="text-sm text-gray-600">Term: <span className="font-medium text-gray-800">{terms.find((term) => term.id === termId)?.title || ''}</span></span>
-        : <label className="text-sm">Term<select aria-label="Pulse term" className="ml-2 rounded border border-gray-300 p-1" value={termId} onChange={(e) => { setTermId(e.target.value); setSelected(null); }}><option value="">Select term</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.title}</option>)}</select></label>}
-      {canGenerate && !learnerNoTerm && <Button size="sm" disabled={!termId || busy} onClick={generate}>{busy ? 'Taking pulse…' : 'Take pulse'}</Button>}
-      {targetType === 'learner' && canGenerateFeedback && !learnerNoTerm && <Button size="sm" variant="outline" disabled={!termId || busy} onClick={generateFeedback}>Feedback</Button>}
-    </div>
-    {busy && <div role="status" aria-live="polite" className="flex items-center gap-2 text-sm text-gray-600">
-      <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin text-blue-600" />
-      <span>{progressMessage || 'Working on the pulse…'}</span>
+      <label className="text-sm">Term<select aria-label="Pulse term" className="ml-2 rounded border border-gray-300 p-1" value={termId} onChange={(e) => { setTermId(e.target.value); setSelected(null); }}><option value="">Select term</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.title}</option>)}</select></label>
+      {canGenerate && <Button size="sm" disabled={!termId || busy} onClick={generate}>Take pulse</Button>}
     </div>}
     {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
     {!termId && targetType !== 'learner' && <p className="text-sm text-gray-500">Create a term before generating a pulse.</p>}
     {termId && <section className="min-w-0 rounded-lg border border-gray-200 bg-white p-4">
-      <div><h2 className="text-lg font-semibold">{targetType === 'learner' ? 'Learner Pulse History' : `${targetType === 'section' ? 'Section' : 'Course'} Pulse`}</h2><p className="text-sm text-gray-500">{targetName}</p></div>
-      <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        <div className="min-w-0">
-          <nav aria-label="Pulse history" className="max-h-72 space-y-1 overflow-auto">
-            {pulses.map((pulse) => <button key={pulse.id} type="button" onClick={() => setSelected(pulse)} className={`block w-full rounded p-2 text-left text-sm ${selected?.id === pulse.id ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-50'}`}>
-              {pulse.pulseType === 'feedback' ? <>Pulse {pulse.pulseNumber}<span className="ml-1.5 inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">Feedback</span></> : `Pulse ${pulse.pulseNumber}`}
-              <span className="block text-xs text-gray-500">{formatDate(pulse.createdAt)}</span>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[13rem_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col">
+          <div className="mb-2 border-b border-gray-100 pb-2">
+            <h2 className="text-sm font-semibold text-gray-800">{targetType === 'learner' ? 'Pulse History' : `${targetType === 'section' ? 'Section' : 'Course'} Pulse`}</h2>
+            <p className="truncate text-xs text-gray-500">{targetName}</p>
+            {targetType === 'learner' && <>
+              {termTitle && <p className="mt-1 text-xs text-gray-500">Term: <span className="font-medium text-gray-700">{termTitle}</span></p>}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {canGenerate && <Button size="xs" disabled={busy} onClick={generate}>Take pulse</Button>}
+                {canGenerateFeedback && <Button size="xs" variant="outline" disabled={busy} onClick={generateFeedback}>Feedback</Button>}
+              </div>
+            </>}
+          </div>
+          <nav aria-label="Pulse history" className="max-h-72 min-h-0 flex-1 space-y-0.5 overflow-auto lg:max-h-[70vh]">
+            {pulses.map((pulse) => <button key={pulse.id} type="button" onClick={() => setSelected(pulse)} className={`block w-full rounded px-2 py-1.5 text-left text-sm ${selected?.id === pulse.id ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-50'}`}>
+              <span className="flex items-center gap-1.5">
+                <Activity size={14} aria-hidden="true" className="shrink-0 text-blue-600" />
+                <span>Pulse {pulse.pulseNumber}{pulse.pulseType === 'feedback' && <span className="ml-1.5 inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">Feedback</span>}</span>
+              </span>
+              <span className="mt-0.5 block pl-[1.375rem] text-xs text-gray-500">{formatDate(pulse.createdAt)}</span>
             </button>)}
             {!pulses.length && <p className="text-sm text-gray-500">No pulses for this term yet.</p>}
           </nav>
         </div>
-        <div className="min-w-0">
-          {selected && <>
+        <div className="relative min-w-0 lg:border-l lg:border-gray-200 lg:pl-4">
+          {/* The generation signifier overlays the content area (like the Markdown editor's AI
+              overlay) so it marks where the pulse will appear without shifting the layout. */}
+          {busy && <div role="status" aria-live="polite" className="absolute inset-0 z-20 rounded bg-white bg-opacity-90">
+            {/* Sticky so the signifier rides the top of the viewport instead of being centered far
+                down a long, overlaid pulse where it can't be seen. */}
+            <div className="sticky top-0 flex items-center justify-center gap-3 border-b border-gray-100 bg-white/70 p-5 text-gray-700">
+              <LoaderCircle aria-hidden="true" className="h-6 w-6 animate-spin text-blue-600" />
+              <span className="text-sm font-medium">{progressMessage || 'Taking pulse…'}</span>
+            </div>
+          </div>}
+          {selected ? <>
             <div className="mb-2 flex justify-end gap-2">{canEdit && !editing && <Button size="xs" variant="outline" onClick={() => setEditing(true)}>Edit</Button>}{editing && <><Button size="xs" variant="secondary" onClick={() => { setMarkdown(normalizePulseMarkdown(selected.markdown)); setEditing(false); }}>Cancel</Button><Button size="xs" disabled={busy} onClick={save}>Save changes</Button></>}</div>
             {editing ? <div ref={splitContainerRef} className="flex h-[70vh] min-h-[32rem] min-w-0 overflow-hidden rounded border border-gray-200">
               <div className="flex h-full min-h-0 min-w-0 shrink-0 overflow-hidden" style={{ width: `${panePercent}%` }}><MarkdownEditor course={course} currentTopic={topic} content={markdown} committedContent={selected.markdown} onChange={setMarkdown} commit={() => {}} showToolbar={false} /></div>
               <Splitter onMove={onPaneMoved} onResized={onPaneResized} />
               <div className="h-full min-h-0 min-w-0 flex-1 overflow-auto bg-white"><div className="markdown-body mx-auto min-h-full max-w-[880px] p-4"><Markdown learningSession={{ course, topic }} content={markdown} /></div></div>
             </div> : <article className="markdown-body max-w-none"><Markdown learningSession={{ course, topic }} content={normalizePulseMarkdown(selected.markdown)} /></article>}
-          </>}
+          </> : busy ? <div className="min-h-[16rem]" aria-hidden="true" /> : null}
         </div>
       </div>
     </section>}

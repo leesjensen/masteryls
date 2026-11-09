@@ -437,6 +437,31 @@ test('learner masteryview shows learner summary and topic detail', async ({ page
   await expect(page.getByRole('button', { name: 'Observe' })).toBeVisible();
 });
 
+test('learner stays on the mastery view after a browser refresh', async ({ page }) => {
+  await initBasicCourse({ page });
+  await mockGradebookOverview(page);
+  // A plain learner: enrolled in the course but not root/editor/mentor.
+  await page.route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [] });
+      return;
+    }
+    await route.fulfill({ status: 201, json: {} });
+  });
+
+  await navigateToDashboard(page);
+  await page.goto(`/course/${COURSE_ID}/mastery`);
+  // The learner sees their own mastery view (Topic Activity tab), not the roster.
+  await expect(page.getByRole('button', { name: 'Topic Activity', exact: true })).toBeVisible();
+
+  await page.reload();
+
+  // Regression: a refresh must keep the learner on /mastery (the enrollment is resolved before the
+  // mastery topic is gated), not fall through to the default topic view.
+  await expect(page).toHaveURL(new RegExp(`/course/${COURSE_ID}/mastery$`));
+  await expect(page.getByRole('button', { name: 'Topic Activity', exact: true })).toBeVisible();
+});
+
 test('masteryview shows course attendance and a learner attendance history when attendance is enabled', async ({ page }) => {
   await initBasicCourse({ page });
   // Attendance is enabled per section now (not course.settings.attendance).

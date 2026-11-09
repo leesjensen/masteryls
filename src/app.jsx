@@ -198,6 +198,14 @@ function ClassroomPage() {
             }
           }
 
+          // Resolve the viewer's enrollment up front: the mastery route's synthetic topic depends on
+          // it (a learner reaches their own mastery view only when enrolled), and a fresh load/refresh
+          // has not populated learningSession.enrollment yet - without this, refreshing /mastery as a
+          // learner fell through to the default topic.
+          const { observeForCourse, learnerId } = getEffectiveLearnerId({ userId: user?.id, courseId: course?.id, observeSession });
+          const enrollment = course && learnerId ? await service.enrollment(learnerId, course.id) : null;
+          if (seq !== latestEffectSeqRef.current) return;
+
           let topic = learningSession?.topic;
           if (course) {
             const redirectToDefaultTopic = (saveAsCurrentTopic = false) => {
@@ -238,7 +246,7 @@ function ClassroomPage() {
               }
             } else if (isMasteryRoute) {
               // Mastery roster (overseer) or per-learner view. Not persisted as the landing topic.
-              topic = courseOps.getMasteryTopic(course);
+              topic = courseOps.getMasteryTopic(course, enrollment);
               if (!topic) {
                 redirectToDefaultTopic();
                 return;
@@ -260,11 +268,8 @@ function ClassroomPage() {
 
           if (!course || !topic) throw new Error('Course or topic not found');
 
-          const { observeForCourse, learnerId } = getEffectiveLearnerId({ userId: user?.id, courseId: course.id, observeSession });
-          const enrollment = learnerId ? await service.enrollment(learnerId, course.id) : null;
-          // A newer invocation started (and possibly already applied its own result) while
-          // this one was awaiting the enrollment fetch - discard this stale result instead
-          // of overwriting whatever the newer invocation set.
+          // A newer invocation may have started while this one awaited above (enrollment fetch or
+          // topic resolution); discard this stale result instead of overwriting the newer one.
           if (seq !== latestEffectSeqRef.current) {
             return;
           }

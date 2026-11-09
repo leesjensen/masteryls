@@ -731,9 +731,9 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   // Mastery renders in the classroom content pane (like Schedule/Sections). An overseer sees the
   // course roster; an enrolled learner sees their own progress. Synthetic topic - no GitHub content.
-  function getMasteryTopic(course = learningSession?.course) {
+  function getMasteryTopic(course = learningSession?.course, enrollment = learningSession?.enrollment) {
     if (!course?.id || !user) return null;
-    if (!user.canOverseeCourse?.(course.id) && !learningSession?.enrollment) return null;
+    if (!user.canOverseeCourse?.(course.id) && !enrollment) return null;
     return { id: 'mastery', title: 'Mastery', type: 'mastery', path: 'mastery', state: 'published' };
   }
 
