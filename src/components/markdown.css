@@ -45,10 +45,10 @@
   --md-accent: #4f46e5;
   --md-accent-2: #0ea5e9;
   --md-accent-soft: color-mix(in srgb, var(--md-accent) 14%, transparent);
-  /* blue, for the locked schedule header — flat solid colours */
-  --md-schedule-head-bg: #bfdbfe;
-  --md-schedule-head-text: #1e40af;
-  --md-schedule-head-border: #60a5fa;
+  /* locked schedule header: cool blue-grey band, deep slate labels, blue accent underline */
+  --md-schedule-head-bg: #dbe3f1;
+  --md-schedule-head-text: #1e293b;
+  --md-schedule-head-border: #2563eb;
   /* blue list bullets: solid dot + soft number chip */
   --md-bullet: #2563eb;
   --md-bullet-soft: #dbeafe;
@@ -742,8 +742,7 @@ html.window-blurred .markdown-body ::selection {
    container. Because the wrapper no longer clips, its own frame would sit at
    the container's width and cut a stray vertical line across the wider,
    horizontally-scrolled table - so the frame moves onto the table itself,
-   which is only as wide as its content. A collapsed-border table can't round
-   its corners, so this is a clean square frame. */
+   which is only as wide as its content. A clean square frame. */
 .markdown-body .markdown-table-scroll--sticky-head {
   overflow: visible;
   border: 0;
@@ -751,21 +750,35 @@ html.window-blurred .markdown-body ::selection {
   box-shadow: none;
 }
 
+/* Separate borders (not the base `collapse`) are what make a sticky header
+   behave: collapsed borders are shared with the tbody, so Chrome renders the
+   header a hair narrower than the body and repaints the header's bottom border
+   away as rows scroll under it. In `separate` mode each header cell owns its
+   background + border, tracks the body's column widths, and stays put. The
+   existing `tr:last-child td { border-bottom: 0 }` keeps the frame from
+   doubling at the bottom edge. */
 .markdown-body .markdown-table-scroll--sticky-head > table {
+  border-collapse: separate;
+  border-spacing: 0;
   border: 1px solid var(--md-border-strong);
   box-shadow: var(--md-shadow-md);
 }
 
 .markdown-body .markdown-table-scroll--sticky-head > table thead th {
   position: sticky;
-  top: 0;
+  /* -1px overshoot tucks the sub-pixel top edge behind the scroll container's
+     clip, so the row scrolling under can't bleed over the pinned header. */
+  top: -1px;
   z-index: 2;
-  /* A flat sky header so the locked row stays distinct from the light grey
-     "past" rows it scrolls over, with a sky hairline for separation. */
+  /* A cool-grey header band with high-contrast slate labels that reads clearly
+     against both the white rows and the grey "past" rows it scrolls over, a
+     blue accent underline, and a soft drop shadow so the header edges are
+     unambiguous. */
   background: var(--md-schedule-head-bg);
   color: var(--md-schedule-head-text);
+  font-weight: 600;
   border-bottom: 2px solid var(--md-schedule-head-border);
-  box-shadow: 0 1px 0 var(--md-schedule-head-border);
+  box-shadow: 0 6px 12px -5px rgba(16, 24, 40, 0.28);
 }
 
 /* --- Footnotes (GFM) ---------------------------------------------------- */

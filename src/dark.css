@@ -282,10 +282,10 @@ html.dark .markdown-body {
   --md-accent: oklch(74% 0.14 280);
   --md-accent-2: oklch(76% 0.12 230);
   --md-accent-soft: color-mix(in srgb, var(--md-accent) 20%, transparent);
-  /* blue schedule header — solid, tuned to read on the dark surface */
-  --md-schedule-head-bg: oklch(42% 0.09 262);
-  --md-schedule-head-text: oklch(90% 0.05 262);
-  --md-schedule-head-border: oklch(55% 0.12 262);
+  /* schedule header — raised cool blue-grey band, bright labels, bright blue accent underline */
+  --md-schedule-head-bg: oklch(34% 0.032 264);
+  --md-schedule-head-text: oklch(93% 0.02 264);
+  --md-schedule-head-border: oklch(70% 0.16 262);
   /* blue list bullets — brighter so they read on the dark surface */
   --md-bullet: oklch(72% 0.15 262);
   --md-bullet-soft: oklch(45% 0.12 262);
