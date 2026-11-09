@@ -1121,6 +1121,9 @@ drop policy if exists "Root manages all" on public.schedule;
 drop policy if exists "World read all" on public.section;
 drop policy if exists "Course editor manages section" on public.section;
 drop policy if exists "Root manages all" on public.section;
+drop policy if exists "Pulse readers" on public.pulse;
+drop policy if exists "Pulse creators" on public.pulse;
+drop policy if exists "Pulse editors" on public.pulse;
 
 
 ----------------------- Policies: Catalog
@@ -1381,8 +1384,9 @@ create policy "Root manages all" on public.section for all to authenticated
   using (public.auth_is_root(auth.uid())) with check (public.auth_is_root(auth.uid()));
 
 create policy "Pulse readers" on public.pulse for select to authenticated using (
-  public.auth_manages_course(auth.uid(), "catalogId")
-  or ("targetType" = 'learner' and public.auth_oversees_course(auth.uid(), "catalogId"))
+  -- Any course overseer (root/editor/mentor) can read all pulses, course/section included; a learner
+  -- can read only learner-target pulses tied to their own enrollment.
+  public.auth_oversees_course(auth.uid(), "catalogId")
   or ("targetType" = 'learner' and exists (select 1 from public.enrollment e where e.id = "enrollmentId" and e."learnerId" = auth.uid()))
 );
 create policy "Pulse creators" on public.pulse for insert to authenticated with check (

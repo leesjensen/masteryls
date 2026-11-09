@@ -96,6 +96,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const canObserveLearners = React.useMemo(() => Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId)), [user, selectedCourseId]);
   const canUnenrollLearners = React.useMemo(() => Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId))), [user, selectedCourseId]);
   const canManagePulses = Boolean(user && selectedCourseId && (user.isRoot?.() || user.isEditor?.(selectedCourseId)));
+  // Mentors can read course/section pulses (any overseer), but only root/editors generate or edit them.
+  const canViewPulses = Boolean(user && selectedCourseId && user.canOverseeCourse?.(selectedCourseId));
   const hasActions = canObserveLearners || canUnenrollLearners;
 
   // Derive every displayed/sorted metric from the trimmed progress once per course load. This is
@@ -367,8 +369,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     <>
     <div className="w-full min-w-0 max-w-7xl mx-auto self-start p-4 flex flex-col gap-4">
       <Tabs variant="scroll" active={masteryTab} onChange={setMasteryTab} tabs={[{ id: 'roster', label: 'Roster' }, { id: 'pulses', label: 'Pulses' }]} />
-      {masteryTab === 'pulses' && selectedCourse && canManagePulses && <>
-        <PulseArchive key={`${selectedCourseId}-${selectedSectionId || 'course'}`} courseOps={courseOps} course={selectedCourse} targetType={selectedSectionId ? 'section' : 'course'} targetId={selectedSectionId || selectedCourseId} targetName={selectedSectionId ? courseSections.find((section) => section.id === selectedSectionId)?.title : selectedCourse.title} canEdit extraControls={<label className="text-sm">Pulse target<select className="ml-2 rounded border p-1" value={selectedSectionId || 'course'} onChange={(e) => onSectionSelect(e.target.value === 'course' ? '' : e.target.value)}><option value="course">Course</option>{courseSections.map((section) => <option key={section.id} value={section.id}>Section: {section.title}</option>)}</select></label>} evidence={buildPulseRosterEvidence(derivedRows, { sections: selectedSectionId ? courseSections.filter((section) => section.id === selectedSectionId) : courseSections, schedules: selectedCourse.schedules || [] })} rosterRows={derivedRows} sections={courseSections} />
+      {masteryTab === 'pulses' && selectedCourse && canViewPulses && <>
+        <PulseArchive key={`${selectedCourseId}-${selectedSectionId || 'course'}`} courseOps={courseOps} course={selectedCourse} targetType={selectedSectionId ? 'section' : 'course'} targetId={selectedSectionId || selectedCourseId} targetName={selectedSectionId ? courseSections.find((section) => section.id === selectedSectionId)?.title : selectedCourse.title} canEdit={canManagePulses} canGenerate={canManagePulses} extraControls={<label className="text-sm">Pulse target<select className="ml-2 rounded border p-1" value={selectedSectionId || 'course'} onChange={(e) => onSectionSelect(e.target.value === 'course' ? '' : e.target.value)}><option value="course">Course</option>{courseSections.map((section) => <option key={section.id} value={section.id}>Section: {section.title}</option>)}</select></label>} evidence={buildPulseRosterEvidence(derivedRows, { sections: selectedSectionId ? courseSections.filter((section) => section.id === selectedSectionId) : courseSections, schedules: selectedCourse.schedules || [] })} rosterRows={derivedRows} sections={courseSections} />
       </>}
       {masteryTab === 'roster' && <>
       <div className={`grid grid-cols-1 ${canViewLearnerFilters ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-3`}>

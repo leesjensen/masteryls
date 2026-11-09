@@ -14,7 +14,7 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString();
 }
 
-export default function PulseArchive({ courseOps, course, targetType, targetId, targetName, enrollmentId = null, learnerRow = null, evidence, rosterRows = [], sections = [], canEdit, canGenerateFeedback = false, extraControls = null }) {
+export default function PulseArchive({ courseOps, course, targetType, targetId, targetName, enrollmentId = null, learnerRow = null, evidence, rosterRows = [], sections = [], canEdit, canGenerate = true, canGenerateFeedback = false, extraControls = null }) {
   const [terms, setTerms] = React.useState([]);
   const [termId, setTermId] = React.useState('');
   const [pulses, setPulses] = React.useState([]);
@@ -122,7 +122,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
     <div className="flex flex-wrap items-end gap-3">
       {extraControls}
       <label className="text-sm">Term<select aria-label="Pulse term" className="ml-2 rounded border border-gray-300 p-1" value={termId} onChange={(e) => { setTermId(e.target.value); setSelected(null); }}><option value="">Select term</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.title}</option>)}</select></label>
-      <Button size="sm" disabled={!termId || busy} onClick={generate}>{busy ? 'Taking pulse…' : 'Take pulse'}</Button>
+      {canGenerate && <Button size="sm" disabled={!termId || busy} onClick={generate}>{busy ? 'Taking pulse…' : 'Take pulse'}</Button>}
       {targetType === 'learner' && canGenerateFeedback && <Button size="sm" variant="outline" disabled={!termId || busy} onClick={generateFeedback}>Feedback</Button>}
     </div>
     {busy && <div role="status" aria-live="polite" className="flex items-center gap-2 text-sm text-gray-600">
