@@ -5,7 +5,12 @@ export function buildPulsePrompt({ targetType, targetName, term, currentEvidence
   const historyCohortPolicy = targetType === 'learner'
     ? 'Learner history points belong to this learner and may be compared when their metrics match.'
     : 'For course and section pulses, compare prior aggregate metrics only when they appear in PULSE TREND HISTORY; older pulses without a cohort marker included course staff and are not comparable.';
+  const voicePolicy = targetType === 'learner'
+    ? 'Write the body directly to the learner in the second person ("you", "your"), as a mentor speaking with them. Do not refer to the learner in the third person ("the learner", "the student", "they") or by name in the prose. Keep the tone warm, encouraging, and specific: celebrate genuine wins in a personable way and frame needs-attention items as supportive, actionable guidance rather than judgment. The "# ..." title line may still include the learner\'s name, but headings and body text are addressed to "you".'
+    : 'Write for a course overseer (instructor or mentor) about the cohort in the third person, and identify learners by name so staff can act. Do not address individual learners in the second person.';
   return `Create a useful ${targetType} pulse in Markdown for ${targetName} during ${term?.title || 'the selected term'}.
+
+${voicePolicy}
 
 Follow this exact section order, omitting only sections that have no relevant evidence:
 # ${term?.title || 'Term'} | ${targetName} Pulse

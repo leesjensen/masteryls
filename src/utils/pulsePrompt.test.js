@@ -41,4 +41,24 @@ test('pulse prompt specifies the standard evidence-first Markdown layout and pre
   assert.match(prompt, /do not use pseudo-types such as line-chart/);
   assert.match(prompt, /Do not add classDef default/);
   assert.match(prompt, /Return Markdown only/);
+  // Course/section pulses address a course overseer in the third person, never the learner directly.
+  assert.match(prompt, /Write for a course overseer .* in the third person/);
+  assert.doesNotMatch(prompt, /Write the body directly to the learner in the second person/);
+});
+
+test('learner pulse prompt is written directly to the learner in the second person', () => {
+  const prompt = buildPulsePrompt({
+    targetType: 'learner',
+    targetName: 'Jordan Lee',
+    term: { title: 'Fall Term' },
+    currentEvidence: { masteryPercent: 75 },
+    previousPulse: '',
+    pulseTrendHistory: [],
+  });
+
+  assert.match(prompt, /Write the body directly to the learner in the second person \("you", "your"\)/);
+  assert.match(prompt, /Do not refer to the learner in the third person/);
+  assert.doesNotMatch(prompt, /Write for a course overseer/);
+  // The title line may still carry the learner's name.
+  assert.match(prompt, /# Fall Term \| Jordan Lee Pulse/);
 });
