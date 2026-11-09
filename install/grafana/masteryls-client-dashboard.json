@@ -15,14 +15,24 @@
         "type": "datasource",
         "query": "prometheus",
         "label": "Metrics",
-        "refresh": 1
+        "refresh": 1,
+        "current": {
+          "selected": true,
+          "text": "grafanacloud-leesjensen-prom",
+          "value": "grafanacloud-leesjensen-prom"
+        }
       },
       {
         "name": "DS_LOGS",
         "type": "datasource",
         "query": "loki",
         "label": "Logs",
-        "refresh": 1
+        "refresh": 1,
+        "current": {
+          "selected": true,
+          "text": "grafanacloud-leesjensen-logs",
+          "value": "grafanacloud-leesjensen-logs"
+        }
       }
     ]
   },
@@ -191,7 +201,7 @@
       "title": "Latency distribution",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
       "gridPos": { "x": 8, "y": 28, "w": 8, "h": 8 },
-      "options": { "calculate": false, "cellGap": 1, "color": { "mode": "scheme", "scheme": "Spectral", "steps": 64, "reverse": true }, "yAxis": { "unit": "ms" }, "tooltip": { "show": true, "yHistogram": true }, "legend": { "show": true }, "rowsFrame": { "layout": "auto" } },
+      "options": { "calculate": false, "cellGap": 1, "color": { "mode": "scheme", "scheme": "Spectral", "steps": 64, "reverse": false }, "yAxis": { "unit": "ms" }, "tooltip": { "show": true, "yHistogram": true }, "legend": { "placement": "right", "show": true }, "rowsFrame": { "layout": "auto" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m]))", "format": "heatmap", "legendFormat": "{{le}}" }]
     },
 

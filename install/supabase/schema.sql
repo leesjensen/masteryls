@@ -141,7 +141,8 @@ create table if not exists public.section (
   "legacyFileId" text
 );
 
--- Archived AI course/section/learner pulses. Pulse numbers are indexed data, not parsed from Markdown.
+-- Archived AI course/section/learner pulses. The "Pulse N" label is derived from creation order at
+-- read time (see service.getPulses) - there is no stored number, so no number-sequencing RPC.
 create table if not exists public.pulse (
   id uuid primary key default gen_random_uuid(),
   "catalogId" uuid not null references public.catalog(id) on delete cascade,
@@ -150,38 +151,11 @@ create table if not exists public.pulse (
   "targetId" uuid not null,
   "enrollmentId" uuid references public.enrollment(id) on delete cascade,
   "pulseType" text not null default 'pulse' check ("pulseType" in ('pulse', 'feedback')),
-  "pulseNumber" integer not null check ("pulseNumber" > 0),
   markdown text not null,
   "createdBy" uuid not null references public."user"(id),
-  "createdAt" timestamptz not null default now(),
-  unique ("catalogId", "termId", "targetType", "targetId", "pulseNumber")
+  "createdAt" timestamptz not null default now()
 );
-create index if not exists pulse_target_number_idx on public.pulse ("catalogId", "termId", "targetType", "targetId", "pulseNumber" desc);
-
-create or replace function public.next_pulse_number(p_catalog_id uuid, p_term_id uuid, p_target_type text, p_target_id uuid, p_enrollment_id uuid default null)
-returns integer language plpgsql security definer set search_path = public as $$
-declare next_number integer;
-begin
-  if not exists (select 1 from public.term where id = p_term_id and "catalogId" = p_catalog_id) then
-    raise exception 'Term does not belong to this course';
-  end if;
-  if p_target_type = 'course' then
-    if p_target_id <> p_catalog_id or not public.auth_manages_course(auth.uid(), p_catalog_id) then raise exception 'Not authorized'; end if;
-  elsif p_target_type = 'section' then
-    if not exists (select 1 from public.section where id = p_target_id and "catalogId" = p_catalog_id and "termId" = p_term_id)
-       or not public.auth_manages_course(auth.uid(), p_catalog_id) then raise exception 'Not authorized'; end if;
-  elsif p_target_type = 'learner' then
-    if p_enrollment_id is null or not exists (select 1 from public.enrollment where id = p_enrollment_id and "catalogId" = p_catalog_id and "learnerId" = p_target_id) then
-      raise exception 'Learner enrollment does not match this course';
-    end if;
-    if p_target_id <> auth.uid() and not public.auth_oversees_course(auth.uid(), p_catalog_id) then raise exception 'Not authorized'; end if;
-  else
-    raise exception 'Invalid pulse target type';
-  end if;
-  perform pg_advisory_xact_lock(hashtextextended(p_catalog_id::text || p_term_id::text || p_target_type || p_target_id::text, 0));
-  select coalesce(max("pulseNumber"), 0) + 1 into next_number from public.pulse where "catalogId" = p_catalog_id and "termId" = p_term_id and "targetType" = p_target_type and "targetId" = p_target_id;
-  return next_number;
-end; $$;
+create index if not exists pulse_target_created_idx on public.pulse ("catalogId", "termId", "targetType", "targetId", "createdAt" desc);
 
 -- Associate each enrollment with a section (nullable: a course may have no sections, and legacy
 -- enrollments are backfilled). The learner's schedule is derived via section -> schedule. Added
@@ -1030,7 +1004,6 @@ revoke all on table public.schedule from public, anon, authenticated;
 revoke all on table public.section from public, anon, authenticated;
 revoke all on table public.pulse from public, anon, authenticated;
 grant select, insert, update on table public.pulse to authenticated;
-grant execute on function public.next_pulse_number(uuid, uuid, text, uuid, uuid) to authenticated;
 
 -- Catalog grants
 grant select on table public.catalog to anon, authenticated;

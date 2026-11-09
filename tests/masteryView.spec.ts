@@ -241,9 +241,6 @@ test('overseer gets Canvas grades and can save learner feedback as a pulse', asy
   });
   const savedPulses: any[] = [];
   let insertedPulse: any = null;
-  await page.route(/.*supabase.co\/rest\/v1\/rpc\/next_pulse_number(\?.+)?/, async (route: any) => {
-    await route.fulfill({ json: 1 });
-  });
   await page.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({ json: savedPulses });

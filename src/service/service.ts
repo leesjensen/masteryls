@@ -693,18 +693,19 @@ class Service {
   // ---- Term / Schedule / Section management (editor/root, enforced by RLS). ----
 
   async getPulses(catalogId: string, termId: string, targetType?: string, targetId?: string): Promise<any[]> {
-    let query = this.supabase.from('pulse').select('*').eq('catalogId', catalogId).eq('termId', termId).order('pulseNumber', { ascending: false });
+    let query = this.supabase.from('pulse').select('*').eq('catalogId', catalogId).eq('termId', termId).order('createdAt', { ascending: false });
     if (targetType) query = query.eq('targetType', targetType);
     if (targetId) query = query.eq('targetId', targetId);
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return data || [];
+    // Derive the display number from creation order (callers always scope to one target): newest
+    // first, so the oldest pulse is "Pulse 1". No stored number means no number-sequencing RPC.
+    const rows = data || [];
+    return rows.map((row, i) => ({ ...row, pulseNumber: rows.length - i }));
   }
 
   async createPulse(values: { catalogId: string; termId: string; targetType: string; targetId: string; enrollmentId?: string | null; pulseType?: 'pulse' | 'feedback'; markdown: string; createdBy: string }): Promise<any> {
-    const { data: pulseNumber, error: numberError } = await this.supabase.rpc('next_pulse_number', { p_catalog_id: values.catalogId, p_term_id: values.termId, p_target_type: values.targetType, p_target_id: values.targetId, p_enrollment_id: values.enrollmentId || null });
-    if (numberError) throw new Error(numberError.message);
-    const { data, error } = await this.supabase.from('pulse').insert([{ ...values, pulseType: values.pulseType || 'pulse', pulseNumber }]).select().single();
+    const { data, error } = await this.supabase.from('pulse').insert([{ ...values, pulseType: values.pulseType || 'pulse' }]).select().single();
     if (error) throw new Error(error.message);
     return data;
   }
