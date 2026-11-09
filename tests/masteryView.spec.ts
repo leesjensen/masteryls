@@ -37,6 +37,7 @@ function mockGradebookOverview(page: any) {
         learnerId: KYLE_LEARNER_ID,
         learnerName: 'Kyle Robinson',
         learnerEmail: 'krobin37@byu.edu',
+        sectionId: 'sec-kyle',
         progress: {},
       },
     ].map((row) => (attendance ? { ...row, attendedCount: attendance[row.learnerId] ?? 0 } : row));
@@ -239,6 +240,10 @@ test('overseer gets Canvas grades and can save learner feedback as a pulse', asy
   await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route: any) => {
     await route.fulfill({ json: [{ id: 'term-fall', catalogId: COURSE_ID, title: 'Fall 2026', startDate: '2026-09-01', endDate: '2026-12-18', createdAt: '2026-09-01T00:00:00Z' }] });
   });
+  // The learner pulse view locks to the learner's enrollment term, resolved via their section.
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [{ id: 'sec-kyle', catalogId: COURSE_ID, termId: 'term-fall', title: 'Section A' }] });
+  });
   const savedPulses: any[] = [];
   let insertedPulse: any = null;
   await page.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route: any) => {
@@ -289,6 +294,9 @@ test('overseer gets Canvas grades and can save learner feedback as a pulse', asy
   const feedbackButton = page.getByRole('button', { name: 'Feedback', exact: true });
   await expect(feedbackButton).toBeVisible();
   await expect(page.getByRole('button', { name: 'Take pulse' })).toBeVisible();
+  // Learner pulses lock to the enrollment term: a static label, not a chooser.
+  await expect(page.getByText('Term: Fall 2026')).toBeVisible();
+  await expect(page.getByLabel('Pulse term')).toHaveCount(0);
   await feedbackButton.click();
   await expect(page.getByRole('button', { name: /Feedback.*Pulse 1/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Checking in on your progress' })).toBeVisible();
@@ -306,6 +314,14 @@ test('overseer gets Canvas grades and can save learner feedback as a pulse', asy
 test('no Canvas grades link when the course is not linked to Canvas', async ({ page }) => {
   await initBasicCourse({ page });
   await mockGradebookOverview(page);
+
+  // Learner pulses lock to the learner's enrollment term (section → term), so provide both.
+  await page.route(/.*supabase.co\/rest\/v1\/term(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [{ id: 'term-fall', catalogId: COURSE_ID, title: 'Fall 2026', startDate: '2026-09-01', endDate: '2026-12-18', createdAt: '2026-09-01T00:00:00Z' }] });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [{ id: 'sec-kyle', catalogId: COURSE_ID, termId: 'term-fall', title: 'Section A' }] });
+  });
 
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);

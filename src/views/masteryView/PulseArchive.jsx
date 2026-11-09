@@ -7,6 +7,7 @@ import Splitter from '../../components/Splitter.jsx';
 import useSplitPaneState from '../../hooks/useSplitPaneState.jsx';
 import Button from '../../components/ui/Button.jsx';
 import { normalizePulseMarkdown } from '../../utils/pulseMarkdown.js';
+import { resolveLearnerPulseTermId } from '../../utils/pulseTerm.js';
 import { buildPulseRosterEvidence, excludePulseStaffRows } from '../../utils/pulseEvidence.js';
 import { buildPulseTrendHistory, COURSE_LEARNER_COHORT_MARKER } from '../../utils/pulseTrend.js';
 
@@ -28,16 +29,30 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
   const service = courseOps.service;
   const user = courseOps.user;
 
+  // A learner pulse is scoped to the learner's enrollment term (resolved from their section), so the
+  // learner/observer view locks to that term and shows no chooser; '' means the enrollment has no
+  // term, in which case the view shows nothing.
+  const lockedLearnerTermId = React.useMemo(() => resolveLearnerPulseTermId(learnerRow, course.sections), [learnerRow?.sectionId, course.sections]);
+
   React.useEffect(() => {
     let alive = true;
     service.getCourseTerms(course.id).then((rows) => {
-      if (!alive) return;
-      setTerms(rows);
-      const current = rows.find((term) => term.startDate && term.endDate && new Date(term.startDate) <= new Date() && new Date(term.endDate) >= new Date());
-      setTermId(current?.id || rows.at(-1)?.id || '');
+      if (alive) setTerms(rows);
     }).catch((e) => setError(e.message));
     return () => { alive = false; };
   }, [service, course.id]);
+
+  // Pick the active term: a learner target locks to its enrollment term (or none); course/section
+  // targets default to the current term (or the latest) and keep the chooser.
+  React.useEffect(() => {
+    if (targetType === 'learner') {
+      setTermId(lockedLearnerTermId && terms.some((term) => term.id === lockedLearnerTermId) ? lockedLearnerTermId : '');
+      return;
+    }
+    if (!terms.length) return;
+    const current = terms.find((term) => term.startDate && term.endDate && new Date(term.startDate) <= new Date() && new Date(term.endDate) >= new Date());
+    setTermId((prev) => prev || current?.id || terms.at(-1)?.id || '');
+  }, [targetType, lockedLearnerTermId, terms]);
 
   const load = React.useCallback(async () => {
     if (!termId) return;
@@ -75,7 +90,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
           currentEvidence = { ...currentEvidence, ...detailedEvidence };
         }
       }
-      setProgressMessage('Generating pulse with AI…');
+      setProgressMessage('Generating pulse…');
       const body = await aiPulseGenerator({ targetType, targetName, term: terms.find((term) => term.id === termId), currentEvidence, previousPulse, pulseTrendHistory });
       const pulseMarkdown = normalizePulseMarkdown(body);
       const cohortSafeMarkdown = targetType === 'learner' ? pulseMarkdown : `${pulseMarkdown.trimEnd()}\n\n${COURSE_LEARNER_COHORT_MARKER}\n`;
@@ -118,19 +133,24 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
 
   const topic = { title: `${targetName} Pulse`, type: 'instruction', path: 'pulse.md' };
 
+  // A learner target with no enrollment term shows nothing (no chooser, controls, or history).
+  const learnerNoTerm = targetType === 'learner' && !termId;
+
   return <div className="flex min-w-0 flex-col gap-3" data-testid="pulse-archive">
     <div className="flex flex-wrap items-end gap-3">
       {extraControls}
-      <label className="text-sm">Term<select aria-label="Pulse term" className="ml-2 rounded border border-gray-300 p-1" value={termId} onChange={(e) => { setTermId(e.target.value); setSelected(null); }}><option value="">Select term</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.title}</option>)}</select></label>
-      {canGenerate && <Button size="sm" disabled={!termId || busy} onClick={generate}>{busy ? 'Taking pulse…' : 'Take pulse'}</Button>}
-      {targetType === 'learner' && canGenerateFeedback && <Button size="sm" variant="outline" disabled={!termId || busy} onClick={generateFeedback}>Feedback</Button>}
+      {targetType === 'learner'
+        ? termId && <span className="text-sm text-gray-600">Term: <span className="font-medium text-gray-800">{terms.find((term) => term.id === termId)?.title || ''}</span></span>
+        : <label className="text-sm">Term<select aria-label="Pulse term" className="ml-2 rounded border border-gray-300 p-1" value={termId} onChange={(e) => { setTermId(e.target.value); setSelected(null); }}><option value="">Select term</option>{terms.map((term) => <option key={term.id} value={term.id}>{term.title}</option>)}</select></label>}
+      {canGenerate && !learnerNoTerm && <Button size="sm" disabled={!termId || busy} onClick={generate}>{busy ? 'Taking pulse…' : 'Take pulse'}</Button>}
+      {targetType === 'learner' && canGenerateFeedback && !learnerNoTerm && <Button size="sm" variant="outline" disabled={!termId || busy} onClick={generateFeedback}>Feedback</Button>}
     </div>
     {busy && <div role="status" aria-live="polite" className="flex items-center gap-2 text-sm text-gray-600">
       <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin text-blue-600" />
       <span>{progressMessage || 'Working on the pulse…'}</span>
     </div>}
     {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-    {!termId && <p className="text-sm text-gray-500">Create a term before generating a pulse.</p>}
+    {!termId && targetType !== 'learner' && <p className="text-sm text-gray-500">Create a term before generating a pulse.</p>}
     {termId && <section className="min-w-0 rounded-lg border border-gray-200 bg-white p-4">
       <div><h2 className="text-lg font-semibold">{targetType === 'learner' ? 'Learner Pulse History' : `${targetType === 'section' ? 'Section' : 'Course'} Pulse`}</h2><p className="text-sm text-gray-500">{targetName}</p></div>
       <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
