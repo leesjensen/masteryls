@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown, FileClock } from 'lucide-react';
 import { TopicIcon } from '../../utils/Icons';
 import { completedInteractionIds } from '../../utils/topicProgress';
@@ -60,6 +60,7 @@ function DailyActivityChart({ records }) {
 
 export default function LearnerMasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { learnerId: paramLearnerId, courseId: routeCourseId } = useParams();
   // The roster drill-down carries the learner id in the route; a learner viewing their own progress
   // has none, so fall back to themselves.
@@ -342,6 +343,17 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
     if (chartMode === 'attendance' && !hasAttendance) setChartMode('lastInteraction');
     if (chartMode === 'canvasGrades' && !canvasGradesUrl) setChartMode('lastInteraction');
   }, [chartMode, canvasGradesUrl, hasAttendance]);
+
+  // Deep link to the Pulses tab (e.g. the dashboard card's "View pulse" link routes here with
+  // ?tab=pulses). Applied once per learner so the viewer can switch tabs freely afterward.
+  const pulsesDeepLink = searchParams.get('tab') === 'pulses';
+  const appliedPulsesDeepLink = React.useRef(false);
+  React.useEffect(() => {
+    if (pulsesDeepLink && selectedLearner && !appliedPulsesDeepLink.current) {
+      appliedPulsesDeepLink.current = true;
+      setChartMode('pulses');
+    }
+  }, [pulsesDeepLink, selectedLearner]);
 
   const instructionTopicSummaries = React.useMemo(() => {
     if (!selectedCourse || !selectedLearner?.progress) return [];

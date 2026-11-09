@@ -491,6 +491,11 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
   await context.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route) => {
     await route.fulfill({ json: [] });
   });
+  // Dashboard cards fetch each enrollment's latest learner pulse; default to none so the fetch
+  // resolves without the throwing catch-all. Specific tests override to exercise the pulse summary.
+  await context.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route) => {
+    await route.fulfill({ json: [] });
+  });
 
   // Supabase - Gemini function access
   await context.route(/.*supabase.co\/functions\/v1\/gemini(\?.+)?/, async (route) => {

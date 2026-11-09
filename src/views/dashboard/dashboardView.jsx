@@ -17,6 +17,7 @@ export default function DashboardView({ courseOps, service, user }) {
   const [userSearch, setUserSearch] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [enrollmentSummaries, setEnrollmentSummaries] = useState(new Map());
+  const [enrollmentPulses, setEnrollmentPulses] = useState(new Map());
   const dialogRef = useRef(null);
   // Section picker shown when enrolling in a course that has more than one section.
   const [sectionEnroll, setSectionEnroll] = useState(null); // { catalogEntry, sections }
@@ -66,6 +67,33 @@ export default function DashboardView({ courseOps, service, user }) {
       cancelled = true;
     };
   }, [courseOps, enrollments]);
+
+  // Surface each enrollment's most recent learner pulse on its card (replacing the course blurb). A
+  // single query fetches the latest per enrollment; failures are non-fatal (cards fall back to the
+  // description) so a pulse hiccup never blocks the dashboard.
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadEnrollmentPulses() {
+      const ids = enrollments ? Array.from(enrollments.values()).map((enrollment) => enrollment.id) : [];
+      if (ids.length === 0) {
+        setEnrollmentPulses(new Map());
+        return;
+      }
+      try {
+        const pulses = await service.getLatestLearnerPulses(ids);
+        if (!cancelled) setEnrollmentPulses(pulses);
+      } catch {
+        if (!cancelled) setEnrollmentPulses(new Map());
+      }
+    }
+
+    loadEnrollmentPulses();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [service, enrollments]);
 
   const enrollInCourse = async (catalogEntry, sectionId) => {
     const cardColor = pickEnrollmentCardColor(enrollments);
@@ -212,7 +240,7 @@ export default function DashboardView({ courseOps, service, user }) {
             {visibleEnrollments.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {visibleEnrollments.map((enrollment) => (
-                  <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} masteryPercent={enrollmentSummaries.get(enrollment.catalogId)?.mastery} remove={() => requestedEnrollmentRemoval(enrollment)} />
+                  <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} masteryPercent={enrollmentSummaries.get(enrollment.catalogId)?.mastery} pulse={enrollmentPulses.get(enrollment.id) || null} remove={() => requestedEnrollmentRemoval(enrollment)} />
                 ))}
               </div>
             ) : (

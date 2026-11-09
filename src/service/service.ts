@@ -704,6 +704,28 @@ class Service {
     return rows.map((row, i) => ({ ...row, pulseNumber: rows.length - i }));
   }
 
+  /**
+   * The latest learner-target pulse for each of the given enrollments, keyed by `enrollmentId`.
+   * One round trip (newest-first, deduped client-side); RLS limits the rows to pulses the caller may
+   * read (a learner sees only their own). Used to surface a pulse summary on the dashboard cards.
+   */
+  async getLatestLearnerPulses(enrollmentIds: string[]): Promise<Map<string, any>> {
+    const ids = (enrollmentIds || []).filter(Boolean);
+    if (ids.length === 0) return new Map();
+    const { data, error } = await this.supabase
+      .from('pulse')
+      .select('id, enrollmentId, catalogId, termId, pulseType, markdown, createdAt')
+      .eq('targetType', 'learner')
+      .in('enrollmentId', ids)
+      .order('createdAt', { ascending: false });
+    if (error) throw new Error(error.message);
+    const latest = new Map<string, any>();
+    for (const row of data || []) {
+      if (row.enrollmentId && !latest.has(row.enrollmentId)) latest.set(row.enrollmentId, row);
+    }
+    return latest;
+  }
+
   async createPulse(values: { catalogId: string; termId: string; targetType: string; targetId: string; enrollmentId?: string | null; pulseType?: 'pulse' | 'feedback'; markdown: string; createdBy: string }): Promise<any> {
     const { data, error } = await this.supabase.from('pulse').insert([{ ...values, pulseType: values.pulseType || 'pulse' }]).select().single();
     if (error) throw new Error(error.message);

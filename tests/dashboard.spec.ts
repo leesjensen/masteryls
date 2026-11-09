@@ -61,16 +61,47 @@ test('dashboard join/leave course', async ({ page }) => {
   ];
 
   await page.getByRole('button', { name: 'R Rocket Science' }).click();
-  // Enrolling converts the course card from a button into a link (courseCard.jsx), so wait
-  // for the enrolled link to appear rather than racing the just-clicked button's removal.
+  // Enrolling converts the course card from a button into a card whose title is a link into the
+  // course (courseCard.jsx), so wait for that link rather than racing the clicked button's removal.
   await expect(page.getByRole('link', { name: /Rocket Science/ })).toBeVisible();
-  await expect(page.getByRole('link')).toContainText('Progress0%');
+  // Progress sits on the card (alongside the stretched title link), not inside the link text.
+  await expect(page.locator('#root')).toContainText('Progress');
+  await expect(page.locator('#root')).toContainText('0%');
 
   enrollments = [];
 
   await page.getByRole('button', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK' }).click();
   await expect(page.locator('#root')).toContainText('You are not enrolled in any courses');
+});
+
+test('dashboard shows the latest learner pulse summary with a link to the Pulses tab', async ({ page }) => {
+  const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  const ENROLLMENT_ID = 'aa000000-0000-4000-8000-000000000001';
+  await initBasicCourse({ page });
+
+  await page.route(/.*\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [{ id: ENROLLMENT_ID, catalogId: COURSE_ID, learnerId: '15cb92ef-d2d0-4080-8770-999516448960', settings: {}, progress: { mastery: 30 } }] });
+      return;
+    }
+    await route.fulfill({ status: 204 });
+  });
+
+  // Override the default empty pulse route with one learner pulse for this enrollment.
+  await page.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route) => {
+    await route.fulfill({
+      json: [{ id: 'p1', enrollmentId: ENROLLMENT_ID, catalogId: COURSE_ID, termId: 't1', pulseType: 'pulse', markdown: '# Weekly Pulse\n\nYou are making steady progress on the project this week. Keep going!', createdAt: '2026-11-07T00:00:00Z' }],
+    });
+  });
+
+  await register(page);
+
+  await expect(page.getByRole('link', { name: /Rocket Science/ })).toBeVisible();
+  await expect(page.getByText(/steady progress on the project/)).toBeVisible();
+  // The "Latest pulse" label itself links to the learner's Pulses tab; the title is not shown.
+  await expect(page.getByRole('link', { name: 'Latest pulse' })).toHaveAttribute('href', `/course/${COURSE_ID}/mastery?tab=pulses`);
+  await expect(page.getByText(/Weekly Pulse/)).toHaveCount(0);
 });
 
 test('dashboard enroll prompts for a section when the course has more than one', async ({ page }) => {

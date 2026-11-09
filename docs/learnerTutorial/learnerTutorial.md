@@ -42,6 +42,7 @@ The dashboard is your home base for courses.
 
 - View every course you are currently enrolled in.
 - See your overall progress percentage on each enrolled course card.
+- Read a short summary of your most recent pulse on a course card when one is available, and follow its **Latest pulse** link to open your full pulse history for that course.
 - Search the course catalog by title or description.
 - Join a published course you are not yet enrolled in.
 - Choose a section during enrollment when the course has multiple sections currently open for enrollment.
