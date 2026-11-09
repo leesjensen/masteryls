@@ -157,7 +157,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
         <div className="min-w-0">
           <nav aria-label="Pulse history" className="max-h-72 space-y-1 overflow-auto">
             {pulses.map((pulse) => <button key={pulse.id} type="button" onClick={() => setSelected(pulse)} className={`block w-full rounded p-2 text-left text-sm ${selected?.id === pulse.id ? 'bg-blue-50 text-blue-800' : 'hover:bg-gray-50'}`}>
-              {pulse.pulseType === 'feedback' ? <><span className="mr-1 inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">Feedback</span>Pulse {pulse.pulseNumber}</> : `Pulse ${pulse.pulseNumber}`}
+              {pulse.pulseType === 'feedback' ? <>Pulse {pulse.pulseNumber}<span className="ml-1.5 inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800">Feedback</span></> : `Pulse ${pulse.pulseNumber}`}
               <span className="block text-xs text-gray-500">{formatDate(pulse.createdAt)}</span>
             </button>)}
             {!pulses.length && <p className="text-sm text-gray-500">No pulses for this term yet.</p>}

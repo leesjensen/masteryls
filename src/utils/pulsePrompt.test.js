@@ -12,15 +12,21 @@ test('pulse prompt specifies the standard evidence-first Markdown layout and pre
     pulseTrendHistory: [{ snapshotDate: '2026-11-06', masteryPercent: 40 }, { snapshotDate: '2026-11-07', masteryPercent: 42 }],
   });
 
-  const headings = ['# Fall Term | Section 1 Pulse', '**Snapshot date:**', '## Overview', '## Status indicators', '## Change since the previous pulse', '## Positive signals', '## Needs attention', '## Priorities', '## Evidence notes'];
+  const headings = ['## Overview', '## Status indicators', '## Change since the previous pulse', '## Positive signals', '## Needs attention', '## Priorities', '## Evidence notes'];
   let lastIndex = -1;
   for (const heading of headings) {
     const index = prompt.indexOf(heading);
     assert.ok(index > lastIndex, `${heading} should follow the prior standard section`);
     lastIndex = index;
   }
-  assert.match(prompt, /Snapshot date:\*\* \d{4}-\d{2}-\d{2}/);
+  // A lead summary precedes Overview; the top-level title heading and snapshot-date line are gone.
+  assert.match(prompt, /A lead summary: one or two sentences, at most 180 characters/);
+  assert.match(prompt, /Do not add a top-level title heading or a snapshot-date line/);
+  assert.doesNotMatch(prompt, /# Fall Term \| Section 1 Pulse/);
+  assert.doesNotMatch(prompt, /\*\*Snapshot date:\*\*/);
   assert.doesNotMatch(prompt, /> .*Snapshot date/);
+  // The current snapshot date is still supplied to label the trend chart's current point.
+  assert.match(prompt, /current evidence point's snapshot date is \d{4}-\d{2}-\d{2}/);
   assert.match(prompt, /Persistent concern: incomplete reading interactions/);
   assert.match(prompt, /Use every comparable point in PULSE TREND HISTORY, in chronological order, plus the current evidence/);
   assert.match(prompt, /2026-11-06/);
@@ -59,6 +65,6 @@ test('learner pulse prompt is written directly to the learner in the second pers
   assert.match(prompt, /Write the body directly to the learner in the second person \("you", "your"\)/);
   assert.match(prompt, /Do not refer to the learner in the third person/);
   assert.doesNotMatch(prompt, /Write for a course overseer/);
-  // The title line may still carry the learner's name.
-  assert.match(prompt, /# Fall Term \| Jordan Lee Pulse/);
+  // No top-level title heading is emitted (it was removed to keep the pulse compact).
+  assert.doesNotMatch(prompt, /# Fall Term \| Jordan Lee Pulse/);
 });

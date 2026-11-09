@@ -104,6 +104,32 @@ test('dashboard shows the latest learner pulse summary with a link to the Pulses
   await expect(page.getByText(/Weekly Pulse/)).toHaveCount(0);
 });
 
+test('dashboard annotates the card when the latest learner pulse is feedback', async ({ page }) => {
+  const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  const ENROLLMENT_ID = 'aa000000-0000-4000-8000-000000000001';
+  await initBasicCourse({ page });
+
+  await page.route(/.*\/rest\/v1\/enrollment(\?.+)?/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [{ id: ENROLLMENT_ID, catalogId: COURSE_ID, learnerId: '15cb92ef-d2d0-4080-8770-999516448960', settings: {}, progress: { mastery: 30 } }] });
+      return;
+    }
+    await route.fulfill({ status: 204 });
+  });
+
+  await page.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route) => {
+    await route.fulfill({
+      json: [{ id: 'p1', enrollmentId: ENROLLMENT_ID, catalogId: COURSE_ID, termId: 't1', pulseType: 'feedback', markdown: '# Reflecting on your progress\n\nYou have been consistently working through the material. Keep it up!', createdAt: '2026-11-07T00:00:00Z' }],
+    });
+  });
+
+  await register(page);
+
+  await expect(page.getByRole('link', { name: 'Latest pulse' })).toBeVisible();
+  await expect(page.getByText('Feedback')).toBeVisible();
+  await expect(page.getByText(/consistently working through the material/)).toBeVisible();
+});
+
 test('dashboard enroll prompts for a section when the course has more than one', async ({ page }) => {
   const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
   let enrollments: Enrollment[] = [];

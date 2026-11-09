@@ -298,7 +298,7 @@ test('overseer gets Canvas grades and can save learner feedback as a pulse', asy
   await expect(page.getByText('Term: Fall 2026')).toBeVisible();
   await expect(page.getByLabel('Pulse term')).toHaveCount(0);
   await feedbackButton.click();
-  await expect(page.getByRole('button', { name: /Feedback.*Pulse 1/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Pulse 1.*Feedback/ })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Checking in on your progress' })).toBeVisible();
   await expect(page.getByText('You have a clear next step in the course.')).toBeVisible();
   expect(insertedPulse?.pulseType).toBe('feedback');

@@ -50,6 +50,31 @@ test('pulseSummaryText truncates long prose on a word boundary with an ellipsis'
   assert.ok(!/word\d+…$/.test(result) || result.endsWith(' …') === false); // truncated at a boundary, not mid-word
 });
 
+test('pulseSummaryText prefers the lead summary paragraph over the Overview', () => {
+  const input = [
+    'You have a strong technical foundation and are progressing through GitHub Pages.',
+    '',
+    '## Overview',
+    'You have established a solid conceptual foundation in several technical areas and are actively working through the materials.',
+    '',
+    '## Status indicators',
+    '| Metric | Value |',
+    '| --- | --- |',
+    '| Topic Mastery | 9% |',
+  ].join('\n');
+  assert.equal(pulseSummaryText(input), 'You have a strong technical foundation and are progressing through GitHub Pages.');
+});
+
+test('pulseSummaryText falls back to the Overview body when there is no lead summary', () => {
+  const input = ['# Weekly Pulse', '', '## Overview', 'Overview body prose here.', '', '## Positive signals', '* Great job'].join('\n');
+  assert.equal(pulseSummaryText(input), 'Overview body prose here.');
+});
+
+test('pulseSummaryText falls back to any body prose when there is no lead or Overview', () => {
+  const input = '# Checking in on your progress\n\nYou have a clear next step in the course.';
+  assert.equal(pulseSummaryText(input), 'You have a clear next step in the course.');
+});
+
 test('pulseSummaryText is safe on empty/nullish input', () => {
   assert.equal(pulseSummaryText(''), '');
   assert.equal(pulseSummaryText(null), '');

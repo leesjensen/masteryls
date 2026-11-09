@@ -13,8 +13,7 @@ export function buildPulsePrompt({ targetType, targetName, term, currentEvidence
 ${voicePolicy}
 
 Follow this exact section order, omitting only sections that have no relevant evidence:
-# ${term?.title || 'Term'} | ${targetName} Pulse
-\n\n**Snapshot date:** ${snapshotDate}
+A lead summary: one or two sentences, at most 180 characters, as a plain paragraph with NO heading, capturing the single most important takeaway; do not restate it verbatim in the Overview.
 ## Overview
 ## Status indicators
 ## Change since the previous pulse
@@ -23,7 +22,8 @@ Follow this exact section order, omitting only sections that have no relevant ev
 ## Priorities
 ## Evidence notes
 
-Use a compact Markdown table for indicators and concise bullet lists for signals and priorities. Include a Mermaid chart when comparable trend points are available. Use every comparable point in PULSE TREND HISTORY, in chronological order, plus the current evidence; do not make a two-point chart if older comparable snapshots are provided. Label every point with its actual snapshot date. If a prior pulse has the same snapshot date as the current pulse, use the current evidence for that date and do not plot it twice. If mastery (percent) and completed topics (count) are both charted, put them in separate charts with appropriate independent axes; never mix different units on one axis. ${MERMAID_PROMPT_GUIDELINES} Never invent facts, causes, grades, deadlines, attendance, or learner activity.
+Do not add a top-level title heading or a snapshot-date line; begin directly with the lead summary paragraph.
+Use a compact Markdown table for indicators and concise bullet lists for signals and priorities. Include a Mermaid chart when comparable trend points are available. Use every comparable point in PULSE TREND HISTORY, in chronological order, plus the current evidence; do not make a two-point chart if older comparable snapshots are provided. Label every point with its actual snapshot date; the current evidence point's snapshot date is ${snapshotDate}. If a prior pulse has the same snapshot date as the current pulse, use the current evidence for that date and do not plot it twice. If mastery (percent) and completed topics (count) are both charted, put them in separate charts with appropriate independent axes; never mix different units on one axis. ${MERMAID_PROMPT_GUIDELINES} Never invent facts, causes, grades, deadlines, attendance, or learner activity.
 
 Use each evidence source for the right purpose:
 - Treat Canvas overall and assignment grades as the primary graded checkpoints when present. Keep grades distinct from topic mastery and interaction completion.

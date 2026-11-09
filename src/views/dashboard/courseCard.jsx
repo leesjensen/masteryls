@@ -110,6 +110,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
                 <Activity size={14} aria-hidden="true" />
                 <span>Latest pulse</span>
               </a>
+              {pulse.pulseType === 'feedback' && <span className="inline-flex rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium normal-case tracking-normal text-amber-800">Feedback</span>}
               {pulse.createdAt && <span className="font-normal normal-case text-slate-400">· {formatPulseDate(pulse.createdAt)}</span>}
             </div>
             <p className="line-clamp-4 text-sm text-slate-600">{pulseSummary}</p>
