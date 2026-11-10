@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseScheduleMarkdown } from './scheduleMarkdown.js';
-import { decoratePulseProgressEvidence, excludePulseStaffRows, getPulseScheduleDueItems, reconcilePulseCanvasAssignments, resolvePulseScheduleDate, summarizeCanvasRosterGrades, summarizePulseAttendance } from './pulseEvidence.js';
+import { decoratePulseProgressEvidence, excludePulseStaffRows, getPulseScheduleDueItems, reconcilePulseCanvasAssignments, reconcileScheduleDeadlinesWithCanvas, resolvePulseScheduleDate, summarizeCanvasRosterGrades, summarizePulseAttendance } from './pulseEvidence.js';
 
 test('course pulse roster exclusion removes enrolled course editors and mentors', () => {
   const result = excludePulseStaffRows([
@@ -39,6 +39,71 @@ test('pulse extracts the real dated due rows from schedule Markdown', () => {
     { date: '2026-10-31', item: 'Phase 4: Chess Database' },
     { date: '2026-11-13', item: 'Phase 5: Chess Pregame' },
   ]);
+});
+
+test('schedule milestones reconcile to Canvas completion (Canvas authoritative, in-app relabeled)', () => {
+  const deadlines = [
+    { item: 'Phase 4: Chess Database', date: '2026-10-31', learnersAssigned: 175, inAppCompleted: 48, inAppIncomplete: 127, inAppStatusUnavailableFor: 0 },
+    { item: 'In-app Reading Quiz', date: '2026-11-02', learnersAssigned: 175, inAppCompleted: 90, inAppIncomplete: 85, inAppStatusUnavailableFor: 0 },
+  ];
+  // Canvas names carry a decorative prefix; the matcher is accent/punctuation-insensitive.
+  const canvasAssignments = [
+    { name: '♕ Phase 4: Chess Database', learnersWithAssignment: 159, completedCount: 158, gradedCount: 158, missingCount: 0, lateCount: 3, averagePercent: 85.6 },
+  ];
+  const reconciled = reconcileScheduleDeadlinesWithCanvas(deadlines, canvasAssignments);
+
+  // Phase 4 matches a Canvas assignment → Canvas is authoritative; in-app counts are retained but demoted.
+  assert.equal(reconciled[0].completionSource, 'canvas');
+  assert.deepEqual(reconciled[0].canvas, { name: '♕ Phase 4: Chess Database', completed: 158, notCompleted: 1, graded: 158, missing: 0, late: 3, averagePercent: 85.6, learnersWithAssignment: 159 });
+  assert.equal(reconciled[0].inAppCompleted, 48);
+
+  // No Canvas assignment for the in-app quiz → stays in-app, no canvas block.
+  assert.equal(reconciled[1].completionSource, 'in-app');
+  assert.equal(reconciled[1].canvas, undefined);
+});
+
+test('reconcile counts completed work, not the absence of a missing flag (future milestone)', () => {
+  // A not-yet-due milestone: missing is 0 (Canvas only flags missing after the due date), but only
+  // 25 of 159 have a grade/submission so far. Completion must read 25, not 159.
+  const [row] = reconcileScheduleDeadlinesWithCanvas(
+    [{ item: 'Phase 5: Chess Pregame', date: '2026-11-13' }],
+    [{ name: '♕ Phase 5: Chess Pregame', learnersWithAssignment: 159, completedCount: 25, gradedCount: 25, missingCount: 0, lateCount: 1, averagePercent: 86.8 }],
+  );
+  assert.equal(row.completionSource, 'canvas');
+  assert.equal(row.canvas.completed, 25);
+  assert.equal(row.canvas.notCompleted, 134);
+  assert.equal(row.canvas.missing, 0);
+});
+
+test('reconcileScheduleDeadlinesWithCanvas tolerates empty input and unmatched milestones', () => {
+  assert.deepEqual(reconcileScheduleDeadlinesWithCanvas(), []);
+  assert.deepEqual(reconcileScheduleDeadlinesWithCanvas([{ item: 'x' }], []), [{ item: 'x', completionSource: 'in-app' }]);
+});
+
+test('summarizeCanvasRosterGrades counts completion as a passing grade (>0) or excused', () => {
+  const roster = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id) => ({ learnerEmail: `${id}@test.edu` }));
+  const gradesByEmail = {
+    // Online submission with a positive grade → completed.
+    'a@test.edu': { assignments: [{ name: 'Phase 4', submittedAt: '2026-10-30T12:00:00Z', score: 95, pointsPossible: 100, missing: false, late: false }] },
+    // Pass-off graded, NO submission timestamp, positive grade → completed.
+    'b@test.edu': { assignments: [{ name: 'Phase 4', submittedAt: null, score: 88, pointsPossible: 100, missing: false, late: false }] },
+    // Excused → completed (not penalized).
+    'c@test.edu': { assignments: [{ name: 'Phase 4', submittedAt: null, score: null, pointsPossible: 100, missing: false, late: false, excused: true }] },
+    // Missing zero → NOT completed.
+    'd@test.edu': { assignments: [{ name: 'Phase 4', submittedAt: null, score: 0, pointsPossible: 100, missing: true, late: false }] },
+    // Nothing yet → NOT completed.
+    'e@test.edu': { assignments: [{ name: 'Phase 4', submittedAt: null, score: null, pointsPossible: 100, missing: false, late: false }] },
+    // Submitted but graded zero (not missing) → NOT completed (a zero is not completion).
+    'f@test.edu': { assignments: [{ name: 'Phase 4', submittedAt: '2026-10-30T12:00:00Z', score: 0, pointsPossible: 100, missing: false, late: false }] },
+    // Submitted but not yet graded → NOT completed (no grade yet).
+    'g@test.edu': { assignments: [{ name: 'Phase 4', submittedAt: '2026-10-30T12:00:00Z', score: null, pointsPossible: 100, missing: false, late: false }] },
+  };
+  const summary = summarizeCanvasRosterGrades(gradesByEmail, roster, []);
+  const phase4 = summary.assignments.find((a) => a.name === 'Phase 4');
+  assert.equal(phase4.learnersWithAssignment, 7);
+  assert.equal(phase4.completedCount, 3); // a (95), b (88 pass-off), c (excused)
+  assert.equal(phase4.gradedCount, 4); // a, b, d (0), f (0)
+  assert.equal(phase4.missingCount, 1); // d
 });
 
 test('pulse Canvas grade evidence maps assignment dates to the schedule and flags material conflicts', () => {

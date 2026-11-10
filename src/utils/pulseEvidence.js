@@ -60,6 +60,46 @@ export function reconcilePulseCanvasAssignments(canvas, scheduleDeadlines = []) 
   };
 }
 
+/**
+ * Attach Canvas completion to each schedule milestone. Canvas is the authority for whether work was
+ * submitted/graded — MasteryLS in-app progress only captures learners who submitted through the app,
+ * and undercounts those who submitted to Canvas directly. When a milestone matches a Canvas
+ * assignment (accent/punctuation-insensitive name match), its `completionSource` becomes `canvas`
+ * and it carries the Canvas completed/graded/missing/late/average; otherwise it stays `in-app`.
+ * "completed" means the learner earned a positive grade or is excused (a zero, a `missing` zero, or an
+ * ungraded assignment is not completed) — NOT the absence of a `missing` flag (Canvas only marks work
+ * missing past due) nor `submittedAt` (pass-off-graded projects have no submission timestamp).
+ */
+export function reconcileScheduleDeadlinesWithCanvas(deadlines = [], canvasAssignments = []) {
+  const assignments = Array.isArray(canvasAssignments) ? canvasAssignments : [];
+  return (Array.isArray(deadlines) ? deadlines : []).map((deadline) => {
+    const deadlineKey = normalizedAssignmentName(deadline.item);
+    const match = assignments
+      .filter((assignment) => {
+        const key = normalizedAssignmentName(assignment.name);
+        return key && deadlineKey && (key.includes(deadlineKey) || deadlineKey.includes(key));
+      })
+      .sort((a, b) => normalizedAssignmentName(b.name).length - normalizedAssignmentName(a.name).length)[0];
+    if (!match) return { ...deadline, completionSource: 'in-app' };
+    const learnersWithAssignment = finiteNumber(match.learnersWithAssignment) || 0;
+    const completed = finiteNumber(match.completedCount) || 0;
+    return {
+      ...deadline,
+      completionSource: 'canvas',
+      canvas: {
+        name: match.name,
+        completed,
+        notCompleted: Math.max(0, learnersWithAssignment - completed),
+        graded: finiteNumber(match.gradedCount),
+        missing: finiteNumber(match.missingCount) || 0,
+        late: finiteNumber(match.lateCount) || 0,
+        averagePercent: match.averagePercent ?? null,
+        learnersWithAssignment,
+      },
+    };
+  });
+}
+
 function median(values) {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -248,6 +288,12 @@ export function summarizeCanvasRosterGrades(gradesByEmail = {}, roster = [], sec
       name,
       learnersWithAssignment: assignments.length,
       averagePercent: mean(percentages),
+      // "Completed" = the learner earned a passing grade (any score greater than zero) or is excused.
+      // A zero — including a `missing` zero — is not completion, and an ungraded assignment is not yet
+      // completed. This is grade-based, so pass-off grading (a score with no `submittedAt`) is covered,
+      // while `missing` (set only after the due date) is correctly ignored for not-yet-due milestones.
+      completedCount: assignments.filter((a) => a.excused === true || (finiteNumber(a.score) > 0 && a.missing !== true)).length,
+      gradedCount: assignments.filter((assignment) => finiteNumber(assignment.score) !== null).length,
       missingCount: assignments.filter((assignment) => assignment.missing === true).length,
       lateCount: assignments.filter((assignment) => assignment.late === true).length,
       dueAt: assignments.find((assignment) => assignment.dueAt)?.dueAt || null,

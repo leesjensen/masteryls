@@ -26,7 +26,7 @@ import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.j
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
 import { buildAttendanceGradeRequest, DEFAULT_ATTENDANCE_POINTS_PER_SESSION, DEFAULT_ATTENDANCE_POINTS_POSSIBLE } from './canvas/attendanceCanvasSync.js';
 import { calculateProgressMastery } from '../utils/progressSummary.js';
-import { decoratePulseProgressEvidence, getPulseScheduleDueItems, reconcilePulseCanvasAssignments, summarizeCanvasRosterGrades, summarizePulseAttendance } from '../utils/pulseEvidence.js';
+import { decoratePulseProgressEvidence, getPulseScheduleDueItems, reconcilePulseCanvasAssignments, reconcileScheduleDeadlinesWithCanvas, summarizeCanvasRosterGrades, summarizePulseAttendance } from '../utils/pulseEvidence.js';
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -2430,9 +2430,15 @@ Requirements:
               displayDate: dueItem.displayDate,
               item: title,
               learnersAssigned: assignedRows.length,
-              completed: completeCount,
-              incomplete: incompleteCount,
-              statusUnavailableFor: unknownCount,
+              // Default completion source. Upgraded to 'canvas' during reconciliation when the course
+              // is linked to Canvas and this milestone matches a Canvas assignment. When it stays
+              // 'in-app' (course not linked to Canvas, or no matching assignment), the inApp* counts
+              // ARE the authoritative completion; when it becomes 'canvas', they are only the subset
+              // who submitted through MasteryLS and must not be used as the milestone completion.
+              completionSource: 'in-app',
+              inAppCompleted: completeCount,
+              inAppIncomplete: incompleteCount,
+              inAppStatusUnavailableFor: unknownCount,
               timing: scheduleDateStatus(dueItem.date, snapshotAt),
               completionAsOf: snapshotAt.toISOString(),
             });
@@ -2467,6 +2473,11 @@ Requirements:
         });
         const canvasSummary = summarizeCanvasRosterGrades(canvas.gradesByEmail, roster, sections, canvas);
         evidence.sources.canvas = reconcilePulseCanvasAssignments(canvasSummary, evidence.sources.schedule?.deadlines);
+        // Canvas is authoritative for milestone completion; attach it to the schedule deadlines so a
+        // Canvas-graded milestone reports Canvas submissions, not the MasteryLS in-app subset.
+        if (evidence.sources.schedule && Array.isArray(evidence.sources.schedule.deadlines)) {
+          evidence.sources.schedule.deadlines = reconcileScheduleDeadlinesWithCanvas(evidence.sources.schedule.deadlines, evidence.sources.canvas.assignments);
+        }
       } catch (error) {
         evidence.sources.canvas = { status: 'unavailable', reason: String(error?.message || error).slice(0, 240) };
       }
