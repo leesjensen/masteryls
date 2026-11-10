@@ -929,8 +929,9 @@ async function navigateToCourse(page: any) {
 
   await _register(page);
 
-  // Open the course
-  await page.getByRole('link', { name: 'R Rocket Science This course' }).click();
+  // Open the course. The enrolled card's link wraps the title only (courseCard.jsx stretched-link),
+  // so its accessible name is the course title, not the whole-card text.
+  await page.getByRole('link', { name: 'Rocket Science' }).click();
 }
 
 async function navigateToCourseNoLogin(page: any) {
@@ -953,7 +954,7 @@ async function _register(page: any) {
 
   await page.getByRole('textbox', { name: 'One-time code' }).fill('123456');
   await page.getByRole('button', { name: 'Verify' }).click();
-  await page.getByRole('link', { name: 'R Rocket Science This course' }).isVisible();
+  await page.getByRole('link', { name: 'Rocket Science' }).isVisible();
 }
 
 export { initBasicCourse, navigateToDashboard, navigateToCourse, navigateToCourseNoLogin, navigateToMetrics, navigateToProgress, register };
