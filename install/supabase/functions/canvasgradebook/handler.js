@@ -393,7 +393,46 @@ export function createCanvasGradebookHandler({ createSupabaseClientFromAuthHeade
           canvasApi(`/courses/${courseId}/students/submissions?student_ids[]=${learner.id}&include[]=assignment&per_page=100`),
           canvasApi(`/courses/${courseId}/enrollments?user_id=${learner.id}&type[]=StudentEnrollment`),
         ]);
-        return new Response(JSON.stringify({ ok: true, found: true, ...buildGradeSummary(submissions, enrollments) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        let assignmentDueDates;
+        if (payload.includeAssignmentDueDates === true) {
+          const courseAssignments = await canvasApiAllPages(`/courses/${courseId}/assignments?override_assignment_dates=false&include[]=all_dates&per_page=100`);
+          const courseAssignmentsById = new Map(courseAssignments.map((assignment) => [String(assignment.id), assignment]));
+          const submissionAssignments = (Array.isArray(submissions) ? submissions : [])
+            .map((submission) => submission?.assignment)
+            .filter((assignment) => assignment?.id != null && assignment?.name);
+          const assignmentIds = [...new Set(submissionAssignments.map((assignment) => String(assignment.id)))];
+          // The assignment embedded in a submission may carry another student's override date.
+          // Canvas's effective_due_dates response is keyed by assignment ID and student ID, so
+          // select the date for the exact learner being analyzed.
+          const effectiveDueDates = assignmentIds.length
+            ? await canvasApi(`/courses/${courseId}/effective_due_dates?${assignmentIds.map((id) => `assignment_ids[]=${encodeURIComponent(id)}`).join('&')}`)
+            : {};
+          const seen = new Set();
+          assignmentDueDates = (Array.isArray(submissions) ? submissions : []).flatMap((submission) => {
+            const assignment = submission?.assignment;
+            if (!assignment?.name) return [];
+            const id = String(assignment.id ?? submission.assignment_id ?? '');
+            if (seen.has(id)) return [];
+            seen.add(id);
+            const courseAssignment = courseAssignmentsById.get(id);
+            const dates = Array.isArray(courseAssignment?.all_dates) ? courseAssignment.all_dates : [];
+            const baseDate = dates.find((date) => date?.base === true);
+            const learnerEffectiveDueAt = effectiveDueDates?.[id]?.[String(learner.id)]?.due_at ?? null;
+            return [{
+              id: assignment.id ?? submission.assignment_id ?? null,
+              name: String(assignment.name),
+              learnerDueAt: learnerEffectiveDueAt,
+              courseDueAt: courseAssignment?.due_at ?? null,
+              baseDueAt: baseDate?.due_at ?? courseAssignment?.due_at ?? null,
+            }];
+          });
+        }
+        return new Response(JSON.stringify({
+          ok: true,
+          found: true,
+          ...buildGradeSummary(submissions, enrollments),
+          ...(assignmentDueDates ? { assignmentDueDates } : {}),
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (error) {
         return new Response(JSON.stringify({ ok: false, found: false, overall: null, assignments: [], error: error?.message || String(error) }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

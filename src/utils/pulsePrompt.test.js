@@ -37,7 +37,7 @@ test('pulse prompt specifies the standard evidence-first Markdown layout and pre
   assert.match(prompt, /attendance session counts and response tallies/);
   assert.match(prompt, /Canvas current overall grades are the learners' current course standing/);
   assert.match(prompt, /Use only `sources\.schedule\.deadlines` for course schedule dates/);
-  assert.match(prompt, /when `scheduleDate` is present, use that date and never substitute the Canvas date/);
+  assert.match(prompt, /Canvas `canvasDueDate` is normalized to the course calendar in `America\/Denver`/);
   assert.match(prompt, /Revalidate every date from an earlier pulse against the current schedule evidence/);
   assert.match(prompt, /progress events, attendance sessions, and scheduled assignments are limited to the selected term/);
   assert.match(prompt, /%%\{init:/);
@@ -64,6 +64,10 @@ test('learner pulse prompt is written directly to the learner in the second pers
 
   assert.match(prompt, /Write the body directly to the learner in the second person \("you", "your"\)/);
   assert.match(prompt, /Do not refer to the learner in the third person/);
+  assert.match(prompt, /learner-specific Canvas effective due date as the date of record/);
+  assert.match(prompt, /Mention a Canvas extension only when the current Canvas assignment evidence explicitly has `dueDateAdjustment: "later"`/);
+  assert.match(prompt, /If that field is absent, do not say or imply that Canvas granted an extension/);
+  assert.match(prompt, /Do not infer an extension from a claim in the previous pulse/);
   assert.doesNotMatch(prompt, /Write for a course overseer/);
   // No top-level title heading is emitted (it was removed to keep the pulse compact).
   assert.doesNotMatch(prompt, /# Fall Term \| Jordan Lee Pulse/);

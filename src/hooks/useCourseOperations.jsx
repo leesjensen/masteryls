@@ -15,7 +15,7 @@ import { markdownToHtml } from '../utils/markdownToHtml';
 import { formatDraFeedbackForCanvas } from '../components/instruction/dra/draScore';
 import { formatInterviewFeedbackForCanvas } from '../components/instruction/interview/interviewScore';
 import { completedInteractionCount } from '../utils/topicProgress';
-import { buildScheduleTimingContext, roundWholePercent, summarizeUpcomingDeadlines } from '../utils/scheduleTiming.js';
+import { buildScheduleTimingContext, canvasTimestampToPulseDate, comparePulseCanvasDueDates, roundWholePercent, summarizeUpcomingDeadlines } from '../utils/scheduleTiming.js';
 import { summarizeLearnerActivity, summarizeSectionAttendance } from '../utils/learnerFeedbackEvidence.js';
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
@@ -2056,9 +2056,31 @@ Requirements:
     if (canvasCourseId && learnerRow.learnerEmail) {
       onProgress('Loading Canvas grades…');
       try {
-        const gradeResult = await service.getCanvasGrades({ courseId: String(canvasCourseId), catalogId: course.id, learnerEmail: learnerRow.learnerEmail });
+        const gradeResult = await service.getCanvasGrades({
+          courseId: String(canvasCourseId),
+          catalogId: course.id,
+          learnerEmail: learnerRow.learnerEmail,
+          includeAssignmentDueDates: true,
+        });
         canvasDeadlineAssignments = gradeResult.assignments || [];
-        const assignments = [...(gradeResult.assignments || [])].sort((a, b) => {
+        const dateSourceByName = new Map((gradeResult.assignmentDueDates || [])
+          .map((source) => [String(source.name || '').trim().toLowerCase(), source]));
+        canvasDeadlineAssignments = canvasDeadlineAssignments.map((assignment) => {
+          const source = dateSourceByName.get(String(assignment.name || '').trim().toLowerCase());
+          const learnerDueAt = source ? source.learnerDueAt : assignment.dueAt || null;
+          const courseDueAt = source?.baseDueAt || source?.courseDueAt || null;
+          const dueDateAdjustment = comparePulseCanvasDueDates(learnerDueAt, courseDueAt);
+          return {
+            ...assignment,
+            dueAt: learnerDueAt,
+            learnerDueAt,
+            courseDueAt,
+            learnerDueDate: canvasTimestampToPulseDate(learnerDueAt),
+            courseDueDate: canvasTimestampToPulseDate(courseDueAt),
+            ...(dueDateAdjustment ? { dueDateAdjustment } : {}),
+          };
+        });
+        const assignments = [...canvasDeadlineAssignments].sort((a, b) => {
           if (Boolean(a.missing) !== Boolean(b.missing)) return a.missing ? -1 : 1;
           const percent = (assignment) => Number.isFinite(assignment.score) && Number.isFinite(assignment.pointsPossible) && assignment.pointsPossible > 0
             ? (assignment.score / assignment.pointsPossible) * 100
@@ -2150,7 +2172,6 @@ Requirements:
       ...scheduleContext,
       deadlines: summarizeUpcomingDeadlines({ scheduleItems: scheduleDeadlineItems, canvasAssignments: canvasDeadlineAssignments }),
     };
-
     // Use the progress event history for a bounded, exact activity summary and for essay examples.
     // The history is also where section attendance check-ins and their self-reported answers live.
     let progressRecords = [];

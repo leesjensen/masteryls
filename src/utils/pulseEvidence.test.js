@@ -48,8 +48,24 @@ test('pulse Canvas grade evidence maps assignment dates to the schedule and flag
 
   assert.equal(result.assignments[0].scheduleDate, '2026-10-31');
   assert.equal(result.assignments[0].canvasDueAt, '2026-11-15T06:59:59Z');
+  assert.equal(result.assignments[0].canvasDueDate, '2026-11-14');
   assert.equal(result.assignments[0].scheduleCanvasDateConflict, true);
   assert.equal('dueAt' in result.assignments[0], false);
+});
+
+test('pulse Canvas dates near UTC midnight compare on the Mountain course calendar', () => {
+  const result = reconcilePulseCanvasAssignments({ assignments: [
+    { name: '♕ Phase 3: Chess Web API', dueAt: '2026-10-23T05:59:00Z' },
+    { name: '♕ Phase 4: Chess Database', dueAt: '2026-11-01T05:59:00Z' },
+    { name: '♕ Phase 5: Chess Pregame', dueAt: '2026-11-14T01:00:00Z' },
+  ] }, [
+    { item: 'Phase 3: Chess Web API', date: '2026-10-22' },
+    { item: 'Phase 4: Chess Database', date: '2026-10-31' },
+    { item: 'Phase 5: Chess Pregame', date: '2026-11-13' },
+  ]);
+
+  assert.deepEqual(result.assignments.map((assignment) => assignment.canvasDueDate), ['2026-10-22', '2026-10-31', '2026-11-13']);
+  assert.equal(result.assignments.some((assignment) => assignment.scheduleCanvasDateConflict), false);
 });
 
 test('pulse progress decoration resolves topic names and essay prompts for bounded SQL results', () => {

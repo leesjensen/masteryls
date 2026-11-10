@@ -1,4 +1,5 @@
 import { parseScheduleDisplayDate } from './scheduleMarkdown.js';
+import { canvasTimestampToPulseDate } from './scheduleTiming.js';
 
 function mean(values) {
   return values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 10) / 10 : null;
@@ -29,24 +30,29 @@ function normalizedAssignmentName(value) {
   return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+function findPulseScheduleMatches(assignmentName, deadlines = []) {
+  const assignmentKey = normalizedAssignmentName(assignmentName);
+  return deadlines.filter((item) => {
+    const scheduleKey = normalizedAssignmentName(item.item);
+    return scheduleKey && assignmentKey && (scheduleKey.includes(assignmentKey) || assignmentKey.includes(scheduleKey));
+  }).sort((a, b) => normalizedAssignmentName(b.item).length - normalizedAssignmentName(a.item).length);
+}
+
 export function reconcilePulseCanvasAssignments(canvas, scheduleDeadlines = []) {
   const deadlines = Array.isArray(scheduleDeadlines) ? scheduleDeadlines : [];
   return {
     ...canvas,
     assignments: (canvas?.assignments || []).map(({ dueAt, ...assignment }) => {
-      const assignmentKey = normalizedAssignmentName(assignment.name);
-      const matches = deadlines.filter((item) => {
-        const scheduleKey = normalizedAssignmentName(item.item);
-        return scheduleKey && assignmentKey && (scheduleKey.includes(assignmentKey) || assignmentKey.includes(scheduleKey));
-      }).sort((a, b) => normalizedAssignmentName(b.item).length - normalizedAssignmentName(a.item).length);
+      const matches = findPulseScheduleMatches(assignment.name, deadlines);
       const scheduleDate = matches[0]?.date || null;
-      const canvasDueDate = dueAt ? String(dueAt).slice(0, 10) : null;
+      const canvasDueDate = canvasTimestampToPulseDate(dueAt);
       const dateDistance = scheduleDate && canvasDueDate
         ? Math.abs(Date.parse(`${scheduleDate}T00:00:00Z`) - Date.parse(`${canvasDueDate}T00:00:00Z`)) / 86400000
         : 0;
       return {
         ...assignment,
         canvasDueAt: dueAt || null,
+        canvasDueDate,
         scheduleDate,
         ...(dateDistance > 1 ? { scheduleCanvasDateConflict: true } : {}),
       };

@@ -336,7 +336,14 @@ class Service {
   async getCoursePulseExcludedUserIds(courseId: string): Promise<string[]> {
     const { data, error } = await this.supabase.from('role').select('user').eq('object', courseId).in('right', ['editor', 'mentor']);
     if (error) throw new Error(error.message);
-    return [...new Set((data || []).map((row: any) => row.user).filter(Boolean).map(String))];
+    return [
+      ...new Set(
+        (data || [])
+          .map((row: any) => row.user)
+          .filter(Boolean)
+          .map(String),
+      ),
+    ];
   }
 
   /**
@@ -656,11 +663,7 @@ class Service {
    * @param catalogId - The course catalog ID.
    */
   async getCourseSections(catalogId: string): Promise<any[]> {
-    const { data, error } = await this.supabase
-      .from('section')
-      .select('id, catalogId, termId, scheduleId, title, state, attendanceEnabled, legacyFileId, createdAt')
-      .eq('catalogId', catalogId)
-      .order('createdAt', { ascending: true });
+    const { data, error } = await this.supabase.from('section').select('id, catalogId, termId, scheduleId, title, state, attendanceEnabled, legacyFileId, createdAt').eq('catalogId', catalogId).order('createdAt', { ascending: true });
     if (error) throw new Error(error.message);
     return data || [];
   }
@@ -670,11 +673,7 @@ class Service {
    * @param catalogId - The course catalog ID.
    */
   async getCourseSchedules(catalogId: string): Promise<any[]> {
-    const { data, error } = await this.supabase
-      .from('schedule')
-      .select('id, catalogId, termId, title, state, startDate, endDate, contentPath, legacyFileId, createdAt')
-      .eq('catalogId', catalogId)
-      .order('createdAt', { ascending: true });
+    const { data, error } = await this.supabase.from('schedule').select('id, catalogId, termId, title, state, startDate, endDate, contentPath, legacyFileId, createdAt').eq('catalogId', catalogId).order('createdAt', { ascending: true });
     if (error) throw new Error(error.message);
     return data || [];
   }
@@ -712,12 +711,7 @@ class Service {
   async getLatestLearnerPulses(enrollmentIds: string[]): Promise<Map<string, any>> {
     const ids = (enrollmentIds || []).filter(Boolean);
     if (ids.length === 0) return new Map();
-    const { data, error } = await this.supabase
-      .from('pulse')
-      .select('id, enrollmentId, catalogId, termId, pulseType, markdown, createdAt')
-      .eq('targetType', 'learner')
-      .in('enrollmentId', ids)
-      .order('createdAt', { ascending: false });
+    const { data, error } = await this.supabase.from('pulse').select('id, enrollmentId, catalogId, termId, pulseType, markdown, createdAt').eq('targetType', 'learner').in('enrollmentId', ids).order('createdAt', { ascending: false });
     if (error) throw new Error(error.message);
     const latest = new Map<string, any>();
     for (const row of data || []) {
@@ -727,7 +721,11 @@ class Service {
   }
 
   async createPulse(values: { catalogId: string; termId: string; targetType: string; targetId: string; enrollmentId?: string | null; pulseType?: 'pulse' | 'feedback'; markdown: string; createdBy: string }): Promise<any> {
-    const { data, error } = await this.supabase.from('pulse').insert([{ ...values, pulseType: values.pulseType || 'pulse' }]).select().single();
+    const { data, error } = await this.supabase
+      .from('pulse')
+      .insert([{ ...values, pulseType: values.pulseType || 'pulse' }])
+      .select()
+      .single();
     if (error) throw new Error(error.message);
     return data;
   }
@@ -1034,7 +1032,10 @@ class Service {
   }
 
   async uploadSubmissionFile(enrollmentId: string, interactionId: string, file: File): Promise<{ storagePath: string; size: number; type: string }> {
-    const safeName = String(file.name || 'file').replace(/[^\w.\-]+/g, '_').slice(0, 80) || 'file';
+    const safeName =
+      String(file.name || 'file')
+        .replace(/[^\w.\-]+/g, '_')
+        .slice(0, 80) || 'file';
     const storagePath = `enrollments/${enrollmentId}/interactions/${interactionId}/${crypto.randomUUID()}_${safeName}`;
     const { error } = await this.supabase.storage.from('submissions').upload(storagePath, file, {
       contentType: file.type,
@@ -1075,32 +1076,14 @@ class Service {
     return JSON.parse(await (data as Blob).text());
   }
 
-  private async saveTopicStateCollection(
-    base: string,
-    indexFile: string,
-    itemPrefix: string,
-    index: object,
-    items: Array<{ id: string; data: any }>,
-  ): Promise<void> {
-    await Promise.all([
-      this.topicStateUpload(`${base}/${indexFile}`, index),
-      ...items.map(({ id, data }) => this.topicStateUpload(`${base}/${itemPrefix}-${id}.json`, data)),
-    ]);
+  private async saveTopicStateCollection(base: string, indexFile: string, itemPrefix: string, index: object, items: Array<{ id: string; data: any }>): Promise<void> {
+    await Promise.all([this.topicStateUpload(`${base}/${indexFile}`, index), ...items.map(({ id, data }) => this.topicStateUpload(`${base}/${itemPrefix}-${id}.json`, data))]);
   }
 
-  private async loadTopicStateCollection(
-    base: string,
-    indexFile: string,
-    itemPrefix: string,
-    getPracticeIds: (index: any) => string[],
-    getFinalId: (index: any) => string | null,
-  ): Promise<{ index: any; items: any[]; finalItem: any | null } | null> {
+  private async loadTopicStateCollection(base: string, indexFile: string, itemPrefix: string, getPracticeIds: (index: any) => string[], getFinalId: (index: any) => string | null): Promise<{ index: any; items: any[]; finalItem: any | null } | null> {
     const index = await this.topicStateDownload(`${base}/${indexFile}`);
     if (!index) return null;
-    const [items, finalItem] = await Promise.all([
-      Promise.all(getPracticeIds(index).map((id) => this.topicStateDownload(`${base}/${itemPrefix}-${id}.json`))),
-      getFinalId(index) ? this.topicStateDownload(`${base}/${itemPrefix}-${getFinalId(index)}.json`) : Promise.resolve(null),
-    ]);
+    const [items, finalItem] = await Promise.all([Promise.all(getPracticeIds(index).map((id) => this.topicStateDownload(`${base}/${itemPrefix}-${id}.json`))), getFinalId(index) ? this.topicStateDownload(`${base}/${itemPrefix}-${getFinalId(index)}.json`) : Promise.resolve(null)]);
     return { index, items: items.filter(Boolean), finalItem };
   }
 
@@ -1109,23 +1092,24 @@ class Service {
     const practiceScenarios: any[] = Array.isArray(state.practiceScenarios) ? state.practiceScenarios : [];
     const finalScenario = state.finalScenario || null;
     await this.saveTopicStateCollection(
-      base, 'scenarios.json', 'scenario',
+      base,
+      'scenarios.json',
+      'scenario',
       {
         selectedPracticeScenarioId: state.selectedPracticeScenarioId || null,
         practiceScenarioIds: practiceScenarios.map((s: any) => s.scenarioRunId),
         finalScenarioId: finalScenario?.scenarioRunId || null,
       },
-      [
-        ...practiceScenarios.map((s: any) => ({ id: s.scenarioRunId, data: s })),
-        ...(finalScenario?.scenarioRunId ? [{ id: finalScenario.scenarioRunId, data: finalScenario }] : []),
-      ],
+      [...practiceScenarios.map((s: any) => ({ id: s.scenarioRunId, data: s })), ...(finalScenario?.scenarioRunId ? [{ id: finalScenario.scenarioRunId, data: finalScenario }] : [])],
     );
   }
 
   async loadDraState(enrollmentId: string, topicId: string): Promise<object | null> {
     const base = `enrollments/${enrollmentId}/topics/${topicId}`;
     const result = await this.loadTopicStateCollection(
-      base, 'scenarios.json', 'scenario',
+      base,
+      'scenarios.json',
+      'scenario',
       (idx) => idx.practiceScenarioIds || [],
       (idx) => idx.finalScenarioId || null,
     );
@@ -1142,23 +1126,24 @@ class Service {
     const practiceRuns: any[] = Array.isArray(state.practiceRuns) ? state.practiceRuns : [];
     const finalRun = state.finalRun || null;
     await this.saveTopicStateCollection(
-      base, 'interview.json', 'interview-run',
+      base,
+      'interview.json',
+      'interview-run',
       {
         selectedPracticeRunId: state.selectedPracticeRunId || null,
         practiceRunIds: practiceRuns.map((r: any) => r.runId),
         finalRunId: finalRun?.runId || null,
       },
-      [
-        ...practiceRuns.map((r: any) => ({ id: r.runId, data: r })),
-        ...(finalRun?.runId ? [{ id: finalRun.runId, data: finalRun }] : []),
-      ],
+      [...practiceRuns.map((r: any) => ({ id: r.runId, data: r })), ...(finalRun?.runId ? [{ id: finalRun.runId, data: finalRun }] : [])],
     );
   }
 
   async loadInterviewState(enrollmentId: string, topicId: string): Promise<object | null> {
     const base = `enrollments/${enrollmentId}/topics/${topicId}`;
     const result = await this.loadTopicStateCollection(
-      base, 'interview.json', 'interview-run',
+      base,
+      'interview.json',
+      'interview-run',
       (idx) => idx.practiceRunIds || [],
       (idx) => idx.finalRunId || null,
     );
@@ -1488,9 +1473,15 @@ class Service {
    * Reads a learner's current Canvas grades for display: an overall course grade plus a
    * per-assignment breakdown. `found` is false when the learner isn't in the Canvas course.
    */
-  async getCanvasGrades(params: { courseId: string; catalogId?: string; learnerEmail: string }): Promise<{ found: boolean; overall: { score: number | null; grade: string | null } | null; assignments: { name: string; score: number | null; pointsPossible: number | null; grade: string | null; dueAt?: string | null; submittedAt?: string | null; missing?: boolean; late?: boolean; excused?: boolean }[]; error?: string }> {
+  async getCanvasGrades(params: { courseId: string; catalogId?: string; learnerEmail: string; includeAssignmentDueDates?: boolean }): Promise<{ found: boolean; overall: { score: number | null; grade: string | null } | null; assignments: { name: string; score: number | null; pointsPossible: number | null; grade: string | null; dueAt?: string | null; submittedAt?: string | null; missing?: boolean; late?: boolean; excused?: boolean }[]; assignmentDueDates?: { id: string | number | null; name: string; learnerDueAt: string | null; courseDueAt: string | null; baseDueAt: string | null }[]; error?: string }> {
     const { data, error } = await this.invokeEdge('canvasgradebook', {
-      body: { mode: 'grades', courseId: params.courseId, catalogId: params.catalogId, learnerEmail: params.learnerEmail },
+      body: {
+        mode: 'grades',
+        courseId: params.courseId,
+        catalogId: params.catalogId,
+        learnerEmail: params.learnerEmail,
+        includeAssignmentDueDates: params.includeAssignmentDueDates === true,
+      },
     });
 
     if (error) {
@@ -1498,7 +1489,13 @@ class Service {
       throw new Error(edgeMessage || error.message);
     }
 
-    return { found: Boolean(data?.found), overall: data?.overall ?? null, assignments: Array.isArray(data?.assignments) ? data.assignments : [], error: data?.error };
+    return {
+      found: Boolean(data?.found),
+      overall: data?.overall ?? null,
+      assignments: Array.isArray(data?.assignments) ? data.assignments : [],
+      assignmentDueDates: Array.isArray(data?.assignmentDueDates) ? data.assignmentDueDates : undefined,
+      error: data?.error,
+    };
   }
 
   /** Reads current Canvas roster grades in one batched request; term dates use each assignment's base due date. */

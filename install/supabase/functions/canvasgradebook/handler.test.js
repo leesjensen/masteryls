@@ -695,6 +695,51 @@ test('canvasgradebook grades mode returns overall and per-assignment breakdown f
   assert.equal(body.assignments[2].grade, 'Excused');
 });
 
+test('canvasgradebook grades mode returns the exact learner effective due date and course date', async () => {
+  const calls = [];
+  const fetchFn = async (url) => {
+    calls.push(url);
+    if (url.includes('/search_users?search_term=')) return new Response(JSON.stringify([{ id: 77, email: 'learner@test.com' }]));
+    if (url.includes('/students/submissions')) return new Response(JSON.stringify([
+      { score: 0, grade: '0', assignment: { id: 42, name: 'Phase 4: Chess Database', points_possible: 155, due_at: '2026-11-14T23:59:00-07:00' } },
+    ]));
+    if (url.includes('/enrollments?')) return new Response(JSON.stringify([{ grades: { current_score: 50, current_grade: 'E' } }]));
+    if (url.includes('/courses/12345/assignments?')) return new Response(JSON.stringify([{
+      id: 42,
+      name: 'Phase 4: Chess Database',
+      due_at: '2026-10-31T23:59:00-06:00',
+      all_dates: [
+        { base: true, due_at: '2026-10-31T23:59:00-06:00' },
+        { base: false, title: 'Single student', due_at: '2026-11-14T23:59:00-07:00' },
+      ],
+    }]));
+    if (url.includes('/courses/12345/effective_due_dates?')) return new Response(JSON.stringify({
+      '42': {
+        '77': { due_at: '2026-10-31T23:59:00-06:00' },
+        '88': { due_at: '2026-11-14T23:59:00-07:00' },
+      },
+    }));
+    return new Response(JSON.stringify({ error: 'unexpected request' }), { status: 500 });
+  };
+  const handler = createCanvasGradebookHandler({
+    createSupabaseClientFromAuthHeader: () => createMockSupabase({ user: { id: 'root-user', email: 'root@test.com' }, roles: [{ user: 'root-user', right: 'root' }] }),
+    getEnv: (key) => ({ SUPABASE_URL: 'x', SUPABASE_SERVICE_ROLE_KEY: 'y', CANVAS_API_KEY: 'z' })[key],
+    fetchFn,
+  });
+
+  const response = await handler(makeRequest({ mode: 'grades', courseId: '12345', learnerEmail: 'learner@test.com', includeAssignmentDueDates: true }));
+  const body = await response.json();
+  assert.equal(body.assignments[0].dueAt, '2026-11-14T23:59:00-07:00', 'existing learner-specific grade date is preserved');
+  assert.deepEqual(body.assignmentDueDates, [{
+    id: 42,
+    name: 'Phase 4: Chess Database',
+    learnerDueAt: '2026-10-31T23:59:00-06:00',
+    courseDueAt: '2026-10-31T23:59:00-06:00',
+    baseDueAt: '2026-10-31T23:59:00-06:00',
+  }]);
+  assert.ok(calls.some((url) => url.includes('override_assignment_dates=false') && url.includes('include[]=all_dates')));
+});
+
 test('canvasgradebook grades mode returns found:false when the learner is not in the Canvas course', async () => {
   const { fetchFn } = buildFetchStub();
   const handler = createCanvasGradebookHandler({
