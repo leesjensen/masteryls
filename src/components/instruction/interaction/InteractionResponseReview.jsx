@@ -126,8 +126,8 @@ function ChoiceResponseSummary({ attempts, interactionType, body, onRefresh, loa
         <StatTile label="Avg attempts" value={avgAttempts} hint={`${summary.totalAttempts} total`} />
       </div>
 
-      <div className="overflow-hidden rounded border border-indigo-100 bg-white">
-        <table className="min-w-full text-sm">
+      <div role="region" aria-label="Choice response distribution" tabIndex={0} className="overflow-x-auto overscroll-x-contain rounded border border-indigo-100 bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500">
+        <table className="w-max min-w-full text-sm">
           <thead className="bg-indigo-50 text-left text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-3 py-2 font-semibold">Choice</th>
@@ -138,7 +138,7 @@ function ChoiceResponseSummary({ attempts, interactionType, body, onRefresh, loa
           <tbody>
             {summary.counts.map((choice) => (
               <tr key={choice.index} className="border-t border-indigo-50">
-                <td className="px-3 py-2 text-gray-800">
+                <td className="whitespace-nowrap px-3 py-2 text-gray-800">
                   {choice.label}
                   {summary.correct.has(choice.index) && <span className="ml-2 text-green-700">(correct)</span>}
                 </td>
