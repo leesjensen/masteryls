@@ -797,14 +797,15 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
     await route.fulfill({ json: topicFiles });
   });
 
-  // GitHub - request for README.md file
+  // GitHub - request for README.md file. The editor loads the latest content via the Contents API
+  // (getGitHubFileAtHead), so the GET returns the file's base64 content + blob sha like GitHub does.
   await context.route('https://api.github.com/**/contents/README.md', async (route) => {
     switch (route.request().method()) {
       case 'PUT':
-        await route.fulfill({ status: 201, json: { commit: { sha: 'fakecommitsha123' } } });
+        await route.fulfill({ status: 201, json: { commit: { sha: 'fakecommitsha123' }, content: { sha: 'fakeblobsha123' } } });
         break;
       case 'GET':
-        await route.fulfill({ json: topicFiles[0] });
+        await route.fulfill({ json: { ...topicFiles[0], content: Buffer.from(topicMarkdown).toString('base64'), encoding: 'base64' } });
         break;
     }
   });

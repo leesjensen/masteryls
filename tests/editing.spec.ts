@@ -79,6 +79,38 @@ test('editor commit', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Commit', exact: true })).toBeDisabled();
 });
 
+test('editor surfaces a conflict instead of overwriting when the topic changed on the server', async ({ page }) => {
+  await initAndOpenBasicCourse({ page });
+
+  // The commit loses the optimistic-concurrency race: GitHub rejects the stale base sha with 409.
+  let putCount = 0;
+  await page.route('https://api.github.com/**/contents/README.md', async (route) => {
+    if (route.request().method() === 'PUT') {
+      putCount += 1;
+      await route.fulfill({ status: 409, json: { message: 'sha does not match' } });
+      return;
+    }
+    await route.fulfill({
+      json: { path: 'README.md', sha: 'cd54f565190cb64e5b8fb63d05df57b975997385', content: Buffer.from('# Home\n\nserver version').toString('base64'), encoding: 'base64', download_url: 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/README.md', type: 'file' },
+    });
+  });
+
+  await page.locator('.absolute.left-0\\.5').click();
+  await expect(page.getByRole('code')).toContainText('server version');
+
+  await setMonacoModelValue(page, 'server version', '# Home\n\nmy local change');
+  await expect(page.getByRole('code')).toContainText('my local change');
+
+  await page.getByRole('button', { name: 'Commit', exact: true }).click();
+
+  // The conflict is surfaced (not a silent overwrite), and reloading restores the server's latest.
+  await expect(page.getByText('Topic changed on the server')).toBeVisible();
+  await page.getByRole('button', { name: 'Reload latest' }).click();
+  await expect(page.getByRole('code')).toContainText('server version');
+  await expect(page.getByRole('code')).not.toContainText('my local change');
+  expect(putCount).toBe(1);
+});
+
 test('settings', async ({ page }) => {
   await initAndOpenBasicCourse({ page });
 

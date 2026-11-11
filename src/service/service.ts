@@ -1231,8 +1231,36 @@ class Service {
    * @param commitMessage - Message for the commit.
    * @returns The SHA of the new commit.
    */
-  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string): Promise<string> {
-    const commitSha = await this._getGitHubFileSha(gitHubUrl, token);
+  /**
+   * Reads a file at the default-branch HEAD via the Contents API, returning its decoded text and blob
+   * `sha`. The sha is the base for an optimistic-concurrency commit (see `updateGitHubFile`'s
+   * `baseSha`). Returns null when the file does not exist yet (404).
+   */
+  async getGitHubFileAtHead(gitHubUrl: string, token: string): Promise<{ content: string; sha: string } | null> {
+    const res = await this.makeGitHubApiRequest(token, gitHubUrl);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Failed to read file: ${res.status} ${res.statusText}`);
+    const data = await res.json();
+    const base64 = String(data.content || '').replace(/\s+/g, '');
+    let content = '';
+    if (base64) {
+      content = new TextDecoder().decode(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)));
+    } else if (data.download_url) {
+      // GitHub omits inline content for large files (>1MB); fetch the raw bytes directly.
+      const raw = await fetch(data.download_url, { cache: 'no-store' });
+      if (raw.ok) content = await raw.text();
+    }
+    return { content, sha: data.sha };
+  }
+
+  /**
+   * @param baseSha - Optional optimistic-concurrency base. Omit (undefined) for the legacy behavior of
+   *   fetching the live HEAD sha and overwriting it. Pass a sha string to commit against that exact
+   *   blob (GitHub returns 409 if HEAD moved, surfaced as a `github-conflict` error). Pass null to
+   *   create a new file (no base).
+   */
+  async updateGitHubFile(gitHubUrl: string, content: string, token: string, commitMessage: string, baseSha?: string | null): Promise<string> {
+    const commitSha = baseSha !== undefined ? baseSha ?? undefined : await this._getGitHubFileSha(gitHubUrl, token);
     return await this.commitGitHubFile(gitHubUrl, content, token, commitMessage, commitSha);
   }
 
@@ -1271,7 +1299,16 @@ class Service {
     }
 
     const commitRes = await this.makeGitHubApiRequest(token, gitHubUrl, 'PUT', body);
-    if (!commitRes.ok) throw new Error(`Failed to commit file: ${commitRes.status} ${commitRes.statusText}`);
+    if (!commitRes.ok) {
+      // A stale base sha means another commit landed first; surface it as a conflict so the editor can
+      // reload rather than letting the generic error read as a transient failure.
+      if (commitRes.status === 409) {
+        const conflict: any = new Error('This file changed on the server since it was opened.');
+        conflict.code = 'github-conflict';
+        throw conflict;
+      }
+      throw new Error(`Failed to commit file: ${commitRes.status} ${commitRes.statusText}`);
+    }
 
     const commitData = await commitRes.json();
     return commitData.commit.sha;

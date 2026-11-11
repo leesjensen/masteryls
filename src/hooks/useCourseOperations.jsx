@@ -4,6 +4,7 @@ import { makeSimpleAiRequest, aiTopicGenerator, aiExamGenerator, aiEssayInteract
 import Course from '../course';
 import MarkdownStatic from '../components/MarkdownStatic';
 import { generateId } from '../utils/utils';
+import { gitBlobSha } from '../utils/gitBlobSha.js';
 import { resolveSnapshotRawUrl, invalidateRawGitHubSnapshot, setRawGitHubSnapshot, replaceRawGitHubRef } from '../utils/githubRawSnapshot.js';
 import { extractInteractionMetas, isSubmittableInteractionType, normalizeInteractionIds, parseInteractionMeta } from '../utils/interactionMeta';
 import { calculateGraceDays, formatGraceDaysLine, parseScheduleMarkdown, remapScheduleToStartDate, scheduleDateStatus, serializeScheduleMarkdown } from '../utils/scheduleMarkdown';
@@ -600,20 +601,42 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return markdown;
   }
 
-  async function updateTopic(topic, content, commitMessage = `update(${topic.title})`) {
+  // Load a topic's LATEST content (default-branch HEAD, bypassing the per-session read snapshot) plus
+  // the blob sha it is based on, for the editor. Loading HEAD means edit mode starts from the newest
+  // commit even if another machine pushed after this session loaded; the sha is passed back on commit
+  // so a concurrent push is detected (optimistic concurrency) rather than silently overwritten.
+  async function getTopicForEdit(topic) {
+    if (!topic || topic.type === 'video' || topic.type === 'embedded') {
+      return { content: topic?.path || '', baseSha: null };
+    }
+    const course = learningSession?.course;
+    const token = user?.getSetting?.('gitHubToken', course?.id);
+    const contentPath = topic.path?.match(/\/main\/(.+)$/);
+    if (!course?.links?.gitHub?.apiUrl || !contentPath) {
+      return { content: await getTopic(topic), baseSha: null };
+    }
+    const apiUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
+    const file = await service.getGitHubFileAtHead(apiUrl, token);
+    return { content: file?.content ?? '', baseSha: file?.sha ?? null };
+  }
+
+  async function updateTopic(topic, content, commitMessage = `update(${topic.title})`, baseSha = undefined) {
     const token = user.getSetting('gitHubToken', learningSession.course.id);
-    await _updateTopic(token, learningSession.course, topic, content, commitMessage);
+    const newBaseSha = await _updateTopic(token, learningSession.course, topic, content, commitMessage, baseSha);
     if (topic?.state !== 'stub') {
       service.indexCourse(learningSession.course.id, [{ id: topic.id, content }]);
     }
+    return newBaseSha;
   }
 
-  async function _updateTopic(token, course, topic, content, commitMessage = `update(${topic.title})`) {
+  async function _updateTopic(token, course, topic, content, commitMessage = `update(${topic.title})`, baseSha = undefined) {
     const contentPath = topic.path.match(/\/main\/(.+)$/);
 
     let updatedCourse = Course.copy(course);
     const updatedTopic = updatedCourse.topicFromId(topic.id);
     let structureChanged = false;
+    // The blob sha the editor should base its NEXT optimistic commit on (the bytes we just committed).
+    let newBaseSha = null;
 
     if (updatedTopic.type === 'video' || updatedTopic.type === 'embedded') {
       const nextPath = String(content || '').trim();
@@ -630,20 +653,22 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
       structureChanged = !_areStringArraysEqual(previousInteractions, nextInteractions);
 
       const gitHubUrl = `${course.links.gitHub.apiUrl}/${contentPath[1]}`;
-      const commitSha = await service.updateGitHubFile(gitHubUrl, normalizedContent, token, commitMessage);
+      const commitSha = await service.updateGitHubFile(gitHubUrl, normalizedContent, token, commitMessage, baseSha);
       invalidateCourseReadCache(course, commitSha);
       course.markdownCache.set(topic.path, normalizedContent);
+      newBaseSha = await gitBlobSha(normalizedContent);
     }
 
     if (structureChanged) {
       updatedCourse = await _updateCourseStructure(token, updatedCourse, `update(course) topic ${topic.title}`);
       setLearningSession({ ...learningSession, course: updatedCourse, topic: updatedTopic });
-      return;
+      return newBaseSha;
     }
 
     if (learningSession?.topic?.id === topic.id) {
       setLearningSession({ ...learningSession, topic: { ...learningSession.topic, interactions: updatedTopic.interactions } });
     }
+    return newBaseSha;
   }
 
   async function renameTopic(moduleIdx, topicIdx, newTitle, newDescription, newType, newPoints) {
@@ -1031,16 +1056,31 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return markdown;
   }
 
-  async function updateScheduleTopicContent(topic, fileId, content, commitMessage = `update(${topic.title})`) {
+  // Latest-HEAD load of a schedule file for the editor (parallels getTopicForEdit): bypass the read
+  // snapshot and return the newest content plus its blob sha for optimistic-concurrency commits.
+  // Schedules are conflict-heavy early in a term, so starting from HEAD matters most here.
+  async function getScheduleTopicContentForEdit(topic, fileId) {
+    if (!topic) return { content: '', baseSha: null };
+    const files = getScheduleFiles(topic);
+    const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files) || files[0];
+    if (!selectedFile?.apiUrl) {
+      return { content: await getScheduleTopicContent(topic, fileId, true), baseSha: null };
+    }
+    const token = user?.getSetting?.('gitHubToken', learningSession?.course?.id);
+    const file = await service.getGitHubFileAtHead(selectedFile.apiUrl, token);
+    return { content: file?.content ?? '', baseSha: file?.sha ?? null };
+  }
+
+  async function updateScheduleTopicContent(topic, fileId, content, commitMessage = `update(${topic.title})`, baseSha = undefined) {
     const course = getWorkingCourse();
-    if (!course || !topic) return;
+    if (!course || !topic) return null;
 
     const files = getScheduleFiles(topic);
     const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files);
-    if (!selectedFile) return;
+    if (!selectedFile) return null;
 
     const token = user.getSetting('gitHubToken', course.id);
-    const commitSha = await service.updateGitHubFile(selectedFile.apiUrl, content, token, commitMessage);
+    const commitSha = await service.updateGitHubFile(selectedFile.apiUrl, content, token, commitMessage, baseSha);
     invalidateCourseReadCache(course, commitSha);
 
     // The schedule's name is owned by the DB `schedule` row and edited in the Terms & Sections
@@ -1048,6 +1088,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     // never rewrites course structure. Just refresh the cached content for this schedule.
     course.markdownCache.set(selectedFile.rawUrl, content);
     setSelectedScheduleFile(topic, selectedFile.id);
+    return await gitBlobSha(content);
   }
 
   async function deleteTopicFiles(topic, files) {
@@ -2932,6 +2973,7 @@ Requirements:
     generateTopic,
     generateTopics,
     getTopic,
+    getTopicForEdit,
     removeTopic,
     renameTopic,
     updateTopic,
@@ -2944,6 +2986,7 @@ Requirements:
     renameScheduleFile,
     deleteCourseSchedule,
     getScheduleTopicContent,
+    getScheduleTopicContentForEdit,
     updateScheduleTopicContent,
     addTopicFiles,
     deleteTopicFiles,

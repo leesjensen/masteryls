@@ -375,7 +375,9 @@ function SortableSessionCard({ row, sessionIndex, learningSession, selectedFileR
 }
 
 export default function ScheduleEditor({ courseOps, learningSession }) {
-  const { showConfirm } = useAlert();
+  const { showConfirm, showAlert } = useAlert();
+  // The blob sha the loaded schedule content is based on, for optimistic-concurrency commits.
+  const baseShaRef = React.useRef(null);
   const [files, setFiles] = React.useState([]);
   const [selectedFileId, setSelectedFileId] = React.useState('');
   const [selectedFile, setSelectedFile] = React.useState(null);
@@ -409,9 +411,12 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     // Guard against out-of-order resolution: an older request for a previously-selected
     // file must not clobber the model after a newer selection's fetch already applied.
     let cancelled = false;
-    courseOps.getScheduleTopicContent(learningSession.topic, selectedFileId).then((markdown) => {
+    // Load the LATEST schedule content from HEAD (not the per-session read snapshot) so edits never
+    // start from a commit another machine already superseded, and remember its base sha for commit.
+    courseOps.getScheduleTopicContentForEdit(learningSession.topic, selectedFileId).then(({ content, baseSha }) => {
       if (cancelled) return;
-      const parsed = parseScheduleMarkdown(markdown || '');
+      baseShaRef.current = baseSha;
+      const parsed = parseScheduleMarkdown(content || '');
       setModel({ ...createEmptyModel(), ...parsed });
       setDirty(false);
     });
@@ -558,6 +563,13 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     });
   }
 
+  async function reloadLatest() {
+    const { content, baseSha } = await courseOps.getScheduleTopicContentForEdit(learningSession.topic, selectedFileId);
+    baseShaRef.current = baseSha;
+    setModel({ ...createEmptyModel(), ...parseScheduleMarkdown(content || '') });
+    setDirty(false);
+  }
+
   async function commit() {
     if (!selectedFile || committing) {
       return;
@@ -566,8 +578,22 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     setCommitting(true);
     try {
       const markdown = serializeScheduleMarkdown(model);
-      await courseOps.updateScheduleTopicContent(learningSession.topic, selectedFileId, markdown);
+      const newBaseSha = await courseOps.updateScheduleTopicContent(learningSession.topic, selectedFileId, markdown, undefined, baseShaRef.current);
+      if (newBaseSha) baseShaRef.current = newBaseSha;
       setDirty(false);
+    } catch (error) {
+      if (error?.code === 'github-conflict') {
+        const reload = await showConfirm({
+          title: 'Schedule changed on the server',
+          message: 'This schedule was changed and committed from somewhere else since you opened it, so your changes were NOT saved. Reload the latest version? This replaces your unsaved edits — copy them first if you need them.',
+          confirmButtonText: 'Reload latest',
+          cancelButtonText: 'Keep editing',
+          danger: true,
+        });
+        if (reload) await reloadLatest();
+      } else {
+        showAlert({ message: 'Failed to commit schedule changes. Please try again.', type: 'error' });
+      }
     } finally {
       setCommitting(false);
     }
@@ -577,10 +603,7 @@ export default function ScheduleEditor({ courseOps, learningSession }) {
     if (!selectedFileId) {
       return;
     }
-
-    const markdown = await courseOps.getScheduleTopicContent(learningSession.topic, selectedFileId, true);
-    setModel({ ...createEmptyModel(), ...parseScheduleMarkdown(markdown || '') });
-    setDirty(false);
+    await reloadLatest();
   }
 
   async function handleFileChange(event) {
