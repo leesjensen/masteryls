@@ -26,7 +26,7 @@ When you first open MasteryLS, you land on the start page.
 
 <img src="../features/getstarted.png" width="600" />
 
-- Enter your email to log in or create your account.
+- Enter your email to log in or create your account. New accounts require both a given name and last name.
 - Use the emailed one-time password if your installation is configured that way.
 - If you are just exploring, your instance may also offer demo courses.
 

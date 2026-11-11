@@ -949,7 +949,8 @@ async function register(page: any) {
 
 async function _register(page: any) {
   await page.getByRole('button', { name: "Don't have an account? Create" }).click();
-  await page.getByRole('textbox', { name: 'Name' }).fill('Bud');
+  await page.getByRole('textbox', { name: 'Given name' }).fill('Bud');
+  await page.getByRole('textbox', { name: 'Last name' }).fill('Cow');
   await page.getByRole('textbox', { name: 'Email' }).fill('bud@byu.edu');
   await page.getByRole('button', { name: 'Send Code' }).click();
 

@@ -2,6 +2,25 @@ import { test, expect } from './fixtures';
 import { initBasicCourse, register } from './testInit';
 import { Enrollment } from '../src/model';
 
+test('account registration requires given and last names and sends both with the OTP request', async ({ page }) => {
+  await initBasicCourse({ page });
+  await page.goto('http://localhost:5173/');
+  await page.getByRole('button', { name: "Don't have an account? Create" }).click();
+
+  const sendCode = page.getByRole('button', { name: 'Send Code' });
+  await page.getByRole('textbox', { name: 'Email' }).fill('ada@byu.edu');
+  await expect(sendCode).toBeDisabled();
+  await page.getByRole('textbox', { name: 'Given name' }).fill('  Ada  ');
+  await expect(sendCode).toBeDisabled();
+  await page.getByRole('textbox', { name: 'Last name' }).fill('  Lovelace  ');
+  await expect(sendCode).toBeEnabled();
+
+  const otpRequestPromise = page.waitForRequest((request) => request.url().endsWith('/auth/v1/otp') && request.method() === 'POST');
+  await sendCode.click();
+  const otpRequest = await otpRequestPromise;
+  expect(otpRequest.postDataJSON().data).toEqual({ name: 'Ada Lovelace', given_name: 'Ada', family_name: 'Lovelace' });
+});
+
 test('dashboard one time password error', async ({ page }) => {
   await page.route('**/auth/v1/verify', async (route) => {
     if (route.request().method() === 'POST') {

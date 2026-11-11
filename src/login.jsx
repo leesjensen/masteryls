@@ -38,13 +38,16 @@ function isTypingTowardAllowedDomain(value) {
 }
 
 function Login({ courseOps }) {
-  const [name, setName] = useState('');
+  const [givenName, setGivenName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [showSignup, setShowSignup] = useState(false);
   const { showAlert } = useAlert();
   const otpDialogRef = useRef(null);
 
   const trimmedEmail = email.trim();
+  const trimmedGivenName = givenName.trim();
+  const trimmedLastName = lastName.trim();
   const emailMatchesAllowedDomain = emailMatchesAllowedPattern(trimmedEmail);
   const emailNeedsAllowedDomain = showSignup && !emailMatchesAllowedDomain && !isTypingTowardAllowedDomain(trimmedEmail);
 
@@ -54,12 +57,16 @@ function Login({ courseOps }) {
       showAlert({ message: `Please use an allowed email address to create an account (e.g. ${ALLOWED_SIGNUP_EMAIL_EXAMPLES}).`, type: 'error' });
       return;
     }
+    if (showSignup && (!trimmedGivenName || !trimmedLastName)) {
+      showAlert({ message: 'Please enter both your given name and last name to create an account.', type: 'error' });
+      return;
+    }
     let user = null;
     try {
       if (showSignup) {
-        await service.requestOtp(email, name, true);
+        await service.requestOtp(email, true, { givenName: trimmedGivenName, lastName: trimmedLastName });
       } else {
-        await service.requestOtp(email, null, false);
+        await service.requestOtp(email, false);
       }
 
       const token = await otpDialogRef.current.show({
@@ -98,12 +105,16 @@ function Login({ courseOps }) {
       <InputDialog dialogRef={otpDialogRef} />
       <form className="space-y-4  max-w-md w-full" onSubmit={handleLogin}>
         {showSignup && (
-          <div>
-            <label className="block text-gray-700 mb-1" htmlFor="name">
-              Name
-            </label>
-            <Input id="name" type="text" placeholder="Your Name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
+          <>
+            <div>
+              <label className="block text-gray-700 mb-1" htmlFor="givenName">Given name</label>
+              <Input id="givenName" type="text" placeholder="Given name" autoComplete="given-name" value={givenName} onChange={(e) => setGivenName(e.target.value)} required />
+            </div>
+            <div>
+              <label className="block text-gray-700 mb-1" htmlFor="lastName">Last name</label>
+              <Input id="lastName" type="text" placeholder="Last name" autoComplete="family-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+            </div>
+          </>
         )}
         <div>
           <label className="block text-gray-700 mb-1" htmlFor="email">
@@ -113,7 +124,7 @@ function Login({ courseOps }) {
           {emailNeedsAllowedDomain && <p className="text-red-600 text-sm mt-1">You must use an allowed email address to create an account (e.g. {ALLOWED_SIGNUP_EMAIL_EXAMPLES}).</p>}
         </div>
         <div className="flex space-x-2">
-          <Button type="submit" className="flex-1" disabled={!email || (showSignup && !name) || (showSignup && !emailMatchesAllowedDomain)}>
+          <Button type="submit" className="flex-1" disabled={!trimmedEmail || (showSignup && (!trimmedGivenName || !trimmedLastName || !emailMatchesAllowedDomain))}>
             Send Code
           </Button>
         </div>

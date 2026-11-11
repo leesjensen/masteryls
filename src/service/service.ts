@@ -455,12 +455,16 @@ class Service {
    * Sends a one-time passcode (OTP) to the user's email.
 
    */
-  async requestOtp(email: string, name: string | null, shouldCreateUser: boolean): Promise<void> {
+  async requestOtp(email: string, shouldCreateUser: boolean, nameParts?: { givenName: string; lastName: string } | null): Promise<void> {
     const trimmedEmail = String(email || '').trim();
-    const trimmedName = typeof name === 'string' ? name.trim() : '';
     const options: any = { shouldCreateUser };
-    if (trimmedName) {
-      options.data = { name: trimmedName };
+    if (shouldCreateUser) {
+      const givenName = String(nameParts?.givenName || '').trim();
+      const lastName = String(nameParts?.lastName || '').trim();
+      if (!givenName || !lastName) {
+        throw new Error('Given name and last name are required to create an account.');
+      }
+      options.data = { name: `${givenName} ${lastName}`, given_name: givenName, family_name: lastName };
     }
     const { error } = await this.supabase.auth.signInWithOtp({ email: trimmedEmail, options });
     if (error) {
