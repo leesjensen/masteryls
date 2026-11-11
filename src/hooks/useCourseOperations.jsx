@@ -128,6 +128,18 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return {};
   }
 
+  // Toggle the per-enrollment pulse-reminder opt-out (DB `enrollment.settings.pulsePromptsDisabled`).
+  // Merges onto existing settings and updates the live session enrollment so the banner/toggle reflect
+  // the change immediately.
+  async function setEnrollmentPulsePromptsDisabled(enrollment, disabled) {
+    if (!enrollment?.id) return;
+    const nextSettings = { ...(enrollment.settings || {}), pulsePromptsDisabled: disabled };
+    await service.setEnrollmentSettings(enrollment.id, nextSettings);
+    if (learningSession?.enrollment?.id === enrollment.id) {
+      setLearningSession({ ...learningSession, enrollment: { ...learningSession.enrollment, settings: nextSettings } });
+    }
+  }
+
   function toggleSidebar() {
     if (learningSession?.course) {
       const settings = getEnrollmentUiSettings(learningSession.course.id);
@@ -2955,6 +2967,7 @@ Requirements:
     user,
     getEnrollmentUiSettings,
     saveEnrollmentUiSettings,
+    setEnrollmentPulsePromptsDisabled,
     toggleSidebar,
     setDiscussionToggleHandler,
     toggleDiscussion,

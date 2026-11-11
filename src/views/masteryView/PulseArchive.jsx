@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Activity, LoaderCircle } from 'lucide-react';
 import { aiPulseGenerator } from '../../ai/aiContentGenerator';
 import Markdown from '../../components/Markdown.jsx';
@@ -11,6 +12,7 @@ import { resolveLearnerPulseTermId } from '../../utils/pulseTerm.js';
 import { buildPulseRosterEvidence, excludePulseStaffRows } from '../../utils/pulseEvidence.js';
 import { buildPulseMetricsMarker, buildPulseTrendHistory, COURSE_LEARNER_COHORT_MARKER } from '../../utils/pulseTrend.js';
 import { buildMasteryTrendChart, insertMasteryTrendChart } from '../../utils/pulseMasteryChart.js';
+import { writePulsePromptState } from '../../hooks/usePulsePromptReminder.jsx';
 
 function formatDate(value) {
   return new Date(value).toLocaleDateString();
@@ -29,6 +31,41 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
   const { panePercent, splitContainerRef, onPaneMoved, onPaneResized } = useSplitPaneState(50, { minPercent: 25, maxPercent: 75 });
   const service = courseOps.service;
   const user = courseOps.user;
+
+  // The learner's own view (not an overseer drill-down) offers a pulse-reminder toggle. Load the
+  // learner's enrollment to read/write `settings.pulsePromptsDisabled`.
+  const isOwnLearner = targetType === 'learner' && Boolean(user?.id) && String(user.id) === String(targetId) && !user.canOverseeCourse?.(course.id);
+  const [ownEnrollment, setOwnEnrollment] = React.useState(null);
+  React.useEffect(() => {
+    if (!isOwnLearner) { setOwnEnrollment(null); return undefined; }
+    let alive = true;
+    service.enrollment(user.id, course.id).then((e) => { if (alive) setOwnEnrollment(e); }).catch(() => {});
+    return () => { alive = false; };
+  }, [isOwnLearner, course.id, user?.id]);
+
+  async function togglePulseReminders(enabled) {
+    if (!ownEnrollment) return;
+    const next = { ...ownEnrollment, settings: { ...(ownEnrollment.settings || {}), pulsePromptsDisabled: !enabled } };
+    setOwnEnrollment(next);
+    try { await courseOps.setEnrollmentPulsePromptsDisabled(ownEnrollment, !enabled); } catch { setError('Could not update pulse reminders.'); }
+  }
+
+  // One-shot auto-generate: the classroom reminder's "Take pulse" links here with `?take=1` so the
+  // learner takes their pulse in a single click. We start it HERE (after the term resolves) rather
+  // than in the classroom, so navigating away doesn't abort the in-flight request. The param is
+  // cleared first so a refresh never regenerates.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoTookRef = React.useRef(false);
+  React.useEffect(() => {
+    if (autoTookRef.current) return;
+    if (searchParams.get('take') !== '1') return;
+    if (!isOwnLearner || !canGenerate || !termId || busy) return;
+    autoTookRef.current = true;
+    const next = new URLSearchParams(searchParams);
+    next.delete('take');
+    setSearchParams(next, { replace: true });
+    generate();
+  }, [searchParams, isOwnLearner, canGenerate, termId, busy]);
 
   // A learner pulse is scoped to the learner's enrollment term (resolved from their section), so the
   // learner/observer view locks to that term and shows no chooser; '' means the enrollment has no
@@ -110,6 +147,8 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       const cohortSafeMarkdown = targetType === 'learner' ? pulseMarkdown : `${pulseMarkdown.trimEnd()}\n\n${COURSE_LEARNER_COHORT_MARKER}\n`;
       setProgressMessage('Saving pulse…');
       const pulse = await service.createPulse({ catalogId: course.id, termId, targetType, targetId, enrollmentId, markdown: cohortSafeMarkdown, createdBy: user.id });
+      // Record the fresh pulse locally so the classroom reminder banner won't immediately re-fire.
+      if (targetType === 'learner' && enrollmentId) writePulsePromptState(service, course.id, { lastPulseAt: Date.now() });
       setProgressMessage('Refreshing pulse history…');
       await load(); setSelected(pulse);
     } catch (e) { setError(e.message || 'Unable to generate pulse.'); }
@@ -171,6 +210,12 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
                 {canGenerate && <Button size="xs" disabled={busy} onClick={generate}>Take pulse</Button>}
                 {canGenerateFeedback && <Button size="xs" variant="outline" disabled={busy} onClick={generateFeedback}>Feedback</Button>}
               </div>
+              {isOwnLearner && ownEnrollment && (
+                <label className="mt-2 flex items-center gap-1.5 text-xs text-gray-600">
+                  <input type="checkbox" checked={ownEnrollment.settings?.pulsePromptsDisabled !== true} onChange={(e) => togglePulseReminders(e.target.checked)} />
+                  Remind me to take my pulse
+                </label>
+              )}
             </>}
           </div>
           <nav aria-label="Pulse history" className="max-h-72 min-h-0 flex-1 space-y-0.5 overflow-auto lg:max-h-[70vh]">

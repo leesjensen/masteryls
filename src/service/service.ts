@@ -693,6 +693,16 @@ class Service {
     if (error) throw new Error(error.message);
   }
 
+  /**
+   * Persists the (already-merged) settings blob on an enrollment row. A learner may update their own
+   * enrollment (RLS "User manage self"), so this backs per-course learner preferences such as the
+   * pulse-reminder opt-out.
+   */
+  async setEnrollmentSettings(enrollmentId: string, settings: object): Promise<void> {
+    const { error } = await this.supabase.from('enrollment').update({ settings }).eq('id', enrollmentId);
+    if (error) throw new Error(error.message);
+  }
+
   // ---- Term / Schedule / Section management (editor/root, enforced by RLS). ----
 
   async getPulses(catalogId: string, termId: string, targetType?: string, targetId?: string): Promise<any[]> {

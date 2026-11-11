@@ -64,6 +64,8 @@ jobs:
     permissions:
       pages: write
       id-token: write
+    env:
+      version: ${{needs.build.outputs.version}}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -72,3 +74,9 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+      - name: Annotate deployment in Grafana
+        run: |
+          curl -s -X POST https://leesjensen.grafana.net/api/annotations \
+          -H "Authorization: Bearer ${{ secrets.GRAFANA_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{"dashboardUID":"masteryls", "panelId":12, "tags":["frontend","production"], "text":"Version '"$version"' deployed" }'

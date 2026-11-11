@@ -8,6 +8,8 @@ import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { useNavigate } from 'react-router-dom';
 import useHotkeys from '../../hooks/useHotKeys';
 import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
+import usePulsePromptReminder from '../../hooks/usePulsePromptReminder.jsx';
+import PulseReminderBanner from '../../components/PulseReminderBanner.jsx';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings, onExitObserve = null, observedLearnerName = '' }) {
   const [editorVisible, setEditorVisible] = useState(false);
@@ -80,6 +82,8 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
     return <div className="p-8" />;
   }
 
+  const pulseReminder = usePulsePromptReminder({ courseOps, learningSession });
+
   let content = null;
   // The attendance and Terms & Sections views have no editable content, so they always render
   // their own instruction view rather than the Monaco editor.
@@ -106,6 +110,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
           )}
         </div>
       )}
+      {pulseReminder.visible && <PulseReminderBanner onTake={pulseReminder.openPulse} onDismiss={pulseReminder.snooze} />}
 
       <main className="flex flex-1 overflow-hidden">
         {effectiveSidebarVisible !== 'start' && (
