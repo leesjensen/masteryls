@@ -1,7 +1,4 @@
-import { MERMAID_PROMPT_GUIDELINES } from './mermaidPromptGuidelines.js';
-
 export function buildPulsePrompt({ targetType, targetName, term, currentEvidence, previousPulse, pulseTrendHistory = [] }) {
-  const snapshotDate = new Date().toISOString().slice(0, 10);
   const historyCohortPolicy = targetType === 'learner'
     ? 'Learner history points belong to this learner and may be compared when their metrics match.'
     : 'For course and section pulses, compare prior aggregate metrics only when they appear in PULSE TREND HISTORY; older pulses without a cohort marker included course staff and are not comparable.';
@@ -23,10 +20,18 @@ A lead summary: one or two sentences, at most 180 characters, as a plain paragra
 ## Positive signals
 ## Needs attention
 ## Priorities
+## Ongoing threads
 ## Evidence notes
 
 Do not add a top-level title heading or a snapshot-date line; begin directly with the lead summary paragraph.
-Use a compact Markdown table for indicators and concise bullet lists for signals and priorities. Include a Mermaid chart when comparable trend points are available. Use every comparable point in PULSE TREND HISTORY, in chronological order, plus the current evidence; do not make a two-point chart if older comparable snapshots are provided. Label every point with its actual snapshot date; the current evidence point's snapshot date is ${snapshotDate}. If a prior pulse has the same snapshot date as the current pulse, use the current evidence for that date and do not plot it twice. If mastery (percent) and completed topics (count) are both charted, put them in separate charts with appropriate independent axes; never mix different units on one axis. ${MERMAID_PROMPT_GUIDELINES} Never invent facts, causes, grades, deadlines, attendance, or learner activity.
+Use a compact Markdown table for indicators and concise bullet lists for signals and priorities. Report **topic mastery (percent)** as the single progress metric; do NOT include a completed-topics row or compare completed topics — mastery percent already captures progress. Do NOT author any Mermaid, xychart, or other diagram: place the exact line \`{{MASTERY_TREND_CHART}}\` on its own line immediately after the Status indicators table, and a mastery-trend chart built from every available snapshot is inserted there automatically. Never invent facts, causes, grades, deadlines, attendance, or learner activity.
+
+Because the previous pulse is provided, keep Overview, Change since the previous pulse, Positive signals, Needs attention, and Priorities focused on what has changed or happened SINCE the last pulse (the short-term view). The "## Ongoing threads" section is the long-term memory: a running, carried-forward ledger of multi-pulse objectives and issues. Start from the previous pulse's "## Ongoing threads" (in LATEST PREVIOUS PULSE) and update each entry against the current evidence:
+- Keep every still-open thread; never drop an unresolved one. Show a short bolded label, the date it was first raised, a status (new | continuing | improving | escalating | resolved), and one line on its current state.
+- Mark a long-running problem **resolved** when the current evidence shows it is addressed, and briefly recognize the win; drop a thread only after it has been resolved for more than one pulse.
+- Flag as **escalating** anything that has persisted across multiple pulses without being addressed — these are the important long-term items being neglected.
+- Add a NEW thread only for an objective or issue that is genuinely multi-pulse, not a one-off; keep at most the eight most significant threads, most urgent first.
+- Do not merely duplicate "## Needs attention" or "## Change since the previous pulse"; Ongoing threads is the long arc, not the current snapshot.
 
 Use each evidence source for the right purpose:
 - Treat Canvas overall and assignment grades as the primary graded checkpoints when present. Keep grades distinct from topic mastery and interaction completion.

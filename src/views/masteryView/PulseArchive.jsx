@@ -9,7 +9,8 @@ import Button from '../../components/ui/Button.jsx';
 import { normalizePulseMarkdown } from '../../utils/pulseMarkdown.js';
 import { resolveLearnerPulseTermId } from '../../utils/pulseTerm.js';
 import { buildPulseRosterEvidence, excludePulseStaffRows } from '../../utils/pulseEvidence.js';
-import { buildPulseTrendHistory, COURSE_LEARNER_COHORT_MARKER } from '../../utils/pulseTrend.js';
+import { buildPulseMetricsMarker, buildPulseTrendHistory, COURSE_LEARNER_COHORT_MARKER } from '../../utils/pulseTrend.js';
+import { buildMasteryTrendChart, insertMasteryTrendChart } from '../../utils/pulseMasteryChart.js';
 
 function formatDate(value) {
   return new Date(value).toLocaleDateString();
@@ -92,7 +93,20 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       }
       setProgressMessage('Taking pulse…');
       const body = await aiPulseGenerator({ targetType, targetName, term: terms.find((term) => term.id === termId), currentEvidence, previousPulse, pulseTrendHistory });
-      const pulseMarkdown = normalizePulseMarkdown(body);
+      // Build the mastery-trend chart from every available snapshot + the current value and insert it
+      // where the prompt left a placeholder; the model does not author the chart, so it always grows.
+      const currentMastery = targetType === 'learner' ? currentEvidence?.overall?.masteryPercent : currentEvidence?.overall?.averageMasteryPercent;
+      const currentCanvas = targetType === 'learner' ? null : currentEvidence?.sources?.canvas?.currentOverall?.averagePercent;
+      const snapshotDate = new Date().toISOString().slice(0, 10);
+      const chartPoints = [
+        ...pulseTrendHistory.filter((point) => Number.isFinite(point.masteryPercent)).map((point) => ({ date: point.snapshotDate, mastery: point.masteryPercent })),
+        ...(Number.isFinite(Number(currentMastery)) ? [{ date: snapshotDate, mastery: Number(currentMastery) }] : []),
+      ];
+      const masteryChart = buildMasteryTrendChart(chartPoints, { title: targetType === 'learner' ? 'Cumulative Mastery (%)' : 'Average Cumulative Mastery (%)' });
+      // Append a machine-readable metrics marker so future pulses can plot this point reliably.
+      const metricsMarker = buildPulseMetricsMarker({ date: snapshotDate, mastery: currentMastery, canvasAveragePercent: currentCanvas });
+      let pulseMarkdown = normalizePulseMarkdown(insertMasteryTrendChart(body, masteryChart));
+      pulseMarkdown = `${pulseMarkdown.trimEnd()}\n\n${metricsMarker}\n`;
       const cohortSafeMarkdown = targetType === 'learner' ? pulseMarkdown : `${pulseMarkdown.trimEnd()}\n\n${COURSE_LEARNER_COHORT_MARKER}\n`;
       setProgressMessage('Saving pulse…');
       const pulse = await service.createPulse({ catalogId: course.id, termId, targetType, targetId, enrollmentId, markdown: cohortSafeMarkdown, createdBy: user.id });
