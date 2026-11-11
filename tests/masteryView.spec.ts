@@ -454,12 +454,20 @@ test('learner stays on the mastery view after a browser refresh', async ({ page 
   // The learner sees their own mastery view (Topic Activity tab), not the roster.
   await expect(page.getByRole('button', { name: 'Topic Activity', exact: true })).toBeVisible();
 
+  // Persist a collapsed classroom sidebar before refreshing the synthetic mastery route.
+  await page.evaluate((courseId) => {
+    const key = `uiSettings-${courseId}`;
+    const saved = JSON.parse(localStorage.getItem(key) || '{}');
+    localStorage.setItem(key, JSON.stringify({ ...saved, sidebarVisible: 'start' }));
+  }, COURSE_ID);
+
   await page.reload();
 
   // Regression: a refresh must keep the learner on /mastery (the enrollment is resolved before the
   // mastery topic is gated), not fall through to the default topic view.
   await expect(page).toHaveURL(new RegExp(`/course/${COURSE_ID}/mastery$`));
   await expect(page.getByRole('button', { name: 'Topic Activity', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Topics', exact: true })).toHaveCount(0);
 });
 
 test('masteryview shows course attendance and a learner attendance history when attendance is enabled', async ({ page }) => {

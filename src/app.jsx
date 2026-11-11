@@ -100,6 +100,7 @@ function App({ initialUser }) {
     courseOps,
     user,
     settings,
+    setSettings,
     service,
     learningSession,
     setLearningSession,
@@ -165,7 +166,7 @@ function ProgressPage() {
 }
 
 function ClassroomPage() {
-  const { courseOps, service, user, learningSession, setLearningSession, settings, observeSession, exitObserveSession } = useOutletContext();
+  const { courseOps, service, user, learningSession, setLearningSession, settings, setSettings, observeSession, exitObserveSession } = useOutletContext();
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -205,6 +206,11 @@ function ClassroomPage() {
           const { observeForCourse, learnerId } = getEffectiveLearnerId({ userId: user?.id, courseId: course?.id, observeSession });
           const enrollment = course && learnerId ? await service.enrollment(learnerId, course.id) : null;
           if (seq !== latestEffectSeqRef.current) return;
+
+          // Restore classroom UI state for every route. Schedule and Attendance happen to save
+          // currentTopic while loading, which also refreshes React state from localStorage; the
+          // synthetic Mastery/Sections routes intentionally do not save a landing topic.
+          setSettings(service.getEnrollmentUiSettings(courseId));
 
           let topic = learningSession?.topic;
           if (course) {
