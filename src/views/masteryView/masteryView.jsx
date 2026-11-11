@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Eye, UserMinus } from 'lucide-react';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import { buildPulseRosterEvidence } from '../../utils/pulseEvidence.js';
 import Button from '../../components/ui/Button.jsx';
 import Input from '../../components/ui/Input.jsx';
-import { useAlert } from '../../contexts/AlertContext.jsx';
+import Modal from '../../components/ui/Modal.jsx';
 import Tabs from '../../components/Tabs.jsx';
 import PulseArchive from './PulseArchive.jsx';
 
@@ -46,7 +46,6 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const { courseId: routeCourseId } = useParams();
   const [searchParams] = useSearchParams();
   const requestedSectionId = searchParams.get('section') || '';
-  const { showConfirm } = useAlert();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [page, setPage] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
@@ -62,6 +61,11 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [masteryTab, setMasteryTab] = React.useState('roster');
+  const enrollmentDialogRef = React.useRef(null);
+  const [enrollmentActionRow, setEnrollmentActionRow] = React.useState(null);
+  const [moveSectionId, setMoveSectionId] = React.useState('');
+  const [enrollmentActionBusy, setEnrollmentActionBusy] = React.useState(false);
+  const [enrollmentActionError, setEnrollmentActionError] = React.useState(null);
 
 
   const courseOpsRef = React.useRef(courseOps);
@@ -314,20 +318,54 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     navigate(`/course/${selectedCourseId}`);
   }
 
-  async function onUnenrollLearner(row, event) {
+  function openEnrollmentActions(row, event) {
     event?.stopPropagation?.();
     if (!canUnenrollLearners || !row?.enrollmentId) {
       return;
     }
-    const learnerLabel = row.learnerName || row.learnerEmail || 'this learner';
-    if (!(await showConfirm({ title: 'Unenroll learner', message: `Unenroll ${learnerLabel} from this course? Their progress and submissions will no longer be accessible.`, confirmButtonText: 'Unenroll', danger: true }))) {
-      return;
-    }
+    setEnrollmentActionRow(row);
+    setMoveSectionId('');
+    setEnrollmentActionError(null);
+    enrollmentDialogRef.current?.showModal();
+  }
+
+  function closeEnrollmentActions(force = false) {
+    if (enrollmentActionBusy && !force) return;
+    enrollmentDialogRef.current?.close();
+    setEnrollmentActionRow(null);
+    setMoveSectionId('');
+    setEnrollmentActionError(null);
+  }
+
+  async function unenrollSelectedLearner() {
+    if (!canUnenrollLearners || !enrollmentActionRow?.enrollmentId) return;
+    setEnrollmentActionBusy(true);
     try {
-      await courseOpsRef.current.unenrollLearner({ enrollmentId: row.enrollmentId });
-      setAllRows((prev) => prev.filter((r) => r.enrollmentId !== row.enrollmentId));
-    } catch (unenrollError) {
-      setError(unenrollError.message || String(unenrollError));
+      await courseOpsRef.current.unenrollLearner({ enrollmentId: enrollmentActionRow.enrollmentId });
+      setAllRows((prev) => prev.filter((row) => row.enrollmentId !== enrollmentActionRow.enrollmentId));
+      setEnrollmentActionBusy(false);
+      closeEnrollmentActions(true);
+    } catch (actionError) {
+      setEnrollmentActionError(actionError.message || String(actionError));
+      setEnrollmentActionBusy(false);
+    }
+  }
+
+  async function moveSelectedLearner() {
+    if (!canUnenrollLearners || !enrollmentActionRow?.enrollmentId || !moveSectionId) return;
+    setEnrollmentActionBusy(true);
+    try {
+      await courseOpsRef.current.setEnrollmentSection(enrollmentActionRow.enrollmentId, moveSectionId);
+      setAllRows((prev) => prev.flatMap((row) => {
+        if (row.enrollmentId !== enrollmentActionRow.enrollmentId) return [row];
+        if (selectedSectionId && selectedSectionId !== moveSectionId) return [];
+        return [{ ...row, sectionId: moveSectionId }];
+      }));
+      setEnrollmentActionBusy(false);
+      closeEnrollmentActions(true);
+    } catch (actionError) {
+      setEnrollmentActionError(actionError.message || String(actionError));
+      setEnrollmentActionBusy(false);
     }
   }
 
@@ -481,19 +519,23 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
                         {canObserveLearners && (
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border border-blue-300 text-blue-700 hover:bg-blue-50 text-xs"
+                            aria-label={`Observe ${row.learnerName || row.learnerEmail || 'learner'}`}
+                            title="Observe learner"
+                            className="p-1.5 rounded border border-blue-300 text-blue-700 hover:bg-blue-50"
                             onClick={(event) => onObserveLearner(row, event)}
                           >
-                            Observe
+                            <Eye size={16} aria-hidden="true" />
                           </button>
                         )}
                         {canUnenrollLearners && (
                           <button
                             type="button"
-                            className="px-2 py-1 rounded border border-red-300 text-red-700 hover:bg-red-50 text-xs"
-                            onClick={(event) => onUnenrollLearner(row, event)}
+                            aria-label={`Manage enrollment for ${row.learnerName || row.learnerEmail || 'learner'}`}
+                            title="Manage enrollment"
+                            className="p-1.5 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                            onClick={(event) => openEnrollmentActions(row, event)}
                           >
-                            Unenroll
+                            <UserMinus size={16} aria-hidden="true" />
                           </button>
                         )}
                       </div>
@@ -508,6 +550,51 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
       {renderPagination()}
       </>}
     </div>
+
+    <Modal
+      dialogRef={enrollmentDialogRef}
+      title="Manage enrollment"
+      aria-label="Manage enrollment"
+      size="sm"
+      onCancel={(event) => {
+        event.preventDefault();
+        closeEnrollmentActions();
+      }}
+    >
+      {enrollmentActionRow && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-700">
+            Update {enrollmentActionRow.learnerName || enrollmentActionRow.learnerEmail || 'this learner'}’s enrollment in this course.
+          </p>
+          <label className="block text-sm font-medium text-gray-700">
+            Move to section
+            <select
+              aria-label="Move to section"
+              value={moveSectionId}
+              onChange={(event) => setMoveSectionId(event.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Choose a different section…</option>
+              {courseSections.filter((section) => section.id !== enrollmentActionRow.sectionId).map((section) => (
+                <option key={section.id} value={section.id}>{section.title || 'Section'}</option>
+              ))}
+            </select>
+          </label>
+          {enrollmentActionError && <p role="alert" className="text-sm text-red-600">{enrollmentActionError}</p>}
+          <div className="flex flex-wrap justify-between gap-2">
+            <Button type="button" variant="danger" onClick={unenrollSelectedLearner} disabled={enrollmentActionBusy}>
+              {enrollmentActionBusy ? 'Working…' : 'Unenroll'}
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={closeEnrollmentActions} disabled={enrollmentActionBusy}>Cancel</Button>
+              <Button type="button" onClick={moveSelectedLearner} disabled={!moveSectionId || enrollmentActionBusy}>
+                Move learner
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Modal>
 
     </>
   );

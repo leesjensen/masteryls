@@ -116,12 +116,12 @@ test('masteryview sorts across the full dataset, not just the current page', asy
 
   // Click the Learner header -> ascending by name. The client sorts the whole dataset it holds,
   // so the page-2 learner is pulled to the top of page 1. A current-page-only sort could not.
-  await page.getByRole('button', { name: 'Learner' }).click();
+  await page.getByRole('button', { name: 'Learner', exact: true }).click();
   await expect(page.locator('tbody tr').first()).toContainText('Aaron Aardvark');
   await expect(page.getByRole('cell', { name: 'Zelda Zimmerman', exact: true })).toHaveCount(0);
 
   // Click again -> descending. The global last name now leads page 1.
-  await page.getByRole('button', { name: 'Learner' }).click();
+  await page.getByRole('button', { name: 'Learner', exact: true }).click();
   await expect(page.locator('tbody tr').first()).toContainText('Zelda Zimmerman');
   await expect(page.getByRole('cell', { name: 'Aaron Aardvark', exact: true })).toHaveCount(0);
 
@@ -244,6 +244,55 @@ test('masteryview loads learner overview for accessible course', async ({ page }
   // Navigate to learner gradebook (this issues the single-learner full-blob request).
   await page.getByRole('cell', { name: 'Kyle Robinson', exact: true }).click();
   await expect(page.getByRole('columnheader', { name: 'Instruction Item' })).toBeVisible();
+});
+
+test('roster enrollment dialog moves a learner to another section', async ({ page }) => {
+  await initBasicCourse({ page });
+  await mockGradebookOverview(page);
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, async (route: any) => {
+    await route.fulfill({ json: [
+      { id: 'sec-kyle', catalogId: COURSE_ID, title: 'Section A' },
+      { id: 'sec-b', catalogId: COURSE_ID, title: 'Section B' },
+    ] });
+  });
+  let sectionUpdate: any = null;
+  let enrollmentDeleted = false;
+  await page.route(/.*supabase.co\/rest\/v1\/enrollment(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'PATCH') {
+      sectionUpdate = route.request().postDataJSON();
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    if (route.request().method() === 'DELETE') {
+      enrollmentDeleted = true;
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await navigateToDashboard(page);
+  await page.goto(`/course/${COURSE_ID}/mastery`);
+  const optionsButton = page.getByRole('button', { name: 'Manage enrollment for Kyle Robinson' });
+  await expect(optionsButton).toBeVisible();
+  await optionsButton.click();
+
+  const dialog = page.getByRole('dialog', { name: 'Manage enrollment' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Unenroll' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Move learner' })).toBeDisabled();
+  await expect(dialog.getByLabel('Move to section').locator('option[value="sec-kyle"]')).toHaveCount(0);
+  await dialog.getByLabel('Move to section').selectOption('sec-b');
+  await dialog.getByRole('button', { name: 'Move learner' }).click();
+
+  await expect(dialog).not.toBeVisible();
+  expect(sectionUpdate).toEqual({ sectionId: 'sec-b' });
+  await expect(page.getByRole('cell', { name: 'Kyle Robinson', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Manage enrollment for Kyle Robinson' }).click();
+  await page.getByRole('dialog', { name: 'Manage enrollment' }).getByRole('button', { name: 'Unenroll' }).click();
+  await expect(page.getByRole('cell', { name: 'Kyle Robinson', exact: true })).toHaveCount(0);
+  expect(enrollmentDeleted).toBe(true);
 });
 
 test('overseer gets Canvas grades and can save learner feedback as a pulse', async ({ page }) => {
@@ -424,7 +473,7 @@ test('mentor can view course mastery and observe learners without edit controls'
   await page.goto(`/course/${COURSE_ID}/mastery`);
 
   await expect(page.getByLabel('Filter learner')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Observe' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Observe Bud' })).toBeVisible();
   await page.getByRole('button', { name: 'User Menu' }).click();
   await expect(page.getByRole('button', { name: 'New course' })).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Link course' })).not.toBeVisible();
