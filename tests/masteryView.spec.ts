@@ -208,6 +208,19 @@ test('masteryview filters the roster by section (server-side)', async ({ page })
   await expect(page.getByText('Total learners: 2')).toBeVisible();
 });
 
+test('masteryview reads a section filter from the URL', async ({ page }) => {
+  await initBasicCourse({ page });
+  const requests = await mockSectionRoster(page);
+
+  await navigateToDashboard(page);
+  await page.goto(`/course/${COURSE_ID}/mastery?section=sec-b`);
+
+  await expect(page.getByLabel('Section')).toHaveValue('sec-b');
+  await expect(page.getByText('Total learners: 1')).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Beta Learner', exact: true })).toBeVisible();
+  await expect.poll(() => requests.some((request) => request.sectionId === 'sec-b')).toBe(true);
+});
+
 test('masteryview loads learner overview for accessible course', async ({ page }) => {
   await initBasicCourse({ page });
   const overviewRequests = await mockGradebookOverview(page);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import { buildPulseRosterEvidence } from '../../utils/pulseEvidence.js';
@@ -44,6 +44,8 @@ function compareRows(a, b, key) {
 export default function MasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
+  const [searchParams] = useSearchParams();
+  const requestedSectionId = searchParams.get('section') || '';
   const { showConfirm } = useAlert();
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [page, setPage] = React.useState(1);
@@ -214,7 +216,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
         const course = await courseOpsRef.current.getCourse(selectedCourseId);
         if (cancelled) return;
         setSelectedCourse(course || null);
-        setSelectedSectionId('');
+        setSelectedSectionId(course?.sections?.some((section) => section.id === requestedSectionId) ? requestedSectionId : '');
         setPage(1);
       } catch {
         if (!cancelled) {
@@ -229,7 +231,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
     return () => {
       cancelled = true;
     };
-  }, [selectedCourseId]);
+  }, [requestedSectionId, selectedCourseId]);
 
   // Fetch the roster, scoped to the selected section ('' = all sections). Refetches when the section
   // changes; sorting, text filtering and pagination all happen client-side against the returned set.

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Trash2, Eye, Copy } from 'lucide-react';
+import { handleInAppLinkClick } from '../../utils/linkNavigation.js';
 import { useAlert } from '../../contexts/AlertContext.jsx';
 import Modal from '../../components/ui/Modal.jsx';
 import Input from '../../components/ui/Input.jsx';
@@ -96,9 +97,14 @@ export default function SectionsAdminView({ courseOps }) {
         <label className="flex items-center gap-1 text-gray-700">
           <input type="checkbox" checked={!!sec.attendanceEnabled} onChange={(e) => run(() => courseOps.updateSection(sec.id, { attendanceEnabled: e.target.checked }))} /> Attendance
         </label>
-        <span className="ml-auto text-xs text-gray-500">
+        <a
+          href={`/course/${courseId}/mastery?section=${encodeURIComponent(sec.id)}`}
+          onClick={(event) => handleInAppLinkClick(event, () => navigate(`/course/${courseId}/mastery?section=${encodeURIComponent(sec.id)}`))}
+          aria-label={`View ${count} learners in ${sec.title || 'this section'}`}
+          className="ml-auto text-xs text-blue-600 underline decoration-blue-300 underline-offset-2 hover:text-blue-800"
+        >
           {count} learner{count === 1 ? '' : 's'}
-        </span>
+        </a>
         {canDelete && (
           <button
             type="button"

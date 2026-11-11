@@ -234,7 +234,7 @@ The classroom table of contents has a **Terms & Sections** entry for root users 
 - Create terms to organize instruction periods. Sections are listed beneath their term.
 - A section groups learners, can be assigned a schedule, and can have attendance enabled.
 - Learners with multiple sections available choose one while enrolling. The enrollment is tied to that section, which determines the learner's schedule. Section availability is based on its schedule date range; sections without a schedule or date range remain available.
-- Use the section controls to assign learners from the roster views. A section with learners cannot be deleted, and a term can only be deleted when its sections have no learners.
+- Select a section's learner count to open MasteryView with that section selected. Use the section controls there to assign learners; a section with learners cannot be deleted, and a term can only be deleted when its sections have no learners.
 
 ### Schedule metadata and content
 

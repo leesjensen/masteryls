@@ -119,6 +119,7 @@ test('settings', async ({ page }) => {
 });
 
 test('terms & sections view creates a term with its first section', async ({ page }) => {
+  const courseId = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
   const terms: any[] = [];
   const sections: any[] = [];
   const termPosts: any[] = [];
@@ -182,6 +183,7 @@ test('terms & sections view creates a term with its first section', async ({ pag
   await expect.poll(() => sectionPosts.length).toBeGreaterThan(0);
   expect(sectionPosts.at(-1).title).toBe('Section A');
   expect(sectionPosts.at(-1).termId).toBe('new-term');
+  await expect(page.getByRole('link', { name: 'View 0 learners in Section A' })).toHaveAttribute('href', `/course/${courseId}/mastery?section=new-section`);
 });
 
 function firstRow(body: any) {
