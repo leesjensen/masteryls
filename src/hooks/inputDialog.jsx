@@ -90,7 +90,7 @@ export default function InputDialog({ dialogRef, title: defaultTitle, descriptio
       {currentChoices && (
         <fieldset className="mb-4">
           {currentChoices.label && <legend className="mb-1 text-sm font-medium text-gray-700">{currentChoices.label}</legend>}
-          <div className="flex flex-wrap gap-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {currentChoices.options.map((option) => (
               <label key={option.value} className="flex cursor-pointer items-start gap-2 text-sm text-gray-700">
                 <input type="radio" name="input-dialog-choice" value={option.value} checked={choice === option.value} onChange={() => setChoice(option.value)} className="mt-0.5 accent-blue-600" />
