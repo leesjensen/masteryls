@@ -40,7 +40,7 @@ export default function AttendanceCodeOverlay({ courseOps, session, onClose }) {
   }
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-white/95 p-6 text-center" data-testid="attendance-code-overlay">
+    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-6 bg-white p-6 text-center" data-testid="attendance-code-overlay">
       <div className="text-xl font-semibold text-gray-600">Attendance code</div>
       <div className="font-mono font-bold text-gray-900 tracking-[0.2em] leading-none" style={{ fontSize: 'min(28vw, 12rem)' }} aria-label="Attendance code value">
         {session.code}

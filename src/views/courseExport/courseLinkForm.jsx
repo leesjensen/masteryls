@@ -158,8 +158,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
   const selectedScheduleTitle = selectedSchedule?.title || selectedSchedule?.path || 'No schedule selected';
   const modules = Array.isArray(course?.modules) ? course.modules : [];
   const topicCount = modules.reduce((count, module) => count + (Array.isArray(module?.topics) ? module.topics.length : 0), 0);
-  const masteryAssignmentUrl =
-    course?.externalRefs?.canvasCourseId && course?.externalRefs?.canvasMasteryAssignmentId ? `https://byu.instructure.com/courses/${course.externalRefs.canvasCourseId}/assignments/${course.externalRefs.canvasMasteryAssignmentId}` : null;
+  const masteryAssignmentUrl = course?.externalRefs?.canvasCourseId && course?.externalRefs?.canvasMasteryAssignmentId ? `https://byu.instructure.com/courses/${course.externalRefs.canvasCourseId}/assignments/${course.externalRefs.canvasMasteryAssignmentId}` : null;
 
   function setPresetSelectAll() {
     setSelectedTopicIds(
@@ -188,7 +187,7 @@ export default function CourseLinkForm({ courseOps, onClose }) {
     <>
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 bg-white backdrop-blur-sm z-20 flex flex-col items-center justify-center">
           {/* Spinner */}
           <div className="relative mb-6">
             <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>

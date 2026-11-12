@@ -52,7 +52,7 @@ export default function CourseCreationForm({ courseOps, onClose, onCreate }) {
     <>
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 bg-white backdrop-blur-sm z-20 flex flex-col items-center justify-center">
           {/* Spinner */}
           <div className="relative mb-6">
             <div className="w-16 h-16 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
