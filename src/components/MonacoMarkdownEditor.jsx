@@ -97,6 +97,12 @@ const MonacoMarkdownEditor = ({ content, contentEpoch = 0, diffContent, onChange
 
   const editorOptions = {
     readOnly,
+    // Use Monaco's classic hidden-<textarea> input instead of the new experimental EditContext
+    // (default-on since Monaco 0.52). EditContext routes copy/cut/paste through a `native-edit-context`
+    // element, and opening/closing a native <dialog> (e.g. the AI-image preview) detaches that binding —
+    // afterward the browser dispatches clipboard events to <body>, so cut/copy/paste silently fail even
+    // though the editor still has focus. The textarea input is immune to this.
+    editContext: false,
     fontSize: 14,
     fontFamily: "'Roboto Mono', 'Monaco', monospace",
     wrappingIndent: 'indent',
