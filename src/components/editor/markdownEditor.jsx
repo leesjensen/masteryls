@@ -2,6 +2,7 @@ import React from 'react';
 import { Bold, Italic, Code, Heading2, Heading3, Table, List, ListOrdered, Link, Image as ImageIcon, CircleDot, SquareX, BookOpenCheck, FileUp, CloudUpload, ListChecks, TextSelect, Bot, WrapText, GitCompare, WandSparkles, ImagePlus, FileCode2, Globe, GraduationCap, SpellCheck, BarChart3 } from 'lucide-react';
 import MonacoMarkdownEditor from '../../components/MonacoMarkdownEditor';
 import { aiQuizGenerator, aiSectionGenerator, aiGeneralPromptResponse, aiSelectedMarkdownModifier, aiImageGenerator, aiTopicReviewGenerator } from '../../ai/aiContentGenerator';
+import { IMAGE_STYLE_OPTIONS, IMAGE_STYLE_VISUAL } from '../../utils/imagePrompt.js';
 import { normalizeInteractionIds } from '../../utils/interactionMeta';
 import InputDialog from '../../hooks/inputDialog';
 import TopicLinkDialog from './topicLinkDialog';
@@ -635,7 +636,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     const editor = editorRef.current;
     const insertionSelection = editor?.getSelection();
 
-    const prompt = await subjectDialogRef.current.show({
+    const result = await subjectDialogRef.current.show({
       title: 'Generate image',
       description: 'Describe the image to generate for this topic.',
       placeholder: 'e.g., a clear diagram of the event loop moving tasks between queues',
@@ -643,8 +644,11 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
       required: true,
       multiline: true,
       rows: 5,
+      choices: { label: 'Style', defaultValue: IMAGE_STYLE_VISUAL, options: IMAGE_STYLE_OPTIONS },
     });
 
+    const prompt = result?.value;
+    const style = result?.choice ?? IMAGE_STYLE_VISUAL;
     if (!prompt) {
       editor?.focus();
       return;
@@ -654,7 +658,7 @@ const MarkdownEditor = React.forwardRef(function MarkdownEditor({ course, curren
     let dialogResult = null;
     try {
       setGeneratingContent(true);
-      const generatedImage = await aiImageGenerator(prompt);
+      const generatedImage = await aiImageGenerator(prompt, style);
       const initialFile = base64ImageToFile(generatedImage.data, suggestedAiImageName(prompt, generatedImage.mimeType), generatedImage.mimeType);
       const dimensions = await readImageDimensions(initialFile);
       const existingNames = new Set((await getExistingTopicFileNames?.()) || []);

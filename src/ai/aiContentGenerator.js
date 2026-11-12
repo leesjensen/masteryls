@@ -5,6 +5,7 @@ import { buildLearnerFeedbackPrompt } from '../utils/learnerFeedbackPrompt.js';
 import { buildPulsePrompt } from '../utils/pulsePrompt.js';
 import { MERMAID_PROMPT_GUIDELINES } from '../utils/mermaidPromptGuidelines.js';
 import { INLINE_CODE_PROMPT_GUIDELINE, convertMathDelimitersToInlineCode } from '../utils/inlineCodeMarkdown.js';
+import { buildImagePromptText, IMAGE_STYLE_VISUAL } from '../utils/imagePrompt.js';
 
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
@@ -1221,29 +1222,13 @@ Requirements:
  * @param {string} prompt - The image prompt.
  * @returns {Promise<{data: string, mimeType: string}>} The base64 image data and mime type.
  */
-export async function aiImageGenerator(prompt) {
+export async function aiImageGenerator(prompt, style = IMAGE_STYLE_VISUAL) {
   const body = {
     contents: [
       {
         parts: [
           {
-            text: `
-Create a high-quality instructional image for course content based on this prompt:
-
-${prompt}
-
-Requirements:
-- No main title.
-- White background.
-- Image width should be greater than height, ideally around a 16:9 aspect ratio, and at most 800 pixels wide.
-- The image should be a friendly and clean modern educational infographic in a vector illustration style.
-- The image is professional looking and appropriate for a university audience.
-- All graphical elements, including icons, flowcharts, thought bubbles, and UI screens, have clear black borders.
-- Prefer a vibrant clean modern monochromatic palette that uses vibrant harmonious colors for highlights and callouts.
-- Integrate clear, legible modern sans-serif typography for all text, including modular section callouts if used.
-- Strong contrast between text and the background to increase legibility.
-- Text must be large enough to be easily readable when the image is viewed on a mobile device.
-- The structured, modular layout uses simple illustrative icons and flowcharts to explain complex concepts.`,
+            text: buildImagePromptText(prompt, style),
           },
         ],
       },
