@@ -136,6 +136,6 @@ Commands (see `package.json`):
 - Markdown content rendering/styling → `src/components/Markdown.jsx` + `src/components/markdown.css` (dark tokens in `src/dark.css`)
 - Teacher review of responses → `src/components/instruction/interaction/InteractionResponseReview.jsx`
 - DB schema / RLS / RPCs → `install/supabase/schema.sql`
-- AI prompts/calls → `src/ai/aiContentGenerator.js` and the `gemini`/`githubgrade` edge functions
+- AI prompts/calls → `src/ai/aiContentGenerator.js` and the `gemini`/`githubgrade` edge functions. Generated topic/exam Markdown (`aiTopicGenerator`/`aiExamGenerator`) is steered toward backticks for inline code/variables/math via `INLINE_CODE_PROMPT_GUIDELINE` and then run through `convertMathDelimitersToInlineCode` (`src/utils/inlineCodeMarkdown.js`), which rewrites stray LaTeX `$...$`/`$$...$$` to inline code (the renderer has no `$` math support) while leaving fenced/inline code and currency like "$5 and $10" untouched.
 - Client-side observability → `src/observability/observability.js` (two self-rolled buffered sinks via edge functions: `logpush`→Loki logs + `telemetry`/`telemetryflush`→Mimir metrics; `instrument`/`logAction`/`recordLogin`) + dashboard `install/grafana/masteryls-client-dashboard.json`
 - User docs → `docs/` (each doc in its own subfolder with its images)

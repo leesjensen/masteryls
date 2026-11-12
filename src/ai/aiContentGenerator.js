@@ -4,6 +4,7 @@ import { normalizeDraProcessAttributeName } from '../utils/draStages';
 import { buildLearnerFeedbackPrompt } from '../utils/learnerFeedbackPrompt.js';
 import { buildPulsePrompt } from '../utils/pulsePrompt.js';
 import { MERMAID_PROMPT_GUIDELINES } from '../utils/mermaidPromptGuidelines.js';
+import { INLINE_CODE_PROMPT_GUIDELINE, convertMathDelimitersToInlineCode } from '../utils/inlineCodeMarkdown.js';
 
 /**
  * Generates a course structure in JSON format using AI, based on the provided title and description.
@@ -99,6 +100,7 @@ Requirements:
 - Do not over create bulleted lists with multiple levels
 - Make content educational and engaging
 - Prefer textual prose
+- ${INLINE_CODE_PROMPT_GUIDELINE}
 - ${MERMAID_PROMPT_GUIDELINES}
 - Include practical examples where applicable
 - Include references to external resources if relevant
@@ -106,7 +108,7 @@ Requirements:
 - Include common challenges and solutions
 - Provide a summary`;
 
-  return makeSimpleAiRequest(prompt);
+  return convertMathDelimitersToInlineCode(await makeSimpleAiRequest(prompt));
 }
 
 export async function aiExamGenerator(courseDescription, title, description) {
@@ -141,10 +143,11 @@ question body
 - Test on a first year university level student level
 - base questions on the topic ${title}
 - base questions on the content ${description}
-- prefer coding questions where applicable`;
+- prefer coding questions where applicable
+- ${INLINE_CODE_PROMPT_GUIDELINE}`;
 
   const response = await makeSimpleAiRequest(prompt);
-  return normalizeInteractionIds(response);
+  return normalizeInteractionIds(convertMathDelimitersToInlineCode(response));
 }
 
 /**
