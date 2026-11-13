@@ -9,7 +9,6 @@ import Start from './start.jsx';
 import { AppBar } from './appBar.jsx';
 import DashboardView from './views/dashboard/dashboardView.jsx';
 import ClassroomView from './views/classroom/classroomView.jsx';
-import MetricsView from './views/metrics/metricsView.jsx';
 import CourseCreationView from './views/courseCreation/courseCreationView.jsx';
 import CourseLinkView from './views/courseExport/courseLinkView.jsx';
 import ProgressView from './views/progress/ProgressView.jsx';
@@ -38,7 +37,6 @@ export function createAppRouter(user) {
         { path: 'course/:courseId/sections', element: <ClassroomPage /> },
         { path: 'course/:courseId/mastery', element: <ClassroomPage /> },
         { path: 'course/:courseId/mastery/learner/:learnerId', element: <ClassroomPage /> },
-        { path: 'metrics', element: <MetricsPage /> },
         { path: 'courseCreation', element: <CourseCreationPage /> },
         { path: 'courseLink', element: <CourseLinkPage /> },
         { path: 'progress', element: <ProgressPage /> },
@@ -143,11 +141,6 @@ function AboutPage() {
 function DemoCoursesPage() {
   const { courseOps } = useOutletContext();
   return <DemoCoursesView courseOps={courseOps} />;
-}
-
-function MetricsPage() {
-  const { courseOps } = useOutletContext();
-  return <MetricsView courseOps={courseOps} />;
 }
 
 function CourseCreationPage() {

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Link2, PackagePlus, SquareStar, Columns3Cog, ChartArea, LogOut, Info, UserCog, Moon, Sun, Monitor } from 'lucide-react';
+import { Link2, PackagePlus, SquareStar, ChartArea, LogOut, Info, UserCog, Moon, Sun, Monitor } from 'lucide-react';
 import { PwaInstallButton } from './components/PwaInstallControls.jsx';
 import UserProfileDialog from './components/UserProfileDialog.jsx';
 import { useTheme } from './hooks/useTheme.jsx';
@@ -186,7 +186,6 @@ function UserMenu({ user, courseOps }) {
             </button>
             <div className="border-t border-gray-200 my-1"></div>
             <AppBarMenuItem icon={SquareStar} onClick={() => handleMenuItemClick(() => navigate('/dashboard'))} title="Dashboard" />
-            <AppBarMenuItem icon={Columns3Cog} onClick={() => handleMenuItemClick(() => navigate('/metrics'))} title="Metrics" />
             <AppBarMenuItem icon={ChartArea} onClick={() => handleMenuItemClick(() => navigate('/progress'))} title="Activity" />
 
             {(user.isRoot() || user.isEditor()) && (

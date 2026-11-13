@@ -907,15 +907,6 @@ async function navigateToDashboard(page: any) {
   await _register(page);
 }
 
-async function navigateToMetrics(page: any) {
-  await page.goto('http://localhost:5173/');
-
-  await _register(page);
-
-  await page.getByRole('button', { name: 'User Menu' }).click();
-  await page.getByRole('button', { name: 'Metrics' }).click();
-}
-
 async function navigateToProgress(page: any) {
   await page.goto('http://localhost:5173/');
 
@@ -959,4 +950,4 @@ async function _register(page: any) {
   await page.getByRole('link', { name: 'Rocket Science' }).isVisible();
 }
 
-export { initBasicCourse, navigateToDashboard, navigateToCourse, navigateToCourseNoLogin, navigateToMetrics, navigateToProgress, register };
+export { initBasicCourse, navigateToDashboard, navigateToCourse, navigateToCourseNoLogin, navigateToProgress, register };

@@ -16,7 +16,7 @@ If you are new to MasteryLS editing, use this checklist as a first-run path thro
 - [ ] If needed, add a file or paste an image and verify the markdown reference.
 - [ ] Open course `Settings`, confirm metadata, and save changes.
 - [ ] If using Canvas, run `Link course` and verify external references.
-- [ ] Open `Metrics` and `Activity` once to verify progress/analytics visibility.
+- [ ] Open the MasteryView `Metrics` tab and `Activity` once to verify progress/analytics visibility.
 - [ ] Open `MasteryView`, expand a learner row, and test `Observe` / `Exit observe`.
 
 ## 1) Course Creation and Getting to Edit Mode
@@ -604,19 +604,15 @@ Open: sidebar `Settings`.
 
 ## 9) Metrics
 
-Open from user menu `Metrics`.
-
-<img src="../learnerTutorial/metrics.png" width="600" />
+Open the **Metrics** tab in MasteryView (between **Roster** and **Pulses**). It is course-scoped — there is no course picker.
 
 Metrics supports:
 
-- Course filter (`All Courses` or specific course)
-- Date range filters + quick presets
-- Editor user filter (search by name/email)
-- Aggregate activity counters and trend visualizations
-- Session/time/activity-type analytics for operational insight
+- A time range with quick presets (default: **last 24 hours**; also Last hour / Today / Last 7 days / custom)
+- A **Section** filter and a **learner** type-ahead to narrow the combined view
+- A horizontal bar chart per topic (top 25) over the selected range showing **both views and active time** side by side (views = visits; time = total active time); each topic label links to that topic
 
-Use it to identify engagement drop-offs, outlier activity, and timing patterns.
+Counts are aggregated in the database (no per-row download), and because topic views are de-duplicated to about one per 15 minutes per topic per learner, the counts read as view sessions rather than raw opens. Use it to identify engagement drop-offs and timing patterns. More metrics will be added over time.
 
 ## 10) Activity (Progress View)
 

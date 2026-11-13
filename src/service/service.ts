@@ -1224,6 +1224,20 @@ class Service {
     return data || { status: 'available', eventCount: 0, learnersWithEvents: 0, eventCountsByType: [], recentEvents: [], essayExamples: [] };
   }
 
+  // Aggregated topic-view counts for the Metrics tab (server-side; no row cap). The RPC restricts a
+  // learner to their own rows and admits overseers for section/learner filtering. Returns { topics:[{ topicId, count }], total }.
+  async getTopicViewsEvidence(params: { catalogId: string; startAt?: string | null; endAt?: string | null; sectionId?: string | null; learnerId?: string | null }): Promise<any> {
+    const { data, error } = await this.supabase.rpc('topic_views_evidence', {
+      p_catalog_id: params.catalogId,
+      p_start_at: params.startAt || null,
+      p_end_at: params.endAt || null,
+      p_section_id: params.sectionId || null,
+      p_learner_id: params.learnerId || null,
+    });
+    if (error) throw new Error(error.message);
+    return data || { status: 'available', topics: [], total: 0, totalSeconds: 0 };
+  }
+
   /**
    * Fetches commit history for a specific file in a repo.
    * @param gitHubToken - GitHub token.

@@ -10,16 +10,23 @@ import { useEffect, useRef } from 'react';
  *   - when the page is hidden (visibilitychange) or unloaded (pagehide)
  *   - on unmount / dependency change
  *
- * Each flush calls onProgress(null, null, progressType, seconds). The progress layer is
- * responsible for how often it writes an actual history row vs. only updating the cached
- * summary (see courseOps row throttling).
+ * Each flush folds the newly-accrued time into the cached summary. A history ROW is written only when
+ * the current *view window* closes (a topic switch / navigation / tab hide / unmount, or the WINDOW_MS
+ * cap), and that row's duration is the window's whole active time — not just the last tick. This keeps
+ * the append-only log to ~one row per window while making SUM(duration) an accurate time-on-topic.
+ * A row that is a WINDOW_MS continuation of an ongoing visit carries details.continuation = true so the
+ * view *count* stays "one per visit" while time sums across all rows.
+ *
+ * Each flush calls onProgress(null, null, progressType, tickSeconds, details, { windowRowSeconds, commitWindowRow }):
+ * tickSeconds is this flush's new active time (for the cache), windowRowSeconds is the window's running
+ * total (the row duration), and commitWindowRow says whether to write the row now.
  *
  * onProgress is read through a ref so an unstable callback identity does not reset the
  * accumulator on every render.
  *
  * @param {Object} options
  * @param {string} options.progressType - e.g. 'instructionView', 'draView'
- * @param {Function} options.onProgress - (interactionId, unused, type, durationSeconds) => Promise|void
+ * @param {Function} options.onProgress - (interactionId, unused, type, tickSeconds, details, options) => Promise|void
  * @param {boolean} [options.enabled=true]
  * @param {number} [options.minDuration=10] - minimum accrued seconds before a flush records
  * @param {Array} [options.dependencies=[]] - restart tracking when these change
@@ -27,10 +34,14 @@ import { useEffect, useRef } from 'react';
  */
 const IDLE_LIMIT_MS = 90 * 1000;
 const PERIODIC_FLUSH_MS = 60 * 1000;
+const WINDOW_MS = 5 * 60 * 1000; // cap one history row at 5 minutes of a visit (bounds crash-loss)
 const ACTIVITY_EVENTS = ['keydown', 'pointerdown', 'pointermove', 'wheel', 'scroll', 'touchstart'];
 
 export default function useProgressTracking({ progressType, onProgress, enabled = true, minDuration = 10, dependencies = [] }) {
-  const accumulatedMsRef = useRef(0); // active time not yet flushed
+  const accumulatedMsRef = useRef(0); // active time not yet flushed (this tick)
+  const windowSecRef = useRef(0); // active seconds accrued in the current (not-yet-written) window
+  const windowStartAtRef = useRef(Date.now()); // wall-clock start of the current window
+  const firstWindowRef = useRef(true); // the first window of a visit is a view; later ones are continuations
   const segmentStartRef = useRef(null); // start of the current active+visible segment
   const lastActivityAtRef = useRef(Date.now());
   const onProgressRef = useRef(onProgress);
@@ -61,23 +72,41 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
     return Math.round(ms / 1000);
   }
 
-  async function flush() {
+  async function flush({ closing = false } = {}) {
     settleSegment();
-    const seconds = Math.round(accumulatedMsRef.current / 1000);
+    const tickSeconds = Math.round(accumulatedMsRef.current / 1000);
     // Restart a segment immediately so tracking continues after the flush.
     maybeStartSegment();
 
-    if (seconds < minDuration) return false;
     const report = onProgressRef.current;
     if (!report) return false;
 
-    accumulatedMsRef.current = 0; // reset only what we are about to report
+    const windowShouldClose = closing || Date.now() - windowStartAtRef.current >= WINDOW_MS;
+    // Report only when there's meaningful new time to fold into the cache, or a closing window worth
+    // writing (>= minDuration). A trivial sub-minDuration visit stays a no-op, as before — this avoids
+    // a needless progress write (and re-render) every time the learner briefly passes through a topic.
+    if (tickSeconds < minDuration && !(windowShouldClose && windowSecRef.current + tickSeconds >= minDuration)) return false;
+
+    accumulatedMsRef.current = 0; // consume this tick
+    windowSecRef.current += tickSeconds;
+
+    // Write a history row only when the window closes (its duration = the whole window's active time);
+    // otherwise this flush just folds the tick into the cached summary (no row).
+    const commitWindowRow = windowShouldClose && windowSecRef.current >= minDuration;
+    const details = firstWindowRef.current ? {} : { continuation: true };
+
     try {
-      await report(null, null, progressType, seconds);
+      await report(null, null, progressType, tickSeconds, details, { windowRowSeconds: windowSecRef.current, commitWindowRow });
+      if (commitWindowRow) {
+        windowSecRef.current = 0;
+        windowStartAtRef.current = Date.now();
+        firstWindowRef.current = false;
+      }
       return true;
     } catch {
       // Put the time back so it can be retried on the next flush.
-      accumulatedMsRef.current += seconds * 1000;
+      accumulatedMsRef.current += tickSeconds * 1000;
+      windowSecRef.current -= tickSeconds;
       return false;
     }
   }
@@ -86,6 +115,9 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
     if (!enabled) return undefined;
 
     accumulatedMsRef.current = 0;
+    windowSecRef.current = 0;
+    windowStartAtRef.current = Date.now();
+    firstWindowRef.current = true;
     lastActivityAtRef.current = Date.now();
     segmentStartRef.current = null;
     maybeStartSegment();
@@ -101,8 +133,8 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
 
     const onVisibility = () => {
       if (document.hidden) {
-        // Fold the current segment and flush the accrued time while leaving.
-        void flush();
+        // Leaving/backgrounding: close the window and write its row while the page is still alive.
+        void flush({ closing: true });
         settleSegment();
       } else {
         lastActivityAtRef.current = Date.now();
@@ -111,7 +143,7 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
     };
 
     const onPageHide = () => {
-      void flush();
+      void flush({ closing: true });
     };
 
     // Pause accrual if the learner goes idle mid-segment.
@@ -135,7 +167,7 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
       ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, onActivity, { capture: true }));
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onPageHide);
-      void flush();
+      void flush({ closing: true });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressType, enabled, minDuration, ...dependencies]);

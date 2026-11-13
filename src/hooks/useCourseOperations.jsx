@@ -1428,12 +1428,9 @@ Requirements:
   // Throttle how often a heartbeat/snapshot progress ROW is inserted, per (topic, type),
   // so long sessions don't accumulate thousands of records. The cached enrollment summary
   // is always updated (below), so MasteryView stays current between rows.
+  // Still used by DRA/interview updates, which pass `throttleRowMs: PROGRESS_ROW_THROTTLE_MS` explicitly.
   const PROGRESS_ROW_THROTTLE_MS = 15 * 60 * 1000;
   const lastProgressRowAtRef = React.useRef({});
-
-  function _isThrottleableRowType(type) {
-    return typeof type === 'string' && type.endsWith('View');
-  }
 
   function _progressCacheUpdatePayload(topic, interactionId, type, details = {}, duration = 0) {
     if (!topic?.id) return {};
@@ -1539,17 +1536,28 @@ Requirements:
     }
     const progressUser = providedUser || user;
     if (progressUser) {
-      // Decide whether to write an actual history row now, or only update the cache.
-      const throttleMs = options.throttleRowMs != null ? options.throttleRowMs : _isThrottleableRowType(type) ? PROGRESS_ROW_THROTTLE_MS : 0;
+      // A time-tracking flush from useProgressTracking carries window options: every flush folds its
+      // tick into the cached summary (timeSpentDelta = `duration`), but a history ROW is written only
+      // when the view window closes, and that row's duration is the window's whole active time
+      // (`windowRowSeconds`), not just this tick. Other callers keep the legacy behavior (always insert,
+      // unless they ask for a time throttle via `throttleRowMs`).
+      const isWindowFlush = options.windowRowSeconds != null;
       let insertProgress = true;
-      if (throttleMs > 0 && !options.force) {
-        const key = `${learningSession?.topic?.id || ''}:${type}`;
-        const now = Date.now();
-        const lastAt = lastProgressRowAtRef.current[key] || 0;
-        if (now - lastAt < throttleMs) {
-          insertProgress = false; // cache updated; skip the row this time
-        } else {
-          lastProgressRowAtRef.current[key] = now;
+      let rowDuration = duration;
+      if (isWindowFlush) {
+        insertProgress = options.commitWindowRow === true;
+        rowDuration = Math.max(0, Math.round(Number(options.windowRowSeconds) || 0));
+      } else {
+        const throttleMs = options.throttleRowMs != null ? options.throttleRowMs : 0;
+        if (throttleMs > 0 && !options.force) {
+          const key = `${learningSession?.topic?.id || ''}:${type}`;
+          const now = Date.now();
+          const lastAt = lastProgressRowAtRef.current[key] || 0;
+          if (now - lastAt < throttleMs) {
+            insertProgress = false; // cache updated; skip the row this time
+          } else {
+            lastProgressRowAtRef.current[key] = now;
+          }
         }
       }
 
@@ -1561,7 +1569,8 @@ Requirements:
           topicId: learningSession.topic.id,
           interactionId,
           type,
-          duration,
+          // Row duration (whole-window time for a window flush); the cache still accrues only this tick.
+          duration: rowDuration,
           details,
           cacheUpdate: _progressCacheUpdatePayload(learningSession.topic, interactionId, type, details, duration),
           insertProgress,
@@ -1569,7 +1578,7 @@ Requirements:
         saved = result?.progress || null;
         _applyRecordedEnrollment(result?.enrollment);
       } else if (insertProgress) {
-        saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, duration, details);
+        saved = await service.addProgress(progressUser.id, learningSession?.course?.id, learningSession?.enrollment?.id, learningSession?.topic?.id, interactionId, type, rowDuration, details);
       }
 
       if (!insertProgress) {
@@ -1634,7 +1643,8 @@ Requirements:
       const topicName = learningSession?.topic?.title;
       if (type === 'quizSubmit') {
         recordInteraction(courseName, topicName);
-      } else if (typeof type === 'string' && type.endsWith('View')) {
+      } else if (typeof type === 'string' && type.endsWith('View') && !details?.continuation) {
+        // Count one topic view per visit (the window's first row), not per 5-minute continuation row.
         recordTopicView(courseName, topicName);
       }
 
@@ -1993,6 +2003,11 @@ Requirements:
 
   async function getProgress({ courseId, enrollmentId, userId, topicId = null, interactionId = null, types = null, startDate = null, endDate = null, page = 1, limit = 100 }) {
     return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
+  }
+
+  // Aggregated topic-view counts for the Metrics tab (server-side RPC; no row cap).
+  async function getTopicViewsEvidence({ catalogId, startAt = null, endAt = null, sectionId = null, learnerId = null }) {
+    return service.getTopicViewsEvidence({ catalogId, startAt, endAt, sectionId, learnerId });
   }
 
   async function repairCourseProgressCache(courseId) {
@@ -3042,6 +3057,7 @@ Requirements:
     isLearnerInCanvasCourse,
     canSubmitToCanvasGradebook,
     getProgress,
+    getTopicViewsEvidence,
     getMasteryOverview,
     unenrollLearner,
     collectLearnerAnalysisEvidence,

@@ -22,13 +22,11 @@ The dashboard shows enrolled courses and progress. When a course has several ope
 
 ![Dashboard](dashboard.png)
 
-MasteryView summarizes course mastery and lets overseers review a course roster, filter by section, and inspect individual learners. Progress and Metrics provide activity history and time-based views.
+MasteryView summarizes course mastery and lets overseers review a course roster, filter by section, and inspect individual learners. Its **Metrics** tab charts course engagement (topic views) over a selectable time range, and the Progress view provides a detailed activity history.
 
 ![Mastery view](masteryView.png)
 
 ![Progress](progress.jpg)
-
-![Metrics](metrics.jpg)
 
 ## Course content and interactions
 

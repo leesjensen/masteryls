@@ -10,6 +10,7 @@ import LearnerAttendanceChart from '../../components/attendance/learnerAttendanc
 import { getCanvasGradesUrl } from '../../hooks/canvas/canvasSync.js';
 import CanvasGradesPanel from './canvasGradesPanel.jsx';
 import PulseArchive from './PulseArchive.jsx';
+import MetricsPanel from './MetricsPanel.jsx';
 
 function formatDuration(seconds) {
   const s = Number(seconds);
@@ -561,6 +562,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
             { id: 'attendance', label: 'Attendance', visible: hasAttendance },
             { id: 'lastInteraction', label: 'Last Activity' },
             { id: 'dailyActivity', label: 'Daily Activity' },
+            { id: 'metrics', label: 'Metrics' },
             { id: 'pulses', label: 'Pulses' },
             { id: 'canvasGrades', label: 'Canvas', visible: Boolean(canvasGradesUrl) },
           ]}
@@ -572,6 +574,10 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
 
       {!loading && !selectedLearner && !error && selectedCourseId && (
         <div className="text-sm text-gray-500">{learnerLabel ? `${learnerLabel} is not enrolled in this course.` : 'This learner is not enrolled in this course.'}</div>
+      )}
+
+      {!loading && selectedLearner && chartMode === 'metrics' && (
+        <MetricsPanel courseOps={courseOps} course={selectedCourse} scope="learner" learnerId={selectedLearner.learnerId || routeLearnerId} />
       )}
 
       {!loading && selectedLearner && chartMode === 'pulses' && (

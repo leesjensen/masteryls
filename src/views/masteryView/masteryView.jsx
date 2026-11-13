@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input.jsx';
 import Modal from '../../components/ui/Modal.jsx';
 import Tabs from '../../components/Tabs.jsx';
 import PulseArchive from './PulseArchive.jsx';
+import MetricsPanel from './MetricsPanel.jsx';
 
 const PAGE_SIZE = 50;
 
@@ -408,7 +409,8 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   return (
     <>
     <div className="w-full min-w-0 max-w-7xl mx-auto self-start p-4 flex flex-col gap-4">
-      <Tabs variant="scroll" active={masteryTab} onChange={setMasteryTab} tabs={[{ id: 'roster', label: 'Roster' }, { id: 'pulses', label: 'Pulses' }]} />
+      <Tabs variant="scroll" active={masteryTab} onChange={setMasteryTab} tabs={[{ id: 'roster', label: 'Roster' }, { id: 'metrics', label: 'Metrics' }, { id: 'pulses', label: 'Pulses' }]} />
+      {masteryTab === 'metrics' && selectedCourse && <MetricsPanel courseOps={courseOps} course={selectedCourse} scope="overseer" />}
       {masteryTab === 'pulses' && selectedCourse && canViewPulses && <>
         <PulseArchive key={`${selectedCourseId}-${selectedSectionId || 'course'}`} courseOps={courseOps} course={selectedCourse} targetType={selectedSectionId ? 'section' : 'course'} targetId={selectedSectionId || selectedCourseId} targetName={selectedSectionId ? courseSections.find((section) => section.id === selectedSectionId)?.title : selectedCourse.title} canEdit={canManagePulses} canGenerate={canManagePulses} extraControls={<label className="text-sm">Pulse target<select className="ml-2 rounded border p-1" value={selectedSectionId || 'course'} onChange={(e) => onSectionSelect(e.target.value === 'course' ? '' : e.target.value)}><option value="course">Course</option>{courseSections.map((section) => <option key={section.id} value={section.id}>Section: {section.title}</option>)}</select></label>} evidence={buildPulseRosterEvidence(derivedRows, { sections: selectedSectionId ? courseSections.filter((section) => section.id === selectedSectionId) : courseSections, schedules: selectedCourse.schedules || [] })} rosterRows={derivedRows} sections={courseSections} />
       </>}

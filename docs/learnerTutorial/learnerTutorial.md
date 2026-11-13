@@ -337,17 +337,14 @@ This is useful when you need a detailed record of what you have done.
 
 ## 14. Metrics
 
-Some installations make a `Metrics` view available.
+Your **Mastery** view includes a **Metrics** tab (before **Pulses**) that charts your own engagement in the course.
 
-<img src="metrics.png" width="800" alt="Metrics" />
+Use it to see:
 
-Use it to visualize:
+- how many times you have viewed each topic **and** how much active time you have spent on it, side by side (your top 25, each label linking to the topic)
+- over a time range you choose (default: the last 24 hours, with Last hour / Today / Last 7 days / custom presets)
 
-- time spent by course
-- activity trends
-- where your effort is going
-
-This is especially helpful for self-management across multiple courses.
+This is a quick way to see where your recent effort has been going within the course.
 
 ## 15. Tips for Succeeding in MasteryLS
 

@@ -193,6 +193,9 @@ create index if not exists "progressCatalogTopicIdx" on public.progress ("catalo
 -- Progress queries: course-scoped activity pages ordered by newest first
 create index if not exists "progressCatalogCreatedAtIdx" on public.progress ("catalogId", "createdAt" desc);
 
+-- Metrics tab: topic-view aggregation over a course + time range (partial - the only type it counts)
+create index if not exists "progressInstructionViewIdx" on public.progress ("catalogId", "createdAt") where type = 'instructionView';
+
 -- Attendance: at most one open session per section (sections meet independently, so a course can
 -- hold several concurrent open sessions). Legacy sessions with a null sectionId are not constrained.
 create unique index if not exists "attendanceOneOpenSectionIdx" on public.attendance ("sectionId") where "closedAt" is null and "sectionId" is not null;
@@ -899,6 +902,88 @@ end;
 $$;
 revoke all on function public.pulse_progress_evidence(uuid, timestamptz, timestamptz, uuid) from public, anon;
 grant execute on function public.pulse_progress_evidence(uuid, timestamptz, timestamptz, uuid) to authenticated;
+
+-- Aggregate topic-VIEW counts (progress rows of type 'instructionView') per topic for the Metrics
+-- tab, within an optional time range and optional section/learner filter, scoped to one course. Only
+-- the per-topic counts cross the wire, never the raw rows (which can run to tens of thousands).
+-- Overseers (root/editor/mentor) may view any learner/section; a non-overseer is forced to their own
+-- rows (and cannot section-filter). Course staff's own views are excluded so instructor browsing does
+-- not inflate the counts (consistent with pulse_progress_evidence).
+create or replace function public.topic_views_evidence(
+  p_catalog_id uuid,
+  p_start_at timestamptz,
+  p_end_at timestamptz,
+  p_section_id uuid default null,
+  p_learner_id uuid default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_overseer boolean;
+  v_topics jsonb := '[]'::jsonb;
+  v_total bigint := 0;
+  v_total_seconds bigint := 0;
+begin
+  v_overseer := public.auth_oversees_course(auth.uid(), p_catalog_id);
+
+  if not v_overseer then
+    -- A learner may only see their own topic views; any section filter is ignored for them.
+    if p_learner_id is not null and p_learner_id <> auth.uid() then
+      raise exception 'Not authorized to view other learners'' metrics';
+    end if;
+    p_learner_id := auth.uid();
+    p_section_id := null;
+  elsif p_section_id is not null and not exists (
+    select 1 from public.section where id = p_section_id and "catalogId" = p_catalog_id
+  ) then
+    raise exception 'Section does not belong to this course';
+  end if;
+
+  -- Per topic: `count` = number of VIEWS (one row per visit; a row's duration can span up to a 5-minute
+  -- window, and a window that rolls over mid-visit is flagged details.continuation so it is not re-counted
+  -- as a view), `seconds` = total active time (sum of every row's duration, continuations included).
+  select
+    coalesce(jsonb_agg(jsonb_build_object('topicId', t."topicId", 'count', t.c, 'seconds', t.secs) order by t.c desc, t.secs desc, t."topicId"), '[]'::jsonb),
+    coalesce(sum(t.c), 0),
+    coalesce(sum(t.secs), 0)
+    into v_topics, v_total, v_total_seconds
+  from (
+    select p."topicId" as "topicId",
+      count(*) filter (where coalesce((p.details->>'continuation')::boolean, false) = false) as c,
+      sum(coalesce(p.duration, 0)) as secs
+    from public.progress p
+    where p."catalogId" = p_catalog_id
+      and p.type = 'instructionView'
+      and p."topicId" is not null
+      and not exists (
+        select 1 from public.role r
+        where r."user" = p."userId"
+          and r."right" in ('editor', 'mentor')
+          and r.object = p_catalog_id
+      )
+      and (p_start_at is null or p."createdAt" >= p_start_at)
+      and (p_end_at is null or p."createdAt" <= p_end_at)
+      and (p_learner_id is null or p."userId" = p_learner_id)
+      and (p_section_id is null or exists (
+        select 1 from public.enrollment e
+        where e.id = p."enrollmentId" and e."sectionId" = p_section_id
+      ))
+    group by p."topicId"
+  ) t;
+
+  return jsonb_build_object(
+    'status', 'available',
+    'topics', v_topics,
+    'total', v_total,
+    'totalSeconds', v_total_seconds
+  );
+end;
+$$;
+revoke all on function public.topic_views_evidence(uuid, timestamptz, timestamptz, uuid, uuid) from public, anon;
+grant execute on function public.topic_views_evidence(uuid, timestamptz, timestamptz, uuid, uuid) to authenticated;
 
 -- Security helper: true when user can oversee a specific course without editing it
 create or replace function public.auth_oversees_course(uid uuid, catalog_id uuid)
