@@ -275,6 +275,15 @@ export function recordEnrollment(course) {
   if (!course) return;
   recordCounter('masteryls_client_enrollments_total', { course });
 }
+// Pulse generation. `target` = learner|section|course, `type` = analysis|feedback (both low
+// cardinality). Labelled by course NAME like the other engagement counters. No-op when off.
+export function recordPulse(course, { target, type } = {}) {
+  if (!course) return;
+  const labels = { course };
+  if (target) labels.target = target;
+  if (type) labels.type = type;
+  recordCounter('masteryls_client_pulses_total', labels);
+}
 
 // Build the compact DELTA payload the edge function ingests, or null when there is nothing to send.
 // Shape: { calls: [{ op, status, count, sum, buckets[] }], counters: [{ metric, labels, count }] }.

@@ -21,7 +21,7 @@ import { summarizeLearnerActivity, summarizeSectionAttendance } from '../utils/l
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
-import { recordTopicView, recordInteraction } from '../observability/observability.js';
+import { recordTopicView, recordInteraction, recordPulse, logAction } from '../observability/observability.js';
 import { useAlert } from '../contexts/AlertContext.jsx';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
@@ -2552,6 +2552,25 @@ Requirements:
     return result;
   }
 
+  // Record that a pulse was generated. Observability (log + metric) fires for EVERY pulse; a
+  // progress-table audit row is written only when a learner takes their OWN pulse — an overseer
+  // generating a learner/section/course pulse is not the learner's activity, and the progress RLS
+  // only permits inserting a row for your own userId. A failed audit row never blocks the pulse.
+  async function recordPulseGenerated({ course, targetType, targetId, enrollmentId, pulseType = 'pulse', termId = null, pulseId = null }) {
+    const courseName = course?.title || course?.name;
+    const metricType = pulseType === 'feedback' ? 'feedback' : 'analysis';
+    logAction('pulse', { courseId: course?.id, targetType, targetId, pulseType, termId, pulseId });
+    recordPulse(courseName, { target: targetType, type: metricType });
+
+    if (targetType === 'learner' && enrollmentId && String(user?.id) === String(targetId)) {
+      try {
+        await service.addProgress(user.id, course?.id, enrollmentId, null, null, 'pulse', 0, { pulseType, pulseId, termId });
+      } catch (error) {
+        console.error(`Unable to record pulse progress: ${error.message}`);
+      }
+    }
+  }
+
   async function getTopicProgress(types = ['quizSubmit', 'canvasGradebookSubmit']) {
     if (!learningSession?.enrollment || !learningSession?.topic) return {};
 
@@ -3028,6 +3047,7 @@ Requirements:
     collectLearnerAnalysisEvidence,
     collectCourseSectionPulseEvidence,
     generateLearnerFeedback,
+    recordPulseGenerated,
     getTopicProgress,
     getSurveySummary,
     getLikertSummary,

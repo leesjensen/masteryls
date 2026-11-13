@@ -38,8 +38,9 @@ const ALLOWED_COUNTER_METRICS = new Set([
   'masteryls_client_topic_views_total',
   'masteryls_client_interactions_total',
   'masteryls_client_enrollments_total',
+  'masteryls_client_pulses_total',
 ]);
-const ALLOWED_LABEL_KEYS = new Set(['result', 'course', 'topic']);
+const ALLOWED_LABEL_KEYS = new Set(['result', 'course', 'topic', 'target', 'type']);
 const MAX_LABEL_LEN = 160;
 
 function json(body, status) {

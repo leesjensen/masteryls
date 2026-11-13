@@ -97,6 +97,16 @@ test('sanitizeDelta drops non-allowlisted ops/metrics/labels and non-positive co
   ]);
 });
 
+test('sanitizeDelta keeps the pulse metric with its target/type labels (requires a course)', () => {
+  const clean = sanitizeDelta({
+    counters: [
+      { metric: 'masteryls_client_pulses_total', labels: { course: 'CS 260', target: 'learner', type: 'analysis' }, count: 1 }, // kept
+      { metric: 'masteryls_client_pulses_total', labels: { target: 'course', type: 'analysis' }, count: 1 }, // dropped: no course
+    ],
+  });
+  assert.deepEqual(clean.counters, [{ metric: 'masteryls_client_pulses_total', labels: { course: 'CS 260', target: 'learner', type: 'analysis' }, count: 1 }]);
+});
+
 test('sanitizeDelta truncates over-long label values', () => {
   const long = 'x'.repeat(500);
   const clean = sanitizeDelta({ counters: [{ metric: 'masteryls_client_enrollments_total', labels: { course: long }, count: 1 }] });

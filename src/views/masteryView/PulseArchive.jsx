@@ -147,6 +147,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       const cohortSafeMarkdown = targetType === 'learner' ? pulseMarkdown : `${pulseMarkdown.trimEnd()}\n\n${COURSE_LEARNER_COHORT_MARKER}\n`;
       setProgressMessage('Saving pulse…');
       const pulse = await service.createPulse({ catalogId: course.id, termId, targetType, targetId, enrollmentId, markdown: cohortSafeMarkdown, createdBy: user.id });
+      await courseOps.recordPulseGenerated({ course, targetType, targetId, enrollmentId, pulseType: 'pulse', termId, pulseId: pulse?.id });
       // Record the fresh pulse locally so the classroom reminder banner won't immediately re-fire.
       if (targetType === 'learner' && enrollmentId) writePulsePromptState(service, course.id, { lastPulseAt: Date.now() });
       setProgressMessage('Refreshing pulse history…');
@@ -166,6 +167,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
       const feedbackMarkdown = normalizePulseMarkdown(`# ${subject}\n\n${body}`);
       setProgressMessage('Saving feedback pulse…');
       const pulse = await service.createPulse({ catalogId: course.id, termId, targetType: 'learner', targetId, enrollmentId, pulseType: 'feedback', markdown: feedbackMarkdown, createdBy: user.id });
+      await courseOps.recordPulseGenerated({ course, targetType: 'learner', targetId, enrollmentId, pulseType: 'feedback', termId, pulseId: pulse?.id });
       setProgressMessage('Refreshing pulse history…');
       await load(); setSelected(pulse);
     } catch (e) { setError(e.message || 'Unable to generate feedback.'); }
