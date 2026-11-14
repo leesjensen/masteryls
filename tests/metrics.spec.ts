@@ -120,7 +120,7 @@ test('overseer metrics shows views and active time together', async ({ page }) =
   const panel = page.getByTestId('metrics-panel');
   // Both totals are shown at once (no toggle), and the dual-series chart renders.
   await expect(panel.getByText('7 views · 1h 50m active')).toBeVisible();
-  await expect(panel.getByRole('img', { name: 'Topic views and active time' })).toBeVisible();
+  await expect(panel.getByRole('img', { name: 'Topic views with active time' })).toBeVisible();
 });
 
 test('overseer metrics shows an empty state when no topics were viewed', async ({ page }) => {

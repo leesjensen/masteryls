@@ -94,7 +94,7 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
     };
   }, [course?.id, courseOps, preset, range.startAt, range.endAt, isOverseer, sectionId, selectedLearner?.learnerId, learnerId]);
 
-  // Top N topics by views; each row carries both metrics (views + time) and links to its topic.
+  // Top N topics by views; active time is shown beside the view count, not as a second scaled bar.
   const chartItems = React.useMemo(
     () =>
       [...result.topics]
@@ -104,7 +104,8 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
           const title = topicTitles.get(String(t.topicId).replace(/-/g, ''));
           return {
             label: title || 'Unknown topic',
-            values: { views: Number(t.count) || 0, time: Number(t.seconds) || 0 },
+            value: Number(t.count) || 0,
+            detail: formatDurationShort(t.seconds),
             href: title && course?.id ? `/course/${course.id}/topic/${t.topicId}` : undefined,
           };
         }),
@@ -241,11 +242,8 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
             <div className="max-h-[60vh] overflow-auto">
               <CategoryBarChartSvg
                 items={chartItems}
-                series={[
-                  { key: 'views', label: 'Views', color: '#3b82f6', format: (v) => String(v) },
-                  { key: 'time', label: 'Active time', color: '#f59e0b', format: formatDurationShort },
-                ]}
-                ariaLabel="Topic views and active time"
+                color="#3b82f6"
+                ariaLabel="Topic views with active time"
                 onLabelClick={(item, event) => item.href && handleInAppLinkClick(event, () => navigate(item.href))}
               />
             </div>
