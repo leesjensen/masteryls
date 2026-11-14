@@ -958,11 +958,16 @@ begin
     where p."catalogId" = p_catalog_id
       and p.type = 'instructionView'
       and p."topicId" is not null
-      and not exists (
-        select 1 from public.role r
-        where r."user" = p."userId"
-          and r."right" in ('editor', 'mentor')
-          and r.object = p_catalog_id
+      and (
+        -- Keep staff out of roster-wide course/section totals, but include their activity when
+        -- the caller explicitly drills into one learner (including a learner who is course staff).
+        p_learner_id is not null
+        or not exists (
+          select 1 from public.role r
+          where r."user" = p."userId"
+            and r."right" in ('editor', 'mentor')
+            and r.object = p_catalog_id
+        )
       )
       and (p_start_at is null or p."createdAt" >= p_start_at)
       and (p_end_at is null or p."createdAt" <= p_end_at)
