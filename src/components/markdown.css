@@ -683,7 +683,7 @@ html.window-blurred .markdown-body ::selection {
 }
 
 .markdown-body table {
-  width: max-content;
+  width: 100%;
   min-width: 100%;
   margin: 0 0 1.25rem;
   border-collapse: collapse;
@@ -711,10 +711,12 @@ html.window-blurred .markdown-body ::selection {
 
 .markdown-body th,
 .markdown-body td {
+  min-width: 7rem;
+  max-width: 24rem;
   padding: 0.6rem 0.85rem;
   border-bottom: 1px solid var(--md-border);
-  white-space: nowrap;
-  overflow-wrap: normal;
+  white-space: normal;
+  overflow-wrap: break-word;
   word-break: normal;
   hyphens: none;
 }
