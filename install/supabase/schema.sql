@@ -193,8 +193,10 @@ create index if not exists "progressCatalogTopicIdx" on public.progress ("catalo
 -- Progress queries: course-scoped activity pages ordered by newest first
 create index if not exists "progressCatalogCreatedAtIdx" on public.progress ("catalogId", "createdAt" desc);
 
--- Metrics tab: topic-view aggregation over a course + time range (partial - the only type it counts)
+-- Metrics tab: partial indexes for topic-view and interaction-completion aggregation by course + time range.
 create index if not exists "progressInstructionViewIdx" on public.progress ("catalogId", "createdAt") where type = 'instructionView';
+-- Metrics tab: deduplicate interaction completions over the same course + time range.
+create index if not exists "progressQuizSubmitIdx" on public.progress ("catalogId", "createdAt") where type = 'quizSubmit';
 
 -- Attendance: at most one open session per section (sections meet independently, so a course can
 -- hold several concurrent open sessions). Legacy sessions with a null sectionId are not constrained.
@@ -903,12 +905,12 @@ $$;
 revoke all on function public.pulse_progress_evidence(uuid, timestamptz, timestamptz, uuid) from public, anon;
 grant execute on function public.pulse_progress_evidence(uuid, timestamptz, timestamptz, uuid) to authenticated;
 
--- Aggregate topic-VIEW counts (progress rows of type 'instructionView') per topic for the Metrics
--- tab, within an optional time range and optional section/learner filter, scoped to one course. Only
--- the per-topic counts cross the wire, never the raw rows (which can run to tens of thousands).
+-- Aggregate topic views and completed interactions for the Metrics tab, within an optional time range
+-- and optional section/learner filter, scoped to one course. Only per-topic aggregates cross the wire,
+-- never the raw rows (which can run to tens of thousands).
 -- Overseers (root/editor/mentor) may view any learner/section; a non-overseer is forced to their own
--- rows (and cannot section-filter). Course staff's own views are excluded so instructor browsing does
--- not inflate the counts (consistent with pulse_progress_evidence).
+-- rows (and cannot section-filter). Course staff's own activity is excluded from roster-wide totals
+-- so instructor browsing does not inflate them (consistent with pulse_progress_evidence).
 create or replace function public.topic_views_evidence(
   p_catalog_id uuid,
   p_start_at timestamptz,
@@ -926,11 +928,12 @@ declare
   v_topics jsonb := '[]'::jsonb;
   v_total bigint := 0;
   v_total_seconds bigint := 0;
+  v_total_interactions bigint := 0;
 begin
   v_overseer := public.auth_oversees_course(auth.uid(), p_catalog_id);
 
   if not v_overseer then
-    -- A learner may only see their own topic views; any section filter is ignored for them.
+    -- A learner may only see their own metrics; any section filter is ignored for them.
     if p_learner_id is not null and p_learner_id <> auth.uid() then
       raise exception 'Not authorized to view other learners'' metrics';
     end if;
@@ -942,48 +945,72 @@ begin
     raise exception 'Section does not belong to this course';
   end if;
 
-  -- Per topic: `count` = number of VIEWS (one row per visit; a row's duration can span up to a 5-minute
-  -- window, and a window that rolls over mid-visit is flagged details.continuation so it is not re-counted
-  -- as a view), `seconds` = total active time (sum of every row's duration, continuations included).
+  -- `count` = number of VIEWS (one row per visit; continuation rows are excluded), `seconds` = active
+  -- time (continuations included), and `interactionsCompleted` = unique learner/interaction pairs with
+  -- at least one quizSubmit, so retries do not increase the completion count.
   select
-    coalesce(jsonb_agg(jsonb_build_object('topicId', t."topicId", 'count', t.c, 'seconds', t.secs) order by t.c desc, t.secs desc, t."topicId"), '[]'::jsonb),
+    coalesce(jsonb_agg(jsonb_build_object(
+      'topicId', t."topicId",
+      'count', t.c,
+      'seconds', t.secs,
+      'interactionsCompleted', t.interactions_completed
+    ) order by t.c desc, t.secs desc, t."topicId"), '[]'::jsonb),
     coalesce(sum(t.c), 0),
-    coalesce(sum(t.secs), 0)
-    into v_topics, v_total, v_total_seconds
+    coalesce(sum(t.secs), 0),
+    coalesce(sum(t.interactions_completed), 0)
+    into v_topics, v_total, v_total_seconds, v_total_interactions
   from (
-    select p."topicId" as "topicId",
-      count(*) filter (where coalesce((p.details->>'continuation')::boolean, false) = false) as c,
-      sum(coalesce(p.duration, 0)) as secs
+    with scoped_progress as (
+      select p.*
     from public.progress p
     where p."catalogId" = p_catalog_id
-      and p.type = 'instructionView'
-      and p."topicId" is not null
-      and (
-        -- Keep staff out of roster-wide course/section totals, but include their activity when
-        -- the caller explicitly drills into one learner (including a learner who is course staff).
-        p_learner_id is not null
-        or not exists (
-          select 1 from public.role r
-          where r."user" = p."userId"
-            and r."right" in ('editor', 'mentor')
-            and r.object = p_catalog_id
+        and p.type in ('instructionView', 'quizSubmit')
+        and p."topicId" is not null
+        and (
+          -- Keep staff out of roster-wide course/section totals, but include their activity when
+          -- the caller explicitly drills into one learner (including a learner who is course staff).
+          p_learner_id is not null
+          or not exists (
+            select 1 from public.role r
+            where r."user" = p."userId"
+              and r."right" in ('editor', 'mentor')
+              and r.object = p_catalog_id
+          )
         )
-      )
-      and (p_start_at is null or p."createdAt" >= p_start_at)
-      and (p_end_at is null or p."createdAt" <= p_end_at)
-      and (p_learner_id is null or p."userId" = p_learner_id)
-      and (p_section_id is null or exists (
-        select 1 from public.enrollment e
-        where e.id = p."enrollmentId" and e."sectionId" = p_section_id
-      ))
-    group by p."topicId"
+        and (p_start_at is null or p."createdAt" >= p_start_at)
+        and (p_end_at is null or p."createdAt" <= p_end_at)
+        and (p_learner_id is null or p."userId" = p_learner_id)
+        and (p_section_id is null or exists (
+          select 1 from public.enrollment e
+          where e.id = p."enrollmentId" and e."sectionId" = p_section_id
+        ))
+    ), views_by_topic as (
+      select "topicId",
+        count(*) filter (where coalesce((details->>'continuation')::boolean, false) = false) as c,
+        sum(coalesce(duration, 0)) as secs
+      from scoped_progress
+      where type = 'instructionView'
+      group by "topicId"
+    ), interactions_by_topic as (
+      select "topicId", count(distinct ("userId", "interactionId")) as completed
+      from scoped_progress
+      where type = 'quizSubmit' and "interactionId" is not null
+      group by "topicId"
+    )
+    select coalesce(v."topicId", i."topicId") as "topicId",
+      coalesce(v.c, 0) as c,
+      coalesce(v.secs, 0) as secs,
+      coalesce(i.completed, 0) as interactions_completed
+    from views_by_topic v
+    full outer join interactions_by_topic i on i."topicId" = v."topicId"
   ) t;
 
   return jsonb_build_object(
     'status', 'available',
     'topics', v_topics,
     'total', v_total,
-    'totalSeconds', v_total_seconds
+    'totalSeconds', v_total_seconds,
+    'totalInteractionsCompleted', v_total_interactions
   );
 end;
 $$;

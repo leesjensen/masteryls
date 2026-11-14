@@ -18,7 +18,7 @@ function buildTopicTitleMap(course) {
   return map;
 }
 
-// The course-scoped Metrics tab. v1 shows topic-view counts over a time range (default last 24h).
+// The course-scoped Metrics tab. Shows topic views, active time, and completed interactions over a range.
 // Overseers can filter by section and/or a single learner; a learner sees only their own data
 // (the server RPC also enforces that). `scope` is 'overseer' | 'learner'.
 export default function MetricsPanel({ courseOps, course, scope = 'overseer', learnerId = null }) {
@@ -32,7 +32,7 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
   const [selectedLearner, setSelectedLearner] = React.useState(null); // { learnerId, learnerName, learnerEmail }
   const [showLearnerList, setShowLearnerList] = React.useState(false);
   const [roster, setRoster] = React.useState([]); // overseer learner list for the type-ahead
-  const [result, setResult] = React.useState({ topics: [], total: 0, totalSeconds: 0 });
+  const [result, setResult] = React.useState({ topics: [], total: 0, totalSeconds: 0, totalInteractionsCompleted: 0 });
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
 
@@ -79,11 +79,16 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
           sectionId: isOverseer ? sectionId || null : null,
           learnerId: isOverseer ? selectedLearner?.learnerId || null : learnerId || null,
         });
-        if (!cancelled) setResult({ topics: Array.isArray(data?.topics) ? data.topics : [], total: Number(data?.total) || 0, totalSeconds: Number(data?.totalSeconds) || 0 });
+        if (!cancelled) setResult({
+          topics: Array.isArray(data?.topics) ? data.topics : [],
+          total: Number(data?.total) || 0,
+          totalSeconds: Number(data?.totalSeconds) || 0,
+          totalInteractionsCompleted: Number(data?.totalInteractionsCompleted) || 0,
+        });
       } catch (e) {
         if (!cancelled) {
           setError(e.message || 'Unable to load metrics.');
-          setResult({ topics: [], total: 0, totalSeconds: 0 });
+          setResult({ topics: [], total: 0, totalSeconds: 0, totalInteractionsCompleted: 0 });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -98,6 +103,7 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
   const chartItems = React.useMemo(
     () =>
       [...result.topics]
+        .filter((topic) => (Number(topic.count) || 0) > 0)
         .sort((a, b) => (Number(b.count) || 0) - (Number(a.count) || 0) || (Number(b.seconds) || 0) - (Number(a.seconds) || 0))
         .slice(0, TOP_N)
         .map((t) => {
@@ -111,7 +117,23 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
         }),
     [result.topics, topicTitles, course?.id],
   );
-  const hiddenTopicCount = Math.max(0, result.topics.length - TOP_N);
+  const hiddenTopicCount = Math.max(0, result.topics.filter((topic) => (Number(topic.count) || 0) > 0).length - TOP_N);
+  const interactionChartItems = React.useMemo(
+    () => [...result.topics]
+      .filter((topic) => (Number(topic.interactionsCompleted) || 0) > 0)
+      .sort((a, b) => (Number(b.interactionsCompleted) || 0) - (Number(a.interactionsCompleted) || 0))
+      .slice(0, TOP_N)
+      .map((topic) => {
+        const title = topicTitles.get(String(topic.topicId).replace(/-/g, ''));
+        return {
+          label: title || 'Unknown topic',
+          value: Number(topic.interactionsCompleted) || 0,
+          href: title && course?.id ? `/course/${course.id}/topic/${topic.topicId}` : undefined,
+        };
+      }),
+    [result.topics, topicTitles, course?.id],
+  );
+  const hiddenInteractionTopicCount = Math.max(0, result.topics.filter((topic) => (Number(topic.interactionsCompleted) || 0) > 0).length - TOP_N);
 
   const learnerMatches = React.useMemo(() => {
     const q = learnerQuery.trim().toLowerCase();
@@ -224,7 +246,6 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
-      {/* Chart */}
       <section className="min-w-0 rounded-lg border border-gray-200 bg-white p-4">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="text-sm font-semibold text-gray-800">Topic engagement</h3>
@@ -238,12 +259,36 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
           <p className="py-8 text-center text-sm text-gray-500">No topic views in this range.</p>
         ) : (
           <>
-            {hiddenTopicCount > 0 && <p className="mb-2 text-xs text-gray-500">Showing the top {TOP_N} of {result.topics.length} topics.</p>}
+            {hiddenTopicCount > 0 && <p className="mb-2 text-xs text-gray-500">Showing the top {TOP_N} of {hiddenTopicCount + TOP_N} topics.</p>}
             <div className="max-h-[60vh] overflow-auto">
               <CategoryBarChartSvg
                 items={chartItems}
                 color="#3b82f6"
                 ariaLabel="Topic views with active time"
+                onLabelClick={(item, event) => item.href && handleInAppLinkClick(event, () => navigate(item.href))}
+              />
+            </div>
+          </>
+        )}
+      </section>
+
+      <section className="min-w-0 rounded-lg border border-gray-200 bg-white p-4">
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-sm font-semibold text-gray-800">Interactions completed</h3>
+          <span className="text-xs text-gray-500">{result.totalInteractionsCompleted} completion{result.totalInteractionsCompleted === 1 ? '' : 's'}</span>
+        </div>
+        {loading ? (
+          <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+        ) : interactionChartItems.every((item) => item.value === 0) ? (
+          <p className="py-8 text-center text-sm text-gray-500">No completed interactions in this range.</p>
+        ) : (
+          <>
+            {hiddenInteractionTopicCount > 0 && <p className="mb-2 text-xs text-gray-500">Showing the top {TOP_N} of {hiddenInteractionTopicCount + TOP_N} topics.</p>}
+            <div className="max-h-[60vh] overflow-auto">
+              <CategoryBarChartSvg
+                items={interactionChartItems}
+                color="#3b82f6"
+                ariaLabel="Completed interactions by topic"
                 onLabelClick={(item, event) => item.href && handleInAppLinkClick(event, () => navigate(item.href))}
               />
             </div>

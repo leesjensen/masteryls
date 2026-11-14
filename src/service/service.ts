@@ -1224,8 +1224,8 @@ class Service {
     return data || { status: 'available', eventCount: 0, learnersWithEvents: 0, eventCountsByType: [], recentEvents: [], essayExamples: [] };
   }
 
-  // Aggregated topic-view counts for the Metrics tab (server-side; no row cap). The RPC restricts a
-  // learner to their own rows and admits overseers for section/learner filtering. Returns { topics:[{ topicId, count }], total }.
+  // Aggregated topic views, active time, and unique completed interactions per topic (server-side;
+  // no row cap). The RPC restricts a learner to their own rows and admits overseers for section/learner filtering.
   async getTopicViewsEvidence(params: { catalogId: string; startAt?: string | null; endAt?: string | null; sectionId?: string | null; learnerId?: string | null }): Promise<any> {
     const { data, error } = await this.supabase.rpc('topic_views_evidence', {
       p_catalog_id: params.catalogId,
@@ -1235,7 +1235,7 @@ class Service {
       p_learner_id: params.learnerId || null,
     });
     if (error) throw new Error(error.message);
-    return data || { status: 'available', topics: [], total: 0, totalSeconds: 0 };
+    return data || { status: 'available', topics: [], total: 0, totalSeconds: 0, totalInteractionsCompleted: 0 };
   }
 
   /**

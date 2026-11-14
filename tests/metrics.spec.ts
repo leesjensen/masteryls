@@ -28,15 +28,19 @@ function mockTopicViewsRpc(page: any, topics: any[], total: number, totalSeconds
   page.route(/.*supabase.co\/rest\/v1\/rpc\/topic_views_evidence(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*' } });
     calls.push(await route.request().postDataJSON());
-    await route.fulfill({ status: 200, json: { status: 'available', topics, total, totalSeconds } });
+    const totalInteractionsCompleted = topics.reduce((sum, topic) => sum + (Number(topic.interactionsCompleted) || 0), 0);
+    await route.fulfill({ status: 200, json: { status: 'available', topics, total, totalSeconds, totalInteractionsCompleted } });
   });
   return calls;
 }
 
-test('overseer sees a Metrics tab between Roster and Pulses that charts topic views', async ({ page }) => {
+test('overseer sees a Metrics tab between Roster and Pulses with topic views and completed interactions', async ({ page }) => {
   await initBasicCourse({ page });
   await mockOverview(page);
-  const calls = mockTopicViewsRpc(page, [{ topicId: TOPIC1_ID, count: 5 }, { topicId: TOPIC2_ID, count: 2 }], 7);
+  const calls = mockTopicViewsRpc(page, [
+    { topicId: TOPIC1_ID, count: 5, interactionsCompleted: 4 },
+    { topicId: TOPIC2_ID, count: 2, interactionsCompleted: 1 },
+  ], 7);
 
   await navigateToDashboard(page);
   await page.goto(`/course/${COURSE_ID}/mastery`);
@@ -46,8 +50,10 @@ test('overseer sees a Metrics tab between Roster and Pulses that charts topic vi
   await page.getByRole('button', { name: 'Metrics' }).click();
 
   await expect(page.getByTestId('metrics-panel')).toBeVisible();
-  await expect(page.getByTestId('metrics-panel').getByRole('img', { name: 'Topic views' })).toBeVisible();
+  await expect(page.getByTestId('metrics-panel').getByRole('img', { name: 'Topic views with active time' })).toBeVisible();
   await expect(page.getByTestId('metrics-panel').getByText('7 views')).toBeVisible();
+  await expect(page.getByTestId('metrics-panel').getByRole('img', { name: 'Completed interactions by topic' })).toBeVisible();
+  await expect(page.getByText('5 completions')).toBeVisible();
 
   // The default range is the last 24 hours, scoped to the course with no section/learner filter.
   await expect.poll(() => calls.length).toBeGreaterThan(0);
@@ -118,7 +124,7 @@ test('overseer metrics shows views and active time together', async ({ page }) =
   await page.getByRole('button', { name: 'Metrics' }).click();
 
   const panel = page.getByTestId('metrics-panel');
-  // Both totals are shown at once (no toggle), and the dual-series chart renders.
+  // Views and active time share a chart, alongside a separate completed-interactions chart.
   await expect(panel.getByText('7 views · 1h 50m active')).toBeVisible();
   await expect(panel.getByRole('img', { name: 'Topic views with active time' })).toBeVisible();
 });
@@ -157,7 +163,7 @@ test('a learner sees a self-scoped Metrics tab before Pulses with no section/lea
   await page.getByRole('button', { name: 'Metrics' }).click();
 
   await expect(page.getByTestId('metrics-panel')).toBeVisible();
-  await expect(page.getByTestId('metrics-panel').getByRole('img', { name: 'Topic views' })).toBeVisible();
+  await expect(page.getByTestId('metrics-panel').getByRole('img', { name: 'Topic views with active time' })).toBeVisible();
   // No overseer filters for a learner.
   await expect(page.getByLabel('Section')).toHaveCount(0);
   await expect(page.getByLabel('Filter learner')).toHaveCount(0);
