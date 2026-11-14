@@ -66,7 +66,8 @@ test('overseer sees a Metrics tab between Roster and Pulses with topic views and
   expect(spanHours).toBeLessThan(24.5);
 
   // Each known topic label is a real anchor to that topic (so open-in-new-tab works).
-  await expect(page.getByTestId('metrics-panel').locator(`a[href="/course/${COURSE_ID}/topic/${TOPIC1_ID}"]`)).toHaveCount(1);
+  // The topic is linked from both the engagement and interactions charts.
+  await expect(page.getByTestId('metrics-panel').locator(`a[href="/course/${COURSE_ID}/topic/${TOPIC1_ID}"]`)).toHaveCount(2);
 });
 
 test('topic labels link to the topic and the chart caps at the top 25', async ({ page }) => {
