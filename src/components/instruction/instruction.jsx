@@ -56,7 +56,7 @@ export default function Instruction({ courseOps, learningSession, user, content 
     onProgress: courseOps?.addProgress,
     enabled: !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && learningSession.topic?.type !== 'mastery' && !!courseOps?.addProgress,
     minDuration: 10,
-    dependencies: [learningSession.topic?.path],
+    dependencies: [learningSession.course?.id, learningSession.enrollment?.id, learningSession.topic?.id, learningSession.topic?.path],
   });
 
   if (loadingProgress) {

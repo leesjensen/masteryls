@@ -72,13 +72,16 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
     return Math.round(ms / 1000);
   }
 
-  async function flush({ closing = false } = {}) {
+  async function flush({ closing = false } = {}, reportOverride = null) {
     settleSegment();
     const tickSeconds = Math.round(accumulatedMsRef.current / 1000);
     // Restart a segment immediately so tracking continues after the flush.
     maybeStartSegment();
 
-    const report = onProgressRef.current;
+    // Closing flushes belong to the view window whose effect is being cleaned up. Use the
+    // callback captured by that effect so a route change cannot attribute its final seconds
+    // to the next topic through the mutable callback ref.
+    const report = reportOverride || onProgressRef.current;
     if (!report) return false;
 
     const windowShouldClose = closing || Date.now() - windowStartAtRef.current >= WINDOW_MS;
@@ -134,7 +137,7 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
     const onVisibility = () => {
       if (document.hidden) {
         // Leaving/backgrounding: close the window and write its row while the page is still alive.
-        void flush({ closing: true });
+        void flush({ closing: true }, onProgress);
         settleSegment();
       } else {
         lastActivityAtRef.current = Date.now();
@@ -143,7 +146,7 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
     };
 
     const onPageHide = () => {
-      void flush({ closing: true });
+      void flush({ closing: true }, onProgress);
     };
 
     // Pause accrual if the learner goes idle mid-segment.
@@ -167,7 +170,7 @@ export default function useProgressTracking({ progressType, onProgress, enabled 
       ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, onActivity, { capture: true }));
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onPageHide);
-      void flush({ closing: true });
+      void flush({ closing: true }, onProgress);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [progressType, enabled, minDuration, ...dependencies]);
