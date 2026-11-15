@@ -21,16 +21,15 @@ const NO_TEXT = '- Do not overlay any title, caption, labels, or other text on t
 const STYLES = {
   [IMAGE_STYLE_VISUAL]: {
     label: 'Visual',
-    description: 'Illustrated educational infographic',
-    lead: 'Create a high-quality instructional image for course content based on this prompt:',
-    body: `- No main title.
-- White background.
-- The image should be a friendly and clean modern educational infographic in a vector illustration style.
-- All graphical elements, including icons, flowcharts, thought bubbles, and UI screens, have clear black borders.
-- Prefer a vibrant clean modern monochromatic palette that uses vibrant harmonious colors for highlights and callouts.
-- Integrate clear, legible modern sans-serif typography for all text, including modular section callouts if used.
-- Strong contrast between text and the background to increase legibility.
-- Text must be large enough to be easily readable when the image is viewed on a mobile device.
+    description: 'Clean editorial diagram',
+    lead: 'Create a high-quality instructional visual for course content based on this prompt:',
+    body: `- White background with reasonable whitespace.
+- No main title. Only illustrate the subject of the prompt. The image will be accompanied by a caption in the course content.
+- Clean, modern editorial style — the kind used in academic instructional content.
+- Use color as appropriate to enhance the visual message without being distracting.
+- Text is minimal: short labels or clarifying text only.
+- Use clean sans-serif type.
+- Text should be large enough to read easily from an audience member's perspective.
 - The structured, modular layout uses simple illustrative icons and flowcharts to explain complex concepts.`,
   },
   [IMAGE_STYLE_PHOTO]: {
