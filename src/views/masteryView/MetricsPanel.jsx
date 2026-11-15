@@ -254,7 +254,10 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
           </span>
         </div>
         {loading ? (
-          <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+          <div className="py-8 text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+            <p className="mt-2 text-sm text-gray-600">Loading…</p>
+          </div>
         ) : chartItems.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-500">No topic views in this range.</p>
         ) : (
@@ -278,7 +281,10 @@ export default function MetricsPanel({ courseOps, course, scope = 'overseer', le
           <span className="text-xs text-gray-500">{result.totalInteractionsCompleted} completion{result.totalInteractionsCompleted === 1 ? '' : 's'}</span>
         </div>
         {loading ? (
-          <p className="py-8 text-center text-sm text-gray-500">Loading…</p>
+          <div className="py-8 text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+            <p className="mt-2 text-sm text-gray-600">Loading…</p>
+          </div>
         ) : interactionChartItems.every((item) => item.value === 0) ? (
           <p className="py-8 text-center text-sm text-gray-500">No completed interactions in this range.</p>
         ) : (
