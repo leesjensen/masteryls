@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { instrument, logAction, recordLogin, setObservabilityUser, httpClass, buildDeltaPayload } from './observability.js';
+import { instrument, logAction, recordLogin, recordUserActive, setObservabilityUser, httpClass, buildDeltaPayload } from './observability.js';
 
 // Most tests run with observability uninitialized (config.observability.enabled is false by default
 // and initObservability is never called), so both sinks are off and every runtime export is a
@@ -44,6 +44,7 @@ test('logAction, recordLogin and setObservabilityUser are safe no-ops when disab
   assert.doesNotThrow(() => logAction('no-args'));
   assert.doesNotThrow(() => recordLogin('success'));
   assert.doesNotThrow(() => recordLogin('failure'));
+  assert.doesNotThrow(() => recordUserActive());
   assert.doesNotThrow(() => setObservabilityUser({ id: 'u1', isRoot: () => true }));
   assert.doesNotThrow(() => setObservabilityUser(null));
 });

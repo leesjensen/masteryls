@@ -3,7 +3,7 @@
   "uid": "masteryls",
   "tags": ["masteryls", "observability", "client"],
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "graphTooltip": 1,
   "time": { "from": "now-1h", "to": "now" },
@@ -250,6 +250,18 @@
       "gridPos": { "x": 0, "y": 44, "w": 24, "h": 9 },
       "options": { "showTime": true, "showLabels": false, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
       "targets": [{ "refId": "A", "datasource": { "type": "loki", "uid": "$DS_LOGS" }, "expr": "{app=\"masteryls\", level=\"error\"} | json" }]
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Active users",
+      "description": "Distinct users (by user_id) active in each interval, plotted over the dashboard time range. Fed by the throttled `user_active` heartbeat emitted on any topic/interaction/assessment activity (plus login/enroll/unenroll and errors, which also carry user_id). The panel's minimum interval is 5m to match the heartbeat cadence; to plot strictly heartbeats, filter `event_name=\"user_active\"`.",
+      "datasource": { "type": "loki", "uid": "$DS_LOGS" },
+      "gridPos": { "x": 0, "y": 53, "w": 12, "h": 8 },
+      "interval": "5m",
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "color": { "mode": "fixed", "fixedColor": "purple" }, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 15, "showPoints": "auto" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single", "sort": "none" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "loki", "uid": "$DS_LOGS" }, "queryType": "range", "expr": "count(sum by (user_id) (count_over_time({app=\"masteryls\"} | json | user_id != \"\" [$__interval])))", "legendFormat": "active users" }]
     }
   ]
 }

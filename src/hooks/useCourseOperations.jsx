@@ -21,7 +21,7 @@ import { summarizeLearnerActivity, summarizeSectionAttendance } from '../utils/l
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
-import { recordTopicView, recordInteraction, recordPulse, logAction } from '../observability/observability.js';
+import { recordTopicView, recordInteraction, recordPulse, recordUserActive, logAction } from '../observability/observability.js';
 import { useAlert } from '../contexts/AlertContext.jsx';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
@@ -1536,6 +1536,9 @@ Requirements:
     }
     const progressUser = providedUser || user;
     if (progressUser) {
+      // Any progress activity (topic-time flush, interaction, assessment) marks the user active for the
+      // active-users logs metric. Throttled inside observability, so this adds negligible Loki volume.
+      recordUserActive();
       // A time-tracking flush from useProgressTracking carries window options: every flush folds its
       // tick into the cached summary (timeSpentDelta = `duration`), but a history ROW is written only
       // when the view window closes, and that row's duration is the window's whole active time

@@ -139,6 +139,7 @@ function truncate(stack) {
 export function setObservabilityUser(user) {
   if (!logs) return;
   logs.user = user?.id ? { id: user.id, role: roleOf(user) } : null;
+  lastUserActiveAt = 0; // re-arm the active heartbeat so the next activity logs promptly for this user
 }
 
 // Build one JSON log line: event_name + current user tag + cleaned attributes.
@@ -183,6 +184,21 @@ function flushLogs() {
 // Log an important user action, e.g. logAction('enroll', { courseId }). No-op when logs are off.
 export function logAction(name, attributes = {}) {
   pushLog('info', name, attributes);
+}
+
+// A lightweight "user is active" heartbeat for the active-users logs metric (Loki). It piggybacks on
+// the progress-update path (useCourseOperations.addProgress), so any topic view / interaction /
+// assessment activity marks the user active. Throttled to at most one line per user per window, so a
+// continuously-active learner stays lean in Loki (only event_name + user_id + coarse role, no titles).
+// No-op when logs are off or no user is set; the window re-arms on login/logout (setObservabilityUser).
+const USER_ACTIVE_THROTTLE_MS = 5 * 60 * 1000;
+let lastUserActiveAt = 0;
+export function recordUserActive() {
+  if (!logs?.user) return;
+  const now = Date.now();
+  if (now - lastUserActiveAt < USER_ACTIVE_THROTTLE_MS) return;
+  lastUserActiveAt = now;
+  logAction('user_active', {});
 }
 
 // ----------------------------------------------------------------------------------------------
