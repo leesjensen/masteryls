@@ -21,7 +21,7 @@ import { summarizeLearnerActivity, summarizeSectionAttendance } from '../utils/l
 import { repairEnrollmentProgressCache } from '../utils/progressCacheRepair';
 import { createCourseInternal } from './courseCreation.js';
 import { createCanvasSync } from './canvas/canvasSync.js';
-import { recordTopicView, recordInteraction, recordPulse, recordUserActive, logAction } from '../observability/observability.js';
+import { recordTopicView, recordInteraction, recordPulse, recordUserActive } from '../observability/observability.js';
 import { useAlert } from '../contexts/AlertContext.jsx';
 import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.js';
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
@@ -2577,7 +2577,6 @@ Requirements:
   async function recordPulseGenerated({ course, targetType, targetId, enrollmentId, pulseType = 'pulse', termId = null, pulseId = null }) {
     const courseName = course?.title || course?.name;
     const metricType = pulseType === 'feedback' ? 'feedback' : 'analysis';
-    logAction('pulse', { courseId: course?.id, targetType, targetId, pulseType, termId, pulseId });
     recordPulse(courseName, { target: targetType, type: metricType });
 
     if (targetType === 'learner' && enrollmentId && String(user?.id) === String(targetId)) {
