@@ -11,10 +11,10 @@ import {
   IMAGE_STYLE_OPTIONS,
 } from './imagePrompt.js';
 
-test('visual style produces the illustrated infographic prompt', () => {
+test('visual style produces the editorial-diagram prompt', () => {
   const text = buildImagePromptText('the event loop', IMAGE_STYLE_VISUAL);
   assert.match(text, /the event loop/);
-  assert.match(text, /vector illustration style/);
+  assert.match(text, /editorial style/);
   assert.doesNotMatch(text, /photorealistic/i);
 });
 
@@ -23,7 +23,7 @@ test('photo style produces the photorealistic prompt', () => {
   assert.match(text, /a professor at a whiteboard/);
   assert.match(text, /photorealistic/i);
   assert.match(text, /real photograph/i);
-  assert.doesNotMatch(text, /vector illustration style/);
+  assert.doesNotMatch(text, /editorial style/);
 });
 
 test('each style injects the subject and its own aesthetic direction', () => {
@@ -51,7 +51,7 @@ test('every style shares the common base requirements', () => {
 test('defaults to visual when style is omitted or unknown', () => {
   const omitted = buildImagePromptText('x');
   const unknown = buildImagePromptText('x', 'bogus');
-  assert.match(omitted, /vector illustration style/);
+  assert.match(omitted, /editorial style/);
   assert.equal(unknown, omitted);
 });
 

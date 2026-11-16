@@ -12,6 +12,7 @@ import { resolveLearnerSchedule } from '../utils/scheduleResolution';
 import { createInitialDraMarkdown } from '../utils/draMarkdown';
 import { createInitialInterviewMarkdown } from '../utils/interviewMarkdown';
 import { summarizeLikertResponses } from '../utils/likertInteraction';
+import { mergeRecordedEnrollment } from '../utils/learningSessionMerge.js';
 import { markdownToHtml } from '../utils/markdownToHtml';
 import { formatDraFeedbackForCanvas } from '../components/instruction/dra/draScore';
 import { formatInterviewFeedbackForCanvas } from '../components/instruction/interview/interviewScore';
@@ -1493,9 +1494,11 @@ Requirements:
     if (!enrollment) return;
     const mastery = calculateProgressMastery(enrollment.progress, learningSession?.course);
     const enriched = { ...enrollment, progress: { ...enrollment.progress, mastery } };
-    if (learningSession?.enrollment?.id === enriched.id) {
-      setLearningSession({ ...learningSession, enrollment: enriched });
-    }
+    // Merge the fresh enrollment into the CURRENT session with a functional update, not the closure's
+    // (possibly stale) `learningSession`. A closing time-flush runs the departing topic's addProgress,
+    // which resolves *after* the learner has already navigated to the next topic; spreading the stale
+    // closure here would clobber the rendered topic back to the one being left (the topic/URL mismatch).
+    setLearningSession((prev) => mergeRecordedEnrollment(prev, enriched));
     _scheduleMasteryCanvasSync(enriched);
   }
 
