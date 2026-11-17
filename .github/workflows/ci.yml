@@ -23,7 +23,7 @@ jobs:
           version=$(date +'%Y%m%d.%H%M%S')
           echo "version=$version" >> "$GITHUB_OUTPUT"
           printf '{"version": "%s" }' "$version" > public/version.json
-          echo "Built version: $version" >> "$GITHUB_STEP_SUMMARY"
+          echo "📦 Built version: $version" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create config.js
         run: |
