@@ -62,7 +62,7 @@ jobs:
 
       - name: Record deployment version
         run: |
-          echo "Deployed version: `$VERSION`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed version: $VERSION" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Annotate deployment in Grafana
         env:
