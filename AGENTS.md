@@ -111,7 +111,7 @@ Commands (see `package.json`):
 
 ## Deployment notes
 
-- Client releases are built and tested on pushes to `main` by `.github/workflows/ci.yml`, which stores `dist/` as a `site-<version>` artifact for 90 days. The CI run summary shows the version. To deploy an existing build, run `.github/workflows/deploy.yml` manually and enter that version; the deploy workflow downloads and publishes the saved artifact without rebuilding, then creates a GitHub Release with generated notes and the same tag on successful deployment. The deployment run summary links the site and release and identifies the source commit.
+- Client releases are built and tested on pushes to `main` by `.github/workflows/ci.yml`, which stores `dist/` as a `site-<version>` artifact for 90 days. The CI run summary shows the version and links to `.github/workflows/deploy.yml`. To deploy an existing build, run that workflow manually and enter the version; it downloads and publishes the saved artifact without rebuilding, then creates a GitHub Release with generated notes and the same tag on successful deployment. The deployment run summary links the site and release and identifies the source commit.
 - **Edge functions must be deployed** to take effect (they run on the hosted Supabase project, not from the local tree): `supabase functions deploy <name> --project-ref <ref>`. Changing a `handler.js` without deploying does nothing in production.
 - **Schema changes** (`install/supabase/schema.sql`) — tables/indexes/RLS/RPCs — must be applied to the database separately.
 - **Client/server contract changes ship together.** If an edge function's request/response shape changes, deploy it with the client release that depends on it; there is no backward-compat window unless you build one.
