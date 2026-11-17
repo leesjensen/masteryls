@@ -259,7 +259,7 @@
       "datasource": { "type": "loki", "uid": "$DS_LOGS" },
       "gridPos": { "x": 0, "y": 53, "w": 12, "h": 8 },
       "interval": "5m",
-      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "color": { "mode": "fixed", "fixedColor": "purple" }, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 15, "showPoints": "auto" } }, "overrides": [] },
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "noValue": "0", "color": { "fixedColor": "purple", "mode": "fixed" }, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 68, "showPoints": "auto" } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single", "sort": "none" } },
       "targets": [{ "refId": "A", "datasource": { "type": "loki", "uid": "$DS_LOGS" }, "queryType": "range", "expr": "count(sum by (user_id) (count_over_time({app=\"masteryls\"} | json | user_id != \"\" [$__interval])))", "legendFormat": "active users" }]
     }
