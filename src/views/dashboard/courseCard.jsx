@@ -1,6 +1,7 @@
 import React from 'react';
-import { EyeOff, Pencil, X, Activity } from 'lucide-react';
+import { EyeOff, Pencil, X, Activity, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { handleInAppLinkClick } from '../../utils/linkNavigation.js';
 import { pulseSummaryText } from '../../utils/pulseMarkdown.js';
 
 function formatPulseDate(value) {
@@ -22,6 +23,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
   };
 
   const courseHref = enrollment ? `/course/${enrollment.catalogId}` : null;
+  const scheduleHref = enrollment ? `/course/${enrollment.catalogId}/schedule` : null;
   const pulseHref = enrollment ? `/course/${enrollment.catalogId}/mastery?tab=pulses` : null;
   const pulseSummary = pulse ? pulseSummaryText(pulse.markdown) : '';
 
@@ -56,6 +58,17 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
             <Pencil size={16} />
           </span>
         </div>
+      )}
+      {enrollment && (
+        <a
+          href={scheduleHref}
+          onClick={(e) => handleInAppLinkClick(e, () => navigate(scheduleHref))}
+          aria-label="Open schedule"
+          title="Open schedule"
+          className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+        >
+          <CalendarDays size={16} aria-hidden="true" />
+        </a>
       )}
       {enrollment && remove && (
         <button
