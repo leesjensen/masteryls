@@ -135,7 +135,7 @@
       "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
       "interval": "2m",
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
-      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (course) (increase(masteryls_client_topic_views_total[$__interval]))", "legendFormat": "{{course}}" }]
     },
     {
@@ -146,7 +146,7 @@
       "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
       "interval": "2m",
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
-      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (course) (increase(masteryls_client_interactions_total[$__interval]))", "legendFormat": "{{course}}" }]
     },
 
@@ -167,7 +167,7 @@
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
       "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" } }, "overrides": [] },
-      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (op, status) (rate(masteryls_client_call_duration_ms_count{status!=\"ok\"}[5m]))", "legendFormat": "{{op}} {{status}}" }]
     },
 
@@ -178,7 +178,7 @@
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
       "gridPos": { "x": 0, "y": 28, "w": 8, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 5, "showPoints": "never" } }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
         { "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.50, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p50" },
         { "refId": "B", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.95, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p95" },
@@ -192,7 +192,7 @@
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
       "gridPos": { "x": 16, "y": 28, "w": 8, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 5, "showPoints": "never" } }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le, op) (rate(masteryls_client_call_duration_ms_bucket[5m]))) >= 0 or on(op) (0 * group by (op) (last_over_time(masteryls_client_call_duration_ms_count[1h])))", "legendFormat": "{{op}}" }]
     },
     {
