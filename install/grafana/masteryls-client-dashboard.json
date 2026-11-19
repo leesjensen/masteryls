@@ -180,9 +180,9 @@
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 5, "showPoints": "never" } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
-        { "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.50, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p50" },
-        { "refId": "B", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.95, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p95" },
-        { "refId": "C", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m])))", "legendFormat": "p99" }
+        { "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.50, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m]))) >= 0 or vector(0)", "legendFormat": "p50" },
+        { "refId": "B", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.95, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m]))) >= 0 or vector(0)", "legendFormat": "p95" },
+        { "refId": "C", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m]))) >= 0 or vector(0)", "legendFormat": "p99" }
       ]
     },
     {
