@@ -126,13 +126,61 @@
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "instant": true, "format": "table", "expr": "sum by (course) (masteryls_client_enrollments_total)" }],
       "transformations": [{ "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "Value #A": "Enrollments", "Value": "Enrollments", "course": "Course" } } }]
     },
-
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Active users",
+      "description": "Distinct users (by user_id) active in each interval, plotted over the dashboard time range. Fed by the throttled `user_active` heartbeat emitted on any topic/interaction/assessment activity (plus login/enroll/unenroll and errors, which also carry user_id). The panel's minimum interval is 5m to match the heartbeat cadence; to plot strictly heartbeats, filter `event_name=\"user_active\"`.",
+      "datasource": { "type": "loki", "uid": "$DS_LOGS" },
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "interval": "5m",
+      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "noValue": "0", "color": { "fixedColor": "purple", "mode": "fixed" }, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 68, "showPoints": "auto" } }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single", "sort": "none" } },
+      "targets": [{ "refId": "A", "datasource": { "type": "loki", "uid": "$DS_LOGS" }, "queryType": "range", "expr": "count(sum by (user_id) (count_over_time({app=\"masteryls\"} | json | user_id != \"\" [$__interval])))", "legendFormat": "active users" }]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Active users by role",
+      "description": "Distinct active users per role in each interval. Uses Loki log lines carrying both user_id and role.",
+      "datasource": { "type": "loki", "uid": "$DS_LOGS" },
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "interval": "5m",
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "noValue": "0",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 30,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "$DS_LOGS" },
+          "queryType": "range",
+          "expr": "count by (role) (sum by (role, user_id) (count_over_time({app=\"masteryls\"} | json | user_id != \"\" | role != \"\" [$__interval])))",
+          "legendFormat": "{{role}}"
+        }
+      ]
+    },
     {
       "id": 8,
       "type": "timeseries",
       "title": "Topic views per interval, by course",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
       "interval": "2m",
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
       "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"], "sortBy": "Total", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
@@ -143,7 +191,7 @@
       "type": "timeseries",
       "title": "Interactions per interval, by course",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
       "interval": "2m",
       "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
       "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"], "sortBy": "Total", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
@@ -155,7 +203,7 @@
       "type": "timeseries",
       "title": "Request rate by endpoint",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 28, "w": 12, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 1, "fillOpacity": 20, "showPoints": "never", "stacking": { "mode": "normal", "group": "A" } } }, "overrides": [] },
       "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (op) (rate(masteryls_client_call_duration_ms_count[5m]))", "legendFormat": "{{op}}" }]
@@ -165,7 +213,7 @@
       "type": "timeseries",
       "title": "Error rate by endpoint & status",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" } }, "overrides": [] },
       "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (op, status) (rate(masteryls_client_call_duration_ms_count{status!=\"ok\"}[5m]))", "legendFormat": "{{op}} {{status}}" }]
@@ -176,7 +224,7 @@
       "type": "timeseries",
       "title": "Latency percentiles (overall)",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 0, "y": 28, "w": 8, "h": 8 },
+      "gridPos": { "x": 0, "y": 36, "w": 8, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 5, "showPoints": "never" } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [
@@ -190,7 +238,7 @@
       "type": "timeseries",
       "title": "P99 latency by endpoint",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 16, "y": 28, "w": 8, "h": 8 },
+      "gridPos": { "x": 16, "y": 36, "w": 8, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 5, "showPoints": "never" } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"], "sortBy": "Mean", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le, op) (rate(masteryls_client_call_duration_ms_bucket[5m]))) >= 0 or on(op) (0 * group by (op) (last_over_time(masteryls_client_call_duration_ms_count[1h])))", "legendFormat": "{{op}}" }]
@@ -200,7 +248,7 @@
       "type": "heatmap",
       "title": "Latency distribution",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 8, "y": 28, "w": 8, "h": 8 },
+      "gridPos": { "x": 8, "y": 36, "w": 8, "h": 8 },
       "options": { "calculate": false, "cellGap": 1, "color": { "mode": "scheme", "scheme": "Spectral", "steps": 64, "reverse": false }, "yAxis": { "unit": "ms" }, "tooltip": { "show": true, "yHistogram": true }, "legend": { "placement": "right", "show": true }, "rowsFrame": { "layout": "auto" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (le) (rate(masteryls_client_call_duration_ms_bucket[5m]))", "format": "heatmap", "legendFormat": "{{le}}" }]
     },
@@ -210,7 +258,7 @@
       "type": "timeseries",
       "title": "AI (Gemini) — P99 latency",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 0, "y": 36, "w": 8, "h": 8 },
+      "gridPos": { "x": 0, "y": 44, "w": 8, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single", "sort": "none" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "histogram_quantile(0.99, sum by (le) (rate(masteryls_client_call_duration_ms_bucket{op=\"edge:gemini\"}[5m]))) >= 0 or vector(0)", "legendFormat": "p99" }]
@@ -220,7 +268,7 @@
       "type": "timeseries",
       "title": "AI (Gemini) — call rate",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 8, "y": 36, "w": 8, "h": 8 },
+      "gridPos": { "x": 8, "y": 44, "w": 8, "h": 8 },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 20, "showPoints": "never" } }, "overrides": [] },
       "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "desc" } },
       "targets": [{ "refId": "A", "datasource": { "type": "prometheus", "uid": "$DS_PROM" }, "expr": "sum by (status) (rate(masteryls_client_call_duration_ms_count{op=\"edge:gemini\"}[5m]))", "legendFormat": "{{status}}" }]
@@ -230,7 +278,7 @@
       "type": "timeseries",
       "title": "Logins (success vs failure)",
       "datasource": { "type": "prometheus", "uid": "$DS_PROM" },
-      "gridPos": { "x": 16, "y": 36, "w": 8, "h": 8 },
+      "gridPos": { "x": 16, "y": 44, "w": 8, "h": 8 },
       "fieldConfig": {
         "defaults": { "unit": "reqps", "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 15, "showPoints": "auto" } },
         "overrides": [
@@ -247,21 +295,9 @@
       "type": "logs",
       "title": "Recent client errors",
       "datasource": { "type": "loki", "uid": "$DS_LOGS" },
-      "gridPos": { "x": 0, "y": 44, "w": 24, "h": 9 },
+      "gridPos": { "x": 0, "y": 52, "w": 24, "h": 9 },
       "options": { "showTime": true, "showLabels": false, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
       "targets": [{ "refId": "A", "datasource": { "type": "loki", "uid": "$DS_LOGS" }, "expr": "{app=\"masteryls\", level=\"error\"} | json" }]
-    },
-    {
-      "id": 19,
-      "type": "timeseries",
-      "title": "Active users",
-      "description": "Distinct users (by user_id) active in each interval, plotted over the dashboard time range. Fed by the throttled `user_active` heartbeat emitted on any topic/interaction/assessment activity (plus login/enroll/unenroll and errors, which also carry user_id). The panel's minimum interval is 5m to match the heartbeat cadence; to plot strictly heartbeats, filter `event_name=\"user_active\"`.",
-      "datasource": { "type": "loki", "uid": "$DS_LOGS" },
-      "gridPos": { "x": 0, "y": 53, "w": 12, "h": 8 },
-      "interval": "5m",
-      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "noValue": "0", "color": { "fixedColor": "purple", "mode": "fixed" }, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 68, "showPoints": "auto" } }, "overrides": [] },
-      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single", "sort": "none" } },
-      "targets": [{ "refId": "A", "datasource": { "type": "loki", "uid": "$DS_LOGS" }, "queryType": "range", "expr": "count(sum by (user_id) (count_over_time({app=\"masteryls\"} | json | user_id != \"\" [$__interval])))", "legendFormat": "active users" }]
     }
   ]
 }
