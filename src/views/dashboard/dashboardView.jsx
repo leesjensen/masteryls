@@ -8,6 +8,7 @@ import { updateAppBar } from '../../hooks/useAppBarState.jsx';
 import { GraduationCap, BookSearch, Eye, EyeOff } from 'lucide-react';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import { enrollableSections } from '../../utils/sectionEnrollment.js';
+import { resolveLearnerSchedule } from '../../utils/scheduleResolution.js';
 
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
@@ -17,6 +18,9 @@ export default function DashboardView({ courseOps, service, user }) {
   const [userSearch, setUserSearch] = useState('');
   const [showCompleted, setShowCompleted] = useState(false);
   const [enrollmentSummaries, setEnrollmentSummaries] = useState(new Map());
+  // catalogId -> boolean: does the learner's section resolve to a schedule? Gates the card's schedule
+  // icon so it only appears once resolved (never flickers on then off).
+  const [enrollmentHasSchedule, setEnrollmentHasSchedule] = useState(new Map());
   const [enrollmentPulses, setEnrollmentPulses] = useState(new Map());
   const dialogRef = useRef(null);
   // Section picker shown when enrolling in a course that has more than one section.
@@ -41,23 +45,30 @@ export default function DashboardView({ courseOps, service, user }) {
     async function loadEnrollmentSummaries() {
       if (!enrollments || !courseOps?.getCourse) {
         setEnrollmentSummaries(new Map());
+        setEnrollmentHasSchedule(new Map());
         return;
       }
 
       const summaries = new Map();
+      const hasSchedule = new Map();
       await Promise.all(
         Array.from(enrollments.values()).map(async (enrollment) => {
           try {
             const course = await courseOps.getCourse(enrollment.catalogId);
             summaries.set(enrollment.catalogId, deriveProgressSummary(enrollment.progress, course));
+            // The schedule icon shows only when the learner's section resolves to a schedule. The full
+            // course (with its DB sections/schedules) is already loaded here for the progress summary.
+            hasSchedule.set(enrollment.catalogId, Boolean(resolveLearnerSchedule({ sectionId: enrollment.sectionId, sections: course.sections || [], schedules: course.schedules || [] })));
           } catch {
             summaries.set(enrollment.catalogId, deriveProgressSummary(enrollment.progress, null));
+            hasSchedule.set(enrollment.catalogId, false);
           }
         }),
       );
 
       if (!cancelled) {
         setEnrollmentSummaries(summaries);
+        setEnrollmentHasSchedule(hasSchedule);
       }
     }
 
@@ -240,7 +251,7 @@ export default function DashboardView({ courseOps, service, user }) {
             {visibleEnrollments.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {visibleEnrollments.map((enrollment) => (
-                  <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} masteryPercent={enrollmentSummaries.get(enrollment.catalogId)?.mastery} pulse={enrollmentPulses.get(enrollment.id) || null} remove={() => requestedEnrollmentRemoval(enrollment)} />
+                  <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} masteryPercent={enrollmentSummaries.get(enrollment.catalogId)?.mastery} pulse={enrollmentPulses.get(enrollment.id) || null} hasSchedule={enrollmentHasSchedule.get(enrollment.catalogId) || false} remove={() => requestedEnrollmentRemoval(enrollment)} />
                 ))}
               </div>
             ) : (

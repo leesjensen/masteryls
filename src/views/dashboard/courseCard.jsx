@@ -9,7 +9,7 @@ function formatPulseDate(value) {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export default function CourseCard({ user, catalogEntry, enrollment, masteryPercent = null, pulse = null, select, remove }) {
+export default function CourseCard({ user, catalogEntry, enrollment, masteryPercent = null, pulse = null, hasSchedule = false, select, remove }) {
   const navigate = useNavigate();
   const displayMastery = Number.isFinite(Number(masteryPercent)) ? Math.max(0, Math.min(100, Math.round(Number(masteryPercent)))) : Number.isFinite(Number(enrollment?.progress?.mastery)) ? Math.max(0, Math.min(100, Math.round(Number(enrollment.progress.mastery)))) : 0;
 
@@ -59,7 +59,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
           </span>
         </div>
       )}
-      {enrollment && (
+      {enrollment && hasSchedule && (
         <a
           href={scheduleHref}
           onClick={(e) => handleInAppLinkClick(e, () => navigate(scheduleHref))}

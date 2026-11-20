@@ -149,6 +149,38 @@ test('dashboard annotates the card when the latest learner pulse is feedback', a
   await expect(page.getByText(/consistently working through the material/)).toBeVisible();
 });
 
+// The card's schedule icon appears only when the learner's section resolves to a schedule.
+async function setupScheduledEnrollment(page: any, { scheduleId }: { scheduleId: string | null }) {
+  const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
+  await initBasicCourse({ page });
+  await page.route(/.*\/rest\/v1\/enrollment(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ json: [{ id: 'aa000000-0000-4000-8000-000000000001', catalogId: COURSE_ID, learnerId: '15cb92ef-d2d0-4080-8770-999516448960', sectionId: 'sec-1', settings: {}, progress: { mastery: 30 } }] });
+      return;
+    }
+    await route.fulfill({ status: 204 });
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, (route: any) => route.fulfill({ json: [{ id: 'sec-1', catalogId: COURSE_ID, title: 'Section 1', scheduleId }] }));
+  await page.route(/.*supabase.co\/rest\/v1\/schedule(\?.+)?/, (route: any) => route.fulfill({ json: scheduleId ? [{ id: scheduleId, catalogId: COURSE_ID, title: 'Fall', startDate: '2026-09-01', endDate: '2026-12-18' }] : [] }));
+}
+
+test('dashboard shows the schedule icon when the learner section has a schedule', async ({ page }) => {
+  await setupScheduledEnrollment(page, { scheduleId: 'sch-1' });
+  await register(page);
+
+  await expect(page.getByRole('link', { name: /Rocket Science/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open schedule' })).toBeVisible();
+});
+
+test('dashboard hides the schedule icon when the learner section has no schedule', async ({ page }) => {
+  await setupScheduledEnrollment(page, { scheduleId: null });
+  await register(page);
+
+  await expect(page.getByRole('link', { name: /Rocket Science/ })).toBeVisible();
+  // The section has no schedule, so the gate stays false and the icon never appears.
+  await expect(page.getByRole('link', { name: 'Open schedule' })).toHaveCount(0);
+});
+
 test('dashboard enroll prompts for a section when the course has more than one', async ({ page }) => {
   const COURSE_ID = '14602d77-0ff3-4267-b25e-4a7c3c47848b';
   let enrollments: Enrollment[] = [];
