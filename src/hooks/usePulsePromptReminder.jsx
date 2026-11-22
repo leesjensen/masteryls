@@ -1,12 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isWithinScheduleWindow, shouldPromptForPulse } from '../utils/pulsePromptSchedule.js';
+import { arePulseRemindersDisabled, isWithinScheduleWindow, PULSE_PROMPT_COOLDOWN_MS, pulsePromptCooldownRemaining, shouldPromptForPulse } from '../utils/pulsePromptSchedule.js';
 import useOnlineStatus from './useOnlineStatus.js';
 
-// Per-device throttle state ({ lastPulseAt, lastPromptedAt }) lives inside the course's local
-// `uiSettings` blob (`uiSettings-<courseId>`), so it is scoped per course like the rest of the
-// learner's local prefs rather than a stray top-level key. The authoritative "last pulse" still comes
-// from the DB so a pulse taken on another device suppresses the nudge. All access is guarded.
+// Per-device `lastPulseAt` fallback and the dismissal-based `nextPromptAt` live inside the course's
+// local `uiSettings` blob (`uiSettings-<courseId>`). The authoritative last pulse still comes from
+// the DB so a pulse taken on another device suppresses the reminder. All access is guarded.
 export function readPulsePromptState(service, courseId) {
   try {
     return service?.getEnrollmentUiSettings?.(courseId)?.pulsePrompt || {};
@@ -27,22 +26,24 @@ export function writePulsePromptState(service, courseId, patch) {
 
 /**
  * Decides whether to show the learner self-pulse reminder for the current course, and exposes its
- * actions. Only fires for the enrolled learner (not an overseer/observer), within the learner's dated
- * schedule window, when reminders aren't opted out, and subject to the 7-day / 24-hour throttle.
+ * actions. Fires for the enrolled user themselves (including course overseers with their own
+ * enrollment, but not while observing), within their dated schedule window, when reminders aren't
+ * opted out, and the last pulse is at least seven days old.
  */
 export default function usePulsePromptReminder({ courseOps, learningSession }) {
   const isOnline = useOnlineStatus();
   const navigate = useNavigate();
   const [visible, setVisible] = React.useState(false);
-  const [dismissed, setDismissed] = React.useState(false);
+  const [promptCheckVersion, setPromptCheckVersion] = React.useState(0);
 
   const enrollment = learningSession?.enrollment;
   const course = learningSession?.course;
   const user = courseOps?.user;
 
-  // Only a pure learner (enrolled, not an overseer of this course, not observing) is nudged.
-  const isOwnLearner = Boolean(user && enrollment && enrollment.learnerId === user.id && !learningSession?.observeMode && !user.canOverseeCourse?.(course?.id));
-  const pulsePromptsDisabled = enrollment?.settings?.pulsePromptsDisabled === true;
+  // Nudge the enrolled user themselves, including mentors/editors/root who also have an
+  // enrollment. Never prompt an overseer while they are observing someone else's enrollment.
+  const isOwnLearner = Boolean(user && enrollment && enrollment.learnerId === user.id && !learningSession?.observeMode);
+  const pulsePromptsDisabled = arePulseRemindersDisabled(enrollment, user, course?.id);
 
   const scheduleActive = React.useMemo(() => {
     if (!enrollment?.sectionId || !course) return false;
@@ -54,13 +55,14 @@ export default function usePulsePromptReminder({ courseOps, learningSession }) {
 
   React.useEffect(() => {
     setVisible(false);
-    setDismissed(false);
     if (!isOnline || course?.offlineCached || !isOwnLearner || pulsePromptsDisabled || !scheduleActive) return undefined;
 
     let cancelled = false;
+    let cooldownTimer = null;
     (async () => {
       const service = courseOps.service;
-      let lastPulseAt = readPulsePromptState(service, course.id).lastPulseAt || null;
+      const promptState = readPulsePromptState(service, course.id);
+      let lastPulseAt = promptState.lastPulseAt || null;
       try {
         const latest = await service.getLatestLearnerPulses([enrollment.id]);
         const row = latest.get(enrollment.id);
@@ -72,16 +74,23 @@ export default function usePulsePromptReminder({ courseOps, learningSession }) {
         // fall back to the cached lastPulseAt
       }
       if (cancelled) return;
-      const { lastPromptedAt } = readPulsePromptState(service, course.id);
-      if (shouldPromptForPulse({ lastPulseAt, lastPromptedAt, pulsePromptsDisabled })) {
-        writePulsePromptState(service, course.id, { lastPromptedAt: Date.now() });
+      const now = Date.now();
+      if (shouldPromptForPulse({ lastPulseAt, nextPromptAt: promptState.nextPromptAt, pulsePromptsDisabled, now })) {
         setVisible(true);
+      } else {
+        const delay = pulsePromptCooldownRemaining(promptState.nextPromptAt, now);
+        if (delay > 0) {
+          cooldownTimer = setTimeout(() => {
+            if (!cancelled) setPromptCheckVersion((version) => version + 1);
+          }, delay);
+        }
       }
     })();
     return () => {
       cancelled = true;
+      if (cooldownTimer) clearTimeout(cooldownTimer);
     };
-  }, [enrollment?.id, isOwnLearner, isOnline, pulsePromptsDisabled, scheduleActive]);
+  }, [enrollment?.id, isOwnLearner, isOnline, pulsePromptsDisabled, scheduleActive, promptCheckVersion]);
 
   const openPulse = () => {
     setVisible(false);
@@ -90,9 +99,9 @@ export default function usePulsePromptReminder({ courseOps, learningSession }) {
     if (course?.id) navigate(`/course/${course.id}/mastery?tab=pulses&take=1`);
   };
   const snooze = () => {
+    writePulsePromptState(courseOps.service, course?.id, { nextPromptAt: Date.now() + PULSE_PROMPT_COOLDOWN_MS });
     setVisible(false);
-    setDismissed(true);
+    setPromptCheckVersion((version) => version + 1);
   };
-
-  return { visible: visible && !dismissed, openPulse, snooze };
+  return { visible, openPulse, snooze };
 }

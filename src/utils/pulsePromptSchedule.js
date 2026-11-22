@@ -3,6 +3,7 @@
 
 const DAY_MS = 86400000;
 const SEVEN_DAYS_MS = 7 * DAY_MS;
+export const PULSE_PROMPT_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 export function localIsoDate(date = new Date()) {
   const year = date.getFullYear();
@@ -26,6 +27,13 @@ export function isWithinScheduleWindow(schedule, today = localIsoDate()) {
   return true;
 }
 
+/** Explicit enrollment preference wins; otherwise course overseers default to reminders off. */
+export function arePulseRemindersDisabled(enrollment, user, courseId) {
+  const configured = enrollment?.settings?.pulsePromptsDisabled;
+  if (typeof configured === 'boolean') return configured;
+  return Boolean(user?.canOverseeCourse?.(courseId));
+}
+
 function toMs(value) {
   if (value == null) return null;
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
@@ -34,15 +42,19 @@ function toMs(value) {
 }
 
 /**
- * Prompt only when reminders are enabled, the last pulse is ≥7 days old (or there is none), and the
- * learner has not been prompted in the last 24h. `lastPulseAt`/`lastPromptedAt` accept epoch ms, an
- * ISO string, or null.
+ * Prompt when reminders are enabled, the last pulse is ≥7 days old (or there is none), and the
+ * dismissal cooldown has elapsed. Timestamps accept epoch ms, ISO strings, or null.
  */
-export function shouldPromptForPulse({ lastPulseAt = null, lastPromptedAt = null, pulsePromptsDisabled = false, now = Date.now() } = {}) {
+export function shouldPromptForPulse({ lastPulseAt = null, nextPromptAt = null, pulsePromptsDisabled = false, now = Date.now() } = {}) {
   if (pulsePromptsDisabled) return false;
   const pulseMs = toMs(lastPulseAt);
-  const promptMs = toMs(lastPromptedAt);
   const pulseStale = pulseMs == null || now - pulseMs >= SEVEN_DAYS_MS;
-  const promptCooled = promptMs == null || now - promptMs >= DAY_MS;
-  return pulseStale && promptCooled;
+  const nextPromptMs = toMs(nextPromptAt);
+  const cooldownElapsed = nextPromptMs == null || now >= nextPromptMs;
+  return pulseStale && cooldownElapsed;
+}
+
+export function pulsePromptCooldownRemaining(nextPromptAt, now = Date.now()) {
+  const nextPromptMs = toMs(nextPromptAt);
+  return nextPromptMs == null ? 0 : Math.max(0, nextPromptMs - now);
 }

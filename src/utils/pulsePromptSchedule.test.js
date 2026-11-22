@@ -1,6 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isWithinScheduleWindow, shouldPromptForPulse } from './pulsePromptSchedule.js';
+import { arePulseRemindersDisabled, isWithinScheduleWindow, shouldPromptForPulse } from './pulsePromptSchedule.js';
+
+test('pulse reminder defaults are off for course overseers and on for other users', () => {
+  const overseer = { canOverseeCourse: (courseId) => courseId === 'course-1' };
+  const learner = { canOverseeCourse: () => false };
+  assert.equal(arePulseRemindersDisabled({ settings: {} }, overseer, 'course-1'), true);
+  assert.equal(arePulseRemindersDisabled({ settings: {} }, learner, 'course-1'), false);
+  assert.equal(arePulseRemindersDisabled({ settings: {} }, overseer, 'course-2'), false);
+});
+
+test('an explicit pulse reminder preference overrides the role default', () => {
+  const overseer = { canOverseeCourse: () => true };
+  const learner = { canOverseeCourse: () => false };
+  assert.equal(arePulseRemindersDisabled({ settings: { pulsePromptsDisabled: false } }, overseer, 'course-1'), false);
+  assert.equal(arePulseRemindersDisabled({ settings: { pulsePromptsDisabled: true } }, learner, 'course-1'), true);
+});
 
 test('isWithinScheduleWindow requires a dated window that includes today', () => {
   assert.equal(isWithinScheduleWindow({ startDate: '2026-09-01', endDate: '2026-12-18' }, '2026-11-11'), true);
@@ -19,25 +34,25 @@ test('isWithinScheduleWindow returns false when there is no dated window', () =>
 
 const NOW = new Date('2026-11-11T12:00:00Z').getTime();
 const daysAgo = (n) => NOW - n * 86400000;
-const hoursAgo = (n) => NOW - n * 3600000;
+const hoursFromNow = (n) => NOW + n * 3600000;
 
-test('shouldPromptForPulse prompts when the last pulse is >= 7 days old and not prompted in 24h', () => {
-  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(8), lastPromptedAt: hoursAgo(25), now: NOW }), true);
-  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(7), lastPromptedAt: null, now: NOW }), true); // exactly 7 days
-  assert.equal(shouldPromptForPulse({ lastPulseAt: null, lastPromptedAt: null, now: NOW }), true); // never pulsed
+test('shouldPromptForPulse prompts when the last pulse is >= 7 days old and the cooldown has elapsed', () => {
+  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(8), nextPromptAt: null, now: NOW }), true);
+  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(7), nextPromptAt: null, now: NOW }), true); // exactly 7 days
+  assert.equal(shouldPromptForPulse({ lastPulseAt: null, nextPromptAt: null, now: NOW }), true); // never pulsed
+  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(8), nextPromptAt: hoursFromNow(1), now: NOW }), false); // dismissed recently
+  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(8), nextPromptAt: NOW, now: NOW }), true); // cooldown boundary
 });
 
-test('shouldPromptForPulse suppresses within 7 days of a pulse or within 24h of a prompt', () => {
+test('shouldPromptForPulse suppresses within 7 days of a pulse', () => {
   assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(3), lastPromptedAt: null, now: NOW }), false); // recent pulse
-  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(8), lastPromptedAt: hoursAgo(5), now: NOW }), false); // recently prompted
-  assert.equal(shouldPromptForPulse({ lastPulseAt: daysAgo(8), lastPromptedAt: hoursAgo(24), now: NOW }), true); // 24h boundary
 });
 
 test('shouldPromptForPulse never prompts when reminders are disabled', () => {
-  assert.equal(shouldPromptForPulse({ lastPulseAt: null, lastPromptedAt: null, pulsePromptsDisabled: true, now: NOW }), false);
+  assert.equal(shouldPromptForPulse({ lastPulseAt: null, nextPromptAt: null, pulsePromptsDisabled: true, now: NOW }), false);
 });
 
 test('shouldPromptForPulse accepts ISO strings for timestamps', () => {
-  assert.equal(shouldPromptForPulse({ lastPulseAt: '2026-11-01T12:00:00Z', lastPromptedAt: null, now: NOW }), true); // 10 days
-  assert.equal(shouldPromptForPulse({ lastPulseAt: '2026-11-09T12:00:00Z', lastPromptedAt: null, now: NOW }), false); // 2 days
+  assert.equal(shouldPromptForPulse({ lastPulseAt: '2026-11-01T12:00:00Z', nextPromptAt: null, now: NOW }), true); // 10 days
+  assert.equal(shouldPromptForPulse({ lastPulseAt: '2026-11-09T12:00:00Z', nextPromptAt: null, now: NOW }), false); // 2 days
 });

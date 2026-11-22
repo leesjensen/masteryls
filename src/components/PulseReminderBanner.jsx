@@ -2,8 +2,8 @@ import React from 'react';
 import { Activity, X } from 'lucide-react';
 import Button from './ui/Button.jsx';
 
-// A slim, dismissible reminder bar (not a modal) shown at the top of the classroom when a learner is
-// due to take their own pulse. See usePulsePromptReminder for the gating.
+// A slim reminder bar shown at the top of the classroom with a dismissal cooldown. See
+// usePulsePromptReminder for the timing and eligibility rules.
 export default function PulseReminderBanner({ onTake, onDismiss }) {
   return (
     <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-900">

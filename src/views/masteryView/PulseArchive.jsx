@@ -13,6 +13,7 @@ import { buildPulseRosterEvidence, excludePulseStaffRows } from '../../utils/pul
 import { buildPulseMetricsMarker, buildPulseTrendHistory, COURSE_LEARNER_COHORT_MARKER } from '../../utils/pulseTrend.js';
 import { buildMasteryTrendChart, insertMasteryTrendChart } from '../../utils/pulseMasteryChart.js';
 import { writePulsePromptState } from '../../hooks/usePulsePromptReminder.jsx';
+import { arePulseRemindersDisabled } from '../../utils/pulsePromptSchedule.js';
 
 function formatDate(value) {
   return new Date(value).toLocaleDateString();
@@ -32,9 +33,9 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
   const service = courseOps.service;
   const user = courseOps.user;
 
-  // The learner's own view (not an overseer drill-down) offers a pulse-reminder toggle. Load the
-  // learner's enrollment to read/write `settings.pulsePromptsDisabled`.
-  const isOwnLearner = targetType === 'learner' && Boolean(user?.id) && String(user.id) === String(targetId) && !user.canOverseeCourse?.(course.id);
+  // A user's own learner view offers a pulse-reminder toggle, including when they also oversee
+  // the course. Load their enrollment to read/write `settings.pulsePromptsDisabled`.
+  const isOwnLearner = targetType === 'learner' && Boolean(user?.id) && String(user.id) === String(targetId);
   const [ownEnrollment, setOwnEnrollment] = React.useState(null);
   React.useEffect(() => {
     if (!isOwnLearner) { setOwnEnrollment(null); return undefined; }
@@ -214,7 +215,7 @@ export default function PulseArchive({ courseOps, course, targetType, targetId, 
               </div>
               {isOwnLearner && ownEnrollment && (
                 <label className="mt-2 flex items-center gap-1.5 text-xs text-gray-600">
-                  <input type="checkbox" checked={ownEnrollment.settings?.pulsePromptsDisabled !== true} onChange={(e) => togglePulseReminders(e.target.checked)} />
+                  <input type="checkbox" checked={!arePulseRemindersDisabled(ownEnrollment, user, course.id)} onChange={(e) => togglePulseReminders(e.target.checked)} />
                   Remind me to take my pulse
                 </label>
               )}

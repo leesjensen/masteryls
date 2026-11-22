@@ -6,11 +6,11 @@ const ENROLLMENT_ID = '50a0dcd2-2b5a-4c4a-b5c3-0751c874d6f5';
 const LEARNER_ID = '15cb92ef-d2d0-4080-8770-999516448960';
 
 // The session clock is 2026-11-11, so a Sep 1 – Dec 18 schedule window is active.
-async function setupSchedule(page: any, { endDate = '2026-12-18', settings = {} }: { endDate?: string; settings?: any } = {}) {
+async function setupSchedule(page: any, { endDate = '2026-12-18', settings = {}, roles = [] }: { endDate?: string; settings?: any; roles?: any[] } = {}) {
   const patches: any[] = [];
-  // The reminder is only for a pure learner (not an enrolled overseer), so strip the default roles.
+  // Default to a learner without course roles; selected cases exercise enrolled overseers too.
   await page.route(/.*supabase.co\/rest\/v1\/role(\?.+)?/, async (route: any) => {
-    if (route.request().method() === 'GET') return route.fulfill({ json: [] });
+    if (route.request().method() === 'GET') return route.fulfill({ json: roles });
     await route.fulfill({ status: 201, json: {} });
   });
   await page.route(/.*supabase.co\/rest\/v1\/section(\?.+)?/, (route: any) =>
@@ -51,7 +51,7 @@ test('accepting the reminder takes the pulse on the pulse page (the request is n
   const pulsePosts: any[] = [];
   await page.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route: any) => {
     if (route.request().method() === 'POST') {
-      const row = { id: 'p-new', createdAt: '2026-11-11T12:00:00Z', ...route.request().postDataJSON()[0] };
+      const row = { id: 'p-new', createdAt: new Date().toISOString(), ...route.request().postDataJSON()[0] };
       pulsePosts.push(row);
       await route.fulfill({ status: 201, json: row });
       return;
@@ -67,6 +67,58 @@ test('accepting the reminder takes the pulse on the pulse page (the request is n
   await expect(page).toHaveURL(new RegExp(`/course/${COURSE_ID}/mastery`));
   await expect.poll(() => pulsePosts.length, { timeout: 15000 }).toBeGreaterThan(0);
   expect(pulsePosts[0].targetType).toBe('learner');
+
+  await page.goto(`/course/${COURSE_ID}`);
+  await expect(page.getByText('take your pulse')).toHaveCount(0);
+});
+
+test('dismissing the reminder stores a 12-hour cooldown and it returns when the cooldown expires', async ({ page }) => {
+  await initBasicCourse({ page });
+  await setupSchedule(page);
+  await navigateToCourse(page);
+
+  await expect(page.getByText('take your pulse')).toBeVisible();
+  await page.getByRole('button', { name: 'Dismiss reminder' }).click();
+  await expect(page.getByText('take your pulse')).toHaveCount(0);
+
+  const settingsKey = `uiSettings-${COURSE_ID}`;
+  const nextPromptAt = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) || '{}').pulsePrompt?.nextPromptAt, settingsKey);
+  expect(nextPromptAt).toBeGreaterThan(Date.now());
+
+  await page.reload();
+  await expect(page.getByText('take your pulse')).toHaveCount(0);
+
+  await page.evaluate((key) => {
+    const settings = JSON.parse(localStorage.getItem(key) || '{}');
+    settings.pulsePrompt.nextPromptAt = Date.now() - 1;
+    localStorage.setItem(key, JSON.stringify(settings));
+  }, settingsKey);
+  await page.reload();
+
+  await expect(page.getByText('take your pulse')).toBeVisible();
+});
+
+for (const role of ['root', 'editor', 'mentor']) {
+  test(`an enrolled ${role} has pulse reminders off by default`, async ({ page }) => {
+    await initBasicCourse({ page });
+    await setupSchedule(page, {
+      roles: [{ user: LEARNER_ID, right: role, ...(role === 'root' ? {} : { object: COURSE_ID }), settings: {} }],
+    });
+    await navigateToCourse(page);
+
+    await expect(page.getByText('take your pulse')).toHaveCount(0);
+  });
+}
+
+test('an enrolled overseer with reminders explicitly enabled is prompted', async ({ page }) => {
+  await initBasicCourse({ page });
+  await setupSchedule(page, {
+    settings: { pulsePromptsDisabled: false },
+    roles: [{ user: LEARNER_ID, right: 'editor', object: COURSE_ID, settings: {} }],
+  });
+  await navigateToCourse(page);
+
+  await expect(page.getByText('take your pulse')).toBeVisible();
 });
 
 test('the Pulse view toggle opts out of pulse reminders on the enrollment', async ({ page }) => {
