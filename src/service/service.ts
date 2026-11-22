@@ -4,6 +4,11 @@ import { User, CatalogEntry, Enrollment, Role } from '../model';
 import { extractEdgeFunctionErrorMessage } from './edgeFunctionErrors';
 import { instrument, logAction, recordLogin, recordEnrollment, httpClass } from '../observability/observability.js';
 import { deriveProgressSummary } from '../utils/progressSummary.js';
+import { listOfflineCourses } from '../utils/offlineCourseStore.js';
+
+function isOffline() {
+  return typeof navigator !== 'undefined' && !navigator.onLine;
+}
 
 class Service {
   catalog: CatalogEntry[] = [];
@@ -22,10 +27,20 @@ class Service {
    */
   static async create() {
     const supabase = createClient(config.supabase.url, config.supabase.key);
-    const { data, error } = await supabase.from('catalog').select('id, name, title, description, gitHub, settings');
-
-    if (error) {
-      throw new Error(error.message);
+    let data = [];
+    if (isOffline()) {
+      const cachedCatalog = (await listOfflineCourses().catch(() => [])).map((item) => item.catalogEntry).filter(Boolean);
+      data = cachedCatalog;
+    } else {
+      try {
+        const result = await supabase.from('catalog').select('id, name, title, description, gitHub, settings');
+        if (result.error) throw new Error(result.error.message);
+        data = result.data || [];
+      } catch (error) {
+        const cachedCatalog = (await listOfflineCourses().catch(() => [])).map((item) => item.catalogEntry).filter(Boolean);
+        if (cachedCatalog.length === 0) throw error;
+        data = cachedCatalog;
+      }
     }
 
     const sanitizedData = (data || []).map((entry: any) => {
@@ -229,9 +244,29 @@ class Service {
   async currentUser(): Promise<User | null> {
     const session = await this.supabase.auth.getSession();
     if (session.data.session?.user) {
+      const authUser = session.data.session.user;
+      const createOfflineUser = () => new User({
+        id: authUser.id,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'Learner',
+        email: authUser.email || '',
+        settings: {},
+        roles: [],
+      });
+      if (isOffline()) {
+        const userId = authUser.id;
+        const packages = await listOfflineCourses().catch(() => []);
+        return packages.some((item) => item.ownerId === userId)
+          ? createOfflineUser()
+          : null;
+      }
       try {
-        return await this._loadUser({ id: session.data.session.user.id });
+        return await this._loadUser({ id: authUser.id });
       } catch {
+        const packages = await listOfflineCourses().catch(() => []);
+        if (packages.some((item) => item.ownerId === authUser.id)) {
+          return createOfflineUser();
+        }
+        if (typeof navigator !== 'undefined' && !navigator.onLine) return null;
         await this.supabase.auth.signOut();
       }
     }
@@ -600,6 +635,7 @@ class Service {
    * @returns The Enrollment object or null if not found.
    */
   async currentEnrollment(learnerId: string): Promise<Enrollment | null> {
+    if (isOffline()) return null;
     const currentCourse = localStorage.getItem('currentCourse');
     if (currentCourse) {
       return this.enrollment(learnerId, currentCourse);
@@ -613,6 +649,7 @@ class Service {
    * @returns A Map where keys are catalog IDs and values are Enrollment objects.
    */
   async enrollments(learnerId: string): Promise<Map<string, Enrollment>> {
+    if (isOffline()) return new Map();
     const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress, sectionId').eq('learnerId', learnerId);
 
     if (error) {
@@ -636,6 +673,7 @@ class Service {
    * @returns An array of enrollment records.
    */
   async allEnrollments(catalogId: string): Promise<any> {
+    if (isOffline()) return [];
     const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress, sectionId').eq('catalogId', catalogId);
 
     if (error) {
@@ -652,6 +690,7 @@ class Service {
    * @returns The Enrollment object or null if not found.
    */
   async enrollment(learnerId: string, catalogId: string): Promise<Enrollment | null> {
+    if (isOffline()) return null;
     const { data, error } = await this.supabase.from('enrollment').select('id, catalogId, learnerId, settings, progress, sectionId').eq('learnerId', learnerId).eq('catalogId', catalogId);
 
     if (error || data.length === 0) {
@@ -667,6 +706,7 @@ class Service {
    * @param catalogId - The course catalog ID.
    */
   async getCourseSections(catalogId: string): Promise<any[]> {
+    if (isOffline()) return [];
     const { data, error } = await this.supabase.from('section').select('id, catalogId, termId, scheduleId, title, state, attendanceEnabled, legacyFileId, createdAt').eq('catalogId', catalogId).order('createdAt', { ascending: true });
     if (error) throw new Error(error.message);
     return data || [];
@@ -677,6 +717,7 @@ class Service {
    * @param catalogId - The course catalog ID.
    */
   async getCourseSchedules(catalogId: string): Promise<any[]> {
+    if (isOffline()) return [];
     const { data, error } = await this.supabase.from('schedule').select('id, catalogId, termId, title, state, startDate, endDate, contentPath, legacyFileId, createdAt').eq('catalogId', catalogId).order('createdAt', { ascending: true });
     if (error) throw new Error(error.message);
     return data || [];
@@ -752,6 +793,7 @@ class Service {
 
   /** Terms defined for a course, oldest first. */
   async getCourseTerms(catalogId: string): Promise<any[]> {
+    if (isOffline()) return [];
     const { data, error } = await this.supabase.from('term').select('id, catalogId, title, startDate, endDate, createdAt').eq('catalogId', catalogId).order('createdAt', { ascending: true });
     if (error) throw new Error(error.message);
     return data || [];
@@ -1405,6 +1447,7 @@ class Service {
    * `context` adds metric tags (e.g. `{ kind: 'ai' }` for Gemini calls).
    */
   private async invokeEdge(name: string, body: any) {
+    if (isOffline()) return { data: null, error: new Error('This action requires an internet connection.') };
     const op = `edge:${name}`;
     try {
       return await instrument(

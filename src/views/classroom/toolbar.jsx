@@ -7,8 +7,10 @@ import { getCanvasTopicUrl, getCanvasCourseUrl, hasCanvasTopicLink } from '../..
 import MasteryPie from '../../components/MasteryPie.jsx';
 import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import { collapseSidebarForNavigation, handleInAppLinkClick } from '../../utils/linkNavigation.js';
+import useOnlineStatus from '../../hooks/useOnlineStatus.js';
 
 export default function Toolbar({ courseOps, user, learningSession, settings, editing, toggleEditor }) {
+  const isOnline = useOnlineStatus();
   const navigate = useNavigate();
   const { showAlert } = useAlert();
 
@@ -45,6 +47,7 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const masteryPercent = deriveProgressSummary(learningSession?.enrollment?.progress, learningSession?.course).mastery;
   const hasMastery = Number.isFinite(Number(masteryPercent));
+  const offlineReadOnly = Boolean(learningSession?.course?.offlineCached) || !isOnline;
 
   return (
     <div className="flex flex-row justify-between border-b-1 border-gray-200">
@@ -52,12 +55,12 @@ export default function Toolbar({ courseOps, user, learningSession, settings, ed
         {settings.sidebarVisible !== 'start' ? <ToolBarButton icon={ArrowLeftFromLine} title="Collapse sidebar" size={16} aria-hidden="true" /> : <ToolBarButton icon={ArrowRightFromLine} title="Expand sidebar" size={16} aria-hidden="true" />}
       </div>
       <div className="flex flex-row justify-end gap-2 items-center pr-2">
-        {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && <EditorToggleSlider editing={editing} onToggle={toggleEditor} />}
-        {user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
-        {canvasCourseId && <ToolBarButton title={courseOps.canSubmitToCanvasGradebook ? 'Canvas — your grades submit here' : canvasTopicUrl ? 'Canvas topic' : 'Canvas course site'} href={canvasUrl} external icon={Canvas} badge={courseOps.canSubmitToCanvasGradebook} />}
-        {hasMastery ? <MasteryPie percent={masteryPercent} title={`Mastery ${Math.round(Number(masteryPercent))}% — open MasteryView`} href={masteryViewPath} onClick={() => navigateAndCollapseSidebar(masteryViewPath)} /> : <ToolBarButton title="MasteryView" href={masteryViewPath} onClick={() => navigateAndCollapseSidebar(masteryViewPath)} icon={ChartArea} />}
+        {!offlineReadOnly && user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && <EditorToggleSlider editing={editing} onToggle={toggleEditor} />}
+        {!offlineReadOnly && user && user.isEditor(learningSession.course.id) && !isObserveReadOnly && hasCanvasTopicLink(learningSession.topic) && learningSession.course?.externalRefs?.canvasCourseId && <ToolBarButton title="Link topic" onClick={() => linkCanvasTopic()} icon={FileDown} />}
+        {!offlineReadOnly && canvasCourseId && <ToolBarButton title={courseOps.canSubmitToCanvasGradebook ? 'Canvas — your grades submit here' : canvasTopicUrl ? 'Canvas topic' : 'Canvas course site'} href={canvasUrl} external icon={Canvas} badge={courseOps.canSubmitToCanvasGradebook} />}
+        {!offlineReadOnly && (hasMastery ? <MasteryPie percent={masteryPercent} title={`Mastery ${Math.round(Number(masteryPercent))}% — open MasteryView`} href={masteryViewPath} onClick={() => navigateAndCollapseSidebar(masteryViewPath)} /> : <ToolBarButton title="MasteryView" href={masteryViewPath} onClick={() => navigateAndCollapseSidebar(masteryViewPath)} icon={ChartArea} />)}
         {courseOps.getScheduleTopic(learningSession.course) && <ToolBarButton title="Schedule" href={schedulePath} onClick={() => navigateAndCollapseSidebar(schedulePath)} icon={CalendarDays} />}
-        <ToolBarButton title="GitHub repository" href={gitHubUrl(learningSession.topic.path)} external icon={GitHub} />
+        {!offlineReadOnly && <ToolBarButton title="GitHub repository" href={gitHubUrl(learningSession.topic.path)} external icon={GitHub} />}
         <ToolBarButton title="Previous topic" href={topicPath(prevTopic)} onClick={() => prevTopic && navigate(topicPath(prevTopic))} icon={SquareChevronLeft} />
         <ToolBarButton title="Next topic" href={topicPath(nextTopic)} onClick={() => nextTopic && navigate(topicPath(nextTopic))} icon={SquareChevronRight} />
       </div>

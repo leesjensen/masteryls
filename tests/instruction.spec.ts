@@ -47,7 +47,10 @@ test('instruction types all', async ({ page }) => {
 
   await expect(page.getByRole('img', { name: 'Stock Photo' })).toBeVisible();
   await expect(page.getByRole('img', { name: 'relative image' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute('src', 'https://raw.githubusercontent.com/ghAccount/ghRepo/main/path/relative.svg');
+  await expect(page.getByRole('img', { name: 'relative image' })).toHaveAttribute(
+    'src',
+    'https://raw.githubusercontent.com/ghAccount/ghRepo/0123456789abcdef0123456789abcdef01234567/path/relative.svg',
+  );
 });
 
 test('embedded', async ({ page }) => {

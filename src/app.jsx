@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useSearchResults } from './hooks/useSearchResults';
 import useCourseOperations from './hooks/useCourseOperations';
 import useObserveSession, { getEffectiveLearnerId } from './hooks/useObserveSession.jsx';
+import useOnlineStatus from './hooks/useOnlineStatus.js';
 
 import Start from './start.jsx';
 import { AppBar } from './appBar.jsx';
@@ -18,6 +19,7 @@ import ErrorPage from './components/errorPage.jsx';
 import { PwaStatusToasts } from './components/PwaInstallControls.jsx';
 import service from './service/service.js';
 import { setObservabilityUser } from './observability/observability.js';
+import { listOfflineCourses } from './utils/offlineCourseStore.js';
 
 export function createAppRouter(user) {
   return createBrowserRouter([
@@ -59,7 +61,8 @@ function App({ initialUser }) {
   React.useEffect(() => {
     (async () => {
       if (location.pathname === '/' && initialUser) {
-        const enrollment = await service.currentEnrollment(initialUser.id);
+        let enrollment = null;
+        try { enrollment = await service.currentEnrollment(initialUser.id); } catch { /* offline session */ }
         if (enrollment) {
           const enrollmentUiSettings = service.getEnrollmentUiSettings(enrollment.catalogId);
           const currentTopic = enrollmentUiSettings?.currentTopic;
@@ -70,6 +73,12 @@ function App({ initialUser }) {
           // before the push (a data router can otherwise abort the first navigation with the second).
           await navigate('/dashboard', { replace: true });
           navigate(`/course/${enrollment.catalogId}${topicPath}`);
+        } else if (!navigator.onLine) {
+          const offlineCourse = (await listOfflineCourses().catch(() => [])).find((item) => item.ownerId === initialUser.id);
+          if (offlineCourse) {
+            const firstTopic = offlineCourse.course?.modules?.flatMap((module) => module.topics || [])[0];
+            navigate(firstTopic ? `/course/${offlineCourse.courseId}/topic/${firstTopic.id}` : `/course/${offlineCourse.courseId}/schedule`, { replace: true });
+          }
         } else {
           navigate('/dashboard', { replace: true });
         }
@@ -160,6 +169,7 @@ function ProgressPage() {
 
 function ClassroomPage() {
   const { courseOps, service, user, learningSession, setLearningSession, settings, setSettings, observeSession, exitObserveSession } = useOutletContext();
+  const isOnline = useOnlineStatus();
   const [errorMsg, setErrorMsg] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -184,7 +194,7 @@ function ClassroomPage() {
           const isSectionsRoute = location.pathname.endsWith('/sections');
           const isMasteryRoute = location.pathname.endsWith('/mastery') || location.pathname.includes('/mastery/learner/');
           let course = learningSession?.course;
-          if (!course || course.id !== courseId) {
+          if (!course || course.id !== courseId || (course.offlineCached && isOnline)) {
             course = await courseOps.getCourse(courseId);
             if (course) {
               service.setCourseUiSettings(courseId);
@@ -197,7 +207,8 @@ function ClassroomPage() {
           // has not populated learningSession.enrollment yet - without this, refreshing /mastery as a
           // learner fell through to the default topic.
           const { observeForCourse, learnerId } = getEffectiveLearnerId({ userId: user?.id, courseId: course?.id, observeSession });
-          const enrollment = course && learnerId ? await service.enrollment(learnerId, course.id) : null;
+          const offlinePackage = course?.offlineCached ? await courseOps.getOfflineCourses().then((items) => items.find((item) => item.courseId === course.id)) : null;
+          const enrollment = course?.offlineCached ? { id: null, catalogId: course.id, learnerId: user?.id, sectionId: offlinePackage?.sectionId || null, progress: {} } : course && learnerId ? await service.enrollment(learnerId, course.id) : null;
           if (seq !== latestEffectSeqRef.current) return;
 
           // Restore classroom UI state for every route. Schedule and Attendance happen to save
@@ -219,8 +230,13 @@ function ClassroomPage() {
               navigate(`/course/${courseId}/topic/${targetTopic.id}`, { replace: true });
             };
 
+            if (course.offlineCached && (isAttendanceRoute || isSectionsRoute || isMasteryRoute)) {
+              redirectToDefaultTopic();
+              return;
+            }
+
             if (isScheduleRoute) {
-              topic = courseOps.getScheduleTopic(course);
+              topic = courseOps.getScheduleTopic(course, enrollment?.sectionId || null);
               if (topic) {
                 courseOps.saveEnrollmentUiSettings(courseId, { currentTopic: 'schedule' });
               } else {
@@ -278,11 +294,11 @@ function ClassroomPage() {
         setErrorMsg(`Unable to load course: ${error.message}`);
       }
     })();
-  }, [courseId, topicId, user, location.pathname, observeSession]);
+  }, [courseId, topicId, user, location.pathname, observeSession, isOnline]);
 
   if (errorMsg) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      throw new Error('You are offline. Reconnect to load course content, submissions, and AI features.');
+      throw new Error('This course is not saved for offline reading. Reconnect to open it or download it from your dashboard.');
     }
     throw new Error(errorMsg);
   }

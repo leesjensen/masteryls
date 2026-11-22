@@ -28,7 +28,75 @@ import { createCanvasCourseMembershipChecker } from './canvas/canvasMembership.j
 import { createMasteryCanvasSync } from './canvas/masteryCanvasSync.js';
 import { buildAttendanceGradeRequest, DEFAULT_ATTENDANCE_POINTS_PER_SESSION, DEFAULT_ATTENDANCE_POINTS_POSSIBLE } from './canvas/attendanceCanvasSync.js';
 import { calculateProgressMastery } from '../utils/progressSummary.js';
+import { findOfflineCourse, listOfflineCourses, removeOfflineCourse, saveOfflineCourse } from '../utils/offlineCourseStore.js';
 import { decoratePulseProgressEvidence, getPulseScheduleDueItems, reconcilePulseCanvasAssignments, reconcileScheduleDeadlinesWithCanvas, summarizeCanvasRosterGrades, summarizePulseAttendance } from '../utils/pulseEvidence.js';
+
+function collectOfflineImageUrls(markdown, baseUrl, imageUrls) {
+  const references = [
+    ...String(markdown || '').matchAll(/!\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)/g),
+    ...String(markdown || '').matchAll(/<img\b[^>]*\bsrc=["']([^"']+)["']/gi),
+  ];
+  for (const match of references) {
+    try { imageUrls.add(new URL(match[1], baseUrl).href); } catch { /* ignore malformed image refs */ }
+  }
+}
+
+function rawGitHubPathParts(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    if (url.hostname !== 'raw.githubusercontent.com') return null;
+    const [owner, repository, ref, ...path] = url.pathname.split('/').filter(Boolean);
+    return owner && repository && ref ? { owner, repository, ref, path } : null;
+  } catch {
+    return null;
+  }
+}
+
+function isGitCommitSha(ref) {
+  return /^[a-f0-9]{40}$/i.test(String(ref || ''));
+}
+
+function offlineTopicSnapshotPath(topic, offlinePackage) {
+  const savedPath = offlinePackage?.topicSnapshotUrls?.[topic.id] || topic.snapshotPath;
+  const savedParts = rawGitHubPathParts(savedPath);
+  if (savedParts && isGitCommitSha(savedParts.ref)) return savedPath;
+
+  const topicParts = rawGitHubPathParts(topic.path);
+  if (!topicParts) return savedPath || topic.path;
+
+  let snapshotSha = isGitCommitSha(offlinePackage?.snapshotSha) ? offlinePackage.snapshotSha : null;
+  if (!snapshotSha) {
+    const imageUrls = offlinePackage?.imageUrls || [];
+    for (const imageUrl of imageUrls) {
+      const imageParts = rawGitHubPathParts(imageUrl);
+      if (imageParts?.owner === topicParts.owner && imageParts?.repository === topicParts.repository && isGitCommitSha(imageParts.ref)) {
+        snapshotSha = imageParts.ref;
+        break;
+      }
+    }
+  }
+
+  if (snapshotSha) return replaceRawGitHubRef(topic.path, snapshotSha);
+  return savedPath || topic.path;
+}
+
+function offlineEnrollmentSnapshot(enrollment) {
+  if (!enrollment) return null;
+  return {
+    id: enrollment.id,
+    catalogId: enrollment.catalogId,
+    learnerId: enrollment.learnerId,
+    sectionId: enrollment.sectionId || null,
+    progress: enrollment.progress || {},
+    settings: enrollment.settings || {},
+  };
+}
+
+const offlineDownloadTasks = new Map();
+
+function signalOfflineDownloadsChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('masteryls-offline-courses-changed'));
+}
 
 /**
  * @typedef {import('../service/service.ts').default} Service
@@ -46,6 +114,7 @@ import { decoratePulseProgressEvidence, getPulseScheduleDueItems, reconcilePulse
 function useCourseOperations(user, setUser, service, learningSession, setLearningSession, setSettings, observeSession = null) {
   const { showAlert } = useAlert();
   const courseCache = React.useRef(new Map());
+  const courseLoadPromises = React.useRef(new Map());
   const discussionToggleHandler = React.useRef(null);
   const canvasMembershipChecker = React.useRef(createCanvasCourseMembershipChecker({ checkLearnerEligibility: (params) => service.checkCanvasGradebookEligibility(params) }));
   // Coalesces posting course mastery to the Canvas "Reading interactions" assignment so frequent
@@ -62,7 +131,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   React.useEffect(() => {
     let active = true;
     (async () => {
-      if (!eligibilityCanvasCourseId || !user) {
+      if (!eligibilityCanvasCourseId || !user || learningSession?.course?.offlineCached || (typeof navigator !== 'undefined' && !navigator.onLine)) {
         if (active) setCanSubmitToCanvasGradebook(false);
         return;
       }
@@ -78,13 +147,16 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   // last debounced value always lands even if the debounce window hasn't elapsed.
   React.useEffect(() => {
     const flush = () => masteryCanvasSync.current.flush();
+    const onOnline = () => flush();
     const onVisibility = () => {
       if (typeof document !== 'undefined' && document.hidden) flush();
     };
     window.addEventListener('pagehide', flush);
+    window.addEventListener('online', onOnline);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('pagehide', flush);
+      window.removeEventListener('online', onOnline);
       document.removeEventListener('visibilitychange', onVisibility);
       flush();
     };
@@ -190,23 +262,63 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     const canEditCourse = user?.isEditor(courseId);
     let isEnrolledLearner = false;
     if (!isPublished && !canEditCourse && user?.id) {
-      const enrollment = await service.enrollment(user.id, courseId);
-      isEnrolledLearner = !!enrollment;
+      isEnrolledLearner = Boolean(await findOfflineCourse(courseId, user.id));
+      if (!isEnrolledLearner && (typeof navigator === 'undefined' || navigator.onLine)) {
+        const enrollment = await service.enrollment(user.id, courseId);
+        isEnrolledLearner = !!enrollment;
+      }
     }
 
     if (!isPublished && !canEditCourse && !isEnrolledLearner) {
       return null;
     }
 
-    if (!courseCache.current.has(courseId)) {
-      const course = await Course.load(courseEntry, {
-        snapshotRefResolver: async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }),
-      });
+    const cachedCourse = courseCache.current.get(courseId);
+    if (cachedCourse && (!cachedCourse.offlineCached || (typeof navigator !== 'undefined' && !navigator.onLine))) {
+      return cachedCourse;
+    }
+    // A course opened from its saved package stays in this session's cache after reconnecting.
+    // Drop that copy so the online route can reload current course data and clear offline mode.
+    if (cachedCourse?.offlineCached && (typeof navigator === 'undefined' || navigator.onLine)) {
+      courseCache.current.delete(courseId);
+    }
+    if (courseLoadPromises.current.has(courseId)) return courseLoadPromises.current.get(courseId);
+
+    const loadPromise = (async () => {
+      const useOfflinePackage = async () => {
+        const cached = await findOfflineCourse(courseId, user?.id);
+        if (!cached?.course) return null;
+        const offlineCourse = new Course(cached.course);
+        for (const topic of offlineCourse.allTopics) {
+          topic.snapshotPath = offlineTopicSnapshotPath(topic, cached);
+        }
+        offlineCourse.offlineCached = true;
+        offlineCourse.sections = cached.sections || [];
+        offlineCourse.schedules = cached.schedules || [];
+        offlineCourse.markdownCache = new Map();
+        courseCache.current.set(courseId, offlineCourse);
+        return offlineCourse;
+      };
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return useOfflinePackage();
+      }
+      let course;
+      try {
+        course = await Course.load(courseEntry, {
+          snapshotRefResolver: async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }),
+        });
+      } catch (error) {
+        const cached = await useOfflinePackage();
+        if (cached) return cached;
+        throw error;
+      }
+      if (!course) return useOfflinePackage();
       if (course) {
         // Attach the DB-backed Term/Schedule/Section rows so schedule resolution can derive a
         // learner's schedule from their section. Best-effort: a failure leaves these empty and the
         // legacy course.json schedule-file path is used (dual-read fallback).
         try {
+          if (typeof navigator !== 'undefined' && !navigator.onLine) throw new Error('Offline');
           const [sections, schedules] = await Promise.all([service.getCourseSections(courseId), service.getCourseSchedules(courseId)]);
           course.sections = sections;
           course.schedules = schedules;
@@ -217,8 +329,13 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         courseCache.current.set(courseId, course);
       }
       return course;
+    })();
+    courseLoadPromises.current.set(courseId, loadPromise);
+    try {
+      return await loadPromise;
+    } finally {
+      if (courseLoadPromises.current.get(courseId) === loadPromise) courseLoadPromises.current.delete(courseId);
     }
-    return courseCache.current.get(courseId);
   }
 
   async function searchCourse(query) {
@@ -591,6 +708,12 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   async function getTopic(topic, commit = null) {
     if (!topic || topic?.type === 'video' || topic?.type === 'embedded') return '';
 
+    if (learningSession?.course?.offlineCached || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      const cached = await findOfflineCourse(learningSession?.course?.id, user?.id);
+      if (cached) topic.snapshotPath = offlineTopicSnapshotPath(topic, cached);
+      return cached?.contents?.[topic.id] || '';
+    }
+
     let url = topic.path;
     if (commit) {
       url = topic.path.replace(/(\/main\/)/, `/${commit}/`);
@@ -612,6 +735,101 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     }
 
     return markdown;
+  }
+
+  function downloadCourseOffline(courseId, enrollment = null) {
+    const taskKey = `${user?.id || 'anonymous'}:${courseId}`;
+    if (offlineDownloadTasks.has(taskKey)) return offlineDownloadTasks.get(taskKey);
+    const task = performOfflineCourseDownload(courseId, enrollment).finally(() => {
+      if (offlineDownloadTasks.get(taskKey) === task) offlineDownloadTasks.delete(taskKey);
+      signalOfflineDownloadsChanged();
+    });
+    offlineDownloadTasks.set(taskKey, task);
+    signalOfflineDownloadsChanged();
+    return task;
+  }
+
+  function isOfflineCourseDownloading(courseId) {
+    return offlineDownloadTasks.has(`${user?.id || 'anonymous'}:${courseId}`);
+  }
+
+  async function performOfflineCourseDownload(courseId, enrollment = null) {
+    if (!navigator.onLine || !user?.id) throw new Error('Connect to the internet and sign in to download a course.');
+    const previousPackage = await findOfflineCourse(courseId, user.id);
+    const course = await getCourse(courseId);
+    if (!course) throw new Error('Course is unavailable.');
+    const catalogEntry = service.catalogEntry(courseId);
+    const contents = {};
+    const topicSnapshotUrls = {};
+    const imageUrls = new Set();
+    let imageBytes = 0;
+    for (const topic of course.allTopics) {
+      if (topic.state === 'published' && !['video', 'embedded'].includes(topic.type)) {
+        const markdown = await getTopic(topic);
+        contents[topic.id] = markdown;
+        topicSnapshotUrls[topic.id] = topic.snapshotPath || topic.path;
+        collectOfflineImageUrls(markdown, topicSnapshotUrls[topic.id], imageUrls);
+      }
+    }
+    const scheduleTopic = getScheduleTopic(course, enrollment?.sectionId);
+    const scheduleFiles = scheduleTopic ? getScheduleFiles(scheduleTopic, course, enrollment?.sectionId) : [];
+    const scheduleContent = {};
+    const scheduleSnapshotUrls = {};
+    for (const file of scheduleFiles) {
+      scheduleContent[file.id] = await getScheduleTopicContent(scheduleTopic, file.id, false, course, enrollment?.sectionId || null);
+      scheduleSnapshotUrls[file.id] = scheduleTopic.snapshotPath || file.rawUrl;
+      collectOfflineImageUrls(scheduleContent[file.id], scheduleSnapshotUrls[file.id], imageUrls);
+    }
+    for (const url of imageUrls) {
+      try {
+        let response;
+        try { response = await fetch(url); }
+        catch { response = await fetch(url, { mode: 'no-cors' }); }
+        if (response.ok || response.type === 'opaque') {
+          const image = response.clone();
+          if (typeof caches !== 'undefined') await (await caches.open('static-assets')).put(url, image);
+          const declaredSize = Number(response.headers.get('content-length'));
+          imageBytes += Number.isFinite(declaredSize) && declaredSize > 0 ? declaredSize : (await response.blob()).size;
+        }
+      } catch { /* an image may be unavailable offline; the text remains useful */ }
+    }
+    const publishedModules = (course.modules || []).map((module) => ({
+      ...module,
+      topics: (module.topics || []).filter((topic) => topic.state === 'published' && !['video', 'embedded'].includes(topic.type)),
+    })).filter((module) => module.topics.length > 0);
+    const serialCourse = { ...course, modules: publishedModules, allTopics: undefined, markdownCache: undefined };
+    const sizeBytes = new Blob([JSON.stringify({ serialCourse, contents, scheduleContent })]).size + imageBytes;
+    const enrollmentSnapshot = offlineEnrollmentSnapshot(enrollment);
+    const snapshotPath = course.allTopics.find((topic) => topicSnapshotUrls[topic.id])?.snapshotPath;
+    const snapshotSha = rawGitHubPathParts(snapshotPath)?.ref || '';
+    await saveOfflineCourse({ courseId, ownerId: user.id, sectionId: enrollment?.sectionId || null, enrollment: enrollmentSnapshot, catalogEntry, course: serialCourse, contents, topicSnapshotUrls, scheduleFiles, scheduleContent, scheduleSnapshotUrls, sections: course.sections || [], schedules: course.schedules || [], imageUrls: [...imageUrls], snapshotSha, downloadedAt: new Date().toISOString(), sizeBytes });
+    if (previousPackage && typeof caches !== 'undefined') {
+      const referencedImages = new Set((await listOfflineCourses()).flatMap((item) => item.imageUrls || []));
+      const cache = await caches.open('static-assets');
+      for (const url of previousPackage.imageUrls || []) if (!referencedImages.has(url)) await cache.delete(url);
+    }
+    signalOfflineDownloadsChanged();
+    return { sizeBytes };
+  }
+
+  async function getOfflineCourses() { return (await listOfflineCourses()).filter((item) => item.ownerId === user?.id); }
+  async function updateOfflineEnrollmentSnapshot(courseId, enrollment) {
+    const existing = await findOfflineCourse(courseId, user?.id);
+    if (!existing || !enrollment) return;
+    await saveOfflineCourse({ ...existing, enrollment: offlineEnrollmentSnapshot(enrollment) });
+  }
+  async function deleteOfflineCourse(courseId) {
+    const existing = await findOfflineCourse(courseId, user?.id);
+    if (!existing) return;
+    await removeOfflineCourse(courseId, user.id);
+    if (typeof caches !== 'undefined') {
+      const remainingImageUrls = new Set((await listOfflineCourses()).flatMap((item) => item.imageUrls || []));
+      const cache = await caches.open('static-assets');
+      for (const url of existing.imageUrls || []) {
+        if (!remainingImageUrls.has(url)) await cache.delete(url);
+      }
+    }
+    signalOfflineDownloadsChanged();
   }
 
   // Load a topic's LATEST content (default-branch HEAD, bypassing the per-session read snapshot) plus
@@ -788,14 +1006,14 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
 
   // The descriptor id a LEARNER is locked to via their section (null for an overseer picker). In DB
   // mode this is the schedule row's id; in legacy mode it is the matching course.json file id.
-  function getLockedScheduleFileId(course) {
+  function getLockedScheduleFileId(course, sectionIdOverride = null) {
     if (!course?.id) return null;
     // When observing a learner, lock to that learner's section schedule (learningSession.enrollment is
     // the observed learner's enrollment). Otherwise overseers keep the picker to inspect sections, and
     // a learner is locked to their own section.
     const observing = Boolean(observeSession?.active && observeSession?.courseId === course.id);
     if (!observing && user?.canOverseeCourse?.(course.id)) return null;
-    const sectionId = learningSession?.enrollment?.sectionId;
+    const sectionId = sectionIdOverride ?? learningSession?.enrollment?.sectionId;
     if (!sectionId) return null;
     const cached = courseCache.current.get(course.id) || course;
     const resolved = resolveLearnerSchedule({ sectionId, sections: cached.sections || [], schedules: cached.schedules || [] });
@@ -803,13 +1021,13 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return _courseScheduleRows(course).length > 0 ? resolved.scheduleId || resolved.schedule.id : resolved.schedule.legacyFileId || null;
   }
 
-  function getScheduleTopic(course = learningSession?.course) {
+  function getScheduleTopic(course = learningSession?.course, sectionIdOverride = null) {
     if (!course) return null;
     const dbRows = _courseScheduleRows(course);
     const legacyFiles = Array.isArray(course.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
     if (dbRows.length === 0 && legacyFiles.length === 0) return null;
 
-    const lockedId = getLockedScheduleFileId(course);
+    const lockedId = getLockedScheduleFileId(course, sectionIdOverride);
     let title;
     let path;
     if (dbRows.length > 0) {
@@ -831,10 +1049,10 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     };
   }
 
-  function getScheduleFiles(topic = learningSession?.topic) {
-    const course = getWorkingCourse();
+  function getScheduleFiles(topic = learningSession?.topic, courseOverride = null, sectionIdOverride = null) {
+    const course = courseOverride || getWorkingCourse();
     if (!course) return [];
-    const scheduleTopic = getScheduleTopic(course);
+    const scheduleTopic = getScheduleTopic(course, sectionIdOverride);
     if (!scheduleTopic) return [];
 
     const dbRows = _courseScheduleRows(course);
@@ -842,7 +1060,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     if (dbRows.length > 0) {
       // DB schedules: the first (oldest) is treated as the default. contentPath is a GitHub URL, so
       // resolveScheduleFile derives the rawUrl/repoPath the same way it does for legacy files.
-      resolvedFiles = dbRows.map((row, index) => resolveScheduleFile(scheduleTopic, row.contentPath, row.id, row.title || 'Schedule', index === 0, { startDate: row.startDate, endDate: row.endDate }));
+      resolvedFiles = dbRows.map((row, index) => resolveScheduleFile(scheduleTopic, row.contentPath, row.id, row.title || 'Schedule', index === 0, { startDate: row.startDate, endDate: row.endDate }, course));
     } else {
       let files = Array.isArray(course.schedule?.files) ? course.schedule.files.filter((file) => file && file.path) : [];
       if (!files.length) return [];
@@ -854,13 +1072,13 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
         if (!file.id) {
           file.id = generateId();
         }
-        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default), { startDate: file.startDate, endDate: file.endDate });
+        return resolveScheduleFile(scheduleTopic, file.path, file.id || `schedule-${index + 1}`, file.title || file.path, Boolean(file.default), { startDate: file.startDate, endDate: file.endDate }, course);
       });
     }
 
     // A learner is locked to their section's schedule: expose only that one file so the read view
     // and due-date sync use it and the picker cannot switch away. Overseers see all files.
-    const lockedId = getLockedScheduleFileId(course);
+    const lockedId = getLockedScheduleFileId(course, sectionIdOverride);
     if (lockedId) {
       const locked = resolvedFiles.find((file) => file.id === lockedId);
       if (locked) {
@@ -925,7 +1143,7 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     };
 
     const scheduleTopic = getScheduleTopic(updatedCourse);
-    const resolved = resolveScheduleFile(scheduleTopic, defaultPath, defaultFileId, title, true);
+    const resolved = resolveScheduleFile(scheduleTopic, defaultPath, defaultFileId, title, true, {}, course);
     const initialMarkdown = createInitialScheduleMarkdown(title);
 
     await service.commitGitHubFile(resolved.apiUrl, initialMarkdown, token, `add(schedule) ${title}`);
@@ -1000,10 +1218,11 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
     return `| Week | Date | Module | Due | Topics Covered | Slides |\n| :--: | ---- | ------ | --- | -------------- | ------ |\n|  1   |      |        |     |                |        |\n`;
   }
 
-  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false, { startDate, endDate } = {}) {
-    const course = learningSession?.course;
-    const rawRoot = course.links.gitHub.rawUrl;
-    const apiRoot = course.links.gitHub.apiUrl;
+  function resolveScheduleFile(topic, configuredPath, id, title, isDefault = false, { startDate, endDate } = {}, courseOverride = null) {
+    const course = courseOverride || learningSession?.course || getWorkingCourse();
+    const rawRoot = course?.links?.gitHub?.rawUrl;
+    const apiRoot = course?.links?.gitHub?.apiUrl;
+    if (!rawRoot || !apiRoot) throw new Error('Course repository links are unavailable; reload the course and try again.');
     const topicRepoPath = String(topic.path || '').replace(`${rawRoot}/`, '');
     const topicDir = topicRepoPath.substring(0, topicRepoPath.lastIndexOf('/'));
 
@@ -1048,15 +1267,21 @@ function useCourseOperations(user, setUser, service, learningSession, setLearnin
   // because this is async, even a legitimate caller's own stale in-flight request (for a
   // selectedFileId that has since changed) could otherwise persist the wrong file whenever
   // it happens to resolve, regardless of resolution order.
-  async function getScheduleTopicContent(topic, fileId, forceRefresh = false) {
+  async function getScheduleTopicContent(topic, fileId, forceRefresh = false, courseOverride = null, sectionIdOverride = null) {
     if (!topic) return '';
+    if (learningSession?.course?.offlineCached || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      const cached = await findOfflineCourse(learningSession?.course?.id, user?.id);
+      topic.snapshotPath = cached?.scheduleSnapshotUrls?.[fileId] || cached?.scheduleFiles?.find((file) => file.id === fileId)?.rawUrl || topic.path;
+      return cached?.scheduleContent?.[fileId] || '';
+    }
 
-    const files = getScheduleFiles(topic);
+    const files = getScheduleFiles(topic, courseOverride, sectionIdOverride);
     const selectedFile = files.find((file) => file.id === fileId) || getSelectedScheduleFile(topic, files) || files[0];
     if (!selectedFile) return '';
 
     const token = user?.getSetting?.('gitHubToken', learningSession?.course?.id);
     const fetchUrl = await resolveSnapshotRawUrl(selectedFile.rawUrl, token, async ({ owner, repository, ref }) => service.resolveGitHubSnapshotRef({ owner, repository, ref }));
+    topic.snapshotPath = fetchUrl;
 
     if (!forceRefresh && learningSession?.course?.markdownCache.has(fetchUrl)) {
       return learningSession.course.markdownCache.get(fetchUrl);
@@ -1534,6 +1759,7 @@ Requirements:
   }
 
   async function addProgress(providedUser, interactionId, type, duration = 0, details = {}, options = {}) {
+    if (learningSession?.course?.offlineCached || (typeof navigator !== 'undefined' && !navigator.onLine)) return null;
     if (observeSession?.active && learningSession?.observeMode) {
       return null;
     }
@@ -1738,6 +1964,8 @@ Requirements:
     const course = providedCourse || learningSession?.course;
     const canvasCourseId = String(course?.externalRefs?.canvasCourseId || '').trim();
     const learnerEmail = String(progressUser?.email || '').trim();
+
+    if (course?.offlineCached || (typeof navigator !== 'undefined' && !navigator.onLine)) return false;
 
     return canvasMembershipChecker.current.isLearnerInCanvasCourse(canvasCourseId, learnerEmail, course?.id);
   }
@@ -3012,6 +3240,11 @@ Requirements:
     toggleDiscussion,
     courseCatalog,
     getCourse,
+    downloadCourseOffline,
+    isOfflineCourseDownloading,
+    getOfflineCourses,
+    updateOfflineEnrollmentSnapshot,
+    deleteOfflineCourse,
     searchCourse,
     reindexCourse,
     setCurrentCourse,

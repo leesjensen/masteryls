@@ -1,16 +1,59 @@
 import React from 'react';
-import { EyeOff, Pencil, X, Activity, CalendarDays } from 'lucide-react';
+import { EyeOff, Pencil, X, Activity, CalendarDays, Download, BookCheck, LoaderCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { handleInAppLinkClick } from '../../utils/linkNavigation.js';
 import { pulseSummaryText } from '../../utils/pulseMarkdown.js';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 
 function formatPulseDate(value) {
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export default function CourseCard({ user, catalogEntry, enrollment, masteryPercent = null, pulse = null, hasSchedule = false, select, remove }) {
+export default function CourseCard({ user, catalogEntry, enrollment, masteryPercent = null, pulse = null, hasSchedule = false, courseOps, select, remove }) {
   const navigate = useNavigate();
+  const { showConfirm } = useAlert();
+  const [offlinePackage, setOfflinePackage] = React.useState(null);
+  const [offlineBusy, setOfflineBusy] = React.useState(false);
+  const [offlineError, setOfflineError] = React.useState('');
+  React.useEffect(() => {
+    if (!enrollment || !courseOps?.getOfflineCourses) return undefined;
+    const refresh = () => {
+      setOfflineBusy(Boolean(courseOps.isOfflineCourseDownloading?.(enrollment.catalogId)));
+      courseOps.getOfflineCourses().then((items) => setOfflinePackage(items.find((item) => item.courseId === enrollment.catalogId) || null)).catch(() => {});
+    };
+    refresh();
+    window.addEventListener('masteryls-offline-courses-changed', refresh);
+    return () => window.removeEventListener('masteryls-offline-courses-changed', refresh);
+  }, [courseOps, enrollment?.catalogId]);
+  async function toggleOffline() {
+    setOfflineBusy(true);
+    setOfflineError('');
+    try {
+      if (offlinePackage) {
+        const shouldRemove = await showConfirm({
+          title: 'Remove offline download?',
+          message: 'This removes the saved course topics, images, and schedule from this device. You can download them again later.',
+          confirmButtonText: 'Remove download',
+          cancelButtonText: 'Keep download',
+          danger: true,
+        });
+        if (!shouldRemove) return;
+        await courseOps.deleteOfflineCourse(enrollment.catalogId);
+        setOfflinePackage(null);
+      } else {
+        const shouldDownload = await showConfirm({
+          title: 'Download course for offline reading?',
+          message: 'This saves the course topics, images, and schedule on this device. The download may take a few minutes and use bandwidth or mobile data.',
+          confirmButtonText: 'Download',
+          cancelButtonText: 'Cancel',
+        });
+        if (!shouldDownload) return;
+        setOfflinePackage({ ...(await courseOps.downloadCourseOffline(enrollment.catalogId, enrollment)), courseId: enrollment.catalogId });
+      }
+    } catch (error) { setOfflineError(error.message || 'Unable to save this course offline.'); }
+    finally { setOfflineBusy(false); }
+  }
   const displayMastery = Number.isFinite(Number(masteryPercent)) ? Math.max(0, Math.min(100, Math.round(Number(masteryPercent)))) : Number.isFinite(Number(enrollment?.progress?.mastery)) ? Math.max(0, Math.min(100, Math.round(Number(enrollment.progress.mastery)))) : 0;
 
   const colorGenerator = (title) => {
@@ -58,6 +101,18 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
             <Pencil size={16} />
           </span>
         </div>
+      )}
+      {enrollment && (
+        <button
+          type="button"
+          disabled={offlineBusy || ((typeof navigator === 'undefined' || !navigator.onLine) && !offlinePackage)}
+          onClick={(e) => { e.stopPropagation(); void toggleOffline(); }}
+          aria-label={offlinePackage ? 'Remove offline download' : 'Make course available offline'}
+          title={offlinePackage ? 'Available offline — click to remove' : offlineBusy ? 'Downloading course content' : 'Make available offline'}
+          className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {offlineBusy ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : offlinePackage ? <BookCheck size={16} aria-hidden="true" /> : <Download size={15} aria-hidden="true" />}
+        </button>
       )}
       {enrollment && hasSchedule && (
         <a
@@ -141,6 +196,7 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
             <div className="h-full rounded bg-blue-500 transition-all duration-300" style={{ width: `${displayMastery}%` }} />
           </div>
         </div>
+        {offlineError && <p role="alert" className="relative z-10 mt-2 text-xs text-rose-700">{offlineError}</p>}
       </div>
       {overlay}
     </div>

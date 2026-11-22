@@ -10,6 +10,17 @@ import DraInstruction from './dra/draInstruction';
 import InterviewInstruction from './interview/interviewInstruction';
 import useProgressTracking from '../../hooks/useProgressTracking';
 import { replaceAllInteractionProgress } from './interaction/interactionProgressStore';
+import useOnlineStatus from '../../hooks/useOnlineStatus.js';
+import OfflineNotice from '../OfflineNotice.jsx';
+
+function OfflineUnavailable({ title }) {
+  return (
+    <section className="mx-auto w-full max-w-4xl p-4" aria-labelledby="offline-topic-title">
+      <h1 id="offline-topic-title" className="mb-3 text-2xl font-semibold">{title}</h1>
+      <OfflineNotice message="Content not available while offline." />
+    </section>
+  );
+}
 
 // A `= {}` default parameter evaluates to a NEW object on every call when the caller
 // doesn't pass previewFileUrls (the normal student-viewing route never does). That fresh
@@ -17,8 +28,12 @@ import { replaceAllInteractionProgress } from './interaction/interactionProgress
 // array, making it think something changed and re-fetch/fade on every render (e.g. every
 // progress heartbeat). A stable module-level default fixes that.
 const EMPTY_PREVIEW_FILE_URLS = {};
+// Schedules are stored separately in the offline package and read through
+// getScheduleTopicContent, so they remain available alongside reading topics.
+const OFFLINE_READABLE_TOPIC_TYPES = new Set(['instruction', 'project', 'schedule']);
 
 export default function Instruction({ courseOps, learningSession, user, content = null, instructionState = 'learning', previewFileUrls = EMPTY_PREVIEW_FILE_URLS }) {
+  const isOnline = useOnlineStatus();
   const [loadingProgress, setLoadingProgress] = React.useState(true);
 
   React.useEffect(() => {
@@ -27,6 +42,10 @@ export default function Instruction({ courseOps, learningSession, user, content 
     // quick succession) before this fetch resolves, a stale response must not overwrite the
     // interaction store with the wrong learner's answers.
     let cancelled = false;
+    if (learningSession.course?.offlineCached || !isOnline) {
+      setLoadingProgress(false);
+      return () => { cancelled = true; };
+    }
     // The attendance and Terms & Sections views are synthetic topics with no interactions.
     if (learningSession.topic?.type === 'attendance' || learningSession.topic?.type === 'sections' || learningSession.topic?.type === 'mastery') {
       setLoadingProgress(false);
@@ -49,21 +68,30 @@ export default function Instruction({ courseOps, learningSession, user, content 
     return () => {
       cancelled = true;
     };
-  }, [learningSession.topic?.id, learningSession.enrollment?.id]);
+  }, [learningSession.topic?.id, learningSession.enrollment?.id, learningSession.course?.offlineCached, isOnline]);
 
   useProgressTracking({
     progressType: `${learningSession.topic.type || 'instruction'}View`,
     onProgress: courseOps?.addProgress,
-    enabled: !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && learningSession.topic?.type !== 'mastery' && !!courseOps?.addProgress,
+    enabled: isOnline && !learningSession.course?.offlineCached && !content && !!learningSession.topic?.path && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && learningSession.topic?.type !== 'mastery' && !!courseOps?.addProgress,
     minDuration: 10,
     dependencies: [learningSession.course?.id, learningSession.enrollment?.id, learningSession.topic?.id, learningSession.topic?.path],
   });
+
+  const offline = Boolean(learningSession.course?.offlineCached) || !isOnline;
+  const topic = learningSession.topic;
+  // Older course definitions can omit `type`; the editor and progress tracking both
+  // treat that as the default instruction type, so offline reading must do the same.
+  const topicType = topic?.type || 'instruction';
+  if (offline && topic && !OFFLINE_READABLE_TOPIC_TYPES.has(topicType)) {
+    return <OfflineUnavailable title={topic.title} />;
+  }
 
   if (loadingProgress) {
     return null;
   }
 
-  const contentAvailable = learningSession.topic && learningSession.topic.path && (!learningSession.topic.state || learningSession.topic.state === 'published');
+  const contentAvailable = topic && topic.path && (!topic.state || topic.state === 'published');
   if (!contentAvailable) {
     return null;
   }

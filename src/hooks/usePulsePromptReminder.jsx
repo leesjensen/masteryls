@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isWithinScheduleWindow, shouldPromptForPulse } from '../utils/pulsePromptSchedule.js';
+import useOnlineStatus from './useOnlineStatus.js';
 
 // Per-device throttle state ({ lastPulseAt, lastPromptedAt }) lives inside the course's local
 // `uiSettings` blob (`uiSettings-<courseId>`), so it is scoped per course like the rest of the
@@ -30,6 +31,7 @@ export function writePulsePromptState(service, courseId, patch) {
  * schedule window, when reminders aren't opted out, and subject to the 7-day / 24-hour throttle.
  */
 export default function usePulsePromptReminder({ courseOps, learningSession }) {
+  const isOnline = useOnlineStatus();
   const navigate = useNavigate();
   const [visible, setVisible] = React.useState(false);
   const [dismissed, setDismissed] = React.useState(false);
@@ -53,7 +55,7 @@ export default function usePulsePromptReminder({ courseOps, learningSession }) {
   React.useEffect(() => {
     setVisible(false);
     setDismissed(false);
-    if (!isOwnLearner || pulsePromptsDisabled || !scheduleActive) return undefined;
+    if (!isOnline || course?.offlineCached || !isOwnLearner || pulsePromptsDisabled || !scheduleActive) return undefined;
 
     let cancelled = false;
     (async () => {
@@ -79,7 +81,7 @@ export default function usePulsePromptReminder({ courseOps, learningSession }) {
     return () => {
       cancelled = true;
     };
-  }, [enrollment?.id, isOwnLearner, pulsePromptsDisabled, scheduleActive]);
+  }, [enrollment?.id, isOwnLearner, isOnline, pulsePromptsDisabled, scheduleActive]);
 
   const openPulse = () => {
     setVisible(false);

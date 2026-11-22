@@ -60,7 +60,14 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: ({ request }) => request.destination === 'image' || request.destination === 'style' || request.destination === 'script',
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-assets',
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === 'style' || request.destination === 'script',
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'static-assets',

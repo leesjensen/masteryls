@@ -10,6 +10,32 @@ import { deriveProgressSummary } from '../../utils/progressSummary.js';
 import { enrollableSections } from '../../utils/sectionEnrollment.js';
 import { resolveLearnerSchedule } from '../../utils/scheduleResolution.js';
 
+function formatOfflineSize(bytes = 0) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function offlineEnrollmentFromPackage(coursePackage, user) {
+  const courseId = coursePackage.courseId;
+  const savedEnrollment = coursePackage.enrollment || {};
+  const catalogEntry = coursePackage.catalogEntry || {
+    id: courseId,
+    title: coursePackage.course?.title || 'Downloaded course',
+    description: coursePackage.course?.description || '',
+    settings: coursePackage.course?.settings || {},
+  };
+  return {
+    ...savedEnrollment,
+    id: savedEnrollment.id || `offline-${courseId}`,
+    catalogId: courseId,
+    learnerId: savedEnrollment.learnerId || user.id,
+    sectionId: savedEnrollment.sectionId ?? coursePackage.sectionId ?? null,
+    progress: savedEnrollment.progress || {},
+    settings: savedEnrollment.settings || {},
+    catalogEntry,
+  };
+}
+
 export default function DashboardView({ courseOps, service, user }) {
   if (!user) return null;
 
@@ -22,6 +48,8 @@ export default function DashboardView({ courseOps, service, user }) {
   // icon so it only appears once resolved (never flickers on then off).
   const [enrollmentHasSchedule, setEnrollmentHasSchedule] = useState(new Map());
   const [enrollmentPulses, setEnrollmentPulses] = useState(new Map());
+  const [offlineCourses, setOfflineCourses] = useState([]);
+  const [dashboardOffline, setDashboardOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
   const dialogRef = useRef(null);
   // Section picker shown when enrolling in a course that has more than one section.
   const [sectionEnroll, setSectionEnroll] = useState(null); // { catalogEntry, sections }
@@ -33,11 +61,68 @@ export default function DashboardView({ courseOps, service, user }) {
       if (user.isRoot) {
         updateAppBar({ title: `${user.name}'s Dashboard`, tools: null });
       }
-      service.enrollments(user.id).then((learnerEnrollments) => {
+      const loadEnrollments = () => service.enrollments(user.id).then((learnerEnrollments) => {
         setEnrollments(learnerEnrollments);
+        setDashboardOffline(false);
+      }).catch(() => {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          void loadOfflineDashboard();
+          return;
+        }
+        setDashboardOffline(true);
+        setEnrollments(new Map());
       });
+      const loadOfflineDashboard = async () => {
+        setDashboardOffline(true);
+        try {
+          const items = await courseOps.getOfflineCourses?.() || [];
+          setOfflineCourses(items);
+          setEnrollments(new Map(items.map((item) => {
+            const enrollment = offlineEnrollmentFromPackage(item, user);
+            return [enrollment.catalogId, enrollment];
+          })));
+        } catch {
+          setOfflineCourses([]);
+          setEnrollments(new Map());
+        }
+      };
+      if (typeof navigator === 'undefined' || navigator.onLine) loadEnrollments();
+      else void loadOfflineDashboard();
+      const refreshOfflineCourses = () => {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) void loadOfflineDashboard();
+        else courseOps.getOfflineCourses?.().then(setOfflineCourses).catch(() => setOfflineCourses([]));
+      };
+      const handleOffline = () => { void loadOfflineDashboard(); };
+      const handleOnline = () => loadEnrollments();
+      courseOps.getOfflineCourses?.().then(setOfflineCourses).catch(() => setOfflineCourses([]));
+      window.addEventListener('masteryls-offline-courses-changed', refreshOfflineCourses);
+      window.addEventListener('offline', handleOffline);
+      window.addEventListener('online', handleOnline);
+      return () => {
+        window.removeEventListener('masteryls-offline-courses-changed', refreshOfflineCourses);
+        window.removeEventListener('offline', handleOffline);
+        window.removeEventListener('online', handleOnline);
+      };
     }
   }, [user]);
+
+  React.useEffect(() => {
+    if (dashboardOffline || !enrollments || !courseOps?.updateOfflineEnrollmentSnapshot) return;
+    for (const coursePackage of offlineCourses) {
+      const enrollment = enrollments.get(coursePackage.courseId);
+      if (enrollment) {
+        courseOps.updateOfflineEnrollmentSnapshot(coursePackage.courseId, enrollment).catch(() => {});
+      }
+    }
+  // The operation API object is recreated on render; package and enrollment snapshots are the
+  // meaningful inputs, and the update itself does not emit a package-change event.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardOffline, enrollments, offlineCourses]);
+
+  async function removeOfflineCourse(courseId) {
+    await courseOps.deleteOfflineCourse(courseId);
+    setOfflineCourses((items) => items.filter((item) => item.courseId !== courseId));
+  }
 
   React.useEffect(() => {
     let cancelled = false;
@@ -68,7 +153,7 @@ export default function DashboardView({ courseOps, service, user }) {
 
       if (!cancelled) {
         setEnrollmentSummaries(summaries);
-        setEnrollmentHasSchedule(hasSchedule);
+        setEnrollmentHasSchedule(dashboardOffline ? new Map() : hasSchedule);
       }
     }
 
@@ -77,7 +162,10 @@ export default function DashboardView({ courseOps, service, user }) {
     return () => {
       cancelled = true;
     };
-  }, [courseOps, enrollments]);
+  // `courseOps` is a freshly composed API object on each render. Enrollment changes are the
+  // meaningful trigger; including that object here re-ran course loading on every state update.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enrollments, dashboardOffline]);
 
   // Surface each enrollment's most recent learner pulse on its card (replacing the course blurb). A
   // single query fetches the latest per enrollment; failures are non-fatal (cards fall back to the
@@ -87,7 +175,7 @@ export default function DashboardView({ courseOps, service, user }) {
 
     async function loadEnrollmentPulses() {
       const ids = enrollments ? Array.from(enrollments.values()).map((enrollment) => enrollment.id) : [];
-      if (ids.length === 0) {
+      if (dashboardOffline || ids.length === 0) {
         setEnrollmentPulses(new Map());
         return;
       }
@@ -104,7 +192,7 @@ export default function DashboardView({ courseOps, service, user }) {
     return () => {
       cancelled = true;
     };
-  }, [service, enrollments]);
+  }, [service, enrollments, dashboardOffline]);
 
   const enrollInCourse = async (catalogEntry, sectionId) => {
     const cardColor = pickEnrollmentCardColor(enrollments);
@@ -195,6 +283,10 @@ export default function DashboardView({ courseOps, service, user }) {
         activeEnrollmentCount++;
       }
 
+      if (dashboardOffline) {
+        return !showCompleted || summary.mastery >= 100;
+      }
+
       if (summary.mastery >= 100) {
         return showCompleted;
       }
@@ -232,16 +324,34 @@ export default function DashboardView({ courseOps, service, user }) {
   const catalog = courseOps.courseCatalog();
   const [activeEnrollmentCount, completedEnrollmentCount, visibleEnrollments] = getEnrollmentsByType();
   const visibleAvailable = getVisibleUnenrolledCourses(catalog);
+  const offlineManagerCourses = offlineCourses.filter((item) => !Array.from(enrollments.values()).some((enrollment) => enrollment.catalogId === item.courseId));
 
   return (
     <>
       <div className="flex-1 overflow-auto bg-white p-6 sm:p-8">
         <div className="mx-auto max-w-7xl space-y-6">
+          {offlineManagerCourses.length > 0 && <section aria-labelledby="offline-courses-heading" className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div><h2 id="offline-courses-heading" className="font-semibold text-slate-900">Available offline</h2><p className="text-sm text-slate-600">Downloaded reading stays on this device until you remove it.</p></div>
+              <span className="text-xs text-slate-500">{offlineManagerCourses.length} course{offlineManagerCourses.length === 1 ? '' : 's'}</span>
+            </div>
+            <ul className="divide-y divide-blue-100">
+              {offlineManagerCourses.map((item) => {
+                const title = item.catalogEntry?.title || item.course?.title || 'Downloaded course';
+                const firstTopic = item.course?.modules?.flatMap((module) => module.topics || [])[0];
+                const openHref = firstTopic ? `/course/${item.courseId}/topic/${firstTopic.id}` : `/course/${item.courseId}/schedule`;
+                return <li key={item.courseId} className="flex items-center justify-between gap-3 py-2">
+                  <a href={openHref} className="min-w-0 truncate font-medium text-blue-700 hover:underline">{title}</a>
+                  <div className="flex shrink-0 items-center gap-3 text-xs text-slate-500"><span>{formatOfflineSize(item.sizeBytes)}</span><button type="button" onClick={() => removeOfflineCourse(item.courseId)} className="font-medium text-slate-600 underline hover:text-rose-700">Remove</button></div>
+                </li>;
+              })}
+            </ul>
+          </section>}
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="text-xl mb-6">
               <h1 className="text-slate-800">
                 <GraduationCap className="inline mr-2" />
-                {`You are enrolled in ${enrollments.size} course${enrollments.size > 1 ? 's' : ''}`}
+                {dashboardOffline ? 'Your saved course downloads' : `You are enrolled in ${enrollments.size} course${enrollments.size > 1 ? 's' : ''}`}
               </h1>
               <div className="mt-4 grid-cols-4 gap-2 hidden sm:grid">
                 <DashboardStat label="Active" value={activeEnrollmentCount} />
@@ -251,15 +361,15 @@ export default function DashboardView({ courseOps, service, user }) {
             {visibleEnrollments.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {visibleEnrollments.map((enrollment) => (
-                  <CourseCard user={user} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} masteryPercent={enrollmentSummaries.get(enrollment.catalogId)?.mastery} pulse={enrollmentPulses.get(enrollment.id) || null} hasSchedule={enrollmentHasSchedule.get(enrollment.catalogId) || false} remove={() => requestedEnrollmentRemoval(enrollment)} />
+                  <CourseCard user={user} courseOps={courseOps} key={enrollment.id} catalogEntry={enrollment.catalogEntry} enrollment={enrollment} masteryPercent={enrollmentSummaries.get(enrollment.catalogId)?.mastery} pulse={enrollmentPulses.get(enrollment.id) || null} hasSchedule={enrollmentHasSchedule.get(enrollment.catalogId) || false} remove={dashboardOffline ? null : () => requestedEnrollmentRemoval(enrollment)} />
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">You are not enrolled in any courses yet. Join one below to get started.</div>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{dashboardOffline ? 'No enrolled courses are saved for offline use. Connect to the internet to load your courses.' : 'You are not enrolled in any courses yet. Join one below to get started.'}</div>
             )}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          {!dashboardOffline && <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h1 className="text-xl text-slate-800 flex items-center justify-between">
               <span>
                 <BookSearch className="inline mr-2" />
@@ -282,7 +392,7 @@ export default function DashboardView({ courseOps, service, user }) {
             ) : (
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500">{userSearch?.length ? 'No available courses match your search.' : 'You are enrolled in every published course.'}</div>
             )}
-          </section>
+          </section>}
         </div>
       </div>
       <ConfirmDialog

@@ -6,7 +6,9 @@ MasteryLS combines GitHub-based course authoring, interactive learning, progress
 
 ## Learn on the web or install the app
 
-MasteryLS works in modern desktop and mobile browsers. It can also be installed as a progressive web app (PWA) from a supported browser. Installation adds an app-style shortcut; offline access depends on the page and files already cached on the device.
+MasteryLS works in modern desktop and mobile browsers. It can also be installed as a progressive web app (PWA) from a supported browser. From an enrolled course card, select the download icon beside the schedule icon and confirm to save its published text topics, resolved course schedule, and referenced images on this device. A check icon indicates a saved course; select it to remove the download. The download may take a few minutes and use bandwidth. It can continue while navigating within MasteryLS, but closing or reloading the app interrupts it. While offline, the dashboard keeps its course-card layout and shows only courses saved on this device. Downloads are tied to the signed-in account on this device and remain until removed; signing out does not erase them.
+
+Offline mode is for reading. An **Offline** chip in the app bar indicates connection status and explains what needs a connection in its tooltip. Topics with the **instruction** and **project** types are readable offline; other topic types show that their content is unavailable. Interactions embedded in these topics show their title and an offline-unavailable message without revealing the activity. Submissions, progress updates, attendance, editing, AI tools, and other server-backed actions require a connection. A course download does not include video or embedded media. Reconnect before expecting new content or account changes to appear.
 
 The **About** page shows the deployed version and includes **Check for updates**. When a newer version is available, the app applies the service-worker update and reloads.
 

@@ -1,6 +1,8 @@
 import React from 'react';
-import { Download, Share, PlusSquare, RefreshCw, WifiOff, X } from 'lucide-react';
+import { Download, Share, PlusSquare, RefreshCw, X } from 'lucide-react';
 import usePwaInstall from '../hooks/usePwaInstall.jsx';
+import useOnlineStatus from '../hooks/useOnlineStatus.js';
+import OfflineNotice from './OfflineNotice.jsx';
 
 export function PwaInstallButton() {
   const { canPromptInstall, showIosInstructions, promptInstall } = usePwaInstall();
@@ -74,19 +76,10 @@ function IosInstallModal({ onClose }) {
 }
 
 export function PwaStatusToasts() {
-  const [offline, setOffline] = React.useState(() => (typeof navigator !== 'undefined' ? !navigator.onLine : false));
   const [offlineReady, setOfflineReady] = React.useState(false);
   const [updateAction, setUpdateAction] = React.useState(null);
 
   React.useEffect(() => {
-    function handleOnline() {
-      setOffline(false);
-    }
-
-    function handleOffline() {
-      setOffline(true);
-    }
-
     function handleOfflineReady() {
       setOfflineReady(true);
     }
@@ -95,14 +88,10 @@ export function PwaStatusToasts() {
       setUpdateAction(() => event.detail?.updateSW || null);
     }
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
     window.addEventListener('pwa-offline-ready', handleOfflineReady);
     window.addEventListener('pwa-update-available', handleUpdateAvailable);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
       window.removeEventListener('pwa-offline-ready', handleOfflineReady);
       window.removeEventListener('pwa-update-available', handleUpdateAvailable);
     };
@@ -110,15 +99,6 @@ export function PwaStatusToasts() {
 
   return (
     <>
-      {offline && (
-        <div className="fixed inset-x-0 top-[42px] z-[9996] flex justify-center px-3">
-          <div className="mt-2 inline-flex max-w-xl items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-900 shadow-sm">
-            <WifiOff size={14} />
-            <span>You are offline. MasteryLS can open, but course content, submissions, and AI features still require a connection.</span>
-          </div>
-        </div>
-      )}
-
       {(offlineReady || updateAction) && (
         <div className="fixed inset-x-0 bottom-4 z-[9996] flex justify-center px-3">
           <div className="flex max-w-xl items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-lg">
@@ -148,4 +128,13 @@ export function PwaStatusToasts() {
       )}
     </>
   );
+}
+
+export function PwaOfflineStatusChip() {
+  const online = useOnlineStatus();
+  const offline = !online;
+  if (!offline) return null;
+
+  const tooltip = 'Offline: saved course reading is available. Submissions, progress, attendance, editing, discussions, AI, Canvas, and mastery need a connection.';
+  return <OfflineNotice message="Offline" variant="chip" tooltip={tooltip} />;
 }

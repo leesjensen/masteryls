@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "preview": "vite preview",
     "test": "playwright test",
     "test:unit": "node --test --test-reporter=spec 'src/**/*.test.js'",
     "test:edge-auth": "node --test --test-reporter=spec install/supabase/functions/canvas/handler.test.js install/supabase/functions/canvasgradebook/handler.test.js install/supabase/functions/urlvalidator/handler.test.js install/supabase/functions/masteryoverview/handler.test.js install/supabase/functions/progressrecord/handler.test.js install/supabase/functions/telemetry/handler.test.js install/supabase/functions/telemetryflush/handler.test.js install/supabase/functions/logpush/handler.test.js",

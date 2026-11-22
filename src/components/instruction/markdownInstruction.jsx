@@ -6,6 +6,7 @@ import Markdown from '../../components/Markdown';
 import { scrollToAnchor, scrollToTextFragment } from '../../utils/utils';
 import Splitter from '../../components/Splitter.jsx';
 import useMarkdownLocation from '../../hooks/useMarkdownLocation';
+import useOnlineStatus from '../../hooks/useOnlineStatus.js';
 
 import '../markdown.css';
 
@@ -16,6 +17,7 @@ import '../markdown.css';
 const EMPTY_PREVIEW_FILE_URLS = {};
 
 export default function MarkdownInstruction({ courseOps, learningSession, user, languagePlugins = [], content = null, instructionState = 'learning', previewFileUrls = EMPTY_PREVIEW_FILE_URLS }) {
+  const isOnline = useOnlineStatus();
   const isObserveReadOnly = Boolean(learningSession?.observeMode);
   const [markdown, setMarkdown] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +30,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   const containerRef = React.useRef(null);
   const location = useLocation();
   const restoreScrollPosition = useMarkdownLocation(learningSession.topic.id, containerRef);
-  const canDiscuss = user && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule';
+  const canDiscuss = user && isOnline && !learningSession?.course?.offlineCached && instructionState === 'learning' && learningSession?.topic?.type !== 'schedule';
   // Schedule tables read best edge-to-edge: drop the centered reading-column cap
   // so a wide schedule fills the available width and large screens avoid
   // horizontal scrolling. Other topic prose keeps the comfortable 880px measure.
@@ -46,7 +48,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
 
   useEffect(() => {
     if (content) {
-      load(content, learningSession.topic.path);
+      load(content, learningSession.topic.snapshotPath || learningSession.topic.path);
       return;
     }
 
@@ -65,7 +67,7 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
       if (!isLoading) {
         setIsLoading(true);
         courseOps.getTopic(learningSession.topic).then((md) => {
-          load(md, learningSession.topic.path);
+          load(md, learningSession.topic.snapshotPath || learningSession.topic.path);
         });
       }
     }

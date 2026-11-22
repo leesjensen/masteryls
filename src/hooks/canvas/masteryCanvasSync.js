@@ -15,11 +15,19 @@ export function createMasteryCanvasSync({ post, debounceMs = 20000 }) {
   let lastPostedKey = null; // `${canvasAssignmentId}:${mastery}` of the last successful post
   let inFlight = null; // promise of the post currently being sent
 
+  function isOnline() {
+    return typeof navigator === 'undefined' || navigator.onLine !== false;
+  }
+
   function keyFor(ctx) {
     return `${ctx.canvasAssignmentId}:${ctx.mastery}`;
   }
 
   async function send(ctx) {
+    if (!isOnline()) {
+      pending = ctx;
+      return Promise.resolve();
+    }
     // Coalesce: if an identical post is already in flight, ride along with it.
     if (inFlight && inFlight.key === keyFor(ctx)) {
       return inFlight.promise;
@@ -71,8 +79,9 @@ export function createMasteryCanvasSync({ post, debounceMs = 20000 }) {
     clearTimer();
     timer = setTimeout(() => {
       const ctxToSend = pending;
-      pending = null;
       timer = null;
+      if (!isOnline()) return;
+      pending = null;
       if (ctxToSend) void send(ctxToSend);
     }, debounceMs);
   }
@@ -80,6 +89,7 @@ export function createMasteryCanvasSync({ post, debounceMs = 20000 }) {
   // Force any pending post immediately (e.g. on topic change or when the page is hidden/unloaded).
   function flush() {
     clearTimer();
+    if (!isOnline()) return Promise.resolve();
     const ctxToSend = pending;
     pending = null;
     if (ctxToSend) return send(ctxToSend);

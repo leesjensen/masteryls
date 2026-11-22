@@ -168,7 +168,7 @@ test('course link performs successful link flow', async ({ page }) => {
   await openCourseLinking(page);
 
   await page.getByLabel('Course', { exact: true }).selectOption('14602d77-0ff3-4267-b25e-4a7c3c47848b');
-  await page.waitForTimeout(300);
+  await expect(page.getByText('Topics to link with Canvas')).toBeVisible();
   await page.getByLabel('Canvas course ID', { exact: true }).fill('12345');
   await expect(page.getByRole('button', { name: 'Link course', exact: true })).toBeEnabled();
 

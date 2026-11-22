@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import useHotkeys from '../../hooks/useHotKeys';
 import { useSwipeNavigation } from '../../hooks/useSwipeNavigation';
 import usePulsePromptReminder from '../../hooks/usePulsePromptReminder.jsx';
+import useOnlineStatus from '../../hooks/useOnlineStatus.js';
 import PulseReminderBanner from '../../components/PulseReminderBanner.jsx';
 
 export default function ClassroomView({ courseOps, user, learningSession, settings, onExitObserve = null, observedLearnerName = '' }) {
@@ -16,6 +17,7 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   const [sidebarWidth, setSidebarWidth] = useState(settings.sidebarWidth || 300);
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false));
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
@@ -85,9 +87,10 @@ export default function ClassroomView({ courseOps, user, learningSession, settin
   const pulseReminder = usePulsePromptReminder({ courseOps, learningSession });
 
   let content = null;
+  const showEditor = editorVisible && isOnline && !learningSession.course.offlineCached;
   // The attendance and Terms & Sections views have no editable content, so they always render
   // their own instruction view rather than the Monaco editor.
-  if (editorVisible && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && learningSession.topic?.type !== 'mastery') {
+  if (showEditor && learningSession.topic?.type !== 'attendance' && learningSession.topic?.type !== 'sections' && learningSession.topic?.type !== 'mastery') {
     content = <Editor courseOps={courseOps} user={user} learningSession={learningSession} />;
   } else {
     content = <Instruction courseOps={courseOps} learningSession={learningSession} user={user} />;

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useId } from 'react';
 import { useAppBarState } from './hooks/useAppBarState';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Link2, PackagePlus, SquareStar, ChartArea, LogOut, Info, UserCog, Moon, Sun, Monitor } from 'lucide-react';
-import { PwaInstallButton } from './components/PwaInstallControls.jsx';
+import { PwaInstallButton, PwaOfflineStatusChip } from './components/PwaInstallControls.jsx';
 import UserProfileDialog from './components/UserProfileDialog.jsx';
 import { useTheme } from './hooks/useTheme.jsx';
 import { useAlert } from './contexts/AlertContext.jsx';
@@ -60,6 +60,7 @@ export function AppBar({ user, courseOps }) {
         <span className="inline-flex shrink-0 items-center justify-center bg-white border border-gray-300 rounded-full w-[32px] h-[32px] ml-1 mr-2">{navigateHome()}</span> <span className="overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0">{renderTitle(title, subTitle)}</span>
       </h1>
       <div className="flex items-center gap-2">
+        <PwaOfflineStatusChip />
         <PwaInstallButton />
         <div className="whitespace-nowrap ml-2">{tools}</div>
         <UserMenu user={user} courseOps={courseOps} />

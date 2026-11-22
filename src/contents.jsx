@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarDays, UserCheck, Layers, ChartArea, X } from 'lucide-react';
 import { MasteryPieIcon } from './components/MasteryPie.jsx';
 import { deriveProgressSummary } from './utils/progressSummary.js';
+import useOnlineStatus from './hooks/useOnlineStatus.js';
 
 function repoRelativePathFromRawUrl(rawUrl, rawRoot) {
   if (!rawUrl || !rawRoot || !rawUrl.startsWith(rawRoot)) {
@@ -91,6 +92,7 @@ function formatDueLabel(dates) {
 }
 
 function Contents({ courseOps, learningSession, editorVisible }) {
+  const isOnline = useOnlineStatus();
   const navigate = useNavigate();
   const { showAlert, showConfirm } = useAlert();
   const { openModuleIndexes, toggleModule } = useModuleState(courseOps, learningSession?.course, learningSession?.topic);
@@ -142,9 +144,10 @@ function Contents({ courseOps, learningSession, editorVisible }) {
   const currentTopicHeadings = topicHeadings.topicId === currentTopic?.id ? topicHeadings.items : [];
 
   const scheduleTopic = courseOps.getScheduleTopic(learningSession?.course);
-  const attendanceTopic = courseOps.getAttendanceTopic(learningSession?.course);
-  const sectionsTopic = courseOps.getSectionsTopic(learningSession?.course);
-  const masteryTopic = courseOps.getMasteryTopic(learningSession?.course);
+  const offlineReadOnly = Boolean(learningSession?.course?.offlineCached) || !isOnline;
+  const attendanceTopic = offlineReadOnly ? null : courseOps.getAttendanceTopic(learningSession?.course);
+  const sectionsTopic = offlineReadOnly ? null : courseOps.getSectionsTopic(learningSession?.course);
+  const masteryTopic = offlineReadOnly ? null : courseOps.getMasteryTopic(learningSession?.course);
   // Mirror the toolbar's dynamic mastery affordance: show the filling pie when the viewer has a
   // mastery value (a learner), otherwise the generic chart icon (e.g. an overseer with no enrollment).
   const masteryPercent = deriveProgressSummary(learningSession?.enrollment?.progress, learningSession?.course).mastery;

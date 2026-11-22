@@ -116,6 +116,7 @@ function initLogs(cfg) {
     }
     if (typeof window !== 'undefined' && window.addEventListener) {
       window.addEventListener('pagehide', () => flushLogs());
+      window.addEventListener('online', () => flushLogs());
       // Capture uncaught errors + unhandled promise rejections as error-level log entries.
       window.addEventListener('error', (e) => {
         pushLog('error', 'exception', { message: e?.message, source: e?.filename, line: e?.lineno, column: e?.colno, stack: truncate(e?.error?.stack) });
@@ -157,17 +158,16 @@ function logLine(event, attrs) {
 function pushLog(level, event, attrs) {
   if (!logs) return;
   logs.buffer.push({ ts: nanoStr(), level: level === 'error' ? 'error' : 'info', line: logLine(event, attrs) });
-  if (logs.buffer.length >= LOG_BATCH_MAX) {
-    flushLogs();
-  } else if (logs.buffer.length > LOG_BUFFER_MAX) {
+  if (logs.buffer.length > LOG_BUFFER_MAX) {
     logs.buffer.splice(0, logs.buffer.length - LOG_BUFFER_MAX);
   }
+  if (logs.buffer.length >= LOG_BATCH_MAX) flushLogs();
 }
 
 // Drain the buffer and POST the batch to the `logpush` edge function (which formats + forwards to
 // Loki). keepalive lets an in-flight flush survive page unload.
 function flushLogs() {
-  if (!logs || !logs.buffer.length) return;
+  if (!logs || !logs.buffer.length || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
   const entries = logs.buffer.splice(0, logs.buffer.length);
   try {
     fetch(logs.url, {
@@ -226,6 +226,7 @@ function initMetrics(cfg) {
     }
     if (typeof window !== 'undefined' && window.addEventListener) {
       window.addEventListener('pagehide', () => flushMetrics());
+      window.addEventListener('online', () => flushMetrics());
     }
   } catch {
     // ignore - timers/listeners are best-effort
@@ -317,7 +318,7 @@ export function buildDeltaPayload(histograms, counters) {
 // semantics: clearing immediately means a failed POST drops at most one window (acceptable for
 // metrics); keepalive lets an in-flight flush survive page unload.
 function flushMetrics() {
-  if (!metrics) return;
+  if (!metrics || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
   const payload = buildDeltaPayload([...metrics.histograms.values()], [...metrics.counters.values()]);
   metrics.histograms.clear();
   metrics.counters.clear();
