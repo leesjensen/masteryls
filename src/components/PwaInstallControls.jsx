@@ -78,6 +78,7 @@ function IosInstallModal({ onClose }) {
 export function PwaStatusToasts() {
   const [offlineReady, setOfflineReady] = React.useState(false);
   const [updateAction, setUpdateAction] = React.useState(null);
+  const [updating, setUpdating] = React.useState(false);
 
   React.useEffect(() => {
     function handleOfflineReady() {
@@ -97,26 +98,45 @@ export function PwaStatusToasts() {
     };
   }, []);
 
+  async function handleUpdate() {
+    setUpdating(true);
+    try {
+      await updateAction(true);
+    } catch {
+      // If the update can't start, clear the spinner so the learner can retry rather than being stuck.
+      setUpdating(false);
+    }
+  }
+
   return (
     <>
       {(offlineReady || updateAction) && (
         <div className="fixed inset-x-0 bottom-4 z-[9996] flex justify-center px-3">
-          <div className="flex max-w-xl items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-lg">
+          <div className={`flex max-w-xl items-center gap-3 rounded-2xl px-4 py-3 text-sm shadow-lg ${updating ? 'border border-blue-500 bg-blue-600 font-medium text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
             {updateAction ? (
-              <>
-                <RefreshCw size={16} className="text-blue-600" />
-                <span className="flex-1">A new version of MasteryLS is ready.</span>
-                <button
-                  type="button"
-                  className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
-                  onClick={() => updateAction(true)}
-                >
-                  Refresh
-                </button>
-              </>
+              updating ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin" aria-hidden="true" />
+                  <span className="flex-1" role="status" aria-live="polite">
+                    Updating to the latest version… the app will reload automatically.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={16} className="text-blue-600" aria-hidden="true" />
+                  <span className="flex-1">A new version of MasteryLS is ready.</span>
+                  <button
+                    type="button"
+                    className="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                    onClick={handleUpdate}
+                  >
+                    Update now
+                  </button>
+                </>
+              )
             ) : (
               <>
-                <Download size={16} className="text-emerald-600" />
+                <Download size={16} className="text-emerald-600" aria-hidden="true" />
                 <span>MasteryLS is ready for faster relaunches and home-screen install.</span>
                 <button type="button" className="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50" onClick={() => setOfflineReady(false)}>
                   Dismiss
