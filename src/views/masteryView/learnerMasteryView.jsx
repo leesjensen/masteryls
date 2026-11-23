@@ -61,7 +61,7 @@ function DailyActivityChart({ records }) {
 
 export default function LearnerMasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { learnerId: paramLearnerId, courseId: routeCourseId } = useParams();
   // The roster drill-down carries the learner id in the route; a learner viewing their own progress
   // has none, so fall back to themselves.
@@ -76,7 +76,26 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   const [error, setError] = React.useState(null);
   const [detailSort, setDetailSort] = React.useState({ key: 'topicTitle', direction: 'course' });
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState(new Set());
-  const [chartMode, setChartMode] = React.useState('topicActivity');
+  const [chartMode, setChartMode] = React.useState(() => {
+    const t = searchParams.get('tab');
+    return ['topicActivity', 'attendance', 'lastInteraction', 'dailyActivity', 'metrics', 'pulses', 'canvasGrades'].includes(t) ? t : 'topicActivity';
+  });
+  // Reflect the active tab in the URL (shareable, survives refresh). Routed through by tab clicks AND
+  // the automatic fallbacks below so the URL and the shown tab never drift. Other params are preserved.
+  const changeChartMode = React.useCallback(
+    (id) => {
+      setChartMode(id);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.set('tab', id);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const [activityRecords, setActivityRecords] = React.useState([]);
   const [activityLoading, setActivityLoading] = React.useState(false);
   const [activityLoaded, setActivityLoaded] = React.useState(false);
@@ -341,20 +360,9 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
   // If the selected tab is no longer offered for this course (switched to a course without
   // attendance, or without a Canvas link for this learner), fall back to the always-present tab.
   React.useEffect(() => {
-    if (chartMode === 'attendance' && !hasAttendance) setChartMode('lastInteraction');
-    if (chartMode === 'canvasGrades' && !canvasGradesUrl) setChartMode('lastInteraction');
-  }, [chartMode, canvasGradesUrl, hasAttendance]);
-
-  // Deep link to the Pulses tab (e.g. the dashboard card's "View pulse" link routes here with
-  // ?tab=pulses). Applied once per learner so the viewer can switch tabs freely afterward.
-  const pulsesDeepLink = searchParams.get('tab') === 'pulses';
-  const appliedPulsesDeepLink = React.useRef(false);
-  React.useEffect(() => {
-    if (pulsesDeepLink && selectedLearner && !appliedPulsesDeepLink.current) {
-      appliedPulsesDeepLink.current = true;
-      setChartMode('pulses');
-    }
-  }, [pulsesDeepLink, selectedLearner]);
+    if (chartMode === 'attendance' && !hasAttendance) changeChartMode('lastInteraction');
+    if (chartMode === 'canvasGrades' && !canvasGradesUrl) changeChartMode('lastInteraction');
+  }, [chartMode, canvasGradesUrl, hasAttendance, changeChartMode]);
 
   const instructionTopicSummaries = React.useMemo(() => {
     if (!selectedCourse || !selectedLearner?.progress) return [];
@@ -407,9 +415,9 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
 
   React.useEffect(() => {
     if (!loading && selectedLearner && instructionTopicSummaries.length === 0 && chartMode === 'topicActivity') {
-      setChartMode('pulses');
+      changeChartMode('pulses');
     }
-  }, [loading, selectedLearner, instructionTopicSummaries.length, chartMode]);
+  }, [loading, selectedLearner, instructionTopicSummaries.length, chartMode, changeChartMode]);
 
   const sortedInstructionTopicSummaries = React.useMemo(() => {
     if (detailSort.key === 'topicTitle' && detailSort.direction === 'course') {
@@ -567,7 +575,7 @@ export default function LearnerMasteryView({ courseOps, startObserveSession = nu
             { id: 'canvasGrades', label: 'Canvas', visible: Boolean(canvasGradesUrl) },
           ]}
           active={chartMode}
-          onChange={setChartMode}
+          onChange={changeChartMode}
           variant="fill"
         />
       )}

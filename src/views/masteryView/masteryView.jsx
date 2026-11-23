@@ -45,7 +45,7 @@ function compareRows(a, b, key) {
 export default function MasteryView({ courseOps, startObserveSession = null }) {
   const navigate = useNavigate();
   const { courseId: routeCourseId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedSectionId = searchParams.get('section') || '';
   const [selectedCourseId, setSelectedCourseId] = React.useState('');
   const [page, setPage] = React.useState(1);
@@ -61,7 +61,22 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   const [selectedSectionId, setSelectedSectionId] = React.useState('');
   const [sort, setSort] = React.useState({ key: null, direction: 'asc' });
   const [selectedCourse, setSelectedCourse] = React.useState(null);
-  const [masteryTab, setMasteryTab] = React.useState('roster');
+  const [masteryTab, setMasteryTab] = React.useState(() => {
+    const t = searchParams.get('tab');
+    return ['roster', 'metrics', 'pulses'].includes(t) ? t : 'roster';
+  });
+  // Reflect the active tab in the URL so it is shareable and survives a refresh (keeps ?section).
+  const changeMasteryTab = (id) => {
+    setMasteryTab(id);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', id);
+        return next;
+      },
+      { replace: true },
+    );
+  };
   const enrollmentDialogRef = React.useRef(null);
   const [enrollmentActionRow, setEnrollmentActionRow] = React.useState(null);
   const [moveSectionId, setMoveSectionId] = React.useState('');
@@ -409,7 +424,7 @@ export default function MasteryView({ courseOps, startObserveSession = null }) {
   return (
     <>
     <div className="w-full min-w-0 max-w-7xl mx-auto self-start p-4 flex flex-col gap-4">
-      <Tabs variant="scroll" active={masteryTab} onChange={setMasteryTab} tabs={[{ id: 'roster', label: 'Roster' }, { id: 'metrics', label: 'Metrics' }, { id: 'pulses', label: 'Pulses' }]} />
+      <Tabs variant="scroll" active={masteryTab} onChange={changeMasteryTab} tabs={[{ id: 'roster', label: 'Roster' }, { id: 'metrics', label: 'Metrics' }, { id: 'pulses', label: 'Pulses' }]} />
       {masteryTab === 'metrics' && selectedCourse && <MetricsPanel courseOps={courseOps} course={selectedCourse} scope="overseer" />}
       {masteryTab === 'pulses' && selectedCourse && canViewPulses && <>
         <PulseArchive key={`${selectedCourseId}-${selectedSectionId || 'course'}`} courseOps={courseOps} course={selectedCourse} targetType={selectedSectionId ? 'section' : 'course'} targetId={selectedSectionId || selectedCourseId} targetName={selectedSectionId ? courseSections.find((section) => section.id === selectedSectionId)?.title : selectedCourse.title} canEdit={canManagePulses} canGenerate={canManagePulses} extraControls={<label className="text-sm">Pulse target<select className="ml-2 rounded border p-1" value={selectedSectionId || 'course'} onChange={(e) => onSectionSelect(e.target.value === 'course' ? '' : e.target.value)}><option value="course">Course</option>{courseSections.map((section) => <option key={section.id} value={section.id}>Section: {section.title}</option>)}</select></label>} evidence={buildPulseRosterEvidence(derivedRows, { sections: selectedSectionId ? courseSections.filter((section) => section.id === selectedSectionId) : courseSections, schedules: selectedCourse.schedules || [] })} rosterRows={derivedRows} sections={courseSections} />

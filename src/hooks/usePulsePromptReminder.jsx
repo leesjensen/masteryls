@@ -96,7 +96,13 @@ export default function usePulsePromptReminder({ courseOps, learningSession }) {
     setVisible(false);
     // Navigate to the pulse view AND auto-start the pulse there (one-shot `take=1`). Generating here
     // in the classroom would abort the request on navigation, so the pulse page kicks it off instead.
-    if (course?.id) navigate(`/course/${course.id}/mastery?tab=pulses&take=1`);
+    // An enrolled overseer (mentor/editor/root) lands on the ROSTER at /mastery, which has no self
+    // pulse view and ignores ?tab/take — so send them to their OWN learner pulse view, where the
+    // deep-link opens the Pulses tab and the one-shot take fires. A plain learner already gets that
+    // view at /mastery, so keep their path unchanged.
+    if (!course?.id || !user?.id) return;
+    const base = user.canOverseeCourse?.(course.id) ? `/course/${course.id}/mastery/learner/${user.id}` : `/course/${course.id}/mastery`;
+    navigate(`${base}?tab=pulses&take=1`);
   };
   const snooze = () => {
     writePulsePromptState(courseOps.service, course?.id, { nextPromptAt: Date.now() + PULSE_PROMPT_COOLDOWN_MS });

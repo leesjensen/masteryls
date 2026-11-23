@@ -121,6 +121,34 @@ test('an enrolled overseer with reminders explicitly enabled is prompted', async
   await expect(page.getByText('take your pulse')).toBeVisible();
 });
 
+test('an enrolled overseer accepting the reminder is routed to their own learner pulse view and takes the pulse', async ({ page }) => {
+  await initBasicCourse({ page });
+  await setupSchedule(page, {
+    settings: { pulsePromptsDisabled: false },
+    roles: [{ user: LEARNER_ID, right: 'editor', object: COURSE_ID, settings: {} }],
+  });
+  await page.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, (route: any) => route.fulfill({ json: [] }));
+  const pulsePosts: any[] = [];
+  await page.route(/.*supabase.co\/rest\/v1\/pulse(\?.+)?/, async (route: any) => {
+    if (route.request().method() === 'POST') {
+      const row = { id: 'p-new', createdAt: new Date().toISOString(), ...route.request().postDataJSON()[0] };
+      pulsePosts.push(row);
+      await route.fulfill({ status: 201, json: row });
+      return;
+    }
+    await route.fulfill({ json: pulsePosts });
+  });
+
+  await navigateToCourse(page);
+  await page.getByRole('button', { name: 'Take pulse' }).click();
+
+  // An overseer must land on their OWN learner pulse view (not the roster, which ignores ?tab/take).
+  await expect(page).toHaveURL(new RegExp(`/course/${COURSE_ID}/mastery/learner/${LEARNER_ID}`));
+  await expect.poll(() => pulsePosts.length, { timeout: 15000 }).toBeGreaterThan(0);
+  expect(pulsePosts[0].targetType).toBe('learner');
+  expect(pulsePosts[0].targetId).toBe(LEARNER_ID);
+});
+
 test('the Pulse view toggle opts out of pulse reminders on the enrollment', async ({ page }) => {
   await initBasicCourse({ page });
   const patches = await setupSchedule(page);

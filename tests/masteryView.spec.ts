@@ -129,6 +129,26 @@ test('masteryview sorts across the full dataset, not just the current page', asy
   await expect.poll(() => overviewRequests.length).toBe(1);
 });
 
+test('mastery roster tabs reflect the active tab in the URL (and a tab deep-link opens it)', async ({ page }) => {
+  await initBasicCourse({ page });
+  await mockGradebookOverview(page);
+  await page.route(/.*supabase.co\/rest\/v1\/rpc\/topic_views_evidence(\?.+)?/, (route: any) => route.fulfill({ status: 200, json: { status: 'available', topics: [], total: 0, totalSeconds: 0 } }));
+
+  await navigateToDashboard(page);
+  await page.goto(`/course/${COURSE_ID}/mastery`);
+
+  // Default is the roster; switching tabs writes ?tab to the URL.
+  await expect(page.getByLabel('Filter learner')).toBeVisible();
+  await page.getByRole('button', { name: 'Metrics' }).click();
+  await expect(page).toHaveURL(/[?&]tab=metrics/);
+  await page.getByRole('button', { name: 'Pulses' }).click();
+  await expect(page).toHaveURL(/[?&]tab=pulses/);
+
+  // A direct ?tab deep-link opens that tab on load.
+  await page.goto(`/course/${COURSE_ID}/mastery?tab=metrics`);
+  await expect(page.getByTestId('metrics-panel')).toBeVisible();
+});
+
 test('masteryview numeric sort spans all pages and resets to page one', async ({ page }) => {
   await initBasicCourse({ page });
   await mockSortableOverview(page);
