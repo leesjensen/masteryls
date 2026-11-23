@@ -1,8 +1,8 @@
 import React from 'react';
-import { StickyNote, MessageCircle, Copy, Check } from 'lucide-react';
+import { StickyNote, MessageCircle, Copy, Check, Trash2 } from 'lucide-react';
 import Markdown from '../Markdown';
 
-export default function MessageBox({ message, handleSaveAsNote, setDiscussionContext }) {
+export default function MessageBox({ message, handleSaveAsNote, onDeleteNote = null, setDiscussionContext }) {
   const { type, content } = message;
   const [copied, setCopied] = React.useState(false);
 
@@ -71,11 +71,22 @@ export default function MessageBox({ message, handleSaveAsNote, setDiscussionCon
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
             </button>
+            {onDeleteNote && (
+              <button
+                type="button"
+                onClick={onDeleteNote}
+                className="p-1.5 rounded-sm text-amber-700 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                aria-label="Delete note"
+                title="Delete note"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
           </div>
         )}
         <div className={formatAsMarkdown ? 'markdown-body' : ''}>
           {msgTitle && (
-            <div className={`text-xs text-${color}-600 font-medium mb-1 flex items-center gap-1 pr-16`}>
+            <div className={`text-xs text-${color}-600 font-medium mb-1 flex items-center gap-1 pr-20`}>
               <Icon size={12} /> {msgTitle} {heading}
             </div>
           )}

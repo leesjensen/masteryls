@@ -2239,6 +2239,13 @@ Requirements:
     return service.getProgress({ courseId, enrollmentId, userId, topicId, interactionId, types, startDate, endDate, page, limit });
   }
 
+  // Delete the learner's own note. Blocked while observing (never mutate the observed learner's notes).
+  async function deleteNote(noteId) {
+    if (observeSession?.active && learningSession?.observeMode) return;
+    if (!noteId) return;
+    await service.deleteNote(noteId);
+  }
+
   // Aggregated topic-view counts for the Metrics tab (server-side RPC; no row cap).
   async function getTopicViewsEvidence({ catalogId, startAt = null, endAt = null, sectionId = null, learnerId = null }) {
     return service.getTopicViewsEvidence({ catalogId, startAt, endAt, sectionId, learnerId });
@@ -3295,6 +3302,7 @@ Requirements:
     isLearnerInCanvasCourse,
     canSubmitToCanvasGradebook,
     getProgress,
+    deleteNote,
     getTopicViewsEvidence,
     getMasteryOverview,
     unenrollLearner,

@@ -1198,6 +1198,7 @@ drop policy if exists "Course editor manages topics" on public.topic;
 drop policy if exists "Root manages all" on public.topic;
 drop policy if exists "Allow users to insert their own progress" on public.progress;
 drop policy if exists "Allow users to read their own progress" on public.progress;
+drop policy if exists "Allow users to delete their own notes" on public.progress;
 drop policy if exists "Editor reads all users progress" on public.progress;
 drop policy if exists "Editor reads managed course progress" on public.progress;
 drop policy if exists "Root manages all" on public.progress;
@@ -1420,6 +1421,14 @@ on public.progress
 for select
 to authenticated
 using (auth.uid() = "userId");
+
+-- A learner may delete only their own NOTE rows (their authored content). Other progress types are an
+-- append-only activity/audit trail and stay non-deletable by learners (root still manages all).
+create policy "Allow users to delete their own notes"
+on public.progress
+for delete
+to authenticated
+using (auth.uid() = "userId" and type = 'note');
 
 create policy "Editor reads managed course progress"
 on public.progress

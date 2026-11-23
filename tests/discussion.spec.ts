@@ -27,6 +27,26 @@ test('discussion panel opens, supports notes, and closes', async ({ page }) => {
   await expect(page.getByTitle('Discuss this topic')).toBeVisible();
 });
 
+test('a learner can delete their own note', async ({ page }) => {
+  const deletes: string[] = [];
+  await page.route(/.*supabase.co\/rest\/v1\/progress(\?.+)?/, async (route) => {
+    if (route.request().method() === 'DELETE') deletes.push(route.request().url());
+    await route.fallback();
+  });
+
+  await openDiscussionPanel(page);
+  await page.getByRole('button', { name: 'Notes' }).click();
+  await expect(page.getByText('there should be a note that appears on the TOC')).toBeVisible();
+
+  // Delete the note and confirm the dialog.
+  await page.getByRole('button', { name: 'Delete note' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+
+  await expect(page.getByText('there should be a note that appears on the TOC')).toHaveCount(0);
+  // The note's own progress row was deleted (scoped to type=note).
+  expect(deletes.some((url) => /type=eq\.note/.test(url))).toBe(true);
+});
+
 test('discussion notes can be copied', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openDiscussionPanel(page);

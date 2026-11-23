@@ -995,6 +995,17 @@ class Service {
   }
 
   /**
+   * Deletes a learner's own note (a `type='note'` progress row). RLS permits a learner to delete only
+   * their own note rows, so an id for another user's row or a non-note type simply affects nothing.
+   */
+  async deleteNote(noteId: string): Promise<void> {
+    const { error } = await this.supabase.from('progress').delete().eq('id', noteId).eq('type', 'note');
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  /**
    * Opens a new attendance session (closing any open one) and returns it, including its code.
    * Only course overseers may open attendance.
    * @param catalogId - The course catalog ID.

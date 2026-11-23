@@ -752,6 +752,18 @@ async function initBasicCourse({ page, topicMarkdown = defaultTopicMarkdown, cou
           });
         }
         return;
+      case 'DELETE':
+        {
+          const requestUrl = new URL(route.request().url());
+          const idMatch = requestUrl.searchParams.get('id')?.match(/^eq\.(.+)$/);
+          if (idMatch) {
+            const id = decodeURIComponent(idMatch[1]);
+            const idx = progressData.findIndex((p) => p.id === id);
+            if (idx !== -1) progressData.splice(idx, 1);
+          }
+          await route.fulfill({ status: 204 });
+        }
+        return;
     }
     throw new Error(`Unmocked endpoint requested: ${route.request().url()} ${route.request().method()}`);
   });

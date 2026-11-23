@@ -3,12 +3,14 @@ import { StickyNote, MessageCircleOff, X, MessageCircle, Notebook, XCircle } fro
 import { aiDiscussionResponseGenerator } from '../../ai/aiContentGenerator';
 import { scrollToBottom } from '../../utils/utils';
 import usePersistentAIMessages from '../../hooks/usePersistentAIMessages';
+import { useAlert } from '../../contexts/AlertContext.jsx';
 import Tabs from '../Tabs';
 import MessageBox from './MessageBox';
 
 export default function DiscussionPanel({ courseOps, learningSession, onClose, noteMessages, setNoteMessages, aiMessages, setAIMessages, discussionContext, setDiscussionContext, allowAi = true, readOnlyNotes = false }) {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { showConfirm, showAlert } = useAlert();
   const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
   const { clearStoredAIMessages } = usePersistentAIMessages(learningSession?.topic?.id, aiMessages, setAIMessages);
@@ -81,6 +83,25 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
 
       setIsLoading(false);
       scrollMessages();
+    }
+  };
+
+  const handleDeleteNote = async (messageIndex) => {
+    const note = filteredMessages[messageIndex];
+    if (!note?.id) return;
+    const confirmed = await showConfirm({
+      title: 'Delete note?',
+      message: 'This permanently removes this note. It cannot be undone.',
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      danger: true,
+    });
+    if (!confirmed) return;
+    try {
+      await courseOps.deleteNote(note.id);
+      setNoteMessages((prev) => prev.filter((message) => message.id !== note.id));
+    } catch (error) {
+      showAlert({ message: `Unable to delete note: ${error.message}`, type: 'error' });
     }
   };
 
@@ -181,7 +202,13 @@ export default function DiscussionPanel({ courseOps, learningSession, onClose, n
         )}
 
         {filteredMessages.map((message, i) => (
-          <MessageBox key={message.id || message.timestamp} message={message} handleSaveAsNote={() => handleSaveAsNote(i)} setDiscussionContext={setDiscussionContext} />
+          <MessageBox
+            key={message.id || message.timestamp}
+            message={message}
+            handleSaveAsNote={() => handleSaveAsNote(i)}
+            onDeleteNote={!readOnlyNotes && message.type === 'note' && message.id ? () => handleDeleteNote(i) : null}
+            setDiscussionContext={setDiscussionContext}
+          />
         ))}
 
         {isLoading && (
