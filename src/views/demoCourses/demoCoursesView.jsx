@@ -18,7 +18,7 @@ function DemoCoursesView({ courseOps }) {
   return (
     <section id="catalog-section" className="py-16 bg-blue-50 min-h-full">
       <div className="max-w-7xl mx-auto px-8">
-        <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Try a course</h2>
+        <h2 className="text-4xl font-bold text-center text-gray-900 mb-8">Browse a course</h2>
 
         <div className="max-w-xl mx-auto">
           <label className="block text-xl font-medium text-gray-800 mb-4">

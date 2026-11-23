@@ -21,7 +21,7 @@ const Start = ({ courseOps }) => {
               <span className="text-[#3dbcab]">LS</span>
             </h1>
           </div>
-          <p className="text-lg sm:text-xl text-gray-600 mt-3 max-w-xl">Log in or create an account to continue.</p>
+          <p className="text-lg sm:text-xl text-gray-600 mt-3 max-w-xl">Log in or create an account</p>
         </div>
 
         <div className="flex flex-col items-center md:items-end w-full">
@@ -29,13 +29,15 @@ const Start = ({ courseOps }) => {
             <Login courseOps={courseOps} />
           </div>
           <div className="mt-5 w-full max-w-md flex items-center justify-center gap-6 text-sm sm:text-base">
-            <button onClick={() => navigate('/demo-courses')} className="text-blue-700 font-semibold hover:text-blue-600 hover:underline">
-              Demo
+            <button onClick={() => navigate('/demo-courses')} className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
+              Browse Courses
             </button>
-            <button onClick={() => navigate('/about')} className="text-blue-700 font-semibold hover:text-blue-600 hover:underline">
+            <span className="text-gray-400">|</span>
+            <button onClick={() => navigate('/about')} className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
               About
             </button>
-            <a href="https://github.com/leesjensen/masteryls/blob/main/docs/learnerTutorial/learnerTutorial.md" className="text-blue-700 font-semibold hover:text-blue-600 hover:underline">
+            <span className="text-gray-400">|</span>
+            <a href="https://github.com/leesjensen/masteryls/blob/main/docs/learnerTutorial/learnerTutorial.md" className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
               Docs
             </a>
           </div>
