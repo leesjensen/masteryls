@@ -78,7 +78,10 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
     }
   };
 
-  const shell = 'group col-start-1 row-start-1 flex min-h-[300px] cursor-pointer flex-col rounded-2xl border border-gray-200 p-6 text-left shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-2 hover:border-gray-400 hover:shadow-md';
+  // Signify the card is interactive with COLOR only — a blue ring + light background on hover. The
+  // ring is a box-shadow outline (not a border-width change) so it traces the whole rounded perimeter
+  // uniformly and never reflows the layout (the old hover:border-2 shifted content by a pixel).
+  const shell = 'group col-start-1 row-start-1 flex min-h-[300px] cursor-pointer flex-col rounded-2xl border border-gray-200 p-6 text-left shadow-sm transition duration-200 hover:bg-blue-50 hover:ring-2 hover:ring-blue-400';
 
   const iconBlock = (
     <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-xl ${enrollment ? enrollment.settings?.cardColor || colorGenerator(catalogEntry.title) : 'bg-slate-300'}`}>
@@ -86,8 +89,10 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
     </div>
   );
 
-  const overlay = (
-    <div className="pointer-events-none col-start-1 row-start-1 z-20 flex translate-x-3 -translate-y-3 justify-self-end gap-1 self-start">
+  // State indicators (published/editor status) sit at the top-left corner; action affordances
+  // (schedule, download, unenroll) sit at the top-right corner.
+  const stateOverlay = (
+    <div className="pointer-events-none col-start-1 row-start-1 z-20 flex translate-x-3 -translate-y-3 justify-self-start gap-1 self-start">
       {catalogEntry.settings?.state === 'unpublished' && (
         <div className="pointer-events-auto inline-flex h-7 w-7 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm">
           <span title="Unpublished">
@@ -102,6 +107,22 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
           </span>
         </div>
       )}
+    </div>
+  );
+
+  const affordanceOverlay = (
+    <div className="pointer-events-none col-start-1 row-start-1 z-20 flex -translate-x-3 -translate-y-3 justify-self-end gap-1 self-start">
+      {enrollment && hasSchedule && (
+        <a
+          href={scheduleHref}
+          onClick={(e) => handleInAppLinkClick(e, () => navigate(scheduleHref))}
+          aria-label="Open schedule"
+          title="Open schedule"
+          className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
+        >
+          <CalendarDays size={16} aria-hidden="true" />
+        </a>
+      )}
       {enrollment && (
         <button
           type="button"
@@ -113,17 +134,6 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
         >
           {offlineBusy ? <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> : offlinePackage ? <BookCheck size={16} aria-hidden="true" /> : <Download size={15} aria-hidden="true" />}
         </button>
-      )}
-      {enrollment && hasSchedule && (
-        <a
-          href={scheduleHref}
-          onClick={(e) => handleInAppLinkClick(e, () => navigate(scheduleHref))}
-          aria-label="Open schedule"
-          title="Open schedule"
-          className="pointer-events-auto inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
-        >
-          <CalendarDays size={16} aria-hidden="true" />
-        </a>
       )}
       {enrollment && remove && (
         <button
@@ -152,7 +162,8 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
           <p className="mb-4 line-clamp-3 text-sm text-slate-600">{catalogEntry.description}</p>
           <div className="mt-auto inline-flex w-fit items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-800">Join course</div>
         </button>
-        {overlay}
+        {stateOverlay}
+        {affordanceOverlay}
       </div>
     );
   }
@@ -198,7 +209,8 @@ export default function CourseCard({ user, catalogEntry, enrollment, masteryPerc
         </div>
         {offlineError && <p role="alert" className="relative z-10 mt-2 text-xs text-rose-700">{offlineError}</p>}
       </div>
-      {overlay}
+      {stateOverlay}
+      {affordanceOverlay}
     </div>
   );
 }
