@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 
 // Imperatively apply a SEO head spec (from buildTopicHead) to document.head: description, canonical,
 // robots, Open Graph, Twitter cards, and a JSON-LD script. Tags this hook creates carry `data-seo` so
-// they can be removed on cleanup. The robots meta (seeded as `noindex` in index.html so non-JS crawlers
-// never index the empty shell) is MUTATED in place — never duplicated — and reset to `noindex` on
-// cleanup, so navigating away from a public topic de-indexes correctly.
+// they can be removed on cleanup. The robots meta (seeded as `index,follow` in index.html — the shell
+// must stay renderable so Googlebot will render public topics) is MUTATED in place — never duplicated —
+// to `noindex,follow` for a non-public/unpublished topic, and reset to `noindex,follow` on cleanup so
+// navigating away from a public topic within the SPA de-indexes correctly.
 
 function setRobots(content) {
   if (typeof document === 'undefined') return;

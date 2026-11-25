@@ -510,9 +510,9 @@ export default function Settings({ courseOps, user, course }) {
                 <div>
                   <label className="flex items-center cursor-pointer">
                     <input type="checkbox" checked={formData.public} onChange={(e) => handleInputChange('public', e.target.checked)} className="mr-2 cursor-pointer" />
-                    <span className="text-sm font-medium text-gray-700">Public (search-engine indexable)</span>
+                    <span className="text-sm font-medium text-gray-700">Public</span>
                   </label>
-                  <p className="mt-1 text-xs text-gray-500">When on, published topic pages in this course expose SEO metadata and may be indexed by search engines. The course is also visible in the public browse list.</p>
+                  <p className="mt-1 text-xs text-gray-500">Displays this course in the public browse list.</p>
                 </div>
               </>
             )}
