@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from '../../hooks/useAppBarState';
+import { handleInAppLinkClick } from '../../utils/linkNavigation.js';
 
 function DemoCoursesView({ courseOps }) {
   const navigate = useNavigate();
@@ -11,7 +12,9 @@ function DemoCoursesView({ courseOps }) {
   }, []);
 
   useEffect(() => {
-    const c = courseOps.courseCatalog() || [];
+    // The public, logged-out browse list shows only courses marked public (settings.public) — the same
+    // flag that opts a course into search-engine indexing. Non-public courses stay out of the public list.
+    const c = (courseOps.courseCatalog() || []).filter((entry) => entry.settings?.public);
     setCatalog(c);
   }, [courseOps]);
 
@@ -29,7 +32,7 @@ function DemoCoursesView({ courseOps }) {
             to use <b>AI learning</b>, track <b>progress</b>, and earn <b>credentials</b>.
           </label>
 
-          <div role="listbox" aria-label="Courses" tabIndex={0} className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
+          <div aria-label="Courses" className="w-full rounded-md border border-gray-300 shadow-sm bg-white overflow-y-auto max-h-[500px]">
             {catalog.map((entry) => (
               <CourseEntry key={entry.id} entry={entry} />
             ))}
@@ -42,20 +45,20 @@ function DemoCoursesView({ courseOps }) {
 
 function CourseEntry({ entry }) {
   const navigate = useNavigate();
+  // A real <a href> (not an onClick div) so crawlers can discover and follow the course URL, and so
+  // the browser offers "open in new tab". A plain click still navigates inside the SPA.
   return (
-    <div
-      role="option"
-      onClick={() => {
-        navigate(`/course/${entry.id}`);
-      }}
-      className={'cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-blue-200'}
+    <a
+      href={`/course/${entry.id}`}
+      onClick={(e) => handleInAppLinkClick(e, () => navigate(`/course/${entry.id}`))}
+      className={'block no-underline text-inherit cursor-pointer px-4 py-3 border-b last:border-b-0 transition-colors duration-150 hover:bg-blue-200'}
     >
       <div className="flex items-center justify-between">
         <div className="font-semibold text-blue-600">{entry.title}</div>
         <div className="text-sm text-gray-500">{entry.duration || ''}</div>
       </div>
       {entry.description && <div className="text-sm text-gray-600 mt-1">{entry.description}</div>}
-    </div>
+    </a>
   );
 }
 

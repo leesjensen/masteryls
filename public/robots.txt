@@ -1,0 +1,6 @@
+# MasteryLS
+# Crawling is allowed so crawlers can read each page's robots meta. Indexing is opt-in per topic:
+# only public, published course topics emit <meta name="robots" content="index,follow"> (see
+# src/utils/seo.js / useHeadTags.jsx); every other page defaults to noindex (index.html).
+User-agent: *
+Allow: /

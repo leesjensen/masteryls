@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import Login from './login.jsx';
 import { useNavigate } from 'react-router-dom';
 import { updateAppBar } from './hooks/useAppBarState';
+import { handleInAppLinkClick } from './utils/linkNavigation.js';
 
 const Start = ({ courseOps }) => {
   const navigate = useNavigate();
@@ -29,13 +30,13 @@ const Start = ({ courseOps }) => {
             <Login courseOps={courseOps} />
           </div>
           <div className="mt-5 w-full max-w-md flex items-center justify-center gap-6 text-sm sm:text-base">
-            <button onClick={() => navigate('/demo-courses')} className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
+            <a href="/demo-courses" onClick={(e) => handleInAppLinkClick(e, () => navigate('/demo-courses'))} className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
               Browse Courses
-            </button>
+            </a>
             <span className="text-gray-400">|</span>
-            <button onClick={() => navigate('/about')} className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
+            <a href="/about" onClick={(e) => handleInAppLinkClick(e, () => navigate('/about'))} className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
               About
-            </button>
+            </a>
             <span className="text-gray-400">|</span>
             <a href="https://github.com/leesjensen/masteryls/blob/main/docs/learnerTutorial/learnerTutorial.md" className="text-blue-700 font-semibold hover:text-blue-700 hover:underline">
               Docs

@@ -37,6 +37,7 @@ export default function Settings({ courseOps, user, course }) {
     gitHubToken: user?.getSetting('gitHubToken', course.id) || '',
     state: course.settings.state,
     deleteProtected: course.settings.deleteProtected || false,
+    public: course.settings.public || false,
   });
 
   const moduleCount = course.modules.length || 0;
@@ -156,7 +157,7 @@ export default function Settings({ courseOps, user, course }) {
   };
 
   const compareCourse = (data) => {
-    return data.name !== course.name || data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository || data.state !== course.settings.state || data.deleteProtected !== (course.settings?.deleteProtected || false);
+    return data.name !== course.name || data.title !== course.title || data.description !== course.description || data.githubAccount !== course.gitHub.account || data.githubRepository !== course.gitHub.repository || data.state !== course.settings.state || data.deleteProtected !== (course.settings?.deleteProtected || false) || data.public !== (course.settings?.public || false);
   };
 
   const compareMentors = (newSelected) => {
@@ -218,6 +219,7 @@ export default function Settings({ courseOps, user, course }) {
           ...course.settings,
           state: formData.state,
           deleteProtected: formData.deleteProtected,
+          public: formData.public,
         },
       };
       courseOps.service.saveCatalogEntry(catalogEntry);
@@ -504,6 +506,13 @@ export default function Settings({ courseOps, user, course }) {
                     <input type="checkbox" checked={formData.deleteProtected} onChange={(e) => handleInputChange('deleteProtected', e.target.checked)} className="mr-2 cursor-pointer" />
                     <span className="text-sm font-medium text-gray-700">Delete Protected</span>
                   </label>
+                </div>
+                <div>
+                  <label className="flex items-center cursor-pointer">
+                    <input type="checkbox" checked={formData.public} onChange={(e) => handleInputChange('public', e.target.checked)} className="mr-2 cursor-pointer" />
+                    <span className="text-sm font-medium text-gray-700">Public (search-engine indexable)</span>
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500">When on, published topic pages in this course expose SEO metadata and may be indexed by search engines. The course is also visible in the public browse list.</p>
                 </div>
               </>
             )}

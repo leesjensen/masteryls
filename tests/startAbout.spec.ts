@@ -29,15 +29,16 @@ test('start page links to About and Demo Courses', async ({ page }) => {
   await page.goto('http://localhost:5173/');
 
   await expect(page.getByRole('heading', { name: 'MasteryLS', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Browse Courses' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'About' })).toBeVisible();
+  // Discovery links are real anchors (crawlable / open-in-new-tab), not click-only buttons.
+  await expect(page.getByRole('link', { name: 'Browse Courses' })).toHaveAttribute('href', '/demo-courses');
+  await expect(page.getByRole('link', { name: 'About' })).toHaveAttribute('href', '/about');
 
-  await page.getByRole('button', { name: 'About' }).click();
+  await page.getByRole('link', { name: 'About' }).click();
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.getByRole('heading', { name: 'MasteryLS README' })).toBeVisible();
 
   await page.goto('http://localhost:5173/');
-  await page.getByRole('button', { name: 'Browse Courses' }).click();
+  await page.getByRole('link', { name: 'Browse Courses' }).click();
   await expect(page).toHaveURL(/\/demo-courses$/);
   await expect(page.getByRole('heading', { name: 'Browse a course' })).toBeVisible();
 });
@@ -67,14 +68,17 @@ test('about page renders README Markdown and relative Markdown links', async ({ 
   }
 });
 
-test('demo courses page lists browseable course catalog and navigates to course', async ({ page }) => {
-  await initBasicCourse({ page });
+test('demo courses page lists only public courses and navigates to course', async ({ page }) => {
+  // Only public courses appear in the browse list; mark the first catalog course public.
+  await initBasicCourse({ page, catalogSettingsOverride: { public: true } });
   await page.goto('http://localhost:5173/demo-courses');
 
   await expect(page.getByRole('heading', { name: 'Browse a course' })).toBeVisible();
-  await expect(page.getByRole('option', { name: /Rocket Science/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Rocket Science/ })).toHaveAttribute('href', /\/course\//);
+  // Non-public catalog courses are hidden.
+  await expect(page.getByRole('link', { name: /Software construction/ })).toHaveCount(0);
 
-  await page.getByRole('option', { name: /Rocket Science/ }).click();
+  await page.getByRole('link', { name: /Rocket Science/ }).click();
   await expect(page).toHaveURL(/\/course\//);
   await expect(page.getByRole('banner')).toContainText('Rocket Science');
 });

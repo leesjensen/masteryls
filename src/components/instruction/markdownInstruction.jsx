@@ -7,6 +7,8 @@ import { scrollToAnchor, scrollToTextFragment } from '../../utils/utils';
 import Splitter from '../../components/Splitter.jsx';
 import useMarkdownLocation from '../../hooks/useMarkdownLocation';
 import useOnlineStatus from '../../hooks/useOnlineStatus.js';
+import useHeadTags from '../../hooks/useHeadTags.jsx';
+import { buildTopicHead } from '../../utils/seo.js';
 
 import '../markdown.css';
 
@@ -35,6 +37,21 @@ export default function MarkdownInstruction({ courseOps, learningSession, user, 
   // so a wide schedule fills the available width and large screens avoid
   // horizontal scrolling. Other topic prose keeps the comfortable 880px measure.
   const isSchedule = learningSession?.topic?.type === 'schedule';
+
+  // Client-side SEO for the topic page: description/canonical/Open Graph/Twitter/JSON-LD + a robots tag
+  // that only indexes public, published topics (gated by course.settings.public). Scoped to a real
+  // content topic viewed as a learner — not schedule, nor editor-preview/export (where `content` is passed).
+  const seoHead = React.useMemo(() => {
+    if (instructionState !== 'learning' || isSchedule || content || !learningSession?.topic?.path) return null;
+    return buildTopicHead({
+      origin: typeof window !== 'undefined' ? window.location.origin : '',
+      course: learningSession.course,
+      topic: learningSession.topic,
+      markdown,
+      isPublic: Boolean(learningSession.course?.settings?.public),
+    });
+  }, [instructionState, isSchedule, content, learningSession.course, learningSession.topic, markdown]);
+  useHeadTags(seoHead);
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
