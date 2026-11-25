@@ -1,0 +1,21 @@
+# Cloudflare Pages response headers (optional but recommended).
+#
+# Vite emits content-hashed files under /assets/, so they can be cached forever. The HTML shell and
+# the service worker must NOT be long-cached, or browsers would keep booting an old build after a
+# deploy. Copied into dist/ alongside _redirects before the Cloudflare deploy.
+
+# Immutable, content-hashed build output.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Always revalidate the app shell so a new deploy is picked up immediately.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/404.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Never cache the PWA service worker registration (workbox-*.js is hashed and may stay cached).
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate

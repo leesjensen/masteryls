@@ -1,0 +1,13 @@
+# Cloudflare Pages SPA fallback.
+#
+# This is the whole point of moving off GitHub Pages: any deep route that has no matching
+# static file (e.g. /course/<id>/topic/<id>) is served the app shell with an HTTP 200 status
+# instead of a 404. Cloudflare Pages serves real static assets first and only applies this
+# catch-all when no file matches, so hashed /assets/* and files like /favicon.png are unaffected.
+#
+# A 200 is what lets Googlebot render the SPA and index public topics. (GitHub Pages serves its
+# 404.html fallback with a 404 status, which Google treats as "not found" and never indexes.)
+#
+# This file must sit at the ROOT of the published directory (dist/). CI copies it there before the
+# Cloudflare deploy — see install/cloudflare/README.md.
+/*    /index.html    200
